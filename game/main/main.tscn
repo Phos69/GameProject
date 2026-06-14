@@ -1,0 +1,81 @@
+[gd_scene load_steps=18 format=3]
+
+[ext_resource type="Script" path="res://game/main/main.gd" id="1_main"]
+[ext_resource type="Script" path="res://game/input/input_manager.gd" id="2_input_manager"]
+[ext_resource type="Script" path="res://game/multiplayer/local_multiplayer_manager.gd" id="3_local_multiplayer"]
+[ext_resource type="Script" path="res://game/modes/game_mode_manager.gd" id="4_game_mode_manager"]
+[ext_resource type="Script" path="res://game/player/player_manager.gd" id="5_player_manager"]
+[ext_resource type="Script" path="res://game/modes/shared/wave_manager.gd" id="6_wave_manager"]
+[ext_resource type="Script" path="res://game/enemies/enemy_system.gd" id="7_enemy_system"]
+[ext_resource type="Script" path="res://game/bosses/boss_system.gd" id="8_boss_system"]
+[ext_resource type="Script" path="res://game/drops/drop_system.gd" id="9_drop_system"]
+[ext_resource type="Script" path="res://game/progression/progression_manager.gd" id="10_progression_manager"]
+[ext_resource type="Script" path="res://game/procedural/dungeon_generator.gd" id="11_dungeon_generator"]
+[ext_resource type="Script" path="res://game/modes/tower_defense/tower_defense_manager.gd" id="12_tower_defense_manager"]
+[ext_resource type="Script" path="res://game/main/isometric_playground.gd" id="13_playground"]
+[ext_resource type="Script" path="res://game/camera/isometric_camera_controller.gd" id="14_camera"]
+[ext_resource type="Script" path="res://game/ui/hud_manager.gd" id="15_hud_manager"]
+[ext_resource type="Script" path="res://game/projectiles/projectile_system.gd" id="16_projectile_system"]
+[ext_resource type="Script" path="res://game/health/health_system.gd" id="17_health_system"]
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1_main")
+
+[node name="InputManager" type="Node" parent="."]
+script = ExtResource("2_input_manager")
+
+[node name="LocalMultiplayerManager" type="Node" parent="."]
+script = ExtResource("3_local_multiplayer")
+
+[node name="GameModeManager" type="Node" parent="."]
+script = ExtResource("4_game_mode_manager")
+
+[node name="PlayerManager" type="Node" parent="."]
+script = ExtResource("5_player_manager")
+player_container_path = NodePath("../World/Players")
+
+[node name="Systems" type="Node" parent="."]
+
+[node name="WaveManager" type="Node" parent="Systems"]
+script = ExtResource("6_wave_manager")
+
+[node name="EnemySystem" type="Node" parent="Systems"]
+script = ExtResource("7_enemy_system")
+
+[node name="BossSystem" type="Node" parent="Systems"]
+script = ExtResource("8_boss_system")
+
+[node name="DropSystem" type="Node" parent="Systems"]
+script = ExtResource("9_drop_system")
+
+[node name="ProjectileSystem" type="Node" parent="Systems"]
+script = ExtResource("16_projectile_system")
+
+[node name="HealthSystem" type="Node" parent="Systems"]
+script = ExtResource("17_health_system")
+
+[node name="ProgressionManager" type="Node" parent="Systems"]
+script = ExtResource("10_progression_manager")
+
+[node name="DungeonGenerator" type="Node" parent="Systems"]
+script = ExtResource("11_dungeon_generator")
+
+[node name="TowerDefenseManager" type="Node" parent="Systems"]
+script = ExtResource("12_tower_defense_manager")
+
+[node name="World" type="Node2D" parent="."]
+
+[node name="Playground" type="Node2D" parent="World"]
+script = ExtResource("13_playground")
+
+[node name="Players" type="Node2D" parent="World"]
+
+[node name="Camera2D" type="Camera2D" parent="."]
+script = ExtResource("14_camera")
+position = Vector2(0, 0)
+zoom = Vector2(1, 1)
+position_smoothing_enabled = true
+position_smoothing_speed = 7.0
+
+[node name="HUD" type="CanvasLayer" parent="."]
+script = ExtResource("15_hud_manager")
