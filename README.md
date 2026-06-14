@@ -11,7 +11,7 @@ Il progetto vuole diventare una piattaforma modulare per sperimentare tre modali
 - tower defense;
 - boss fight ricorrenti nelle ondate importanti o alla fine dei livelli.
 
-La base attuale contiene Milestone 0-3 come prototipi minimi: repository iniziale, documentazione, progetto Godot, scena pseudo-isometrica, player controllabile, input tastiera/joypad, camera funzionante, multiplayer locale 1-4 player e combat base con armi, munizioni, proiettili, danni e vita.
+La base attuale contiene Milestone 0-4 come prototipi minimi: repository iniziale, documentazione, progetto Godot, scena pseudo-isometrica, player controllabile, input tastiera/joypad, camera funzionante, multiplayer locale 1-4 player, combat base, nemico melee con AI e drop raccoglibili.
 
 ## Stack tecnico
 
@@ -45,10 +45,11 @@ Controlli debug:
 
 Nota: in questo ambiente `godot` non risulta disponibile nel PATH, quindi la verifica runtime va eseguita dall'editor Godot installato localmente.
 
-Smoke test combat headless:
+Smoke test headless:
 
 ```text
 godot --headless --path . --script res://tests/combat_smoke_test.gd
+godot --headless --path . --script res://tests/enemy_drop_smoke_test.gd
 ```
 
 ## Struttura cartelle
@@ -100,21 +101,29 @@ Completato:
 - proiettili con collisione e danno tramite `HealthSystem`;
 - bersagli statici con vita nella scena principale;
 - HUD per-player con vita e munizioni;
+- nemico base melee con stati idle, chase, attack e dead;
+- targeting del player vivo piu vicino e retarget su join/leave;
+- spawn e registro nemici tramite `EnemySystem`;
+- loot table tipizzate con probabilita e quantita configurabili;
+- pickup fisici per XP, denaro, munizioni, vita e armi;
+- XP e denaro condivisi dal party;
+- munizioni, cura e cambio arma applicati solo al player che raccoglie;
+- seconda arma prototipo ottenibile come drop;
 - struttura modulare per multiplayer, modalita, combat, proiettili, health, drop, boss, progressione e UI;
 - documentazione iniziale.
 
 Non ancora completato:
 
-- AI nemici;
-- drop e pickup;
 - wave gameplay;
+- varianti nemico ranged/tank/runner;
+- respawn o revive dei player;
 - dungeon generato giocabile;
 - tower defense giocabile;
 - salvataggi e packaging.
 
 ## Prossime milestone
 
-1. Milestone 4: nemici base e drop system funzionante.
-2. Milestone 5: zombie survival a ondate.
-3. Milestone 6: boss system modulare.
-4. Milestone 7: dungeon procedurale giocabile.
+1. Milestone 5: zombie survival a ondate.
+2. Milestone 6: boss system modulare.
+3. Milestone 7: dungeon procedurale giocabile.
+4. Milestone 8: tower defense.

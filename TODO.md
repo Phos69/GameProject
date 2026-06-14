@@ -2,6 +2,12 @@
 
 ## Completati recenti
 
+- Milestone 4: nemico base e drop system.
+  - Obiettivo: introdurre AI chase/attack, morte, spawn e pickup raccoglibili.
+  - Milestone collegata: Milestone 4.
+  - File/sistemi coinvolti: `BasicEnemy`, `EnemySystem`, `DropEntry`, `LootTable`, `DropSystem`, `DropPickup`, `HealthSystem`, `ProgressionManager`, `WeaponSystem`.
+  - Criterio di accettazione: il nemico seleziona un player vivo, attacca, muore per danno e genera ricompense applicate correttamente in multiplayer locale.
+  - Test richiesto: `tests/enemy_drop_smoke_test.gd` e checklist manuale enemy/drop.
 - Milestone 3: combat system base.
   - Obiettivo: collegare sparo, proiettili, danni, vita e munizioni base.
   - Milestone collegata: Milestone 3.
@@ -17,27 +23,15 @@
 
 ## Priorita alta
 
-- Milestone 4: creare un nemico base con AI chase/attack.
-  - Obiettivo: introdurre il primo nemico che insegue e attacca i player.
-  - Milestone collegata: Milestone 4.
-  - File/sistemi coinvolti: `EnemySystem`, nuova scena nemico, `HealthComponent`.
-  - Criterio di accettazione: il nemico sceglie un target player vivo, si muove verso di lui e puo morire.
-  - Test richiesto: spawn manuale in scena principale e verifica con 1-2 player.
-- Milestone 4: rendere operativo il drop system con pickup in scena.
-  - Obiettivo: trasformare i drop in pickup raccoglibili.
-  - Milestone collegata: Milestone 4.
-  - File/sistemi coinvolti: `DropSystem`, `LootTable`, `ProgressionManager`, pickup scene future.
-  - Criterio di accettazione: alla morte di un nemico puo apparire un pickup e il party riceve la ricompensa.
-  - Test richiesto: uccidere un nemico in scena e verificare XP/denaro/HUD.
-
-## Priorita media
-
 - Milestone 5: implementare arena zombie survival con ondate e scaling.
   - Obiettivo: creare un loop survival con spawn progressivo e ricompense tra ondate.
   - Milestone collegata: Milestone 5.
   - File/sistemi coinvolti: `SurvivalMode`, `WaveManager`, `EnemySystem`, HUD.
-  - Criterio di accettazione: almeno tre ondate consecutive aumentano numero o difficolta dei nemici.
-  - Test richiesto: checklist manuale survival con 1-2 player.
+  - Criterio di accettazione: almeno tre ondate consecutive aumentano numero o difficolta dei nemici e terminano quando tutti sono morti.
+  - Test richiesto: smoke test wave headless e checklist manuale con 1-2 player.
+
+## Priorita media
+
 - Milestone 6: implementare primo boss con pattern semplice.
   - Obiettivo: introdurre un boss modulare richiedibile dalle modalita.
   - Milestone collegata: Milestone 6.
@@ -62,6 +56,18 @@
   - File/sistemi coinvolti: `GameModeManager`, nuova UI debug.
   - Criterio di accettazione: ogni modalita registrata puo essere selezionata e avviata.
   - Test richiesto: smoke test manuale di selezione modalita.
+- Respawn o revive player.
+  - Obiettivo: definire il recupero di un player morto nelle modalita a ondate.
+  - Milestone collegata: Milestone 5.
+  - File/sistemi coinvolti: `PlayerManager`, `HealthComponent`, `SurvivalMode`, HUD.
+  - Criterio di accettazione: la regola di respawn non interrompe gli altri player locali e viene documentata nel design.
+  - Test richiesto: checklist manuale morte/respawn con due player.
+- Varianti nemico base.
+  - Obiettivo: aggiungere almeno runner e tank riusando il contratto `BasicEnemy`.
+  - Milestone collegata: Milestone 5.
+  - File/sistemi coinvolti: `game/enemies/`, `EnemySystem`, loot table dedicate.
+  - Criterio di accettazione: le varianti cambiano dati o comportamento senza duplicare il sistema condiviso.
+  - Test richiesto: smoke test spawn e morte per ogni variante.
 
 ## Priorita bassa
 

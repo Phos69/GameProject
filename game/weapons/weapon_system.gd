@@ -6,6 +6,7 @@ signal fire_blocked(reason: StringName)
 signal ammo_changed(current_ammo: int, reserve_ammo: int)
 signal reload_started(duration: float)
 signal reload_finished()
+signal weapon_changed(weapon_data: WeaponData)
 
 @export var weapon_data: WeaponData = preload("res://game/weapons/starter_pistol.tres")
 
@@ -16,11 +17,7 @@ var reload_timer: float = 0.0
 var is_reloading: bool = false
 
 func _ready() -> void:
-	if weapon_data == null:
-		return
-	current_ammo = weapon_data.magazine_size
-	reserve_ammo = weapon_data.starting_reserve_ammo
-	ammo_changed.emit(current_ammo, reserve_ammo)
+	_initialize_weapon()
 
 func _process(delta: float) -> void:
 	cooldown = maxf(cooldown - delta, 0.0)
@@ -107,6 +104,24 @@ func get_ammo_text() -> String:
 	var suffix := " R" if is_reloading else ""
 	return "%d/%s%s" % [current_ammo, reserve_text, suffix]
 
+func add_reserve_ammo(amount: int) -> int:
+	if weapon_data == null or weapon_data.infinite_reserve_ammo or amount <= 0:
+		return 0
+	reserve_ammo += amount
+	ammo_changed.emit(current_ammo, reserve_ammo)
+	return amount
+
+func equip_weapon(new_weapon_data: WeaponData) -> bool:
+	if new_weapon_data == null:
+		return false
+	weapon_data = new_weapon_data
+	cooldown = 0.0
+	reload_timer = 0.0
+	is_reloading = false
+	_initialize_weapon()
+	weapon_changed.emit(weapon_data)
+	return true
+
 func _finish_reload() -> void:
 	if weapon_data == null:
 		is_reloading = false
@@ -123,3 +138,12 @@ func _finish_reload() -> void:
 	reload_timer = 0.0
 	ammo_changed.emit(current_ammo, reserve_ammo)
 	reload_finished.emit()
+
+func _initialize_weapon() -> void:
+	if weapon_data == null:
+		current_ammo = 0
+		reserve_ammo = 0
+		return
+	current_ammo = weapon_data.magazine_size
+	reserve_ammo = weapon_data.starting_reserve_ammo
+	ammo_changed.emit(current_ammo, reserve_ammo)

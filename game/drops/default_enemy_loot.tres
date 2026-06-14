@@ -1,0 +1,45 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://game/drops/loot_table.gd" id="1_loot_table"]
+[ext_resource type="Script" path="res://game/drops/drop_entry.gd" id="2_drop_entry"]
+[ext_resource type="Resource" path="res://game/weapons/prototype_blaster.tres" id="3_blaster"]
+
+[sub_resource type="Resource" id="DropEntry_experience"]
+script = ExtResource("2_drop_entry")
+drop_type = &"experience"
+chance = 1.0
+min_amount = 3
+max_amount = 3
+
+[sub_resource type="Resource" id="DropEntry_money"]
+script = ExtResource("2_drop_entry")
+drop_type = &"money"
+chance = 0.55
+min_amount = 1
+max_amount = 2
+
+[sub_resource type="Resource" id="DropEntry_ammo"]
+script = ExtResource("2_drop_entry")
+drop_type = &"ammo"
+chance = 0.25
+min_amount = 6
+max_amount = 10
+
+[sub_resource type="Resource" id="DropEntry_health"]
+script = ExtResource("2_drop_entry")
+drop_type = &"health"
+chance = 0.15
+min_amount = 12
+max_amount = 20
+
+[sub_resource type="Resource" id="DropEntry_weapon"]
+script = ExtResource("2_drop_entry")
+drop_type = &"weapon"
+chance = 0.05
+min_amount = 1
+max_amount = 1
+weapon_data = ExtResource("3_blaster")
+
+[resource]
+script = ExtResource("1_loot_table")
+entries = Array[ExtResource("2_drop_entry")]([SubResource("DropEntry_experience"), SubResource("DropEntry_money"), SubResource("DropEntry_ammo"), SubResource("DropEntry_health"), SubResource("DropEntry_weapon")])

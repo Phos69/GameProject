@@ -42,6 +42,15 @@ Arma prototipo implementata:
 - ricarica da 1 secondo;
 - munizioni e ricarica separate per ogni player.
 
+Seconda arma prototipo:
+
+- `Prototype Blaster`;
+- ottenibile come drop raro;
+- 16 danni per colpo;
+- 4 colpi al secondo;
+- caricatore da 8 e riserva iniziale da 24;
+- sostituisce immediatamente l'arma del player che la raccoglie.
+
 Controlli ricarica:
 
 - tastiera player 1: `R`;
@@ -51,14 +60,23 @@ La scena principale include bersagli statici da 40 HP per verificare danno, barr
 
 ## Nemici
 
-Nemici base futuri:
+Nemico implementato:
 
-- zombie melee;
+- `Basic Zombie`;
+- 30 HP;
+- velocita 95;
+- detection range 900;
+- attacco melee da 8 danni;
+- cooldown attacco 0,85 secondi;
+- seleziona il player vivo piu vicino;
+- rivaluta il target durante join, leave e morte dei player;
+- stati idle, chase, attack e dead.
+
+Nemici futuri:
+
 - shooter semplice;
 - tank lento;
 - runner veloce.
-
-AI iniziale prevista: idle, chase, attack, dead.
 
 ## Boss
 
@@ -81,6 +99,22 @@ I mostri possono droppare:
 - vita.
 
 Le loot table devono essere dati configurabili, non logica hardcoded nel nemico.
+
+Loot table prototipo del `Basic Zombie`:
+
+- esperienza: 100%, 3 XP;
+- denaro: 55%, 1-2;
+- munizioni: 25%, 6-10;
+- vita: 15%, 12-20;
+- `Prototype Blaster`: 5%.
+
+Regole raccolta:
+
+- XP e denaro sono condivisi dal party;
+- munizioni e vita vanno al player che raccoglie;
+- un pickup vita resta a terra se il player e gia a vita piena;
+- un drop arma equipaggia immediatamente il player che lo raccoglie;
+- non esistono ancora inventario, confronto arma o scambio tra player.
 
 ## Progressione
 

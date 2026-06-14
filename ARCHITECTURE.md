@@ -13,8 +13,11 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 5. `PlayerController` legge input e muove il personaggio del proprio slot.
 6. `WeaponSystem` gestisce arma, cooldown, caricatore, riserva e ricarica per il singolo player.
 7. `ProjectileSystem` spawna proiettili che applicano danno tramite `HealthSystem`.
-8. `IsometricCameraController` segue il gruppo `players`.
-9. `HUDManager` mostra slot locali, progressione party, vita e munizioni per-player.
+8. `EnemySystem` spawna nemici e `BasicEnemy` seleziona il player vivo piu vicino.
+9. Alla morte, il nemico chiede a `DropSystem` di generare pickup dalla propria `LootTable`.
+10. `DropPickup` delega l'applicazione della ricompensa a `DropSystem`.
+11. `IsometricCameraController` segue il gruppo `players`.
+12. `HUDManager` mostra slot locali, progressione party, vita e munizioni per-player.
 
 ## Sistemi principali
 
@@ -27,12 +30,15 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `WeaponSystem`: stato runtime per-player di arma, cooldown, munizioni e ricarica.
 - `ProjectileSystem` e `Projectile`: spawn, movimento, collisione e consegna del danno.
 - `HealthSystem` e `HealthComponent`: richieste globali di danno/cura e stato vita locale.
-- `EnemySystem`: contratto di spawn nemici.
+- `EnemySystem`: spawn, contenitore, registro runtime e notifica morte nemici.
+- `BasicEnemy`: AI melee con stati idle, chase, attack e dead.
 - `BossSystem`: contratto comune per boss richiesti dalle modalita.
 - `WaveManager`: logica ondate e boss ogni N ondate.
 - `DungeonGenerator`: generazione dati layout dungeon.
 - `TowerDefenseManager`: base health e contratto tower defense.
-- `DropSystem` e `LootTable`: drop XP, denaro, armi, munizioni e vita.
+- `DropEntry` e `LootTable`: dati tipizzati per chance, quantita e arma associata.
+- `DropSystem`: roll, spawn pickup e applicazione centralizzata delle ricompense.
+- `DropPickup`: rappresentazione fisica e raccolta da parte dei player.
 - `ProgressionManager`: XP, livello e denaro party.
 - `HUDManager`: UI prototipo.
 
@@ -46,7 +52,27 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - Collision layer `1`: player e corpi generici.
 - Collision layer `2`: bersagli damageable.
 - Collision layer `4`: proiettili; la mask attuale colpisce il layer `2`.
+- Collision layer `8`: pickup; la mask attuale rileva i player sul layer `1`.
 - `CombatTarget` e una fixture statica della scena principale per verificare il combat e non sostituisce l'AI nemica della Milestone 4.
+
+## Contratto nemici
+
+- `EnemySystem.spawn_enemy()` e il punto di ingresso per modalita e wave future.
+- `EnemySystem` mantiene solo nemici validi in `active_enemies` ed emette `enemy_died`.
+- `BasicEnemy` cerca periodicamente il player vivo piu vicino entro il detection range.
+- Il target viene rivalutato anche quando un player lascia la sessione o muore.
+- L'attacco inoltra il danno a `HealthSystem`; non modifica direttamente la vita del player.
+- La morte nasce dal segnale `HealthComponent.died`, disabilita collisioni, genera drop e rimuove il nodo.
+- I dati di movimento, detection, attacco, cooldown, vita e loot sono configurabili dalla scena o da risorse.
+
+## Contratto drop
+
+- Ogni nemico possiede una `LootTable` composta da risorse `DropEntry`.
+- `DropSystem` e l'unico sistema che esegue roll, crea pickup e applica ricompense.
+- XP e denaro aggiornano `ProgressionManager` e sono condivisi dal party.
+- Munizioni, cura e arma vengono applicate al player che raccoglie.
+- Un pickup non viene consumato se la ricompensa non puo essere applicata, per esempio cura su vita piena.
+- Il drop arma equipaggia immediatamente il relativo `WeaponData`; inventario e scelta arma restano futuri.
 
 ## Contratto multiplayer locale
 

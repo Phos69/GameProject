@@ -17,6 +17,7 @@ class_name PlayerController
 @onready var visual := $Visual as Polygon2D
 @onready var aim_line := $AimLine as Line2D
 @onready var weapon_system = $WeaponSystem
+@onready var health_component := $HealthComponent as HealthComponent
 
 var facing_direction: Vector2 = Vector2.RIGHT
 var input_manager
@@ -24,10 +25,14 @@ var input_manager
 func _ready() -> void:
 	add_to_group("players")
 	input_manager = get_tree().get_first_node_in_group("input_manager")
+	health_component.died.connect(_on_died)
 	_apply_slot_color()
 	_update_aim_line()
 
 func _physics_process(delta: float) -> void:
+	if health_component.is_dead:
+		velocity = Vector2.ZERO
+		return
 	if input_manager == null:
 		input_manager = get_tree().get_first_node_in_group("input_manager")
 		if input_manager == null:
@@ -79,3 +84,8 @@ func _handle_weapon_input() -> void:
 		weapon_system.start_reload()
 	if input_manager.is_player_fire_pressed(player_slot):
 		weapon_system.try_fire(global_position + facing_direction * 22.0, facing_direction, self)
+
+func _on_died() -> void:
+	velocity = Vector2.ZERO
+	visual.modulate = Color(0.35, 0.35, 0.35, 0.55)
+	aim_line.hide()

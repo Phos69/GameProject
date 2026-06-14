@@ -27,3 +27,15 @@
 - Esteso HUD con vita e munizioni per ogni player.
 - Aggiunto smoke test headless per combat e regressione multiplayer a due player.
 - Aggiornata documentazione per stato Milestone 3, contratti combat e backlog futuro.
+- Completata Milestone 4 come prototipo minimo di nemici e drop.
+- Aggiunto `BasicEnemy` melee con stati idle, chase, attack e dead.
+- Aggiunti targeting del player vivo piu vicino e retarget su join/leave.
+- Esteso `EnemySystem` con spawn, contenitore, registro e segnale morte.
+- Integrati attacchi nemici e morte con `HealthSystem` e `HealthComponent`.
+- Aggiunti `DropEntry` e loot table tipizzate configurabili.
+- Aggiunti pickup fisici per esperienza, denaro, munizioni, vita e armi.
+- Centralizzata in `DropSystem` l'applicazione delle ricompense party e per-player.
+- Aggiunto `Prototype Blaster` come primo drop arma equipaggiabile.
+- Aggiunti due nemici iniziali alla scena principale.
+- Aggiunto smoke test headless enemy/drop con regressione multiplayer locale.
+- Aggiornata documentazione per stato Milestone 4, contratti enemy/drop e prossima Milestone 5.

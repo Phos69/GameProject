@@ -46,16 +46,21 @@ Stato: completata come prototipo minimo.
 
 ## Milestone 4 - Nemici base e drop
 
-Stato: prossima.
+Stato: completata come prototipo minimo.
 
-- Nemico base con AI.
-- Spawn nemici.
-- Drop XP, denaro, armi, munizioni e vita.
-- Pickup in scena.
+- Nemico melee con stati idle, chase, attack e dead.
+- Targeting del player vivo piu vicino con retarget dinamico.
+- Attacco integrato con `HealthSystem`.
+- Spawn, registro e segnali morte tramite `EnemySystem`.
+- Loot table tipizzate e configurabili.
+- Pickup in scena per XP, denaro, armi, munizioni e vita.
+- XP e denaro condivisi; ricompense combat applicate al raccoglitore.
+- Seconda arma prototipo equipaggiabile tramite drop.
+- Smoke test headless con join/leave di due player.
 
 ## Milestone 5 - Zombie survival
 
-Stato: pianificata.
+Stato: prossima.
 
 - Arena survival.
 - Wave manager operativo.

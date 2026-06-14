@@ -54,6 +54,37 @@ godot --headless --path . --script res://tests/combat_smoke_test.gd
 
 Il test verifica scena principale, due player locali, sparo, collisione, danno, munizioni indipendenti e ricarica.
 
+## Regressione nemici
+
+- La scena principale genera due `Basic Zombie`.
+- Un nemico inattivo senza player valido resta in idle.
+- Un nemico entro detection range insegue il player vivo piu vicino.
+- Con due player separati, il nemico puo cambiare target verso quello piu vicino.
+- Se il target lascia la sessione, il nemico seleziona un altro player vivo.
+- A distanza melee il nemico entra in attack e infligge 8 danni tramite `HealthSystem`.
+- Tre colpi della `Starter Pistol` uccidono un nemico da 30 HP.
+- Alla morte il nemico sparisce dal registro di `EnemySystem`.
+- Un player morto non puo muoversi o sparare e non viene selezionato come target.
+
+## Regressione drop
+
+- Ogni nemico morto genera sempre un pickup XP.
+- I pickup denaro aggiornano il totale party nell'HUD.
+- I pickup munizioni aggiornano solo la riserva del raccoglitore.
+- I pickup vita curano solo il raccoglitore danneggiato.
+- Un pickup vita non sparisce se raccolto a vita piena.
+- Il pickup arma viola equipaggia il `Prototype Blaster`.
+- Il cambio arma di un player non modifica l'arma degli altri player.
+- I pickup restano separati dai nemici e dai proiettili.
+
+## Smoke test enemy/drop
+
+```text
+godot --headless --path . --script res://tests/enemy_drop_smoke_test.gd
+```
+
+Il test verifica spawn, chase, retarget, attack, danno da proiettile, morte, pickup XP e tutti i tipi di ricompensa con due player.
+
 ## Regressione architettura
 
 - I sistemi non sono duplicati in cartelle diverse.
