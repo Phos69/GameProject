@@ -24,17 +24,17 @@ Stato: completata come prototipo minimo.
 
 ## Milestone 2 - Multiplayer locale
 
-Stato: pianificata.
+Stato: completata come prototipo minimo.
 
-- Assegnazione device a 2-4 player.
-- Spawn multipli.
-- Camera di gruppo con zoom dinamico.
-- HUD per slot player.
-- Join/leave locale opzionale.
+- Assegnazione deterministica device/slot per 1-4 player locali.
+- Spawn e despawn dinamico dei player locali.
+- Camera di gruppo con zoom dinamico gia condivisa tra i player attivi.
+- HUD con conteggio player e slot attivi.
+- Join/leave locale: `Start`/`Back` su joypad e `F2`-`F4` come fallback debug per slot 2-4.
 
 ## Milestone 3 - Sparo, armi, danni e vita
 
-Stato: pianificata.
+Stato: prossima.
 
 - Proiettili visibili.
 - Collisioni proiettile/nemico.
@@ -95,4 +95,3 @@ Stato: pianificata.
 - Audio e feedback.
 - Bilanciamento.
 - Export desktop.
-

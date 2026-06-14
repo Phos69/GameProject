@@ -6,16 +6,19 @@ Un action sandbox locale dove 1-4 giocatori affrontano arene, dungeon e difese a
 
 ## Giocatori
 
-- 1 player implementato nel prototipo.
-- 2-4 player locali previsti.
+- 1-4 player locali implementati come prototipo minimo.
+- Player 1 e sempre presente.
+- Player 2-4 possono entrare/uscire durante la scena.
 - Ogni player avra vita, arma e munizioni proprie.
 - XP e denaro sono per default condivisi dal party per semplificare il multiplayer locale.
+- Ogni player usa un colore diverso per restare leggibile nella camera condivisa.
 
 ## Movimento e camera
 
 - Movimento fluido con tastiera o joypad.
 - Movimento pseudo-isometrico: input di movimento convertito su assi diagonali del playground.
-- Camera condivisa che segue il gruppo player.
+- Camera condivisa che segue il gruppo player e allarga leggermente lo zoom quando i player si separano.
+- Il mapping prototipo dei controller e deterministico: controller 1/player 1, controller 2/player 2, controller 3/player 3, controller 4/player 4.
 
 ## Armi
 
@@ -99,4 +102,3 @@ La modalita tower defense prevede:
 - punti torre;
 - ondate;
 - boss nelle ondate principali.
-

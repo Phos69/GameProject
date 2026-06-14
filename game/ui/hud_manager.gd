@@ -21,6 +21,7 @@ func _refresh() -> void:
 		return
 
 	var players := get_tree().get_nodes_in_group("players")
+	var active_slots := _get_active_slots(players)
 	var progression = get_tree().get_first_node_in_group("progression_manager")
 	var level := 1
 	var experience := 0
@@ -30,9 +31,26 @@ func _refresh() -> void:
 		experience = progression.experience
 		money = progression.money
 
-	status_label.text = "Prototype Arena\nPlayers: %d\nParty Lv %d  XP %d  Money %d" % [
-		players.size(),
+	status_label.text = "Prototype Arena\nPlayers: %d/4  Slots: %s\nParty Lv %d  XP %d  Money %d" % [
+		active_slots.size(),
+		_format_slots(active_slots),
 		level,
 		experience,
 		money
 	]
+
+func _get_active_slots(players: Array[Node]) -> Array:
+	var local_multiplayer = get_tree().get_first_node_in_group("local_multiplayer_manager")
+	if local_multiplayer != null and local_multiplayer.has_method("get_active_slots"):
+		return local_multiplayer.get_active_slots()
+
+	var slots: Array[int] = []
+	for player in players:
+		slots.append(int(player.get("player_slot")))
+	return slots
+
+func _format_slots(active_slots: Array) -> String:
+	var labels := PackedStringArray()
+	for player_slot in active_slots:
+		labels.append("P%d" % int(player_slot))
+	return " ".join(labels)

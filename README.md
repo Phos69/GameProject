@@ -11,7 +11,7 @@ Il progetto vuole diventare una piattaforma modulare per sperimentare tre modali
 - tower defense;
 - boss fight ricorrenti nelle ondate importanti o alla fine dei livelli.
 
-La base attuale contiene Milestone 0 e Milestone 1: repository iniziale, documentazione, progetto Godot, scena pseudo-isometrica, player controllabile, input tastiera/joypad e camera funzionante.
+La base attuale contiene Milestone 0, Milestone 1 e Milestone 2 come prototipi minimi: repository iniziale, documentazione, progetto Godot, scena pseudo-isometrica, player controllabile, input tastiera/joypad, camera funzionante e multiplayer locale 1-4 player con join/leave.
 
 ## Stack tecnico
 
@@ -39,7 +39,9 @@ res://game/main/main.tscn
 Controlli debug:
 
 - Tastiera: `WASD` per movimento, frecce per mira, `Spazio` per fire action.
-- Joypad player 1: stick sinistro per movimento, stick destro per mira, trigger/spalla destra per fire action.
+- Tastiera debug multiplayer: `F2`, `F3`, `F4` attivano/disattivano gli slot player 2, 3 e 4.
+- Joypad: stick sinistro per movimento, stick destro per mira, trigger/spalla destra per fire action.
+- Joypad multiplayer: `Start` attiva lo slot del controller, `Back/Select` lascia lo slot se non e player 1.
 
 Nota: in questo ambiente `godot` non risulta disponibile nel PATH, quindi la verifica runtime va eseguita dall'editor Godot installato localmente.
 
@@ -83,13 +85,16 @@ Completato:
 - player controllabile;
 - camera che segue il gruppo player;
 - input manager per tastiera e joypad;
+- multiplayer locale 1-4 player con mapping controller deterministico;
+- join/leave locale per slot 2-4;
+- spawn/despawn dinamico dei player locali;
+- HUD con slot locali attivi;
 - fire action con proiettili placeholder visibili;
 - struttura modulare per multiplayer, modalita, combat, proiettili, health, drop, boss, progressione e UI;
 - documentazione iniziale.
 
 Non ancora completato:
 
-- multiplayer locale effettivo 2-4 player;
 - collisioni proiettile/nemico, ammo e combat completo;
 - AI nemici;
 - wave gameplay;
@@ -99,7 +104,7 @@ Non ancora completato:
 
 ## Prossime milestone
 
-1. Milestone 2: multiplayer locale reale 2-4 giocatori.
-2. Milestone 3: sparo, armi, proiettili, danni e vita.
-3. Milestone 4: nemici base e drop system funzionante.
-4. Milestone 5: zombie survival a ondate.
+1. Milestone 3: sparo, armi, proiettili, danni e vita.
+2. Milestone 4: nemici base e drop system funzionante.
+3. Milestone 5: zombie survival a ondate.
+4. Milestone 6: boss system modulare.

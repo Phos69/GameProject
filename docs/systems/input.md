@@ -14,6 +14,12 @@ Joypad:
 - stick destro: mira;
 - spalla/trigger destro: fire action.
 
+Join/leave multiplayer locale:
+
+- `Start` su joypad attiva lo slot associato al controller;
+- `Back/Select` su joypad disattiva lo slot associato, tranne player 1;
+- `F2`, `F3`, `F4` sono fallback debug tastiera per attivare/disattivare player 2, 3 e 4.
+
 Le azioni seguono il formato:
 
 ```text
@@ -25,4 +31,3 @@ Esempi:
 - `p1_move_left`
 - `p1_aim_right`
 - `p1_fire`
-
