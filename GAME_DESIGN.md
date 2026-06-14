@@ -137,12 +137,34 @@ La modalita dungeon generera una sequenza/grafo di stanze:
 
 ## Zombie survival
 
-La modalita survival usa un'arena e ondate crescenti:
+La modalita survival usa l'arena principale e parte automaticamente:
 
-- ondate normali;
-- pausa breve tra ondate;
-- boss ogni N ondate;
-- drop e ricompense tra ondate.
+- 3 secondi di preparazione iniziale;
+- 4 secondi di intermissione tra ondate;
+- ondata 1 con 3 zombie;
+- 2 zombie aggiuntivi per ogni ondata successiva;
+- spawn scaglionato ogni 0,45 secondi;
+- +18% vita, +5% velocita e +12% danno per ondata superata;
+- ogni quinta ondata e marcata come boss wave;
+- finche il boss reale non e implementato, la boss wave aggiunge 2 zombie, +35% vita e +20% danno;
+- la run termina quando tutti i player attivi sono morti.
+
+Ricompense al completamento dell'ondata `N`:
+
+- denaro party: `2 + 2N`;
+- munizioni per ogni player vivo: `3 + N`;
+- cura per ogni player vivo: `4 + 2N`.
+
+I drop individuali dei nemici restano attivi durante le ondate e sono separati dalla ricompensa di completamento.
+
+L'HUD mostra:
+
+- countdown alla prossima ondata;
+- indice ondata e indicatore boss;
+- nemici rimasti sul totale;
+- ultima ricompensa;
+- vita e munizioni di ogni player;
+- XP e denaro party.
 
 ## Tower defense
 

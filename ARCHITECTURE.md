@@ -16,8 +16,10 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 8. `EnemySystem` spawna nemici e `BasicEnemy` seleziona il player vivo piu vicino.
 9. Alla morte, il nemico chiede a `DropSystem` di generare pickup dalla propria `LootTable`.
 10. `DropPickup` delega l'applicazione della ricompensa a `DropSystem`.
-11. `IsometricCameraController` segue il gruppo `players`.
-12. `HUDManager` mostra slot locali, progressione party, vita e munizioni per-player.
+11. `GameModeManager` avvia `SurvivalMode`, che delega il ciclo delle ondate a `WaveManager`.
+12. `WaveManager` spawna zombie tramite `EnemySystem`, conta le morti e assegna ricompense.
+13. `IsometricCameraController` segue il gruppo `players`.
+14. `HUDManager` mostra slot, progressione, vita, munizioni e stato ondata.
 
 ## Sistemi principali
 
@@ -25,7 +27,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `LocalMultiplayerManager`: mantiene gli slot locali attivi, gestisce join/leave e usa mapping deterministico `device joypad + 1 = player_slot`.
 - `PlayerManager`: spawna/despawna player in base agli slot attivi e tiene il registro degli slot.
 - `PlayerController`: movimento, mira, fire action e colore visuale per slot.
-- `GameModeManager`: selezione modalita e contratto comune futuro.
+- `GameModeManager`: registra, arresta e avvia le modalita.
 - `WeaponData`: risorsa immutabile con danno, fire rate, velocita proiettile, caricatore, riserva e durata ricarica.
 - `WeaponSystem`: stato runtime per-player di arma, cooldown, munizioni e ricarica.
 - `ProjectileSystem` e `Projectile`: spawn, movimento, collisione e consegna del danno.
@@ -33,7 +35,8 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `EnemySystem`: spawn, contenitore, registro runtime e notifica morte nemici.
 - `BasicEnemy`: AI melee con stati idle, chase, attack e dead.
 - `BossSystem`: contratto comune per boss richiesti dalle modalita.
-- `WaveManager`: logica ondate e boss ogni N ondate.
+- `SurvivalMode`: ciclo survival, condizione di sconfitta e inoltro richieste boss.
+- `WaveManager`: macchina a stati per intermissione, spawn, combat, reward e boss wave.
 - `DungeonGenerator`: generazione dati layout dungeon.
 - `TowerDefenseManager`: base health e contratto tower defense.
 - `DropEntry` e `LootTable`: dati tipizzati per chance, quantita e arma associata.
@@ -85,13 +88,28 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 
 ## Contratti per modalita
 
-Ogni modalita deve derivare concettualmente da `BaseGameMode` e fornire:
+Ogni modalita deriva da `BaseGameMode` e fornisce:
 
 - `mode_id`;
 - start/stop;
 - condizione di vittoria/sconfitta;
 - richiesta boss;
 - collegamento a spawn nemici, drop e progressione.
+
+## Contratto survival e wave
+
+- `GameModeManager.register_mode()` avvia la modalita registrata se coincide con `default_mode`.
+- `SurvivalMode` avvia e arresta `WaveManager` e controlla la sconfitta del party.
+- `WaveManager` e autoritativo per indice ondata, stato, spawn pendenti e nemici della wave.
+- Gli stati runtime sono `idle`, `intermission`, `spawning`, `combat` e `reward`.
+- Gli zombie vengono creati esclusivamente tramite `EnemySystem.spawn_enemy()`.
+- Ogni ondata aumenta il conteggio base e passa moltiplicatori a `BasicEnemy`.
+- Solo le morti dei nemici registrati nella wave contribuiscono al completamento.
+- Le ricompense tra ondate aggiungono denaro party e munizioni/cura ai player attivi vivi.
+- Join e leave non modificano il conteggio nemici; i nuovi player partecipano alle ricompense successive.
+- Ogni quinta ondata emette `boss_wave_requested` e `SurvivalMode` la inoltra a `BossSystem`.
+- Finche Milestone 6 non fornisce un boss, la boss wave usa zombie extra con bonus vita e danno.
+- Se tutti i player attivi sono morti, `SurvivalMode` arresta la run.
 
 Modalita previste:
 

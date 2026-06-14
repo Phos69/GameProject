@@ -18,7 +18,7 @@ Completata come prototipo minimo.
 - XP e denaro condivisi dal party.
 - Munizioni, cura e arma applicate al raccoglitore.
 - `Prototype Blaster` come primo drop arma.
-- Due nemici dimostrativi nella scena principale.
+- Integrazione del nemico nella scena principale, successivamente gestita dalle ondate survival.
 
 ## Verifica automatica
 
@@ -33,7 +33,7 @@ Risultati attesi: `COMBAT_SMOKE_TEST: PASS` e `ENEMY_DROP_SMOKE_TEST: PASS`.
 
 1. Aprire il progetto in Godot 4.x.
 2. Avviare `res://game/main/main.tscn`.
-3. Verificare che i nemici verdi inseguano il player piu vicino.
+3. Attendere l'avvio dell'ondata e verificare che i nemici verdi inseguano il player piu vicino.
 4. Lasciarsi raggiungere e verificare la perdita di vita nell'HUD.
 5. Uccidere un nemico con tre colpi della pistola.
 6. Raccogliere il pickup XP azzurro.

@@ -17,7 +17,12 @@ func _ready() -> void:
 	if spawn_initial_enemies:
 		call_deferred("_spawn_initial_enemies")
 
-func spawn_enemy(enemy_id: StringName, position: Vector2, parent: Node = null) -> Node:
+func spawn_enemy(
+	enemy_id: StringName,
+	position: Vector2,
+	parent: Node = null,
+	spawn_config: Dictionary = {}
+) -> Node:
 	enemy_spawn_requested.emit(enemy_id, position)
 	if enemy_scene == null:
 		return null
@@ -25,6 +30,7 @@ func spawn_enemy(enemy_id: StringName, position: Vector2, parent: Node = null) -
 	var enemy := enemy_scene.instantiate()
 	if enemy is BasicEnemy:
 		(enemy as BasicEnemy).enemy_id = enemy_id
+		(enemy as BasicEnemy).configure_wave_scaling(spawn_config)
 	if enemy is Node2D:
 		(enemy as Node2D).global_position = position
 

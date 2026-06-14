@@ -31,7 +31,7 @@ func _refresh() -> void:
 		experience = progression.experience
 		money = progression.money
 
-	status_label.text = "Prototype Arena\nPlayers: %d/4  Slots: %s\nParty Lv %d  XP %d  Money %d" % [
+	status_label.text = "Survival Arena\nPlayers: %d/4  Slots: %s\nParty Lv %d  XP %d  Money %d" % [
 		active_slots.size(),
 		_format_slots(active_slots),
 		level,
@@ -41,6 +41,9 @@ func _refresh() -> void:
 	var combat_status := _format_combat_status(players)
 	if not combat_status.is_empty():
 		status_label.text += "\n" + combat_status
+	var wave_status := _format_wave_status()
+	if not wave_status.is_empty():
+		status_label.text += "\n" + wave_status
 
 func _get_active_slots(players: Array[Node]) -> Array:
 	var local_multiplayer = get_tree().get_first_node_in_group("local_multiplayer_manager")
@@ -80,3 +83,46 @@ func _format_combat_status(players: Array[Node]) -> String:
 		])
 	lines.sort()
 	return "\n".join(lines)
+
+func _format_wave_status() -> String:
+	var wave_manager := get_tree().get_first_node_in_group("wave_manager") as WaveManager
+	if wave_manager == null:
+		return ""
+
+	match wave_manager.state:
+		&"intermission":
+			return "Next Wave %d in %.1fs%s" % [
+				wave_manager.current_wave + 1,
+				wave_manager.get_intermission_time_left(),
+				_format_last_reward(wave_manager.last_reward)
+			]
+		&"spawning":
+			return "Wave %d%s  Spawning  Enemies %d/%d" % [
+				wave_manager.current_wave,
+				" BOSS" if wave_manager.current_wave_is_boss else "",
+				wave_manager.get_enemies_remaining(),
+				wave_manager.current_wave_enemy_total
+			]
+		&"combat":
+			return "Wave %d%s  Enemies %d/%d" % [
+				wave_manager.current_wave,
+				" BOSS" if wave_manager.current_wave_is_boss else "",
+				wave_manager.get_enemies_remaining(),
+				wave_manager.current_wave_enemy_total
+			]
+		&"reward":
+			return "Wave %d Complete%s" % [
+				wave_manager.current_wave,
+				_format_last_reward(wave_manager.last_reward)
+			]
+		_:
+			return "Survival idle"
+
+func _format_last_reward(reward: Dictionary) -> String:
+	if reward.is_empty():
+		return ""
+	return "  Reward +%d$ +%d Ammo +%d HP" % [
+		int(reward.get("money", 0)),
+		int(reward.get("ammo", 0)),
+		int(reward.get("health", 0))
+	]

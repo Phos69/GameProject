@@ -2,6 +2,12 @@
 
 ## Completati recenti
 
+- Milestone 5: zombie survival a ondate.
+  - Obiettivo: creare un loop survival con spawn progressivo, scaling e ricompense.
+  - Milestone collegata: Milestone 5.
+  - File/sistemi coinvolti: `SurvivalMode`, `WaveManager`, `GameModeManager`, `EnemySystem`, `BasicEnemy`, `HUDManager`, `ProgressionManager`.
+  - Criterio di accettazione: almeno tre ondate consecutive aumentano conteggio e statistiche, terminano alla morte dei nemici e premiano tutti i player attivi.
+  - Test richiesto: `tests/survival_wave_smoke_test.gd` e checklist manuale survival.
 - Milestone 4: nemico base e drop system.
   - Obiettivo: introdurre AI chase/attack, morte, spawn e pickup raccoglibili.
   - Milestone collegata: Milestone 4.
@@ -23,21 +29,15 @@
 
 ## Priorita alta
 
-- Milestone 5: implementare arena zombie survival con ondate e scaling.
-  - Obiettivo: creare un loop survival con spawn progressivo e ricompense tra ondate.
-  - Milestone collegata: Milestone 5.
-  - File/sistemi coinvolti: `SurvivalMode`, `WaveManager`, `EnemySystem`, HUD.
-  - Criterio di accettazione: almeno tre ondate consecutive aumentano numero o difficolta dei nemici e terminano quando tutti sono morti.
-  - Test richiesto: smoke test wave headless e checklist manuale con 1-2 player.
+- Milestone 6: implementare primo boss con pattern semplice.
+  - Obiettivo: sostituire la boss wave potenziata con un boss reale e modulare.
+  - Milestone collegata: Milestone 6.
+  - File/sistemi coinvolti: `BossSystem`, nuova scena boss, `WaveManager`, `SurvivalMode`, HUD boss, drop speciali.
+  - Criterio di accettazione: alla quinta ondata il boss entra, attacca, perde vita, muore, genera un drop speciale e permette la prosecuzione della run.
+  - Test richiesto: smoke test boss headless e checklist manuale survival con 1-2 player.
 
 ## Priorita media
 
-- Milestone 6: implementare primo boss con pattern semplice.
-  - Obiettivo: introdurre un boss modulare richiedibile dalle modalita.
-  - Milestone collegata: Milestone 6.
-  - File/sistemi coinvolti: `BossSystem`, nuova scena boss, HUD boss, drop speciali.
-  - Criterio di accettazione: il boss entra, attacca, perde vita, muore e notifica la modalita.
-  - Test richiesto: scena di test boss e integrazione survival.
 - Milestone 7: trasformare `DungeonGenerator` in generatore di stanze giocabili.
   - Obiettivo: generare e collegare start room, combat room, loot room e boss room.
   - Milestone collegata: Milestone 7.

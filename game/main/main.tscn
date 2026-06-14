@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=3]
+[gd_scene load_steps=20 format=3]
 
 [ext_resource type="Script" path="res://game/main/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://game/input/input_manager.gd" id="2_input_manager"]
@@ -18,6 +18,7 @@
 [ext_resource type="Script" path="res://game/projectiles/projectile_system.gd" id="16_projectile_system"]
 [ext_resource type="Script" path="res://game/health/health_system.gd" id="17_health_system"]
 [ext_resource type="PackedScene" path="res://game/debug/combat_target.tscn" id="18_combat_target"]
+[ext_resource type="Script" path="res://game/modes/survival/survival_mode.gd" id="19_survival_mode"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -31,6 +32,11 @@ script = ExtResource("3_local_multiplayer")
 [node name="GameModeManager" type="Node" parent="."]
 script = ExtResource("4_game_mode_manager")
 
+[node name="Modes" type="Node" parent="."]
+
+[node name="SurvivalMode" type="Node" parent="Modes"]
+script = ExtResource("19_survival_mode")
+
 [node name="PlayerManager" type="Node" parent="."]
 script = ExtResource("5_player_manager")
 player_container_path = NodePath("../World/Players")
@@ -42,8 +48,6 @@ script = ExtResource("6_wave_manager")
 
 [node name="EnemySystem" type="Node" parent="Systems"]
 script = ExtResource("7_enemy_system")
-spawn_initial_enemies = true
-initial_spawn_points = Array[Vector2]([Vector2(360, 20), Vector2(-330, 170)])
 
 [node name="BossSystem" type="Node" parent="Systems"]
 script = ExtResource("8_boss_system")

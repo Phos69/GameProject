@@ -31,10 +31,15 @@ var current_state: State = State.IDLE
 var target: Node2D
 var attack_timer: float = 0.0
 var target_refresh_timer: float = 0.0
+var wave_index: int = 0
+var health_multiplier: float = 1.0
+var move_speed_multiplier: float = 1.0
+var damage_multiplier: float = 1.0
 
 func _ready() -> void:
 	add_to_group("enemies")
 	add_to_group("damageable_targets")
+	_apply_wave_scaling()
 	health_component.damaged.connect(_on_health_changed)
 	health_component.healed.connect(_on_health_changed)
 	health_component.died.connect(_on_died)
@@ -78,6 +83,12 @@ func get_state_name() -> StringName:
 			return &"dead"
 		_:
 			return &"idle"
+
+func configure_wave_scaling(config: Dictionary) -> void:
+	wave_index = int(config.get("wave_index", 0))
+	health_multiplier = maxf(float(config.get("health_multiplier", 1.0)), 0.01)
+	move_speed_multiplier = maxf(float(config.get("move_speed_multiplier", 1.0)), 0.01)
+	damage_multiplier = maxf(float(config.get("damage_multiplier", 1.0)), 0.01)
 
 func _select_target() -> void:
 	var nearest_target: Node2D
@@ -146,3 +157,12 @@ func _update_health_bar() -> void:
 		Vector2(-22.0 + 44.0 * ratio, -30.0)
 	])
 	health_bar.default_color = Color(1.0 - ratio, ratio, 0.18, 1.0)
+
+func _apply_wave_scaling() -> void:
+	health_component.max_health = maxi(
+		1,
+		roundi(float(health_component.max_health) * health_multiplier)
+	)
+	health_component.reset_health()
+	move_speed *= move_speed_multiplier
+	attack_damage = maxi(1, roundi(float(attack_damage) * damage_multiplier))

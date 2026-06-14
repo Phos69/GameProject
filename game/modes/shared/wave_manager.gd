@@ -1,30 +1,264 @@
 extends Node
 class_name WaveManager
 
+signal run_started()
+signal run_stopped(wave_index: int)
+signal intermission_started(next_wave_index: int, duration: float)
 signal wave_started(wave_index: int)
+signal wave_configured(wave_index: int, enemy_count: int, is_boss_wave: bool)
+signal wave_progress_changed(wave_index: int, enemies_remaining: int)
 signal wave_completed(wave_index: int)
+signal wave_reward_granted(wave_index: int, reward: Dictionary)
 signal boss_wave_requested(wave_index: int)
 
-@export var boss_wave_interval: int = 5
+@export var boss_wave_interval: int = GameConstants.DEFAULT_BOSS_WAVE_INTERVAL
+@export var initial_delay: float = 3.0
+@export var intermission_duration: float = 4.0
+@export var spawn_interval: float = 0.45
+@export var base_enemy_count: int = 3
+@export var enemy_count_growth: int = 2
+@export var boss_wave_bonus_enemies: int = 2
+@export var health_scale_per_wave: float = 0.18
+@export var move_speed_scale_per_wave: float = 0.05
+@export var damage_scale_per_wave: float = 0.12
+@export var boss_health_bonus: float = 0.35
+@export var boss_damage_bonus: float = 0.20
+@export var base_money_reward: int = 2
+@export var money_reward_per_wave: int = 2
+@export var base_ammo_reward: int = 3
+@export var ammo_reward_per_wave: int = 1
+@export var base_health_reward: int = 4
+@export var health_reward_per_wave: int = 2
+@export var spawn_points: Array[Vector2] = [
+	Vector2(520.0, 0.0),
+	Vector2(-520.0, 0.0),
+	Vector2(0.0, 310.0),
+	Vector2(0.0, -310.0),
+	Vector2(390.0, 230.0),
+	Vector2(-390.0, 230.0),
+	Vector2(390.0, -230.0),
+	Vector2(-390.0, -230.0)
+]
 
 var current_wave: int = 0
 var wave_running: bool = false
+var run_active: bool = false
+var state: StringName = &"idle"
+var state_timer: float = 0.0
+var spawn_timer: float = 0.0
+var pending_spawn_count: int = 0
+var current_wave_enemy_total: int = 0
+var current_wave_is_boss: bool = false
+var wave_enemies: Array[Node] = []
+var last_reward: Dictionary = {}
+
+var enemy_system: EnemySystem
 
 func _ready() -> void:
 	add_to_group("wave_manager")
 
+func _process(delta: float) -> void:
+	if not run_active:
+		return
+
+	match state:
+		&"intermission":
+			state_timer = maxf(state_timer - delta, 0.0)
+			if state_timer <= 0.0:
+				_start_next_wave()
+		&"spawning":
+			_process_spawning(delta)
+		&"combat":
+			_check_wave_completion()
+
+func start_run() -> void:
+	if run_active:
+		return
+	if not _resolve_enemy_system():
+		return
+
+	current_wave = 0
+	wave_running = false
+	run_active = true
+	state = &"idle"
+	last_reward = {}
+	wave_enemies.clear()
+	pending_spawn_count = 0
+	run_started.emit()
+	_begin_intermission(initial_delay)
+
+func stop_run(clear_wave_enemies: bool = false) -> void:
+	if not run_active and state == &"idle":
+		return
+
+	run_active = false
+	wave_running = false
+	state = &"idle"
+	state_timer = 0.0
+	spawn_timer = 0.0
+	pending_spawn_count = 0
+	if clear_wave_enemies:
+		for enemy in wave_enemies.duplicate():
+			if is_instance_valid(enemy):
+				enemy.queue_free()
+	wave_enemies.clear()
+	run_stopped.emit(current_wave)
+
 func start_next_wave() -> void:
-	current_wave += 1
-	wave_running = true
-	wave_started.emit(current_wave)
-	if should_spawn_boss(current_wave):
-		boss_wave_requested.emit(current_wave)
+	if not run_active:
+		if not _resolve_enemy_system():
+			return
+		run_active = true
+	_start_next_wave()
 
 func complete_current_wave() -> void:
-	if not wave_running:
-		return
-	wave_running = false
-	wave_completed.emit(current_wave)
+	if wave_running:
+		_complete_current_wave()
 
 func should_spawn_boss(wave_index: int) -> bool:
 	return boss_wave_interval > 0 and wave_index > 0 and wave_index % boss_wave_interval == 0
+
+func get_enemies_remaining() -> int:
+	_prune_wave_enemies()
+	return pending_spawn_count + wave_enemies.size()
+
+func get_active_wave_enemies() -> Array[Node]:
+	_prune_wave_enemies()
+	return wave_enemies.duplicate()
+
+func get_intermission_time_left() -> float:
+	return state_timer if state == &"intermission" else 0.0
+
+func _resolve_enemy_system() -> bool:
+	if enemy_system == null:
+		enemy_system = get_tree().get_first_node_in_group("enemy_system") as EnemySystem
+	if enemy_system == null:
+		return false
+
+	var callback := Callable(self, "_on_enemy_died")
+	if not enemy_system.enemy_died.is_connected(callback):
+		enemy_system.enemy_died.connect(callback)
+	return true
+
+func _begin_intermission(duration: float) -> void:
+	state = &"intermission"
+	state_timer = maxf(duration, 0.0)
+	intermission_started.emit(current_wave + 1, state_timer)
+
+func _start_next_wave() -> void:
+	if not run_active or not _resolve_enemy_system():
+		return
+
+	current_wave += 1
+	wave_running = true
+	current_wave_is_boss = should_spawn_boss(current_wave)
+	current_wave_enemy_total = (
+		base_enemy_count
+		+ (current_wave - 1) * enemy_count_growth
+		+ (boss_wave_bonus_enemies if current_wave_is_boss else 0)
+	)
+	current_wave_enemy_total = maxi(current_wave_enemy_total, 1)
+	pending_spawn_count = current_wave_enemy_total
+	wave_enemies.clear()
+	state = &"spawning"
+	spawn_timer = 0.0
+	wave_started.emit(current_wave)
+	wave_configured.emit(current_wave, current_wave_enemy_total, current_wave_is_boss)
+	wave_progress_changed.emit(current_wave, get_enemies_remaining())
+	if current_wave_is_boss:
+		boss_wave_requested.emit(current_wave)
+
+func _process_spawning(delta: float) -> void:
+	spawn_timer = maxf(spawn_timer - delta, 0.0)
+	if spawn_timer > 0.0 or pending_spawn_count <= 0:
+		return
+
+	_spawn_wave_enemy(current_wave_enemy_total - pending_spawn_count)
+	pending_spawn_count -= 1
+	spawn_timer = maxf(spawn_interval, 0.0)
+	wave_progress_changed.emit(current_wave, get_enemies_remaining())
+	if pending_spawn_count <= 0:
+		state = &"combat"
+		_check_wave_completion()
+
+func _spawn_wave_enemy(spawn_index: int) -> void:
+	if spawn_points.is_empty():
+		return
+
+	var wave_offset := maxi(current_wave - 1, 0)
+	var health_multiplier := 1.0 + float(wave_offset) * health_scale_per_wave
+	var move_multiplier := 1.0 + float(wave_offset) * move_speed_scale_per_wave
+	var damage_multiplier := 1.0 + float(wave_offset) * damage_scale_per_wave
+	if current_wave_is_boss:
+		health_multiplier += boss_health_bonus
+		damage_multiplier += boss_damage_bonus
+
+	var spawn_config := {
+		"wave_index": current_wave,
+		"health_multiplier": health_multiplier,
+		"move_speed_multiplier": move_multiplier,
+		"damage_multiplier": damage_multiplier
+	}
+	var spawn_position := spawn_points[spawn_index % spawn_points.size()]
+	var enemy := enemy_system.spawn_enemy(
+		&"survival_zombie",
+		spawn_position,
+		null,
+		spawn_config
+	)
+	if enemy != null:
+		wave_enemies.append(enemy)
+
+func _on_enemy_died(enemy: Node) -> void:
+	if not wave_enemies.has(enemy):
+		return
+	wave_enemies.erase(enemy)
+	wave_progress_changed.emit(current_wave, get_enemies_remaining())
+	_check_wave_completion()
+
+func _check_wave_completion() -> void:
+	if not wave_running or pending_spawn_count > 0:
+		return
+	_prune_wave_enemies()
+	if wave_enemies.is_empty():
+		_complete_current_wave()
+
+func _complete_current_wave() -> void:
+	if not wave_running:
+		return
+
+	wave_running = false
+	state = &"reward"
+	last_reward = _grant_wave_reward()
+	wave_reward_granted.emit(current_wave, last_reward.duplicate(true))
+	wave_completed.emit(current_wave)
+	if run_active:
+		_begin_intermission(intermission_duration)
+
+func _grant_wave_reward() -> Dictionary:
+	var reward := {
+		"money": base_money_reward + current_wave * money_reward_per_wave,
+		"ammo": base_ammo_reward + current_wave * ammo_reward_per_wave,
+		"health": base_health_reward + current_wave * health_reward_per_wave
+	}
+
+	var progression = get_tree().get_first_node_in_group("progression_manager")
+	if progression != null:
+		progression.add_money(int(reward["money"]))
+
+	var health_system = get_tree().get_first_node_in_group("health_system")
+	for player in get_tree().get_nodes_in_group("players"):
+		var health_component := player.get_node_or_null("HealthComponent") as HealthComponent
+		if health_component == null or not health_component.is_alive():
+			continue
+		var weapon_system := player.get_node_or_null("WeaponSystem") as WeaponSystem
+		if weapon_system != null:
+			weapon_system.add_reserve_ammo(int(reward["ammo"]))
+		if health_system != null:
+			health_system.heal(player, int(reward["health"]))
+	return reward
+
+func _prune_wave_enemies() -> void:
+	for enemy in wave_enemies.duplicate():
+		if not is_instance_valid(enemy) or enemy.is_queued_for_deletion():
+			wave_enemies.erase(enemy)

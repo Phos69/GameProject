@@ -60,16 +60,22 @@ Stato: completata come prototipo minimo.
 
 ## Milestone 5 - Zombie survival
 
-Stato: prossima.
+Stato: completata come prototipo minimo.
 
-- Arena survival.
-- Wave manager operativo.
-- Boss ogni N ondate.
-- Ricompense tra ondate.
+- `SurvivalMode` registrata e avviata tramite `GameModeManager`.
+- `WaveManager` con stati intermission, spawning, combat e reward.
+- Spawn progressivo e aumento del numero di zombie.
+- Scaling per ondata di vita, velocita e danno.
+- Ricompense party di denaro, munizioni e cura.
+- HUD con ondata, countdown, nemici rimasti e ricompensa.
+- Compatibilita join/leave durante la run.
+- Sconfitta quando tutti i player attivi sono morti.
+- Boss wave ogni cinque ondate con richiesta al `BossSystem`.
+- Smoke test headless su tre ondate.
 
 ## Milestone 6 - Boss system
 
-Stato: pianificata.
+Stato: prossima.
 
 - Boss base con fasi.
 - Health bar boss.

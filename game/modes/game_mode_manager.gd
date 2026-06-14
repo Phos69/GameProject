@@ -22,10 +22,20 @@ func register_mode(mode: Node) -> void:
 	var callback := Callable(self, "_on_mode_boss_requested")
 	if mode.has_signal("boss_requested") and not mode.is_connected("boss_requested", callback):
 		mode.connect("boss_requested", callback)
+	if mode_id == active_mode_id and mode.has_method("start_mode"):
+		mode.call_deferred("start_mode")
 
 func set_mode(mode_id: StringName) -> void:
+	if active_mode_id == mode_id:
+		return
+	var previous_mode: Node = registered_modes.get(active_mode_id)
+	if previous_mode != null and previous_mode.has_method("stop_mode"):
+		previous_mode.stop_mode()
 	active_mode_id = mode_id
 	game_mode_changed.emit(active_mode_id)
+	var next_mode: Node = registered_modes.get(active_mode_id)
+	if next_mode != null and next_mode.has_method("start_mode"):
+		next_mode.start_mode()
 
 func request_boss(reason: StringName) -> Node:
 	mode_boss_requested.emit(active_mode_id, reason)

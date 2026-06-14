@@ -39,3 +39,15 @@
 - Aggiunti due nemici iniziali alla scena principale.
 - Aggiunto smoke test headless enemy/drop con regressione multiplayer locale.
 - Aggiornata documentazione per stato Milestone 4, contratti enemy/drop e prossima Milestone 5.
+- Completata Milestone 5 come prototipo minimo zombie survival.
+- Trasformato `WaveManager` in una macchina a stati con intermissione, spawn, combat e reward.
+- Aggiunti spawn scaglionato, conteggio crescente e tracking dei nemici della wave.
+- Aggiunto scaling configurabile di vita, velocita e danno per ondata.
+- Aggiunte boss wave ogni cinque ondate con zombie potenziati e richiesta al `BossSystem`.
+- Collegati `SurvivalMode` e `GameModeManager` per avvio e arresto della modalita.
+- Aggiunta condizione di sconfitta quando tutti i player attivi sono morti.
+- Aggiunte ricompense di denaro, munizioni e cura tra le ondate.
+- Esteso HUD con countdown, indice ondata, boss marker, nemici rimasti e ricompense.
+- Rimossi gli spawn dimostrativi statici dalla scena principale in favore del loop survival.
+- Aggiunto smoke test headless su tre ondate con scaling, reward, boss hook e join multiplayer.
+- Aggiornata documentazione per stato Milestone 5 e prossima Milestone 6.

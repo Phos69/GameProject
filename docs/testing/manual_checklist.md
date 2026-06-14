@@ -56,7 +56,7 @@ Il test verifica scena principale, due player locali, sparo, collisione, danno, 
 
 ## Regressione nemici
 
-- La scena principale genera due `Basic Zombie`.
+- La scena principale genera i `Basic Zombie` tramite `WaveManager`.
 - Un nemico inattivo senza player valido resta in idle.
 - Un nemico entro detection range insegue il player vivo piu vicino.
 - Con due player separati, il nemico puo cambiare target verso quello piu vicino.
@@ -84,6 +84,31 @@ godot --headless --path . --script res://tests/enemy_drop_smoke_test.gd
 ```
 
 Il test verifica spawn, chase, retarget, attack, danno da proiettile, morte, pickup XP e tutti i tipi di ricompensa con due player.
+
+## Regressione zombie survival
+
+- La scena mostra un countdown iniziale di 3 secondi.
+- L'ondata 1 genera 3 zombie in modo scaglionato.
+- L'HUD mostra indice ondata e nemici rimasti sul totale.
+- L'ondata termina solo dopo la morte di tutti i nemici registrati.
+- Alla fine dell'ondata il party riceve denaro.
+- Ogni player vivo riceve munizioni e cura.
+- La nuova ondata parte dopo 4 secondi.
+- Ogni ondata aggiunge 2 zombie.
+- Vita, velocita e danno degli zombie aumentano tra le ondate.
+- Un player puo entrare o uscire senza interrompere la wave.
+- Un player entrato durante la run riceve le ricompense delle ondate successive.
+- Ogni quinta ondata mostra il marker `BOSS` e usa zombie extra potenziati.
+- La quinta ondata inoltra una richiesta al `BossSystem` senza errori.
+- Se tutti i player attivi muoiono, la run si arresta.
+
+## Smoke test survival
+
+```text
+godot --headless --path . --script res://tests/survival_wave_smoke_test.gd
+```
+
+Il test verifica tre ondate, spawn progressivo, scaling, ricompense, HUD, join player e richiesta boss.
 
 ## Regressione architettura
 

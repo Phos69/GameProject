@@ -11,7 +11,7 @@ Il progetto vuole diventare una piattaforma modulare per sperimentare tre modali
 - tower defense;
 - boss fight ricorrenti nelle ondate importanti o alla fine dei livelli.
 
-La base attuale contiene Milestone 0-4 come prototipi minimi: repository iniziale, documentazione, progetto Godot, scena pseudo-isometrica, player controllabile, input tastiera/joypad, camera funzionante, multiplayer locale 1-4 player, combat base, nemico melee con AI e drop raccoglibili.
+La base attuale contiene Milestone 0-5 come prototipi minimi: repository iniziale, documentazione, progetto Godot, scena pseudo-isometrica, player controllabile, input tastiera/joypad, camera funzionante, multiplayer locale 1-4 player, combat base, nemico melee, drop raccoglibili e zombie survival a ondate.
 
 ## Stack tecnico
 
@@ -50,6 +50,7 @@ Smoke test headless:
 ```text
 godot --headless --path . --script res://tests/combat_smoke_test.gd
 godot --headless --path . --script res://tests/enemy_drop_smoke_test.gd
+godot --headless --path . --script res://tests/survival_wave_smoke_test.gd
 ```
 
 ## Struttura cartelle
@@ -109,12 +110,19 @@ Completato:
 - XP e denaro condivisi dal party;
 - munizioni, cura e cambio arma applicati solo al player che raccoglie;
 - seconda arma prototipo ottenibile come drop;
+- survival avviato automaticamente dalla scena principale;
+- ondate con spawn scaglionato e conteggio crescente;
+- scaling progressivo di vita, velocita e danno dei nemici;
+- intermissione e ricompense party tra le ondate;
+- HUD con ondata, nemici rimasti, countdown e ultima ricompensa;
+- richiesta boss ogni cinque ondate, predisposta per il boss reale;
+- sconfitta survival quando tutti i player attivi sono morti;
 - struttura modulare per multiplayer, modalita, combat, proiettili, health, drop, boss, progressione e UI;
 - documentazione iniziale.
 
 Non ancora completato:
 
-- wave gameplay;
+- boss reale con pattern e barra vita;
 - varianti nemico ranged/tank/runner;
 - respawn o revive dei player;
 - dungeon generato giocabile;
@@ -123,7 +131,7 @@ Non ancora completato:
 
 ## Prossime milestone
 
-1. Milestone 5: zombie survival a ondate.
-2. Milestone 6: boss system modulare.
-3. Milestone 7: dungeon procedurale giocabile.
-4. Milestone 8: tower defense.
+1. Milestone 6: boss system modulare.
+2. Milestone 7: dungeon procedurale giocabile.
+3. Milestone 8: tower defense.
+4. Milestone 9: progressione persistente, polish e packaging.
