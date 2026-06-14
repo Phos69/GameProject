@@ -79,6 +79,8 @@ script = ExtResource("13_playground")
 
 [node name="Enemies" type="Node2D" parent="World"]
 
+[node name="Bosses" type="Node2D" parent="World"]
+
 [node name="Pickups" type="Node2D" parent="World"]
 
 [node name="CombatTargets" type="Node2D" parent="World"]

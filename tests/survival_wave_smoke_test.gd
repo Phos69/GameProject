@@ -60,7 +60,7 @@ func _run() -> void:
 	wave_manager.enemy_count_growth = 1
 	wave_manager.boss_wave_interval = 3
 	survival_mode.boss_wave_interval = 3
-	wave_manager.boss_wave_bonus_enemies = 1
+	wave_manager.boss_wave_escort_count = 4
 	wave_manager.spawn_points = [
 		Vector2(1100.0, 0.0),
 		Vector2(-1100.0, 0.0),
@@ -142,7 +142,9 @@ func _run() -> void:
 
 	_expect(await _wait_for_wave_combat(wave_manager, 3), "wave three reaches combat state")
 	var wave_three_enemies := wave_manager.get_active_wave_enemies()
-	_expect(wave_three_enemies.size() == 5, "boss-marked wave includes its bonus enemy")
+	_expect(wave_three_enemies.size() == 4, "boss-marked wave spawns four escorts")
+	_expect(wave_manager.current_wave_enemy_total == 5, "boss counts toward the wave total")
+	_expect(wave_manager.get_active_boss() is BasicBoss, "boss-marked wave spawns a real boss")
 	var wave_three_enemy := wave_three_enemies[0] as BasicEnemy
 	_expect(
 		wave_three_enemy.health_component.max_health > wave_two_health,
@@ -215,6 +217,10 @@ func _freeze_and_kill_wave(
 	for enemy in wave_manager.get_active_wave_enemies():
 		enemy.set_physics_process(false)
 		health_system.apply_damage(enemy, 9999)
+	var boss := wave_manager.get_active_boss()
+	if boss != null:
+		boss.set_physics_process(false)
+		health_system.apply_damage(boss, 9999)
 
 func _on_wave_configured(wave_index: int, enemy_count: int, is_boss_wave: bool) -> void:
 	configured_waves[wave_index] = {

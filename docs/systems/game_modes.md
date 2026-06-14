@@ -20,9 +20,20 @@ Flusso:
 4. ricompensa party;
 5. ondata successiva.
 
-`WaveManager` aumenta conteggio e statistiche nemiche. Ogni quinta ondata inoltra una richiesta a `BossSystem`; finche il boss reale non esiste, usa zombie extra potenziati.
+`WaveManager` aumenta conteggio e statistiche nemiche. Ogni quinta ondata usa due scorte e inoltra a `BossSystem` la richiesta per il `Wave Warden`. La wave resta attiva finche scorte e boss non sono morti.
 
 La run termina quando non rimangono player attivi vivi.
+
+## Boss condivisi
+
+Le modalita richiedono boss tramite `GameModeManager`, che delega a `BossSystem`.
+
+`BossSystem`:
+
+- mantiene un solo boss attivo;
+- riceve posizione e scaling dalla modalita;
+- emette spawn e sconfitta;
+- usa lo stesso contratto per survival, dungeon e tower defense.
 
 ## Dungeon
 

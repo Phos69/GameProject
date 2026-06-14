@@ -75,16 +75,22 @@ Stato: completata come prototipo minimo.
 
 ## Milestone 6 - Boss system
 
-Stato: prossima.
+Stato: completata come prototipo minimo.
 
-- Boss base con fasi.
-- Health bar boss.
-- Drop speciale boss.
-- Contratto comune per tutte le modalita.
+- `Wave Warden` con targeting multiplayer e movimento a distanza.
+- Fase 1 con raffiche mirate.
+- Fase 2 sotto il 50% con raffiche mirate e radiali alternate.
+- Proiettili ostili integrati con `HealthSystem`.
+- Barra vita boss con nome, fase e valori.
+- `BossSystem` con boss attivo, spawn centralizzato e notifica sconfitta.
+- Drop speciale garantito `Wave Cannon`.
+- Quinta ondata survival con due scorte e boss reale.
+- Wave completata solo alla morte di scorte e boss.
+- Smoke test headless boss con due player.
 
 ## Milestone 7 - Dungeon procedurale
 
-Stato: pianificata.
+Stato: prossima.
 
 - Grafo stanze.
 - Stanza iniziale, combattimento, loot e boss.

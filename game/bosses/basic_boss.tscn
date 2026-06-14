@@ -1,0 +1,31 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://game/bosses/basic_boss.gd" id="1_basic_boss"]
+[ext_resource type="Script" path="res://game/health/health_component.gd" id="2_health_component"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_boss"]
+radius = 38.0
+
+[node name="WaveWarden" type="CharacterBody2D"]
+collision_layer = 2
+collision_mask = 1
+script = ExtResource("1_basic_boss")
+
+[node name="Visual" type="Polygon2D" parent="."]
+color = Color(0.52, 0.22, 0.82, 1)
+polygon = PackedVector2Array(0, -52, 37, -37, 52, 0, 37, 37, 0, 52, -37, 37, -52, 0, -37, -37)
+
+[node name="Core" type="Polygon2D" parent="."]
+color = Color(0.32, 0.9, 1, 1)
+polygon = PackedVector2Array(0, -24, 21, -12, 21, 12, 0, 24, -21, 12, -21, -12)
+
+[node name="DirectionMarker" type="Polygon2D" parent="."]
+color = Color(1, 0.72, 0.26, 1)
+polygon = PackedVector2Array(0, -48, 8, -34, -8, -34)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_boss")
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("2_health_component")
+max_health = 360

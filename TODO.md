@@ -2,6 +2,12 @@
 
 ## Completati recenti
 
+- Milestone 6: boss system modulare.
+  - Obiettivo: integrare un boss reale nella quinta ondata survival.
+  - Milestone collegata: Milestone 6.
+  - File/sistemi coinvolti: `BasicBoss`, `BossSystem`, `WaveManager`, `SurvivalMode`, `ProjectileSystem`, `HUDManager`, `DropSystem`.
+  - Criterio di accettazione: il boss usa due pattern, cambia fase, blocca il completamento della wave, muore, genera drop speciale e permette la prosecuzione.
+  - Test richiesto: `tests/boss_smoke_test.gd` e checklist manuale boss.
 - Milestone 5: zombie survival a ondate.
   - Obiettivo: creare un loop survival con spawn progressivo, scaling e ricompense.
   - Milestone collegata: Milestone 5.
@@ -29,21 +35,15 @@
 
 ## Priorita alta
 
-- Milestone 6: implementare primo boss con pattern semplice.
-  - Obiettivo: sostituire la boss wave potenziata con un boss reale e modulare.
-  - Milestone collegata: Milestone 6.
-  - File/sistemi coinvolti: `BossSystem`, nuova scena boss, `WaveManager`, `SurvivalMode`, HUD boss, drop speciali.
-  - Criterio di accettazione: alla quinta ondata il boss entra, attacca, perde vita, muore, genera un drop speciale e permette la prosecuzione della run.
-  - Test richiesto: smoke test boss headless e checklist manuale survival con 1-2 player.
-
-## Priorita media
-
 - Milestone 7: trasformare `DungeonGenerator` in generatore di stanze giocabili.
   - Obiettivo: generare e collegare start room, combat room, loot room e boss room.
   - Milestone collegata: Milestone 7.
-  - File/sistemi coinvolti: `DungeonGenerator`, `DungeonMode`, scene stanza.
-  - Criterio di accettazione: una run genera un percorso attraversabile fino alla stanza boss.
-  - Test richiesto: generare piu seed e verificare connettivita e completabilita.
+  - File/sistemi coinvolti: `DungeonGenerator`, `DungeonMode`, scene stanza, `EnemySystem`, `BossSystem`.
+  - Criterio di accettazione: una run genera un percorso attraversabile fino alla stanza boss e usa i sistemi combat condivisi.
+  - Test richiesto: smoke test dungeon headless e verifica manuale di piu seed.
+
+## Priorita media
+
 - Milestone 8: implementare base tower defense, path nemici e torri piazzabili.
   - Obiettivo: creare il loop minimo di difesa della base con economia.
   - Milestone collegata: Milestone 8.
@@ -68,6 +68,18 @@
   - File/sistemi coinvolti: `game/enemies/`, `EnemySystem`, loot table dedicate.
   - Criterio di accettazione: le varianti cambiano dati o comportamento senza duplicare il sistema condiviso.
   - Test richiesto: smoke test spawn e morte per ogni variante.
+- Telegraph e feedback boss.
+  - Obiettivo: rendere anticipabili raffiche e cambio fase con animazioni, indicatori e audio.
+  - Milestone collegata: Milestone 9.
+  - File/sistemi coinvolti: `BasicBoss`, HUD, `AudioManager`, asset visuali.
+  - Criterio di accettazione: ogni pattern mostra un preavviso leggibile prima del danno.
+  - Test richiesto: checklist manuale visuale e audio.
+- Varianti boss.
+  - Obiettivo: aggiungere boss configurabili per dungeon e tower defense riusando `BossSystem`.
+  - Milestone collegata: Milestone 7-8.
+  - File/sistemi coinvolti: `game/bosses/`, `BossSystem`, modalita.
+  - Criterio di accettazione: almeno due boss possono essere richiesti per ID senza cambiare il chiamante.
+  - Test richiesto: smoke test spawn, morte e drop per ogni boss.
 
 ## Priorita bassa
 

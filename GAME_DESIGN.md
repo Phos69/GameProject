@@ -86,7 +86,28 @@ Ogni modalita deve poter richiedere un boss:
 - dungeon: boss alla fine del livello o area;
 - tower defense: boss nelle ondate principali.
 
-Un boss deve avere vita elevata, pattern riconoscibile, drop speciale e segnale di sconfitta.
+Boss implementato: `Wave Warden`.
+
+- vita base: 360;
+- quinta ondata: 504 HP per lo scaling survival;
+- mantiene una distanza media dai player e si muove lateralmente;
+- seleziona il player vivo piu vicino;
+- fase 1: raffica mirata di 3 proiettili;
+- fase 2 sotto il 50%: alterna raffica radiale da 12 e raffica mirata;
+- danno proiettile base: 10, portato a 13 nella quinta ondata;
+- la barra HUD mostra nome, fase e vita;
+- la sconfitta genera 25 XP, 20 denaro e `Wave Cannon`;
+- XP, denaro e arma sono pickup fisici da raccogliere.
+
+`Wave Cannon`:
+
+- 24 danni;
+- 3,5 colpi al secondo;
+- caricatore da 6;
+- riserva iniziale da 30;
+- ricarica da 1,4 secondi.
+
+I boss futuri devono mantenere il contratto di vita, segnali, drop e integrazione modalita.
 
 ## Drop
 
@@ -146,7 +167,10 @@ La modalita survival usa l'arena principale e parte automaticamente:
 - spawn scaglionato ogni 0,45 secondi;
 - +18% vita, +5% velocita e +12% danno per ondata superata;
 - ogni quinta ondata e marcata come boss wave;
-- finche il boss reale non e implementato, la boss wave aggiunge 2 zombie, +35% vita e +20% danno;
+- ogni boss wave genera 2 zombie di scorta e il `Wave Warden`;
+- la vita boss aumenta del 10% per ondata precedente;
+- il danno boss aumenta dell'8% per ondata precedente;
+- la wave termina solo quando scorte e boss sono morti;
 - la run termina quando tutti i player attivi sono morti.
 
 Ricompense al completamento dell'ondata `N`:

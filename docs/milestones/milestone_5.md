@@ -17,7 +17,7 @@ Completata come prototipo minimo.
 - Join/leave locale compatibile durante la run.
 - Sconfitta quando tutti i player attivi sono morti.
 - Boss wave ogni cinque ondate con inoltro a `BossSystem`.
-- Zombie extra potenziati come fallback finche il boss reale non esiste.
+- Contratto successivamente completato dalla Milestone 6 con boss reale.
 
 ## Verifica automatica
 
@@ -39,13 +39,12 @@ Risultati attesi: tutti i test terminano con `PASS`.
 6. Proseguire per verificare aumento di conteggio e statistiche.
 7. Attivare player 2 durante una intermissione.
 8. Verificare che entrambi ricevano le ricompense successive.
-9. Raggiungere una boss wave e verificare marker e zombie potenziati.
+9. Raggiungere una boss wave e verificare marker, scorte e boss.
 10. Lasciare morire tutti i player e verificare l'arresto della run.
 
 ## Limiti noti
 
-- La boss wave non possiede ancora un boss reale.
-- Non esistono ancora barra vita boss, pattern o drop speciale boss.
+- Il boss reale, la barra vita e i drop sono stati aggiunti nella Milestone 6.
 - Esiste una sola tipologia di zombie melee.
 - Non esistono respawn o revive.
 - Non esiste ancora un menu di selezione modalita.

@@ -17,9 +17,11 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 9. Alla morte, il nemico chiede a `DropSystem` di generare pickup dalla propria `LootTable`.
 10. `DropPickup` delega l'applicazione della ricompensa a `DropSystem`.
 11. `GameModeManager` avvia `SurvivalMode`, che delega il ciclo delle ondate a `WaveManager`.
-12. `WaveManager` spawna zombie tramite `EnemySystem`, conta le morti e assegna ricompense.
-13. `IsometricCameraController` segue il gruppo `players`.
-14. `HUDManager` mostra slot, progressione, vita, munizioni e stato ondata.
+12. `WaveManager` spawna zombie tramite `EnemySystem` e richiede il boss a `SurvivalMode`.
+13. `SurvivalMode` usa `GameModeManager` e `BossSystem` per creare il boss della quinta ondata.
+14. `WaveManager` conta scorte e boss prima di assegnare la ricompensa.
+15. `IsometricCameraController` segue il gruppo `players`.
+16. `HUDManager` mostra slot, progressione, vita, munizioni, wave e barra boss.
 
 ## Sistemi principali
 
@@ -34,7 +36,8 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `HealthSystem` e `HealthComponent`: richieste globali di danno/cura e stato vita locale.
 - `EnemySystem`: spawn, contenitore, registro runtime e notifica morte nemici.
 - `BasicEnemy`: AI melee con stati idle, chase, attack e dead.
-- `BossSystem`: contratto comune per boss richiesti dalle modalita.
+- `BossSystem`: spawn centralizzato, registro del boss attivo e notifica sconfitta.
+- `BasicBoss`: boss modulare con targeting, movimento, fasi e pattern proiettile.
 - `SurvivalMode`: ciclo survival, condizione di sconfitta e inoltro richieste boss.
 - `WaveManager`: macchina a stati per intermissione, spawn, combat, reward e boss wave.
 - `DungeonGenerator`: generazione dati layout dungeon.
@@ -56,6 +59,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - Collision layer `2`: bersagli damageable.
 - Collision layer `4`: proiettili; la mask attuale colpisce il layer `2`.
 - Collision layer `8`: pickup; la mask attuale rileva i player sul layer `1`.
+- Collision layer `16`: proiettili ostili; la mask colpisce i player sul layer `1`.
 - `CombatTarget` e una fixture statica della scena principale per verificare il combat e non sostituisce l'AI nemica della Milestone 4.
 
 ## Contratto nemici
@@ -108,8 +112,23 @@ Ogni modalita deriva da `BaseGameMode` e fornisce:
 - Le ricompense tra ondate aggiungono denaro party e munizioni/cura ai player attivi vivi.
 - Join e leave non modificano il conteggio nemici; i nuovi player partecipano alle ricompense successive.
 - Ogni quinta ondata emette `boss_wave_requested` e `SurvivalMode` la inoltra a `BossSystem`.
-- Finche Milestone 6 non fornisce un boss, la boss wave usa zombie extra con bonus vita e danno.
+- La boss wave usa due zombie di scorta e un boss registrato separatamente.
+- `WaveManager` include il boss nel conteggio e aspetta il suo segnale `died`.
 - Se tutti i player attivi sono morti, `SurvivalMode` arresta la run.
+
+## Contratto boss
+
+- Le modalita richiedono boss tramite `GameModeManager.request_boss()`.
+- `BossSystem` e l'unico proprietario dello spawn e impedisce boss attivi duplicati.
+- Il boss riceve un dizionario di configurazione prima di entrare nell'albero.
+- `BasicBoss` usa `HealthComponent` e appartiene al gruppo `damageable_targets`.
+- Il targeting seleziona il player vivo piu vicino e supporta join/leave.
+- I pattern usano `ProjectileSystem` con una scena proiettile ostile separata.
+- La fase 1 usa una raffica mirata da tre proiettili.
+- Sotto il 50% di vita, la fase 2 alterna raffica radiale e mirata.
+- La morte genera la `LootTable` boss, emette `died` e notifica `BossSystem`.
+- `HUDManager` legge il boss attivo da `BossSystem` e mostra nome, fase e vita.
+- Il contratto non dipende da survival: dungeon e tower defense possono riusare la stessa API.
 
 Modalita previste:
 

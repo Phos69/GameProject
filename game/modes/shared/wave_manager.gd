@@ -17,12 +17,10 @@ signal boss_wave_requested(wave_index: int)
 @export var spawn_interval: float = 0.45
 @export var base_enemy_count: int = 3
 @export var enemy_count_growth: int = 2
-@export var boss_wave_bonus_enemies: int = 2
+@export var boss_wave_escort_count: int = 2
 @export var health_scale_per_wave: float = 0.18
 @export var move_speed_scale_per_wave: float = 0.05
 @export var damage_scale_per_wave: float = 0.12
-@export var boss_health_bonus: float = 0.35
-@export var boss_damage_bonus: float = 0.20
 @export var base_money_reward: int = 2
 @export var money_reward_per_wave: int = 2
 @export var base_ammo_reward: int = 3
@@ -48,8 +46,11 @@ var state_timer: float = 0.0
 var spawn_timer: float = 0.0
 var pending_spawn_count: int = 0
 var current_wave_enemy_total: int = 0
+var current_wave_regular_total: int = 0
 var current_wave_is_boss: bool = false
 var wave_enemies: Array[Node] = []
+var wave_boss: Node
+var boss_spawn_pending: bool = false
 var last_reward: Dictionary = {}
 
 var enemy_system: EnemySystem
@@ -83,6 +84,8 @@ func start_run() -> void:
 	state = &"idle"
 	last_reward = {}
 	wave_enemies.clear()
+	wave_boss = null
+	boss_spawn_pending = false
 	pending_spawn_count = 0
 	run_started.emit()
 	_begin_intermission(initial_delay)
@@ -101,7 +104,11 @@ func stop_run(clear_wave_enemies: bool = false) -> void:
 		for enemy in wave_enemies.duplicate():
 			if is_instance_valid(enemy):
 				enemy.queue_free()
+		if is_instance_valid(wave_boss):
+			wave_boss.queue_free()
 	wave_enemies.clear()
+	wave_boss = null
+	boss_spawn_pending = false
 	run_stopped.emit(current_wave)
 
 func start_next_wave() -> void:
@@ -120,11 +127,27 @@ func should_spawn_boss(wave_index: int) -> bool:
 
 func get_enemies_remaining() -> int:
 	_prune_wave_enemies()
-	return pending_spawn_count + wave_enemies.size()
+	_prune_wave_boss()
+	var boss_count := 1 if boss_spawn_pending or is_instance_valid(wave_boss) else 0
+	return pending_spawn_count + wave_enemies.size() + boss_count
 
 func get_active_wave_enemies() -> Array[Node]:
 	_prune_wave_enemies()
 	return wave_enemies.duplicate()
+
+func get_active_boss() -> Node:
+	_prune_wave_boss()
+	return wave_boss
+
+func register_wave_boss(boss: Node) -> void:
+	boss_spawn_pending = false
+	wave_boss = boss
+	if boss != null and boss.has_signal("died"):
+		var callback := Callable(self, "_on_wave_boss_died")
+		if not boss.is_connected("died", callback):
+			boss.connect("died", callback)
+	wave_progress_changed.emit(current_wave, get_enemies_remaining())
+	_check_wave_completion()
 
 func get_intermission_time_left() -> float:
 	return state_timer if state == &"intermission" else 0.0
@@ -152,28 +175,37 @@ func _start_next_wave() -> void:
 	current_wave += 1
 	wave_running = true
 	current_wave_is_boss = should_spawn_boss(current_wave)
-	current_wave_enemy_total = (
-		base_enemy_count
-		+ (current_wave - 1) * enemy_count_growth
-		+ (boss_wave_bonus_enemies if current_wave_is_boss else 0)
+	current_wave_regular_total = (
+		boss_wave_escort_count
+		if current_wave_is_boss
+		else base_enemy_count + (current_wave - 1) * enemy_count_growth
 	)
+	current_wave_regular_total = maxi(current_wave_regular_total, 0)
+	current_wave_enemy_total = current_wave_regular_total + (1 if current_wave_is_boss else 0)
 	current_wave_enemy_total = maxi(current_wave_enemy_total, 1)
-	pending_spawn_count = current_wave_enemy_total
+	pending_spawn_count = current_wave_regular_total
 	wave_enemies.clear()
+	wave_boss = null
+	boss_spawn_pending = current_wave_is_boss
 	state = &"spawning"
 	spawn_timer = 0.0
 	wave_started.emit(current_wave)
 	wave_configured.emit(current_wave, current_wave_enemy_total, current_wave_is_boss)
-	wave_progress_changed.emit(current_wave, get_enemies_remaining())
 	if current_wave_is_boss:
 		boss_wave_requested.emit(current_wave)
+		if boss_spawn_pending:
+			boss_spawn_pending = false
+	wave_progress_changed.emit(current_wave, get_enemies_remaining())
+	if pending_spawn_count <= 0:
+		state = &"combat"
+		_check_wave_completion()
 
 func _process_spawning(delta: float) -> void:
 	spawn_timer = maxf(spawn_timer - delta, 0.0)
 	if spawn_timer > 0.0 or pending_spawn_count <= 0:
 		return
 
-	_spawn_wave_enemy(current_wave_enemy_total - pending_spawn_count)
+	_spawn_wave_enemy(current_wave_regular_total - pending_spawn_count)
 	pending_spawn_count -= 1
 	spawn_timer = maxf(spawn_interval, 0.0)
 	wave_progress_changed.emit(current_wave, get_enemies_remaining())
@@ -189,9 +221,6 @@ func _spawn_wave_enemy(spawn_index: int) -> void:
 	var health_multiplier := 1.0 + float(wave_offset) * health_scale_per_wave
 	var move_multiplier := 1.0 + float(wave_offset) * move_speed_scale_per_wave
 	var damage_multiplier := 1.0 + float(wave_offset) * damage_scale_per_wave
-	if current_wave_is_boss:
-		health_multiplier += boss_health_bonus
-		damage_multiplier += boss_damage_bonus
 
 	var spawn_config := {
 		"wave_index": current_wave,
@@ -216,11 +245,18 @@ func _on_enemy_died(enemy: Node) -> void:
 	wave_progress_changed.emit(current_wave, get_enemies_remaining())
 	_check_wave_completion()
 
+func _on_wave_boss_died(_boss: Node) -> void:
+	wave_boss = null
+	boss_spawn_pending = false
+	wave_progress_changed.emit(current_wave, get_enemies_remaining())
+	_check_wave_completion()
+
 func _check_wave_completion() -> void:
-	if not wave_running or pending_spawn_count > 0:
+	if not wave_running or pending_spawn_count > 0 or boss_spawn_pending:
 		return
 	_prune_wave_enemies()
-	if wave_enemies.is_empty():
+	_prune_wave_boss()
+	if wave_enemies.is_empty() and wave_boss == null:
 		_complete_current_wave()
 
 func _complete_current_wave() -> void:
@@ -262,3 +298,10 @@ func _prune_wave_enemies() -> void:
 	for enemy in wave_enemies.duplicate():
 		if not is_instance_valid(enemy) or enemy.is_queued_for_deletion():
 			wave_enemies.erase(enemy)
+
+func _prune_wave_boss() -> void:
+	if wave_boss != null and (
+		not is_instance_valid(wave_boss)
+		or wave_boss.is_queued_for_deletion()
+	):
+		wave_boss = null

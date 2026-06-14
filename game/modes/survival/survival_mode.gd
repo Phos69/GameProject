@@ -4,6 +4,9 @@ class_name SurvivalMode
 signal survival_defeated(wave_index: int)
 
 @export var boss_wave_interval: int = GameConstants.DEFAULT_BOSS_WAVE_INTERVAL
+@export var boss_spawn_position: Vector2 = Vector2(0.0, -220.0)
+@export var boss_health_scale_per_wave: float = 0.10
+@export var boss_damage_scale_per_wave: float = 0.08
 
 var wave_manager: WaveManager
 
@@ -50,7 +53,22 @@ func should_spawn_boss_for_wave(wave_index: int) -> bool:
 	return boss_wave_interval > 0 and wave_index % boss_wave_interval == 0
 
 func _on_boss_wave_requested(wave_index: int) -> void:
-	request_boss(StringName("survival_wave_%d" % wave_index))
+	var game_mode_manager = get_tree().get_first_node_in_group("game_mode_manager")
+	if game_mode_manager == null or wave_manager == null:
+		return
+	var wave_offset := maxi(wave_index - 1, 0)
+	var config := {
+		"wave_index": wave_index,
+		"health_multiplier": 1.0 + float(wave_offset) * boss_health_scale_per_wave,
+		"damage_multiplier": 1.0 + float(wave_offset) * boss_damage_scale_per_wave
+	}
+	var boss: Node = game_mode_manager.request_boss(
+		StringName("survival_wave_%d" % wave_index),
+		boss_spawn_position,
+		null,
+		config
+	)
+	wave_manager.register_wave_boss(boss)
 
 func _resolve_wave_manager() -> void:
 	if wave_manager == null:

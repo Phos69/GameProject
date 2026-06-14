@@ -11,7 +11,7 @@ Il progetto vuole diventare una piattaforma modulare per sperimentare tre modali
 - tower defense;
 - boss fight ricorrenti nelle ondate importanti o alla fine dei livelli.
 
-La base attuale contiene Milestone 0-5 come prototipi minimi: repository iniziale, documentazione, progetto Godot, scena pseudo-isometrica, player controllabile, input tastiera/joypad, camera funzionante, multiplayer locale 1-4 player, combat base, nemico melee, drop raccoglibili e zombie survival a ondate.
+La base attuale contiene Milestone 0-6 come prototipi minimi: repository iniziale, documentazione, progetto Godot, scena pseudo-isometrica, player controllabile, input tastiera/joypad, camera funzionante, multiplayer locale 1-4 player, combat base, nemico melee, drop raccoglibili, zombie survival e boss modulare.
 
 ## Stack tecnico
 
@@ -51,6 +51,7 @@ Smoke test headless:
 godot --headless --path . --script res://tests/combat_smoke_test.gd
 godot --headless --path . --script res://tests/enemy_drop_smoke_test.gd
 godot --headless --path . --script res://tests/survival_wave_smoke_test.gd
+godot --headless --path . --script res://tests/boss_smoke_test.gd
 ```
 
 ## Struttura cartelle
@@ -115,14 +116,20 @@ Completato:
 - scaling progressivo di vita, velocita e danno dei nemici;
 - intermissione e ricompense party tra le ondate;
 - HUD con ondata, nemici rimasti, countdown e ultima ricompensa;
-- richiesta boss ogni cinque ondate, predisposta per il boss reale;
+- boss reale ogni cinque ondate, integrato nel conteggio e nel completamento della wave;
 - sconfitta survival quando tutti i player attivi sono morti;
+- boss `Wave Warden` nella quinta ondata con due fasi;
+- raffica mirata e attacco radiale tramite proiettili ostili;
+- barra vita boss con nome, fase e vita corrente;
+- scaling boss in base all'ondata;
+- drop speciale garantito `Wave Cannon`;
+- completamento della boss wave vincolato alla morte del boss;
 - struttura modulare per multiplayer, modalita, combat, proiettili, health, drop, boss, progressione e UI;
 - documentazione iniziale.
 
 Non ancora completato:
 
-- boss reale con pattern e barra vita;
+- ulteriori boss, pattern avanzati e telegraph;
 - varianti nemico ranged/tank/runner;
 - respawn o revive dei player;
 - dungeon generato giocabile;
@@ -131,7 +138,6 @@ Non ancora completato:
 
 ## Prossime milestone
 
-1. Milestone 6: boss system modulare.
-2. Milestone 7: dungeon procedurale giocabile.
-3. Milestone 8: tower defense.
-4. Milestone 9: progressione persistente, polish e packaging.
+1. Milestone 7: dungeon procedurale giocabile.
+2. Milestone 8: tower defense.
+3. Milestone 9: progressione persistente, polish e packaging.

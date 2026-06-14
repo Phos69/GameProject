@@ -51,3 +51,14 @@
 - Rimossi gli spawn dimostrativi statici dalla scena principale in favore del loop survival.
 - Aggiunto smoke test headless su tre ondate con scaling, reward, boss hook e join multiplayer.
 - Aggiornata documentazione per stato Milestone 5 e prossima Milestone 6.
+- Completata Milestone 6 come prototipo minimo boss system.
+- Aggiunto boss `Wave Warden` con targeting multiplayer e movimento a distanza.
+- Aggiunte fase 1 con raffiche mirate e fase 2 con raffiche radiali alternate.
+- Aggiunta scena proiettile boss ostile integrata con `ProjectileSystem` e `HealthSystem`.
+- Esteso `BossSystem` con scena predefinita, contenitore, boss attivo e notifica sconfitta.
+- Integrato il boss reale nella quinta ondata survival con due zombie di scorta.
+- Esteso `WaveManager` per contare e attendere il boss prima di completare la wave.
+- Aggiunta barra vita boss con nome, fase e valori correnti.
+- Aggiunta loot table boss con drop garantito `Wave Cannon`.
+- Aggiunto smoke test headless boss con due player, pattern, fase, HUD, drop e prosecuzione.
+- Aggiornata documentazione per stato Milestone 6 e prossima Milestone 7.

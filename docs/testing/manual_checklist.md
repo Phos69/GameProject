@@ -98,8 +98,9 @@ Il test verifica spawn, chase, retarget, attack, danno da proiettile, morte, pic
 - Vita, velocita e danno degli zombie aumentano tra le ondate.
 - Un player puo entrare o uscire senza interrompere la wave.
 - Un player entrato durante la run riceve le ricompense delle ondate successive.
-- Ogni quinta ondata mostra il marker `BOSS` e usa zombie extra potenziati.
-- La quinta ondata inoltra una richiesta al `BossSystem` senza errori.
+- Ogni quinta ondata mostra il marker `BOSS`.
+- La quinta ondata genera due zombie di scorta e il `Wave Warden`.
+- La wave non termina finche il boss e vivo.
 - Se tutti i player attivi muoiono, la run si arresta.
 
 ## Smoke test survival
@@ -109,6 +110,32 @@ godot --headless --path . --script res://tests/survival_wave_smoke_test.gd
 ```
 
 Il test verifica tre ondate, spawn progressivo, scaling, ricompense, HUD, join player e richiesta boss.
+
+## Regressione boss
+
+- La quinta ondata genera un solo `Wave Warden`.
+- La barra boss mostra nome, fase e vita.
+- Il boss seleziona il player vivo piu vicino.
+- Il boss mantiene distanza e movimento laterale.
+- In fase 1 usa raffiche mirate da tre proiettili.
+- I proiettili viola danneggiano i player e non il boss.
+- Sotto il 50% il boss entra in fase 2.
+- In fase 2 alterna raffiche radiali e mirate.
+- Join/leave player non interrompe il targeting.
+- La wave resta in combat finche il boss e vivo.
+- Alla morte la barra boss scompare.
+- `BossSystem` emette la sconfitta per la modalita survival.
+- Il boss genera sempre XP, denaro e pickup `Wave Cannon`.
+- Raccogliere `Wave Cannon` modifica solo l'arma del raccoglitore.
+- Dopo il boss la run entra in intermissione e prosegue.
+
+## Smoke test boss
+
+```text
+godot --headless --path . --script res://tests/boss_smoke_test.gd
+```
+
+Il test verifica quinta ondata, scaling, pattern, danno, fase 2, HUD, morte, drop speciale e prosecuzione.
 
 ## Regressione architettura
 

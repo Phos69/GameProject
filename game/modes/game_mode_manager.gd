@@ -37,12 +37,17 @@ func set_mode(mode_id: StringName) -> void:
 	if next_mode != null and next_mode.has_method("start_mode"):
 		next_mode.start_mode()
 
-func request_boss(reason: StringName) -> Node:
+func request_boss(
+	reason: StringName,
+	position: Vector2 = Vector2.ZERO,
+	parent: Node = null,
+	config: Dictionary = {}
+) -> Node:
 	mode_boss_requested.emit(active_mode_id, reason)
 	var boss_system = get_tree().get_first_node_in_group("boss_system")
 	if boss_system == null:
 		return null
-	return boss_system.request_boss(active_mode_id, reason)
+	return boss_system.request_boss(active_mode_id, reason, position, parent, config)
 
 func _on_mode_boss_requested(mode_id: StringName, reason: StringName) -> void:
 	mode_boss_requested.emit(mode_id, reason)

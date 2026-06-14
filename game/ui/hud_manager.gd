@@ -2,6 +2,8 @@ extends CanvasLayer
 class_name HUDManager
 
 var status_label: Label
+var boss_name_label: Label
+var boss_health_bar: ProgressBar
 
 func _ready() -> void:
 	add_to_group("hud_manager")
@@ -11,6 +13,7 @@ func _ready() -> void:
 	status_label.add_theme_font_size_override("font_size", 18)
 	status_label.modulate = Color(0.90, 0.96, 1.0, 1.0)
 	add_child(status_label)
+	_create_boss_hud()
 	_refresh()
 
 func _process(_delta: float) -> void:
@@ -44,6 +47,7 @@ func _refresh() -> void:
 	var wave_status := _format_wave_status()
 	if not wave_status.is_empty():
 		status_label.text += "\n" + wave_status
+	_refresh_boss_hud()
 
 func _get_active_slots(players: Array[Node]) -> Array:
 	var local_multiplayer = get_tree().get_first_node_in_group("local_multiplayer_manager")
@@ -126,3 +130,53 @@ func _format_last_reward(reward: Dictionary) -> String:
 		int(reward.get("ammo", 0)),
 		int(reward.get("health", 0))
 	]
+
+func _create_boss_hud() -> void:
+	boss_name_label = Label.new()
+	boss_name_label.name = "BossNameLabel"
+	boss_name_label.position = Vector2(440.0, 18.0)
+	boss_name_label.size = Vector2(400.0, 26.0)
+	boss_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	boss_name_label.add_theme_font_size_override("font_size", 20)
+	boss_name_label.modulate = Color(1.0, 0.78, 0.92, 1.0)
+	boss_name_label.hide()
+	add_child(boss_name_label)
+
+	boss_health_bar = ProgressBar.new()
+	boss_health_bar.name = "BossHealthBar"
+	boss_health_bar.position = Vector2(440.0, 48.0)
+	boss_health_bar.size = Vector2(400.0, 24.0)
+	boss_health_bar.min_value = 0.0
+	boss_health_bar.max_value = 100.0
+	boss_health_bar.show_percentage = false
+	boss_health_bar.hide()
+	add_child(boss_health_bar)
+
+func _refresh_boss_hud() -> void:
+	if boss_name_label == null or boss_health_bar == null:
+		return
+	var boss_system := get_tree().get_first_node_in_group("boss_system") as BossSystem
+	var boss := boss_system.get_active_boss() if boss_system != null else null
+	if boss == null:
+		boss_name_label.hide()
+		boss_health_bar.hide()
+		return
+
+	var health_component := boss.get_node_or_null("HealthComponent") as HealthComponent
+	if health_component == null:
+		boss_name_label.hide()
+		boss_health_bar.hide()
+		return
+
+	var display_name := str(boss.get("display_name"))
+	var phase_index := int(boss.get("phase_index"))
+	boss_name_label.text = "%s  Phase %d  %d/%d" % [
+		display_name,
+		phase_index,
+		health_component.current_health,
+		health_component.max_health
+	]
+	boss_health_bar.max_value = float(health_component.max_health)
+	boss_health_bar.value = float(health_component.current_health)
+	boss_name_label.show()
+	boss_health_bar.show()
