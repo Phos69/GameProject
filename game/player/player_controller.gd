@@ -43,7 +43,7 @@ func _physics_process(delta: float) -> void:
 
 	move_and_slide()
 	_update_facing(move_input)
-	_handle_fire()
+	_handle_weapon_input()
 
 func _movement_to_isometric(input_vector: Vector2) -> Vector2:
 	if input_vector.length_squared() <= 0.01:
@@ -72,8 +72,10 @@ func _apply_slot_color() -> void:
 	var index := clampi(player_slot - 1, 0, slot_colors.size() - 1)
 	visual.color = slot_colors[index]
 
-func _handle_fire() -> void:
+func _handle_weapon_input() -> void:
 	if weapon_system == null:
 		return
+	if input_manager.is_player_reload_just_pressed(player_slot):
+		weapon_system.start_reload()
 	if input_manager.is_player_fire_pressed(player_slot):
 		weapon_system.try_fire(global_position + facing_direction * 22.0, facing_direction, self)

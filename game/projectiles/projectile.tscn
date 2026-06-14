@@ -6,6 +6,8 @@
 radius = 4.0
 
 [node name="Projectile" type="Area2D"]
+collision_layer = 4
+collision_mask = 2
 script = ExtResource("1_projectile")
 
 [node name="Visual" type="Polygon2D" parent="."]
@@ -14,4 +16,3 @@ polygon = PackedVector2Array(-6, -3, 8, 0, -6, 3)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_projectile")
-

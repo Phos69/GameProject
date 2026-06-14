@@ -11,7 +11,7 @@ Il progetto vuole diventare una piattaforma modulare per sperimentare tre modali
 - tower defense;
 - boss fight ricorrenti nelle ondate importanti o alla fine dei livelli.
 
-La base attuale contiene Milestone 0, Milestone 1 e Milestone 2 come prototipi minimi: repository iniziale, documentazione, progetto Godot, scena pseudo-isometrica, player controllabile, input tastiera/joypad, camera funzionante e multiplayer locale 1-4 player con join/leave.
+La base attuale contiene Milestone 0-3 come prototipi minimi: repository iniziale, documentazione, progetto Godot, scena pseudo-isometrica, player controllabile, input tastiera/joypad, camera funzionante, multiplayer locale 1-4 player e combat base con armi, munizioni, proiettili, danni e vita.
 
 ## Stack tecnico
 
@@ -38,12 +38,18 @@ res://game/main/main.tscn
 
 Controlli debug:
 
-- Tastiera: `WASD` per movimento, frecce per mira, `Spazio` per fire action.
+- Tastiera: `WASD` per movimento, frecce per mira, `Spazio` per sparare e `R` per ricaricare.
 - Tastiera debug multiplayer: `F2`, `F3`, `F4` attivano/disattivano gli slot player 2, 3 e 4.
-- Joypad: stick sinistro per movimento, stick destro per mira, trigger/spalla destra per fire action.
+- Joypad: stick sinistro per movimento, stick destro per mira, trigger/spalla destra per sparare e pulsante `X` per ricaricare.
 - Joypad multiplayer: `Start` attiva lo slot del controller, `Back/Select` lascia lo slot se non e player 1.
 
 Nota: in questo ambiente `godot` non risulta disponibile nel PATH, quindi la verifica runtime va eseguita dall'editor Godot installato localmente.
+
+Smoke test combat headless:
+
+```text
+godot --headless --path . --script res://tests/combat_smoke_test.gd
+```
 
 ## Struttura cartelle
 
@@ -89,14 +95,18 @@ Completato:
 - join/leave locale per slot 2-4;
 - spawn/despawn dinamico dei player locali;
 - HUD con slot locali attivi;
-- fire action con proiettili placeholder visibili;
+- pistola base configurata tramite `WeaponData`;
+- munizioni, riserva e ricarica indipendenti per ogni player;
+- proiettili con collisione e danno tramite `HealthSystem`;
+- bersagli statici con vita nella scena principale;
+- HUD per-player con vita e munizioni;
 - struttura modulare per multiplayer, modalita, combat, proiettili, health, drop, boss, progressione e UI;
 - documentazione iniziale.
 
 Non ancora completato:
 
-- collisioni proiettile/nemico, ammo e combat completo;
 - AI nemici;
+- drop e pickup;
 - wave gameplay;
 - dungeon generato giocabile;
 - tower defense giocabile;
@@ -104,7 +114,7 @@ Non ancora completato:
 
 ## Prossime milestone
 
-1. Milestone 3: sparo, armi, proiettili, danni e vita.
-2. Milestone 4: nemici base e drop system funzionante.
-3. Milestone 5: zombie survival a ondate.
-4. Milestone 6: boss system modulare.
+1. Milestone 4: nemici base e drop system funzionante.
+2. Milestone 5: zombie survival a ondate.
+3. Milestone 6: boss system modulare.
+4. Milestone 7: dungeon procedurale giocabile.

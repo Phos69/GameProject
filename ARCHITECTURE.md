@@ -11,8 +11,10 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 3. `LocalMultiplayerManager` mantiene gli slot locali attivi.
 4. `PlayerManager` ascolta gli slot attivi e spawna/despawna i player.
 5. `PlayerController` legge input e muove il personaggio del proprio slot.
-6. `IsometricCameraController` segue il gruppo `players`.
-7. `HUDManager` mostra stato prototipo, slot locali e progressione party.
+6. `WeaponSystem` gestisce arma, cooldown, caricatore, riserva e ricarica per il singolo player.
+7. `ProjectileSystem` spawna proiettili che applicano danno tramite `HealthSystem`.
+8. `IsometricCameraController` segue il gruppo `players`.
+9. `HUDManager` mostra slot locali, progressione party, vita e munizioni per-player.
 
 ## Sistemi principali
 
@@ -21,8 +23,9 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `PlayerManager`: spawna/despawna player in base agli slot attivi e tiene il registro degli slot.
 - `PlayerController`: movimento, mira, fire action e colore visuale per slot.
 - `GameModeManager`: selezione modalita e contratto comune futuro.
-- `WeaponSystem`: punto di ingresso per armi e fire rate.
-- `ProjectileSystem` e `Projectile`: spawn e base proiettile.
+- `WeaponData`: risorsa immutabile con danno, fire rate, velocita proiettile, caricatore, riserva e durata ricarica.
+- `WeaponSystem`: stato runtime per-player di arma, cooldown, munizioni e ricarica.
+- `ProjectileSystem` e `Projectile`: spawn, movimento, collisione e consegna del danno.
 - `HealthSystem` e `HealthComponent`: richieste globali di danno/cura e stato vita locale.
 - `EnemySystem`: contratto di spawn nemici.
 - `BossSystem`: contratto comune per boss richiesti dalle modalita.
@@ -32,6 +35,18 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `DropSystem` e `LootTable`: drop XP, denaro, armi, munizioni e vita.
 - `ProgressionManager`: XP, livello e denaro party.
 - `HUDManager`: UI prototipo.
+
+## Contratto combat
+
+- Ogni istanza player possiede il proprio `WeaponSystem`; caricatore, riserva e cooldown non sono condivisi.
+- Le statistiche di bilanciamento vivono in risorse `WeaponData`, non nel controller player.
+- `ProjectileSystem` riceve i dati dello sparo e configura il proiettile prima di aggiungerlo alla scena.
+- Il proiettile non conosce classi nemico specifiche: colpisce un body damageable e inoltra il danno a `HealthSystem`.
+- `HealthSystem` cerca un figlio `HealthComponent` sul target; player, nemici, boss e bersagli debug possono condividere lo stesso contratto.
+- Collision layer `1`: player e corpi generici.
+- Collision layer `2`: bersagli damageable.
+- Collision layer `4`: proiettili; la mask attuale colpisce il layer `2`.
+- `CombatTarget` e una fixture statica della scena principale per verificare il combat e non sostituisce l'AI nemica della Milestone 4.
 
 ## Contratto multiplayer locale
 

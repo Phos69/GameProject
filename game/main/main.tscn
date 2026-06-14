@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=3]
+[gd_scene load_steps=19 format=3]
 
 [ext_resource type="Script" path="res://game/main/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://game/input/input_manager.gd" id="2_input_manager"]
@@ -17,6 +17,7 @@
 [ext_resource type="Script" path="res://game/ui/hud_manager.gd" id="15_hud_manager"]
 [ext_resource type="Script" path="res://game/projectiles/projectile_system.gd" id="16_projectile_system"]
 [ext_resource type="Script" path="res://game/health/health_system.gd" id="17_health_system"]
+[ext_resource type="PackedScene" path="res://game/debug/combat_target.tscn" id="18_combat_target"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -69,6 +70,17 @@ script = ExtResource("12_tower_defense_manager")
 script = ExtResource("13_playground")
 
 [node name="Players" type="Node2D" parent="World"]
+
+[node name="CombatTargets" type="Node2D" parent="World"]
+
+[node name="TargetEast" parent="World/CombatTargets" instance=ExtResource("18_combat_target")]
+position = Vector2(260, 0)
+
+[node name="TargetSouthEast" parent="World/CombatTargets" instance=ExtResource("18_combat_target")]
+position = Vector2(210, 145)
+
+[node name="TargetNorthWest" parent="World/CombatTargets" instance=ExtResource("18_combat_target")]
+position = Vector2(-240, -80)
 
 [node name="Camera2D" type="Camera2D" parent="."]
 script = ExtResource("14_camera")

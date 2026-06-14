@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://game/weapons/weapon_data.gd" id="1_weapon_data"]
+[ext_resource type="PackedScene" path="res://game/projectiles/projectile.tscn" id="2_projectile"]
+
+[resource]
+script = ExtResource("1_weapon_data")
+weapon_id = &"starter_pistol"
+display_name = "Starter Pistol"
+damage = 10
+fire_rate = 7.0
+projectile_speed = 620.0
+magazine_size = 12
+starting_reserve_ammo = 36
+ammo_per_shot = 1
+reload_duration = 1.0
+projectile_scene = ExtResource("2_projectile")

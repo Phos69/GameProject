@@ -34,3 +34,7 @@ func reset_health() -> void:
 	is_dead = false
 	current_health = max_health
 
+func get_health_ratio() -> float:
+	if max_health <= 0:
+		return 0.0
+	return float(current_health) / float(max_health)

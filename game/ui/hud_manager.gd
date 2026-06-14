@@ -38,6 +38,9 @@ func _refresh() -> void:
 		experience,
 		money
 	]
+	var combat_status := _format_combat_status(players)
+	if not combat_status.is_empty():
+		status_label.text += "\n" + combat_status
 
 func _get_active_slots(players: Array[Node]) -> Array:
 	var local_multiplayer = get_tree().get_first_node_in_group("local_multiplayer_manager")
@@ -54,3 +57,26 @@ func _format_slots(active_slots: Array) -> String:
 	for player_slot in active_slots:
 		labels.append("P%d" % int(player_slot))
 	return " ".join(labels)
+
+func _format_combat_status(players: Array[Node]) -> String:
+	var lines := PackedStringArray()
+	for player in players:
+		var player_slot := int(player.get("player_slot"))
+		var health_component := player.get_node_or_null("HealthComponent")
+		var weapon_system := player.get_node_or_null("WeaponSystem")
+		var current_health := 0
+		var max_health := 0
+		var ammo_text := "-"
+		if health_component != null:
+			current_health = int(health_component.get("current_health"))
+			max_health = int(health_component.get("max_health"))
+		if weapon_system != null and weapon_system.has_method("get_ammo_text"):
+			ammo_text = weapon_system.get_ammo_text()
+		lines.append("P%d  HP %d/%d  Ammo %s" % [
+			player_slot,
+			current_health,
+			max_health,
+			ammo_text
+		])
+	lines.sort()
+	return "\n".join(lines)

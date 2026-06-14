@@ -8,7 +8,15 @@ signal projectile_spawned(projectile: Node)
 func _ready() -> void:
 	add_to_group("projectile_system")
 
-func spawn_projectile(origin: Vector2, direction: Vector2, speed: float, owner_ref: Node = null, projectile_scene: PackedScene = null) -> Node:
+func spawn_projectile(
+	origin: Vector2,
+	direction: Vector2,
+	speed: float,
+	owner_ref: Node = null,
+	projectile_scene: PackedScene = null,
+	damage: int = 1,
+	source_id: StringName = &"projectile"
+) -> Node:
 	var scene := projectile_scene if projectile_scene != null else default_projectile_scene
 	if scene == null:
 		return null
@@ -17,7 +25,7 @@ func spawn_projectile(origin: Vector2, direction: Vector2, speed: float, owner_r
 	if projectile is Node2D:
 		(projectile as Node2D).global_position = origin
 	if projectile.has_method("launch"):
-		projectile.launch(direction.normalized(), speed, owner_ref)
+		projectile.launch(direction.normalized(), speed, owner_ref, damage, source_id)
 
 	var root := get_tree().current_scene
 	if root != null:
@@ -25,4 +33,3 @@ func spawn_projectile(origin: Vector2, direction: Vector2, speed: float, owner_r
 
 	projectile_spawned.emit(projectile)
 	return projectile
-

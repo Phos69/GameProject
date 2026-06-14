@@ -34,17 +34,19 @@ Stato: completata come prototipo minimo.
 
 ## Milestone 3 - Sparo, armi, danni e vita
 
-Stato: prossima.
+Stato: completata come prototipo minimo.
 
-- Proiettili visibili.
-- Collisioni proiettile/nemico.
-- Weapon stats.
-- Ammo system.
-- Health system integrato.
+- Proiettili visibili con collisione su bersagli damageable.
+- Danno applicato tramite `HealthSystem` e `HealthComponent`.
+- Statistiche arma configurabili tramite `WeaponData`.
+- Pistola base con caricatore, riserva munizioni e ricarica.
+- Stato vita e munizioni per-player nell'HUD.
+- Bersagli statici per verifica combat nella scena principale.
+- Smoke test headless con due player locali.
 
 ## Milestone 4 - Nemici base e drop
 
-Stato: pianificata.
+Stato: prossima.
 
 - Nemico base con AI.
 - Spawn nemici.

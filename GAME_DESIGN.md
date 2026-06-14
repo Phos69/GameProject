@@ -32,6 +32,23 @@ Tipi futuri:
 
 Ogni arma dovra definire danno, fire rate, spread, velocita proiettile, tipo munizione e rarita.
 
+Arma prototipo implementata:
+
+- `Starter Pistol`;
+- 10 danni per colpo;
+- 7 colpi al secondo;
+- caricatore da 12;
+- riserva iniziale da 36;
+- ricarica da 1 secondo;
+- munizioni e ricarica separate per ogni player.
+
+Controlli ricarica:
+
+- tastiera player 1: `R`;
+- joypad: pulsante `X` dello slot associato.
+
+La scena principale include bersagli statici da 40 HP per verificare danno, barra vita e morte. Questi bersagli sono strumenti di prototipo, non nemici della modalita.
+
 ## Nemici
 
 Nemici base futuri:

@@ -26,6 +26,9 @@ func get_player_aim_vector(player_slot: int) -> Vector2:
 func is_player_fire_pressed(player_slot: int) -> bool:
 	return Input.is_action_pressed(_action(player_slot, "fire"))
 
+func is_player_reload_just_pressed(player_slot: int) -> bool:
+	return Input.is_action_just_pressed(_action(player_slot, "reload"))
+
 func _register_default_actions() -> void:
 	for player_slot in range(1, MAX_PLAYERS + 1):
 		_register_player_actions(player_slot)
@@ -41,6 +44,7 @@ func _register_player_actions(player_slot: int) -> void:
 	_ensure_action(_action(player_slot, "aim_down"), _joy_motion(player_slot, JOY_AXIS_RIGHT_Y, 1.0))
 	_ensure_action(_action(player_slot, "fire"), _joy_button(player_slot, JOY_BUTTON_RIGHT_SHOULDER))
 	InputMap.action_add_event(_action(player_slot, "fire"), _joy_motion(player_slot, JOY_AXIS_TRIGGER_RIGHT, 1.0))
+	_ensure_action(_action(player_slot, "reload"), _joy_button(player_slot, JOY_BUTTON_X))
 
 	if player_slot == 1:
 		_add_keyboard_debug_actions()
@@ -55,6 +59,7 @@ func _add_keyboard_debug_actions() -> void:
 	InputMap.action_add_event(_action(1, "aim_up"), _key(KEY_UP))
 	InputMap.action_add_event(_action(1, "aim_down"), _key(KEY_DOWN))
 	InputMap.action_add_event(_action(1, "fire"), _key(KEY_SPACE))
+	InputMap.action_add_event(_action(1, "reload"), _key(KEY_R))
 
 func _ensure_action(action: StringName, first_event: InputEvent) -> void:
 	if not InputMap.has_action(action):
