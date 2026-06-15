@@ -139,6 +139,21 @@ func get_active_boss() -> Node:
 	_prune_wave_boss()
 	return wave_boss
 
+func get_enemy_id_for_spawn(
+	wave_index: int,
+	spawn_index: int,
+	regular_total: int
+) -> StringName:
+	if (
+		wave_index >= 3
+		and regular_total >= 5
+		and spawn_index == regular_total - 1
+	):
+		return &"survival_tank"
+	if wave_index >= 2 and (spawn_index + 1) % 3 == 0:
+		return &"survival_runner"
+	return &"survival_zombie"
+
 func register_wave_boss(boss: Node) -> void:
 	boss_spawn_pending = false
 	wave_boss = boss
@@ -229,8 +244,13 @@ func _spawn_wave_enemy(spawn_index: int) -> void:
 		"damage_multiplier": damage_multiplier
 	}
 	var spawn_position := spawn_points[spawn_index % spawn_points.size()]
+	var enemy_id := get_enemy_id_for_spawn(
+		current_wave,
+		spawn_index,
+		current_wave_regular_total
+	)
 	var enemy := enemy_system.spawn_enemy(
-		&"survival_zombie",
+		enemy_id,
 		spawn_position,
 		null,
 		spawn_config

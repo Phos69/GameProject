@@ -92,6 +92,35 @@ godot --headless --path . --script res://tests/enemy_drop_smoke_test.gd
 
 Il test verifica spawn, chase, retarget, attack, danno, morte, pickup XP, ammo condivisa e isolamento del cambio arma con due player.
 
+## Regressione Milestone 12
+
+- La wave 1 contiene solo `Basic Zombie`.
+- Dalla wave 2 ogni terzo slot regolare usa un `Runner Zombie`.
+- Il runner e piu stretto, veloce e fragile del basic.
+- Il runner raggiunge player isolati prima del gruppo standard.
+- Dalla wave 3, con almeno cinque zombie, l'ultimo slot usa un `Tank Zombie`.
+- Il tank e largo, lento, resistente e marcato in arancione.
+- Il tank infligge piu danno ma attacca meno spesso.
+- Basic, runner e tank reagiscono a hit e morte tramite gli stessi sistemi.
+- Runner e tank generano rispettivamente 4 e 8 XP garantiti.
+- Il conteggio HUD include tutte le varianti senza differenze.
+- Con quattro player, silhouette nemico e colori slot restano leggibili.
+- Dungeon continua a generare il roster basic.
+- Tower defense continua a generare i raider dedicati.
+
+## Smoke test Milestone 12
+
+```text
+godot --headless --path . --script res://tests/milestone_12_enemy_variants_smoke_test.gd
+godot --path . --rendering-method gl_compatibility --script res://tests/enemy_variants_visual_qa.gd
+```
+
+La cattura QA viene salvata in:
+
+```text
+build/qa/milestone_12_enemy_variants.png
+```
+
 ## Regressione zombie survival
 
 - La scena mostra un countdown iniziale di 3 secondi.
@@ -125,6 +154,72 @@ godot --headless --path . --script res://tests/survival_wave_smoke_test.gd
 
 Il test verifica tre ondate, scaling, reward, director low-ammo, supply crate boss, join multiplayer e fallback per tutti i player vivi.
 
+## Regressione Milestone 13
+
+- `Starter Pistol` ha silhouette compatta e accento arancio.
+- `Prototype Blaster` ha doppia forcella e accento ciano.
+- `Wave Cannon` ha silhouette pesante e accento magenta.
+- Ogni arma resta leggibile contro l'arena desaturata.
+- L'arma world-space segue la direzione di mira.
+- L'icona HUD corrisponde all'arma equipaggiata dal relativo player.
+- I tre proiettili differiscono per forma, scala, colore e trail.
+- Il muzzle flash usa la famiglia cromatica dell'arma.
+- Con quattro player, armi e colori slot non si confondono.
+- La torre mostra base esagonale, nucleo e doppia canna.
+- Senza target la torre esegue un idle scan leggero.
+- Con target la canna segue la direzione corretta.
+- Lo sparo torre mostra rinculo, flash e proiettile ciano.
+- Costruzione, crediti, targeting e danno tower defense restano invariati.
+- Dungeon e boss continuano a usare i proiettili condivisi senza errori.
+
+## Smoke test Milestone 13
+
+```text
+godot --headless --path . --script res://tests/milestone_13_weapon_tower_visual_smoke_test.gd
+godot --path . --rendering-method gl_compatibility --script res://tests/weapon_tower_visual_qa.gd
+```
+
+Le catture QA vengono salvate in:
+
+```text
+build/qa/milestone_13_player_weapons.png
+build/qa/milestone_13_defense_towers.png
+```
+
+## Regressione Milestone 14
+
+- `GET READY`, `WAVE` e `WAVE CLEAR` sono leggibili da divano.
+- `WAVE CLEAR` non viene sostituito immediatamente dall'intermissione.
+- Il pannello boss resta centrato e separato dal pannello party.
+- Il `Wave Warden` non si confonde con zombie, player o torri.
+- L'occhio arancio indica il target del boss.
+- Le piastre viola e il nucleo ciano identificano la fase 1.
+- Le spine, le piastre magenta e il nucleo arancio identificano la fase 2.
+- Il flash da danno e breve e non nasconde permanentemente la fase.
+- La carica aimed e distinta dalla carica radial.
+- I proiettili aimed hanno glow/trail viola.
+- I proiettili radial hanno glow/trail corallo.
+- `OVERDRIVE` resta leggibile con quattro schede player.
+- La morte genera anelli, frammenti e nucleo in dissolvenza.
+- `WARDEN DOWN` resta visibile mentre compaiono i drop.
+- Dungeon e tower defense continuano a usare il boss condiviso.
+
+## Smoke test Milestone 14
+
+```text
+godot --headless --path . --script res://tests/milestone_14_final_polish_smoke_test.gd
+godot --path . --rendering-method gl_compatibility --script res://tests/final_survival_visual_qa.gd
+```
+
+Le catture QA vengono salvate in:
+
+```text
+build/qa/milestone_14_wave_presentation.png
+build/qa/milestone_14_boss_phase_one.png
+build/qa/milestone_14_boss_phase_two.png
+build/qa/milestone_14_boss_defeat.png
+```
+
 ## Regressione boss
 
 - La quinta ondata genera un solo `Wave Warden`.
@@ -151,6 +246,35 @@ godot --headless --path . --script res://tests/boss_smoke_test.gd
 ```
 
 Il test verifica quinta ondata, scaling, pattern, danno, fase 2, HUD, morte, drop speciale e prosecuzione.
+
+## Regressione Milestone 11
+
+- La raffica mirata mostra un cono e tre corsie prima del fuoco.
+- Il countdown world-space resta leggibile sopra arena e attori.
+- Nessun proiettile viene creato durante il warning mirato.
+- Spostarsi durante il warning non cambia la direzione gia annunciata.
+- La raffica radiale mostra dodici raggi e varchi leggibili.
+- Nessun proiettile viene creato durante il warning radiale.
+- L'HUD mostra `AIMED VOLLEY - MOVE` e `RADIAL BURST - FIND A GAP`.
+- Spawn, warning e fase boss producono cue audio distinti.
+- Sotto il 50% il boss mostra impulso e messaggio `PHASE 2 - OVERDRIVE`.
+- Con 2-4 player i telegraph restano distinguibili dalle schede HUD e dai colori slot.
+- Il boss dungeon mantiene telegraph, danno e drop condivisi.
+- Il boss tower defense continua a seguire il percorso senza pattern action.
+
+## Smoke test Milestone 11
+
+```text
+godot --headless --path . --script res://tests/milestone_11_boss_telegraph_smoke_test.gd
+godot --path . --rendering-method gl_compatibility --script res://tests/boss_telegraph_visual_qa.gd
+```
+
+Le catture QA vengono salvate in:
+
+```text
+build/qa/milestone_11_boss_aimed.png
+build/qa/milestone_11_boss_radial.png
+```
 
 ## Regressione dungeon
 
@@ -249,3 +373,33 @@ Esito QA del 15 giugno 2026:
 - driver audio `WASAPI` rilevato;
 - feedback focus: 771 frame audio;
 - feedback conferma: 1543 frame audio.
+
+## Regressione Milestone 10
+
+- L'arena survival usa una palette desaturata e non compete con gli attori.
+- I tre bersagli combat debug rossi non sono visibili durante una run.
+- I proiettili attraversano le vecchie posizioni dei bersagli debug invisibili.
+- Ogni player mostra sagoma, arma e colore slot distinti.
+- Camminata, mira, sparo, reload, danno e morte modificano il visual survivor.
+- Lo zombie e riconoscibile da pelle, posa curva e braccia protese.
+- Chase, attack e hit reaction dello zombie sono leggibili.
+- XP, denaro, ammo, cura e arma hanno icone world-space diverse.
+- Nessun pickup usa label `XP`, `$`, `A`, `+` o `W`.
+- La supply crate e riconoscibile senza la label `SUP`.
+- Le schede HUD mostrano vita, arma e munizioni di ogni player attivo.
+- Sparo, hit valido, morte nemico e raccolta generano effetti visuali.
+- Con 2-4 player, schede e colori restano distinguibili a 1280x720.
+- Dungeon e tower defense continuano ad avviarsi e a tornare alla survival.
+
+## Smoke test Milestone 10
+
+```text
+godot --headless --path . --script res://tests/milestone_10_visual_smoke_test.gd
+godot --path . --rendering-method gl_compatibility --script res://tests/survival_visual_qa.gd
+```
+
+La cattura QA viene salvata in:
+
+```text
+build/qa/milestone_10_survival.png
+```

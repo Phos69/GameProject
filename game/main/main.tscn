@@ -1,4 +1,4 @@
-[gd_scene load_steps=27 format=3]
+[gd_scene load_steps=28 format=3]
 
 [ext_resource type="Script" path="res://game/main/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://game/input/input_manager.gd" id="2_input_manager"]
@@ -26,6 +26,7 @@
 [ext_resource type="Script" path="res://game/audio/audio_manager.gd" id="24_audio_manager"]
 [ext_resource type="Script" path="res://game/ui/main_menu.gd" id="25_main_menu"]
 [ext_resource type="Script" path="res://game/modes/survival/survival_ammo_director.gd" id="26_ammo_director"]
+[ext_resource type="Script" path="res://game/visuals/gameplay_effects.gd" id="27_gameplay_effects"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -98,6 +99,7 @@ script = ExtResource("12_tower_defense_manager")
 [node name="World" type="Node2D" parent="."]
 
 [node name="Playground" type="Node2D" parent="World" groups=["prototype_arena_content"]]
+z_index = -10
 script = ExtResource("13_playground")
 
 [node name="Players" type="Node2D" parent="World"]
@@ -108,16 +110,24 @@ script = ExtResource("13_playground")
 
 [node name="Pickups" type="Node2D" parent="World"]
 
-[node name="CombatTargets" type="Node2D" parent="World" groups=["prototype_arena_content"]]
+[node name="GameplayEffects" type="Node2D" parent="World"]
+z_index = 20
+script = ExtResource("27_gameplay_effects")
+
+[node name="CombatTargets" type="Node2D" parent="World"]
+visible = false
 
 [node name="TargetEast" parent="World/CombatTargets" instance=ExtResource("18_combat_target")]
 position = Vector2(260, 0)
+collision_layer = 0
 
 [node name="TargetSouthEast" parent="World/CombatTargets" instance=ExtResource("18_combat_target")]
 position = Vector2(210, 145)
+collision_layer = 0
 
 [node name="TargetNorthWest" parent="World/CombatTargets" instance=ExtResource("18_combat_target")]
 position = Vector2(-240, -80)
+collision_layer = 0
 
 [node name="DungeonRooms" type="Node2D" parent="World"]
 

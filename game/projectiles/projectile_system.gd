@@ -16,7 +16,8 @@ func spawn_projectile(
 	owner_ref: Node = null,
 	projectile_scene: PackedScene = null,
 	damage: int = 1,
-	source_id: StringName = &"projectile"
+	source_id: StringName = &"projectile",
+	visual_data: WeaponVisualData = null
 ) -> Node:
 	var scene := projectile_scene if projectile_scene != null else default_projectile_scene
 	if scene == null:
@@ -26,7 +27,14 @@ func spawn_projectile(
 	if projectile is Node2D:
 		(projectile as Node2D).global_position = origin
 	if projectile.has_method("launch"):
-		projectile.launch(direction.normalized(), speed, owner_ref, damage, source_id)
+		projectile.launch(
+			direction.normalized(),
+			speed,
+			owner_ref,
+			damage,
+			source_id,
+			visual_data
+		)
 	if projectile.has_signal("impacted"):
 		projectile.connect(
 			"impacted",

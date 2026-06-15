@@ -4,6 +4,15 @@
 
 Un action sandbox locale dove 1-4 giocatori affrontano arene, dungeon e difese a ondate con armi, drop, progressione e boss ricorrenti.
 
+## Direzione artistica
+
+- Arcade pseudo-isometrico, stylized e leggibile da distanza couch.
+- Mood zombie survival post-apocalittico senza rumore visuale eccessivo.
+- Sfondo desaturato e scuro; player, nemici, pickup e pericoli usano accenti piu saturi.
+- Il colore slot identifica il player, ma ogni ruolo deve restare leggibile anche dalla silhouette.
+- Le animazioni privilegiano anticipazione e risposta gameplay rispetto al realismo.
+- I placeholder visuali sono componenti modulari sostituibili con asset definitivi.
+
 ## Giocatori
 
 - 1-4 player locali implementati come prototipo minimo.
@@ -12,6 +21,10 @@ Un action sandbox locale dove 1-4 giocatori affrontano arene, dungeon e difese a
 - Ogni player avra vita, arma e munizioni proprie.
 - XP e denaro sono per default condivisi dal party per semplificare il multiplayer locale.
 - Ogni player usa un colore diverso per restare leggibile nella camera condivisa.
+
+Il primo pass visuale aggiunge una silhouette survivor con testa, giacca, arti e
+arma visibile. Movimento, mira, sparo, ricarica, danno e morte producono
+variazioni visuali senza modificare il controller.
 
 ## Movimento e camera
 
@@ -61,6 +74,15 @@ Seconda arma prototipo:
 - caricatore da 8 e riserva iniziale da 24;
 - sostituisce immediatamente l'arma del player che la raccoglie.
 
+Identita visuale delle armi:
+
+- `Starter Pistol`: corpo compatto scuro, accento arancio e proiettile piccolo;
+- `Prototype Blaster`: doppia forcella blu/ciano e trail energetico medio;
+- `Wave Cannon`: corpo lungo viola, nucleo magenta e proiettile pesante;
+- arma in mano, icona HUD, flash di volata e proiettile condividono lo stesso profilo;
+- forma e colore aiutano il riconoscimento, ma non sostituiscono i valori di bilanciamento;
+- il colore slot del player resta separato dal colore energetico dell'arma.
+
 Controlli ricarica:
 
 - tastiera player 1: `R`;
@@ -82,11 +104,38 @@ Nemico implementato:
 - rivaluta il target durante join, leave e morte dei player;
 - stati idle, chase, attack e dead.
 
+Il `Basic Zombie` usa una posa curva, pelle verde desaturata, abiti scuri e
+braccia protese. Camminata, attacco e reazione al colpo devono essere
+riconoscibili anche ai bordi della camera.
+
 Nemici futuri:
 
 - shooter semplice;
-- tank lento;
-- runner veloce.
+
+Varianti survival implementate:
+
+`Runner Zombie`:
+
+- 18 HP;
+- velocita 155;
+- attacco da 6 danni ogni 0,62 secondi;
+- silhouette stretta, postura inclinata e animazione rapida;
+- 4 XP garantiti;
+- entra dalla wave 2 e occupa ogni terzo slot regolare;
+- ruolo: raggiungere rapidamente player isolati e spezzare il kiting passivo.
+
+`Tank Zombie`:
+
+- 90 HP;
+- velocita 58;
+- attacco da 18 danni ogni 1,25 secondi;
+- silhouette larga, arti pesanti e protezione arancione;
+- 8 XP garantiti;
+- entra dalla wave 3 come ultimo slot quando la wave ha almeno cinque zombie;
+- ruolo: assorbire fuoco, occupare spazio e proteggere indirettamente i runner.
+
+Basic, runner e tank usano la stessa AI melee e gli stessi contratti health,
+drop e wave. Le differenze sono dati di scena e presentazione visuale.
 
 ## Boss
 
@@ -104,10 +153,25 @@ Boss implementato: `Wave Warden`.
 - seleziona il player vivo piu vicino;
 - fase 1: raffica mirata di 3 proiettili;
 - fase 2 sotto il 50%: alterna raffica radiale da 12 e raffica mirata;
+- raffica mirata: cono e tre corsie visibili per 0,70 secondi prima del fuoco;
+- la direzione mirata viene bloccata all'inizio del warning, quindi puo essere schivata;
+- raffica radiale: dodici raggi e countdown visibili per 0,90 secondi;
+- durante il telegraph non vengono creati proiettili e non viene applicato danno;
+- il passaggio in fase 2 usa impulso world-space, messaggio HUD e cue audio dedicato;
 - danno proiettile base: 10, portato a 13 nella quinta ondata;
 - la barra HUD mostra nome, fase e vita;
 - la sconfitta genera 25 XP, 20 denaro e `Wave Cannon`;
 - XP, denaro e arma sono pickup fisici da raccogliere.
+
+Identita visuale del `Wave Warden`:
+
+- corpo meccanico/energetico segmentato, distinto dagli zombie organici;
+- piastre viola e nucleo ciano nella fase 1;
+- piastre magenta, spine e nucleo arancio nella fase 2;
+- marker frontale orientato verso il target corrente;
+- aimed e radial usano cariche e proiettili di colore diverso;
+- spawn, hit, overdrive e morte hanno feedback world-space dedicato;
+- l'effetto morte lascia subito leggibili i pickup speciali.
 
 `Wave Cannon`:
 
@@ -116,6 +180,8 @@ Boss implementato: `Wave Warden`.
 - caricatore da 6;
 - riserva iniziale da 30;
 - ricarica da 1,4 secondi.
+- silhouette pesante viola/magenta con nucleo circolare;
+- proiettile piu grande e trail piu marcato delle altre armi.
 
 I boss futuri devono mantenere il contratto di vita, segnali, drop e integrazione modalita.
 
@@ -155,6 +221,7 @@ Supply crate:
 - genera pickup tramite una `LootTable`, senza valori hardcoded nei nemici;
 - drop garantiti attuali: 10-14 ammo speciale e 16-22 HP;
 - viene usata dal director survival e prima delle boss wave.
+- usa una cassa medica azzurro/arancio riconoscibile senza testo.
 
 ## Progressione
 
@@ -232,6 +299,8 @@ La modalita survival usa l'arena principale e parte dopo la selezione dal menu:
 - 2 zombie aggiuntivi per ogni ondata successiva;
 - spawn scaglionato ogni 0,45 secondi;
 - +18% vita, +5% velocita e +12% danno per ondata superata;
+- dalla wave 2 ogni terzo zombie regolare e un runner;
+- dalla wave 3, con almeno cinque zombie regolari, l'ultimo e un tank;
 - ogni quinta ondata e marcata come boss wave;
 - ogni boss wave genera 2 zombie di scorta e il `Wave Warden`;
 - la vita boss aumenta del 10% per ondata precedente;
@@ -266,6 +335,34 @@ L'HUD mostra:
 - conferma temporanea dei pickup ammo condivisi;
 - XP e denaro party.
 
+Ogni player dispone inoltre di una scheda colorata con barra vita, arma attiva
+e munizioni. Le informazioni party e wave restano nel pannello superiore,
+mentre i dettagli individuali sono raccolti nella fascia inferiore.
+
+Feedback visuali implementati:
+
+- flash di volata allo spawn del proiettile;
+- scintille su impatto con danno valido;
+- anello e frammenti alla morte di uno zombie;
+- anello colorato alla raccolta di un pickup;
+- indicatori visuali di ricarica e danno sul survivor.
+- cono/raggi e countdown prima degli attacchi del `Wave Warden`;
+- impulso, HUD e cue audio per il cambio fase boss.
+- annunci centrali per preparazione, wave start, reward e boss;
+- pannello boss incorniciato con fase, vita e warning;
+- effetto morte dedicato con messaggio `WARDEN DOWN`.
+
+## Known Visual TODOs
+
+- Sostituire gradualmente i placeholder procedurali con sprite o skeletal
+  animation mantenendo silhouette e contratti attuali.
+- Aggiungere opzioni per ridurre flash, trail e intensita dei telegraph.
+- Introdurre camera shake regolabile solo per eventi importanti.
+- Creare schermate dedicate per victory, defeat e riepilogo run.
+- Rifinire menu e selezione modalita con lo stesso linguaggio delle schede HUD.
+- Sostituire i toni procedurali con SFX mixati e licenziati.
+- Preparare ulteriori biomi senza aumentare il rumore dello sfondo.
+
 ## Tower defense
 
 La modalita tower defense implementata usa un'arena dedicata:
@@ -293,6 +390,11 @@ Torre prototipo:
 - 16 danni per colpo;
 - targeting automatico del bersaglio valido piu vicino;
 - usa i proiettili e il sistema danni condivisi.
+- base esagonale scura con nucleo energetico ciano;
+- doppia canna orientata verso il target;
+- idle scan quando non ha bersagli;
+- rinculo e flash di volata durante il fuoco;
+- proiettile ciano dedicato, distinto dalle armi player.
 
 Regole ondate:
 

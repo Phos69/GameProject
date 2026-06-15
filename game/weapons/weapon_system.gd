@@ -84,7 +84,8 @@ func try_fire(origin: Vector2, direction: Vector2, owner_ref: Node = null) -> bo
 				owner_ref,
 				weapon_data.projectile_scene,
 				weapon_data.damage,
-				weapon_data.weapon_id
+				weapon_data.weapon_id,
+				weapon_data.visual_data
 			)
 		else:
 			var projectile := weapon_data.projectile_scene.instantiate()
@@ -96,7 +97,8 @@ func try_fire(origin: Vector2, direction: Vector2, owner_ref: Node = null) -> bo
 					weapon_data.projectile_speed,
 					owner_ref,
 					weapon_data.damage,
-					weapon_data.weapon_id
+					weapon_data.weapon_id,
+					weapon_data.visual_data
 				)
 			var root := get_tree().current_scene
 			if root != null:

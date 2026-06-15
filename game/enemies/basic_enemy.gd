@@ -21,9 +21,11 @@ enum State {
 @export var attack_damage: int = 8
 @export var attack_cooldown: float = 0.85
 @export var target_refresh_interval: float = 0.20
+@export var health_bar_width: float = 44.0
+@export var health_bar_y: float = -30.0
 @export var loot_table: LootTable = preload("res://game/drops/default_enemy_loot.tres")
 
-@onready var visual := $Visual as Polygon2D
+@onready var visual := $Visual as ZombieVisual
 @onready var health_bar := $HealthBar as Line2D
 @onready var health_component := $HealthComponent as HealthComponent
 
@@ -59,6 +61,7 @@ func _physics_process(delta: float) -> void:
 		_set_state(State.IDLE)
 		velocity = velocity.move_toward(Vector2.ZERO, acceleration * delta)
 		move_and_slide()
+		_update_visual()
 		return
 
 	var distance_to_target := global_position.distance_to(target.global_position)
@@ -72,6 +75,7 @@ func _physics_process(delta: float) -> void:
 		if attack_timer <= 0.0:
 			_attack_target()
 	move_and_slide()
+	_update_visual()
 
 func get_state_name() -> StringName:
 	match current_state:
@@ -130,17 +134,18 @@ func _set_state(next_state: State) -> void:
 		return
 	var previous_state := get_state_name()
 	current_state = next_state
+	visual.set_state(get_state_name())
 	state_changed.emit(previous_state, get_state_name())
 
 func _on_health_changed(_amount: int, _current_health: int, _max_health: int) -> void:
 	_update_health_bar()
+	visual.play_hit()
 
 func _on_died() -> void:
 	_set_state(State.DEAD)
 	velocity = Vector2.ZERO
 	collision_layer = 0
 	collision_mask = 0
-	visual.modulate = Color(0.35, 0.35, 0.35, 0.55)
 	health_bar.hide()
 
 	var drop_system = get_tree().get_first_node_in_group("drop_system")
@@ -152,10 +157,17 @@ func _on_died() -> void:
 
 func _update_health_bar() -> void:
 	var ratio := health_component.get_health_ratio()
+	var half_width := health_bar_width * 0.5
 	health_bar.points = PackedVector2Array([
-		Vector2(-22.0, -30.0),
-		Vector2(-22.0 + 44.0 * ratio, -30.0)
+		Vector2(-half_width, health_bar_y),
+		Vector2(-half_width + health_bar_width * ratio, health_bar_y)
 	])
+	var background := get_node_or_null("HealthBarBackground") as Line2D
+	if background != null:
+		background.points = PackedVector2Array([
+			Vector2(-half_width, health_bar_y),
+			Vector2(half_width, health_bar_y)
+		])
 	health_bar.default_color = Color(1.0 - ratio, ratio, 0.18, 1.0)
 
 func _apply_wave_scaling() -> void:
@@ -166,3 +178,8 @@ func _apply_wave_scaling() -> void:
 	health_component.reset_health()
 	move_speed *= move_speed_multiplier
 	attack_damage = maxi(1, roundi(float(attack_damage) * damage_multiplier))
+
+func _update_visual() -> void:
+	visual.set_motion(velocity, move_speed)
+	if target != null:
+		visual.set_facing(global_position.direction_to(target.global_position))

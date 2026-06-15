@@ -14,7 +14,7 @@ class_name PlayerController
 	Color(0.94, 0.78, 0.28, 1.0)
 ]
 
-@onready var visual := $Visual as Polygon2D
+@onready var visual := $Visual as PlayerVisual
 @onready var aim_line := $AimLine as Line2D
 @onready var weapon_system = $WeaponSystem
 @onready var health_component := $HealthComponent as HealthComponent
@@ -31,13 +31,19 @@ func _ready() -> void:
 		"game_mode_manager"
 	) as GameModeManager
 	health_component.died.connect(_on_died)
+	health_component.damaged.connect(_on_damaged)
+	weapon_system.fired.connect(_on_weapon_fired)
+	weapon_system.reload_started.connect(_on_reload_started)
+	weapon_system.weapon_changed.connect(_on_weapon_changed)
 	base_max_health = health_component.max_health
 	_apply_slot_color()
+	visual.set_weapon_data(weapon_system.weapon_data)
 	_update_aim_line()
 
 func _physics_process(delta: float) -> void:
 	if health_component.is_dead:
 		velocity = Vector2.ZERO
+		visual.set_motion(velocity, move_speed)
 		return
 	if game_mode_manager == null:
 		game_mode_manager = get_tree().get_first_node_in_group(
@@ -45,6 +51,7 @@ func _physics_process(delta: float) -> void:
 		) as GameModeManager
 	if game_mode_manager != null and not game_mode_manager.is_gameplay_active():
 		velocity = Vector2.ZERO
+		visual.set_motion(velocity, move_speed)
 		return
 	if input_manager == null:
 		input_manager = get_tree().get_first_node_in_group("input_manager")
@@ -61,6 +68,7 @@ func _physics_process(delta: float) -> void:
 
 	move_and_slide()
 	_update_facing(move_input)
+	visual.set_motion(velocity, move_speed)
 	_handle_weapon_input()
 
 func _movement_to_isometric(input_vector: Vector2) -> Vector2:
@@ -83,12 +91,13 @@ func _update_aim_line() -> void:
 	if aim_line == null:
 		return
 	aim_line.points = PackedVector2Array([Vector2.ZERO, facing_direction * aim_line_length])
+	visual.set_facing(facing_direction)
 
 func _apply_slot_color() -> void:
 	if visual == null or slot_colors.is_empty():
 		return
 	var index := clampi(player_slot - 1, 0, slot_colors.size() - 1)
-	visual.color = slot_colors[index]
+	visual.set_slot_color(slot_colors[index])
 
 func _handle_weapon_input() -> void:
 	if weapon_system == null:
@@ -104,10 +113,26 @@ func prepare_for_run(max_health_bonus: int = 0) -> void:
 		true
 	)
 	velocity = Vector2.ZERO
-	visual.modulate = Color.WHITE
+	visual.reset_visual()
 	aim_line.show()
 
 func _on_died() -> void:
 	velocity = Vector2.ZERO
-	visual.modulate = Color(0.35, 0.35, 0.35, 0.55)
+	visual.play_dead()
 	aim_line.hide()
+
+func _on_damaged(_amount: int, _current_health: int, _max_health: int) -> void:
+	visual.play_hurt()
+
+func _on_weapon_fired(
+	_origin: Vector2,
+	_direction: Vector2,
+	_damage: int
+) -> void:
+	visual.play_fire()
+
+func _on_reload_started(duration: float) -> void:
+	visual.play_reload(duration)
+
+func _on_weapon_changed(weapon_data: WeaponData) -> void:
+	visual.set_weapon_data(weapon_data)

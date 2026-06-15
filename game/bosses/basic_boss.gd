@@ -3,6 +3,12 @@ class_name BasicBoss
 
 signal phase_changed(phase_index: int)
 signal target_changed(target: Node)
+signal attack_telegraph_started(
+	pattern_id: StringName,
+	duration: float,
+	direction: Vector2
+)
+signal attack_telegraph_finished(pattern_id: StringName)
 signal attack_pattern_started(pattern_id: StringName, projectile_count: int)
 signal base_reached(boss: Node, damage: int)
 signal died(boss: Node)
@@ -15,6 +21,8 @@ signal died(boss: Node)
 @export var retreat_distance: float = 150.0
 @export var target_refresh_interval: float = 0.20
 @export var attack_cooldown: float = 1.35
+@export var aimed_telegraph_duration: float = 0.70
+@export var radial_telegraph_duration: float = 0.90
 @export var phase_two_health_ratio: float = 0.50
 @export var aimed_projectile_count: int = 3
 @export var aimed_spread_radians: float = 0.16
@@ -22,16 +30,26 @@ signal died(boss: Node)
 @export var projectile_damage: int = 10
 @export var projectile_speed: float = 270.0
 @export var projectile_scene: PackedScene = preload("res://game/projectiles/boss_projectile.tscn")
+@export var aimed_projectile_visual: WeaponVisualData = preload(
+	"res://game/weapons/wave_warden_aimed_visual.tres"
+)
+@export var radial_projectile_visual: WeaponVisualData = preload(
+	"res://game/weapons/wave_warden_radial_visual.tres"
+)
 @export var loot_table: LootTable = preload("res://game/drops/boss_loot.tres")
 
-@onready var visual := $Visual as Polygon2D
-@onready var core_visual := $Core as Polygon2D
+@onready var visual := $Visual as WaveWardenVisual
+@onready var telegraph_visual := $TelegraphVisual as BossTelegraphVisual
 @onready var health_component := $HealthComponent as HealthComponent
 
 var phase_index: int = 1
 var target: Node2D
 var target_refresh_timer: float = 0.0
 var attack_timer: float = 0.0
+var pending_pattern_id: StringName = &""
+var pending_pattern_direction: Vector2 = Vector2.ZERO
+var pending_pattern_phase: int = 1
+var telegraph_timer: float = 0.0
 var phase_two_pattern_index: int = 0
 var strafe_sign: float = 1.0
 var wave_index: int = 0
@@ -62,7 +80,12 @@ func _ready() -> void:
 	_apply_scaling()
 	health_component.damaged.connect(_on_damaged)
 	health_component.died.connect(_on_died)
-	attack_timer = attack_cooldown * 0.65
+	visual.set_phase(phase_index)
+	visual.play_spawn()
+	attack_timer = maxf(
+		attack_cooldown * 0.65 - aimed_telegraph_duration,
+		0.10
+	)
 
 func _physics_process(delta: float) -> void:
 	if is_dead:
@@ -72,7 +95,6 @@ func _physics_process(delta: float) -> void:
 		return
 
 	target_refresh_timer = maxf(target_refresh_timer - delta, 0.0)
-	attack_timer = maxf(attack_timer - delta, 0.0)
 	if target_refresh_timer <= 0.0 or not _is_valid_target(target):
 		_select_target()
 		target_refresh_timer = target_refresh_interval
@@ -82,9 +104,17 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 		return
 
+	visual.set_facing(global_position.direction_to(target.global_position))
 	_update_movement(delta)
+	if not pending_pattern_id.is_empty():
+		telegraph_timer = maxf(telegraph_timer - delta, 0.0)
+		if telegraph_timer <= 0.0:
+			_finish_attack_telegraph()
+		return
+
+	attack_timer = maxf(attack_timer - delta, 0.0)
 	if attack_timer <= 0.0:
-		_perform_scheduled_pattern()
+		_start_scheduled_pattern()
 
 func _update_path_movement(delta: float) -> void:
 	if path_index >= path_points.size():
@@ -100,6 +130,7 @@ func _update_path_movement(delta: float) -> void:
 			return
 		target_point = path_points[path_index]
 	var direction := global_position.direction_to(target_point)
+	visual.set_facing(direction)
 	velocity = direction * move_speed
 	global_position = global_position.move_toward(target_point, travel_distance)
 
@@ -116,16 +147,19 @@ func _reach_base() -> void:
 	base_reached.emit(self, base_damage)
 	queue_free()
 
-func perform_aimed_volley() -> int:
-	if not _is_valid_target(target):
-		_select_target()
-	if target == null:
-		return 0
-
+func perform_aimed_volley(
+	direction_override: Vector2 = Vector2.ZERO
+) -> int:
 	var projectile_system := _get_projectile_system()
 	if projectile_system == null:
 		return 0
-	var base_direction := global_position.direction_to(target.global_position)
+	var base_direction := direction_override.normalized()
+	if base_direction.is_zero_approx():
+		if not _is_valid_target(target):
+			_select_target()
+		if target == null:
+			return 0
+		base_direction = global_position.direction_to(target.global_position)
 	var center := float(aimed_projectile_count - 1) * 0.5
 	for index in range(aimed_projectile_count):
 		var angle_offset := (float(index) - center) * aimed_spread_radians
@@ -136,7 +170,8 @@ func perform_aimed_volley() -> int:
 			self,
 			projectile_scene,
 			projectile_damage,
-			&"boss_aimed"
+			&"boss_aimed",
+			aimed_projectile_visual
 		)
 	attack_pattern_started.emit(&"aimed_volley", aimed_projectile_count)
 	return aimed_projectile_count
@@ -156,10 +191,56 @@ func perform_radial_burst() -> int:
 			self,
 			projectile_scene,
 			maxi(1, roundi(float(projectile_damage) * 0.75)),
-			&"boss_radial"
+			&"boss_radial",
+			radial_projectile_visual
 		)
 	attack_pattern_started.emit(&"radial_burst", radial_projectile_count)
 	return radial_projectile_count
+
+func start_attack_telegraph(pattern_id: StringName) -> bool:
+	if is_dead or not pending_pattern_id.is_empty():
+		return false
+
+	var direction := Vector2.ZERO
+	var duration := 0.0
+	match pattern_id:
+		&"aimed_volley":
+			if not _is_valid_target(target):
+				_select_target()
+			if target == null:
+				return false
+			direction = global_position.direction_to(target.global_position)
+			duration = maxf(aimed_telegraph_duration, 0.01)
+			telegraph_visual.begin_aimed(
+				direction,
+				duration,
+				aimed_projectile_count,
+				aimed_spread_radians
+			)
+		&"radial_burst":
+			duration = maxf(radial_telegraph_duration, 0.01)
+			telegraph_visual.begin_radial(
+				duration,
+				radial_projectile_count
+			)
+		_:
+			return false
+
+	pending_pattern_id = pattern_id
+	pending_pattern_direction = direction
+	pending_pattern_phase = phase_index
+	telegraph_timer = duration
+	visual.set_attack_charge(pattern_id)
+	attack_telegraph_started.emit(pattern_id, duration, direction)
+	return true
+
+func cancel_attack_telegraph() -> void:
+	pending_pattern_id = &""
+	pending_pattern_direction = Vector2.ZERO
+	pending_pattern_phase = phase_index
+	telegraph_timer = 0.0
+	telegraph_visual.finish_telegraph()
+	visual.clear_attack_charge()
 
 func _update_movement(delta: float) -> void:
 	var direction := global_position.direction_to(target.global_position)
@@ -174,17 +255,51 @@ func _update_movement(delta: float) -> void:
 	velocity = velocity.move_toward(desired_velocity, acceleration * delta)
 	move_and_slide()
 
-func _perform_scheduled_pattern() -> void:
-	if phase_index == 1:
-		perform_aimed_volley()
+func _start_scheduled_pattern() -> void:
+	var pattern_id := _get_next_scheduled_pattern()
+	if not start_attack_telegraph(pattern_id):
+		attack_timer = 0.10
+
+func _finish_attack_telegraph() -> void:
+	var pattern_id := pending_pattern_id
+	var direction := pending_pattern_direction
+	var pattern_phase := pending_pattern_phase
+	pending_pattern_id = &""
+	pending_pattern_direction = Vector2.ZERO
+	pending_pattern_phase = phase_index
+	telegraph_timer = 0.0
+	telegraph_visual.finish_telegraph()
+	visual.clear_attack_charge()
+	attack_telegraph_finished.emit(pattern_id)
+
+	if pattern_id == &"radial_burst":
+		perform_radial_burst()
 	else:
-		if phase_two_pattern_index % 2 == 0:
-			perform_radial_burst()
-		else:
-			perform_aimed_volley()
+		perform_aimed_volley(direction)
+	if pattern_phase > 1:
 		phase_two_pattern_index += 1
 		strafe_sign *= -1.0
-	attack_timer = attack_cooldown if phase_index == 1 else attack_cooldown * 0.78
+	var cooldown := (
+		attack_cooldown
+		if phase_index == 1
+		else attack_cooldown * 0.78
+	)
+	attack_timer = maxf(
+		cooldown - _get_telegraph_duration(
+			_get_next_scheduled_pattern()
+		),
+		0.10
+	)
+
+func _get_next_scheduled_pattern() -> StringName:
+	if phase_index > 1 and phase_two_pattern_index % 2 == 0:
+		return &"radial_burst"
+	return &"aimed_volley"
+
+func _get_telegraph_duration(pattern_id: StringName) -> float:
+	if pattern_id == &"radial_burst":
+		return maxf(radial_telegraph_duration, 0.01)
+	return maxf(aimed_telegraph_duration, 0.01)
 
 func _select_target() -> void:
 	var nearest_target: Node2D
@@ -208,23 +323,30 @@ func _is_valid_target(candidate: Node2D) -> bool:
 	return candidate_health != null and candidate_health.is_alive()
 
 func _on_damaged(_amount: int, _current_health: int, _max_health: int) -> void:
+	visual.play_hurt()
 	if phase_index == 1 and health_component.get_health_ratio() <= phase_two_health_ratio:
 		phase_index = 2
-		attack_timer = minf(attack_timer, 0.25)
-		visual.color = Color(0.92, 0.22, 0.48, 1.0)
-		core_visual.color = Color(1.0, 0.78, 0.22, 1.0)
+		attack_timer = 0.0
+		visual.set_phase(phase_index)
+		telegraph_visual.play_phase_change()
 		phase_changed.emit(phase_index)
 
 func _on_died() -> void:
 	if is_dead:
 		return
 	is_dead = true
+	cancel_attack_telegraph()
 	velocity = Vector2.ZERO
 	collision_layer = 0
 	collision_mask = 0
 	var drop_system = get_tree().get_first_node_in_group("drop_system")
 	if drop_system != null:
 		drop_system.spawn_drops_deferred(self, loot_table, global_position)
+	var gameplay_effects := get_tree().get_first_node_in_group(
+		"gameplay_effects"
+	) as GameplayEffects
+	if gameplay_effects != null:
+		gameplay_effects.spawn_boss_death(global_position)
 	died.emit(self)
 	queue_free()
 

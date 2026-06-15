@@ -2,6 +2,36 @@
 
 ## Completati recenti
 
+- Milestone 14: polish finale e presentabilita.
+  - Obiettivo: completare identita del `Wave Warden` e coerenza della run survival.
+  - Milestone collegata: chiusura del visual gameplay pass delle Milestone 10-13.
+  - File/sistemi coinvolti: `WaveWardenVisual`, boss projectile, `CombatAnnouncement`, HUD ed effetti.
+  - Criterio di accettazione: una run a quattro player resta leggibile da wave start a boss defeat.
+  - Test richiesto: `tests/milestone_14_final_polish_smoke_test.gd` e `tests/final_survival_visual_qa.gd`.
+- Milestone 13: identita grafica di armi e torri.
+  - Obiettivo: differenziare armi speciali, proiettili e torre senza duplicare logica condivisa.
+  - Milestone collegata: evoluzione visuale delle Milestone 3, 8 e 10.
+  - File/sistemi coinvolti: `WeaponVisualData`, armi, `Projectile`, `PlayerVisual`, HUD e `DefenseTowerVisual`.
+  - Criterio di accettazione: arma attiva e torre sono riconoscibili dalla silhouette anche in multiplayer locale.
+  - Test richiesto: `tests/milestone_13_weapon_tower_visual_smoke_test.gd` e `tests/weapon_tower_visual_qa.gd`.
+- Milestone 12: varianti zombie runner e tank.
+  - Obiettivo: introdurre ruoli nemico leggibili senza duplicare AI condivisa.
+  - Milestone collegata: evoluzione visuale e gameplay delle Milestone 4, 5 e 10.
+  - File/sistemi coinvolti: `BasicEnemy`, `EnemySystem`, `WaveManager`, `ZombieVisual`, scene e loot.
+  - Criterio di accettazione: runner e tank hanno silhouette, ritmo, resistenza e ricompense distinguibili.
+  - Test richiesto: `tests/milestone_12_enemy_variants_smoke_test.gd` e `tests/enemy_variants_visual_qa.gd`.
+- Milestone 11: telegraph boss e feedback del pericolo.
+  - Obiettivo: rendere anticipabili i pattern del `Wave Warden` e il cambio fase.
+  - Milestone collegata: evoluzione visuale delle Milestone 6, 9 e 10.
+  - File/sistemi coinvolti: `BasicBoss`, `BossTelegraphVisual`, HUD, audio e QA.
+  - Criterio di accettazione: aimed e radial mostrano direzione, area e durata prima di generare proiettili.
+  - Test richiesto: `tests/milestone_11_boss_telegraph_smoke_test.gd` e `tests/boss_telegraph_visual_qa.gd`.
+- Milestone 10: visual readability foundation della zombie survival.
+  - Obiettivo: rendere arena, survivor, zombie, pickup e HUD leggibili come un gioco arcade isometrico.
+  - Milestone collegata: Milestone 10 post-roadmap.
+  - File/sistemi coinvolti: `game/visuals/`, player, nemici, drop, projectile, arena principale, HUD e QA.
+  - Criterio di accettazione: attori riconoscibili, sfondo desaturato, pickup senza label, schede HUD e feedback visuali senza cambiare gameplay.
+  - Test richiesto: `tests/milestone_10_visual_smoke_test.gd`, `tests/survival_visual_qa.gd` e regressione completa Milestone 3-9.
 - Evoluzione post-roadmap: ammo survival anti-frustrazione.
   - Obiettivo: garantire sempre una risposta di fuoco mantenendo tensione sulle armi speciali.
   - Milestone collegata: evoluzione post-roadmap delle Milestone 3, 4, 5 e 9.
@@ -71,12 +101,12 @@
 
 ## Priorita alta
 
-- Varianti nemico e telegraph boss.
-  - Obiettivo: aggiungere runner/tank e rendere anticipabili i pattern del `Wave Warden`.
-  - Milestone collegata: evoluzione post-roadmap delle Milestone 5, 6 e 9.
-  - File/sistemi coinvolti: `game/enemies/`, `EnemySystem`, `BasicBoss`, `AudioManager`, scene e loot table.
-  - Criterio di accettazione: almeno due varianti riusano i contratti condivisi e ogni pattern boss mostra un preavviso leggibile.
-  - Test richiesto: smoke test spawn/morte varianti e checklist visuale/audio boss.
+- Variante zombie ranged.
+  - Obiettivo: aggiungere pressione a distanza con windup e proiettile anticipabile.
+  - Milestone collegata: evoluzione gameplay delle Milestone 4, 5 e 12.
+  - File/sistemi coinvolti: enemy scene, `EnemySystem`, wave composition, visual e telegraph.
+  - Criterio di accettazione: lo shooter e distinguibile e il suo colpo puo essere evitato leggendo il warning.
+  - Test richiesto: smoke test spawn/pattern/morte e QA couch multiplayer.
 
 ## Priorita media
 
@@ -92,18 +122,6 @@
   - File/sistemi coinvolti: `PlayerManager`, `HealthComponent`, `SurvivalMode`, HUD.
   - Criterio di accettazione: la regola di respawn non interrompe gli altri player locali e viene documentata nel design.
   - Test richiesto: checklist manuale morte/respawn con due player.
-- Varianti nemico base.
-  - Obiettivo: aggiungere almeno runner e tank riusando il contratto `BasicEnemy`.
-  - Milestone collegata: Milestone 5.
-  - File/sistemi coinvolti: `game/enemies/`, `EnemySystem`, loot table dedicate.
-  - Criterio di accettazione: le varianti cambiano dati o comportamento senza duplicare il sistema condiviso.
-  - Test richiesto: smoke test spawn e morte per ogni variante.
-- Telegraph e feedback boss.
-  - Obiettivo: rendere anticipabili raffiche e cambio fase con animazioni, indicatori e audio.
-  - Milestone collegata: Milestone 9.
-  - File/sistemi coinvolti: `BasicBoss`, HUD, `AudioManager`, asset visuali.
-  - Criterio di accettazione: ogni pattern mostra un preavviso leggibile prima del danno.
-  - Test richiesto: checklist manuale visuale e audio.
 - Varianti boss.
   - Obiettivo: aggiungere boss configurabili per dungeon e tower defense riusando `BossSystem`.
   - Milestone collegata: Milestone 7-8.

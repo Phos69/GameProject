@@ -4,6 +4,37 @@
 
 ### Added
 
+- Completata Milestone 14 come chiusura del visual gameplay pass.
+- Aggiunto `WaveWardenVisual` segmentato e animato per fase, mira, hit e carica.
+- Aggiunti profili aimed/radial con glow e trail per i proiettili del boss.
+- Aggiunto effetto world-space dedicato alla morte del `Wave Warden`.
+- Aggiunto `CombatAnnouncement` per wave, reward, boss, overdrive e fine run.
+- Aggiunto pannello boss centrato e responsive.
+- Aggiunti smoke test M14 e QA finale in quattro tavole a 1280x720.
+- Completata Milestone 13 con identita grafica data-driven per armi e torri.
+- Aggiunto `WeaponVisualData` per condividere profilo tra arma, HUD, proiettile e muzzle flash.
+- Aggiunti profili distinti per `Starter Pistol`, `Prototype Blaster`, `Wave Cannon` e torre.
+- Aggiunte icone HUD arma generate dal profilo equipaggiato.
+- Aggiunti forma, scala, glow e trail configurabili per i proiettili player e torre.
+- Aggiunto `DefenseTowerVisual` con base esagonale, doppia canna, tracking, idle scan e rinculo.
+- Aggiunti smoke test M13 e QA visuale per armi/player e torri a 1280x720.
+- Completata Milestone 12 con varianti zombie runner e tank.
+- Aggiunte scene enemy data-driven con statistiche, collisioni e loot dedicati.
+- Esteso `ZombieVisual` con silhouette basic, runner e tank.
+- Aggiunta composizione deterministica delle ondate survival per archetipo.
+- Aggiunti smoke test varianti e QA couch multiplayer a 1280x720.
+- Completata Milestone 11 con telegraph modulari del `Wave Warden`.
+- Aggiunti warning world-space con countdown per raffica mirata e radiale.
+- Aggiunti avvisi HUD e cue audio per pattern boss e cambio fase.
+- Aggiunto impulso visuale per la fase 2 e direzione mirata bloccata al warning.
+- Aggiunti smoke test telegraph e QA visuale a 1280x720.
+- Completata Milestone 10 come primo pass di leggibilita visuale della survival.
+- Aggiunta arena pseudo-isometrica desaturata con usura, corsie e barricate.
+- Aggiunti visual modulari e animati proceduralmente per survivor e zombie.
+- Sostituite le etichette dei pickup e della supply crate con icone grafiche.
+- Aggiunte schede HUD per-player con vita, arma e munizioni.
+- Aggiunto `GameplayEffects` per sparo, hit, morte e raccolta.
+- Aggiunti smoke test visuale e QA survival a 1280x720.
 - Aggiunta `Starter Pistol` con riserva infinita, caricatore e reload invariati.
 - Esteso `WeaponSystem` con fallback permanente e stato separato dell'arma speciale.
 - Aggiunto fallback shot automatico quando una speciale esaurisce caricatore e riserva.
@@ -132,6 +163,13 @@
 
 ### Changed
 
+- Riscritta `ROADMAP_VISUAL_GAMEPLAY.md` eliminando le milestone completate e definendo il piano futuro M15-M21.
+- Sostituiti i poligoni statici del `Wave Warden` con un visual modulare.
+- Gli annunci importanti mantengono precedenza sull'intermissione successiva.
+- Sostituito il visual statico della torre con un componente animato senza cambiare targeting o bilanciamento.
+- Il flash di volata usa colore e dimensione del profilo del proiettile generato.
+- Nascosti i bersagli combat debug durante il gameplay normale.
+- Ridotta la saturazione dello sfondo survival per aumentare il contrasto degli attori.
 - I drop ammo sostengono solo le armi speciali; la fallback non dipende dai drop.
 - Le ricompense ammo survival vengono applicate agli slot speciali dei player vivi.
 - Ridotto il fire rate della `Starter Pistol` da 7 a 6 colpi al secondo.

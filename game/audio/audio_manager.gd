@@ -54,7 +54,7 @@ func play_ui_confirm() -> int:
 	return frames_written
 
 func play_gameplay_shot(source_id: StringName) -> int:
-	var frequency := 260.0 if source_id == &"boss_projectile" else 520.0
+	var frequency := 260.0 if String(source_id).begins_with("boss_") else 520.0
 	if source_id == &"defense_tower":
 		frequency = 380.0
 	var frames_written := _play_tone(gameplay_player, frequency, 0.045, 0.09)
@@ -105,6 +105,41 @@ func play_weapon_status(
 	gameplay_feedback_generated.emit(feedback_type, source_id, frames_written)
 	return frames_written
 
+func play_boss_feedback(
+	feedback_type: StringName,
+	pattern_id: StringName = &"wave_warden"
+) -> int:
+	var frequency := 210.0
+	var duration := 0.12
+	var amplitude := 0.10
+	match feedback_type:
+		&"boss_spawn":
+			frequency = 110.0
+			duration = 0.20
+			amplitude = 0.12
+		&"boss_phase":
+			frequency = 95.0
+			duration = 0.24
+			amplitude = 0.13
+		&"boss_telegraph":
+			frequency = (
+				170.0
+				if pattern_id == &"radial_burst"
+				else 245.0
+			)
+	var frames_written := _play_tone(
+		gameplay_player,
+		frequency,
+		duration,
+		amplitude
+	)
+	gameplay_feedback_generated.emit(
+		feedback_type,
+		pattern_id,
+		frames_written
+	)
+	return frames_written
+
 func _connect_gameplay_sources() -> void:
 	var projectile_system := get_tree().get_first_node_in_group(
 		"projectile_system"
@@ -132,6 +167,14 @@ func _connect_gameplay_sources() -> void:
 			player_manager.player_spawned.connect(player_callback)
 	for player in get_tree().get_nodes_in_group("players"):
 		_connect_weapon_system(player)
+	var boss_system := get_tree().get_first_node_in_group(
+		"boss_system"
+	) as BossSystem
+	if boss_system != null:
+		var boss_callback := Callable(self, "_on_boss_spawned")
+		if not boss_system.boss_spawned.is_connected(boss_callback):
+			boss_system.boss_spawned.connect(boss_callback)
+		_connect_boss_feedback(boss_system.get_active_boss())
 
 func _on_projectile_spawned(projectile: Node) -> void:
 	play_gameplay_shot(_get_projectile_source_id(projectile))
@@ -149,6 +192,42 @@ func _on_drop_collected(drop_data: Dictionary, _collector: Node) -> void:
 
 func _on_player_spawned(_player_slot: int, player: Node) -> void:
 	_connect_weapon_system(player)
+
+func _on_boss_spawned(boss: Node) -> void:
+	play_boss_feedback(&"boss_spawn")
+	_connect_boss_feedback(boss)
+
+func _connect_boss_feedback(boss: Node) -> void:
+	if boss == null:
+		return
+	var telegraph_callback := Callable(
+		self,
+		"_on_boss_telegraph_started"
+	)
+	if (
+		boss.has_signal("attack_telegraph_started")
+		and not boss.is_connected(
+			"attack_telegraph_started",
+			telegraph_callback
+		)
+	):
+		boss.connect("attack_telegraph_started", telegraph_callback)
+	var phase_callback := Callable(self, "_on_boss_phase_changed")
+	if (
+		boss.has_signal("phase_changed")
+		and not boss.is_connected("phase_changed", phase_callback)
+	):
+		boss.connect("phase_changed", phase_callback)
+
+func _on_boss_telegraph_started(
+	pattern_id: StringName,
+	_duration: float,
+	_direction: Vector2
+) -> void:
+	play_boss_feedback(&"boss_telegraph", pattern_id)
+
+func _on_boss_phase_changed(_phase_index: int) -> void:
+	play_boss_feedback(&"boss_phase")
 
 func _connect_weapon_system(player: Node) -> void:
 	var weapon_system := player.get_node_or_null("WeaponSystem") as WeaponSystem

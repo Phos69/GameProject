@@ -11,7 +11,10 @@ Il progetto vuole diventare una piattaforma modulare per sperimentare tre modali
 - tower defense;
 - boss fight ricorrenti nelle ondate importanti o alla fine dei livelli.
 
-La base attuale contiene Milestone 0-9 completate come prototipi minimi: tre modalita giocabili, progressione con unlock persistente, feedback audio UI/gameplay e build Windows verificata.
+La base attuale contiene Milestone 0-14 completate: tre modalita giocabili,
+progressione persistente, build Windows verificata e un primo pass visuale
+modulare completo della zombie survival, dalla leggibilita degli attori alla
+presentazione della boss wave.
 
 ## Stack tecnico
 
@@ -59,6 +62,11 @@ godot --headless --path . --script res://tests/boss_smoke_test.gd
 godot --headless --path . --script res://tests/dungeon_smoke_test.gd
 godot --headless --path . --script res://tests/tower_defense_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_9_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_visual_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_11_boss_telegraph_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_12_enemy_variants_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_13_weapon_tower_visual_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_14_final_polish_smoke_test.gd
 ```
 
 Export Windows:
@@ -94,6 +102,7 @@ game/
   ui/                HUD e interfaccia
   audio/             audio manager
   saves/             salvataggi JSON versionati
+  visuals/           visual modulari ed effetti gameplay sostituibili
   debug/             strumenti debug
 docs/                documentazione tecnica e checklist
 prompts/             prompt operativi per task IA futuri
@@ -172,6 +181,19 @@ Completato:
 - feedback audio procedurale per focus e conferma menu;
 - feedback audio procedurale per sparo, impatto valido e pickup;
 - feedback HUD/audio per low ammo, reload, fallback e ammo condivisa;
+- arena survival desaturata con dettagli post-apocalittici;
+- survivor e zombie con visuali modulari animate proceduralmente;
+- pickup e supply crate grafici senza etichette testuali;
+- HUD per-player con barre vita, identita arma e munizioni;
+- effetti visuali per sparo, hit, morte nemico e raccolta;
+- telegraph world-space e HUD/audio per i pattern del `Wave Warden`;
+- `Wave Warden` segmentato e animato con identita distinta per le due fasi;
+- annunci centrali per wave, reward, boss, overdrive e sconfitta;
+- proiettili boss aimed/radial con profili, glow e trail distinti;
+- effetto morte boss e presentazione del drop speciale;
+- runner e tank con silhouette, statistiche e loot distinti;
+- pistola, blaster e Wave Cannon con silhouette, icone HUD e proiettili distinti;
+- torre con base esagonale, doppia canna, tracking e feedback di fuoco;
 - primo pass di bilanciamento sulle armi base;
 - preset export `Windows Desktop`;
 - mapping globale `ui_accept` su joypad `A`;
@@ -185,15 +207,15 @@ Completato:
 Non ancora completato:
 
 - ulteriori boss, pattern avanzati e telegraph;
-- varianti nemico ranged/tank/runner;
+- variante nemico ranged;
 - respawn o revive dei player;
 - dungeon ramificati, shop, biomi e selezione stanza;
-- mix audio, telegraph e polish visuale avanzato;
+- mix audio e polish visuale avanzato opzionale;
 - asset definitivi e ulteriori pass di bilanciamento;
 - firma digitale dell'eseguibile Windows.
 
 ## Prossimi obiettivi post-roadmap
 
-1. Aggiungere varianti nemico e telegraph boss.
+1. Introdurre uno zombie ranged con telegraph leggibile.
 2. Espandere il dungeon con diramazioni, shop e biomi.
 3. Introdurre revive locale e ulteriori unlock.

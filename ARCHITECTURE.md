@@ -15,25 +15,31 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 7. `PlayerManager` ascolta gli slot attivi e spawna/despawna i player.
 8. `PlayerController` legge input solo quando una modalita gameplay e attiva.
 9. `WeaponSystem` gestisce fallback permanente, speciale, cooldown, caricatori, riserve e ricarica per il singolo player.
-10. `ProjectileSystem` spawna proiettili che applicano danno tramite `HealthSystem`.
-11. `EnemySystem` spawna nemici e `BasicEnemy` seleziona il player vivo piu vicino.
-12. Alla morte, il nemico chiede a `DropSystem` di generare pickup dalla propria `LootTable`.
-13. `DropPickup` delega l'applicazione della ricompensa a `DropSystem`.
-14. `GameModeManager` avvia `SurvivalMode`, che delega il ciclo delle ondate a `WaveManager`.
-15. `WaveManager` spawna zombie tramite `EnemySystem` e richiede il boss a `SurvivalMode`.
-16. `SurvivalMode` usa `GameModeManager` e `BossSystem` per creare il boss della quinta ondata.
-17. `WaveManager` conta scorte e boss prima di assegnare la ricompensa.
-18. `DungeonMode` genera un layout da seed, istanzia una `DungeonRoom` alla volta e usa nemici, drop e boss condivisi.
-19. `DungeonRoom` controlla pareti, portale e stato locked/unlocked della stanza corrente.
-20. `TowerDefenseMode` gestisce lifecycle, arena, player e richieste costruzione.
-21. `TowerDefenseWaveController` governa ondate e usa `EnemySystem` per i nemici da percorso.
-22. `TowerDefenseManager` mantiene vita core e crediti, mentre gli slot delegano lo spawn delle torri.
-23. `DefenseTower` seleziona target tower defense e spara tramite `ProjectileSystem`.
-24. `ProgressionManager` prepara i player a ogni nuova run applicando gli unlock persistenti.
-25. `SurvivalAmmoDirector` osserva l'ammo speciale dei player vivi e genera supply crate configurabili.
-26. `AudioManager` ascolta projectile, drop e segnali arma per generare feedback gameplay condiviso.
-27. `IsometricCameraController` segue il gruppo `players`.
-28. `HUDManager` mostra slot, progressione, vita, munizioni, feedback ammo, stato modalita e barra boss.
+10. `WeaponData` inoltra l'eventuale `WeaponVisualData` a player, HUD e proiettile.
+11. `ProjectileSystem` spawna proiettili che applicano danno tramite `HealthSystem`.
+12. `EnemySystem` spawna scene basic, runner e tank; tutte usano `BasicEnemy` per selezionare il player vivo piu vicino.
+13. Alla morte, il nemico chiede a `DropSystem` di generare pickup dalla propria `LootTable`.
+14. `DropPickup` delega l'applicazione della ricompensa a `DropSystem`.
+15. `GameModeManager` avvia `SurvivalMode`, che delega il ciclo delle ondate a `WaveManager`.
+16. `WaveManager` spawna zombie tramite `EnemySystem` e richiede il boss a `SurvivalMode`.
+17. `SurvivalMode` usa `GameModeManager` e `BossSystem` per creare il boss della quinta ondata.
+18. `WaveManager` conta scorte e boss prima di assegnare la ricompensa.
+19. `DungeonMode` genera un layout da seed, istanzia una `DungeonRoom` alla volta e usa nemici, drop e boss condivisi.
+20. `DungeonRoom` controlla pareti, portale e stato locked/unlocked della stanza corrente.
+21. `TowerDefenseMode` gestisce lifecycle, arena, player e richieste costruzione.
+22. `TowerDefenseWaveController` governa ondate e usa `EnemySystem` per i nemici da percorso.
+23. `TowerDefenseManager` mantiene vita core e crediti, mentre gli slot delegano lo spawn delle torri.
+24. `DefenseTower` seleziona target e inoltra direzione e fuoco a `DefenseTowerVisual`.
+25. `ProgressionManager` prepara i player a ogni nuova run applicando gli unlock persistenti.
+26. `SurvivalAmmoDirector` osserva l'ammo speciale dei player vivi e genera supply crate configurabili.
+27. `AudioManager` ascolta projectile, drop e segnali arma per generare feedback gameplay condiviso.
+28. `IsometricCameraController` segue il gruppo `players`.
+29. `HUDManager` mostra slot, progressione, vita, munizioni, feedback ammo, stato modalita e barra boss.
+30. I componenti visuali di player, zombie, pickup e crate ricevono stato dai rispettivi controller senza possedere logica gameplay.
+31. `BossTelegraphVisual` riceve pattern, direzione e durata da `BasicBoss` senza possedere danno o collisioni.
+32. `WaveWardenVisual` riceve fase, mira, hit e carica senza possedere autorita gameplay.
+33. `CombatAnnouncement` presenta segnali wave e boss tradotti da `HUDManager`.
+34. `GameplayEffects` ascolta i segnali di proiettili, nemici e drop e genera effetti temporanei nel mondo.
 
 ## Sistemi principali
 
@@ -45,12 +51,14 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `MainMenu`: UI iniziale, selezione modalita, continue e ritorno con `Esc`.
 - `SaveManager`: persistenza JSON versionata e autosave della progressione.
 - `AudioManager`: feedback audio procedurale per UI, sparo, impatto, pickup e stato ammo.
-- `WeaponData`: risorsa immutabile con danno, fire rate, velocita proiettile, caricatore, riserva e durata ricarica.
+- `WeaponData`: risorsa immutabile con statistiche gameplay e riferimento visuale opzionale.
+- `WeaponVisualData`: palette, dimensioni e profilo condivisi da arma, HUD, proiettile e flash.
 - `WeaponSystem`: stato runtime per-player di fallback, speciale, cooldown, munizioni e ricarica.
 - `ProjectileSystem` e `Projectile`: spawn, movimento, collisione e consegna del danno.
 - `HealthSystem` e `HealthComponent`: richieste globali di danno/cura e stato vita locale.
 - `EnemySystem`: registro di scene nemico per ID, spawn, contenitore, registro runtime e notifica morte.
-- `BasicEnemy`: AI melee con stati idle, chase, attack e dead.
+- `BasicEnemy`: AI melee condivisa con stati idle, chase, attack e dead.
+- `ZombieVisual`: profili procedurali basic, runner e tank senza autorita gameplay.
 - `BossSystem`: spawn centralizzato, registro del boss attivo e notifica sconfitta.
 - `BasicBoss`: boss modulare con targeting, movimento, fasi e pattern proiettile.
 - `SurvivalMode`: ciclo survival, condizione di sconfitta e inoltro richieste boss.
@@ -66,12 +74,37 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `TowerDefenseEnemy`: movimento a waypoint, danno al core e contratto health/drop condiviso.
 - `TowerBuildSlot`: rileva il player e inoltra la richiesta di costruzione.
 - `DefenseTower`: targeting automatico e sparo tramite `ProjectileSystem`.
+- `DefenseTowerVisual`: base, canne, tracking, idle scan e feedback di fuoco senza logica gameplay.
 - `DropEntry` e `LootTable`: dati tipizzati per chance, quantita e arma associata.
 - `DropSystem`: roll, spawn pickup e applicazione centralizzata delle ricompense.
 - `DropPickup`: rappresentazione fisica e raccolta da parte dei player.
 - `SupplyCrate`: contenitore fisico configurato da `LootTable` per ammo e cura.
 - `ProgressionManager`: XP, livello, denaro, unlock party e bonus di inizio run.
 - `HUDManager`: UI prototipo.
+- `PlayerVisual` e `ZombieVisual`: presentazione animata procedurale degli attori.
+- `DropPickupVisual` e `SupplyCrateVisual`: icone world-space sostituibili.
+- `BossTelegraphVisual`: warning world-space per pattern aimed, radial e cambio fase.
+- `WaveWardenVisual`: silhouette, animazione e stato visuale delle due fasi del boss.
+- `PlayerHudCard`: scheda HUD riusabile per ogni slot locale.
+- `WeaponIcon`: icona HUD generata dal profilo dell'arma attiva.
+- `CombatAnnouncement`: banner temporaneo e riusabile per transizioni gameplay.
+- `GameplayEffects`: feedback visuale event-driven senza dipendenze dai controller.
+
+## Contratto presentazione visuale
+
+- Controller, collisioni, health, armi, wave e drop restano autoritativi.
+- I nodi visuali ricevono solo stato, direzione, velocita e richieste di feedback.
+- Sostituire un placeholder con sprite o animazioni non deve cambiare scene manager o sistemi gameplay.
+- Lo sfondo survival usa colori meno saturi e meno luminosi degli attori.
+- Il colore slot resta il primo identificatore del player nel multiplayer locale.
+- Pickup e supply crate devono essere riconoscibili dalla forma e dal colore senza dipendere da label world-space.
+- I telegraph boss mostrano direzione, area e durata prima del danno e non possiedono collisioni.
+- `WaveWardenVisual` riceve solo stato presentazionale da `BasicBoss`.
+- Gli annunci HUD reagiscono ai segnali pubblici e non pilotano wave o boss.
+- Arma world-space, icona HUD, proiettile e muzzle flash leggono lo stesso `WeaponVisualData`.
+- `DefenseTowerVisual` riceve mira e feedback ma non sceglie target, range, danno o fire rate.
+- `GameplayEffects` reagisce a segnali pubblici e non applica danno, cura o ricompense.
+- I bersagli combat debug restano istanziati ma invisibili e senza collisione nel gameplay normale; lo smoke test combat abilita la fixture usata.
 
 ## Contratto combat
 
@@ -81,7 +114,9 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - La fallback infinita conserva caricatore e reload; solo la riserva e virtualmente infinita.
 - Un nuovo rifornimento della speciale la riattiva e avvia il reload.
 - Le statistiche di bilanciamento vivono in risorse `WeaponData`, non nel controller player.
+- Palette, silhouette e trail vivono in `WeaponVisualData` e non modificano il bilanciamento.
 - `ProjectileSystem` riceve i dati dello sparo e configura il proiettile prima di aggiungerlo alla scena.
+- Il parametro visuale di `ProjectileSystem` e opzionale per mantenere compatibili boss e chiamanti esistenti.
 - Il proiettile non conosce classi nemico specifiche: colpisce un body damageable e inoltra il danno a `HealthSystem`.
 - `Projectile` emette l'impatto risolto e `ProjectileSystem` lo espone ai sistemi di feedback.
 - `HealthSystem` cerca un figlio `HealthComponent` sul target; player, nemici, boss e bersagli debug possono condividere lo stesso contratto.
@@ -101,6 +136,11 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - L'attacco inoltra il danno a `HealthSystem`; non modifica direttamente la vita del player.
 - La morte nasce dal segnale `HealthComponent.died`, disabilita collisioni, genera drop e rimuove il nodo.
 - I dati di movimento, detection, attacco, cooldown, vita e loot sono configurabili dalla scena o da risorse.
+- `EnemySystem` registra `survival_runner` e `survival_tank` su scene dedicate.
+- Basic, runner e tank riusano lo stesso script `BasicEnemy`; non esistono controller AI duplicati.
+- `ZombieVisual.archetype_id` cambia silhouette e animazione senza cambiare collisioni o statistiche.
+- Runner: 18 HP, velocita 155, danno 6 e cooldown 0,62 secondi.
+- Tank: 90 HP, velocita 58, danno 18 e cooldown 1,25 secondi.
 
 ## Contratto drop
 
@@ -164,6 +204,7 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - `DropSystem.drop_collected` genera il feedback pickup in base al tipo raccolto.
 - `WeaponSystem` genera feedback per low ammo, reload e fallback.
 - I toni procedurali restano placeholder e non richiedono asset esterni.
+- Spawn boss, telegraph e cambio fase usano cue distinti esposti da `gameplay_feedback_generated`.
 
 ## Contratto survival e wave
 
@@ -173,6 +214,9 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - `WaveManager` e autoritativo per indice ondata, stato, spawn pendenti e nemici della wave.
 - Gli stati runtime sono `idle`, `intermission`, `spawning`, `combat` e `reward`.
 - Gli zombie vengono creati esclusivamente tramite `EnemySystem.spawn_enemy()`.
+- `WaveManager.get_enemy_id_for_spawn()` compone deterministicamente il roster survival.
+- La wave 1 usa solo basic; dalla wave 2 ogni terzo slot e runner.
+- Dalla wave 3, se sono presenti almeno cinque zombie regolari, l'ultimo slot e tank.
 - Ogni ondata aumenta il conteggio base e passa moltiplicatori a `BasicEnemy`.
 - Solo le morti dei nemici registrati nella wave contribuiscono al completamento.
 - Le ricompense tra ondate aggiungono denaro party e munizioni/cura ai player attivi vivi.
@@ -195,8 +239,17 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - `BasicBoss` usa `HealthComponent` e appartiene al gruppo `damageable_targets`.
 - Il targeting seleziona il player vivo piu vicino e supporta join/leave.
 - I pattern usano `ProjectileSystem` con una scena proiettile ostile separata.
+- Aimed e radial passano profili `WeaponVisualData` distinti allo stesso proiettile ostile.
 - La fase 1 usa una raffica mirata da tre proiettili.
 - Sotto il 50% di vita, la fase 2 alterna raffica radiale e mirata.
+- Gli attacchi schedulati entrano prima in uno stato di telegraph.
+- La raffica mirata mostra cono e corsie per 0,70 secondi e blocca la direzione annunciata.
+- La raffica radiale mostra raggi e countdown per 0,90 secondi.
+- Nessun proiettile viene creato durante il warning.
+- `attack_telegraph_started` e `attack_telegraph_finished` espongono il timing ai sistemi di presentazione.
+- `BossTelegraphVisual` puo essere sostituito senza cambiare pattern, danno o targeting.
+- `WaveWardenVisual` puo essere sostituito senza cambiare health, collisioni o timing.
+- Il danno letale genera un effetto `boss_death` senza ritardare il segnale `died`.
 - La morte genera la `LootTable` boss, emette `died` e notifica `BossSystem`.
 - `HUDManager` legge il boss attivo da `BossSystem` e mostra nome, fase e vita.
 - Il contratto non dipende da survival: dungeon e tower defense possono riusare la stessa API.
@@ -228,6 +281,8 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - `TowerBuildSlot` rileva player sovrapposti e richiede la costruzione con l'azione `interact`.
 - `TowerDefenseManager` valida disponibilita e costo prima di creare la torre.
 - `DefenseTower` considera solo nodi nel gruppo `tower_defense_targets`.
+- `DefenseTower` calcola target e origine di fuoco; `DefenseTowerVisual` presenta orientamento, rinculo e flash.
+- Il proiettile torre usa il profilo visuale `defense_tower` senza cambiare danno o collisioni.
 - Le boss wave richiedono il `Wave Warden` tramite `GameModeManager` e `BossSystem`.
 - `BasicBoss` mantiene il comportamento action normale, ma se riceve `path_points` usa il percorso e danneggia il core al termine.
 - La distruzione del core porta la modalita in stato `defeated` e ripulisce la wave.

@@ -12,3 +12,4 @@ class_name WeaponData
 @export_range(0.0, 10.0, 0.05) var reload_duration: float = 1.0
 @export var infinite_reserve_ammo: bool = false
 @export var projectile_scene: PackedScene
+@export var visual_data: WeaponVisualData

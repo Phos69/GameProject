@@ -1,8 +1,7 @@
 extends Area2D
 class_name DropPickup
 
-@onready var visual := $Visual as Polygon2D
-@onready var label := $Label as Label
+@onready var visual := $Visual as DropPickupVisual
 
 var drop_data: Dictionary = {}
 var collected: bool = false
@@ -35,22 +34,4 @@ func _on_body_entered(body: Node2D) -> void:
 
 func _apply_visual() -> void:
 	var drop_type := StringName(drop_data.get("type", &"unknown"))
-	match drop_type:
-		GameConstants.DROP_EXPERIENCE:
-			visual.color = Color(0.40, 0.75, 1.0, 1.0)
-			label.text = "XP"
-		GameConstants.DROP_MONEY:
-			visual.color = Color(1.0, 0.78, 0.20, 1.0)
-			label.text = "$"
-		GameConstants.DROP_AMMO:
-			visual.color = Color(1.0, 0.46, 0.18, 1.0)
-			label.text = "A"
-		GameConstants.DROP_HEALTH:
-			visual.color = Color(0.35, 0.95, 0.45, 1.0)
-			label.text = "+"
-		GameConstants.DROP_WEAPON:
-			visual.color = Color(0.78, 0.42, 1.0, 1.0)
-			label.text = "W"
-		_:
-			visual.color = Color(0.75, 0.75, 0.75, 1.0)
-			label.text = "?"
+	visual.configure(drop_type)

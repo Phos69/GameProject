@@ -145,9 +145,76 @@ Stato: completata come prototipo minimo.
 - Primo pass di bilanciamento: `Starter Pistol` a 6 colpi/s e `Prototype Blaster` a 4,5 colpi/s.
 - Stato unlock mostrato nel menu principale.
 
+## Milestone 10 - Visual Readability Foundation
+
+Stato: completata come primo pass visuale modulare.
+
+- Arena survival desaturata e pseudo-isometrica con dettagli post-apocalittici.
+- Survivor leggibili per slot con animazioni procedurali di movimento e combat.
+- Zombie riconoscibili con silhouette e feedback di stato.
+- Pickup e supply crate grafici senza etichette testuali.
+- HUD per-player con schede, barre vita, arma e munizioni.
+- Effetti leggeri per sparo, hit, morte e raccolta.
+- Bersagli debug nascosti dal gameplay normale.
+- Smoke test visuale e QA a 1280x720.
+
+## Milestone 11 - Boss Telegraph e Combat Danger Feedback
+
+Stato: completata come primo pass modulare.
+
+- Raffica mirata preceduta da cono, corsie e countdown world-space.
+- Direzione mirata bloccata al momento del warning.
+- Raffica radiale preceduta da raggi, area e countdown leggibili.
+- Nessun proiettile generato durante la finestra di telegraph.
+- HUD con messaggi distinti per aimed, radial e fase 2.
+- Cue audio procedurali per spawn boss, warning e cambio fase.
+- Impulso visuale world-space al passaggio in fase 2.
+- Smoke test dedicato e QA visuale a 1280x720.
+
+## Milestone 12 - Varianti Zombie Runner e Tank
+
+Stato: completata come primo pass gameplay e visuale.
+
+- Runner rapido, fragile e dalla silhouette sottile.
+- Tank lento, resistente e dalla silhouette larga.
+- AI melee condivisa tramite `BasicEnemy`.
+- Scene, collisioni, health bar e loot configurati per archetipo.
+- Composizione wave deterministica: runner dalla wave 2 e tank dalla wave 3.
+- Conteggio, scaling, morte e drop continuano a usare i sistemi condivisi.
+- Dungeon e tower defense non modificati.
+- Smoke test dedicato e QA con quattro player a 1280x720.
+
+## Milestone 13 - Identita Grafica di Armi e Torri
+
+Stato: completata come primo pass visuale modulare.
+
+- `WeaponVisualData` condiviso tra arma world-space, icona HUD e proiettile.
+- `Starter Pistol` compatta con accento arancio.
+- `Prototype Blaster` a doppia forcella con energia ciano.
+- `Wave Cannon` pesante con nucleo e proiettile magenta.
+- Forma, scala, glow e trail dei proiettili configurati per profilo.
+- Torre con base esagonale, nucleo pulsante e doppia canna orientabile.
+- Tracking, idle scan, rinculo e muzzle flash senza autorita gameplay nel visual.
+- Smoke test dedicato e due QA visuali a 1280x720.
+
+## Milestone 14 - Polish Finale e Presentabilita
+
+Stato: completata come chiusura del visual gameplay pass.
+
+- `WaveWardenVisual` segmentato con nucleo, piastre e direzione leggibile.
+- Palette, spine e animazione dedicate alla fase 2.
+- Feedback visuale di spawn, hit e carica pattern.
+- Proiettili aimed e radial con profili, glow e trail distinti.
+- Effetto morte boss con drop speciale leggibile.
+- Pannello boss centrato e responsive.
+- Annunci centrali per wave, reward, boss, overdrive e sconfitta.
+- Precedenza degli annunci per evitare sovrascritture immediate.
+- Smoke test dedicato e QA completa a quattro player a 1280x720.
+
 Attivita post-roadmap:
 
 - sistema ammo survival robusto con fallback infinita, pickup condivisi, supply crate e director anti-frustrazione completato;
-- telegraph e mix audio avanzato;
+- visual gameplay pass della zombie survival completato;
+- mix audio avanzato;
 - asset definitivi e ulteriori pass di bilanciamento;
 - firma digitale della build pubblica.

@@ -49,6 +49,7 @@ func _run() -> void:
 	var weapon_one := player_one.get_node("WeaponSystem") as WeaponSystem
 	var weapon_two := player_two.get_node("WeaponSystem") as WeaponSystem
 	var target_health := target.get_node("HealthComponent") as HealthComponent
+	target.collision_layer = 2
 	var direction := player_one.global_position.direction_to(target.global_position)
 	var fired := weapon_one.try_fire(
 		player_one.global_position + direction * 22.0,

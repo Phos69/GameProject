@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="WeaponVisualData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/weapons/weapon_visual_data.gd" id="1_visual"]
+
+[resource]
+script = ExtResource("1_visual")
+profile_id = &"prototype_blaster"
+primary_color = Color(0.25, 0.12, 0.42, 1)
+secondary_color = Color(0.2, 0.9, 1, 1)
+glow_color = Color(0.18, 0.8, 1, 0.5)
+muzzle_color = Color(0.32, 0.92, 1, 1)
+projectile_color = Color(0.28, 0.9, 1, 1)
+projectile_glow_color = Color(0.18, 0.72, 1, 0.42)
+projectile_scale = Vector2(1.15, 1.15)
+weapon_length = 31.0
+weapon_width = 9.0
+muzzle_size = 9.0
+trail_length = 22.0
+trail_width = 5.0
