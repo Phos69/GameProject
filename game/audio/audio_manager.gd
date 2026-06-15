@@ -325,6 +325,8 @@ func _register_default_cues() -> void:
 		_make_cue(&"enemy_telegraph", &"Enemies", 330.0, 0.12, 0.09, 58),
 		_make_cue(&"wave_start", &"Environment", 540.0, 0.14, 0.11, 72),
 		_make_cue(&"wave_clear", &"Environment", 740.0, 0.16, 0.11, 72),
+		_make_cue(&"rpg_level_up", &"UI", 880.0, 0.18, 0.12, 86),
+		_make_cue(&"rpg_super", &"Weapons", 690.0, 0.22, 0.13, 88),
 		_make_cue(&"player_downed", &"UI", 135.0, 0.18, 0.12, 92),
 		_make_cue(&"player_revived", &"UI", 620.0, 0.18, 0.11, 92),
 		_make_cue(&"run_finished", &"UI", 260.0, 0.24, 0.12, 96)

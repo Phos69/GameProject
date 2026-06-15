@@ -4,6 +4,10 @@
 
 ### Added
 
+- Completata Roadmap RPG Mode Milestone 12 con feedback polish per level-up e super.
+- `GameplayEffects` ora genera effetti dedicati `rpg_level_up` e `rpg_super` dai segnali RPG.
+- `AudioEventRouter` collega level-up e super RPG a cue procedurali dedicati.
+- Aggiunto smoke test `milestone_rpg_12_feedback_smoke_test.gd`.
 - Completata Roadmap RPG Mode Milestone 11 con configurazione personaggi data-driven.
 - Aggiunto `RpgCharacterData` e quattro risorse in `game/rpg/characters/`.
 - `RpgCharacterRegistry` ora carica i profili dalle risorse mantenendo la stessa API pubblica.

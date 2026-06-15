@@ -77,6 +77,7 @@ godot --headless --path . --script res://tests/milestone_rpg_8_adrenaline_super_
 godot --headless --path . --script res://tests/milestone_rpg_9_hud_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_rpg_10_balance_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_rpg_11_data_driven_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_rpg_12_feedback_smoke_test.gd
 ```
 
 Export Windows:
@@ -163,6 +164,7 @@ Completato:
 - HUD RPG con ritratto classe, icona arma, pips ammo, barre XP/adrenalina e icona super ready;
 - primo pass di bilanciamento RPG per differenziare meglio range, accessibilita, rischio e difesa;
 - profili classe RPG data-driven tramite risorse `RpgCharacterData`;
+- feedback world-space e cue procedurali dedicati per level-up e super RPG;
 - selezione di survival, dungeon e tower defense da tastiera o joypad;
 - ritorno al menu con `Esc` e arresto pulito della modalita attiva;
 - survival avviabile dal menu o con hotkey debug;

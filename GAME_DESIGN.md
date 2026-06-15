@@ -368,7 +368,9 @@ il Pistoliere rapido e accessibile senza superare 85 DPS teorici grezzi, il
 Berserker il piu resistente e lento, e lo Spadaccino il piu difensivo tra le
 classi iniziali.
 
-Le milestone successive rifiniscono configurazione data-driven e polish feedback.
+La prima roadmap RPG e ora completa come pass prototipale: i profili sono
+data-driven e level-up/super generano feedback world-space dedicati
+`rpg_level_up` e `rpg_super`, oltre a cue procedurali placeholder.
 
 ## Bilanciamento iniziale
 

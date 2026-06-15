@@ -877,6 +877,21 @@ Aggiungere una nuova classe deve richiedere modifiche minime.
 
 # Milestone 12 — Polish grafico e feedback
 
+Stato: completata come primo pass feedback.
+
+Implementato:
+
+- `GameplayEffects` ascolta level-up e super dai player RPG e genera effetti
+  world-space dedicati `rpg_level_up` e `rpg_super`;
+- `GameplayEffect` disegna anelli, raggi e flash cromatici specifici per gli
+  eventi RPG importanti;
+- `AudioEventRouter` collega level-up e super a cue procedurali registrate in
+  `AudioManager`;
+- smoke test dedicato `tests/milestone_rpg_12_feedback_smoke_test.gd`.
+
+Limite noto: animazioni e suoni dedicati per ogni singola arma/classe restano
+placeholder e richiedono asset definitivi o un pass di animation polish.
+
 ## Goal
 
 Fare percepire il gioco come un vero action RPG arcade.

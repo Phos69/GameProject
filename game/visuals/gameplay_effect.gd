@@ -157,6 +157,53 @@ func _draw() -> void:
 				true
 			)
 			draw_line(Vector2(0.0, 7.0), Vector2(0.0, -effect_size * alpha), color, 3.0, true)
+		&"rpg_level_up":
+			for ring_index in range(2):
+				draw_arc(
+					Vector2.ZERO,
+					effect_size * (0.24 + motion_ratio * (0.55 + float(ring_index) * 0.22)),
+					0.0,
+					TAU,
+					36,
+					Color(color, alpha * (1.0 - float(ring_index) * 0.28)),
+					3.5,
+					true
+				)
+			for index in range(6):
+				var direction := Vector2.UP.rotated(TAU * float(index) / 6.0)
+				draw_line(
+					direction * effect_size * 0.18,
+					direction * effect_size * (0.36 + motion_ratio * 0.50),
+					Color(color.lightened(0.25), alpha),
+					3.0,
+					true
+				)
+			draw_circle(Vector2.ZERO, effect_size * 0.12 * alpha, Color(1.0, 0.95, 0.45, alpha))
+		&"rpg_super":
+			draw_circle(
+				Vector2.ZERO,
+				effect_size * (0.10 + motion_ratio * 0.34),
+				Color(color, alpha * 0.18)
+			)
+			draw_arc(
+				Vector2.ZERO,
+				effect_size * (0.30 + motion_ratio * 0.72),
+				0.0,
+				TAU,
+				44,
+				color,
+				5.0,
+				true
+			)
+			for index in range(10):
+				var direction := Vector2.RIGHT.rotated(TAU * float(index) / 10.0 + ratio * 0.25)
+				draw_line(
+					direction * effect_size * motion_ratio * 0.22,
+					direction * effect_size * (0.42 + motion_ratio * 0.48),
+					Color(color, alpha),
+					4.0,
+					true
+				)
 		_:
 			for index in range(5):
 				var direction := Vector2.RIGHT.rotated(TAU * float(index) / 5.0)

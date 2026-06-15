@@ -36,6 +36,7 @@ func _connect_sources() -> void:
 	for player in get_tree().get_nodes_in_group("players"):
 		_connect_weapon_system(player)
 		_connect_player_health(player)
+		_connect_rpg_feedback(player)
 	var boss_system := get_tree().get_first_node_in_group(
 		"boss_system"
 	) as BossSystem
@@ -96,6 +97,7 @@ func _on_drop_collected(drop_data: Dictionary, _collector: Node) -> void:
 func _on_player_spawned(_player_slot: int, player: Node) -> void:
 	_connect_weapon_system(player)
 	_connect_player_health(player)
+	_connect_rpg_feedback(player)
 
 func _connect_player_health(player: Node) -> void:
 	var health_component := player.get_node_or_null(
@@ -235,6 +237,28 @@ func _on_fallback_activated(
 			&"fallback",
 			_get_weapon_source_id(weapon_system)
 		)
+
+func _connect_rpg_feedback(player: Node) -> void:
+	var rpg_component := player.get_node_or_null(
+		"RpgPlayerComponent"
+	) as RpgPlayerComponent
+	if rpg_component == null:
+		return
+	var level_callback := Callable(self, "_on_rpg_leveled_up")
+	if not rpg_component.leveled_up.is_connected(level_callback):
+		rpg_component.leveled_up.connect(level_callback)
+	var super_callback := Callable(self, "_on_rpg_super_activated")
+	if not rpg_component.super_activated.is_connected(super_callback):
+		rpg_component.super_activated.connect(super_callback)
+
+func _on_rpg_leveled_up(_level: int) -> void:
+	audio_manager.play_run_feedback(&"rpg_level_up")
+
+func _on_rpg_super_activated(
+	_super_id: StringName,
+	_super_name: String
+) -> void:
+	audio_manager.play_run_feedback(&"rpg_super")
 
 func _get_projectile_source_id(projectile: Node) -> StringName:
 	if projectile == null:

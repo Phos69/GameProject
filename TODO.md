@@ -2,6 +2,12 @@
 
 ## Completati recenti
 
+- Roadmap RPG Mode, Milestone 12: polish grafico e feedback.
+  - Obiettivo: dare feedback visivo/audio dedicato agli eventi RPG importanti senza cambiare gameplay.
+  - Milestone collegata: `roadmap_rpg_mode.md` Milestone 12.
+  - File/sistemi coinvolti: `GameplayEffects`, `GameplayEffect`, `AudioEventRouter`, `AudioManager`.
+  - Criterio di accettazione: level-up e super generano effetti world-space e cue procedurali dedicati.
+  - Test richiesto: `tests/milestone_rpg_12_feedback_smoke_test.gd`; verifica manuale level-up/super in survival.
 - Roadmap RPG Mode, Milestone 11: configurazione data-driven.
   - Obiettivo: spostare i profili classe fuori dal dizionario hardcoded mantenendo un registry unico.
   - Milestone collegata: `roadmap_rpg_mode.md` Milestone 11.

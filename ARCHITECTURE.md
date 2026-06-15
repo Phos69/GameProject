@@ -116,7 +116,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `ReviveIndicatorVisual`: anello world-space con colore slot e progresso.
 - `WeaponIcon`: icona HUD generata dal profilo dell'arma attiva.
 - `CombatAnnouncement`: banner temporaneo e riusabile per transizioni gameplay.
-- `GameplayEffects`: feedback visuale event-driven senza dipendenze dai controller.
+- `GameplayEffects`: feedback visuale event-driven, inclusi level-up e super RPG, senza dipendenze dai controller.
 
 ## Contratto fine run
 
@@ -161,6 +161,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - Ritratto classe e icona super RPG sono disegnati da `RpgHudIcon` e non alterano stats, input o cooldown.
 - `DefenseTowerVisual` riceve mira e feedback ma non sceglie target, range, danno o fire rate.
 - `GameplayEffects` reagisce a segnali pubblici e non applica danno, cura o ricompense.
+- Level-up e super RPG emettono segnali dal `RpgPlayerComponent`; feedback visuale e audio li consumano senza modificare stats o cooldown.
 - I bersagli combat debug restano istanziati ma invisibili e senza collisione nel gameplay normale; lo smoke test combat abilita la fixture usata.
 
 ## Contratto combat
