@@ -2,6 +2,12 @@
 
 ## Completati recenti
 
+- Roadmap RPG Mode, Milestone 5: sistema ammo e reload per arma.
+  - Obiettivo: mostrare munizioni e ricarica in modo leggibile per ciascuna arma base.
+  - Milestone collegata: `roadmap_rpg_mode.md` Milestone 5.
+  - File/sistemi coinvolti: `WeaponSystem`, `PlayerHudCard`, `HUDManager`, profili RPG.
+  - Criterio di accettazione: il caricatore usa pips grafici, il reload ha una barra di progresso e `reload_speed` modifica la durata.
+  - Test richiesto: `tests/milestone_rpg_5_ammo_reload_smoke_test.gd`; verifica manuale con arco e pistola.
 - Roadmap RPG Mode, Milestone 4: hitbox proiettili e colpi melee.
   - Obiettivo: separare collisione e sprite per armi ranged/melee.
   - Milestone collegata: `roadmap_rpg_mode.md` Milestone 4.

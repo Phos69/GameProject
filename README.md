@@ -70,6 +70,7 @@ godot --headless --path . --script res://tests/milestone_rpg_1_character_select_
 godot --headless --path . --script res://tests/milestone_rpg_2_stats_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_rpg_3_weapons_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_rpg_4_hitbox_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_rpg_5_ammo_reload_smoke_test.gd
 ```
 
 Export Windows:
@@ -148,6 +149,7 @@ Completato:
 - statistiche classe RPG con HP, attacco, difesa, velocita, XP bar e level-up per-run;
 - armi base RPG per arco, pistola, ascia e spada con range, scatter, ammo e reload distinti;
 - hitbox arma configurabili e separate dal visual, inclusi capsule, rettangolo e arco multi-hit;
+- pips ammo e barra reload nel player HUD per le armi RPG;
 - selezione di survival, dungeon e tower defense da tastiera o joypad;
 - ritorno al menu con `Esc` e arresto pulito della modalita attiva;
 - survival avviabile dal menu o con hotkey debug;

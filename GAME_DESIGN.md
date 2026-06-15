@@ -323,8 +323,10 @@ Armi base RPG attive:
 
 Le armi base hanno riserva infinita ma conservano caricatore e reload. Le
 hitbox sono configurate separatamente dal visual: pistola circle, arco capsule,
-ascia arc multi-hit e spada rectangle multi-hit. Le milestone successive
-collegano fonti XP reali, passive, adrenalina, super e polish feedback.
+ascia arc multi-hit e spada rectangle multi-hit. L'HUD mostra pips ammo per
+caricatore e una barra reload; il profilo RPG puo accelerare o rallentare la
+ricarica tramite `reload_speed`. Le milestone successive collegano fonti XP
+reali, passive, adrenalina, super e polish feedback.
 
 ## Bilanciamento iniziale
 

@@ -334,6 +334,19 @@ Si deve percepire che:
 
 # Milestone 5 — Sistema ammo e reload per ogni arma
 
+Stato: completata come primo pass HUD/gameplay.
+
+Implementato:
+
+- caricatori distinti per arco, pistola, ascia e spada;
+- reload per arma con moltiplicatore `reload_speed` del profilo RPG;
+- `WeaponSystem.get_reload_ratio()` per UI e test;
+- pips grafici nel `PlayerHudCard` in base al caricatore;
+- barra reload stabile sotto le munizioni;
+- smoke test dedicato `tests/milestone_rpg_5_ammo_reload_smoke_test.gd`.
+
+Limite noto: la UI usa pips e barra lineare, non ancora una barra radiale attorno all'icona arma.
+
 ## Goal
 
 Ogni arma deve avere una logica di ammo/reload chiara, ma il player non deve mai restare completamente impossibilitato ad attaccare.

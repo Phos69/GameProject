@@ -10,14 +10,17 @@ var class_label: Label
 var health_bar: ProgressBar
 var health_label: Label
 var ammo_label: Label
+var ammo_pips_container: HBoxContainer
+var reload_bar: ProgressBar
 var xp_bar: ProgressBar
 var stats_label: Label
+var ammo_pips: Array[ColorRect] = []
 var hud_text_scale: float = 1.0
 var high_contrast: bool = false
 
 func _ready() -> void:
 	add_to_group("visual_settings_consumers")
-	custom_minimum_size = Vector2(292.0, 126.0)
+	custom_minimum_size = Vector2(292.0, 142.0)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_ui()
 	_apply_style()
@@ -121,10 +124,13 @@ func refresh(player: Node) -> void:
 			if weapon_system.low_ammo_active
 			else Color(1.0, 0.80, 0.34, 1.0)
 		)
+		_refresh_ammo_widgets(weapon_system)
 		if health_component != null and health_component.is_downed:
 			weapon_label.text = "NEEDS REVIVE"
 			ammo_label.text = "HOLD INTERACT"
 			ammo_label.modulate = slot_color.lightened(0.2)
+	else:
+		_refresh_ammo_widgets(null)
 
 func _build_ui() -> void:
 	var content := VBoxContainer.new()
@@ -172,17 +178,28 @@ func _build_ui() -> void:
 	health_row.add_child(health_label)
 
 	var ammo_row := HBoxContainer.new()
+	ammo_row.add_theme_constant_override("separation", 7)
 	content.add_child(ammo_row)
 	var ammo_icon := Label.new()
 	ammo_icon.text = "||"
 	ammo_icon.custom_minimum_size = Vector2(28.0, 20.0)
 	ammo_icon.modulate = Color(1.0, 0.70, 0.24, 1.0)
 	ammo_row.add_child(ammo_icon)
+	ammo_pips_container = HBoxContainer.new()
+	ammo_pips_container.add_theme_constant_override("separation", 3)
+	ammo_pips_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	ammo_row.add_child(ammo_pips_container)
 	ammo_label = Label.new()
-	ammo_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	ammo_label.custom_minimum_size = Vector2(64.0, 20.0)
 	ammo_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	ammo_label.add_theme_font_size_override("font_size", 17)
 	ammo_row.add_child(ammo_label)
+
+	reload_bar = ProgressBar.new()
+	reload_bar.custom_minimum_size = Vector2(250.0, 8.0)
+	reload_bar.max_value = 1.0
+	reload_bar.show_percentage = false
+	content.add_child(reload_bar)
 
 	var xp_row := HBoxContainer.new()
 	xp_row.add_theme_constant_override("separation", 8)
@@ -254,3 +271,70 @@ func _apply_style() -> void:
 		xp_fill_style.corner_radius_bottom_left = 4
 		xp_fill_style.corner_radius_bottom_right = 4
 		xp_bar.add_theme_stylebox_override("fill", xp_fill_style)
+	if reload_bar != null:
+		var reload_background_style := StyleBoxFlat.new()
+		reload_background_style.bg_color = Color(0.07, 0.065, 0.04, 1.0)
+		reload_background_style.corner_radius_top_left = 4
+		reload_background_style.corner_radius_top_right = 4
+		reload_background_style.corner_radius_bottom_left = 4
+		reload_background_style.corner_radius_bottom_right = 4
+		reload_bar.add_theme_stylebox_override(
+			"background",
+			reload_background_style
+		)
+		var reload_fill_style := StyleBoxFlat.new()
+		reload_fill_style.bg_color = Color(1.0, 0.70, 0.24, 1.0)
+		reload_fill_style.corner_radius_top_left = 4
+		reload_fill_style.corner_radius_top_right = 4
+		reload_fill_style.corner_radius_bottom_left = 4
+		reload_fill_style.corner_radius_bottom_right = 4
+		reload_bar.add_theme_stylebox_override("fill", reload_fill_style)
+
+func _refresh_ammo_widgets(weapon_system: WeaponSystem) -> void:
+	if weapon_system == null or weapon_system.weapon_data == null:
+		_ensure_ammo_pips(0)
+		if reload_bar != null:
+			reload_bar.value = 0.0
+		return
+
+	var magazine_size := clampi(weapon_system.weapon_data.magazine_size, 1, 12)
+	_ensure_ammo_pips(magazine_size)
+	var active_color := Color(1.0, 0.70, 0.24, 1.0)
+	if weapon_system.weapon_data.visual_data != null:
+		active_color = weapon_system.weapon_data.visual_data.projectile_color
+	var inactive_color := Color(0.13, 0.15, 0.17, 1.0)
+	for index in range(ammo_pips.size()):
+		ammo_pips[index].color = (
+			active_color
+			if index < weapon_system.current_ammo
+			else inactive_color
+		)
+	if weapon_system.weapon_data.infinite_reserve_ammo:
+		ammo_label.text = (
+			"RELOAD"
+			if weapon_system.is_reloading
+			else "%d/%d" % [
+				weapon_system.current_ammo,
+				weapon_system.weapon_data.magazine_size
+			]
+		)
+	if reload_bar != null:
+		reload_bar.value = weapon_system.get_reload_ratio()
+		reload_bar.modulate = (
+			Color(1.0, 1.0, 1.0, 1.0)
+			if weapon_system.is_reloading
+			else Color(1.0, 1.0, 1.0, 0.22)
+		)
+
+func _ensure_ammo_pips(target_count: int) -> void:
+	target_count = clampi(target_count, 0, 12)
+	while ammo_pips.size() < target_count:
+		var pip := ColorRect.new()
+		pip.custom_minimum_size = Vector2(9.0, 15.0)
+		pip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		ammo_pips_container.add_child(pip)
+		ammo_pips.append(pip)
+	while ammo_pips.size() > target_count:
+		var pip := ammo_pips.pop_back() as ColorRect
+		ammo_pips_container.remove_child(pip)
+		pip.queue_free()

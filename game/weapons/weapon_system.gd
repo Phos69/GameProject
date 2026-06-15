@@ -123,7 +123,7 @@ func start_reload() -> bool:
 		return false
 
 	is_reloading = true
-	reload_timer = weapon_data.reload_duration
+	reload_timer = _get_modified_reload_duration()
 	reload_started.emit(reload_timer)
 	if reload_timer <= 0.0:
 		_finish_reload()
@@ -142,6 +142,12 @@ func get_ammo_text() -> String:
 		tags.append("LOW")
 	var suffix := " " + " ".join(tags) if not tags.is_empty() else ""
 	return "%d/%s%s" % [current_ammo, reserve_text, suffix]
+
+func get_reload_ratio() -> float:
+	if not is_reloading or weapon_data == null:
+		return 0.0
+	var duration := maxf(_get_modified_reload_duration(), 0.01)
+	return clampf(1.0 - reload_timer / duration, 0.0, 1.0)
 
 func add_reserve_ammo(amount: int) -> int:
 	if special_weapon_data == null or amount <= 0:
@@ -294,3 +300,17 @@ func _apply_weapon_scatter(direction: Vector2) -> Vector2:
 		return direction
 	var scatter_radians := deg_to_rad(weapon_data.scatter_degrees)
 	return direction.rotated(randf_range(-scatter_radians, scatter_radians))
+
+func _get_modified_reload_duration() -> float:
+	if weapon_data == null:
+		return 0.0
+	var duration := weapon_data.reload_duration
+	var parent := get_parent()
+	var rpg_component: RpgPlayerComponent
+	if parent != null:
+		rpg_component = parent.get_node_or_null(
+			"RpgPlayerComponent"
+		) as RpgPlayerComponent
+	if rpg_component != null and rpg_component.has_character():
+		duration /= rpg_component.get_reload_speed_multiplier()
+	return maxf(duration, 0.0)

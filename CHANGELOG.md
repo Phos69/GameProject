@@ -4,6 +4,10 @@
 
 ### Added
 
+- Completata Roadmap RPG Mode Milestone 5 con ammo/reload leggibili per arma.
+- Le schede HUD ora mostrano pips ammo grafici e una barra reload stabile.
+- `WeaponSystem` espone `get_reload_ratio()` e applica `reload_speed` del profilo RPG.
+- Aggiunto smoke test `milestone_rpg_5_ammo_reload_smoke_test.gd`.
 - Completata Roadmap RPG Mode Milestone 4 con hitbox arma configurabili.
 - Esteso `WeaponData` con `hitbox_type`, `hitbox_size` e `max_hit_count`.
 - `Projectile` ora crea shape circle, rectangle, capsule o arc separate dal visual.
