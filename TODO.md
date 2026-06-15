@@ -2,6 +2,12 @@
 
 ## Completati recenti
 
+- Roadmap RPG Mode, Milestone 6: esperienza e level up.
+  - Obiettivo: assegnare XP al killer e bonus XP a fine ondata senza drop XP dagli zombie.
+  - Milestone collegata: `roadmap_rpg_mode.md` Milestone 6.
+  - File/sistemi coinvolti: `HealthSystem`, `BasicEnemy`, `BasicBoss`, `WaveManager`, loot table zombie, HUD reward.
+  - Criterio di accettazione: il last-hit riceve XP, la wave assegna XP uguale ai player RPG vivi e gli zombie non generano pickup XP.
+  - Test richiesto: `tests/milestone_rpg_6_xp_level_smoke_test.gd`; regressione varianti enemy M12/M15.
 - Roadmap RPG Mode, Milestone 5: sistema ammo e reload per arma.
   - Obiettivo: mostrare munizioni e ricarica in modo leggibile per ciascuna arma base.
   - Milestone collegata: `roadmap_rpg_mode.md` Milestone 5.

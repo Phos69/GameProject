@@ -117,7 +117,7 @@ Varianti survival implementate:
 - velocita 155;
 - attacco da 6 danni ogni 0,62 secondi;
 - silhouette stretta, postura inclinata e animazione rapida;
-- 4 XP garantiti;
+- 7 XP RPG al killer;
 - entra dalla wave 2 e occupa ogni terzo slot regolare;
 - ruolo: raggiungere rapidamente player isolati e spezzare il kiting passivo.
 
@@ -127,7 +127,7 @@ Varianti survival implementate:
 - velocita 58;
 - attacco da 18 danni ogni 1,25 secondi;
 - silhouette larga, arti pesanti e protezione arancione;
-- 8 XP garantiti;
+- 12 XP RPG al killer;
 - entra dalla wave 3 come ultimo slot quando la wave ha almeno cinque zombie;
 - ruolo: assorbire fuoco, occupare spazio e proteggere indirettamente i runner.
 
@@ -142,7 +142,7 @@ drop e wave. Le differenze sono dati di scena e presentazione visuale.
 - windup da 0,85 secondi con direzione e corsia bloccate;
 - proiettile verde/ciano da 11 danni, distinto dai pattern boss;
 - cooldown da 2,2 secondi;
-- 6 XP garantiti;
+- 7 XP RPG al killer;
 - entra dalla wave 4 ogni quarto slot regolare;
 - ruolo: interrompere il kiting statico lasciando spazio e tempo di reazione.
 
@@ -211,15 +211,17 @@ Le loot table devono essere dati configurabili, non logica hardcoded nel nemico.
 
 Loot table prototipo del `Basic Zombie`:
 
-- esperienza: 100%, 3 XP;
 - denaro: 55%, 1-2;
 - munizioni: 25%, 6-10;
 - vita: 15%, 12-20;
 - `Prototype Blaster`: 5%.
+- XP RPG: 5 al player che infligge il colpo finale.
 
 Regole raccolta:
 
-- XP e denaro sono condivisi dal party;
+- I pickup XP fisici, quando presenti in dungeon/boss/fixture, restano condivisi dal party;
+- gli zombie survival assegnano XP RPG direttamente al killer;
+- denaro dei pickup e reward resta condiviso dal party;
 - le munizioni vengono assegnate per intero alle speciali di tutti i player vivi;
 - la vita va al player che raccoglie;
 - un pickup vita resta a terra se il player e gia a vita piena;
@@ -325,8 +327,16 @@ Le armi base hanno riserva infinita ma conservano caricatore e reload. Le
 hitbox sono configurate separatamente dal visual: pistola circle, arco capsule,
 ascia arc multi-hit e spada rectangle multi-hit. L'HUD mostra pips ammo per
 caricatore e una barra reload; il profilo RPG puo accelerare o rallentare la
-ricarica tramite `reload_speed`. Le milestone successive collegano fonti XP
-reali, passive, adrenalina, super e polish feedback.
+ricarica tramite `reload_speed`.
+
+XP RPG:
+
+- gli zombie survival non droppano piu pickup XP;
+- il player che infligge il colpo finale riceve la XP kill;
+- a fine ondata ogni player RPG vivo riceve `waveNumber * 10` XP;
+- il level-up aumenta HP, attacco e difesa e cura parzialmente il player.
+
+Le milestone successive collegano passive, adrenalina, super e polish feedback.
 
 ## Bilanciamento iniziale
 

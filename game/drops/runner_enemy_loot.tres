@@ -26,4 +26,4 @@ max_amount = 7
 
 [resource]
 script = ExtResource("1_loot")
-entries = Array[ExtResource("2_entry")]([SubResource("DropEntry_xp"), SubResource("DropEntry_money"), SubResource("DropEntry_ammo")])
+entries = Array[ExtResource("2_entry")]([SubResource("DropEntry_money"), SubResource("DropEntry_ammo")])

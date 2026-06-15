@@ -304,7 +304,8 @@ func _grant_wave_reward() -> Dictionary:
 	var reward := {
 		"money": base_money_reward + current_wave * money_reward_per_wave,
 		"ammo": base_ammo_reward + current_wave * ammo_reward_per_wave,
-		"health": base_health_reward + current_wave * health_reward_per_wave
+		"health": base_health_reward + current_wave * health_reward_per_wave,
+		"experience": current_wave * 10
 	}
 
 	var progression = get_tree().get_first_node_in_group("progression_manager")
@@ -319,6 +320,11 @@ func _grant_wave_reward() -> Dictionary:
 		var weapon_system := player.get_node_or_null("WeaponSystem") as WeaponSystem
 		if weapon_system != null:
 			weapon_system.add_reserve_ammo(int(reward["ammo"]))
+		var rpg_component := player.get_node_or_null(
+			"RpgPlayerComponent"
+		) as RpgPlayerComponent
+		if rpg_component != null:
+			rpg_component.add_experience(int(reward["experience"]))
 		if health_system != null:
 			health_system.heal(player, int(reward["health"]))
 	return reward

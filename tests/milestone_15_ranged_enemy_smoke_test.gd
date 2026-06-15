@@ -78,7 +78,7 @@ func _run() -> void:
 		"shooter silhouette is taller than the basic zombie"
 	)
 	_expect(
-		_get_guaranteed_xp(shooter.loot_table) == 6,
+		shooter.kill_experience == 7,
 		"shooter grants its configured XP reward"
 	)
 
@@ -150,8 +150,8 @@ func _run() -> void:
 		"shooter death uses the shared enemy registry"
 	)
 	_expect(
-		_count_xp_pickups(6) >= 1,
-		"shooter death creates its guaranteed XP pickup"
+		_count_xp_pickups(7) == 0,
+		"shooter death no longer creates XP pickups"
 	)
 
 	_expect(
@@ -171,18 +171,6 @@ func _run() -> void:
 	)
 
 	_finish()
-
-func _get_guaranteed_xp(loot_table: LootTable) -> int:
-	if loot_table == null:
-		return 0
-	for entry in loot_table.entries:
-		if (
-			entry != null
-			and entry.drop_type == GameConstants.DROP_EXPERIENCE
-			and entry.chance >= 1.0
-		):
-			return entry.min_amount
-	return 0
 
 func _count_xp_pickups(amount: int) -> int:
 	var count := 0

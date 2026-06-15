@@ -4,6 +4,12 @@
 
 ### Added
 
+- Completata Roadmap RPG Mode Milestone 6 con XP al killer e XP di fine ondata.
+- `HealthSystem` conserva la sorgente dell'ultimo danno per assegnare XP on-kill.
+- Zombie e boss assegnano XP direttamente al `RpgPlayerComponent` del killer.
+- `WaveManager` assegna XP wave uguale ai player RPG vivi.
+- Rimosso il drop XP fisico dalle loot table zombie survival.
+- Aggiunto smoke test `milestone_rpg_6_xp_level_smoke_test.gd`.
 - Completata Roadmap RPG Mode Milestone 5 con ammo/reload leggibili per arma.
 - Le schede HUD ora mostrano pips ammo grafici e una barra reload stabile.
 - `WeaponSystem` espone `get_reload_ratio()` e applica `reload_speed` del profilo RPG.

@@ -20,6 +20,7 @@ enum State {
 @export var attack_range: float = 42.0
 @export var attack_damage: int = 8
 @export var defense: int = 0
+@export var kill_experience: int = 5
 @export var attack_cooldown: float = 0.85
 @export var target_refresh_interval: float = 0.20
 @export var health_bar_width: float = 44.0
@@ -154,6 +155,7 @@ func _on_died() -> void:
 	collision_layer = 0
 	collision_mask = 0
 	health_bar.hide()
+	_grant_kill_experience()
 
 	var drop_system = get_tree().get_first_node_in_group("drop_system")
 	if drop_system != null and drop_system.has_method("spawn_drops_deferred"):
@@ -190,3 +192,21 @@ func _update_visual() -> void:
 	visual.set_motion(velocity, move_speed)
 	if target != null:
 		visual.set_facing(global_position.direction_to(target.global_position))
+
+func _grant_kill_experience() -> void:
+	if kill_experience <= 0:
+		return
+	var health_system := get_tree().get_first_node_in_group(
+		"health_system"
+	) as HealthSystem
+	if health_system == null:
+		return
+	var killer := health_system.get_last_damage_source(self)
+	health_system.clear_last_damage_source(self)
+	if killer == null:
+		return
+	var rpg_component := killer.get_node_or_null(
+		"RpgPlayerComponent"
+	) as RpgPlayerComponent
+	if rpg_component != null:
+		rpg_component.add_experience(kill_experience)

@@ -29,6 +29,7 @@ signal died(boss: Node)
 @export var radial_projectile_count: int = 12
 @export var projectile_damage: int = 10
 @export var defense: int = 2
+@export var kill_experience: int = 100
 @export var projectile_speed: float = 270.0
 @export var projectile_scene: PackedScene = preload("res://game/projectiles/boss_projectile.tscn")
 @export var aimed_projectile_visual: WeaponVisualData = preload(
@@ -343,6 +344,7 @@ func _on_died() -> void:
 	velocity = Vector2.ZERO
 	collision_layer = 0
 	collision_mask = 0
+	_grant_kill_experience()
 	var drop_system = get_tree().get_first_node_in_group("drop_system")
 	if drop_system != null:
 		drop_system.spawn_drops_deferred(self, loot_table, global_position)
@@ -364,3 +366,21 @@ func _apply_scaling() -> void:
 
 func _get_projectile_system() -> ProjectileSystem:
 	return get_tree().get_first_node_in_group("projectile_system") as ProjectileSystem
+
+func _grant_kill_experience() -> void:
+	if kill_experience <= 0:
+		return
+	var health_system := get_tree().get_first_node_in_group(
+		"health_system"
+	) as HealthSystem
+	if health_system == null:
+		return
+	var killer := health_system.get_last_damage_source(self)
+	health_system.clear_last_damage_source(self)
+	if killer == null:
+		return
+	var rpg_component := killer.get_node_or_null(
+		"RpgPlayerComponent"
+	) as RpgPlayerComponent
+	if rpg_component != null:
+		rpg_component.add_experience(kill_experience)

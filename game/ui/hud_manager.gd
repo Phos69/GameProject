@@ -297,10 +297,11 @@ func _format_wave_status() -> String:
 func _format_last_reward(reward: Dictionary) -> String:
 	if reward.is_empty():
 		return ""
-	return "  Reward +%d$ +%d Ammo +%d HP" % [
+	return "  Reward +%d$ +%d Ammo +%d HP +%d XP" % [
 		int(reward.get("money", 0)),
 		int(reward.get("ammo", 0)),
-		int(reward.get("health", 0))
+		int(reward.get("health", 0)),
+		int(reward.get("experience", 0))
 	]
 
 func _create_boss_hud() -> void:
@@ -610,10 +611,11 @@ func _on_wave_reward_granted(
 	combat_announcement.show_announcement(
 		&"wave_clear",
 		"WAVE %d CLEAR" % wave_index,
-		"+%d CREDITS  +%d AMMO  +%d HP" % [
+		"+%d CREDITS  +%d AMMO  +%d HP  +%d XP" % [
 			int(reward.get("money", 0)),
 			int(reward.get("ammo", 0)),
-			int(reward.get("health", 0))
+			int(reward.get("health", 0)),
+			int(reward.get("experience", 0))
 		],
 		Color(0.34, 0.92, 0.58, 1.0),
 		1.8

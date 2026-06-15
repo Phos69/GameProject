@@ -42,4 +42,4 @@ weapon_data = ExtResource("3_blaster")
 
 [resource]
 script = ExtResource("1_loot_table")
-entries = Array[ExtResource("2_drop_entry")]([SubResource("DropEntry_experience"), SubResource("DropEntry_money"), SubResource("DropEntry_ammo"), SubResource("DropEntry_health"), SubResource("DropEntry_weapon")])
+entries = Array[ExtResource("2_drop_entry")]([SubResource("DropEntry_money"), SubResource("DropEntry_ammo"), SubResource("DropEntry_health"), SubResource("DropEntry_weapon")])

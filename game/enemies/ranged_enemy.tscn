@@ -19,6 +19,7 @@ acceleration = 520.0
 detection_range = 1000.0
 attack_range = 520.0
 attack_damage = 11
+kill_experience = 7
 attack_cooldown = 2.2
 health_bar_width = 42.0
 health_bar_y = -38.0

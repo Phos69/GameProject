@@ -4,6 +4,8 @@ class_name HealthSystem
 signal damage_requested(target: Node, amount: int)
 signal heal_requested(target: Node, amount: int)
 
+var last_damage_sources: Dictionary = {}
+
 func _ready() -> void:
 	add_to_group("health_system")
 
@@ -24,10 +26,31 @@ func apply_damage(
 	damage_requested.emit(target, resolved_amount)
 	if target == null:
 		return 0
+	if source != null and resolved_amount > 0:
+		last_damage_sources[target.get_instance_id()] = {
+			"source": source,
+			"source_id": source_id
+		}
 	var health_component := _find_health_component(target)
 	if health_component != null:
 		return health_component.apply_damage(resolved_amount)
 	return 0
+
+func get_last_damage_source(target: Node) -> Node:
+	if target == null:
+		return null
+	var data: Dictionary = last_damage_sources.get(
+		target.get_instance_id(),
+		{}
+	)
+	var source: Node = data.get("source", null)
+	if source != null and is_instance_valid(source):
+		return source
+	return null
+
+func clear_last_damage_source(target: Node) -> void:
+	if target != null:
+		last_damage_sources.erase(target.get_instance_id())
 
 func heal(target: Node, amount: int) -> int:
 	heal_requested.emit(target, amount)

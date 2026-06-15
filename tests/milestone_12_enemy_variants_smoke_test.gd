@@ -107,11 +107,11 @@ func _run() -> void:
 		"tank silhouette is wider than basic"
 	)
 	_expect(
-		_get_guaranteed_xp(runner.loot_table) == 4,
+		runner.kill_experience == 7,
 		"runner grants its configured XP reward"
 	)
 	_expect(
-		_get_guaranteed_xp(tank.loot_table) == 8,
+		tank.kill_experience == 12,
 		"tank grants its configured XP reward"
 	)
 
@@ -150,12 +150,12 @@ func _run() -> void:
 		"variant deaths use the shared enemy registry"
 	)
 	_expect(
-		_count_xp_pickups(4) >= 1,
-		"runner death creates its guaranteed XP pickup"
+		_count_xp_pickups(7) == 0,
+		"runner death no longer creates XP pickups"
 	)
 	_expect(
-		_count_xp_pickups(8) >= 1,
-		"tank death creates its guaranteed XP pickup"
+		_count_xp_pickups(12) == 0,
+		"tank death no longer creates XP pickups"
 	)
 
 	_expect(
@@ -232,18 +232,6 @@ func _wait_for_wave_combat(
 			return true
 		await physics_frame
 	return false
-
-func _get_guaranteed_xp(loot_table: LootTable) -> int:
-	if loot_table == null:
-		return 0
-	for entry in loot_table.entries:
-		if (
-			entry != null
-			and entry.drop_type == GameConstants.DROP_EXPERIENCE
-			and entry.chance >= 1.0
-		):
-			return entry.min_amount
-	return 0
 
 func _count_xp_pickups(amount: int) -> int:
 	var count := 0

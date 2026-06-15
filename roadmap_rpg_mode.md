@@ -410,6 +410,19 @@ Il player capisce sempre:
 
 # Milestone 6 — Esperienza e level up
 
+Stato: completata come primo pass XP runtime.
+
+Implementato:
+
+- XP kill assegnata al player sorgente dell'ultimo danno;
+- XP wave uguale ai player RPG vivi a fine ondata;
+- level-up gia gestito da `RpgPlayerComponent` con HP/attacco/difesa;
+- loot table zombie survival senza pickup XP fisico;
+- HUD reward e annunci wave includono XP;
+- smoke test dedicato `tests/milestone_rpg_6_xp_level_smoke_test.gd`.
+
+Limite noto: i drop XP fisici restano disponibili per boss, dungeon e fixture legacy; l'eventuale migrazione completa dei boss loot sara valutata con i boss RPG.
+
 ## Goal
 
 L’esperienza non deve più essere droppata dagli zombie.

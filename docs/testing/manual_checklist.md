@@ -72,7 +72,8 @@ Il test verifica scena principale, due player locali, sparo, collisione, danno, 
 
 ## Regressione drop
 
-- Ogni nemico morto genera sempre un pickup XP.
+- Gli zombie survival non generano pickup XP; il killer riceve XP RPG diretta.
+- I pickup XP fisici restano supportati per loot room, boss e fixture legacy.
 - I pickup denaro aggiornano il totale party nell'HUD.
 - I pickup munizioni aggiornano la speciale di tutti i player vivi.
 - Un player morto non riceve ammo condivisa.
@@ -90,7 +91,7 @@ Il test verifica scena principale, due player locali, sparo, collisione, danno, 
 godot --headless --path . --script res://tests/enemy_drop_smoke_test.gd
 ```
 
-Il test verifica spawn, chase, retarget, attack, danno, morte, pickup XP, ammo condivisa e isolamento del cambio arma con due player.
+Il test verifica spawn, chase, retarget, attack, danno, morte, pickup XP legacy, ammo condivisa e isolamento del cambio arma con due player.
 
 ## Regressione Milestone 12
 
@@ -102,7 +103,7 @@ Il test verifica spawn, chase, retarget, attack, danno, morte, pickup XP, ammo c
 - Il tank e largo, lento, resistente e marcato in arancione.
 - Il tank infligge piu danno ma attacca meno spesso.
 - Basic, runner e tank reagiscono a hit e morte tramite gli stessi sistemi.
-- Runner e tank generano rispettivamente 4 e 8 XP garantiti.
+- Runner e tank assegnano rispettivamente 7 e 12 XP RPG al killer.
 - Il conteggio HUD include tutte le varianti senza differenze.
 - Con quattro player, silhouette nemico e colori slot restano leggibili.
 - Dungeon continua a generare il roster basic.

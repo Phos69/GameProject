@@ -17,6 +17,7 @@ move_speed = 58.0
 acceleration = 360.0
 attack_range = 54.0
 attack_damage = 18
+kill_experience = 12
 attack_cooldown = 1.25
 health_bar_width = 68.0
 health_bar_y = -42.0

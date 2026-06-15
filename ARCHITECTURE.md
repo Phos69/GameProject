@@ -179,6 +179,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `Projectile` emette l'impatto risolto e `ProjectileSystem` lo espone ai sistemi di feedback.
 - `HealthSystem` cerca un figlio `HealthComponent` sul target; player, nemici, boss e bersagli debug possono condividere lo stesso contratto.
 - `HealthSystem.apply_damage()` accetta una sorgente opzionale per applicare attacco/difesa RPG senza cambiare collisioni o AI.
+- `HealthSystem` conserva la sorgente dell'ultimo danno valido per assegnare XP al killer.
 - Collision layer `1`: player e corpi generici.
 - Collision layer `2`: bersagli damageable.
 - Collision layer `4`: proiettili; la mask attuale colpisce il layer `2`.
@@ -207,7 +208,8 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 
 - Ogni nemico possiede una `LootTable` composta da risorse `DropEntry`.
 - `DropSystem` e l'unico sistema che esegue roll, crea pickup e applica ricompense.
-- XP e denaro aggiornano `ProgressionManager` e sono condivisi dal party.
+- I pickup XP fisici aggiornano ancora `ProgressionManager` quando presenti.
+- Gli zombie survival assegnano XP RPG direttamente al killer e non usano piu pickup XP.
 - Le munizioni vengono applicate alle speciali di tutti i player vivi.
 - Cura e arma vengono applicate al player che raccoglie.
 - Un pickup non viene consumato se la ricompensa non puo essere applicata, per esempio cura su vita piena.
@@ -291,6 +293,7 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - Ogni ondata aumenta il conteggio base e passa moltiplicatori a `BasicEnemy`.
 - Solo le morti dei nemici registrati nella wave contribuiscono al completamento.
 - Le ricompense tra ondate aggiungono denaro party e munizioni/cura ai player attivi vivi.
+- Le ricompense tra ondate aggiungono anche XP RPG uguale ai player vivi con profilo attivo.
 - Le ricompense ammo alimentano solo lo slot speciale; la fallback non necessita drop.
 - `SurvivalAmmoDirector` valuta ogni secondo i player vivi con speciale.
 - Sotto la soglia configurata di 8 colpi totali puo generare una supply crate, con cooldown di 12 secondi.
