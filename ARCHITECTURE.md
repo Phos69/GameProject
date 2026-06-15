@@ -111,6 +111,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `BossTelegraphVisual`: warning world-space per pattern aimed, radial e cambio fase.
 - `WaveWardenVisual`: silhouette, animazione e stato visuale delle due fasi del boss.
 - `PlayerHudCard`: scheda HUD riusabile per ogni slot locale.
+- `RpgHudIcon`: icona procedurale leggera per ritratto classe e super RPG.
 - `ReviveIndicatorVisual`: anello world-space con colore slot e progresso.
 - `WeaponIcon`: icona HUD generata dal profilo dell'arma attiva.
 - `CombatAnnouncement`: banner temporaneo e riusabile per transizioni gameplay.
@@ -156,6 +157,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `WaveWardenVisual` riceve solo stato presentazionale da `BasicBoss`.
 - Gli annunci HUD reagiscono ai segnali pubblici e non pilotano wave o boss.
 - Arma world-space, icona HUD, proiettile e muzzle flash leggono lo stesso `WeaponVisualData`.
+- Ritratto classe e icona super RPG sono disegnati da `RpgHudIcon` e non alterano stats, input o cooldown.
 - `DefenseTowerVisual` riceve mira e feedback ma non sceglie target, range, danno o fire rate.
 - `GameplayEffects` reagisce a segnali pubblici e non applica danno, cura o ricompense.
 - I bersagli combat debug restano istanziati ma invisibili e senza collisione nel gameplay normale; lo smoke test combat abilita la fixture usata.

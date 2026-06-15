@@ -686,6 +686,20 @@ Non deve sembrare solo un colpo più forte.
 
 # Milestone 9 — HUD grafica RPG
 
+Stato: completata come primo pass grafico compatto.
+
+Implementato:
+
+- ritratto procedurale per classe nella scheda player;
+- icona arma gia condivisa dal profilo `WeaponVisualData`;
+- HP, XP e adrenalina come barre grafiche;
+- ammo come pips grafici e reload come barra stabile;
+- icona super procedurale con bordo ready quando la barra adrenalina e piena;
+- riga buff passivo attivo;
+- smoke test dedicato `tests/milestone_rpg_9_hud_smoke_test.gd`.
+
+Limite noto: il layout resta nella card compatta inferiore; una UI arcade piu scenografica puo arrivare nel polish finale.
+
 ## Goal
 
 Salute, ammo, bombe/adrenalina e livello devono essere grafici e leggibili.

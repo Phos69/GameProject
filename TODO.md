@@ -2,6 +2,12 @@
 
 ## Completati recenti
 
+- Roadmap RPG Mode, Milestone 9: HUD grafica RPG.
+  - Obiettivo: rendere leggibili graficamente classe, arma, HP, ammo, XP, adrenalina, super e passive.
+  - Milestone collegata: `roadmap_rpg_mode.md` Milestone 9.
+  - File/sistemi coinvolti: `PlayerHudCard`, `RpgHudIcon`, `HUDManager`.
+  - Criterio di accettazione: la scheda mostra ritratto classe, icona arma, pips ammo, barre XP/adrenalina e icona super ready senza dipendere solo da testo piccolo.
+  - Test richiesto: `tests/milestone_rpg_9_hud_smoke_test.gd`; verifica manuale survival a quattro slot.
 - Roadmap RPG Mode, Milestone 8: adrenalina e super.
   - Obiettivo: caricare una risorsa super da combat e spenderla in abilita diverse per classe.
   - Milestone collegata: `roadmap_rpg_mode.md` Milestone 8.

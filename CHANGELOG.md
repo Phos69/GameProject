@@ -4,6 +4,10 @@
 
 ### Added
 
+- Completata Roadmap RPG Mode Milestone 9 con HUD RPG piu grafico e leggibile.
+- Aggiunto `RpgHudIcon` procedurale per ritratto classe e icona super senza asset esterni.
+- `PlayerHudCard` ora mostra ritratto personaggio, icona super ready, HP, ammo pips, XP, adrenalina e buff passivi in una scheda stabile.
+- Aggiunto smoke test `milestone_rpg_9_hud_smoke_test.gd`.
 - Completata Roadmap RPG Mode Milestone 8 con adrenalina e super per le quattro classi.
 - `RpgPlayerComponent` ora gestisce adrenalina, ready state, attivazione super e timer dedicati.
 - Aggiunto `RpgSuperResolver` per Pioggia di Frecce, Scarica Finale, Terremoto di Sangue e Lama Fantasma.

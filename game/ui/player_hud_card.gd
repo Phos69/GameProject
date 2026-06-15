@@ -3,6 +3,7 @@ class_name PlayerHudCard
 
 var player_slot: int = 1
 var slot_color: Color = Color(0.18, 0.74, 0.95, 1.0)
+var portrait_icon: RpgHudIcon
 var slot_label: Label
 var weapon_icon: WeaponIcon
 var weapon_label: Label
@@ -15,6 +16,7 @@ var reload_bar: ProgressBar
 var xp_bar: ProgressBar
 var stats_label: Label
 var adrenaline_bar: ProgressBar
+var super_icon: RpgHudIcon
 var super_label: Label
 var passive_label: Label
 var ammo_pips: Array[ColorRect] = []
@@ -78,6 +80,7 @@ func configure(slot: int, color: Color) -> void:
 	slot_color = color
 	if is_node_ready():
 		_apply_style()
+		portrait_icon.set_icon(&"survivor", slot_color)
 		slot_label.text = "P%d" % player_slot
 
 func refresh(player: Node) -> void:
@@ -91,6 +94,8 @@ func refresh(player: Node) -> void:
 	var rpg_component := player.get_node_or_null(
 		"RpgPlayerComponent"
 	) as RpgPlayerComponent
+	portrait_icon.set_icon(&"survivor", slot_color)
+	super_icon.set_icon(&"super", Color(0.38, 1.0, 0.72, 1.0))
 	slot_label.text = "P%d" % player_slot
 	class_label.text = "Survivor"
 	stats_label.text = "ATK 0  DEF 0  SPD 1.00"
@@ -108,8 +113,14 @@ func refresh(player: Node) -> void:
 			rpg_component.get_class_name()
 		]
 		stats_label.text = rpg_component.get_stats_text()
+		portrait_icon.set_icon(rpg_component.character_id, slot_color)
 		adrenaline_bar.max_value = float(RpgPlayerComponent.ADRENALINE_MAX)
 		adrenaline_bar.value = float(rpg_component.adrenaline)
+		super_icon.set_icon(
+			rpg_component.get_super_id(),
+			Color(0.38, 1.0, 0.72, 1.0),
+			rpg_component.is_super_ready()
+		)
 		super_label.text = rpg_component.get_super_status_text()
 		super_label.modulate = (
 			Color(0.54, 1.0, 0.74, 1.0)
@@ -169,8 +180,10 @@ func _build_ui() -> void:
 
 	var top_row := HBoxContainer.new()
 	content.add_child(top_row)
+	portrait_icon = RpgHudIcon.new()
+	top_row.add_child(portrait_icon)
 	slot_label = Label.new()
-	slot_label.custom_minimum_size = Vector2(76.0, 24.0)
+	slot_label.custom_minimum_size = Vector2(62.0, 24.0)
 	slot_label.add_theme_font_size_override("font_size", 18)
 	top_row.add_child(slot_label)
 	weapon_icon = WeaponIcon.new()
@@ -255,12 +268,9 @@ func _build_ui() -> void:
 	var adrenaline_row := HBoxContainer.new()
 	adrenaline_row.add_theme_constant_override("separation", 8)
 	content.add_child(adrenaline_row)
-	var adrenaline_icon := Label.new()
-	adrenaline_icon.text = "!"
-	adrenaline_icon.custom_minimum_size = Vector2(28.0, 16.0)
-	adrenaline_icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	adrenaline_icon.modulate = Color(0.38, 1.0, 0.72, 1.0)
-	adrenaline_row.add_child(adrenaline_icon)
+	super_icon = RpgHudIcon.new()
+	super_icon.custom_minimum_size = Vector2(28.0, 20.0)
+	adrenaline_row.add_child(super_icon)
 	adrenaline_bar = ProgressBar.new()
 	adrenaline_bar.custom_minimum_size = Vector2(126.0, 12.0)
 	adrenaline_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL

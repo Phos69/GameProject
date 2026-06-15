@@ -318,8 +318,9 @@ Statistiche attive:
 - difesa sottratta al danno in ingresso;
 - livello per-run con `+10 HP`, `+2 attacco` e `+1 difesa`.
 
-Le schede HUD player mostrano livello, classe, barra XP, HP, ammo, riga
-ATK/DEF/SPD e il buff passivo attivo.
+Le schede HUD player mostrano ritratto classe, livello, classe, icona arma,
+barra XP, HP, ammo, riga ATK/DEF/SPD, adrenalina, icona super e il buff
+passivo attivo.
 
 Armi base RPG attive:
 

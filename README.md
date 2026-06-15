@@ -74,6 +74,7 @@ godot --headless --path . --script res://tests/milestone_rpg_5_ammo_reload_smoke
 godot --headless --path . --script res://tests/milestone_rpg_6_xp_level_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_rpg_7_passives_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_rpg_8_adrenaline_super_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_rpg_9_hud_smoke_test.gd
 ```
 
 Export Windows:
@@ -156,6 +157,7 @@ Completato:
 - XP RPG assegnata al killer e a fine ondata senza pickup XP dagli zombie;
 - passive automatiche RPG per Ranger, Pistoliere, Berserker e Spadaccino con stato visibile nell'HUD;
 - adrenalina RPG da combat e fine ondata, con super attivabile a 100 per ogni classe;
+- HUD RPG con ritratto classe, icona arma, pips ammo, barre XP/adrenalina e icona super ready;
 - selezione di survival, dungeon e tower defense da tastiera o joypad;
 - ritorno al menu con `Esc` e arresto pulito della modalita attiva;
 - survival avviabile dal menu o con hotkey debug;
