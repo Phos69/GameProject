@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="RpgCharacterData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/rpg/rpg_character_data.gd" id="1_character_data"]
+
+[resource]
+script = ExtResource("1_character_data")
+character_id = &"spadaccino"
+display_name = "Spadaccino"
+class_name = "Spadaccino"
+base_weapon_id = &"sword"
+base_weapon_name = "Spada"
+max_hp = 112
+attack = 7
+defense = 6
+speed = 1.0
+reload_speed = 1.05
+adrenaline_gain = 1.0
+crit_chance = 0.07
+crit_multiplier = 1.45
+passive_id = &"perfect_guard"
+passive_name = "Guardia Perfetta"
+passive_description = "Colpire concede riduzione danno breve."
+super_id = &"phantom_blade"
+super_name = "Lama Fantasma"
+super_description = "Dash offensivo che attraversa i nemici."
+difficulty = "Media"

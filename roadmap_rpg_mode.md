@@ -804,6 +804,18 @@ Ogni classe deve avere almeno un motivo chiaro per essere scelta.
 
 # Milestone 11 — Data-driven configuration
 
+Stato: completata come primo pass Resource-based.
+
+Implementato:
+
+- `RpgCharacterData` come `Resource` typed per i profili classe;
+- risorse `game/rpg/characters/ranger.tres`, `pistoliere.tres`, `berserker.tres` e `spadaccino.tres`;
+- `RpgCharacterRegistry` ridotto a path dei profili, fallback e API di accesso;
+- menu, player, HUD e test continuano a usare `get_character_profile()` senza conoscere il formato interno;
+- smoke test dedicato `tests/milestone_rpg_11_data_driven_smoke_test.gd`.
+
+Limite noto: armi, passive e super hanno ancora registry/implementazioni dedicate; una futura espansione puo portare anche skill e super a risorse.
+
 ## Goal
 
 Evitare classi hardcoded sparse nel codice.
@@ -829,9 +841,9 @@ Oppure oggetti equivalenti nel codice, purché centralizzati.
   "name": "Ranger",
   "weapon": "bow",
   "maxHp": 90,
-  "attack": 8,
+  "attack": 9,
   "defense": 2,
-  "speed": 1.05,
+  "speed": 1.04,
   "passive": "predator_eye",
   "super": "arrow_rain"
 }
@@ -843,7 +855,7 @@ Oppure oggetti equivalenti nel codice, purché centralizzati.
 {
   "id": "bow",
   "name": "Arco",
-  "damage": 18,
+  "damage": 20,
   "range": 750,
   "scatter": 2,
   "ammo": 1,

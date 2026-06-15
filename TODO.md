@@ -2,6 +2,12 @@
 
 ## Completati recenti
 
+- Roadmap RPG Mode, Milestone 11: configurazione data-driven.
+  - Obiettivo: spostare i profili classe fuori dal dizionario hardcoded mantenendo un registry unico.
+  - Milestone collegata: `roadmap_rpg_mode.md` Milestone 11.
+  - File/sistemi coinvolti: `RpgCharacterData`, `RpgCharacterRegistry`, risorse `game/rpg/characters/*.tres`.
+  - Criterio di accettazione: aggiungere una classe richiede una nuova risorsa e una voce path nel registry, senza modificare menu/player/HUD.
+  - Test richiesto: `tests/milestone_rpg_11_data_driven_smoke_test.gd`; verifica manuale Character Select.
 - Roadmap RPG Mode, Milestone 10: bilanciamento prima versione.
   - Obiettivo: rendere le quattro classi iniziali chiaramente diverse senza cercare ancora la perfezione.
   - Milestone collegata: `roadmap_rpg_mode.md` Milestone 10.

@@ -10,100 +10,16 @@ const BASE_WEAPON_PATHS: Dictionary = {
 	&"sword": "res://game/weapons/rpg_sword.tres"
 }
 
-const CHARACTER_PROFILES: Dictionary = {
-	&"ranger": {
-		"id": &"ranger",
-		"display_name": "Ranger",
-		"class_name": "Ranger",
-		"base_weapon_id": &"bow",
-		"base_weapon_name": "Arco",
-		"max_hp": 90,
-		"attack": 9,
-		"defense": 2,
-		"speed": 1.04,
-		"reload_speed": 1.08,
-		"adrenaline_gain": 1.10,
-		"crit_chance": 0.12,
-		"crit_multiplier": 1.70,
-		"passive_id": &"predator_eye",
-		"passive_name": "Occhio del Predatore",
-		"passive_description": "Piu danno sui bersagli lontani.",
-		"super_id": &"arrow_rain",
-		"super_name": "Pioggia di Frecce",
-		"super_description": "Raffica conica a lungo raggio.",
-		"difficulty": "Media"
-	},
-	&"pistoliere": {
-		"id": &"pistoliere",
-		"display_name": "Pistoliere",
-		"class_name": "Pistoliere",
-		"base_weapon_id": &"pistol",
-		"base_weapon_name": "Pistola",
-		"max_hp": 100,
-		"attack": 5,
-		"defense": 3,
-		"speed": 1.12,
-		"reload_speed": 1.0,
-		"adrenaline_gain": 1.0,
-		"crit_chance": 0.08,
-		"crit_multiplier": 1.50,
-		"passive_id": &"quick_hand",
-		"passive_name": "Mano Veloce",
-		"passive_description": "Reload completati aumentano la cadenza.",
-		"super_id": &"final_barrage",
-		"super_name": "Scarica Finale",
-		"super_description": "Fuoco automatico sui nemici vicini.",
-		"difficulty": "Facile"
-	},
-	&"berserker": {
-		"id": &"berserker",
-		"display_name": "Berserker",
-		"class_name": "Berserker",
-		"base_weapon_id": &"axe",
-		"base_weapon_name": "Ascia",
-		"max_hp": 125,
-		"attack": 12,
-		"defense": 1,
-		"speed": 0.90,
-		"reload_speed": 0.85,
-		"adrenaline_gain": 1.15,
-		"crit_chance": 0.05,
-		"crit_multiplier": 1.60,
-		"passive_id": &"blood_fury",
-		"passive_name": "Furia di Sangue",
-		"passive_description": "Sotto il 40% HP aumenta il danno.",
-		"super_id": &"blood_quake",
-		"super_name": "Terremoto di Sangue",
-		"super_description": "Colpo ad area attorno al player.",
-		"difficulty": "Difficile"
-	},
-	&"spadaccino": {
-		"id": &"spadaccino",
-		"display_name": "Spadaccino",
-		"class_name": "Spadaccino",
-		"base_weapon_id": &"sword",
-		"base_weapon_name": "Spada",
-		"max_hp": 112,
-		"attack": 7,
-		"defense": 6,
-		"speed": 1.0,
-		"reload_speed": 1.05,
-		"adrenaline_gain": 1.0,
-		"crit_chance": 0.07,
-		"crit_multiplier": 1.45,
-		"passive_id": &"perfect_guard",
-		"passive_name": "Guardia Perfetta",
-		"passive_description": "Colpire concede riduzione danno breve.",
-		"super_id": &"phantom_blade",
-		"super_name": "Lama Fantasma",
-		"super_description": "Dash offensivo che attraversa i nemici.",
-		"difficulty": "Media"
-	}
+const CHARACTER_RESOURCE_PATHS: Dictionary = {
+	&"ranger": "res://game/rpg/characters/ranger.tres",
+	&"pistoliere": "res://game/rpg/characters/pistoliere.tres",
+	&"berserker": "res://game/rpg/characters/berserker.tres",
+	&"spadaccino": "res://game/rpg/characters/spadaccino.tres"
 }
 
 static func get_character_ids() -> Array[StringName]:
 	var ids: Array[StringName] = []
-	for character_id in CHARACTER_PROFILES.keys():
+	for character_id in CHARACTER_RESOURCE_PATHS.keys():
 		ids.append(StringName(character_id))
 	ids.sort()
 	return ids
@@ -117,13 +33,16 @@ static func get_character_profiles() -> Array[Dictionary]:
 static func get_character_profile(character_id: StringName) -> Dictionary:
 	var resolved_id := (
 		character_id
-		if CHARACTER_PROFILES.has(character_id)
+		if CHARACTER_RESOURCE_PATHS.has(character_id)
 		else DEFAULT_CHARACTER_ID
 	)
-	return (CHARACTER_PROFILES.get(resolved_id, {}) as Dictionary).duplicate(true)
+	var character_data := load(str(CHARACTER_RESOURCE_PATHS[resolved_id])) as RpgCharacterData
+	if character_data == null:
+		return {}
+	return character_data.to_profile()
 
 static func is_character_available(character_id: StringName) -> bool:
-	return CHARACTER_PROFILES.has(character_id)
+	return CHARACTER_RESOURCE_PATHS.has(character_id)
 
 static func get_character_label(character_id: StringName) -> String:
 	var profile := get_character_profile(character_id)

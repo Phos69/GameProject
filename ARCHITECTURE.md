@@ -60,6 +60,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `RunResultsScreen`: overlay condiviso con focus e azioni di fine run.
 - `MainMenu`: UI iniziale, selezione modalita, `Character Select` survival, continue e ritorno con `Esc`.
 - `RpgCharacterRegistry`: catalogo centralizzato dei personaggi RPG iniziali.
+- `RpgCharacterData`: risorsa dati per un profilo classe RPG selezionabile.
 - `RpgPlayerComponent`: profilo RPG runtime, statistiche, XP per-run, adrenalina, passive automatiche, super e formule danno del player survival.
 - `RpgSuperResolver`: esecuzione delle super RPG usando `ProjectileSystem`, `HealthSystem` e bersagli damageable condivisi.
 - `SaveManager`: persistenza JSON versionata e autosave della progressione.
@@ -284,6 +285,7 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - La survival avviata dal menu riceve `context.character_id` dalla schermata `Character Select`.
 - In assenza di context, hotkey/debug e test mantengono il profilo sandbox generico precedente.
 - Il profilo selezionato e applicato ai player attivi e ai player che entrano durante la run.
+- I profili classe sono risorse `RpgCharacterData`; il registry mantiene solo path e funzioni di accesso.
 - Il profilo survival modifica HP massimi, velocita, attacco, difesa, passive, super, adrenalina e progressione per-run del player.
 - `SurvivalMode` avvia e arresta `WaveManager` e controlla la sconfitta del party.
 - L'arresto di survival rimuove i nemici e il boss della wave prima di attivare un'altra modalita.

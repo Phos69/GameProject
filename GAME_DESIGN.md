@@ -308,7 +308,8 @@ centralizzato:
 Il menu mostra una card per ogni profilo con nome, classe, arma base,
 statistiche iniziali, passiva, super e difficolta. La scelta e passata alla
 survival come `character_id` e applicata ai player attivi tramite
-`RpgPlayerComponent`.
+`RpgPlayerComponent`. I profili sono risorse `RpgCharacterData` in
+`game/rpg/characters/`, lette da `RpgCharacterRegistry`.
 
 Statistiche attive:
 

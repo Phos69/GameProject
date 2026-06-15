@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="RpgCharacterData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/rpg/rpg_character_data.gd" id="1_character_data"]
+
+[resource]
+script = ExtResource("1_character_data")
+character_id = &"berserker"
+display_name = "Berserker"
+class_name = "Berserker"
+base_weapon_id = &"axe"
+base_weapon_name = "Ascia"
+max_hp = 125
+attack = 12
+defense = 1
+speed = 0.9
+reload_speed = 0.85
+adrenaline_gain = 1.15
+crit_chance = 0.05
+crit_multiplier = 1.6
+passive_id = &"blood_fury"
+passive_name = "Furia di Sangue"
+passive_description = "Sotto il 40% HP aumenta il danno."
+super_id = &"blood_quake"
+super_name = "Terremoto di Sangue"
+super_description = "Colpo ad area attorno al player."
+difficulty = "Difficile"

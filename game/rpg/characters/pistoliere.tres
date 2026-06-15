@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="RpgCharacterData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/rpg/rpg_character_data.gd" id="1_character_data"]
+
+[resource]
+script = ExtResource("1_character_data")
+character_id = &"pistoliere"
+display_name = "Pistoliere"
+class_name = "Pistoliere"
+base_weapon_id = &"pistol"
+base_weapon_name = "Pistola"
+max_hp = 100
+attack = 5
+defense = 3
+speed = 1.12
+reload_speed = 1.0
+adrenaline_gain = 1.0
+crit_chance = 0.08
+crit_multiplier = 1.5
+passive_id = &"quick_hand"
+passive_name = "Mano Veloce"
+passive_description = "Reload completati aumentano la cadenza."
+super_id = &"final_barrage"
+super_name = "Scarica Finale"
+super_description = "Fuoco automatico sui nemici vicini."
+difficulty = "Facile"

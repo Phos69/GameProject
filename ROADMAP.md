@@ -312,6 +312,6 @@ Attivita post-roadmap:
 - secondo boss e registro configurabile completati;
 - arena survival, biomi e props interattivi completati;
 - accessibilita, profiling e pipeline asset completati;
-- roadmap RPG Mode M1-M10 completata fino al primo pass di bilanciamento classi;
+- roadmap RPG Mode M1-M11 completata fino alla configurazione classi data-driven;
 - asset definitivi e ulteriori pass di bilanciamento;
 - firma digitale della build pubblica.

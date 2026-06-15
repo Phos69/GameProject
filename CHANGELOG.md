@@ -4,6 +4,10 @@
 
 ### Added
 
+- Completata Roadmap RPG Mode Milestone 11 con configurazione personaggi data-driven.
+- Aggiunto `RpgCharacterData` e quattro risorse in `game/rpg/characters/`.
+- `RpgCharacterRegistry` ora carica i profili dalle risorse mantenendo la stessa API pubblica.
+- Aggiunto smoke test `milestone_rpg_11_data_driven_smoke_test.gd`.
 - Completata Roadmap RPG Mode Milestone 10 con primo pass di bilanciamento classi/armi.
 - Aggiustati profili e armi RPG per rendere Ranger, Pistoliere, Berserker e Spadaccino piu distinti.
 - Aggiunto smoke test `milestone_rpg_10_balance_smoke_test.gd` con criteri relativi di identita classe.
