@@ -12,6 +12,10 @@
 
 ### Added
 
+- Completata Roadmap Revamp Modalita Zombie Milestone Z2 con smoke test dello spawn dai bordi camera.
+- `ZombieSpawner` espone parametri per gruppo, tick, ritardo gruppi, helper `is_position_outside_camera_view()` e validazione fuori camera.
+- `ObstacleSystem` e `HazardSystem` riconoscono zone leggere `Node2D` con metadata `zone_radius` per validare spawn blocker e fall zone.
+- Aggiunto `zombie_spawner_edge_smoke_test.gd` per bordi nord/sud/est/ovest, distanza dal player, hazard, ostacoli e fallback.
 - Avviata Roadmap Revamp Modalita Zombie con Milestone Z1: fondamenta modulari.
 - Aggiunti `ZombieModeController`, `BiomeManager`, `BiomeDefinition`, `WaveDirector`, `ZombieSpawner` e stub ambientali per terreno, casse, ostacoli e hazard.
 - Aggiunte definizioni dati per Pianura Infetta, Tossico, Infuocato, Neve e Palude con palette, roster, risorse, ostacoli e moltiplicatori iniziali.

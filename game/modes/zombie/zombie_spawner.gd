@@ -5,6 +5,8 @@ class_name ZombieSpawner
 @export var min_distance_from_player: float = 220.0
 @export_range(1, 64) var max_spawn_attempts: int = 20
 @export var spawn_group_radius: float = 24.0
+@export_range(1, 32) var max_spawn_per_tick: int = 1
+@export var spawn_delay_between_groups: float = 0.45
 @export var spawn_blocker_collision_mask: int = 0
 @export var fallback_spawn_points: Array[Vector2] = []
 @export var spawn_edge_weights: Dictionary = {
@@ -44,6 +46,8 @@ func get_spawn_position(
 	return _fallback_spawn_position(spawn_index)
 
 func is_spawn_position_valid(position: Vector2, _biome = null) -> bool:
+	if not is_position_outside_camera_view(position):
+		return false
 	if _is_too_close_to_players(position):
 		return false
 	if _is_position_blocked_by_obstacles(position):
@@ -70,6 +74,13 @@ func get_visible_world_rect() -> Rect2:
 	)
 	var center := camera.get_screen_center_position()
 	return Rect2(center - world_size * 0.5, world_size)
+
+func is_position_outside_camera_view(position: Vector2) -> bool:
+	var visible_rect := get_visible_world_rect()
+	return visible_rect.size.x <= 0.0 or not visible_rect.has_point(position)
+
+func get_last_spawn_edge() -> StringName:
+	return last_spawn_edge
 
 func _select_edge(spawn_index: int, attempt: int) -> StringName:
 	var edges := _weighted_edges()

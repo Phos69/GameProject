@@ -2,12 +2,6 @@
 
 ## Revamp modalita zombie - tracking attivo
 
-- Milestone Z2: spawn dinamico dai bordi camera.
-  - Obiettivo: generare zombie fuori o appena oltre il rettangolo visibile invece che da punti fissi arena.
-  - Milestone collegata: `roadmap_revamp_modalita_zombie.md` Milestone 2.
-  - File/sistemi coinvolti: `ZombieSpawner`, `WaveManager`, camera, player manager, profili arena come fallback.
-  - Criterio di accettazione: gli spawn sono sui bordi nord/sud/est/ovest, non troppo vicini ai player e hanno fallback stabile.
-  - Test richiesto: smoke test headless dello spawner e regressione survival.
 - Milestone Z3: biomi dati e ondate contestuali.
   - Obiettivo: definire Pianura Infetta, Tossico, Infuocato, Neve e Palude con roster, pesi, risorse e difficolta.
   - Milestone collegata: `roadmap_revamp_modalita_zombie.md` Milestone 3 e 8.
@@ -29,6 +23,12 @@
 
 ## Completati recenti
 
+- Roadmap Revamp Modalita Zombie, Milestone Z2: spawn dinamico dai bordi camera.
+  - Obiettivo: generare zombie fuori o appena oltre il rettangolo visibile invece che da punti fissi arena.
+  - Milestone collegata: `roadmap_revamp_modalita_zombie.md` Milestone 2.
+  - File/sistemi coinvolti: `ZombieSpawner`, `ObstacleSystem`, `HazardSystem`, test smoke dedicato.
+  - Criterio di accettazione: lo spawner supporta bordi nord/sud/est/ovest, distanza minima dal player, rifiuto fall zone/spawn blocker e fallback configurato.
+  - Test richiesto: `tests/zombie_spawner_edge_smoke_test.gd`, regressione `tests/zombie_revamp_foundation_smoke_test.gd` e `tests/survival_wave_smoke_test.gd`.
 - Roadmap Revamp Modalita Zombie, Milestone Z1: fondamenta modulari.
   - Obiettivo: separare la logica zombie in componenti dedicati mantenendo avviabile la survival esistente.
   - Milestone collegata: `roadmap_revamp_modalita_zombie.md` Milestone 1.

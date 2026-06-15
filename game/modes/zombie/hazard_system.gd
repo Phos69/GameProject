@@ -34,6 +34,9 @@ func _node_contains_position(node: Node, position: Vector2) -> bool:
 		return false
 	if node.has_method("contains_global_position"):
 		return bool(node.contains_global_position(position))
+	if node is Node2D:
+		var radius := float(node.get_meta("zone_radius", 32.0))
+		return (node as Node2D).global_position.distance_squared_to(position) <= radius * radius
 	if node is Area2D and node is Node2D:
 		return (node as Node2D).global_position.distance_squared_to(position) <= 32.0 * 32.0
 	return false

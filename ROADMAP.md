@@ -303,7 +303,7 @@ Stato: completata come primo pass configurabile e misurabile.
 
 Attivita post-roadmap:
 
-- roadmap revamp modalita zombie avviata con Milestone Z1 completata: sistemi separati, bioma iniziale, definizioni bioma e spawn delegato dai bordi camera;
+- roadmap revamp modalita zombie avviata con Milestone Z1-Z2 completate: sistemi separati, bioma iniziale, definizioni bioma e spawn verificato dai bordi camera;
 - sistema ammo survival robusto con fallback infinita, pickup condivisi, supply crate e director anti-frustrazione completato;
 - visual gameplay pass della zombie survival completato;
 - zombie ranged con telegraph e pressione a distanza completato;

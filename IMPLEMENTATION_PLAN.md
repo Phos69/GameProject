@@ -4,7 +4,7 @@
 
 Roadmap di riferimento: `roadmap_revamp_modalita_zombie.md`.
 
-Stato corrente: Milestone Z1 completata come fondazione modulare.
+Stato corrente: Milestone Z2 completata con spawn camera-edge verificato.
 
 ## Ricognizione iniziale
 
@@ -35,7 +35,7 @@ Il revamp non deve sostituire in blocco la survival esistente. I nuovi sistemi v
    - Garantire che la run parta sempre dalla `Pianura Infetta`.
    - Verifica: survival smoke test e caricamento scena principale.
 
-2. Spawn dai bordi camera.
+2. Spawn dai bordi camera. Completata.
    - Calcolare il rettangolo visibile dalla camera corrente.
    - Generare posizioni fuori dal bordo con margine, distanza minima dai player e fallback sicuro.
    - Mantenere compatibilita con test e profili arena esistenti.
@@ -74,3 +74,6 @@ Il revamp non deve sostituire in blocco la survival esistente. I nuovi sistemi v
 - Z1: `godot --headless --path . --script res://tests/zombie_revamp_foundation_smoke_test.gd`
 - Z1 regressione: `godot --headless --path . --script res://tests/survival_wave_smoke_test.gd`
 - Z1 regressione arena: `godot --headless --path . --script res://tests/milestone_20_arena_environment_smoke_test.gd`
+- Z2: `godot --headless --path . --script res://tests/zombie_spawner_edge_smoke_test.gd`
+- Z2 regressione: `godot --headless --path . --script res://tests/zombie_revamp_foundation_smoke_test.gd`
+- Z2 regressione survival: `godot --headless --path . --script res://tests/survival_wave_smoke_test.gd`
