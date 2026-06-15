@@ -2,6 +2,12 @@
 
 ## Completati recenti
 
+- Roadmap RPG Mode, Milestone 7: passive skill per personaggio.
+  - Obiettivo: rendere automatica e visibile una passiva distinta per ogni classe iniziale.
+  - Milestone collegata: `roadmap_rpg_mode.md` Milestone 7.
+  - File/sistemi coinvolti: `RpgPlayerComponent`, `WeaponSystem`, `PlayerController`, `PlayerHudCard`.
+  - Criterio di accettazione: Ranger scala il danno a distanza, Pistoliere ottiene fire rate dopo reload, Berserker aumenta danno a bassa vita e Spadaccino riduce il danno dopo un colpo.
+  - Test richiesto: `tests/milestone_rpg_7_passives_smoke_test.gd`; verifica manuale HUD passive in survival.
 - Roadmap RPG Mode, Milestone 6: esperienza e level up.
   - Obiettivo: assegnare XP al killer e bonus XP a fine ondata senza drop XP dagli zombie.
   - Milestone collegata: `roadmap_rpg_mode.md` Milestone 6.

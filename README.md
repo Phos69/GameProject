@@ -72,6 +72,7 @@ godot --headless --path . --script res://tests/milestone_rpg_3_weapons_smoke_tes
 godot --headless --path . --script res://tests/milestone_rpg_4_hitbox_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_rpg_5_ammo_reload_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_rpg_6_xp_level_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_rpg_7_passives_smoke_test.gd
 ```
 
 Export Windows:
@@ -152,6 +153,7 @@ Completato:
 - hitbox arma configurabili e separate dal visual, inclusi capsule, rettangolo e arco multi-hit;
 - pips ammo e barra reload nel player HUD per le armi RPG;
 - XP RPG assegnata al killer e a fine ondata senza pickup XP dagli zombie;
+- passive automatiche RPG per Ranger, Pistoliere, Berserker e Spadaccino con stato visibile nell'HUD;
 - selezione di survival, dungeon e tower defense da tastiera o joypad;
 - ritorno al menu con `Esc` e arresto pulito della modalita attiva;
 - survival avviabile dal menu o con hotkey debug;

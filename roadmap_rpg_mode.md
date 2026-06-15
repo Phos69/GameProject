@@ -482,6 +482,19 @@ Il level up deve essere visibile e soddisfacente.
 
 # Milestone 7 — Passive skill per personaggio
 
+Stato: completata come primo pass automatico.
+
+Implementato:
+
+- Ranger: `Occhio del Predatore` aumenta il danno fino al 30% in base alla distanza dal bersaglio;
+- Pistoliere: `Mano Veloce` concede +20% fire rate per 3 secondi dopo un reload completato;
+- Berserker: `Furia di Sangue` concede +25% danno sotto il 40% HP;
+- Spadaccino: `Guardia Perfetta` concede -20% danno subito per 1,5 secondi dopo un colpo valido;
+- HUD player con riga passiva temporanea quando il buff entra in funzione;
+- smoke test dedicato `tests/milestone_rpg_7_passives_smoke_test.gd`.
+
+Limite noto: le passive hanno feedback HUD minimale; effetti audio/visual dedicati arrivano con polish e super.
+
 ## Goal
 
 Ogni classe deve avere una passiva coerente con arma e identità.

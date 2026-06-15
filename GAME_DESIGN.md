@@ -313,8 +313,8 @@ Statistiche attive:
 - difesa sottratta al danno in ingresso;
 - livello per-run con `+10 HP`, `+2 attacco` e `+1 difesa`.
 
-Le schede HUD player mostrano livello, classe, barra XP, HP, ammo e riga
-ATK/DEF/SPD.
+Le schede HUD player mostrano livello, classe, barra XP, HP, ammo, riga
+ATK/DEF/SPD e il buff passivo attivo.
 
 Armi base RPG attive:
 
@@ -336,7 +336,14 @@ XP RPG:
 - a fine ondata ogni player RPG vivo riceve `waveNumber * 10` XP;
 - il level-up aumenta HP, attacco e difesa e cura parzialmente il player.
 
-Le milestone successive collegano passive, adrenalina, super e polish feedback.
+Passive RPG attive:
+
+- `Ranger`: piu il bersaglio e lontano, piu il danno aumenta, fino a +30%;
+- `Pistoliere`: completare un reload concede +20% fire rate per 3 secondi;
+- `Berserker`: sotto il 40% HP infligge +25% danno;
+- `Spadaccino`: dopo un colpo valido riceve -20% danno subito per 1,5 secondi.
+
+Le milestone successive collegano adrenalina, super e polish feedback.
 
 ## Bilanciamento iniziale
 

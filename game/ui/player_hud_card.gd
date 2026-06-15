@@ -14,13 +14,14 @@ var ammo_pips_container: HBoxContainer
 var reload_bar: ProgressBar
 var xp_bar: ProgressBar
 var stats_label: Label
+var passive_label: Label
 var ammo_pips: Array[ColorRect] = []
 var hud_text_scale: float = 1.0
 var high_contrast: bool = false
 
 func _ready() -> void:
 	add_to_group("visual_settings_consumers")
-	custom_minimum_size = Vector2(292.0, 142.0)
+	custom_minimum_size = Vector2(292.0, 158.0)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_ui()
 	_apply_style()
@@ -58,6 +59,11 @@ func apply_visual_settings(settings: Dictionary) -> void:
 			"font_size",
 			roundi(12.0 * hud_text_scale)
 		)
+	if passive_label != null:
+		passive_label.add_theme_font_size_override(
+			"font_size",
+			roundi(12.0 * hud_text_scale)
+		)
 	_apply_style()
 
 func configure(slot: int, color: Color) -> void:
@@ -81,6 +87,8 @@ func refresh(player: Node) -> void:
 	slot_label.text = "P%d" % player_slot
 	class_label.text = "Survivor"
 	stats_label.text = "ATK 0  DEF 0  SPD 1.00"
+	passive_label.text = ""
+	passive_label.hide()
 	xp_bar.max_value = 1.0
 	xp_bar.value = 0.0
 	if rpg_component != null and rpg_component.has_character():
@@ -90,6 +98,10 @@ func refresh(player: Node) -> void:
 			rpg_component.get_class_name()
 		]
 		stats_label.text = rpg_component.get_stats_text()
+		var passive_text := rpg_component.get_active_passive_text()
+		if not passive_text.is_empty():
+			passive_label.text = passive_text
+			passive_label.show()
 		xp_bar.max_value = float(rpg_component.experience_to_next_level)
 		xp_bar.value = float(rpg_component.experience)
 	if health_component != null:
@@ -221,6 +233,19 @@ func _build_ui() -> void:
 	stats_label.add_theme_font_size_override("font_size", 12)
 	stats_label.modulate = Color(0.74, 0.84, 0.92, 1.0)
 	xp_row.add_child(stats_label)
+
+	passive_label = Label.new()
+	passive_label.custom_minimum_size = Vector2(250.0, 16.0)
+	passive_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	passive_label.add_theme_font_size_override("font_size", 12)
+	passive_label.add_theme_constant_override("outline_size", 2)
+	passive_label.add_theme_color_override(
+		"font_outline_color",
+		Color(0.01, 0.01, 0.02, 0.95)
+	)
+	passive_label.modulate = Color(1.0, 0.76, 0.30, 1.0)
+	passive_label.hide()
+	content.add_child(passive_label)
 
 func _apply_style() -> void:
 	var panel_style := StyleBoxFlat.new()

@@ -66,7 +66,10 @@ func try_fire(origin: Vector2, direction: Vector2, owner_ref: Node = null) -> bo
 			fire_blocked.emit(&"empty")
 			return false
 
-	cooldown = 1.0 / maxf(weapon_data.fire_rate, 0.01)
+	cooldown = 1.0 / maxf(
+		weapon_data.fire_rate * _get_modified_fire_rate_multiplier(),
+		0.01
+	)
 	current_ammo -= weapon_data.ammo_per_shot
 	_store_active_ammo()
 	ammo_changed.emit(current_ammo, reserve_ammo)
@@ -305,12 +308,19 @@ func _get_modified_reload_duration() -> float:
 	if weapon_data == null:
 		return 0.0
 	var duration := weapon_data.reload_duration
-	var parent := get_parent()
-	var rpg_component: RpgPlayerComponent
-	if parent != null:
-		rpg_component = parent.get_node_or_null(
-			"RpgPlayerComponent"
-		) as RpgPlayerComponent
+	var rpg_component := _get_parent_rpg_component()
 	if rpg_component != null and rpg_component.has_character():
 		duration /= rpg_component.get_reload_speed_multiplier()
 	return maxf(duration, 0.0)
+
+func _get_modified_fire_rate_multiplier() -> float:
+	var rpg_component := _get_parent_rpg_component()
+	if rpg_component != null and rpg_component.has_character():
+		return rpg_component.get_fire_rate_multiplier()
+	return 1.0
+
+func _get_parent_rpg_component() -> RpgPlayerComponent:
+	var parent := get_parent()
+	if parent == null:
+		return null
+	return parent.get_node_or_null("RpgPlayerComponent") as RpgPlayerComponent

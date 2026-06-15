@@ -4,6 +4,11 @@
 
 ### Added
 
+- Completata Roadmap RPG Mode Milestone 7 con passive automatiche per le quattro classi.
+- `RpgPlayerComponent` ora applica Occhio del Predatore, Mano Veloce, Furia di Sangue e Guardia Perfetta.
+- `WeaponSystem` legge il moltiplicatore fire rate temporaneo del Pistoliere dopo il reload.
+- Le schede HUD mostrano il buff passivo attivo quando entra in funzione.
+- Aggiunto smoke test `milestone_rpg_7_passives_smoke_test.gd`.
 - Completata Roadmap RPG Mode Milestone 6 con XP al killer e XP di fine ondata.
 - `HealthSystem` conserva la sorgente dell'ultimo danno per assegnare XP on-kill.
 - Zombie e boss assegnano XP direttamente al `RpgPlayerComponent` del killer.

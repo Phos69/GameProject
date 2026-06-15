@@ -42,6 +42,7 @@ func _ready() -> void:
 	health_component.damaged.connect(_on_damaged)
 	weapon_system.fired.connect(_on_weapon_fired)
 	weapon_system.reload_started.connect(_on_reload_started)
+	weapon_system.reload_finished.connect(_on_reload_finished)
 	weapon_system.weapon_changed.connect(_on_weapon_changed)
 	rpg_component.stats_changed.connect(_on_rpg_stats_changed)
 	rpg_component.leveled_up.connect(_on_rpg_leveled_up)
@@ -180,6 +181,10 @@ func _on_weapon_fired(
 
 func _on_reload_started(duration: float) -> void:
 	visual.play_reload(duration)
+
+func _on_reload_finished() -> void:
+	if rpg_component != null:
+		rpg_component.notify_reload_finished()
 
 func _on_weapon_changed(weapon_data: WeaponData) -> void:
 	visual.set_weapon_data(weapon_data)
