@@ -3,7 +3,7 @@ class_name RpgCharacterData
 
 @export var character_id: StringName = &""
 @export var display_name: String = ""
-@export var class_name: String = ""
+@export var class_label: String = ""
 @export var base_weapon_id: StringName = &""
 @export var base_weapon_name: String = ""
 @export var max_hp: int = 100
@@ -26,7 +26,7 @@ func to_profile() -> Dictionary:
 	return {
 		"id": character_id,
 		"display_name": display_name,
-		"class_name": class_name,
+		"class_name": class_label,
 		"base_weapon_id": base_weapon_id,
 		"base_weapon_name": base_weapon_name,
 		"max_hp": max_hp,

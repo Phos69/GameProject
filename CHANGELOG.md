@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Fixed
+
+- Corretto il parse di `RpgCharacterData` rinominando il campo export interno
+  `class_name`, riservato da GDScript, e mantenendo invariato il profilo
+  pubblico usato da menu e HUD.
+
 ### Added
 
 - Completata Roadmap RPG Mode Milestone 12 con feedback polish per level-up e super.

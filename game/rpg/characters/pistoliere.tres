@@ -6,7 +6,7 @@
 script = ExtResource("1_character_data")
 character_id = &"pistoliere"
 display_name = "Pistoliere"
-class_name = "Pistoliere"
+class_label = "Pistoliere"
 base_weapon_id = &"pistol"
 base_weapon_name = "Pistola"
 max_hp = 100
