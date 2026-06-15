@@ -1,4 +1,4 @@
-[gd_scene load_steps=41 format=3]
+[gd_scene load_steps=42 format=3]
 
 [ext_resource type="Script" path="res://game/main/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://game/input/input_manager.gd" id="2_input_manager"]
@@ -40,6 +40,7 @@
 [ext_resource type="Script" path="res://game/modes/zombie/resource_crate_system.gd" id="38_resource_crate_system"]
 [ext_resource type="Script" path="res://game/modes/zombie/obstacle_system.gd" id="39_obstacle_system"]
 [ext_resource type="Script" path="res://game/modes/zombie/hazard_system.gd" id="40_hazard_system"]
+[ext_resource type="Script" path="res://game/modes/zombie/biome_transition_system.gd" id="41_transition_system"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -84,6 +85,9 @@ script = ExtResource("39_obstacle_system")
 
 [node name="HazardSystem" type="Node" parent="Modes/SurvivalMode/ZombieModeController"]
 script = ExtResource("40_hazard_system")
+
+[node name="TransitionSystem" type="Node" parent="Modes/SurvivalMode/ZombieModeController"]
+script = ExtResource("41_transition_system")
 
 [node name="DungeonMode" type="Node" parent="Modes"]
 script = ExtResource("20_dungeon_mode")

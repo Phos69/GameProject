@@ -294,7 +294,8 @@ func _spawn_wave_enemy(spawn_index: int) -> void:
 		"wave_index": current_wave,
 		"health_multiplier": health_multiplier,
 		"move_speed_multiplier": move_multiplier,
-		"damage_multiplier": damage_multiplier
+		"damage_multiplier": damage_multiplier,
+		"resource_drop_modifier": _get_resource_drop_modifier()
 	}
 	var enemy_id := get_enemy_id_for_spawn(
 		current_wave,
@@ -347,6 +348,15 @@ func _get_wave_director_scaling() -> Dictionary:
 			"damage": 1.0
 		}
 	return wave_director.get_wave_scaling_multipliers()
+
+func _get_resource_drop_modifier() -> float:
+	_resolve_wave_director()
+	if (
+		wave_director != null
+		and wave_director.has_method("get_resource_drop_modifier")
+	):
+		return float(wave_director.get_resource_drop_modifier())
+	return 1.0
 
 func _on_enemy_died(enemy: Node) -> void:
 	if not wave_enemies.has(enemy):

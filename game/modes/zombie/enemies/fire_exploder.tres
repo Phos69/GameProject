@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="BiomeEnemyProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/modes/zombie/biome_enemy_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+enemy_id = &"fire_exploder"
+display_name = "Zombie Esplosivo"
+visual_archetype = "tank"
+theme_id = &"fire"
+max_health = 46
+move_speed = 74.0
+acceleration = 460.0
+attack_range = 50.0
+attack_damage = 14
+attack_cooldown = 1.0
+kill_experience = 12
+death_hazard_id = &"explosion"
+death_hazard_duration = 0.4
+death_hazard_radius = 92.0

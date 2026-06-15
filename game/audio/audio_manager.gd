@@ -179,6 +179,14 @@ func play_enemy_feedback(
 			frequency = 105.0
 		&"survival_shooter":
 			frequency = 330.0
+		&"toxic_zombie", &"toxic_exploder":
+			frequency = 285.0
+		&"burned_zombie", &"fire_runner", &"fire_exploder":
+			frequency = 360.0
+		&"frozen_zombie", &"ice_armored_zombie", &"heavy_slow_zombie":
+			frequency = 150.0
+		&"drowned_zombie", &"marsh_zombie", &"water_emerging_zombie":
+			frequency = 205.0
 	var cue_id := StringName("enemy_%s" % feedback_type)
 	var frames_written := play_cue(
 		cue_id,
@@ -329,6 +337,9 @@ func _register_default_cues() -> void:
 		_make_cue(&"rpg_super", &"Weapons", 690.0, 0.22, 0.13, 88),
 		_make_cue(&"player_downed", &"UI", 135.0, 0.18, 0.12, 92),
 		_make_cue(&"player_revived", &"UI", 620.0, 0.18, 0.11, 92),
+		_make_cue(&"player_fell", &"Environment", 92.0, 0.22, 0.13, 90),
+		_make_cue(&"environment_damage", &"Environment", 170.0, 0.12, 0.10, 62),
+		_make_cue(&"biome_entered", &"Environment", 480.0, 0.20, 0.10, 76),
 		_make_cue(&"run_finished", &"UI", 260.0, 0.24, 0.12, 96)
 	]
 	for cue in cues:

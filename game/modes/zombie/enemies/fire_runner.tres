@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="BiomeEnemyProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/modes/zombie/biome_enemy_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+enemy_id = &"fire_runner"
+display_name = "Zombie Runner Infuocato"
+visual_archetype = "runner"
+theme_id = &"fire"
+max_health = 20
+move_speed = 178.0
+acceleration = 1050.0
+attack_range = 36.0
+attack_damage = 12
+attack_cooldown = 0.56
+kill_experience = 10
+contact_status_id = &"burning"
+contact_status_duration = 2.5
+contact_movement_multiplier = 0.96
+contact_damage_per_tick = 2

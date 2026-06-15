@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="BiomeEnvironmentLayout" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/modes/zombie/biome_environment_layout.gd" id="1_layout"]
+
+[resource]
+script = ExtResource("1_layout")
+terrain_patch_tags = Array[StringName]([&"toxic_soil", &"chemical_puddle", &"corrupted_plants", &"toxic_soil", &"chemical_puddle", &"corrupted_plants", &"toxic_soil", &"chemical_puddle", &"corrupted_plants", &"toxic_soil"])
+terrain_patch_positions = Array[Vector2]([Vector2(-430, -220), Vector2(-330, 250), Vector2(-150, -250), Vector2(70, 250), Vector2(240, -245), Vector2(420, 210), Vector2(-455, 70), Vector2(430, 55), Vector2(-40, -220), Vector2(20, 205)])
+terrain_patch_radii = Array[float]([48.0, 42.0, 38.0, 50.0, 44.0, 40.0, 36.0, 42.0, 36.0, 46.0])
+obstacle_ids = Array[StringName]([&"chemical_barrel", &"lab_ruin", &"corroded_barrier", &"chemical_barrel", &"toxic_boundary_wall"])
+obstacle_positions = Array[Vector2]([Vector2(-350, -150), Vector2(360, -180), Vector2(-305, 215), Vector2(310, 185), Vector2(0, -310)])
+obstacle_sizes = Array[Vector2]([Vector2(48, 48), Vector2(132, 82), Vector2(112, 22), Vector2(52, 52), Vector2(280, 24)])
+obstacle_rotations = Array[float]([0.0, 0.06, -0.18, 0.0, 0.0])
+obstacle_shape_ids = Array[StringName]([&"circle", &"rectangle", &"rectangle", &"circle", &"rectangle"])
+crate_ids = Array[StringName]([&"common", &"medical", &"biome_toxic"])
+crate_positions = Array[Vector2]([Vector2(-150, -145), Vector2(155, 145), Vector2(335, 55)])
+hazard_ids = Array[StringName]([&"toxic_puddle", &"gas_cloud"])
+hazard_positions = Array[Vector2]([Vector2(-245, 65), Vector2(230, -55)])
+hazard_sizes = Array[Vector2]([Vector2(138, 76), Vector2(120, 96)])
+hazard_rotations = Array[float]([-0.12, 0.16])
+central_corridor_width = 220.0

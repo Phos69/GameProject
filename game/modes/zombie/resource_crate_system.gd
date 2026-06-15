@@ -2,25 +2,166 @@ extends Node
 class_name ResourceCrateSystem
 
 signal crate_rules_configured(biome_id: StringName)
+signal resource_crate_spawned(crate: SupplyCrate, crate_id: StringName)
 
-var active_biome
+const COMMON_CRATE_LOOT: LootTable = preload(
+	"res://game/modes/zombie/crates/common_crate_loot.tres"
+)
+const MEDICAL_CRATE_LOOT: LootTable = preload(
+	"res://game/modes/zombie/crates/medical_crate_loot.tres"
+)
+const MILITARY_CRATE_LOOT: LootTable = preload(
+	"res://game/modes/zombie/crates/military_crate_loot.tres"
+)
+const TOXIC_CRATE_LOOT: LootTable = preload(
+	"res://game/modes/zombie/crates/toxic_crate_loot.tres"
+)
+const FIRE_CRATE_LOOT: LootTable = preload(
+	"res://game/modes/zombie/crates/fire_crate_loot.tres"
+)
+const FROST_CRATE_LOOT: LootTable = preload(
+	"res://game/modes/zombie/crates/frost_crate_loot.tres"
+)
+const MARSH_CRATE_LOOT: LootTable = preload(
+	"res://game/modes/zombie/crates/marsh_crate_loot.tres"
+)
+
+@export var supply_crate_scene: PackedScene = preload(
+	"res://game/drops/supply_crate.tscn"
+)
+@export var crate_container_path: NodePath = NodePath(
+	"../../../../World/Pickups"
+)
+@export_range(24.0, 200.0, 4.0) var minimum_crate_spacing: float = 72.0
+
+var active_biome: BiomeDefinition
 var is_active: bool = false
+var active_crates: Array[SupplyCrate] = []
 
 func _ready() -> void:
 	add_to_group("resource_crate_system")
 
-func start_run(biome) -> void:
+func start_run(biome: BiomeDefinition) -> void:
+	_clear_runtime()
 	active_biome = biome
 	is_active = true
+	_generate_resource_crates()
 	crate_rules_configured.emit(
-		StringName(active_biome.get("biome_id")) if active_biome != null else &""
+		active_biome.biome_id if active_biome != null else &""
 	)
 
 func stop_run() -> void:
+	_clear_runtime()
 	is_active = false
 	active_biome = null
 
 func get_active_crate_ids() -> Array[StringName]:
-	if active_biome == null:
-		return []
-	return active_biome.get("crate_ids").duplicate()
+	_prune_crates()
+	var crate_ids: Array[StringName] = []
+	for crate in active_crates:
+		crate_ids.append(StringName(crate.get_meta("biome_crate_id", &"")))
+	return crate_ids
+
+func get_active_crates() -> Array[SupplyCrate]:
+	_prune_crates()
+	return active_crates.duplicate()
+
+func _generate_resource_crates() -> void:
+	if active_biome == null or supply_crate_scene == null:
+		return
+	var layout := active_biome.environment_layout
+	var allowed_ids := active_biome.crate_ids
+	var container := _get_crate_container()
+	if layout == null or container == null:
+		return
+	for index in range(layout.crate_positions.size()):
+		if index >= layout.crate_ids.size():
+			break
+		var crate_id := layout.crate_ids[index]
+		var crate_position := layout.crate_positions[index]
+		if (
+			not allowed_ids.has(crate_id)
+			or not _is_crate_position_valid(crate_position)
+		):
+			continue
+		var crate := supply_crate_scene.instantiate() as SupplyCrate
+		if crate == null:
+			continue
+		crate.name = "%sResourceCrate%d" % [
+			String(crate_id).capitalize(),
+			index + 1
+		]
+		crate.loot_table = _get_loot_table(crate_id)
+		crate.set_meta("biome_crate_id", crate_id)
+		crate.add_to_group("biome_resource_crates")
+		var visual := crate.get_node_or_null("Visual") as SupplyCrateVisual
+		if visual != null:
+			visual.configure_crate_type(crate_id)
+		container.add_child(crate)
+		crate.global_position = crate_position
+		active_crates.append(crate)
+		crate.tree_exited.connect(_on_crate_tree_exited.bind(crate))
+		resource_crate_spawned.emit(crate, crate_id)
+
+func _is_crate_position_valid(position: Vector2) -> bool:
+	var obstacle_system := get_tree().get_first_node_in_group(
+		"obstacle_system"
+	)
+	if (
+		obstacle_system != null
+		and obstacle_system.has_method("is_position_blocked")
+		and obstacle_system.is_position_blocked(position)
+	):
+		return false
+	var hazard_system := get_tree().get_first_node_in_group("hazard_system")
+	if (
+		hazard_system != null
+		and hazard_system.has_method("is_position_hazardous")
+		and hazard_system.is_position_hazardous(position)
+	):
+		return false
+	for crate in active_crates:
+		if (
+			is_instance_valid(crate)
+			and crate.global_position.distance_to(position) < minimum_crate_spacing
+		):
+			return false
+	return true
+
+func _get_loot_table(crate_id: StringName) -> LootTable:
+	match crate_id:
+		&"medical":
+			return MEDICAL_CRATE_LOOT
+		&"military":
+			return MILITARY_CRATE_LOOT
+		&"biome_toxic":
+			return TOXIC_CRATE_LOOT
+		&"biome_fire":
+			return FIRE_CRATE_LOOT
+		&"biome_frost":
+			return FROST_CRATE_LOOT
+		&"biome_marsh":
+			return MARSH_CRATE_LOOT
+		_:
+			return COMMON_CRATE_LOOT
+
+func _get_crate_container() -> Node:
+	var container := get_node_or_null(crate_container_path)
+	return container if container != null else get_tree().current_scene
+
+func _clear_runtime() -> void:
+	for crate in active_crates:
+		if is_instance_valid(crate):
+			crate.queue_free()
+	active_crates.clear()
+
+func _on_crate_tree_exited(crate: SupplyCrate) -> void:
+	active_crates.erase(crate)
+
+func _prune_crates() -> void:
+	for crate in active_crates.duplicate():
+		if (
+			not is_instance_valid(crate)
+			or crate.is_queued_for_deletion()
+		):
+			active_crates.erase(crate)

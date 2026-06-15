@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="BiomeEnvironmentLayout" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/modes/zombie/biome_environment_layout.gd" id="1_layout"]
+
+[resource]
+script = ExtResource("1_layout")
+terrain_patch_tags = Array[StringName]([&"ash", &"hot_crack", &"burned_ground", &"ash", &"hot_crack", &"burned_ground", &"ash", &"hot_crack", &"burned_ground", &"ash"])
+terrain_patch_positions = Array[Vector2]([Vector2(-440, -210), Vector2(-350, 245), Vector2(-170, -250), Vector2(45, 250), Vector2(230, -245), Vector2(420, 205), Vector2(-450, 75), Vector2(430, 70), Vector2(-20, -215), Vector2(25, 210)])
+terrain_patch_radii = Array[float]([44.0, 50.0, 40.0, 46.0, 38.0, 48.0, 36.0, 42.0, 40.0, 44.0])
+obstacle_ids = Array[StringName]([&"burned_house", &"metal_wreck", &"scorched_barricade", &"metal_wreck", &"lava_boundary"])
+obstacle_positions = Array[Vector2]([Vector2(-365, -180), Vector2(340, 175), Vector2(-300, 205), Vector2(315, -190), Vector2(0, 312)])
+obstacle_sizes = Array[Vector2]([Vector2(138, 84), Vector2(72, 48), Vector2(116, 24), Vector2(78, 50), Vector2(300, 28)])
+obstacle_rotations = Array[float]([0.04, -0.22, 0.16, 0.20, 0.0])
+obstacle_shape_ids = Array[StringName]([&"rectangle", &"rectangle", &"rectangle", &"rectangle", &"rectangle"])
+crate_ids = Array[StringName]([&"common", &"military", &"biome_fire"])
+crate_positions = Array[Vector2]([Vector2(-150, 145), Vector2(150, -145), Vector2(330, 65)])
+hazard_ids = Array[StringName]([&"fire_zone", &"lava_crack", &"explosion_trap"])
+hazard_positions = Array[Vector2]([Vector2(-235, -35), Vector2(225, 35), Vector2(0, 220)])
+hazard_sizes = Array[Vector2]([Vector2(120, 76), Vector2(148, 58), Vector2(82, 82)])
+hazard_rotations = Array[float]([0.08, -0.16, 0.0])
+central_corridor_width = 210.0

@@ -155,6 +155,44 @@ godot --headless --path . --script res://tests/survival_wave_smoke_test.gd
 
 Il test verifica tre ondate, scaling, reward, director low-ammo, supply crate boss, join multiplayer e fallback per tutti i player vivi.
 
+## Regressione Revamp Zombie Z4
+
+- La survival parte con la palette della `Pianura Infetta`.
+- Patch di erba secca, terra e detriti rendono il terreno meno vuoto.
+- Sono visibili rocce, recinto rotto, barriera, rudere e confine parziale.
+- Player e zombie collidono con gli ostacoli fisici.
+- Le corsie centrali nord/sud/est/ovest restano attraversabili.
+- Gli zombie non spawnano dentro gli ostacoli.
+- La cassa comune e la cassa medica sono raggiungibili dal party.
+- Le casse ambientali non sostituiscono le crate del director ammo.
+- Uscire dalla survival rimuove patch, ostacoli e casse ambientali.
+- Cambiare arena non duplica i contenuti runtime.
+
+```text
+godot --headless --path . --script res://tests/zombie_environment_milestone_smoke_test.gd
+godot --path . --rendering-method gl_compatibility --script res://tests/arena_variants_visual_qa.gd
+```
+
+## Regressione Revamp Zombie Z5
+
+- La Pianura Infetta mostra una fall zone scura con bordo caldo fuori dalle corsie centrali.
+- Entrare nella zona sottrae esattamente 20 HP.
+- Il player riappare all'ultima posizione sicura e non conserva velocita.
+- La breve invulnerabilita evita una seconda caduta immediata.
+- Super e altre invulnerabilita non vengono cancellate dal recupero.
+- Danno e respawn mostrano effetti distinti e un cue audio ambientale.
+- Gli zombie non spawnano dentro o troppo vicino alla fall zone.
+- Uscire dalla survival rimuove hazard e protezioni temporanee.
+- Industrial Crossroads e Rift Foundry restano avviabili senza duplicazioni.
+
+```text
+godot --headless --path . --script res://tests/zombie_fall_hazard_smoke_test.gd
+godot --headless --path . --script res://tests/zombie_revamp_foundation_smoke_test.gd
+godot --headless --path . --script res://tests/survival_wave_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_rpg_8_adrenaline_super_smoke_test.gd
+godot --path . --rendering-method gl_compatibility --script res://tests/arena_variants_visual_qa.gd
+```
+
 ## Regressione Milestone 13
 
 - `Starter Pistol` ha silhouette compatta e accento arancio.
@@ -427,6 +465,33 @@ godot --path . --rendering-method gl_compatibility --script res://tests/visual_a
 - I sistemi non sono duplicati in cartelle diverse.
 - Ogni nuova modalita usa `GameModeManager`.
 - Drop, XP, boss e wave restano sistemi separati.
+
+## Revamp zombie Z6-Z12
+
+- Avviare survival e confermare la partenza nella `Pianura Infetta`.
+- Attraversare il gate est fino a Tossico, Infuocato, Neve e Palude.
+- Tornare indietro almeno una volta usando il gate ovest.
+- Verificare che ogni bioma cambi palette, terreno, ostacoli, casse e hazard.
+- Verificare che almeno un bordo resti bloccato fisicamente in ogni area.
+- Restare dentro ogni hazard e confermare danno o modifica movimento coerente.
+- Entrare nella fall zone e confermare `-20 HP`, respawn sicuro e invulnerabilita.
+- Aprire casse comuni, mediche, militari e tematiche.
+- Confermare feedback HUD per antidoto, ammo tematica e materiali.
+- Completare almeno una wave in ogni bioma e verificare il roster contestuale.
+- Confermare almeno due zombie tematici per bioma avanzato.
+- Verificare poison, burning, chilled, mudded/soaked e hazard alla morte.
+- Muoversi continuamente durante gli spawn e controllare i quattro bordi camera.
+- Verificare che nessuno zombie appaia in ostacoli, acqua profonda o fall zone.
+- Controllare HUD: nome bioma, pericolo, risorse, status e annuncio transizione.
+- Eseguire una run reale di almeno 10 minuti senza bug bloccanti.
+
+```text
+godot --headless --path . --script res://tests/zombie_biome_transition_smoke_test.gd
+godot --headless --path . --script res://tests/zombie_biome_enemy_smoke_test.gd
+godot --headless --path . --script res://tests/zombie_revamp_ten_wave_smoke_test.gd
+godot --headless --path . --script res://tests/zombie_revamp_ten_minute_soak_test.gd
+godot --path . --rendering-method gl_compatibility --resolution 1280x720 --script res://tests/zombie_biome_visual_qa.gd
+```
 
 ## Regressione Milestone 9
 

@@ -31,6 +31,18 @@ func configure_arena(profile: SurvivalArenaProfile) -> void:
 		hazard_color = profile.biome.hazard_color
 	queue_redraw()
 
+func configure_biome_palette(palette: BiomePalette) -> void:
+	if palette == null:
+		return
+	floor_color = palette.background_color
+	concrete_color = palette.floor_color
+	alternate_concrete_color = palette.alternate_floor_color
+	line_color = palette.grid_color
+	major_line_color = palette.major_grid_color
+	lane_color = palette.lane_color
+	hazard_color = palette.hazard_color
+	queue_redraw()
+
 func _draw() -> void:
 	var arena_size := Vector2(tile_width * grid_radius * 1.45, tile_height * grid_radius * 1.45)
 	draw_rect(Rect2(-arena_size, arena_size * 2.0), floor_color, true)

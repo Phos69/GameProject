@@ -49,6 +49,24 @@ func _connect_systems() -> void:
 		if not drop_system.drop_collected.is_connected(pickup_callback):
 			drop_system.drop_collected.connect(pickup_callback)
 
+	var hazard_system := get_tree().get_first_node_in_group(
+		"hazard_system"
+	) as HazardSystem
+	if hazard_system != null:
+		var fall_callback := Callable(self, "_on_player_fell")
+		if not hazard_system.player_fell.is_connected(fall_callback):
+			hazard_system.player_fell.connect(fall_callback)
+		var damage_callback := Callable(
+			self,
+			"_on_environment_damage"
+		)
+		if not hazard_system.player_environment_damaged.is_connected(
+			damage_callback
+		):
+			hazard_system.player_environment_damaged.connect(
+				damage_callback
+			)
+
 	var player_manager := get_tree().get_first_node_in_group(
 		"player_manager"
 	) as PlayerManager
@@ -157,6 +175,56 @@ func spawn_environment_explosion(
 	_request_camera_shake(10.0, 0.50)
 	return effect
 
+func spawn_fall_feedback(
+	fall_position: Vector2,
+	respawn_position: Vector2
+) -> Array[GameplayEffect]:
+	var effects: Array[GameplayEffect] = []
+	effects.append(_spawn_effect(
+		&"fall_damage",
+		fall_position,
+		Color(0.96, 0.22, 0.16, 1.0),
+		48.0,
+		0.48,
+		0.0,
+		flash_intensity
+	))
+	effects.append(_spawn_effect(
+		&"fall_respawn",
+		respawn_position,
+		Color(0.34, 0.82, 1.0, 1.0),
+		42.0,
+		0.52,
+		0.0,
+		glow_intensity
+	))
+	_request_camera_shake(5.0, 0.24)
+	return effects
+
+func spawn_environment_damage(
+	position: Vector2,
+	hazard_id: StringName
+) -> GameplayEffect:
+	var color := Color(0.82, 0.28, 0.16, 1.0)
+	match hazard_id:
+		&"poisoned", &"toxic_puddle", &"gas_cloud", &"toxic_cloud":
+			color = Color(0.30, 1.0, 0.42, 1.0)
+		&"burning", &"fire_zone", &"lava_crack", &"fire_patch":
+			color = Color(1.0, 0.30, 0.08, 1.0)
+		&"chilled", &"slippery_ice", &"deep_snow_slow":
+			color = Color(0.54, 0.90, 1.0, 1.0)
+		&"mudded", &"soaked", &"mud_slow", &"deep_water":
+			color = Color(0.18, 0.68, 0.64, 1.0)
+	return _spawn_effect(
+		&"environment_damage",
+		position,
+		color,
+		30.0,
+		0.34,
+		0.0,
+		flash_intensity
+	)
+
 func spawn_rpg_level_up(position: Vector2) -> GameplayEffect:
 	var effect := _spawn_effect(
 		&"rpg_level_up",
@@ -242,6 +310,25 @@ func _connect_rpg_feedback(player: Node) -> void:
 
 func _on_player_spawned(_player_slot: int, player: Node) -> void:
 	_connect_rpg_feedback(player)
+
+func _on_player_fell(
+	_player: Node,
+	_damage: int,
+	fall_position: Vector2,
+	respawn_position: Vector2
+) -> void:
+	spawn_fall_feedback(fall_position, respawn_position)
+
+func _on_environment_damage(
+	player: Node,
+	hazard_id: StringName,
+	_damage: int
+) -> void:
+	if player is Node2D:
+		spawn_environment_damage(
+			(player as Node2D).global_position,
+			hazard_id
+		)
 
 func _on_rpg_leveled_up(_level: int, player: Node) -> void:
 	if player is Node2D:

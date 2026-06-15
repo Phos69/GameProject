@@ -14,7 +14,8 @@ func apply_damage(
 	amount: int,
 	source: Node = null,
 	source_id: StringName = &"",
-	hit_position: Vector2 = Vector2.ZERO
+	hit_position: Vector2 = Vector2.ZERO,
+	ignore_invulnerability: bool = false
 ) -> int:
 	var resolved_amount := _resolve_damage(
 		target,
@@ -33,7 +34,10 @@ func apply_damage(
 		}
 	var health_component := _find_health_component(target)
 	if health_component != null:
-		var applied_damage := health_component.apply_damage(resolved_amount)
+		var applied_damage := health_component.apply_damage(
+			resolved_amount,
+			ignore_invulnerability
+		)
 		_notify_rpg_damage_applied(
 			target,
 			source,
@@ -95,6 +99,14 @@ func _resolve_damage(
 			resolved_amount,
 			source
 		)
+	if (
+		target != null
+		and target.has_method("modify_incoming_damage")
+	):
+		resolved_amount = int(target.modify_incoming_damage(
+			resolved_amount,
+			source_id
+		))
 	return resolved_amount
 
 func _find_rpg_component(node: Node) -> RpgPlayerComponent:

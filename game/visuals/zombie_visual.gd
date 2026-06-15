@@ -10,6 +10,7 @@ var hit_flash_timer: float = 0.0
 var current_state: StringName = &"idle"
 var flash_intensity: float = 1.0
 var reduced_motion: bool = false
+var biome_theme_id: StringName = &""
 
 func _ready() -> void:
 	add_to_group("visual_settings_consumers")
@@ -51,6 +52,14 @@ func set_state(state_name: StringName) -> void:
 func play_hit() -> void:
 	hit_flash_timer = 0.12
 
+func configure_biome_style(
+	next_archetype_id: String,
+	next_theme_id: StringName
+) -> void:
+	archetype_id = next_archetype_id
+	biome_theme_id = next_theme_id
+	queue_redraw()
+
 func get_silhouette_size() -> Vector2:
 	match archetype_id:
 		"runner":
@@ -63,6 +72,7 @@ func get_silhouette_size() -> Vector2:
 			return Vector2(46.0, 52.0)
 
 func _draw() -> void:
+	_draw_biome_theme()
 	match archetype_id:
 		"runner":
 			_draw_runner()
@@ -72,6 +82,41 @@ func _draw() -> void:
 			_draw_shooter()
 		_:
 			_draw_basic()
+
+func _draw_biome_theme() -> void:
+	if biome_theme_id.is_empty():
+		return
+	var color := Color(0.55, 0.82, 0.34, 0.72)
+	match biome_theme_id:
+		&"toxic":
+			color = Color(0.30, 1.0, 0.42, 0.78)
+		&"fire":
+			color = Color(1.0, 0.30, 0.08, 0.82)
+		&"frost":
+			color = Color(0.54, 0.90, 1.0, 0.82)
+		&"marsh":
+			color = Color(0.18, 0.68, 0.64, 0.78)
+	draw_arc(
+		Vector2(0.0, 10.0),
+		get_silhouette_size().x * 0.62,
+		0.0,
+		TAU,
+		24,
+		Color(color, 0.34),
+		3.0,
+		true
+	)
+	for index in range(3):
+		var direction := Vector2.UP.rotated(
+			(float(index) - 1.0) * 0.55
+		)
+		draw_line(
+			Vector2(0.0, -4.0),
+			direction * (18.0 + float(index % 2) * 5.0),
+			Color(color, 0.62),
+			2.5,
+			true
+		)
 
 func _draw_basic() -> void:
 	var walk_phase := sin(animation_time * 8.0) * movement_ratio

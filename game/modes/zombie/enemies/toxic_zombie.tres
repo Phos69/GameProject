@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="BiomeEnemyProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/modes/zombie/biome_enemy_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+enemy_id = &"toxic_zombie"
+display_name = "Zombie Tossico"
+visual_archetype = "basic"
+theme_id = &"toxic"
+max_health = 42
+move_speed = 88.0
+attack_damage = 8
+attack_cooldown = 0.9
+kill_experience = 8
+contact_status_id = &"poisoned"
+contact_status_duration = 4.0
+contact_movement_multiplier = 0.88
+contact_damage_per_tick = 2

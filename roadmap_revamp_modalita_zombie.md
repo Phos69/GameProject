@@ -1,5 +1,15 @@
 # Roadmap Revamp Modalità Zombie — Biomi, Spawn Dinamico e Onde Contestuali
 
+## Stato implementazione
+
+Completata il 15 giugno 2026.
+
+- Milestone 1-12 implementate.
+- Definition of Done coperta dai sistemi runtime.
+- Smoke test dedicati per spawn, biomi, ambiente, caduta, transizioni,
+  zombie tematici, dieci wave e soak da dieci minuti simulati.
+- QA visuale dei cinque biomi completata a 1280x720.
+
 ## Obiettivo generale
 
 Rifare la modalità zombie trasformandola da arena statica a modalità survival dinamica con:

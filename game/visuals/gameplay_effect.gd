@@ -145,6 +145,83 @@ func _draw() -> void:
 					4.0,
 					true
 				)
+		&"fall_damage":
+			draw_circle(
+				Vector2.ZERO,
+				effect_size * (0.52 - motion_ratio * 0.32),
+				Color(0.02, 0.025, 0.02, alpha * 0.82)
+			)
+			draw_arc(
+				Vector2.ZERO,
+				effect_size * (0.34 + motion_ratio * 0.72),
+				0.0,
+				TAU,
+				36,
+				color,
+				4.0,
+				true
+			)
+			for index in range(6):
+				var direction := Vector2.RIGHT.rotated(
+					TAU * float(index) / 6.0
+				)
+				draw_line(
+					direction * effect_size * 0.18,
+					direction * effect_size * (
+						0.42 + motion_ratio * 0.48
+					),
+					Color(color, alpha),
+					3.0,
+					true
+				)
+		&"fall_respawn":
+			for ring_index in range(2):
+				draw_arc(
+					Vector2.ZERO,
+					effect_size * (
+						0.24
+						+ motion_ratio * (
+							0.52 + float(ring_index) * 0.18
+						)
+					),
+					0.0,
+					TAU,
+					36,
+					Color(color, alpha * (1.0 - float(ring_index) * 0.30)),
+					3.0,
+					true
+				)
+			draw_line(
+				Vector2(0.0, effect_size * 0.42),
+				Vector2(0.0, -effect_size * (0.30 + motion_ratio * 0.50)),
+				Color(color.lightened(0.20), alpha),
+				3.0,
+				true
+			)
+		&"environment_damage":
+			draw_arc(
+				Vector2.ZERO,
+				effect_size * (0.28 + motion_ratio * 0.72),
+				0.0,
+				TAU,
+				30,
+				color,
+				4.0,
+				true
+			)
+			for index in range(5):
+				var direction := Vector2.UP.rotated(
+					(float(index) - 2.0) * 0.42
+				)
+				draw_line(
+					direction * effect_size * 0.18,
+					direction * effect_size * (
+						0.42 + motion_ratio * 0.44
+					),
+					Color(color, alpha),
+					3.0,
+					true
+				)
 		&"pickup":
 			draw_arc(
 				Vector2.ZERO,

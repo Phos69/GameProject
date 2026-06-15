@@ -12,6 +12,27 @@
 
 ### Added
 
+- Completata integralmente la Roadmap Revamp Modalita Zombie fino alla Milestone Z12.
+- Aggiunti quattro layout data-driven avanzati per Tossico, Infuocato, Neve e Palude, con terreno, ostacoli, casse, hazard e confini fisici dedicati.
+- Aggiunti `BiomeTransitionSystem` e `BiomeTransitionGate` per attraversare in sequenza tutti i cinque biomi durante la stessa run.
+- Esteso `HazardSystem` con danno periodico, rallentamenti, status temporanei e hazard runtime, preservando la fall zone da 20 HP.
+- Aggiunti undici profili `BiomeEnemyProfile` per zombie tossici, infuocati, ghiacciati e paludosi senza duplicare l'AI condivisa.
+- Aggiunte casse comuni, mediche, militari e tematiche con loot tag, visuali e feedback HUD specifici.
+- Esteso `WaveDirector` con scaling per party, tempo sopravvissuto, distanza dal bioma iniziale e modificatore drop.
+- Aggiunti HUD, annunci, cue audio ed effetti per cambio bioma, pericoli ambientali e status attivi.
+- Aggiunti smoke test per transizioni, zombie tematici, dieci ondate, soak da dieci minuti simulati e QA visuale dei cinque biomi.
+- Completata Roadmap Revamp Modalita Zombie Milestone Z5 con fall zone, danno ambientale e recupero sicuro.
+- Aggiunto `BiomeFallZone`, generato dal layout della Pianura Infetta e registrato come hazard/spawn blocker.
+- `HazardSystem` salva l'ultima posizione sicura, applica 20 HP, riposiziona il player e concede invulnerabilita temporanea dedicata.
+- `HealthComponent` supporta sorgenti di invulnerabilita componibili e `HealthSystem` puo ignorarle solo su richiesta esplicita.
+- Aggiunti feedback visuali, camera shake e cue audio `player_fell`.
+- Aggiunto `zombie_fall_hazard_smoke_test.gd` per danno, respawn, invulnerabilita, feedback, spawn validation e cleanup.
+- Completata Roadmap Revamp Modalita Zombie Milestone Z4 con terreno, casse e ostacoli nella Pianura Infetta.
+- Aggiunto `BiomeEnvironmentLayout` per placement data-driven di patch terreno, ostacoli e casse.
+- `TerrainGenerator` applica la palette bioma e genera decorazioni non collidenti.
+- `ObstacleSystem` genera rocce, recinti, barriera, rudere e confine parziale come `StaticBody2D` e spawn blocker.
+- `ResourceCrateSystem` genera casse comuni e mediche con loot table dedicate tramite i sistemi drop esistenti.
+- Aggiunto `zombie_environment_milestone_smoke_test.gd` per layout, collisioni, corridoi, casse, pathing minimo e cleanup.
 - Completata Roadmap Revamp Modalita Zombie Milestone Z3 con verifica dei biomi dati e delle wave contestuali.
 - Aggiunto `zombie_biome_wave_director_smoke_test.gd` per validare cinque biomi, partenza nella Pianura Infetta e modificatori tossici su wave/roster/scaling.
 - Completata Roadmap Revamp Modalita Zombie Milestone Z2 con smoke test dello spawn dai bordi camera.

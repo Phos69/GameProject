@@ -1,7 +1,8 @@
-[gd_resource type="Resource" script_class="BiomeDefinition" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="BiomeDefinition" load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://game/modes/zombie/biome_definition.gd" id="1_definition"]
 [ext_resource type="Resource" path="res://game/modes/zombie/biomes/infected_plains_palette.tres" id="2_palette"]
+[ext_resource type="Resource" path="res://game/modes/zombie/biomes/infected_plains_layout.tres" id="3_layout"]
 
 [resource]
 script = ExtResource("1_definition")
@@ -10,11 +11,18 @@ display_name = "Pianura Infetta"
 description = "Bioma iniziale leggibile con zombie base, pochi ostacoli e risorse comuni."
 is_starting_biome = true
 difficulty_rating = 1.0
+progression_depth = 0
 palette = ExtResource("2_palette")
+environment_layout = ExtResource("3_layout")
+next_biome_id = &"toxic_wastes"
+biome_icon_id = &"plains"
+danger_summary = "Low danger; watch the ravine"
+resource_summary = "Common ammo and medical supplies"
+enemy_summary = "Basic, runner and tank zombies"
 terrain_tags = Array[StringName]([&"dry_grass", &"dirt", &"broken_fence"])
-obstacle_ids = Array[StringName]([&"small_rock", &"broken_fence", &"wood_barrier"])
+obstacle_ids = Array[StringName]([&"small_rock", &"broken_fence", &"wood_barrier", &"ruined_house", &"boundary_fence"])
 crate_ids = Array[StringName]([&"common", &"medical"])
-hazard_ids = Array[StringName]([])
+hazard_ids = Array[StringName]([&"fall_zone"])
 resource_tags = Array[StringName]([&"ammo_base", &"small_medkit", &"common_materials"])
 allowed_zombie_types = Array[StringName]([&"survival_zombie", &"survival_runner", &"survival_tank", &"survival_shooter"])
 weighted_zombie_ids = Array[StringName]([&"survival_zombie", &"survival_runner", &"survival_tank", &"survival_shooter"])

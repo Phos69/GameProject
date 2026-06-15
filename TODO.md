@@ -1,22 +1,35 @@
 # TODO
 
-## Revamp modalita zombie - tracking attivo
+## Revamp modalita zombie - completato
 
-- Milestone Z4: terreno, casse e ostacoli.
-  - Obiettivo: popolare il bioma iniziale con casse risorse, barriere, ostacoli e primi impedimenti fisici validati.
-  - Milestone collegata: `roadmap_revamp_modalita_zombie.md` Milestone 4, 6 e 7.
-  - File/sistemi coinvolti: `TerrainGenerator`, `ResourceCrateSystem`, `ObstacleSystem`, `SurvivalArenaManager`, `DropSystem`.
-  - Criterio di accettazione: la mappa non e vuota, le casse sono raggiungibili e gli ostacoli non bloccano completamente il pathing.
-  - Test richiesto: smoke ambiente e checklist manuale survival.
-- Milestone Z5: hazard e caduta.
-  - Obiettivo: introdurre zone `fall_zone` con 20 HP di danno, respawn su ultima posizione sicura e invulnerabilita breve.
-  - Milestone collegata: `roadmap_revamp_modalita_zombie.md` Milestone 5.
-  - File/sistemi coinvolti: `HazardSystem`, player, `HealthSystem`, terreno e validazione spawn.
-  - Criterio di accettazione: il player non resta bloccato nella zona di caduta e gli zombie non spawnano dentro hazard.
-  - Test richiesto: smoke hazard e verifica manuale del feedback.
+- Roadmap Z1-Z12 completata.
+  - Obiettivo: trasformare la survival statica in una run a cinque biomi con spawn camera-edge, wave contestuali, loot, hazard, varianti nemiche e HUD.
+  - Milestone collegata: intera `roadmap_revamp_modalita_zombie.md`.
+  - File/sistemi coinvolti: `game/modes/zombie/`, `WaveManager`, `EnemySystem`, `HUDManager`, audio, effetti e risorse bioma.
+  - Criterio di accettazione: Definition of Done della roadmap coperta dai sistemi e dai test dedicati.
+  - Test richiesto: smoke Z1-Z5, transizioni, nemici tematici, dieci wave, soak dieci minuti e QA visuale cinque biomi.
 
 ## Completati recenti
 
+- Roadmap Revamp Modalita Zombie, Milestone Z6-Z12: espansione completa.
+  - Obiettivo: completare transizioni, quattro biomi avanzati, loot, hazard, zombie specifici, HUD e bilanciamento.
+  - Milestone collegata: `roadmap_revamp_modalita_zombie.md` Milestone 6-12.
+  - File/sistemi coinvolti: `BiomeTransitionSystem`, layout bioma, `HazardSystem`, `BiomeEnemyProfile`, `ResourceCrateSystem`, `WaveDirector`, HUD/audio/effetti.
+  - Criterio di accettazione: cinque biomi attraversabili e distinguibili, almeno due zombie tematici per bioma avanzato, wave contestuali e run stabile.
+  - Test richiesto: `zombie_biome_transition_smoke_test.gd`, `zombie_biome_enemy_smoke_test.gd`, `zombie_revamp_ten_wave_smoke_test.gd`, `zombie_revamp_ten_minute_soak_test.gd` e `zombie_biome_visual_qa.gd`.
+
+- Roadmap Revamp Modalita Zombie, Milestone Z5: zone di caduta e danno ambientale.
+  - Obiettivo: introdurre una `fall_zone` fisica con danno certo, recupero sicuro e feedback leggibile.
+  - Milestone collegata: `roadmap_revamp_modalita_zombie.md` Milestone 5.
+  - File/sistemi coinvolti: `BiomeFallZone`, `HazardSystem`, `HealthSystem`, `HealthComponent`, `ZombieSpawner`, `GameplayEffects`, `AudioManager`.
+  - Criterio di accettazione: la caduta sottrae 20 HP, riporta il player all'ultima posizione sicura, preserva altre invulnerabilita e non accetta spawn zombie.
+  - Test richiesto: `tests/zombie_fall_hazard_smoke_test.gd`, regressioni foundation/survival/RPG e QA `arena_variants_visual_qa.gd`.
+- Roadmap Revamp Modalita Zombie, Milestone Z4: terreno, casse e ostacoli.
+  - Obiettivo: popolare la Pianura Infetta con terreno leggibile, risorse esplorabili e impedimenti fisici senza chiudere le corsie principali.
+  - Milestone collegata: `roadmap_revamp_modalita_zombie.md` Milestone 4, 6 e 7.
+  - File/sistemi coinvolti: `BiomeEnvironmentLayout`, `TerrainGenerator`, `BiomeTerrainPatch`, `ObstacleSystem`, `BiomeObstacle`, `ResourceCrateSystem`, `SupplyCrate`, `DropSystem`.
+  - Criterio di accettazione: layout deterministico, casse comuni/mediche raggiungibili, rocce/recinti/barriere/rudere/confine fisici e corridoio centrale attraversabile.
+  - Test richiesto: `tests/zombie_environment_milestone_smoke_test.gd`, regressione spawn/survival/arena e QA `arena_variants_visual_qa.gd`.
 - Roadmap Revamp Modalita Zombie, Milestone Z3: biomi dati e ondate contestuali.
   - Obiettivo: verificare definizioni bioma complete e wave modificate dal bioma corrente.
   - Milestone collegata: `roadmap_revamp_modalita_zombie.md` Milestone 3 e 8.

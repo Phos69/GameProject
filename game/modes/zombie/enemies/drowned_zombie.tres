@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="BiomeEnemyProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/modes/zombie/biome_enemy_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+enemy_id = &"drowned_zombie"
+display_name = "Zombie Annegato"
+visual_archetype = "basic"
+theme_id = &"marsh"
+max_health = 58
+move_speed = 76.0
+attack_damage = 10
+attack_cooldown = 0.95
+kill_experience = 9
+contact_status_id = &"soaked"
+contact_status_duration = 3.0
+contact_movement_multiplier = 0.80
+emerge_duration = 0.6

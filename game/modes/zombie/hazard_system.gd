@@ -2,23 +2,153 @@ extends Node
 class_name HazardSystem
 
 signal hazard_rules_configured(biome_id: StringName)
+signal hazard_spawned(hazard: Node2D, hazard_id: StringName)
+signal safe_position_updated(player: Node, position: Vector2)
+signal player_fell(
+	player: Node,
+	damage: int,
+	fall_position: Vector2,
+	respawn_position: Vector2
+)
+signal player_environment_damaged(
+	player: Node,
+	hazard_id: StringName,
+	damage: int
+)
+signal player_status_changed(player: Node, status_ids: Array[StringName])
 
-var active_biome
+const FALL_ZONE_SCRIPT = preload(
+	"res://game/modes/zombie/biome_fall_zone.gd"
+)
+const HAZARD_ZONE_SCRIPT = preload(
+	"res://game/modes/zombie/biome_hazard_zone.gd"
+)
+
+@export var environment_container_path: NodePath = NodePath(
+	"../../../../World/EnvironmentProps"
+)
+@export_range(1, 999, 1) var fall_damage: int = 20
+@export_range(0.1, 5.0, 0.1) var fall_respawn_invulnerability: float = 1.25
+@export_range(0.05, 2.0, 0.05) var safe_position_update_interval: float = 0.20
+@export_range(0.0, 240.0, 4.0) var minimum_safe_distance_from_hazard: float = 56.0
+@export_range(0.1, 3.0, 0.1) var fall_retrigger_cooldown: float = 0.50
+
+var active_biome: BiomeDefinition
 var is_active: bool = false
+var active_hazards: Array[Node2D] = []
+var safe_positions: Dictionary = {}
+var safe_update_timer: float = 0.0
+var fall_cooldowns: Dictionary = {}
+var invulnerability_timers: Dictionary = {}
+var status_runtime: BiomeStatusRuntime
 
 func _ready() -> void:
 	add_to_group("hazard_system")
+	status_runtime = BiomeStatusRuntime.new()
+	status_runtime.environment_damaged.connect(
+		_on_runtime_environment_damaged
+	)
+	status_runtime.status_changed.connect(_on_runtime_status_changed)
 
-func start_run(biome) -> void:
+func _process(delta: float) -> void:
+	if not is_active:
+		return
+	_tick_fall_cooldowns(delta)
+	_tick_invulnerability(delta)
+	status_runtime.process_runtime(delta, get_tree(), active_hazards)
+	safe_update_timer = maxf(safe_update_timer - delta, 0.0)
+	if safe_update_timer <= 0.0:
+		safe_update_timer = safe_position_update_interval
+		_update_safe_positions()
+
+func start_run(biome: BiomeDefinition) -> void:
+	_clear_runtime()
 	active_biome = biome
 	is_active = true
+	_generate_hazards()
+	status_runtime.process_runtime(0.0, get_tree(), active_hazards)
+	_update_safe_positions()
 	hazard_rules_configured.emit(
-		StringName(active_biome.get("biome_id")) if active_biome != null else &""
+		active_biome.biome_id if active_biome != null else &""
 	)
 
 func stop_run() -> void:
+	_clear_runtime()
 	is_active = false
 	active_biome = null
+
+func get_active_hazards() -> Array[Node2D]:
+	_prune_hazards()
+	return active_hazards.duplicate()
+
+func get_last_safe_position(player: Node) -> Vector2:
+	if player == null:
+		return Vector2.ZERO
+	return safe_positions.get(
+		player.get_instance_id(),
+		_resolve_fallback_position(player)
+	)
+
+func get_player_status_ids(player: Node) -> Array[StringName]:
+	return status_runtime.get_status_ids(player, active_hazards)
+
+func apply_status_to_player(
+	player: Node,
+	status_id: StringName,
+	duration: float,
+	movement_multiplier: float = 1.0,
+	damage_per_tick: int = 0
+) -> bool:
+	if (
+		not is_active
+		or player == null
+		or not player.is_in_group("players")
+		or status_id.is_empty()
+		or duration <= 0.0
+	):
+		return false
+	return status_runtime.apply_status_to_player(
+		player,
+		status_id,
+		duration,
+		movement_multiplier,
+		damage_per_tick,
+		active_hazards
+	)
+
+func spawn_runtime_hazard(
+	hazard_id: StringName,
+	position: Vector2,
+	config: Dictionary = {}
+) -> BiomeHazardZone:
+	if not is_active or hazard_id.is_empty():
+		return null
+	var resolved_config := BiomeHazardCatalog.get_config(hazard_id)
+	for key in config.keys():
+		resolved_config[key] = config[key]
+	var radius := maxf(float(resolved_config.get("radius", 68.0)), 20.0)
+	var zone := HAZARD_ZONE_SCRIPT.new() as BiomeHazardZone
+	if zone == null:
+		return null
+	var color := BiomeHazardCatalog.get_color(hazard_id, active_biome)
+	zone.name = "%sRuntimeHazard" % BiomeHazardCatalog.pascal_case(
+		String(hazard_id)
+	)
+	zone.configure(
+		hazard_id,
+		Vector2(radius * 2.0, radius * 1.25),
+		0.0,
+		color,
+		resolved_config
+	)
+	var container := _get_environment_container()
+	if container == null:
+		return null
+	container.add_child(zone)
+	zone.global_position = position
+	active_hazards.append(zone)
+	hazard_spawned.emit(zone, hazard_id)
+	return zone
 
 func is_position_hazardous(position: Vector2) -> bool:
 	for hazard in get_tree().get_nodes_in_group("fall_zones"):
@@ -29,14 +159,296 @@ func is_position_hazardous(position: Vector2) -> bool:
 			return true
 	return false
 
+func is_position_safe(position: Vector2) -> bool:
+	if is_position_hazardous(position):
+		return false
+	for hazard in active_hazards:
+		if (
+			is_instance_valid(hazard)
+			and hazard.has_method("distance_to_zone")
+			and float(hazard.distance_to_zone(position))
+			< minimum_safe_distance_from_hazard
+		):
+			return false
+	var obstacle_system := get_tree().get_first_node_in_group(
+		"obstacle_system"
+	)
+	return not (
+		obstacle_system != null
+		and obstacle_system.has_method("is_position_blocked")
+		and obstacle_system.is_position_blocked(position)
+	)
+
+func trigger_fall(player: Node, _hazard: BiomeFallZone = null) -> bool:
+	if (
+		not is_active
+		or player == null
+		or not player is Node2D
+		or not player.is_in_group("players")
+	):
+		return false
+	var player_id := player.get_instance_id()
+	if float(fall_cooldowns.get(player_id, 0.0)) > 0.0:
+		return false
+	var health_component := player.get_node_or_null(
+		"HealthComponent"
+	) as HealthComponent
+	if health_component == null or health_component.is_incapacitated():
+		return false
+	var fall_position := (player as Node2D).global_position
+	var respawn_position := get_last_safe_position(player)
+	var health_system := get_tree().get_first_node_in_group(
+		"health_system"
+	) as HealthSystem
+	if health_system == null:
+		return false
+	var applied_damage := health_system.apply_damage(
+		player,
+		fall_damage,
+		null,
+		&"fall_zone",
+		fall_position,
+		true
+	)
+	_respawn_player(player, respawn_position)
+	_begin_fall_invulnerability(player, health_component)
+	fall_cooldowns[player_id] = fall_retrigger_cooldown
+	safe_positions[player_id] = respawn_position
+	player_fell.emit(
+		player,
+		applied_damage,
+		fall_position,
+		respawn_position
+	)
+	return true
+
+func _generate_hazards() -> void:
+	if active_biome == null:
+		return
+	var layout := active_biome.environment_layout
+	var palette := active_biome.palette
+	var allowed_ids := active_biome.hazard_ids
+	var container := _get_environment_container()
+	if layout == null or palette == null or container == null:
+		return
+	for index in range(layout.hazard_positions.size()):
+		if index >= layout.hazard_ids.size():
+			break
+		var hazard_id := layout.hazard_ids[index]
+		if not allowed_ids.has(hazard_id):
+			continue
+		var size := (
+			layout.hazard_sizes[index]
+			if index < layout.hazard_sizes.size()
+			else Vector2(150.0, 72.0)
+		)
+		var rotation_radians := (
+			layout.hazard_rotations[index]
+			if index < layout.hazard_rotations.size()
+			else 0.0
+		)
+		var hazard: Node2D
+		if hazard_id == &"fall_zone":
+			var fall_zone := FALL_ZONE_SCRIPT.new() as BiomeFallZone
+			if fall_zone == null:
+				continue
+			fall_zone.configure(
+				hazard_id,
+				size,
+				rotation_radians,
+				palette.hazard_color
+			)
+			fall_zone.body_entered.connect(
+				_on_hazard_body_entered.bind(fall_zone)
+			)
+			hazard = fall_zone
+		else:
+			var hazard_zone := HAZARD_ZONE_SCRIPT.new() as BiomeHazardZone
+			if hazard_zone == null:
+				continue
+			hazard_zone.configure(
+				hazard_id,
+				size,
+				rotation_radians,
+				BiomeHazardCatalog.get_color(hazard_id, active_biome),
+				BiomeHazardCatalog.get_config(hazard_id)
+			)
+			hazard = hazard_zone
+		hazard.name = "%s%d" % [
+			BiomeHazardCatalog.pascal_case(String(hazard_id)),
+			index + 1
+		]
+		container.add_child(hazard)
+		hazard.global_position = layout.hazard_positions[index]
+		active_hazards.append(hazard)
+		hazard_spawned.emit(hazard, hazard_id)
+
+func _update_safe_positions() -> void:
+	for player in get_tree().get_nodes_in_group("players"):
+		if not player is Node2D:
+			continue
+		var health_component := player.get_node_or_null(
+			"HealthComponent"
+		) as HealthComponent
+		if health_component == null or health_component.is_incapacitated():
+			continue
+		var position := (player as Node2D).global_position
+		if not is_position_safe(position):
+			continue
+		var player_id := player.get_instance_id()
+		if (
+			not safe_positions.has(player_id)
+			or not (safe_positions[player_id] as Vector2).is_equal_approx(
+				position
+			)
+		):
+			safe_positions[player_id] = position
+			safe_position_updated.emit(player, position)
+
+func _respawn_player(player: Node, position: Vector2) -> void:
+	var player_node := player as Node2D
+	player_node.global_position = position
+	if player is CharacterBody2D:
+		(player as CharacterBody2D).velocity = Vector2.ZERO
+
+func _begin_fall_invulnerability(
+	player: Node,
+	health_component: HealthComponent
+) -> void:
+	var player_id := player.get_instance_id()
+	var source_id := StringName("fall_respawn_%d" % player_id)
+	health_component.add_invulnerability_source(source_id)
+	invulnerability_timers[player_id] = {
+		"player": player,
+		"health_component": health_component,
+		"source_id": source_id,
+		"time_left": fall_respawn_invulnerability
+	}
+
+func _tick_fall_cooldowns(delta: float) -> void:
+	for player_id in fall_cooldowns.keys():
+		var time_left := maxf(
+			float(fall_cooldowns[player_id]) - delta,
+			0.0
+		)
+		if time_left <= 0.0:
+			fall_cooldowns.erase(player_id)
+		else:
+			fall_cooldowns[player_id] = time_left
+
+func _tick_invulnerability(delta: float) -> void:
+	for player_id in invulnerability_timers.keys():
+		var data := invulnerability_timers[player_id] as Dictionary
+		var health_component := data.get(
+			"health_component"
+		) as HealthComponent
+		var source_id := StringName(data.get("source_id", &""))
+		var time_left := maxf(
+			float(data.get("time_left", 0.0)) - delta,
+			0.0
+		)
+		if (
+			time_left <= 0.0
+			or health_component == null
+			or not is_instance_valid(health_component)
+		):
+			if health_component != null and is_instance_valid(health_component):
+				health_component.remove_invulnerability_source(source_id)
+			invulnerability_timers.erase(player_id)
+		else:
+			data["time_left"] = time_left
+			invulnerability_timers[player_id] = data
+
+func _resolve_fallback_position(player: Node) -> Vector2:
+	var player_slot := int(player.get("player_slot"))
+	var player_manager := get_tree().get_first_node_in_group(
+		"player_manager"
+	) as PlayerManager
+	if player_manager != null and not player_manager.spawn_points.is_empty():
+		var index := clampi(
+			player_slot - 1,
+			0,
+			player_manager.spawn_points.size() - 1
+		)
+		var spawn_position := player_manager.spawn_points[index]
+		if is_position_safe(spawn_position):
+			return spawn_position
+	if is_position_safe(Vector2.ZERO):
+		return Vector2.ZERO
+	for index in range(8):
+		var candidate := Vector2.RIGHT.rotated(
+			TAU * float(index) / 8.0
+		) * 140.0
+		if is_position_safe(candidate):
+			return candidate
+	return Vector2.ZERO
+
+func _on_hazard_body_entered(
+	body: Node2D,
+	hazard: BiomeFallZone
+) -> void:
+	if body.is_in_group("players"):
+		trigger_fall(body, hazard)
+
+func _on_runtime_environment_damaged(
+	player: Node,
+	hazard_id: StringName,
+	damage: int
+) -> void:
+	player_environment_damaged.emit(player, hazard_id, damage)
+
+func _on_runtime_status_changed(
+	player: Node,
+	status_ids: Array[StringName]
+) -> void:
+	player_status_changed.emit(player, status_ids)
+
 func _node_contains_position(node: Node, position: Vector2) -> bool:
-	if node == null or not is_instance_valid(node):
+	if (
+		node == null
+		or not is_instance_valid(node)
+		or node.is_queued_for_deletion()
+	):
 		return false
 	if node.has_method("contains_global_position"):
 		return bool(node.contains_global_position(position))
 	if node is Node2D:
 		var radius := float(node.get_meta("zone_radius", 32.0))
-		return (node as Node2D).global_position.distance_squared_to(position) <= radius * radius
-	if node is Area2D and node is Node2D:
-		return (node as Node2D).global_position.distance_squared_to(position) <= 32.0 * 32.0
+		return (
+			(node as Node2D).global_position.distance_squared_to(position)
+			<= radius * radius
+		)
 	return false
+
+func _get_environment_container() -> Node:
+	var container := get_node_or_null(environment_container_path)
+	return container if container != null else get_tree().current_scene
+
+func _clear_runtime() -> void:
+	for data_value in invulnerability_timers.values():
+		var data := data_value as Dictionary
+		var health_component := data.get(
+			"health_component"
+		) as HealthComponent
+		if health_component != null and is_instance_valid(health_component):
+			health_component.remove_invulnerability_source(
+				StringName(data.get("source_id", &""))
+			)
+	if status_runtime != null:
+		status_runtime.clear_runtime(get_tree())
+	for hazard in active_hazards:
+		if is_instance_valid(hazard):
+			hazard.queue_free()
+	active_hazards.clear()
+	safe_positions.clear()
+	fall_cooldowns.clear()
+	invulnerability_timers.clear()
+	safe_update_timer = 0.0
+
+func _prune_hazards() -> void:
+	for hazard in active_hazards.duplicate():
+		if (
+			not is_instance_valid(hazard)
+			or hazard.is_queued_for_deletion()
+		):
+			active_hazards.erase(hazard)

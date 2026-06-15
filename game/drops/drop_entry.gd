@@ -6,6 +6,7 @@ class_name DropEntry
 @export_range(0, 9999) var min_amount: int = 1
 @export_range(0, 9999) var max_amount: int = 1
 @export var weapon_data: WeaponData
+@export var resource_tag: StringName = &""
 
 func create_drop_data(rng: RandomNumberGenerator) -> Dictionary:
 	var minimum := mini(min_amount, max_amount)
@@ -17,4 +18,6 @@ func create_drop_data(rng: RandomNumberGenerator) -> Dictionary:
 	if weapon_data != null:
 		drop_data["weapon_data"] = weapon_data
 		drop_data["weapon_id"] = weapon_data.weapon_id
+	if not resource_tag.is_empty():
+		drop_data["resource_tag"] = resource_tag
 	return drop_data

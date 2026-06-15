@@ -15,12 +15,29 @@ signal enemy_died(enemy: Node)
 
 var active_enemies: Array[Node] = []
 var registered_enemy_scenes: Dictionary = {}
+var registered_enemy_profiles: Dictionary = {}
+
+const BIOME_ENEMY_PROFILES = [
+	preload("res://game/modes/zombie/enemies/toxic_zombie.tres"),
+	preload("res://game/modes/zombie/enemies/toxic_exploder.tres"),
+	preload("res://game/modes/zombie/enemies/burned_zombie.tres"),
+	preload("res://game/modes/zombie/enemies/fire_runner.tres"),
+	preload("res://game/modes/zombie/enemies/fire_exploder.tres"),
+	preload("res://game/modes/zombie/enemies/frozen_zombie.tres"),
+	preload("res://game/modes/zombie/enemies/ice_armored_zombie.tres"),
+	preload("res://game/modes/zombie/enemies/heavy_slow_zombie.tres"),
+	preload("res://game/modes/zombie/enemies/drowned_zombie.tres"),
+	preload("res://game/modes/zombie/enemies/marsh_zombie.tres"),
+	preload("res://game/modes/zombie/enemies/water_emerging_zombie.tres")
+]
 
 func _ready() -> void:
 	add_to_group("enemy_system")
 	register_enemy_scene(&"survival_runner", runner_enemy_scene)
 	register_enemy_scene(&"survival_tank", tank_enemy_scene)
 	register_enemy_scene(&"survival_shooter", ranged_enemy_scene)
+	for profile in BIOME_ENEMY_PROFILES:
+		register_enemy_profile(profile)
 	if spawn_initial_enemies:
 		call_deferred("_spawn_initial_enemies")
 
@@ -28,6 +45,15 @@ func register_enemy_scene(enemy_id: StringName, scene: PackedScene) -> void:
 	if enemy_id.is_empty() or scene == null:
 		return
 	registered_enemy_scenes[enemy_id] = scene
+
+func register_enemy_profile(profile: BiomeEnemyProfile) -> void:
+	if profile == null or profile.enemy_id.is_empty():
+		return
+	registered_enemy_profiles[profile.enemy_id] = profile
+	register_enemy_scene(profile.enemy_id, enemy_scene)
+
+func get_enemy_profile(enemy_id: StringName) -> BiomeEnemyProfile:
+	return registered_enemy_profiles.get(enemy_id) as BiomeEnemyProfile
 
 func spawn_enemy(
 	enemy_id: StringName,
@@ -41,11 +67,16 @@ func spawn_enemy(
 		return null
 
 	var enemy := scene.instantiate()
+	var resolved_config := spawn_config.duplicate(true)
+	resolved_config["enemy_id"] = enemy_id
+	var profile := get_enemy_profile(enemy_id)
+	if profile != null:
+		resolved_config["enemy_profile"] = profile
 	if enemy.has_method("configure_spawn"):
-		enemy.configure_spawn(spawn_config)
+		enemy.configure_spawn(resolved_config)
 	elif enemy is BasicEnemy:
 		(enemy as BasicEnemy).enemy_id = enemy_id
-		(enemy as BasicEnemy).configure_wave_scaling(spawn_config)
+		(enemy as BasicEnemy).configure_wave_scaling(resolved_config)
 	if enemy is Node2D:
 		(enemy as Node2D).global_position = position
 

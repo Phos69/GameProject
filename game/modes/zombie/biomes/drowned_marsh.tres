@@ -1,7 +1,8 @@
-[gd_resource type="Resource" script_class="BiomeDefinition" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="BiomeDefinition" load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://game/modes/zombie/biome_definition.gd" id="1_definition"]
 [ext_resource type="Resource" path="res://game/modes/zombie/biomes/drowned_marsh_palette.tres" id="2_palette"]
+[ext_resource type="Resource" path="res://game/modes/zombie/biomes/drowned_marsh_layout.tres" id="3_layout"]
 
 [resource]
 script = ExtResource("1_definition")
@@ -9,9 +10,16 @@ biome_id = &"drowned_marsh"
 display_name = "Bioma Palude"
 description = "Bioma con acqua, fango, ponti e percorsi limitati."
 difficulty_rating = 1.75
+progression_depth = 4
 palette = ExtResource("2_palette")
+environment_layout = ExtResource("3_layout")
+previous_biome_id = &"frozen_outskirts"
+biome_icon_id = &"marsh"
+danger_summary = "MUD: deep water and movement slowdown"
+resource_summary = "Special ammo and organic materials"
+enemy_summary = "Drowned, marsh and emerging zombies"
 terrain_tags = Array[StringName]([&"mud", &"shallow_water", &"reeds", &"broken_bridge"])
-obstacle_ids = Array[StringName]([&"reed_wall", &"sunken_wreck", &"wood_bridge"])
+obstacle_ids = Array[StringName]([&"reed_wall", &"sunken_wreck", &"wood_bridge", &"deep_water_boundary"])
 crate_ids = Array[StringName]([&"common", &"military", &"biome_marsh"])
 hazard_ids = Array[StringName]([&"deep_water", &"mud_slow", &"emerge_zone"])
 resource_tags = Array[StringName]([&"floating_crate", &"special_ammo", &"organic_materials"])

@@ -29,6 +29,8 @@ var game_mode_manager: GameModeManager
 var base_max_health: int = 100
 var base_move_speed: float = 260.0
 var current_run_health_bonus: int = 0
+var character_speed_multiplier: float = 1.0
+var environment_speed_multiplier: float = 1.0
 
 func _ready() -> void:
 	add_to_group("players")
@@ -160,6 +162,13 @@ func set_revive_progress(ratio: float, active: bool) -> void:
 func is_downed() -> bool:
 	return health_component.is_downed
 
+func set_environment_speed_multiplier(multiplier: float) -> void:
+	environment_speed_multiplier = clampf(multiplier, 0.25, 1.25)
+	_refresh_move_speed()
+
+func get_environment_speed_multiplier() -> float:
+	return environment_speed_multiplier
+
 func _on_downed() -> void:
 	velocity = Vector2.ZERO
 	visual.play_downed()
@@ -199,12 +208,19 @@ func _on_weapon_changed(weapon_data: WeaponData) -> void:
 
 func _apply_rpg_runtime_stats(refill_health: bool) -> void:
 	var resolved_max_health := base_max_health + current_run_health_bonus
-	var speed_multiplier := 1.0
+	character_speed_multiplier = 1.0
 	if rpg_component != null and rpg_component.has_character():
 		resolved_max_health = rpg_component.get_max_hp() + current_run_health_bonus
-		speed_multiplier = rpg_component.get_speed_multiplier()
+		character_speed_multiplier = rpg_component.get_speed_multiplier()
 	health_component.set_max_health(resolved_max_health, refill_health)
-	move_speed = base_move_speed * speed_multiplier
+	_refresh_move_speed()
+
+func _refresh_move_speed() -> void:
+	move_speed = (
+		base_move_speed
+		* character_speed_multiplier
+		* environment_speed_multiplier
+	)
 
 func _equip_rpg_base_weapon() -> void:
 	if rpg_component == null or not rpg_component.has_character():

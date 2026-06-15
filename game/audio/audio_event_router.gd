@@ -70,6 +70,32 @@ func _connect_sources() -> void:
 		var revive_callback := Callable(self, "_on_player_revived")
 		if not revive_system.is_connected(&"player_revived", revive_callback):
 			revive_system.connect(&"player_revived", revive_callback)
+	var hazard_system := get_tree().get_first_node_in_group(
+		"hazard_system"
+	) as HazardSystem
+	if hazard_system != null:
+		var fall_callback := Callable(self, "_on_player_fell")
+		if not hazard_system.player_fell.is_connected(fall_callback):
+			hazard_system.player_fell.connect(fall_callback)
+		var damage_callback := Callable(
+			self,
+			"_on_environment_damage"
+		)
+		if not hazard_system.player_environment_damaged.is_connected(
+			damage_callback
+		):
+			hazard_system.player_environment_damaged.connect(
+				damage_callback
+			)
+	var biome_manager := get_tree().get_first_node_in_group(
+		"biome_manager"
+	) as BiomeManager
+	if biome_manager != null:
+		var biome_callback := Callable(self, "_on_biome_changed")
+		if not biome_manager.current_biome_changed.is_connected(
+			biome_callback
+		):
+			biome_manager.current_biome_changed.connect(biome_callback)
 	var game_mode_manager := get_tree().get_first_node_in_group(
 		"game_mode_manager"
 	) as GameModeManager
@@ -118,6 +144,35 @@ func _on_player_revived(
 	_restored_health: int
 ) -> void:
 	audio_manager.play_run_feedback(&"player_revived")
+
+func _on_player_fell(
+	_player: Node,
+	_damage: int,
+	_fall_position: Vector2,
+	_respawn_position: Vector2
+) -> void:
+	audio_manager.play_run_feedback(&"player_fell")
+
+func _on_environment_damage(
+	_player: Node,
+	hazard_id: StringName,
+	_damage: int
+) -> void:
+	audio_manager.play_cue(
+		&"environment_damage",
+		hazard_id,
+		&"Environment"
+	)
+
+func _on_biome_changed(
+	biome_id: StringName,
+	_display_name: String
+) -> void:
+	audio_manager.play_cue(
+		&"biome_entered",
+		biome_id,
+		&"Environment"
+	)
 
 func _on_enemy_spawned(enemy: Node) -> void:
 	var enemy_id := StringName(enemy.get("enemy_id"))

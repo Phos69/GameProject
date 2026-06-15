@@ -1,7 +1,8 @@
-[gd_resource type="Resource" script_class="BiomeDefinition" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="BiomeDefinition" load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://game/modes/zombie/biome_definition.gd" id="1_definition"]
 [ext_resource type="Resource" path="res://game/modes/zombie/biomes/toxic_wastes_palette.tres" id="2_palette"]
+[ext_resource type="Resource" path="res://game/modes/zombie/biomes/toxic_wastes_layout.tres" id="3_layout"]
 
 [resource]
 script = ExtResource("1_definition")
@@ -9,9 +10,17 @@ biome_id = &"toxic_wastes"
 display_name = "Bioma Tossico"
 description = "Bioma velenoso con controllo area, gas e risorse chimiche."
 difficulty_rating = 1.55
+progression_depth = 1
 palette = ExtResource("2_palette")
+environment_layout = ExtResource("3_layout")
+previous_biome_id = &"infected_plains"
+next_biome_id = &"burning_fields"
+biome_icon_id = &"toxic"
+danger_summary = "TOX: poison pools and gas"
+resource_summary = "Antidotes and corrosive ammo"
+enemy_summary = "Toxic zombies and toxic exploders"
 terrain_tags = Array[StringName]([&"toxic_soil", &"chemical_puddle", &"corrupted_plants"])
-obstacle_ids = Array[StringName]([&"chemical_barrel", &"lab_ruin", &"corroded_barrier"])
+obstacle_ids = Array[StringName]([&"chemical_barrel", &"lab_ruin", &"corroded_barrier", &"toxic_boundary_wall"])
 crate_ids = Array[StringName]([&"common", &"medical", &"biome_toxic"])
 hazard_ids = Array[StringName]([&"toxic_puddle", &"gas_cloud"])
 resource_tags = Array[StringName]([&"antidote", &"corrosive_ammo", &"chemical_materials"])

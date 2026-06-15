@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="BiomeEnemyProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/modes/zombie/biome_enemy_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+enemy_id = &"ice_armored_zombie"
+display_name = "Zombie Corazzato di Ghiaccio"
+visual_archetype = "tank"
+theme_id = &"frost"
+max_health = 112
+move_speed = 54.0
+acceleration = 330.0
+attack_range = 54.0
+attack_damage = 16
+attack_cooldown = 1.3
+kill_experience = 14
+incoming_damage_multiplier = 0.66
+contact_status_id = &"chilled"
+contact_status_duration = 2.5
+contact_movement_multiplier = 0.78

@@ -421,13 +421,48 @@ selezione dal menu. I profili attuali sono:
 - il barile e colpibile, mostra area e countdown, poi danneggia tutti gli
   attori nell'area tramite `HealthSystem`.
 
-Il revamp zombie e avviato come fondazione modulare:
+Il revamp zombie e completo come prima versione giocabile:
 
 - ogni run parte dalla `Pianura Infetta`, il bioma iniziale semplice;
-- le definizioni dati coprono Pianura Infetta, Tossico, Infuocato, Neve e Palude;
+- il party puo attraversare in sequenza Pianura, Tossico, Infuocato, Neve e Palude;
+- ogni area ha almeno un confine attraversabile o di ritorno e un confine fisicamente bloccato;
+- il cambio area aggiorna palette, terreno, ostacoli, casse, hazard, HUD e wave successive;
 - le ondate leggono il bioma corrente tramite `WaveDirector`;
 - lo spawn reale degli zombie viene richiesto a `ZombieSpawner` sui bordi della camera;
 - i vecchi punti arena restano fallback e supporto visuale per i gate.
+
+Identita dei biomi:
+
+- `Pianura Infetta`: onboarding, zombie base, casse comuni/mediche e fall zone;
+- `Bioma Tossico`: pozze e gas, antidoti, zombie tossici ed esplosivi;
+- `Bioma Infuocato`: fiamme, lava, casse militari, runner ed esplosivi;
+- `Bioma Neve`: ghiaccio, neve alta, kit termici e zombie corazzati;
+- `Bioma Palude`: acqua profonda, fango, loot organico e zombie emergenti;
+- tutti i layout sono deterministici e mantengono una corsia centrale;
+- casse e spawn vengono validati contro ostacoli e hazard.
+
+Zombie tematici:
+
+- Tossico: `toxic_zombie`, `toxic_exploder`;
+- Infuocato: `burned_zombie`, `fire_runner`, `fire_exploder`;
+- Neve: `frozen_zombie`, `ice_armored_zombie`, `heavy_slow_zombie`;
+- Palude: `drowned_zombie`, `marsh_zombie`, `water_emerging_zombie`;
+- i profili configurano statistiche, resistenze, status al contatto, emersione e hazard alla morte;
+- tutte le varianti riusano targeting, health, scaling, drop e AI di `BasicEnemy`.
+
+Regole hazard:
+
+- la `Pianura Infetta` contiene una fall zone visibile fuori dalle corsie centrali;
+- entrando nella zona il player perde 20 HP, anche se ha un'altra invulnerabilita attiva;
+- il player torna all'ultima posizione sicura registrata e la velocita viene azzerata;
+- dopo il recupero riceve 1,25 secondi di invulnerabilita dedicata;
+- altre sorgenti di invulnerabilita restano attive e indipendenti;
+- zombie e casse non possono usare la fall zone come posizione valida;
+- danno e respawn producono feedback visuale, camera shake e cue ambientale.
+- tossico e fuoco applicano danno periodico;
+- gas, neve alta, acqua e fango riducono temporaneamente la velocita;
+- ghiaccio applica un modificatore di movimento distinto senza cambiare input;
+- gli status da nemico scadono automaticamente e non alterano permanentemente le statistiche.
 
 Regole della run:
 
@@ -440,7 +475,8 @@ Regole della run:
 - dalla wave 2 ogni terzo zombie regolare e un runner;
 - dalla wave 3, con almeno cinque zombie regolari, l'ultimo e un tank;
 - dalla wave 4 ogni quarto slot regolare e uno shooter, salvo lo slot tank;
-- nella fondazione revamp, questi ruoli sono risolti dal bioma iniziale per mantenere compatibilita con il roster esistente;
+- nei biomi avanzati il roster pesato sostituisce progressivamente questi ruoli con varianti tematiche;
+- numero player, tempo sopravvissuto e distanza dal bioma iniziale aumentano gradualmente la pressione;
 - ogni quinta ondata e marcata come boss wave;
 - ogni boss wave genera 2 zombie di scorta e il `Wave Warden`;
 - la vita boss aumenta del 10% per ondata precedente;
@@ -473,6 +509,9 @@ L'HUD mostra:
 - vita e munizioni di ogni player;
 - stato low ammo, reload e fallback;
 - conferma temporanea dei pickup ammo condivisi;
+- nome e icona compatta del bioma;
+- pericolo, risorse utili e status ambientali per player;
+- annuncio centrale e cambio colore bordo quando il party entra in un nuovo bioma;
 - XP e denaro party.
 
 Ogni player dispone inoltre di una scheda colorata con barra vita, arma attiva

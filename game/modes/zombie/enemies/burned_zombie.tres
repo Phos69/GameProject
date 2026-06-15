@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="BiomeEnemyProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/modes/zombie/biome_enemy_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+enemy_id = &"burned_zombie"
+display_name = "Zombie Bruciato"
+visual_archetype = "basic"
+theme_id = &"fire"
+max_health = 48
+move_speed = 92.0
+attack_damage = 10
+attack_cooldown = 0.82
+kill_experience = 9
+incoming_damage_multiplier = 0.82
+contact_status_id = &"burning"
+contact_status_duration = 3.0
+contact_movement_multiplier = 0.94
+contact_damage_per_tick = 3
+death_hazard_id = &"fire_patch"
+death_hazard_duration = 3.0
+death_hazard_radius = 54.0

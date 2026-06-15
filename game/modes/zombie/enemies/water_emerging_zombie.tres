@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="BiomeEnemyProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/modes/zombie/biome_enemy_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+enemy_id = &"water_emerging_zombie"
+display_name = "Zombie Emergente"
+visual_archetype = "runner"
+theme_id = &"marsh"
+max_health = 34
+move_speed = 132.0
+acceleration = 820.0
+attack_range = 38.0
+attack_damage = 9
+attack_cooldown = 0.72
+kill_experience = 10
+contact_status_id = &"soaked"
+contact_status_duration = 2.5
+contact_movement_multiplier = 0.82
+emerge_duration = 1.2

@@ -14,14 +14,22 @@ func _ready() -> void:
 	add_to_group("drop_system")
 	rng.randomize()
 
-func roll_drops(source: Node, loot_table: LootTable) -> Array[Dictionary]:
+func roll_drops(
+	source: Node,
+	loot_table: LootTable,
+	chance_multiplier: float = 1.0
+) -> Array[Dictionary]:
 	var drops: Array[Dictionary] = []
 	if loot_table == null:
 		drops_rolled.emit(source, drops)
 		return drops
 
+	var resolved_multiplier := maxf(chance_multiplier, 0.0)
 	for entry in loot_table.entries:
-		if entry != null and rng.randf() <= entry.chance:
+		if (
+			entry != null
+			and rng.randf() <= minf(entry.chance * resolved_multiplier, 1.0)
+		):
 			drops.append(entry.create_drop_data(rng))
 
 	drops_rolled.emit(source, drops)
@@ -31,18 +39,20 @@ func spawn_drops(
 	source: Node,
 	loot_table: LootTable,
 	origin: Vector2,
-	parent: Node = null
+	parent: Node = null,
+	chance_multiplier: float = 1.0
 ) -> Array[Node]:
-	var drops := roll_drops(source, loot_table)
+	var drops := roll_drops(source, loot_table, chance_multiplier)
 	return _spawn_drop_data(drops, origin, parent)
 
 func spawn_drops_deferred(
 	source: Node,
 	loot_table: LootTable,
 	origin: Vector2,
-	parent: Node = null
+	parent: Node = null,
+	chance_multiplier: float = 1.0
 ) -> void:
-	var drops := roll_drops(source, loot_table)
+	var drops := roll_drops(source, loot_table, chance_multiplier)
 	call_deferred("_spawn_drop_data", drops, origin, parent)
 
 func _spawn_drop_data(

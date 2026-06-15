@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="BiomeEnvironmentLayout" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/modes/zombie/biome_environment_layout.gd" id="1_layout"]
+
+[resource]
+script = ExtResource("1_layout")
+terrain_patch_tags = Array[StringName]([&"snow", &"ice", &"deep_snow", &"snow", &"ice", &"deep_snow", &"snow", &"ice", &"deep_snow", &"snow"])
+terrain_patch_positions = Array[Vector2]([Vector2(-435, -215), Vector2(-340, 245), Vector2(-160, -250), Vector2(55, 250), Vector2(235, -245), Vector2(425, 205), Vector2(-455, 70), Vector2(435, 65), Vector2(-20, -215), Vector2(20, 210)])
+terrain_patch_radii = Array[float]([50.0, 44.0, 42.0, 48.0, 38.0, 46.0, 40.0, 42.0, 38.0, 44.0])
+obstacle_ids = Array[StringName]([&"ice_rock", &"fallen_log", &"abandoned_house", &"ice_rock", &"ice_boundary"])
+obstacle_positions = Array[Vector2]([Vector2(-340, -155), Vector2(320, 185), Vector2(370, -185), Vector2(-315, 190), Vector2(0, -312)])
+obstacle_sizes = Array[Vector2]([Vector2(58, 58), Vector2(112, 24), Vector2(132, 82), Vector2(52, 52), Vector2(290, 26)])
+obstacle_rotations = Array[float]([0.0, -0.26, 0.04, 0.0, 0.0])
+obstacle_shape_ids = Array[StringName]([&"circle", &"rectangle", &"rectangle", &"circle", &"rectangle"])
+crate_ids = Array[StringName]([&"common", &"medical", &"biome_frost"])
+crate_positions = Array[Vector2]([Vector2(-155, 140), Vector2(150, -140), Vector2(-330, 45)])
+hazard_ids = Array[StringName]([&"slippery_ice", &"deep_snow_slow"])
+hazard_positions = Array[Vector2]([Vector2(-225, -35), Vector2(230, 45)])
+hazard_sizes = Array[Vector2]([Vector2(150, 76), Vector2(140, 92)])
+hazard_rotations = Array[float]([-0.12, 0.14])
+central_corridor_width = 230.0

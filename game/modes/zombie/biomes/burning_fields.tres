@@ -1,7 +1,8 @@
-[gd_resource type="Resource" script_class="BiomeDefinition" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="BiomeDefinition" load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://game/modes/zombie/biome_definition.gd" id="1_definition"]
 [ext_resource type="Resource" path="res://game/modes/zombie/biomes/burning_fields_palette.tres" id="2_palette"]
+[ext_resource type="Resource" path="res://game/modes/zombie/biomes/burning_fields_layout.tres" id="3_layout"]
 
 [resource]
 script = ExtResource("1_definition")
@@ -9,9 +10,17 @@ biome_id = &"burning_fields"
 display_name = "Bioma Infuocato"
 description = "Bioma aggressivo con terreno bruciato, fiamme e danno alto."
 difficulty_rating = 1.85
+progression_depth = 2
 palette = ExtResource("2_palette")
+environment_layout = ExtResource("3_layout")
+previous_biome_id = &"toxic_wastes"
+next_biome_id = &"frozen_outskirts"
+biome_icon_id = &"fire"
+danger_summary = "FIRE: flames, lava and explosions"
+resource_summary = "Incendiary ammo and bomb parts"
+enemy_summary = "Burned, fire runner and explosive zombies"
 terrain_tags = Array[StringName]([&"ash", &"hot_crack", &"burned_ground"])
-obstacle_ids = Array[StringName]([&"burned_house", &"metal_wreck", &"scorched_barricade"])
+obstacle_ids = Array[StringName]([&"burned_house", &"metal_wreck", &"scorched_barricade", &"lava_boundary"])
 crate_ids = Array[StringName]([&"common", &"military", &"biome_fire"])
 hazard_ids = Array[StringName]([&"fire_zone", &"lava_crack", &"explosion_trap"])
 resource_tags = Array[StringName]([&"bomb", &"fire_ammo", &"metal_materials"])

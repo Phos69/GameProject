@@ -4,10 +4,23 @@ class_name WaveDirector
 @export var biome_manager_path: NodePath
 
 var biome_manager
+var run_elapsed: float = 0.0
+var is_run_active: bool = false
 
 func _ready() -> void:
 	add_to_group("wave_director")
 	_resolve_biome_manager()
+
+func _process(delta: float) -> void:
+	if is_run_active:
+		run_elapsed += delta
+
+func start_run() -> void:
+	run_elapsed = 0.0
+	is_run_active = true
+
+func stop_run() -> void:
+	is_run_active = false
 
 func configure_wave(
 	wave_index: int,
@@ -19,18 +32,39 @@ func configure_wave(
 	var spawn_rate_multiplier := 1.0
 	var biome_id := &""
 	if biome != null:
+		var pressure := _get_pressure_multipliers(biome)
 		biome_id = biome.biome_id
 		if not is_boss_wave:
 			regular_total = maxi(
 				1,
 				ceili(float(regular_total) * biome.wave_size_multiplier)
 			)
-		spawn_rate_multiplier = maxf(biome.spawn_rate_multiplier, 0.05)
+			regular_total = maxi(
+				1,
+				ceili(
+					float(regular_total)
+					* float(pressure.get("time", 1.0))
+					* float(pressure.get("distance", 1.0))
+				)
+			)
+		spawn_rate_multiplier = maxf(
+			biome.spawn_rate_multiplier
+			* float(pressure.get("party", 1.0)),
+			0.05
+		)
 	return {
 		"biome_id": biome_id,
 		"regular_total": regular_total,
 		"spawn_rate_multiplier": spawn_rate_multiplier
 	}
+
+func get_resource_drop_modifier() -> float:
+	var biome = get_current_biome()
+	return (
+		maxf(biome.resource_drop_modifier, 0.0)
+		if biome != null
+		else 1.0
+	)
 
 func get_enemy_id_for_spawn(
 	wave_index: int,
@@ -50,10 +84,16 @@ func get_wave_scaling_multipliers() -> Dictionary:
 			"move_speed": 1.0,
 			"damage": 1.0
 		}
+	var pressure := _get_pressure_multipliers(biome)
+	var full_pressure := (
+		float(pressure.get("party", 1.0))
+		* float(pressure.get("time", 1.0))
+		* float(pressure.get("distance", 1.0))
+	)
 	return {
-		"health": biome.health_multiplier,
-		"move_speed": biome.move_speed_multiplier,
-		"damage": biome.damage_multiplier
+		"health": biome.health_multiplier * full_pressure,
+		"move_speed": biome.move_speed_multiplier * sqrt(full_pressure),
+		"damage": biome.damage_multiplier * full_pressure
 	}
 
 func get_current_biome():
@@ -86,3 +126,20 @@ func _legacy_enemy_id_for_spawn(
 	if wave_index >= 2 and (spawn_index + 1) % 3 == 0:
 		return &"survival_runner"
 	return &"survival_zombie"
+
+func _get_pressure_multipliers(biome: BiomeDefinition) -> Dictionary:
+	var living_players := 0
+	for player in get_tree().get_nodes_in_group("players"):
+		var health_component := player.get_node_or_null(
+			"HealthComponent"
+		) as HealthComponent
+		if health_component != null and health_component.is_alive():
+			living_players += 1
+	return {
+		"party": 1.0 + float(maxi(living_players - 1, 0)) * 0.12,
+		"time": 1.0 + minf(
+			maxf(run_elapsed - 120.0, 0.0) / 600.0,
+			0.20
+		),
+		"distance": 1.0 + float(biome.progression_depth) * 0.04
+	}

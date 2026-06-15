@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="BiomeEnemyProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/modes/zombie/biome_enemy_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+enemy_id = &"toxic_exploder"
+display_name = "Zombie Esplosivo Tossico"
+visual_archetype = "tank"
+theme_id = &"toxic"
+max_health = 54
+move_speed = 66.0
+acceleration = 430.0
+attack_range = 48.0
+attack_damage = 11
+attack_cooldown = 1.1
+kill_experience = 11
+death_hazard_id = &"toxic_cloud"
+death_hazard_duration = 4.0
+death_hazard_radius = 78.0

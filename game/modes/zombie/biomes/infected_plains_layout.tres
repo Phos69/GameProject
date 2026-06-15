@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="BiomeEnvironmentLayout" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/modes/zombie/biome_environment_layout.gd" id="1_layout"]
+
+[resource]
+script = ExtResource("1_layout")
+terrain_patch_tags = Array[StringName]([&"dry_grass", &"dirt", &"dry_grass", &"broken_fence", &"dirt", &"dry_grass", &"dirt", &"dry_grass", &"broken_fence", &"dirt", &"dry_grass", &"dirt"])
+terrain_patch_positions = Array[Vector2]([Vector2(-430, -220), Vector2(-330, 260), Vector2(-190, -255), Vector2(-90, 270), Vector2(80, -260), Vector2(205, 250), Vector2(345, -245), Vector2(455, 205), Vector2(-465, 80), Vector2(-420, 150), Vector2(410, 70), Vector2(20, 210)])
+terrain_patch_radii = Array[float]([42.0, 52.0, 38.0, 34.0, 48.0, 42.0, 50.0, 36.0, 32.0, 40.0, 38.0, 44.0])
+obstacle_ids = Array[StringName]([&"small_rock", &"small_rock", &"broken_fence", &"wood_barrier", &"ruined_house", &"boundary_fence"])
+obstacle_positions = Array[Vector2]([Vector2(-330, -135), Vector2(325, 150), Vector2(-325, 205), Vector2(300, -205), Vector2(455, -205), Vector2(-500, 145)])
+obstacle_sizes = Array[Vector2]([Vector2(48, 48), Vector2(56, 56), Vector2(96, 20), Vector2(108, 22), Vector2(126, 78), Vector2(112, 20)])
+obstacle_rotations = Array[float]([0.0, 0.0, -0.18, 0.24, 0.08, 0.92])
+obstacle_shape_ids = Array[StringName]([&"circle", &"circle", &"rectangle", &"rectangle", &"rectangle", &"rectangle"])
+crate_ids = Array[StringName]([&"common", &"medical"])
+crate_positions = Array[Vector2]([Vector2(-175, -155), Vector2(180, 160)])
+hazard_ids = Array[StringName]([&"fall_zone"])
+hazard_positions = Array[Vector2]([Vector2(-410, 110)])
+hazard_sizes = Array[Vector2]([Vector2(150, 68)])
+hazard_rotations = Array[float]([-0.12])
+central_corridor_width = 240.0

@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="BiomeEnemyProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/modes/zombie/biome_enemy_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+enemy_id = &"frozen_zombie"
+display_name = "Zombie Ghiacciato"
+visual_archetype = "basic"
+theme_id = &"frost"
+max_health = 52
+move_speed = 78.0
+attack_damage = 9
+attack_cooldown = 0.95
+kill_experience = 9
+contact_status_id = &"chilled"
+contact_status_duration = 3.5
+contact_movement_multiplier = 0.70

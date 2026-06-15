@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="BiomeEnemyProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/modes/zombie/biome_enemy_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+enemy_id = &"heavy_slow_zombie"
+display_name = "Zombie Lento Pesante"
+visual_archetype = "tank"
+theme_id = &"frost"
+max_health = 138
+move_speed = 42.0
+acceleration = 270.0
+attack_range = 58.0
+attack_damage = 21
+attack_cooldown = 1.45
+kill_experience = 16
+incoming_damage_multiplier = 0.82

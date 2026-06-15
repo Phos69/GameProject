@@ -39,11 +39,28 @@ var wave_index: int = 0
 var health_multiplier: float = 1.0
 var move_speed_multiplier: float = 1.0
 var damage_multiplier: float = 1.0
+var resource_drop_modifier: float = 1.0
+var enemy_profile: BiomeEnemyProfile
+var incoming_damage_multiplier: float = 1.0
+var contact_status_id: StringName = &""
+var contact_status_duration: float = 0.0
+var contact_movement_multiplier: float = 1.0
+var contact_damage_per_tick: int = 0
+var death_hazard_id: StringName = &""
+var death_hazard_duration: float = 0.0
+var death_hazard_radius: float = 68.0
+var emerge_timer: float = 0.0
+var active_collision_layer: int = 2
 
 func _ready() -> void:
 	add_to_group("enemies")
 	add_to_group("damageable_targets")
+	active_collision_layer = collision_layer
 	_apply_wave_scaling()
+	_apply_profile_visual()
+	if emerge_timer > 0.0:
+		collision_layer = 0
+		visual.modulate = Color(1.0, 1.0, 1.0, 0.28)
 	health_component.damaged.connect(_on_health_changed)
 	health_component.healed.connect(_on_health_changed)
 	health_component.died.connect(_on_died)
@@ -51,6 +68,14 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	if current_state == State.DEAD:
+		return
+	if emerge_timer > 0.0:
+		emerge_timer = maxf(emerge_timer - delta, 0.0)
+		velocity = Vector2.ZERO
+		if emerge_timer <= 0.0:
+			collision_layer = active_collision_layer
+			visual.modulate = Color.WHITE
+		_set_state(State.CHASE)
 		return
 
 	attack_timer = maxf(attack_timer - delta, 0.0)
@@ -95,6 +120,26 @@ func configure_wave_scaling(config: Dictionary) -> void:
 	health_multiplier = maxf(float(config.get("health_multiplier", 1.0)), 0.01)
 	move_speed_multiplier = maxf(float(config.get("move_speed_multiplier", 1.0)), 0.01)
 	damage_multiplier = maxf(float(config.get("damage_multiplier", 1.0)), 0.01)
+	resource_drop_modifier = maxf(
+		float(config.get("resource_drop_modifier", 1.0)),
+		0.0
+	)
+
+func configure_spawn(config: Dictionary) -> void:
+	enemy_id = StringName(config.get("enemy_id", enemy_id))
+	enemy_profile = config.get("enemy_profile") as BiomeEnemyProfile
+	if enemy_profile != null:
+		_apply_enemy_profile(enemy_profile)
+	configure_wave_scaling(config)
+
+func modify_incoming_damage(
+	amount: int,
+	_source_id: StringName = &""
+) -> int:
+	return maxi(
+		1 if amount > 0 else 0,
+		roundi(float(maxi(amount, 0)) * incoming_damage_multiplier)
+	)
 
 func _select_target() -> void:
 	var nearest_target: Node2D
@@ -136,6 +181,7 @@ func _attack_target() -> void:
 	)
 	if applied_damage > 0:
 		attacked.emit(target, applied_damage)
+		_apply_contact_status(target)
 
 func _set_state(next_state: State) -> void:
 	if current_state == next_state:
@@ -159,7 +205,15 @@ func _on_died() -> void:
 
 	var drop_system = get_tree().get_first_node_in_group("drop_system")
 	if drop_system != null and drop_system.has_method("spawn_drops_deferred"):
-		drop_system.spawn_drops_deferred(self, loot_table, global_position)
+		drop_system.spawn_drops_deferred(
+			self,
+			loot_table,
+			global_position,
+			null,
+			resource_drop_modifier
+		)
+
+	_spawn_death_hazard()
 
 	died.emit(self)
 	queue_free()
@@ -211,3 +265,63 @@ func _grant_kill_experience() -> void:
 	if rpg_component != null:
 		rpg_component.add_experience(kill_experience)
 		rpg_component.notify_kill_confirmed()
+
+func _apply_enemy_profile(profile: BiomeEnemyProfile) -> void:
+	move_speed = profile.move_speed
+	acceleration = profile.acceleration
+	attack_range = profile.attack_range
+	attack_damage = profile.attack_damage
+	attack_cooldown = profile.attack_cooldown
+	kill_experience = profile.kill_experience
+	incoming_damage_multiplier = profile.incoming_damage_multiplier
+	contact_status_id = profile.contact_status_id
+	contact_status_duration = profile.contact_status_duration
+	contact_movement_multiplier = profile.contact_movement_multiplier
+	contact_damage_per_tick = profile.contact_damage_per_tick
+	death_hazard_id = profile.death_hazard_id
+	death_hazard_duration = profile.death_hazard_duration
+	death_hazard_radius = profile.death_hazard_radius
+	emerge_timer = profile.emerge_duration
+	var profile_health := get_node_or_null("HealthComponent") as HealthComponent
+	if profile_health != null:
+		profile_health.max_health = profile.max_health
+
+func _apply_profile_visual() -> void:
+	if enemy_profile == null or visual == null:
+		return
+	visual.configure_biome_style(
+		enemy_profile.visual_archetype,
+		enemy_profile.theme_id
+	)
+
+func _apply_contact_status(target_node: Node) -> void:
+	if contact_status_id.is_empty() or contact_status_duration <= 0.0:
+		return
+	var hazard_system := get_tree().get_first_node_in_group(
+		"hazard_system"
+	) as HazardSystem
+	if hazard_system != null:
+		hazard_system.apply_status_to_player(
+			target_node,
+			contact_status_id,
+			contact_status_duration,
+			contact_movement_multiplier,
+			contact_damage_per_tick
+		)
+
+func _spawn_death_hazard() -> void:
+	if death_hazard_id.is_empty():
+		return
+	var hazard_system := get_tree().get_first_node_in_group(
+		"hazard_system"
+	) as HazardSystem
+	if hazard_system == null:
+		return
+	hazard_system.spawn_runtime_hazard(
+		death_hazard_id,
+		global_position,
+		{
+			"lifetime": death_hazard_duration,
+			"radius": death_hazard_radius
+		}
+	)

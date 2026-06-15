@@ -6,7 +6,15 @@ class_name BiomeDefinition
 @export_multiline var description: String = ""
 @export var is_starting_biome: bool = false
 @export_range(0.1, 5.0, 0.05) var difficulty_rating: float = 1.0
+@export_range(0, 10, 1) var progression_depth: int = 0
 @export var palette: BiomePalette
+@export var environment_layout: BiomeEnvironmentLayout
+@export var previous_biome_id: StringName = &""
+@export var next_biome_id: StringName = &""
+@export var biome_icon_id: StringName = &"plains"
+@export var danger_summary: String = "Low environmental danger"
+@export var resource_summary: String = "Ammo and medical supplies"
+@export var enemy_summary: String = "Basic zombies"
 
 @export var terrain_tags: Array[StringName] = []
 @export var obstacle_ids: Array[StringName] = []

@@ -14,12 +14,18 @@ signal died()
 var current_health: int = 100
 var is_dead: bool = false
 var is_downed: bool = false
+var invulnerability_sources: Dictionary = {}
 
 func _ready() -> void:
 	current_health = max_health
 
-func apply_damage(amount: int) -> int:
-	if invulnerable or is_dead or is_downed or amount <= 0:
+func apply_damage(amount: int, ignore_invulnerability: bool = false) -> int:
+	if (
+		(is_invulnerable() and not ignore_invulnerability)
+		or is_dead
+		or is_downed
+		or amount <= 0
+	):
 		return 0
 	var previous_health := current_health
 	current_health = maxi(current_health - amount, 0)
@@ -47,6 +53,7 @@ func heal(amount: int) -> int:
 func reset_health() -> void:
 	is_dead = false
 	is_downed = false
+	invulnerability_sources.clear()
 	current_health = max_health
 
 func revive(health_amount: int) -> bool:
@@ -81,3 +88,16 @@ func is_alive() -> bool:
 
 func is_incapacitated() -> bool:
 	return is_dead or is_downed
+
+func add_invulnerability_source(source_id: StringName) -> void:
+	if not source_id.is_empty():
+		invulnerability_sources[source_id] = true
+
+func remove_invulnerability_source(source_id: StringName) -> void:
+	invulnerability_sources.erase(source_id)
+
+func has_invulnerability_source(source_id: StringName) -> bool:
+	return invulnerability_sources.has(source_id)
+
+func is_invulnerable() -> bool:
+	return invulnerable or not invulnerability_sources.is_empty()

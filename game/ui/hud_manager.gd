@@ -3,6 +3,7 @@ class_name HUDManager
 
 var status_label: Label
 var status_panel: PanelContainer
+var status_panel_style: StyleBoxFlat
 var boss_panel: PanelContainer
 var boss_name_label: Label
 var boss_health_bar: ProgressBar
@@ -81,19 +82,19 @@ func _create_status_hud() -> void:
 	status_panel.name = "StatusPanel"
 	status_panel.position = Vector2(16.0, 16.0)
 	status_panel.custom_minimum_size = Vector2(368.0, 0.0)
-	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color(0.02, 0.032, 0.04, 0.90)
-	panel_style.border_color = Color(0.36, 0.48, 0.50, 0.78)
-	panel_style.set_border_width_all(2)
-	panel_style.corner_radius_top_left = 8
-	panel_style.corner_radius_top_right = 8
-	panel_style.corner_radius_bottom_left = 8
-	panel_style.corner_radius_bottom_right = 8
-	panel_style.content_margin_left = 14.0
-	panel_style.content_margin_right = 14.0
-	panel_style.content_margin_top = 10.0
-	panel_style.content_margin_bottom = 10.0
-	status_panel.add_theme_stylebox_override("panel", panel_style)
+	status_panel_style = StyleBoxFlat.new()
+	status_panel_style.bg_color = Color(0.02, 0.032, 0.04, 0.90)
+	status_panel_style.border_color = Color(0.36, 0.48, 0.50, 0.78)
+	status_panel_style.set_border_width_all(2)
+	status_panel_style.corner_radius_top_left = 8
+	status_panel_style.corner_radius_top_right = 8
+	status_panel_style.corner_radius_bottom_left = 8
+	status_panel_style.corner_radius_bottom_right = 8
+	status_panel_style.content_margin_left = 14.0
+	status_panel_style.content_margin_right = 14.0
+	status_panel_style.content_margin_top = 10.0
+	status_panel_style.content_margin_bottom = 10.0
+	status_panel.add_theme_stylebox_override("panel", status_panel_style)
 	add_child(status_panel)
 
 	status_label = Label.new()
@@ -142,6 +143,9 @@ func _refresh() -> void:
 		experience,
 		money
 	]
+	var biome_status := _format_biome_status()
+	if not biome_status.is_empty():
+		status_label.text += "\n" + biome_status
 	var mode_status := _format_mode_status()
 	if not mode_status.is_empty():
 		status_label.text += "\n" + mode_status
@@ -293,6 +297,83 @@ func _format_wave_status() -> String:
 			]
 		_:
 			return "Survival idle"
+
+func _format_biome_status() -> String:
+	var game_mode_manager := get_tree().get_first_node_in_group(
+		"game_mode_manager"
+	) as GameModeManager
+	if (
+		game_mode_manager != null
+		and game_mode_manager.active_mode_id != GameConstants.MODE_SURVIVAL
+	):
+		return ""
+	var biome_manager := get_tree().get_first_node_in_group(
+		"biome_manager"
+	) as BiomeManager
+	if biome_manager == null:
+		return ""
+	var biome := biome_manager.get_current_biome() as BiomeDefinition
+	if biome == null:
+		return ""
+	var text := "[%s] %s  |  %s\nResources: %s" % [
+		_biome_icon_label(biome.biome_icon_id),
+		biome.display_name,
+		biome.danger_summary,
+		biome.resource_summary
+	]
+	var status_text := _format_environment_statuses()
+	if not status_text.is_empty():
+		text += "\nStatus: " + status_text
+	return text
+
+func _format_environment_statuses() -> String:
+	var hazard_system := get_tree().get_first_node_in_group(
+		"hazard_system"
+	) as HazardSystem
+	if hazard_system == null:
+		return ""
+	var labels := PackedStringArray()
+	for player in get_tree().get_nodes_in_group("players"):
+		var player_slot := int(player.get("player_slot"))
+		var status_ids := hazard_system.get_player_status_ids(player)
+		if status_ids.is_empty():
+			continue
+		var status_labels := PackedStringArray()
+		for status_id in status_ids:
+			status_labels.append(_status_icon_label(status_id))
+		labels.append("P%d %s" % [
+			player_slot,
+			"/".join(status_labels)
+		])
+	return "  ".join(labels)
+
+func _biome_icon_label(icon_id: StringName) -> String:
+	match icon_id:
+		&"toxic":
+			return "TOX"
+		&"fire":
+			return "FIRE"
+		&"frost":
+			return "ICE"
+		&"marsh":
+			return "MUD"
+		_:
+			return "BIO"
+
+func _status_icon_label(status_id: StringName) -> String:
+	match status_id:
+		&"poisoned", &"toxic_puddle", &"gas_cloud", &"toxic_cloud":
+			return "TOX"
+		&"burning", &"fire_zone", &"lava_crack", &"fire_patch":
+			return "FIRE"
+		&"chilled", &"slippery_ice", &"deep_snow_slow":
+			return "ICE"
+		&"mudded", &"soaked", &"mud_slow", &"deep_water":
+			return "MUD"
+		&"fall_zone":
+			return "FALL"
+		_:
+			return String(status_id).to_upper()
 
 func _format_last_reward(reward: Dictionary) -> String:
 	if reward.is_empty():
@@ -552,6 +633,16 @@ func _connect_run_feedback() -> void:
 		var defeat_callback := Callable(self, "_on_survival_defeated")
 		if not survival_mode.survival_defeated.is_connected(defeat_callback):
 			survival_mode.survival_defeated.connect(defeat_callback)
+	var biome_manager := get_tree().get_first_node_in_group(
+		"biome_manager"
+	) as BiomeManager
+	if biome_manager != null:
+		var biome_callback := Callable(self, "_on_current_biome_changed")
+		if not biome_manager.current_biome_changed.is_connected(
+			biome_callback
+		):
+			biome_manager.current_biome_changed.connect(biome_callback)
+		_apply_biome_hud_theme(biome_manager.get_current_biome())
 
 func _on_intermission_started(
 	next_wave_index: int,
@@ -631,6 +722,45 @@ func _on_survival_defeated(wave_index: int) -> void:
 			2.4
 		)
 
+func _on_current_biome_changed(
+	_biome_id: StringName,
+	display_name: String
+) -> void:
+	var biome_manager := get_tree().get_first_node_in_group(
+		"biome_manager"
+	) as BiomeManager
+	var biome: BiomeDefinition = (
+		biome_manager.get_current_biome()
+		if biome_manager != null
+		else null
+	)
+	_apply_biome_hud_theme(biome)
+	if combat_announcement != null and biome != null:
+		combat_announcement.show_announcement(
+			&"biome_entered",
+			display_name.to_upper(),
+			biome.danger_summary,
+			biome.palette.gate_color
+			if biome.palette != null
+			else Color(0.42, 0.90, 0.58, 1.0),
+			2.2
+		)
+
+func _apply_biome_hud_theme(biome) -> void:
+	if status_panel_style == null or not biome is BiomeDefinition:
+		return
+	var definition := biome as BiomeDefinition
+	if definition.palette == null:
+		return
+	status_panel_style.border_color = Color(
+		definition.palette.gate_color,
+		0.90
+	)
+	status_panel_style.bg_color = Color(
+		definition.palette.background_color.darkened(0.45),
+		0.92
+	)
+
 func _connect_drop_feedback() -> void:
 	var drop_system := get_tree().get_first_node_in_group("drop_system") as DropSystem
 	if drop_system == null:
@@ -641,7 +771,16 @@ func _connect_drop_feedback() -> void:
 
 func _on_drop_collected(drop_data: Dictionary, _collector: Node) -> void:
 	var drop_type := StringName(drop_data.get("type", &"unknown"))
-	if drop_type != GameConstants.DROP_AMMO:
+	var resource_tag := StringName(drop_data.get("resource_tag", &""))
+	if not resource_tag.is_empty():
+		pickup_feedback_text = "%s +%d" % [
+			String(resource_tag).replace("_", " ").to_upper(),
+			int(drop_data.get("amount", 0))
+		]
+	elif drop_type == GameConstants.DROP_AMMO:
+		pickup_feedback_text = "AMMO SHARED +%d" % int(
+			drop_data.get("amount", 0)
+		)
+	else:
 		return
-	pickup_feedback_text = "AMMO SHARED +%d" % int(drop_data.get("amount", 0))
 	pickup_feedback_timer = 1.75

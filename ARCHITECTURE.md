@@ -23,31 +23,33 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 14. `DropPickup` delega l'applicazione della ricompensa a `DropSystem`.
 15. `GameModeManager` avvia `SurvivalMode`, che applica il profilo RPG scelto e seleziona un profilo arena tramite `SurvivalArenaManager`.
 16. `ZombieModeController` avvia i componenti revamp zombie e forza il bioma iniziale tramite `BiomeManager`.
-17. `SurvivalArenaManager` configura playground, player, crate, gate e fallback spawn per lo spawner.
-18. `WaveManager` interroga `WaveDirector` per roster/scaling bioma e `ZombieSpawner` per spawn dai bordi camera, poi crea zombie tramite `EnemySystem`.
-19. `SurvivalMode` usa `GameModeManager` e `BossSystem` per creare il boss della quinta ondata.
-20. `WaveManager` conta scorte e boss prima di assegnare la ricompensa.
-21. `DungeonMode` genera un layout da seed, istanzia una `DungeonRoom` alla volta e usa nemici, drop e boss condivisi.
-22. `DungeonRoom` controlla pareti, portale e stato locked/unlocked della stanza corrente.
-23. `TowerDefenseMode` gestisce lifecycle, arena, player e richieste costruzione.
-24. `TowerDefenseWaveController` governa ondate e usa `EnemySystem` per i nemici da percorso.
-25. `TowerDefenseManager` mantiene vita core e crediti, mentre gli slot delegano lo spawn delle torri.
-26. `DefenseTower` seleziona target e inoltra direzione e fuoco a `DefenseTowerVisual`.
-27. `ProgressionManager` prepara i player a ogni nuova run applicando gli unlock persistenti.
-28. `ReviveSystem` coordina prossimita, interact tenuto e progresso per i player downed.
-29. `SurvivalAmmoDirector` osserva l'ammo speciale dei player vivi e genera supply crate configurabili.
-30. `AudioEventRouter` traduce eventi gameplay in cue richiesti ad `AudioManager`.
-31. `AudioManager` gestisce bus, fallback, stream opzionali, priorita e volumi.
-32. `VisualSettingsManager` distribuisce solo impostazioni presentazionali e le persiste nel save.
-33. `IsometricCameraController` segue il gruppo e applica shake solo tramite offset.
-34. `HUDManager` mostra slot, progressione, vita, munizioni, stato modalita e boss.
-35. I componenti visuali ricevono stato e profilo senza possedere logica gameplay.
-36. `BossTelegraphVisual` riceve pattern, direzione e durata senza possedere danno.
-37. `WaveWardenVisual` e `RiftArchitectVisual` ricevono solo stato presentazionale.
-38. `CombatAnnouncement` presenta segnali wave e boss tradotti da `HUDManager`.
-39. `GameplayEffects` ascolta segnali pubblici e genera effetti temporanei.
-40. `RunSessionTracker` misura durata e delta progressione tra start e fine run.
-41. `RunResultsScreen` presenta il risultato e delega retry/menu/cambio.
+17. `BiomeTransitionSystem` crea i confini attraversabili e richiede al controller di applicare il nuovo bioma al party.
+18. `SurvivalArenaManager` configura playground, player, crate, gate e fallback spawn per lo spawner.
+19. `HazardSystem` genera fall zone e hazard ambientali, aggiorna posizioni sicure, status e modificatori movimento.
+20. `WaveManager` interroga `WaveDirector` per roster/scaling bioma e `ZombieSpawner` per spawn dai bordi camera, poi crea zombie tramite `EnemySystem`.
+21. `SurvivalMode` usa `GameModeManager` e `BossSystem` per creare il boss della quinta ondata.
+22. `WaveManager` conta scorte e boss prima di assegnare la ricompensa.
+23. `DungeonMode` genera un layout da seed, istanzia una `DungeonRoom` alla volta e usa nemici, drop e boss condivisi.
+24. `DungeonRoom` controlla pareti, portale e stato locked/unlocked della stanza corrente.
+25. `TowerDefenseMode` gestisce lifecycle, arena, player e richieste costruzione.
+26. `TowerDefenseWaveController` governa ondate e usa `EnemySystem` per i nemici da percorso.
+27. `TowerDefenseManager` mantiene vita core e crediti, mentre gli slot delegano lo spawn delle torri.
+28. `DefenseTower` seleziona target e inoltra direzione e fuoco a `DefenseTowerVisual`.
+29. `ProgressionManager` prepara i player a ogni nuova run applicando gli unlock persistenti.
+30. `ReviveSystem` coordina prossimita, interact tenuto e progresso per i player downed.
+31. `SurvivalAmmoDirector` osserva l'ammo speciale dei player vivi e genera supply crate configurabili.
+32. `AudioEventRouter` traduce eventi gameplay in cue richiesti ad `AudioManager`.
+33. `AudioManager` gestisce bus, fallback, stream opzionali, priorita e volumi.
+34. `VisualSettingsManager` distribuisce solo impostazioni presentazionali e le persiste nel save.
+35. `IsometricCameraController` segue il gruppo e applica shake solo tramite offset.
+36. `HUDManager` mostra slot, progressione, vita, munizioni, stato modalita e boss.
+37. I componenti visuali ricevono stato e profilo senza possedere logica gameplay.
+38. `BossTelegraphVisual` riceve pattern, direzione e durata senza possedere danno.
+39. `WaveWardenVisual` e `RiftArchitectVisual` ricevono solo stato presentazionale.
+40. `CombatAnnouncement` presenta segnali wave e boss tradotti da `HUDManager`.
+41. `GameplayEffects` ascolta segnali pubblici e genera effetti temporanei.
+42. `RunSessionTracker` misura durata e delta progressione tra start e fine run.
+43. `RunResultsScreen` presenta il risultato e delega retry/menu/cambio.
 
 ## Sistemi principali
 
@@ -74,7 +76,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `WeaponVisualData`: palette, dimensioni e profilo condivisi da arma, HUD, proiettile e flash.
 - `WeaponSystem`: stato runtime per-player di fallback, speciale, cooldown, munizioni e ricarica.
 - `ProjectileSystem` e `Projectile`: spawn, movimento, collisione e consegna del danno.
-- `HealthSystem` e `HealthComponent`: richieste globali di danno/cura e stato vita locale.
+- `HealthSystem` e `HealthComponent`: richieste globali di danno/cura, stato vita locale e invulnerabilita componibile per sorgente; il danno ambientale puo ignorarla esplicitamente.
 - `EnemySystem`: registro di scene nemico per ID, spawn, contenitore, registro runtime e notifica morte.
 - `BasicEnemy`: AI melee condivisa con stati idle, chase, attack e dead.
 - `RangedEnemy`: specializzazione di `BasicEnemy` con distanza preferita, windup e proiettile ostile.
@@ -87,9 +89,20 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `ZombieModeController`: coordinatore interno del revamp survival per bioma, terrain, casse, ostacoli e hazard.
 - `BiomeManager`: registro biomi, bioma corrente e selezione iniziale della `Pianura Infetta`.
 - `BiomeDefinition`: risorsa dati con terreno, ostacoli, casse, zombie ammessi, pesi, palette e moltiplicatori.
+- `BiomeTransitionSystem`: gate est/ovest, spostamento party e transizione tra definizioni adiacenti.
+- `BiomeTransitionGate`: area non bloccante e leggibile che richiede il cambio bioma.
+- `BiomeEnvironmentLayout`: placement deterministico di patch terreno, ostacoli fisici, casse e hazard per un bioma.
 - `WaveDirector`: composizione wave e scaling basati sul bioma corrente.
 - `ZombieSpawner`: spawn dai bordi della camera con distanza minima dai player, validazione hazard/ostacoli e fallback arena.
-- `TerrainGenerator`, `ResourceCrateSystem`, `ObstacleSystem`, `HazardSystem`: componenti ambientali incrementali per il revamp zombie.
+- `TerrainGenerator`: applica la palette del bioma e genera decorazioni non collidenti dal layout.
+- `ObstacleSystem`: genera e registra `BiomeObstacle` fisici usati anche come spawn blocker.
+- `ResourceCrateSystem`: genera casse ambientali raggiungibili riusando `SupplyCrate` e `DropSystem`.
+- `BiomeFallZone`: `Area2D` fisica e leggibile generata dai dati del bioma.
+- `BiomeHazardZone`: area dati per danno periodico, slowdown e hazard runtime.
+- `HazardSystem`: coordina fall zone e hazard, valida posizioni sicure/spawn e gestisce il recupero da caduta.
+- `BiomeHazardCatalog`: mantiene configurazione e resa cromatica degli hazard ambientali.
+- `BiomeStatusRuntime`: applica danno periodico, status temporanei e modificatori movimento ai player.
+- `BiomeEnemyProfile`: statistiche e tratti tematici riusabili da `BasicEnemy`.
 - `SurvivalArenaManager`: selezione profilo e configurazione dei sistemi survival.
 - `SurvivalArenaProfile`: dati di layout, spawn, player, crate, boss e props.
 - `BiomePalette`: palette ambientale indipendente dal controller.
@@ -299,7 +312,24 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - `SurvivalMode` avvia e arresta `ZombieModeController` prima del ciclo wave.
 - `BiomeManager` e il punto unico per leggere il bioma corrente della survival.
 - Ogni nuova run survival riparte dalla `Pianura Infetta`.
-- `WaveDirector` legge il bioma corrente per risolvere roster, moltiplicatori e ritmo spawn.
+- `BiomeTransitionSystem` collega Pianura, Tossico, Infuocato, Neve e Palude; il party condivide un solo bioma corrente.
+- Il cambio bioma rigenera terreno, ostacoli, casse, hazard e gate senza riavviare `WaveManager`.
+- `WaveDirector` legge il bioma corrente per risolvere roster, moltiplicatori, ritmo spawn e drop.
+- Lo scaling contestuale considera wave, player vivi, tempo sopravvissuto e profondita del bioma.
+- Ogni bioma legge `BiomeEnvironmentLayout` per terreno, ostacoli, casse e hazard senza placement hardcoded nei controller.
+- `TerrainGenerator` modifica solo palette e decorazioni; non possiede collisioni o regole combat.
+- `BiomeObstacle` usa `StaticBody2D` sul layer `1`, quindi player e zombie lo trattano come impedimento fisico.
+- Gli ostacoli appartengono anche ai gruppi `environment_obstacles` e `spawn_blockers`.
+- Ogni layout conserva un corridoio centrale libero per l'AI diretta esistente.
+- `ResourceCrateSystem` valida le posizioni contro `ObstacleSystem`, `HazardSystem` e la distanza minima tra casse.
+- Casse comuni, mediche, militari e tematiche usano loot table dedicate ma continuano a generare pickup tramite `DropSystem`.
+- I loot tematici aggiungono `resource_tag` presentazionali senza creare un secondo inventario.
+- `HazardSystem` delega tossico, fuoco, gelo, acqua e fango a `BiomeStatusRuntime`, tramite danno periodico o `environment_speed_multiplier`.
+- `BiomeHazardCatalog` centralizza valori runtime e colori, evitando tuning nascosto nel controller.
+- La fall zone conserva il contratto speciale: 20 HP, respawn sicuro e invulnerabilita dedicata.
+- `EnemySystem` registra i profili tematici sullo stesso `basic_enemy.tscn`.
+- `BasicEnemy` applica status al contatto, resistenza, emersione o hazard alla morte solo se definiti dal profilo.
+- Terreno, ostacoli e casse ambientali vengono rimossi da `ZombieModeController.stop_run()`.
 - L'arresto di survival rimuove i nemici e il boss della wave prima di attivare un'altra modalita.
 - `WaveManager` e autoritativo per indice ondata, stato, spawn pendenti e nemici della wave.
 - Gli stati runtime sono `idle`, `intermission`, `spawning`, `combat` e `reward`.
