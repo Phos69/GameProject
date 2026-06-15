@@ -28,6 +28,7 @@ signal died(boss: Node)
 @export var aimed_spread_radians: float = 0.16
 @export var radial_projectile_count: int = 12
 @export var projectile_damage: int = 10
+@export var defense: int = 2
 @export var projectile_speed: float = 270.0
 @export var projectile_scene: PackedScene = preload("res://game/projectiles/boss_projectile.tscn")
 @export var aimed_projectile_visual: WeaponVisualData = preload(

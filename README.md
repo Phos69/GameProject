@@ -67,6 +67,7 @@ godot --headless --path . --script res://tests/milestone_12_enemy_variants_smoke
 godot --headless --path . --script res://tests/milestone_13_weapon_tower_visual_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_14_final_polish_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_rpg_1_character_select_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_rpg_2_stats_smoke_test.gd
 ```
 
 Export Windows:
@@ -142,6 +143,7 @@ Completato:
 - seconda arma prototipo ottenibile come drop;
 - menu principale mostrato all'avvio;
 - selezione personaggio prima della zombie survival con quattro profili iniziali;
+- statistiche classe RPG con HP, attacco, difesa, velocita, XP bar e level-up per-run;
 - selezione di survival, dungeon e tower defense da tastiera o joypad;
 - ritorno al menu con `Esc` e arresto pulito della modalita attiva;
 - survival avviabile dal menu o con hotkey debug;

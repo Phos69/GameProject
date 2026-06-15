@@ -95,7 +95,13 @@ func _try_hit_target(target: Node) -> void:
 	var applied_damage := 0
 	var health_system = get_tree().get_first_node_in_group("health_system")
 	if health_system != null and health_system.has_method("apply_damage"):
-		applied_damage = health_system.apply_damage(target, damage)
+		applied_damage = health_system.apply_damage(
+			target,
+			damage,
+			owner_node,
+			source_id,
+			global_position
+		)
 	else:
 		var health_component := target.get_node_or_null("HealthComponent")
 		if health_component != null and health_component.has_method("apply_damage"):

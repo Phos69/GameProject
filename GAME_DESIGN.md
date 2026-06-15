@@ -301,8 +301,19 @@ centralizzato:
 Il menu mostra una card per ogni profilo con nome, classe, arma base,
 statistiche iniziali, passiva, super e difficolta. La scelta e passata alla
 survival come `character_id` e applicata ai player attivi tramite
-`RpgPlayerComponent`; le milestone successive attivano statistiche, armi,
-XP, passive, adrenalina, super e HUD dedicato.
+`RpgPlayerComponent`.
+
+Statistiche attive:
+
+- HP massimi dal profilo classe;
+- velocita come moltiplicatore del movimento base;
+- attacco aggiunto al danno arma;
+- difesa sottratta al danno in ingresso;
+- livello per-run con `+10 HP`, `+2 attacco` e `+1 difesa`.
+
+Le schede HUD player mostrano livello, classe, barra XP, HP, ammo e riga
+ATK/DEF/SPD. Le milestone successive collegano fonti XP reali, armi dedicate,
+passive, adrenalina, super e polish feedback.
 
 ## Bilanciamento iniziale
 

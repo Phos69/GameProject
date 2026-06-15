@@ -60,7 +60,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `RunResultsScreen`: overlay condiviso con focus e azioni di fine run.
 - `MainMenu`: UI iniziale, selezione modalita, `Character Select` survival, continue e ritorno con `Esc`.
 - `RpgCharacterRegistry`: catalogo centralizzato dei personaggi RPG iniziali.
-- `RpgPlayerComponent`: profilo RPG runtime applicato ai player della survival.
+- `RpgPlayerComponent`: profilo RPG runtime, statistiche, XP per-run e formule danno del player survival.
 - `SaveManager`: persistenza JSON versionata e autosave della progressione.
 - `VisualSettingsManager`: preset, valori visuali, notifica consumer e persistenza.
 - `AudioManager`: bus, cue, fallback procedurali, stream opzionali e volumi.
@@ -173,6 +173,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - Il proiettile non conosce classi nemico specifiche: colpisce body o area damageable e inoltra il danno a `HealthSystem`.
 - `Projectile` emette l'impatto risolto e `ProjectileSystem` lo espone ai sistemi di feedback.
 - `HealthSystem` cerca un figlio `HealthComponent` sul target; player, nemici, boss e bersagli debug possono condividere lo stesso contratto.
+- `HealthSystem.apply_damage()` accetta una sorgente opzionale per applicare attacco/difesa RPG senza cambiare collisioni o AI.
 - Collision layer `1`: player e corpi generici.
 - Collision layer `2`: bersagli damageable.
 - Collision layer `4`: proiettili; la mask attuale colpisce il layer `2`.
@@ -266,8 +267,9 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 
 - `GameModeManager.register_mode()` avvia la modalita registrata se coincide con `default_mode`.
 - La survival avviata dal menu riceve `context.character_id` dalla schermata `Character Select`.
-- In assenza di context, per hotkey/debug viene usato il profilo default `pistoliere`.
+- In assenza di context, hotkey/debug e test mantengono il profilo sandbox generico precedente.
 - Il profilo selezionato e applicato ai player attivi e ai player che entrano durante la run.
+- Il profilo survival modifica HP massimi, velocita, attacco, difesa e progressione per-run del player.
 - `SurvivalMode` avvia e arresta `WaveManager` e controlla la sconfitta del party.
 - L'arresto di survival rimuove i nemici e il boss della wave prima di attivare un'altra modalita.
 - `WaveManager` e autoritativo per indice ondata, stato, spawn pendenti e nemici della wave.

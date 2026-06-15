@@ -12,7 +12,7 @@ var wave_manager: WaveManager
 var ammo_director: SurvivalAmmoDirector
 var arena_manager: SurvivalArenaManager
 var player_manager: PlayerManager
-var selected_character_id: StringName = RpgCharacterRegistry.DEFAULT_CHARACTER_ID
+var selected_character_id: StringName = &""
 
 func _ready() -> void:
 	mode_id = GameConstants.MODE_SURVIVAL
@@ -48,11 +48,10 @@ func start_mode(context: Dictionary = {}) -> void:
 	_resolve_ammo_director()
 	_resolve_arena_manager()
 	_resolve_player_manager()
-	selected_character_id = StringName(
-		context.get(
-			"character_id",
-			RpgCharacterRegistry.DEFAULT_CHARACTER_ID
-		)
+	selected_character_id = (
+		StringName(context.get("character_id", &""))
+		if context.has("character_id")
+		else &""
 	)
 	_apply_character_to_active_players()
 	if arena_manager != null:
@@ -136,7 +135,13 @@ func _apply_character_to_active_players() -> void:
 		_apply_character_to_player(player)
 
 func _apply_character_to_player(player: Node) -> void:
-	if player != null and player.has_method("apply_rpg_character"):
+	if player == null:
+		return
+	if selected_character_id.is_empty():
+		if player.has_method("clear_rpg_character"):
+			player.clear_rpg_character()
+		return
+	if player.has_method("apply_rpg_character"):
 		player.apply_rpg_character(selected_character_id)
 
 func _on_player_spawned(_player_slot: int, player: Node) -> void:

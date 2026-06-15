@@ -25,6 +25,8 @@ var facing_direction: Vector2 = Vector2.RIGHT
 var input_manager
 var game_mode_manager: GameModeManager
 var base_max_health: int = 100
+var base_move_speed: float = 260.0
+var current_run_health_bonus: int = 0
 
 func _ready() -> void:
 	add_to_group("players")
@@ -39,7 +41,10 @@ func _ready() -> void:
 	weapon_system.fired.connect(_on_weapon_fired)
 	weapon_system.reload_started.connect(_on_reload_started)
 	weapon_system.weapon_changed.connect(_on_weapon_changed)
+	rpg_component.stats_changed.connect(_on_rpg_stats_changed)
+	rpg_component.leveled_up.connect(_on_rpg_leveled_up)
 	base_max_health = health_component.max_health
+	base_move_speed = move_speed
 	_apply_slot_color()
 	visual.set_player_slot(player_slot)
 	visual.set_weapon_data(weapon_system.weapon_data)
@@ -114,10 +119,8 @@ func _handle_weapon_input() -> void:
 		weapon_system.try_fire(global_position + facing_direction * 22.0, facing_direction, self)
 
 func prepare_for_run(max_health_bonus: int = 0) -> void:
-	health_component.set_max_health(
-		base_max_health + maxi(max_health_bonus, 0),
-		true
-	)
+	current_run_health_bonus = maxi(max_health_bonus, 0)
+	_apply_rpg_runtime_stats(true)
 	velocity = Vector2.ZERO
 	visual.reset_visual()
 	revive_indicator.set_downed(false)
@@ -126,11 +129,15 @@ func prepare_for_run(max_health_bonus: int = 0) -> void:
 func apply_rpg_character(character_id: StringName) -> bool:
 	if rpg_component == null:
 		return false
-	return rpg_component.apply_character(character_id)
+	var applied := rpg_component.apply_character(character_id)
+	if applied and game_mode_manager != null and game_mode_manager.is_gameplay_active():
+		_apply_rpg_runtime_stats(true)
+	return applied
 
 func clear_rpg_character() -> void:
 	if rpg_component != null:
 		rpg_component.clear_character()
+	_apply_rpg_runtime_stats(true)
 
 func set_revive_progress(ratio: float, active: bool) -> void:
 	revive_indicator.set_revive_progress(ratio, active)
@@ -170,3 +177,22 @@ func _on_reload_started(duration: float) -> void:
 
 func _on_weapon_changed(weapon_data: WeaponData) -> void:
 	visual.set_weapon_data(weapon_data)
+
+func _apply_rpg_runtime_stats(refill_health: bool) -> void:
+	var resolved_max_health := base_max_health + current_run_health_bonus
+	var speed_multiplier := 1.0
+	if rpg_component != null and rpg_component.has_character():
+		resolved_max_health = rpg_component.get_max_hp() + current_run_health_bonus
+		speed_multiplier = rpg_component.get_speed_multiplier()
+	health_component.set_max_health(resolved_max_health, refill_health)
+	move_speed = base_move_speed * speed_multiplier
+
+func _on_rpg_stats_changed() -> void:
+	if health_component == null:
+		return
+	_apply_rpg_runtime_stats(false)
+
+func _on_rpg_leveled_up(_level: int) -> void:
+	_apply_rpg_runtime_stats(false)
+	if health_component != null and health_component.is_alive():
+		health_component.heal(roundi(float(health_component.max_health) * 0.25))

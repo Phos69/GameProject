@@ -4,6 +4,11 @@
 
 ### Added
 
+- Completata Roadmap RPG Mode Milestone 2 con statistiche classe, progressione per-run e formule danno.
+- Esteso `RpgPlayerComponent` con livello, XP, HP/attacco/difesa scalati e risoluzione danni.
+- Collegati `HealthSystem`, proiettili e attacchi nemici alla sorgente del danno.
+- Estese le schede HUD player con livello, classe, XP bar e riga ATK/DEF/SPD.
+- Aggiunto smoke test `milestone_rpg_2_stats_smoke_test.gd`.
 - Avviata roadmap RPG Mode con Milestone 1: selezione personaggio pre-run per la survival.
 - Aggiunti `RpgCharacterRegistry` e `RpgPlayerComponent` come contratto iniziale per classi, arma base, passiva e super.
 - Aggiunto pannello `Character Select` nel menu prima dell'avvio zombie survival.

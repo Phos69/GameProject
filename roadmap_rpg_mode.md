@@ -81,6 +81,20 @@ Il player selezionato determina arma, statistiche, passiva e super.
 
 # Milestone 2 — Sistema classi e statistiche RPG
 
+Stato: completata come primo pass runtime.
+
+Implementato:
+
+- statistiche classe su `RpgPlayerComponent`;
+- HP massimi e velocita applicati al player durante la survival;
+- progressione per-run con level-up e incremento HP/attacco/difesa;
+- formula danno con attacco player e difesa bersaglio;
+- formula danno ricevuto con difesa del player;
+- HUD player con livello, classe, XP bar e ATK/DEF/SPD;
+- smoke test dedicato `tests/milestone_rpg_2_stats_smoke_test.gd`.
+
+Limite noto: le fonti XP reali da kill e fine ondata vengono collegate nella Milestone 6.
+
 ## Goal
 
 Ogni personaggio deve avere statistiche proprie e progressione a livelli.

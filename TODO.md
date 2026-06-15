@@ -2,6 +2,12 @@
 
 ## Completati recenti
 
+- Roadmap RPG Mode, Milestone 2: sistema classi e statistiche RPG.
+  - Obiettivo: rendere HP, attacco, difesa, velocita e level-up propri del personaggio scelto.
+  - Milestone collegata: `roadmap_rpg_mode.md` Milestone 2.
+  - File/sistemi coinvolti: `RpgPlayerComponent`, `PlayerController`, `HealthSystem`, `Projectile`, `BasicEnemy`, `PlayerHudCard`.
+  - Criterio di accettazione: il profilo modifica HP/velocita, il level-up aumenta HP/ATK/DEF e le formule danno usano attacco/difesa.
+  - Test richiesto: `tests/milestone_rpg_2_stats_smoke_test.gd`; regressione combat/survival.
 - Roadmap RPG Mode, Milestone 1: selezione personaggio pre-partita.
   - Obiettivo: obbligare la zombie survival a passare da una scelta classe prima della run.
   - Milestone collegata: `roadmap_rpg_mode.md` Milestone 1.

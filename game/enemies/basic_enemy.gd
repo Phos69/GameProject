@@ -19,6 +19,7 @@ enum State {
 @export var detection_range: float = 900.0
 @export var attack_range: float = 42.0
 @export var attack_damage: int = 8
+@export var defense: int = 0
 @export var attack_cooldown: float = 0.85
 @export var target_refresh_interval: float = 0.20
 @export var health_bar_width: float = 44.0
@@ -125,7 +126,13 @@ func _attack_target() -> void:
 	var health_system = get_tree().get_first_node_in_group("health_system")
 	if health_system == null:
 		return
-	var applied_damage: int = health_system.apply_damage(target, attack_damage)
+	var applied_damage: int = health_system.apply_damage(
+		target,
+		attack_damage,
+		self,
+		enemy_id,
+		global_position
+	)
 	if applied_damage > 0:
 		attacked.emit(target, applied_damage)
 

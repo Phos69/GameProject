@@ -6,15 +6,18 @@ var slot_color: Color = Color(0.18, 0.74, 0.95, 1.0)
 var slot_label: Label
 var weapon_icon: WeaponIcon
 var weapon_label: Label
+var class_label: Label
 var health_bar: ProgressBar
 var health_label: Label
 var ammo_label: Label
+var xp_bar: ProgressBar
+var stats_label: Label
 var hud_text_scale: float = 1.0
 var high_contrast: bool = false
 
 func _ready() -> void:
 	add_to_group("visual_settings_consumers")
-	custom_minimum_size = Vector2(272.0, 92.0)
+	custom_minimum_size = Vector2(292.0, 126.0)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_ui()
 	_apply_style()
@@ -37,10 +40,20 @@ func apply_visual_settings(settings: Dictionary) -> void:
 			"font_size",
 			roundi(14.0 * hud_text_scale)
 		)
+	if class_label != null:
+		class_label.add_theme_font_size_override(
+			"font_size",
+			roundi(12.0 * hud_text_scale)
+		)
 	if ammo_label != null:
 		ammo_label.add_theme_font_size_override(
 			"font_size",
 			roundi(17.0 * hud_text_scale)
+		)
+	if stats_label != null:
+		stats_label.add_theme_font_size_override(
+			"font_size",
+			roundi(12.0 * hud_text_scale)
 		)
 	_apply_style()
 
@@ -59,7 +72,23 @@ func refresh(player: Node) -> void:
 
 	var health_component := player.get_node_or_null("HealthComponent") as HealthComponent
 	var weapon_system := player.get_node_or_null("WeaponSystem") as WeaponSystem
+	var rpg_component := player.get_node_or_null(
+		"RpgPlayerComponent"
+	) as RpgPlayerComponent
 	slot_label.text = "P%d" % player_slot
+	class_label.text = "Survivor"
+	stats_label.text = "ATK 0  DEF 0  SPD 1.00"
+	xp_bar.max_value = 1.0
+	xp_bar.value = 0.0
+	if rpg_component != null and rpg_component.has_character():
+		slot_label.text = "P%d  LV %d" % [player_slot, rpg_component.level]
+		class_label.text = "%s  %s" % [
+			rpg_component.get_display_name(),
+			rpg_component.get_class_name()
+		]
+		stats_label.text = rpg_component.get_stats_text()
+		xp_bar.max_value = float(rpg_component.experience_to_next_level)
+		xp_bar.value = float(rpg_component.experience)
 	if health_component != null:
 		health_bar.max_value = float(health_component.max_health)
 		health_bar.value = float(health_component.current_health)
@@ -105,7 +134,7 @@ func _build_ui() -> void:
 	var top_row := HBoxContainer.new()
 	content.add_child(top_row)
 	slot_label = Label.new()
-	slot_label.custom_minimum_size = Vector2(42.0, 24.0)
+	slot_label.custom_minimum_size = Vector2(76.0, 24.0)
 	slot_label.add_theme_font_size_override("font_size", 18)
 	top_row.add_child(slot_label)
 	weapon_icon = WeaponIcon.new()
@@ -116,6 +145,11 @@ func _build_ui() -> void:
 	weapon_label.add_theme_font_size_override("font_size", 14)
 	weapon_label.modulate = Color(0.76, 0.82, 0.86, 1.0)
 	top_row.add_child(weapon_label)
+
+	class_label = Label.new()
+	class_label.add_theme_font_size_override("font_size", 12)
+	class_label.modulate = Color(0.68, 0.76, 0.82, 1.0)
+	content.add_child(class_label)
 
 	var health_row := HBoxContainer.new()
 	health_row.add_theme_constant_override("separation", 8)
@@ -149,6 +183,27 @@ func _build_ui() -> void:
 	ammo_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	ammo_label.add_theme_font_size_override("font_size", 17)
 	ammo_row.add_child(ammo_label)
+
+	var xp_row := HBoxContainer.new()
+	xp_row.add_theme_constant_override("separation", 8)
+	content.add_child(xp_row)
+	var xp_icon := Label.new()
+	xp_icon.text = "*"
+	xp_icon.custom_minimum_size = Vector2(28.0, 16.0)
+	xp_icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	xp_icon.modulate = Color(0.54, 0.78, 1.0, 1.0)
+	xp_row.add_child(xp_icon)
+	xp_bar = ProgressBar.new()
+	xp_bar.custom_minimum_size = Vector2(126.0, 12.0)
+	xp_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	xp_bar.show_percentage = false
+	xp_row.add_child(xp_bar)
+	stats_label = Label.new()
+	stats_label.custom_minimum_size = Vector2(120.0, 17.0)
+	stats_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	stats_label.add_theme_font_size_override("font_size", 12)
+	stats_label.modulate = Color(0.74, 0.84, 0.92, 1.0)
+	xp_row.add_child(stats_label)
 
 func _apply_style() -> void:
 	var panel_style := StyleBoxFlat.new()
@@ -184,3 +239,18 @@ func _apply_style() -> void:
 		fill_style.corner_radius_bottom_left = 4
 		fill_style.corner_radius_bottom_right = 4
 		health_bar.add_theme_stylebox_override("fill", fill_style)
+	if xp_bar != null:
+		var xp_background_style := StyleBoxFlat.new()
+		xp_background_style.bg_color = Color(0.06, 0.08, 0.13, 1.0)
+		xp_background_style.corner_radius_top_left = 4
+		xp_background_style.corner_radius_top_right = 4
+		xp_background_style.corner_radius_bottom_left = 4
+		xp_background_style.corner_radius_bottom_right = 4
+		xp_bar.add_theme_stylebox_override("background", xp_background_style)
+		var xp_fill_style := StyleBoxFlat.new()
+		xp_fill_style.bg_color = Color(0.24, 0.58, 0.96, 1.0)
+		xp_fill_style.corner_radius_top_left = 4
+		xp_fill_style.corner_radius_top_right = 4
+		xp_fill_style.corner_radius_bottom_left = 4
+		xp_fill_style.corner_radius_bottom_right = 4
+		xp_bar.add_theme_stylebox_override("fill", xp_fill_style)

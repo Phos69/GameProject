@@ -157,7 +157,7 @@ func _create_player_hud() -> void:
 	margin.anchor_right = 1.0
 	margin.anchor_bottom = 1.0
 	margin.offset_left = 18.0
-	margin.offset_top = -112.0
+	margin.offset_top = -146.0
 	margin.offset_right = -18.0
 	margin.offset_bottom = -16.0
 	add_child(margin)
