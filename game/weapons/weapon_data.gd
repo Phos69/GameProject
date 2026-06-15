@@ -8,6 +8,9 @@ class_name WeaponData
 @export_range(1.0, 2000.0, 1.0) var projectile_speed: float = 600.0
 @export_range(0.0, 3000.0, 1.0) var max_range: float = 0.0
 @export_range(0.0, 45.0, 0.1) var scatter_degrees: float = 0.0
+@export var hitbox_type: StringName = &"circle"
+@export var hitbox_size: Vector2 = Vector2(8.0, 8.0)
+@export_range(1, 16) var max_hit_count: int = 1
 @export_range(1, 999) var magazine_size: int = 12
 @export_range(0, 9999) var starting_reserve_ammo: int = 36
 @export_range(1, 100) var ammo_per_shot: int = 1

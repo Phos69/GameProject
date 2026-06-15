@@ -9,12 +9,16 @@ signal impacted(target: Node, applied_damage: int)
 @onready var visual := get_node_or_null("Visual") as Polygon2D
 @onready var glow := get_node_or_null("Glow") as Polygon2D
 @onready var trail := get_node_or_null("Trail") as Line2D
+@onready var collision_shape := get_node_or_null("CollisionShape2D") as CollisionShape2D
 
 var velocity: Vector2 = Vector2.ZERO
 var owner_node: Node
 var source_id: StringName = &"projectile"
 var visual_data: WeaponVisualData
-var has_hit: bool = false
+var hitbox_type: StringName = &"circle"
+var hitbox_size: Vector2 = Vector2(8.0, 8.0)
+var max_hit_count: int = 1
+var hit_targets: Dictionary = {}
 var glow_intensity: float = 1.0
 var trail_intensity: float = 1.0
 var default_glow_color: Color
@@ -32,6 +36,7 @@ func _ready() -> void:
 		default_trail_width = trail.width
 	VisualSettingsManager.sync_consumer(self)
 	_apply_visual_data()
+	_apply_hitbox_data()
 
 func apply_visual_settings(settings: Dictionary) -> void:
 	glow_intensity = clampf(
@@ -54,13 +59,19 @@ func launch(
 	damage_amount: int = 10,
 	damage_source_id: StringName = &"projectile",
 	projectile_visual_data: WeaponVisualData = null,
-	max_range: float = 0.0
+	max_range: float = 0.0,
+	projectile_hitbox_type: StringName = &"circle",
+	projectile_hitbox_size: Vector2 = Vector2(8.0, 8.0),
+	projectile_max_hit_count: int = 1
 ) -> void:
 	velocity = direction.normalized() * speed
 	owner_node = owner_ref
 	damage = damage_amount
 	source_id = damage_source_id
 	visual_data = projectile_visual_data
+	hitbox_type = projectile_hitbox_type
+	hitbox_size = projectile_hitbox_size
+	max_hit_count = maxi(projectile_max_hit_count, 1)
 	if max_range > 0.0:
 		lifetime = (
 			max_range / maxf(speed, 1.0)
@@ -70,6 +81,7 @@ func launch(
 	rotation = direction.angle()
 	if is_node_ready():
 		_apply_visual_data()
+		_apply_hitbox_data()
 
 func get_muzzle_color() -> Color:
 	if visual_data != null:
@@ -94,11 +106,12 @@ func _on_area_entered(area: Area2D) -> void:
 	_try_hit_target(area)
 
 func _try_hit_target(target: Node) -> void:
-	if has_hit or target == owner_node:
+	if target == owner_node:
+		return
+	var target_id := target.get_instance_id()
+	if hit_targets.has(target_id):
 		return
 
-	has_hit = true
-	set_deferred("monitoring", false)
 	var applied_damage := 0
 	var health_system = get_tree().get_first_node_in_group("health_system")
 	if health_system != null and health_system.has_method("apply_damage"):
@@ -114,7 +127,10 @@ func _try_hit_target(target: Node) -> void:
 		if health_component != null and health_component.has_method("apply_damage"):
 			applied_damage = health_component.apply_damage(damage)
 	impacted.emit(target, applied_damage)
-	queue_free()
+	hit_targets[target_id] = true
+	if hit_targets.size() >= max_hit_count:
+		set_deferred("monitoring", false)
+		queue_free()
 
 func _apply_visual_data() -> void:
 	var base_glow_color := default_glow_color
@@ -265,4 +281,43 @@ func _glow_polygon(profile_id: StringName) -> PackedVector2Array:
 	var points := _projectile_polygon(profile_id)
 	for index in range(points.size()):
 		points[index] *= 1.65
+	return points
+
+func _apply_hitbox_data() -> void:
+	if collision_shape == null:
+		return
+	collision_shape.rotation = 0.0
+	match hitbox_type:
+		&"rectangle":
+			var rectangle := RectangleShape2D.new()
+			rectangle.size = Vector2(
+				maxf(hitbox_size.x, 1.0),
+				maxf(hitbox_size.y, 1.0)
+			)
+			collision_shape.shape = rectangle
+		&"capsule":
+			var capsule := CapsuleShape2D.new()
+			capsule.radius = maxf(hitbox_size.x * 0.5, 1.0)
+			capsule.height = maxf(hitbox_size.y, hitbox_size.x)
+			collision_shape.rotation = PI * 0.5
+			collision_shape.shape = capsule
+		&"arc":
+			var arc := ConvexPolygonShape2D.new()
+			arc.points = _arc_hitbox_points(
+				maxf(hitbox_size.x, 1.0),
+				maxf(hitbox_size.y, 1.0)
+			)
+			collision_shape.shape = arc
+		_:
+			var circle := CircleShape2D.new()
+			circle.radius = maxf(hitbox_size.x * 0.5, 1.0)
+			collision_shape.shape = circle
+
+func _arc_hitbox_points(range_value: float, width_value: float) -> PackedVector2Array:
+	var points := PackedVector2Array([Vector2.ZERO])
+	var half_angle := atan2(width_value * 0.5, maxf(range_value, 1.0))
+	for index in range(7):
+		var ratio := float(index) / 6.0
+		var angle := lerpf(-half_angle, half_angle, ratio)
+		points.append(Vector2(cos(angle), sin(angle)) * range_value)
 	return points

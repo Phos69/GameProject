@@ -2,6 +2,12 @@
 
 ## Completati recenti
 
+- Roadmap RPG Mode, Milestone 4: hitbox proiettili e colpi melee.
+  - Obiettivo: separare collisione e sprite per armi ranged/melee.
+  - Milestone collegata: `roadmap_rpg_mode.md` Milestone 4.
+  - File/sistemi coinvolti: `WeaponData`, `WeaponSystem`, `ProjectileSystem`, `Projectile`, risorse `rpg_*`.
+  - Criterio di accettazione: pistola circle, arco capsule, ascia arc multi-hit e spada rectangle multi-hit configurati da dati.
+  - Test richiesto: `tests/milestone_rpg_4_hitbox_smoke_test.gd`; QA manuale in survival con Berserker e Spadaccino.
 - Roadmap RPG Mode, Milestone 3: armi base differenziate.
   - Obiettivo: dare a Ranger, Pistoliere, Berserker e Spadaccino armi base con profili gameplay diversi.
   - Milestone collegata: `roadmap_rpg_mode.md` Milestone 3.

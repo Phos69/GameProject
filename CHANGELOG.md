@@ -4,6 +4,11 @@
 
 ### Added
 
+- Completata Roadmap RPG Mode Milestone 4 con hitbox arma configurabili.
+- Esteso `WeaponData` con `hitbox_type`, `hitbox_size` e `max_hit_count`.
+- `Projectile` ora crea shape circle, rectangle, capsule o arc separate dal visual.
+- Ascia e spada supportano colpi multi-hit tramite `max_hit_count`.
+- Aggiunto smoke test `milestone_rpg_4_hitbox_smoke_test.gd`.
 - Completata Roadmap RPG Mode Milestone 3 con armi base differenziate per le quattro classi.
 - Aggiunti `rpg_bow`, `rpg_pistol`, `rpg_axe` e `rpg_sword` come `WeaponData` con range, scatter, danno, ammo e reload distinti.
 - Esteso `WeaponData` con `max_range` e `scatter_degrees`, applicati da `WeaponSystem` e `Projectile`.

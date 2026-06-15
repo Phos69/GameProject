@@ -271,6 +271,19 @@ Non devono esserci solo sprite diversi: le armi devono cambiare davvero il modo 
 
 # Milestone 4 — Hitbox proiettili e colpi melee
 
+Stato: completata come primo pass dati/collisione.
+
+Implementato:
+
+- `WeaponData.hitbox_type`, `hitbox_size` e `max_hit_count`;
+- shape runtime circle, rectangle, capsule e arc in `Projectile`;
+- collisione separata dai poligoni visuali del proiettile;
+- mapping pistola/circle, arco/capsule, ascia/arc e spada/rectangle;
+- colpi multi-hit per ascia e spada;
+- smoke test dedicato `tests/milestone_rpg_4_hitbox_smoke_test.gd`.
+
+Limite noto: le shape melee sono ancora gestite tramite `Projectile`; un sistema melee dedicato potra rifinirne timing e animazione in un pass futuro.
+
 ## Goal
 
 I proiettili non devono avere tutti la stessa collisione.

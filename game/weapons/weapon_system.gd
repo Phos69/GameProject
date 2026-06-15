@@ -86,7 +86,10 @@ func try_fire(origin: Vector2, direction: Vector2, owner_ref: Node = null) -> bo
 				weapon_data.damage,
 				weapon_data.weapon_id,
 				weapon_data.visual_data,
-				weapon_data.max_range
+				weapon_data.max_range,
+				weapon_data.hitbox_type,
+				weapon_data.hitbox_size,
+				weapon_data.max_hit_count
 			)
 		else:
 			var projectile := weapon_data.projectile_scene.instantiate()
@@ -100,7 +103,10 @@ func try_fire(origin: Vector2, direction: Vector2, owner_ref: Node = null) -> bo
 					weapon_data.damage,
 					weapon_data.weapon_id,
 					weapon_data.visual_data,
-					weapon_data.max_range
+					weapon_data.max_range,
+					weapon_data.hitbox_type,
+					weapon_data.hitbox_size,
+					weapon_data.max_hit_count
 				)
 			var root := get_tree().current_scene
 			if root != null:

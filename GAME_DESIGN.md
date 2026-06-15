@@ -322,8 +322,9 @@ Armi base RPG attive:
 - `Spada`: 15 danni, range 125, 4 fendenti e reload 0,9s.
 
 Le armi base hanno riserva infinita ma conservano caricatore e reload. Le
-milestone successive collegano fonti XP reali, hitbox melee dedicate, passive,
-adrenalina, super e polish feedback.
+hitbox sono configurate separatamente dal visual: pistola circle, arco capsule,
+ascia arc multi-hit e spada rectangle multi-hit. Le milestone successive
+collegano fonti XP reali, passive, adrenalina, super e polish feedback.
 
 ## Bilanciamento iniziale
 

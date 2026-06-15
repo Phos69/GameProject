@@ -170,6 +170,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - Le armi RPG di base sono `WeaponData` dedicate e vengono equipaggiate dal profilo `RpgPlayerComponent`.
 - `WeaponData.max_range` limita la vita del proiettile senza cambiare la scena projectile.
 - `WeaponData.scatter_degrees` viene applicato da `WeaponSystem` alla direzione di sparo.
+- `WeaponData.hitbox_type`, `hitbox_size` e `max_hit_count` configurano la collisione runtime del proiettile separatamente dal visual.
 - Palette, silhouette e trail vivono in `WeaponVisualData` e non modificano il bilanciamento.
 - `ProjectileSystem` riceve i dati dello sparo e configura il proiettile prima di aggiungerlo alla scena.
 - Il parametro visuale di `ProjectileSystem` e opzionale per mantenere compatibili boss e chiamanti esistenti.
