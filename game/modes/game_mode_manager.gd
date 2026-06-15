@@ -2,6 +2,7 @@ extends Node
 class_name GameModeManager
 
 signal game_mode_changed(mode_id: StringName)
+signal game_mode_started(mode_id: StringName)
 signal mode_boss_requested(mode_id: StringName, reason: StringName)
 
 @export var default_mode: StringName = GameConstants.MODE_MENU
@@ -41,7 +42,7 @@ func register_mode(mode: Node) -> void:
 	if mode.has_signal("boss_requested") and not mode.is_connected("boss_requested", callback):
 		mode.connect("boss_requested", callback)
 	if mode_id == active_mode_id and mode.has_method("start_mode"):
-		mode.call_deferred("start_mode")
+		call_deferred("_start_registered_mode", mode_id, {})
 
 func set_mode(mode_id: StringName, context: Dictionary = {}) -> bool:
 	if active_mode_id == mode_id:
@@ -52,6 +53,8 @@ func set_mode(mode_id: StringName, context: Dictionary = {}) -> bool:
 			and not bool(current_mode.get("is_running"))
 		):
 			current_mode.start_mode(context)
+			if bool(current_mode.get("is_running")):
+				game_mode_started.emit(active_mode_id)
 		return true
 	if mode_id != GameConstants.MODE_MENU and not registered_modes.has(mode_id):
 		return false
@@ -63,6 +66,8 @@ func set_mode(mode_id: StringName, context: Dictionary = {}) -> bool:
 	var next_mode: Node = registered_modes.get(active_mode_id)
 	if next_mode != null and next_mode.has_method("start_mode"):
 		next_mode.start_mode(context)
+		if bool(next_mode.get("is_running")):
+			game_mode_started.emit(active_mode_id)
 	return true
 
 func has_mode(mode_id: StringName) -> bool:
@@ -88,3 +93,11 @@ func _on_mode_boss_requested(mode_id: StringName, reason: StringName) -> void:
 	var boss_system = get_tree().get_first_node_in_group("boss_system")
 	if boss_system != null:
 		boss_system.request_boss(mode_id, reason)
+
+func _start_registered_mode(mode_id: StringName, context: Dictionary) -> void:
+	var mode: Node = registered_modes.get(mode_id)
+	if mode == null or not mode.has_method("start_mode"):
+		return
+	mode.start_mode(context)
+	if bool(mode.get("is_running")):
+		game_mode_started.emit(mode_id)

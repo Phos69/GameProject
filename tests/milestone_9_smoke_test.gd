@@ -2,6 +2,7 @@ extends SceneTree
 
 var failures: PackedStringArray = []
 var temporary_save_path: String = "user://milestone_9_smoke_test.json"
+var gameplay_feedback_events: Array[Dictionary] = []
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -29,6 +30,9 @@ func _run() -> void:
 	var progression := get_first_node_in_group(
 		"progression_manager"
 	) as ProgressionManager
+	var player_manager := get_first_node_in_group(
+		"player_manager"
+	) as PlayerManager
 	var survival_mode := get_first_node_in_group("survival_mode") as SurvivalMode
 	var dungeon_mode := get_first_node_in_group("dungeon_mode") as DungeonMode
 	var hud := get_first_node_in_group("hud_manager") as HUDManager
@@ -38,6 +42,7 @@ func _run() -> void:
 	_expect(main_menu != null, "main menu is available")
 	_expect(save_manager != null, "save manager is available")
 	_expect(progression != null, "progression manager is available")
+	_expect(player_manager != null, "player manager is available")
 	_expect(survival_mode != null, "survival mode is available")
 	_expect(dungeon_mode != null, "dungeon mode is available")
 	_expect(hud != null, "HUD manager is available")
@@ -47,6 +52,7 @@ func _run() -> void:
 		or main_menu == null
 		or save_manager == null
 		or progression == null
+		or player_manager == null
 		or survival_mode == null
 		or dungeon_mode == null
 		or hud == null
@@ -66,6 +72,25 @@ func _run() -> void:
 		audio_manager.ui_player != null,
 		"procedural UI audio feedback is initialized"
 	)
+	_expect(
+		audio_manager.gameplay_player != null,
+		"procedural gameplay audio feedback is initialized"
+	)
+	audio_manager.gameplay_feedback_generated.connect(
+		_on_gameplay_feedback_generated
+	)
+	_expect(
+		audio_manager.play_gameplay_shot(&"starter_pistol") > 0,
+		"gameplay shot feedback writes audio samples"
+	)
+	_expect(
+		audio_manager.play_gameplay_impact(&"starter_pistol") > 0,
+		"gameplay impact feedback writes audio samples"
+	)
+	_expect(
+		audio_manager.play_gameplay_pickup(GameConstants.DROP_EXPERIENCE) > 0,
+		"gameplay pickup feedback writes audio samples"
+	)
 
 	save_manager.save_path = temporary_save_path
 	save_manager.auto_persist_in_headless = true
@@ -78,10 +103,35 @@ func _run() -> void:
 	)
 	save_manager.autosave_progression = false
 	save_manager.autosave_mode_selection = false
+	var legacy_file := FileAccess.open(temporary_save_path, FileAccess.WRITE)
+	legacy_file.store_string(JSON.stringify({
+		"version": 1,
+		"party": {
+			"level": 2,
+			"experience": 10,
+			"money": 20
+		},
+		"settings": {
+			"last_mode": String(GameConstants.MODE_SURVIVAL)
+		}
+	}))
+	legacy_file.close()
+	_expect(save_manager.load_game(), "version 1 saves migrate through the current loader")
+	_expect(
+		progression.has_unlock(ProgressionManager.FIELD_KIT_UNLOCK),
+		"legacy level data grants the Field Kit unlock"
+	)
+	_expect(save_manager.save_game(), "migrated progress is written in the current format")
+	var migrated_data := _read_json_dictionary(temporary_save_path)
+	_expect(
+		int(migrated_data.get("version", 0)) == SaveManager.SAVE_VERSION,
+		"migrated saves use the current save version"
+	)
 	progression.restore_save_data({
 		"level": 3,
 		"experience": 45,
-		"money": 70
+		"money": 70,
+		"unlocks": [String(ProgressionManager.FIELD_KIT_UNLOCK)]
 	})
 	save_manager.set_last_mode(GameConstants.MODE_DUNGEON)
 	_expect(save_manager.save_game(), "progression save is written")
@@ -89,13 +139,22 @@ func _run() -> void:
 	progression.restore_save_data({
 		"level": 1,
 		"experience": 0,
-		"money": 0
+		"money": 0,
+		"unlocks": []
 	})
+	_expect(
+		not progression.has_unlock(ProgressionManager.FIELD_KIT_UNLOCK),
+		"runtime progression can reset to a locked state"
+	)
 	save_manager.set_last_mode(GameConstants.MODE_SURVIVAL)
 	_expect(save_manager.load_game(), "progression save is loaded")
 	_expect(progression.level == 3, "save restores party level")
 	_expect(progression.experience == 45, "save restores party experience")
 	_expect(progression.money == 70, "save restores party money")
+	_expect(
+		progression.has_unlock(ProgressionManager.FIELD_KIT_UNLOCK),
+		"save restores the Field Kit unlock"
+	)
 	_expect(
 		save_manager.get_last_mode() == GameConstants.MODE_DUNGEON,
 		"save restores the last selected mode"
@@ -124,6 +183,14 @@ func _run() -> void:
 	_expect(dungeon_mode.is_running, "dungeon starts from the main menu")
 	_expect(not main_menu.is_open(), "menu hides after mode selection")
 	_expect(hud.visible, "gameplay HUD becomes visible after mode selection")
+	var player_one := player_manager.players.get(1) as PlayerController
+	_expect(player_one != null, "player one is available for run unlocks")
+	if player_one != null:
+		var player_health := player_one.get_node("HealthComponent") as HealthComponent
+		_expect(
+			player_health.max_health == 120 and player_health.current_health == 120,
+			"Field Kit raises and refills player health at run start"
+		)
 
 	main_menu.open_menu()
 	await process_frame
@@ -134,8 +201,37 @@ func _run() -> void:
 		"returning to menu restores menu state"
 	)
 	_expect(
+		main_menu.start_selected_mode(GameConstants.MODE_SURVIVAL),
+		"a second run can start after returning to the menu"
+	)
+	await process_frame
+	if player_one != null:
+		var player_health := player_one.get_node("HealthComponent") as HealthComponent
+		_expect(
+			player_health.max_health == 120,
+			"Field Kit health does not stack across runs"
+		)
+		player_health.apply_damage(20)
+		survival_mode.stop_mode()
+		_expect(
+			game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL),
+			"the active mode can restart after stopping"
+		)
+		_expect(
+			player_health.current_health == 120,
+			"same-mode restart prepares the player for a new run"
+		)
+	main_menu.open_menu()
+	await process_frame
+	_expect(
 		FileAccess.file_exists("res://export_presets.cfg"),
 		"desktop export preset is present"
+	)
+	_expect(
+		_has_gameplay_feedback(&"shot")
+		and _has_gameplay_feedback(&"impact")
+		and _has_gameplay_feedback(&"pickup"),
+		"all gameplay feedback categories are emitted"
 	)
 
 	_finish()
@@ -156,6 +252,34 @@ func _remove_temporary_save() -> void:
 	var backup_path := temporary_save_path + ".bak"
 	if FileAccess.file_exists(backup_path):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(backup_path))
+
+func _read_json_dictionary(path: String) -> Dictionary:
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return {}
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	return parsed as Dictionary if parsed is Dictionary else {}
+
+func _on_gameplay_feedback_generated(
+	feedback_type: StringName,
+	source_id: StringName,
+	frames_written: int
+) -> void:
+	gameplay_feedback_events.append({
+		"type": feedback_type,
+		"source": source_id,
+		"frames": frames_written
+	})
+
+func _has_gameplay_feedback(feedback_type: StringName) -> bool:
+	for event in gameplay_feedback_events:
+		if (
+			StringName(event.get("type", &"")) == feedback_type
+			and int(event.get("frames", 0)) > 0
+		):
+			return true
+	return false
 
 func _finish() -> void:
 	_remove_temporary_save()

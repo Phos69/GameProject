@@ -22,6 +22,7 @@ class_name PlayerController
 var facing_direction: Vector2 = Vector2.RIGHT
 var input_manager
 var game_mode_manager: GameModeManager
+var base_max_health: int = 100
 
 func _ready() -> void:
 	add_to_group("players")
@@ -30,6 +31,7 @@ func _ready() -> void:
 		"game_mode_manager"
 	) as GameModeManager
 	health_component.died.connect(_on_died)
+	base_max_health = health_component.max_health
 	_apply_slot_color()
 	_update_aim_line()
 
@@ -95,6 +97,15 @@ func _handle_weapon_input() -> void:
 		weapon_system.start_reload()
 	if input_manager.is_player_fire_pressed(player_slot):
 		weapon_system.try_fire(global_position + facing_direction * 22.0, facing_direction, self)
+
+func prepare_for_run(max_health_bonus: int = 0) -> void:
+	health_component.set_max_health(
+		base_max_health + maxi(max_health_bonus, 0),
+		true
+	)
+	velocity = Vector2.ZERO
+	visual.modulate = Color.WHITE
+	aim_line.show()
 
 func _on_died() -> void:
 	velocity = Vector2.ZERO

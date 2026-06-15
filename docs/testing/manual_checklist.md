@@ -204,8 +204,16 @@ Il test verifica cambio modalita, percorso, danno core, crediti, costruzione, fu
 - `Continue` avvia l'ultima modalita salvata.
 - Una variazione di XP o denaro aggiorna `user://savegame.json`.
 - Riavviando il progetto, livello, XP, denaro e ultima modalita vengono ripristinati.
+- Un save v1 viene caricato e riscritto come v2 senza perdere progressione.
+- Raggiungere il livello party 2 sblocca `Field Kit`.
+- Il menu mostra lo stato di `Field Kit`.
+- Con `Field Kit`, ogni nuova run parte a 120/120 HP.
+- Cambiare modalita non accumula il bonus oltre 120 HP.
+- Un player che entra durante la run riceve lo stesso bonus.
 - Un save con versione non supportata viene ignorato senza azzerare la sessione.
 - Focus e conferma dei pulsanti producono feedback audio.
+- Sparo, impatto con danno e pickup producono feedback audio gameplay.
+- `Starter Pistol` usa 6 colpi/s e `Prototype Blaster` 4,5 colpi/s.
 - Con i template Godot `4.6.3` installati, il preset `Windows Desktop` genera `build/iso_local_sandbox.exe`.
 - Il pacchetto release non contiene file da `tests/` o `build/`.
 

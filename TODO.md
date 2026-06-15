@@ -2,6 +2,12 @@
 
 ## Completati recenti
 
+- Milestone 9, completamento prototipo minimo.
+  - Obiettivo: aggiungere un unlock persistente, feedback audio gameplay e primo bilanciamento.
+  - Milestone collegata: Milestone 9.
+  - File/sistemi coinvolti: `ProgressionManager`, `SaveManager`, player/health, `AudioManager`, proiettili, drop, armi e menu.
+  - Criterio di accettazione: `Field Kit` persistente applicato a ogni nuova run, save v1 migrati, audio sparo/impatto/pickup attivo e valori arma documentati.
+  - Test richiesto: `tests/milestone_9_smoke_test.gd`, regressione combat/drop e suite headless completa.
 - Milestone 9, packaging e QA Windows.
   - Obiettivo: installare i template, produrre una release e verificare menu, joypad e audio.
   - Milestone collegata: Milestone 9.
@@ -59,12 +65,12 @@
 
 ## Priorita alta
 
-- Completare Milestone 9: progressione e polish.
-  - Obiettivo: aggiungere un unlock base, svolgere il primo pass di bilanciamento e completare il feedback gameplay.
-  - Milestone collegata: Milestone 9.
-  - File/sistemi coinvolti: `ProgressionManager`, armi, nemici, boss, `AudioManager`, menu e salvataggi.
-  - Criterio di accettazione: almeno un unlock persistente influenza una nuova run e i valori base sono documentati e verificati.
-  - Test richiesto: round-trip unlock, regressione save e checklist di bilanciamento/audio.
+- Varianti nemico e telegraph boss.
+  - Obiettivo: aggiungere runner/tank e rendere anticipabili i pattern del `Wave Warden`.
+  - Milestone collegata: evoluzione post-roadmap delle Milestone 5, 6 e 9.
+  - File/sistemi coinvolti: `game/enemies/`, `EnemySystem`, `BasicBoss`, `AudioManager`, scene e loot table.
+  - Criterio di accettazione: almeno due varianti riusano i contratti condivisi e ogni pattern boss mostra un preavviso leggibile.
+  - Test richiesto: smoke test spawn/morte varianti e checklist visuale/audio boss.
 
 ## Priorita media
 
@@ -101,12 +107,12 @@
 
 ## Priorita bassa
 
-- Audio placeholder.
-  - Obiettivo: estendere il feedback UI gia presente a sparo, colpo e pickup.
-  - Milestone collegata: Milestone 9.
-  - File/sistemi coinvolti: `AudioManager`, scene gameplay e asset audio.
-  - Criterio di accettazione: gli eventi principali emettono audio con volume configurabile.
-  - Test richiesto: checklist manuale audio.
+- Mix audio e sostituzione placeholder.
+  - Obiettivo: sostituire gradualmente i toni procedurali con asset licenziati e mix configurabile.
+  - Milestone collegata: evoluzione post-roadmap della Milestone 9.
+  - File/sistemi coinvolti: `AudioManager`, asset audio e impostazioni.
+  - Criterio di accettazione: volume UI/gameplay regolabile e assenza di clipping nelle situazioni affollate.
+  - Test richiesto: checklist manuale audio con 1-4 player.
 - Asset definitivi.
   - Obiettivo: sostituire progressivamente i placeholder senza introdurre dipendenze obbligatorie.
   - Milestone collegata: Milestone 9.
@@ -119,3 +125,9 @@
   - File/sistemi coinvolti: `tests/` e sistemi gameplay.
   - Criterio di accettazione: ogni sistema condiviso critico ha almeno uno smoke test headless.
   - Test richiesto: esecuzione completa della suite headless.
+- Eliminare i warning di cleanup dei test headless.
+  - Obiettivo: chiudere esplicitamente nodi e risorse prima dell'uscita dei runner.
+  - Milestone collegata: manutenzione post-roadmap.
+  - File/sistemi coinvolti: `tests/` e lifecycle dei nodi runtime.
+  - Criterio di accettazione: la suite termina senza `ObjectDB instances leaked at exit`.
+  - Test richiesto: suite headless completa con output privo di warning ObjectDB.

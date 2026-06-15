@@ -11,7 +11,7 @@ Il progetto vuole diventare una piattaforma modulare per sperimentare tre modali
 - tower defense;
 - boss fight ricorrenti nelle ondate importanti o alla fine dei livelli.
 
-La base attuale contiene Milestone 0-8 come prototipi minimi e una Milestone 9 avanzata: menu principale, selezione modalita, progressione persistente, feedback audio UI e build Windows verificata.
+La base attuale contiene Milestone 0-9 completate come prototipi minimi: tre modalita giocabili, progressione con unlock persistente, feedback audio UI/gameplay e build Windows verificata.
 
 ## Stack tecnico
 
@@ -160,9 +160,14 @@ Completato:
 - ondate crescenti, ricompense crediti e boss ogni cinque ondate;
 - HUD tower defense con vita core, crediti, ondata e nemici rimasti;
 - salvataggio JSON versionato di livello, XP, denaro e ultima modalita;
+- save v2 con migrazione automatica dei dati v1 e unlock persistenti;
 - autosave su variazioni della progressione;
 - rifiuto dei save malformati o con versione non supportata;
+- unlock `Field Kit` al livello party 2, con 120 HP a inizio run;
+- reset idempotente della salute a ogni nuova run e sui player che entrano durante il gameplay;
 - feedback audio procedurale per focus e conferma menu;
+- feedback audio procedurale per sparo, impatto valido e pickup;
+- primo pass di bilanciamento sulle armi base;
 - preset export `Windows Desktop`;
 - mapping globale `ui_accept` su joypad `A`;
 - build Windows release generata e avviata;
@@ -178,10 +183,12 @@ Non ancora completato:
 - varianti nemico ranged/tank/runner;
 - respawn o revive dei player;
 - dungeon ramificati, shop, biomi e selezione stanza;
-- audio gameplay per sparo, colpi e pickup;
-- unlock base, bilanciamento e polish visuale finale;
+- mix audio, telegraph e polish visuale avanzato;
+- asset definitivi e ulteriori pass di bilanciamento;
 - firma digitale dell'eseguibile Windows.
 
-## Prossime milestone
+## Prossimi obiettivi post-roadmap
 
-1. Completare Milestone 9: unlock base, bilanciamento iniziale, audio gameplay e polish finale.
+1. Aggiungere varianti nemico e telegraph boss.
+2. Espandere il dungeon con diramazioni, shop e biomi.
+3. Introdurre revive locale e ulteriori unlock.

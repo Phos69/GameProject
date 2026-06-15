@@ -6,7 +6,7 @@ signal load_completed(data: Dictionary)
 signal save_failed(path: String, reason: String)
 signal load_failed(path: String, reason: String)
 
-const SAVE_VERSION: int = 1
+const SAVE_VERSION: int = 2
 const DEFAULT_SAVE_PATH: String = "user://savegame.json"
 
 @export var save_path: String = DEFAULT_SAVE_PATH
@@ -32,7 +32,8 @@ func create_empty_save() -> Dictionary:
 		"party": {
 			"level": 1,
 			"experience": 0,
-			"money": 0
+			"money": 0,
+			"unlocks": []
 		},
 		"settings": {
 			"last_mode": String(GameConstants.MODE_SURVIVAL)
@@ -147,6 +148,9 @@ func _initialize() -> void:
 			progression_manager.experience_changed.connect(progression_callback)
 		if not progression_manager.money_changed.is_connected(progression_callback):
 			progression_manager.money_changed.connect(progression_callback)
+		var unlock_callback := Callable(self, "_on_unlocks_changed")
+		if not progression_manager.unlocks_changed.is_connected(unlock_callback):
+			progression_manager.unlocks_changed.connect(unlock_callback)
 
 	var game_mode_manager := get_tree().get_first_node_in_group(
 		"game_mode_manager"
@@ -166,6 +170,10 @@ func _resolve_progression_manager() -> void:
 		) as ProgressionManager
 
 func _on_progression_changed(_value: int, _secondary_value: int = 0) -> void:
+	if autosave_progression and _auto_persistence_enabled():
+		request_save()
+
+func _on_unlocks_changed(_unlock_ids: Array[StringName]) -> void:
 	if autosave_progression and _auto_persistence_enabled():
 		request_save()
 

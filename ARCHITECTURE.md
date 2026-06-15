@@ -8,7 +8,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 
 1. `main.tscn` carica manager, world e `MainMenu`.
 2. `GameModeManager` entra nello stato `menu` senza avviare gameplay.
-3. `SaveManager` carica progressione party e ultima modalita da JSON.
+3. `SaveManager` carica progressione party, unlock e ultima modalita da JSON.
 4. `MainMenu` seleziona una modalita registrata e nasconde la propria UI.
 5. `InputManager` registra azioni tastiera/joypad.
 6. `LocalMultiplayerManager` mantiene gli slot locali attivi.
@@ -29,8 +29,10 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 21. `TowerDefenseWaveController` governa ondate e usa `EnemySystem` per i nemici da percorso.
 22. `TowerDefenseManager` mantiene vita core e crediti, mentre gli slot delegano lo spawn delle torri.
 23. `DefenseTower` seleziona target tower defense e spara tramite `ProjectileSystem`.
-24. `IsometricCameraController` segue il gruppo `players`.
-25. `HUDManager` mostra slot, progressione, vita, munizioni, stato modalita e barra boss.
+24. `ProgressionManager` prepara i player a ogni nuova run applicando gli unlock persistenti.
+25. `AudioManager` ascolta projectile e drop per generare feedback gameplay condiviso.
+26. `IsometricCameraController` segue il gruppo `players`.
+27. `HUDManager` mostra slot, progressione, vita, munizioni, stato modalita e barra boss.
 
 ## Sistemi principali
 
@@ -41,7 +43,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `GameModeManager`: registra, arresta e avvia le modalita.
 - `MainMenu`: UI iniziale, selezione modalita, continue e ritorno con `Esc`.
 - `SaveManager`: persistenza JSON versionata e autosave della progressione.
-- `AudioManager`: feedback audio procedurale minimo per la UI.
+- `AudioManager`: feedback audio procedurale per UI, sparo, impatto e pickup.
 - `WeaponData`: risorsa immutabile con danno, fire rate, velocita proiettile, caricatore, riserva e durata ricarica.
 - `WeaponSystem`: stato runtime per-player di arma, cooldown, munizioni e ricarica.
 - `ProjectileSystem` e `Projectile`: spawn, movimento, collisione e consegna del danno.
@@ -65,7 +67,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `DropEntry` e `LootTable`: dati tipizzati per chance, quantita e arma associata.
 - `DropSystem`: roll, spawn pickup e applicazione centralizzata delle ricompense.
 - `DropPickup`: rappresentazione fisica e raccolta da parte dei player.
-- `ProgressionManager`: XP, livello e denaro party.
+- `ProgressionManager`: XP, livello, denaro, unlock party e bonus di inizio run.
 - `HUDManager`: UI prototipo.
 
 ## Contratto combat
@@ -74,6 +76,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - Le statistiche di bilanciamento vivono in risorse `WeaponData`, non nel controller player.
 - `ProjectileSystem` riceve i dati dello sparo e configura il proiettile prima di aggiungerlo alla scena.
 - Il proiettile non conosce classi nemico specifiche: colpisce un body damageable e inoltra il danno a `HealthSystem`.
+- `Projectile` emette l'impatto risolto e `ProjectileSystem` lo espone ai sistemi di feedback.
 - `HealthSystem` cerca un figlio `HealthComponent` sul target; player, nemici, boss e bersagli debug possono condividere lo stesso contratto.
 - Collision layer `1`: player e corpi generici.
 - Collision layer `2`: bersagli damageable.
@@ -127,11 +130,29 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 ## Contratto salvataggi
 
 - Il file predefinito e `user://savegame.json`.
-- Il formato contiene `version`, dati `party` e `settings.last_mode`.
+- Il formato v2 contiene `version`, dati `party`, `party.unlocks` e `settings.last_mode`.
+- I save v1 restano caricabili; gli unlock deterministici vengono ricostruiti dal livello e riscritti in v2 al salvataggio successivo.
 - `ProgressionManager` espone dati serializzabili e applica valori validati.
-- XP e denaro attivano autosave; il cambio modalita aggiorna `last_mode`.
+- XP, denaro e unlock attivano autosave; il cambio modalita aggiorna `last_mode`.
 - File assente, root non valida o versione non supportata non modificano lo stato runtime.
 - L'auto-persistenza e disabilitata nei test headless, ma save/load espliciti restano disponibili.
+
+## Contratto progressione e run
+
+- `Field Kit` e l'unlock base: viene concesso al livello party 2 e resta persistente.
+- All'ingresso in una modalita gameplay, `ProgressionManager` prepara tutti i player attivi.
+- `GameModeManager.game_mode_started` viene emesso anche quando riparte la stessa modalita dopo un arresto.
+- I player che entrano durante una run ricevono la stessa preparazione.
+- `PlayerController.prepare_for_run()` calcola la vita dal valore base, quindi i bonus non si accumulano tra cambi modalita.
+- Ogni nuova run ripristina la vita; `Field Kit` porta il massimo da 100 a 120 HP.
+
+## Contratto audio
+
+- `AudioManager` mantiene player separati per UI e gameplay.
+- `ProjectileSystem.projectile_spawned` genera il feedback di sparo.
+- Solo un impatto con danno applicato genera il feedback di colpo.
+- `DropSystem.drop_collected` genera il feedback pickup in base al tipo raccolto.
+- I toni procedurali restano placeholder e non richiedono asset esterni.
 
 ## Contratto survival e wave
 

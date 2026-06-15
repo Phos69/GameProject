@@ -1,6 +1,8 @@
 extends Area2D
 class_name Projectile
 
+signal impacted(target: Node, applied_damage: int)
+
 @export var damage: int = 10
 @export var lifetime: float = 1.25
 
@@ -37,11 +39,13 @@ func _on_body_entered(body: Node2D) -> void:
 
 	has_hit = true
 	set_deferred("monitoring", false)
+	var applied_damage := 0
 	var health_system = get_tree().get_first_node_in_group("health_system")
 	if health_system != null and health_system.has_method("apply_damage"):
-		health_system.apply_damage(body, damage)
+		applied_damage = health_system.apply_damage(body, damage)
 	else:
 		var health_component := body.get_node_or_null("HealthComponent")
 		if health_component != null and health_component.has_method("apply_damage"):
-			health_component.apply_damage(damage)
+			applied_damage = health_component.apply_damage(damage)
+	impacted.emit(body, applied_damage)
 	queue_free()

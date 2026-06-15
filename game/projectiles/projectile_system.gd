@@ -2,6 +2,7 @@ extends Node
 class_name ProjectileSystem
 
 signal projectile_spawned(projectile: Node)
+signal projectile_impacted(projectile: Node, target: Node, applied_damage: int)
 
 @export var default_projectile_scene: PackedScene = preload("res://game/projectiles/projectile.tscn")
 
@@ -26,6 +27,11 @@ func spawn_projectile(
 		(projectile as Node2D).global_position = origin
 	if projectile.has_method("launch"):
 		projectile.launch(direction.normalized(), speed, owner_ref, damage, source_id)
+	if projectile.has_signal("impacted"):
+		projectile.connect(
+			"impacted",
+			Callable(self, "_on_projectile_impacted").bind(projectile)
+		)
 
 	var root := get_tree().current_scene
 	if root != null:
@@ -33,3 +39,10 @@ func spawn_projectile(
 
 	projectile_spawned.emit(projectile)
 	return projectile
+
+func _on_projectile_impacted(
+	target: Node,
+	applied_damage: int,
+	projectile: Node
+) -> void:
+	projectile_impacted.emit(projectile, target, applied_damage)

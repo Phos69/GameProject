@@ -2,7 +2,7 @@
 
 ## Stato
 
-Parzialmente completata.
+Completata come prototipo minimo.
 
 ## Implementato
 
@@ -19,6 +19,12 @@ Parzialmente completata.
 - mapping menu joypad `A` esplicito;
 - build smoke e QA visuale;
 - smoke test headless dedicato.
+- save v2 con migrazione dei save v1;
+- unlock persistente `Field Kit` al livello party 2;
+- bonus di 20 HP applicato senza accumulo a ogni nuova run;
+- feedback audio procedurale per sparo, impatto valido e pickup;
+- primo pass di bilanciamento delle armi base;
+- stato unlock mostrato nel menu.
 
 ## Verifica
 
@@ -32,9 +38,9 @@ build/iso_local_sandbox.exe --rendering-method gl_compatibility -- --build-smoke
 
 I template ufficiali sono installati in `4.6.3.stable` e verificati tramite SHA-512. EXE e PCK vengono generati; lo smoke test della build termina con exit code `0`. Il QA non-headless rileva GPU OpenGL, audio WASAPI e un controller XInput.
 
-## Resta da fare
+## Evoluzioni post-roadmap
 
-- aggiungere audio gameplay per sparo, impatto e pickup;
-- aggiungere almeno un unlock persistente;
-- completare bilanciamento e polish visuale;
+- sostituire o mixare i placeholder audio;
+- completare telegraph e polish visuale avanzato;
+- aggiungere ulteriori unlock e pass di bilanciamento;
 - firmare digitalmente l'eseguibile per distribuzione pubblica.

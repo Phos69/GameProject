@@ -121,7 +121,7 @@ Stato: completata come prototipo minimo.
 
 ## Milestone 9 - Polish, salvataggi e packaging
 
-Stato: parzialmente completata.
+Stato: completata come prototipo minimo.
 
 - Save/load JSON versionato completato per progressione party e ultima modalita.
 - Autosave progressione e validazione dei dati completati.
@@ -138,4 +138,15 @@ Stato: parzialmente completata.
 - Corretto `ui_accept` per confermare il menu con joypad `A`.
 - `tests/` e `build/` esclusi dal pacchetto release.
 - Smoke test Milestone 9 completato.
-- Unlock base, bilanciamento, audio gameplay, firma e polish visuale restano aperti.
+- Save v2 con unlock persistenti e migrazione automatica dei save v1.
+- Unlock `Field Kit` ottenuto al livello party 2 e applicato a ogni nuova run.
+- Reset salute idempotente per player presenti e join durante una run.
+- Feedback audio procedurale per sparo, impatto valido e pickup.
+- Primo pass di bilanciamento: `Starter Pistol` a 6 colpi/s e `Prototype Blaster` a 4,5 colpi/s.
+- Stato unlock mostrato nel menu principale.
+
+Attivita post-roadmap:
+
+- telegraph e mix audio avanzato;
+- asset definitivi e ulteriori pass di bilanciamento;
+- firma digitale della build pubblica.

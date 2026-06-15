@@ -67,6 +67,9 @@ func _initialize() -> void:
 		var money_callback := Callable(self, "_on_money_changed")
 		if not progression_manager.money_changed.is_connected(money_callback):
 			progression_manager.money_changed.connect(money_callback)
+		var unlock_callback := Callable(self, "_on_unlocks_changed")
+		if not progression_manager.unlocks_changed.is_connected(unlock_callback):
+			progression_manager.unlocks_changed.connect(unlock_callback)
 	_refresh_save_status()
 	if (
 		game_mode_manager == null
@@ -206,15 +209,23 @@ func _refresh_save_status() -> void:
 	var level := progression_manager.level if progression_manager != null else 1
 	var experience := progression_manager.experience if progression_manager != null else 0
 	var money := progression_manager.money if progression_manager != null else 0
+	var unlock_status := (
+		progression_manager.get_unlock_status_text()
+		if progression_manager != null
+		else "Next unlock: Field Kit at party Lv 2"
+	)
 	var last_mode := (
 		save_manager.get_last_mode()
 		if save_manager != null
 		else GameConstants.MODE_SURVIVAL
 	)
-	save_status_label.text = "Party Lv %d  XP %d  Money %d\nContinue: %s" % [
+	save_status_label.text = (
+		"Party Lv %d  XP %d  Money %d\n%s\nContinue: %s"
+	) % [
 		level,
 		experience,
 		money,
+		unlock_status,
 		_mode_label(last_mode)
 	]
 
@@ -231,6 +242,9 @@ func _on_progression_changed(_experience: int, _level: int) -> void:
 	_refresh_save_status()
 
 func _on_money_changed(_money: int) -> void:
+	_refresh_save_status()
+
+func _on_unlocks_changed(_unlock_ids: Array[StringName]) -> void:
 	_refresh_save_status()
 
 func _play_focus() -> void:

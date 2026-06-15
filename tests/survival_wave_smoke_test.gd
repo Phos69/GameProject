@@ -84,11 +84,11 @@ func _run() -> void:
 
 	var player_one_health := player_one.get_node("HealthComponent") as HealthComponent
 	var player_one_weapon := player_one.get_node("WeaponSystem") as WeaponSystem
-	health_system.apply_damage(player_one, 30)
 	var player_one_starting_reserve := player_one_weapon.reserve_ammo
 
 	game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL)
 	_expect(survival_mode.is_running, "survival mode starts the wave run")
+	health_system.apply_damage(player_one, 30)
 
 	_expect(await _wait_for_wave_spawning(wave_manager, 1), "wave one enters spawning state")
 	_expect(

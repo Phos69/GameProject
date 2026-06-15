@@ -1,6 +1,7 @@
 extends SceneTree
 
 var failures: PackedStringArray = []
+var gameplay_feedback_events: Array[StringName] = []
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -24,12 +25,14 @@ func _run() -> void:
 	var drop_system := get_first_node_in_group("drop_system") as DropSystem
 	var health_system := get_first_node_in_group("health_system") as HealthSystem
 	var progression := get_first_node_in_group("progression_manager") as ProgressionManager
+	var audio_manager := get_first_node_in_group("audio_manager") as AudioManager
 	_expect(local_multiplayer != null, "local multiplayer manager is available")
 	_expect(player_manager != null, "player manager is available")
 	_expect(enemy_system != null, "enemy system is available")
 	_expect(drop_system != null, "drop system is available")
 	_expect(health_system != null, "health system is available")
 	_expect(progression != null, "progression manager is available")
+	_expect(audio_manager != null, "audio manager is available")
 	if (
 		local_multiplayer == null
 		or player_manager == null
@@ -37,9 +40,13 @@ func _run() -> void:
 		or drop_system == null
 		or health_system == null
 		or progression == null
+		or audio_manager == null
 	):
 		_finish()
 		return
+	audio_manager.gameplay_feedback_generated.connect(
+		_on_gameplay_feedback_generated
+	)
 
 	for initial_enemy in get_nodes_in_group("enemies"):
 		initial_enemy.queue_free()
@@ -118,6 +125,10 @@ func _run() -> void:
 		for _frame in range(3):
 			await physics_frame
 		_expect(progression.experience == 3, "physical pickup grants shared party experience")
+		_expect(
+			gameplay_feedback_events.has(&"pickup"),
+			"physical pickup emits gameplay pickup audio"
+		)
 
 	local_multiplayer.activate_slot(2)
 	await process_frame
@@ -173,6 +184,13 @@ func _run() -> void:
 	_expect(weapon_two.weapon_data.weapon_id == &"starter_pistol", "weapon drop leaves other players unchanged")
 
 	_finish()
+
+func _on_gameplay_feedback_generated(
+	feedback_type: StringName,
+	_source_id: StringName,
+	_frames_written: int
+) -> void:
+	gameplay_feedback_events.append(feedback_type)
 
 func _expect(condition: bool, message: String) -> void:
 	if condition:

@@ -109,3 +109,21 @@
 - Verificati controller XInput reale, driver audio WASAPI e feedback focus/conferma.
 - Esclusi `tests/` e `build/` dal pacchetto release.
 - Verificata la suite headless Milestone 3-9 e lo smoke della build con exit code `0`.
+- Completata Milestone 9 come prototipo minimo.
+- Aggiunto unlock persistente `Field Kit` al livello party 2 con 20 HP bonus a inizio run.
+- Esteso il save JSON alla versione 2 con lista unlock e migrazione compatibile dei save v1.
+- Aggiunto reset salute idempotente per nuove run e player entrati durante il gameplay.
+- Aggiunto `GameModeManager.game_mode_started` per coprire anche il restart della stessa modalita.
+- Aggiunto feedback audio procedurale condiviso per sparo, impatto valido e pickup.
+- Estesi `Projectile` e `ProjectileSystem` con il contratto di impatto risolto.
+- Mostrato lo stato unlock nel menu principale.
+- Estesi smoke test Milestone 9, combat, drop e survival per i nuovi contratti.
+- Verificata nuovamente la suite headless completa Milestone 3-9.
+- Rigenerati EXE/PCK Windows e completato lo smoke della release con exit code `0`.
+- Ripetuto il QA visuale del menu a 1280x720 con controller XInput e audio WASAPI.
+
+### Changed
+
+- Ridotto il fire rate della `Starter Pistol` da 7 a 6 colpi al secondo.
+- Aumentato il fire rate del `Prototype Blaster` da 4 a 4,5 colpi al secondo.
+- Ogni nuova run ripristina la vita dei player prima di applicare gli unlock persistenti.

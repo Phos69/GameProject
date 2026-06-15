@@ -1,6 +1,7 @@
 extends SceneTree
 
 var failures: PackedStringArray = []
+var gameplay_feedback_events: Array[StringName] = []
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -20,11 +21,16 @@ func _run() -> void:
 
 	var local_multiplayer := get_first_node_in_group("local_multiplayer_manager") as LocalMultiplayerManager
 	var player_manager := get_first_node_in_group("player_manager") as PlayerManager
+	var audio_manager := get_first_node_in_group("audio_manager") as AudioManager
 	_expect(local_multiplayer != null, "local multiplayer manager is available")
 	_expect(player_manager != null, "player manager is available")
-	if local_multiplayer == null or player_manager == null:
+	_expect(audio_manager != null, "audio manager is available")
+	if local_multiplayer == null or player_manager == null or audio_manager == null:
 		_finish()
 		return
+	audio_manager.gameplay_feedback_generated.connect(
+		_on_gameplay_feedback_generated
+	)
 
 	local_multiplayer.activate_slot(2)
 	await process_frame
@@ -55,6 +61,14 @@ func _run() -> void:
 		await physics_frame
 
 	_expect(target_health.current_health == 30, "projectile collision applies 10 damage")
+	_expect(
+		gameplay_feedback_events.has(&"shot"),
+		"projectile spawn emits gameplay shot audio"
+	)
+	_expect(
+		gameplay_feedback_events.has(&"impact"),
+		"successful projectile damage emits gameplay impact audio"
+	)
 	_expect(weapon_one.current_ammo == 11, "firing consumes player one ammunition")
 	_expect(weapon_two.current_ammo == 12, "player two ammunition remains independent")
 
@@ -67,6 +81,13 @@ func _run() -> void:
 	_expect(weapon_one.reserve_ammo == 24, "reload consumes reserve ammunition")
 
 	_finish()
+
+func _on_gameplay_feedback_generated(
+	feedback_type: StringName,
+	_source_id: StringName,
+	_frames_written: int
+) -> void:
+	gameplay_feedback_events.append(feedback_type)
 
 func _expect(condition: bool, message: String) -> void:
 	if condition:

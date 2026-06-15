@@ -36,7 +36,7 @@ Arma prototipo implementata:
 
 - `Starter Pistol`;
 - 10 danni per colpo;
-- 7 colpi al secondo;
+- 6 colpi al secondo;
 - caricatore da 12;
 - riserva iniziale da 36;
 - ricarica da 1 secondo;
@@ -47,7 +47,7 @@ Seconda arma prototipo:
 - `Prototype Blaster`;
 - ottenibile come drop raro;
 - 16 danni per colpo;
-- 4 colpi al secondo;
+- 4,5 colpi al secondo;
 - caricatore da 8 e riserva iniziale da 24;
 - sostituisce immediatamente l'arma del player che la raccoglie.
 
@@ -146,11 +146,30 @@ Progressione implementata:
 - livello party;
 - persistenza automatica tra sessioni;
 - ultima modalita selezionata usata dal pulsante `Continue`;
-- upgrade futuri di vita, danno, velocita, fire rate e fortuna drop.
+- unlock persistente `Field Kit` al livello party 2;
+- `Field Kit` aumenta la vita massima da 100 a 120 HP a ogni nuova run;
+- upgrade futuri di danno, velocita, fire rate e fortuna drop.
+
+Ogni nuova run ripristina la vita dei player attivi. Un player che entra durante una run riceve gli stessi bonus persistenti senza accumularli tra modalita.
 
 Il gioco parte dal menu principale. La selezione avvia survival, dungeon o tower defense; `Esc` interrompe la run corrente e torna al menu. Il menu mostra livello, XP, denaro e ultima modalita salvata.
 
-Il feedback audio del menu usa toni procedurali placeholder per focus e conferma, senza asset esterni obbligatori. D-pad/stick cambiano focus e joypad `A` conferma da qualunque controller. Audio di combattimento e pickup restano futuri.
+Il feedback audio usa toni procedurali placeholder senza asset esterni obbligatori:
+
+- focus e conferma nel menu;
+- sparo per armi player, boss e torri;
+- impatto solo quando viene applicato danno;
+- pickup con tono differenziato per cura, denaro e arma.
+
+D-pad/stick cambiano focus e joypad `A` conferma da qualunque controller. Mix avanzato e asset audio definitivi restano futuri.
+
+## Bilanciamento iniziale
+
+- `Starter Pistol`: 60 danni teorici al secondo, tre colpi per un `Basic Zombie`.
+- `Prototype Blaster`: 72 danni teorici al secondo, due colpi per un `Basic Zombie`.
+- `Wave Cannon`: 84 danni teorici al secondo e caricatore ridotto da arma boss.
+- `Field Kit`: +20 HP, pari a circa due colpi boss base o due attacchi zombie aggiuntivi.
+- Lo scaling delle modalita resta invariato in questo primo pass e sara rivalutato con varianti nemico.
 
 ## Dungeon
 
