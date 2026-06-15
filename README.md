@@ -38,6 +38,17 @@ Scena principale:
 res://game/main/main.tscn
 ```
 
+Dopo un clone nuovo o un `git pull` su una macchina dove il progetto non e gia
+stato aperto, rigenerare prima la cache locale di Godot:
+
+```text
+godot --headless --path . --import
+```
+
+La cartella `.godot/` e locale e non viene versionata. Senza questo primo import,
+l'avvio runtime puo non vedere le classi globali GDScript e generare errori del
+tipo `Could not find type "RpgPlayerComponent" in the current scope`.
+
 Controlli debug:
 
 - Menu: frecce/D-pad o stick per navigare, `Invio`/joypad `A` per confermare e `Esc` per tornare al menu durante una run.
@@ -49,7 +60,7 @@ Controlli debug:
 - Dungeon: attraversare il portale verde a destra; nelle stanze combat e boss diventa verde solo dopo aver eliminato tutti i bersagli.
 - Tower defense: entrare in uno slot azzurro e premere `E` o pulsante joypad `A` per costruire una torre se ci sono crediti sufficienti.
 
-La suite e stata verificata con Godot `4.6.3`. Se `godot` non e nel PATH, usare l'eseguibile Godot installato localmente o avviare i test dall'editor.
+La suite e stata verificata con Godot `4.6.3`. Se `godot` non e nel PATH, usare l'eseguibile Godot installato localmente o avviare i test dall'editor. In un checkout pulito, eseguire prima il comando di import indicato sopra, poi avviare il runtime con `godot --path .`.
 
 Smoke test headless:
 

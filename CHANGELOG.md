@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Documentata la rigenerazione della cache locale `.godot/` richiesta dopo
+  clone o pull su una nuova macchina prima dell'avvio runtime headless.
 - Corretto il parse di `RpgCharacterData` rinominando il campo export interno
   `class_name`, riservato da GDScript, e mantenendo invariato il profilo
   pubblico usato da menu e HUD.
