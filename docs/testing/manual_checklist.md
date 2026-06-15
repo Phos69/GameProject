@@ -137,6 +137,30 @@ godot --headless --path . --script res://tests/boss_smoke_test.gd
 
 Il test verifica quinta ondata, scaling, pattern, danno, fase 2, HUD, morte, drop speciale e prosecuzione.
 
+## Regressione dungeon
+
+- `F5` arresta survival e avvia una run dungeon.
+- L'HUD mostra seed, indice stanza, tipo stanza, stato uscita e nemici rimasti.
+- La start room mostra il portale verde e consente il passaggio.
+- Entrando nel portale il party viene riposizionato nella stanza successiva.
+- Le combat room mostrano il portale rosso finche rimangono nemici.
+- Uccidere tutti i nemici rende verde il portale.
+- Il numero e le statistiche dei nemici aumentano nelle combat room successive.
+- La loot room genera XP, denaro, munizioni e vita.
+- La boss room genera il `Wave Warden` tramite il sistema condiviso.
+- Il portale finale resta bloccato finche il boss e vivo.
+- Attraversare il portale finale completa la run.
+- Se tutti i player attivi muoiono, la run dungeon si arresta.
+- `F1` arresta dungeon, ripulisce stanza e pickup e riavvia survival.
+
+## Smoke test dungeon
+
+```text
+godot --headless --path . --script res://tests/dungeon_smoke_test.gd
+```
+
+Il test verifica seed deterministico, celle uniche, link, transizione fisica, combat, loot, boss, completamento e ritorno a survival.
+
 ## Regressione architettura
 
 - I sistemi non sono duplicati in cartelle diverse.

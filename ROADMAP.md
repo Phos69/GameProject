@@ -90,16 +90,22 @@ Stato: completata come prototipo minimo.
 
 ## Milestone 7 - Dungeon procedurale
 
-Stato: prossima.
+Stato: completata come prototipo minimo.
 
-- Grafo stanze.
-- Stanza iniziale, combattimento, loot e boss.
-- Transizioni stanza.
-- Boss finale livello/area.
+- Layout deterministico da seed con celle uniche.
+- Link sequenziali attraversabili tra le stanze.
+- Start room, combat room, loot room e boss room.
+- Scena stanza modulare con pareti e portale bloccabile.
+- Spawn nemici e scaling crescente nelle stanze combat.
+- Loot room con ricompense fisiche.
+- Boss finale richiesto tramite `BossSystem`.
+- HUD con seed, indice stanza, stato uscita e nemici rimasti.
+- Hotkey debug per passare tra survival e dungeon.
+- Smoke test headless su una run completa.
 
 ## Milestone 8 - Tower defense
 
-Stato: pianificata.
+Stato: prossima.
 
 - Path nemici.
 - Base da difendere.

@@ -20,8 +20,10 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 12. `WaveManager` spawna zombie tramite `EnemySystem` e richiede il boss a `SurvivalMode`.
 13. `SurvivalMode` usa `GameModeManager` e `BossSystem` per creare il boss della quinta ondata.
 14. `WaveManager` conta scorte e boss prima di assegnare la ricompensa.
-15. `IsometricCameraController` segue il gruppo `players`.
-16. `HUDManager` mostra slot, progressione, vita, munizioni, wave e barra boss.
+15. `DungeonMode` genera un layout da seed, istanzia una `DungeonRoom` alla volta e usa nemici, drop e boss condivisi.
+16. `DungeonRoom` controlla pareti, portale e stato locked/unlocked della stanza corrente.
+17. `IsometricCameraController` segue il gruppo `players`.
+18. `HUDManager` mostra slot, progressione, vita, munizioni, stato modalita e barra boss.
 
 ## Sistemi principali
 
@@ -40,7 +42,9 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `BasicBoss`: boss modulare con targeting, movimento, fasi e pattern proiettile.
 - `SurvivalMode`: ciclo survival, condizione di sconfitta e inoltro richieste boss.
 - `WaveManager`: macchina a stati per intermissione, spawn, combat, reward e boss wave.
-- `DungeonGenerator`: generazione dati layout dungeon.
+- `DungeonGenerator`: generazione deterministica dei dati layout dungeon.
+- `DungeonMode`: avanzamento stanza, encounter, loot, boss e completamento run.
+- `DungeonRoom`: rappresentazione riusabile della stanza attiva e portale di transizione.
 - `TowerDefenseManager`: base health e contratto tower defense.
 - `DropEntry` e `LootTable`: dati tipizzati per chance, quantita e arma associata.
 - `DropSystem`: roll, spawn pickup e applicazione centralizzata delle ricompense.
@@ -104,6 +108,7 @@ Ogni modalita deriva da `BaseGameMode` e fornisce:
 
 - `GameModeManager.register_mode()` avvia la modalita registrata se coincide con `default_mode`.
 - `SurvivalMode` avvia e arresta `WaveManager` e controlla la sconfitta del party.
+- L'arresto di survival rimuove i nemici e il boss della wave prima di attivare un'altra modalita.
 - `WaveManager` e autoritativo per indice ondata, stato, spawn pendenti e nemici della wave.
 - Gli stati runtime sono `idle`, `intermission`, `spawning`, `combat` e `reward`.
 - Gli zombie vengono creati esclusivamente tramite `EnemySystem.spawn_enemy()`.
@@ -129,6 +134,20 @@ Ogni modalita deriva da `BaseGameMode` e fornisce:
 - La morte genera la `LootTable` boss, emette `died` e notifica `BossSystem`.
 - `HUDManager` legge il boss attivo da `BossSystem` e mostra nome, fase e vita.
 - Il contratto non dipende da survival: dungeon e tower defense possono riusare la stessa API.
+
+## Contratto dungeon
+
+- `DungeonGenerator.generate_layout(seed, room_count)` produce almeno quattro stanze con celle uniche.
+- Lo stesso seed e conteggio producono lo stesso layout.
+- Il prototipo genera un percorso sequenziale con start room, combat room, una loot room e boss room finale.
+- `DungeonMode` istanzia una sola `DungeonRoom` attiva per volta e riposiziona il party al suo ingresso.
+- Start e loot room hanno il portale aperto; combat e boss room lo bloccano fino al completamento.
+- I nemici vengono creati solo tramite `EnemySystem` e tracciati localmente dalla modalita.
+- La loot room usa una `LootTable` e `DropSystem`; i pickup non raccolti vengono rimossi al cambio stanza.
+- Il boss finale viene richiesto tramite `GameModeManager` e `BossSystem`.
+- La sostituzione di una stanza richiesta da un trigger fisico avviene in modo differito.
+- `F5` seleziona dungeon e `F1` torna a survival; una UI completa di selezione resta futura.
+- Diramazioni, shop, biomi e persistenza della run non fanno parte del prototipo minimo.
 
 Modalita previste:
 

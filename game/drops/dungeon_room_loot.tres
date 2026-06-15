@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://game/drops/loot_table.gd" id="1_loot_table"]
+[ext_resource type="Script" path="res://game/drops/drop_entry.gd" id="2_drop_entry"]
+
+[sub_resource type="Resource" id="DropEntry_experience"]
+script = ExtResource("2_drop_entry")
+drop_type = &"experience"
+chance = 1.0
+min_amount = 10
+max_amount = 10
+
+[sub_resource type="Resource" id="DropEntry_money"]
+script = ExtResource("2_drop_entry")
+drop_type = &"money"
+chance = 1.0
+min_amount = 8
+max_amount = 12
+
+[sub_resource type="Resource" id="DropEntry_ammo"]
+script = ExtResource("2_drop_entry")
+drop_type = &"ammo"
+chance = 1.0
+min_amount = 10
+max_amount = 16
+
+[sub_resource type="Resource" id="DropEntry_health"]
+script = ExtResource("2_drop_entry")
+drop_type = &"health"
+chance = 1.0
+min_amount = 18
+max_amount = 24
+
+[resource]
+script = ExtResource("1_loot_table")
+entries = Array[ExtResource("2_drop_entry")]([SubResource("DropEntry_experience"), SubResource("DropEntry_money"), SubResource("DropEntry_ammo"), SubResource("DropEntry_health")])

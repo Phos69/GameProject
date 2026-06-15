@@ -5,6 +5,7 @@ signal game_mode_changed(mode_id: StringName)
 signal mode_boss_requested(mode_id: StringName, reason: StringName)
 
 @export var default_mode: StringName = &"survival"
+@export var debug_mode_hotkeys: bool = true
 
 var active_mode_id: StringName = &"prototype"
 var registered_modes: Dictionary = {}
@@ -13,6 +14,21 @@ func _ready() -> void:
 	add_to_group("game_mode_manager")
 	active_mode_id = default_mode
 	game_mode_changed.emit(active_mode_id)
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not debug_mode_hotkeys or not event is InputEventKey:
+		return
+	var key_event := event as InputEventKey
+	if not key_event.pressed or key_event.echo:
+		return
+	match key_event.keycode:
+		KEY_F1:
+			set_mode(GameConstants.MODE_SURVIVAL)
+		KEY_F5:
+			set_mode(GameConstants.MODE_DUNGEON)
+		_:
+			return
+	get_viewport().set_input_as_handled()
 
 func register_mode(mode: Node) -> void:
 	if mode == null:
@@ -25,7 +41,7 @@ func register_mode(mode: Node) -> void:
 	if mode_id == active_mode_id and mode.has_method("start_mode"):
 		mode.call_deferred("start_mode")
 
-func set_mode(mode_id: StringName) -> void:
+func set_mode(mode_id: StringName, context: Dictionary = {}) -> void:
 	if active_mode_id == mode_id:
 		return
 	var previous_mode: Node = registered_modes.get(active_mode_id)
@@ -35,7 +51,7 @@ func set_mode(mode_id: StringName) -> void:
 	game_mode_changed.emit(active_mode_id)
 	var next_mode: Node = registered_modes.get(active_mode_id)
 	if next_mode != null and next_mode.has_method("start_mode"):
-		next_mode.start_mode()
+		next_mode.start_mode(context)
 
 func request_boss(
 	reason: StringName,

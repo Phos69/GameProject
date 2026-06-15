@@ -30,7 +30,6 @@ func _process(_delta: float) -> void:
 		if health_component != null and health_component.is_alive():
 			return
 	var defeated_wave := wave_manager.current_wave
-	wave_manager.stop_run(false)
 	survival_defeated.emit(defeated_wave)
 	stop_mode()
 
@@ -46,7 +45,7 @@ func stop_mode() -> void:
 	if not is_running:
 		return
 	if wave_manager != null:
-		wave_manager.stop_run(false)
+		wave_manager.stop_run(true)
 	super.stop_mode()
 
 func should_spawn_boss_for_wave(wave_index: int) -> bool:

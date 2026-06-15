@@ -1,0 +1,63 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://game/modes/dungeon/dungeon_room.gd" id="1_dungeon_room"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_horizontal"]
+size = Vector2(920, 24)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_vertical"]
+size = Vector2(24, 540)
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_exit"]
+radius = 34.0
+
+[node name="DungeonRoom" type="Node2D"]
+script = ExtResource("1_dungeon_room")
+
+[node name="Walls" type="StaticBody2D" parent="."]
+collision_layer = 1
+collision_mask = 0
+
+[node name="NorthWall" type="CollisionShape2D" parent="Walls"]
+position = Vector2(0, -282)
+shape = SubResource("RectangleShape2D_horizontal")
+
+[node name="SouthWall" type="CollisionShape2D" parent="Walls"]
+position = Vector2(0, 282)
+shape = SubResource("RectangleShape2D_horizontal")
+
+[node name="WestWall" type="CollisionShape2D" parent="Walls"]
+position = Vector2(-472, 0)
+shape = SubResource("RectangleShape2D_vertical")
+
+[node name="EastWall" type="CollisionShape2D" parent="Walls"]
+position = Vector2(472, 0)
+shape = SubResource("RectangleShape2D_vertical")
+
+[node name="SpawnMarker" type="Polygon2D" parent="."]
+position = Vector2(-320, 0)
+color = Color(0.24, 0.62, 0.94, 0.55)
+polygon = PackedVector2Array(-23, -35, 23, -35, 23, 35, -23, 35)
+
+[node name="ExitPortal" type="Polygon2D" parent="."]
+position = Vector2(390, 0)
+color = Color(0.92, 0.28, 0.3, 0.9)
+polygon = PackedVector2Array(-17, -44, 17, -44, 17, 44, -17, 44)
+
+[node name="ExitArea" type="Area2D" parent="."]
+position = Vector2(390, 0)
+collision_layer = 0
+collision_mask = 1
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ExitArea"]
+shape = SubResource("CircleShape2D_exit")
+
+[node name="RoomLabel" type="Label" parent="."]
+offset_left = -170.0
+offset_top = -245.0
+offset_right = 170.0
+offset_bottom = -210.0
+theme_override_colors/font_color = Color(0.84, 0.93, 1, 0.9)
+theme_override_font_sizes/font_size = 20
+text = "ROOM 01  START"
+horizontal_alignment = 1

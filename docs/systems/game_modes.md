@@ -37,7 +37,18 @@ Le modalita richiedono boss tramite `GameModeManager`, che delega a `BossSystem`
 
 ## Dungeon
 
-Usa generazione procedurale di stanze e boss finale per area/livello.
+`DungeonMode` usa `DungeonGenerator` per creare un percorso deterministico da seed.
+
+Flusso:
+
+1. start room con uscita aperta;
+2. combat room con uscita bloccata;
+3. sblocco dopo la morte dei nemici registrati;
+4. loot room con pickup fisici;
+5. boss room richiesta tramite `BossSystem`;
+6. completamento dopo boss e portale finale.
+
+Una sola `DungeonRoom` e attiva alla volta. Nemici, drop, health, progressione, boss e HUD restano sistemi condivisi. `F5` avvia dungeon e `F1` torna a survival durante il prototipo.
 
 ## Tower Defense
 

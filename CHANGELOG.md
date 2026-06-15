@@ -62,3 +62,15 @@
 - Aggiunta loot table boss con drop garantito `Wave Cannon`.
 - Aggiunto smoke test headless boss con due player, pattern, fase, HUD, drop e prosecuzione.
 - Aggiornata documentazione per stato Milestone 6 e prossima Milestone 7.
+- Completata Milestone 7 come prototipo minimo dungeon procedurale.
+- Reso `DungeonGenerator` deterministico da seed con celle uniche e link sequenziali.
+- Aggiunta `DungeonRoom` riusabile con pareti, spawn party e portale bloccabile.
+- Esteso `DungeonMode` con start, combat, loot e boss room.
+- Aggiunti spawn e scaling progressivi dei nemici nelle stanze combat.
+- Aggiunta loot table dungeon garantita per XP, denaro, munizioni e vita.
+- Integrato il boss finale dungeon tramite `GameModeManager` e `BossSystem`.
+- Esteso HUD con seed, stanza corrente, stato uscita e nemici rimasti.
+- Aggiunte hotkey debug `F1` survival e `F5` dungeon.
+- Corretto lo stop di survival per ripulire nemici e boss prima del cambio modalita.
+- Aggiunto smoke test headless dungeon su generazione, transizioni, combat, loot, boss e ritorno a survival.
+- Aggiornata documentazione per stato Milestone 7 e prossima Milestone 8.

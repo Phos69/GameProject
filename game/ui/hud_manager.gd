@@ -34,7 +34,8 @@ func _refresh() -> void:
 		experience = progression.experience
 		money = progression.money
 
-	status_label.text = "Survival Arena\nPlayers: %d/4  Slots: %s\nParty Lv %d  XP %d  Money %d" % [
+	status_label.text = "%s\nPlayers: %d/4  Slots: %s\nParty Lv %d  XP %d  Money %d" % [
+		_get_mode_title(),
 		active_slots.size(),
 		_format_slots(active_slots),
 		level,
@@ -44,9 +45,9 @@ func _refresh() -> void:
 	var combat_status := _format_combat_status(players)
 	if not combat_status.is_empty():
 		status_label.text += "\n" + combat_status
-	var wave_status := _format_wave_status()
-	if not wave_status.is_empty():
-		status_label.text += "\n" + wave_status
+	var mode_status := _format_mode_status()
+	if not mode_status.is_empty():
+		status_label.text += "\n" + mode_status
 	_refresh_boss_hud()
 
 func _get_active_slots(players: Array[Node]) -> Array:
@@ -87,6 +88,21 @@ func _format_combat_status(players: Array[Node]) -> String:
 		])
 	lines.sort()
 	return "\n".join(lines)
+
+func _get_mode_title() -> String:
+	var game_mode_manager := get_tree().get_first_node_in_group("game_mode_manager") as GameModeManager
+	if game_mode_manager != null and game_mode_manager.active_mode_id == GameConstants.MODE_DUNGEON:
+		return "Procedural Dungeon"
+	return "Survival Arena"
+
+func _format_mode_status() -> String:
+	var game_mode_manager := get_tree().get_first_node_in_group("game_mode_manager") as GameModeManager
+	if game_mode_manager != null and game_mode_manager.active_mode_id == GameConstants.MODE_DUNGEON:
+		var dungeon_mode := get_tree().get_first_node_in_group("dungeon_mode") as DungeonMode
+		if dungeon_mode == null:
+			return "Dungeon idle"
+		return "%s  Seed %d" % [dungeon_mode.get_status_text(), dungeon_mode.run_seed]
+	return _format_wave_status()
 
 func _format_wave_status() -> String:
 	var wave_manager := get_tree().get_first_node_in_group("wave_manager") as WaveManager

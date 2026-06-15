@@ -2,6 +2,12 @@
 
 ## Completati recenti
 
+- Milestone 7: dungeon procedurale giocabile.
+  - Obiettivo: generare e attraversare start room, combat room, loot room e boss room.
+  - Milestone collegata: Milestone 7.
+  - File/sistemi coinvolti: `DungeonGenerator`, `DungeonMode`, `DungeonRoom`, `EnemySystem`, `BossSystem`, `DropSystem`, `HUDManager`.
+  - Criterio di accettazione: una run da seed attraversa tutte le stanze, blocca le uscite durante il combat, genera loot e termina dopo il boss.
+  - Test richiesto: `tests/dungeon_smoke_test.gd` e checklist manuale dungeon.
 - Milestone 6: boss system modulare.
   - Obiettivo: integrare un boss reale nella quinta ondata survival.
   - Milestone collegata: Milestone 6.
@@ -35,27 +41,27 @@
 
 ## Priorita alta
 
-- Milestone 7: trasformare `DungeonGenerator` in generatore di stanze giocabili.
-  - Obiettivo: generare e collegare start room, combat room, loot room e boss room.
-  - Milestone collegata: Milestone 7.
-  - File/sistemi coinvolti: `DungeonGenerator`, `DungeonMode`, scene stanza, `EnemySystem`, `BossSystem`.
-  - Criterio di accettazione: una run genera un percorso attraversabile fino alla stanza boss e usa i sistemi combat condivisi.
-  - Test richiesto: smoke test dungeon headless e verifica manuale di piu seed.
-
-## Priorita media
-
 - Milestone 8: implementare base tower defense, path nemici e torri piazzabili.
   - Obiettivo: creare il loop minimo di difesa della base con economia.
   - Milestone collegata: Milestone 8.
   - File/sistemi coinvolti: `TowerDefenseMode`, `TowerDefenseManager`, path, torri e base.
   - Criterio di accettazione: i nemici seguono il path, danneggiano la base e una torre puo eliminarli.
-  - Test richiesto: checklist manuale di una ondata completa.
+  - Test richiesto: smoke test tower defense e checklist manuale di una ondata completa.
+
+## Priorita media
+
 - Menu debug per selezionare modalita.
-  - Obiettivo: avviare survival, dungeon o tower defense senza cambiare scena manualmente.
+  - Obiettivo: sostituire le hotkey `F1`/`F5` con una UI per survival, dungeon e tower defense.
   - Milestone collegata: supporto alle Milestone 5-8.
   - File/sistemi coinvolti: `GameModeManager`, nuova UI debug.
   - Criterio di accettazione: ogni modalita registrata puo essere selezionata e avviata.
   - Test richiesto: smoke test manuale di selezione modalita.
+- Espandere il dungeon oltre il percorso lineare.
+  - Obiettivo: aggiungere diramazioni, scelta stanza, shop e predisposizione biomi.
+  - Milestone collegata: evoluzione Milestone 7.
+  - File/sistemi coinvolti: `DungeonGenerator`, `DungeonMode`, scene stanza e UI mappa.
+  - Criterio di accettazione: almeno un seed produce una scelta reale tra due stanze senza rompere il percorso al boss.
+  - Test richiesto: smoke test su piu seed e checklist manuale delle diramazioni.
 - Respawn o revive player.
   - Obiettivo: definire il recupero di un player morto nelle modalita a ondate.
   - Milestone collegata: Milestone 5.

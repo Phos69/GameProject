@@ -148,13 +148,28 @@ Progressione prevista:
 
 ## Dungeon
 
-La modalita dungeon generera una sequenza/grafo di stanze:
+La modalita dungeon implementata genera un percorso deterministico da seed:
 
 - start room;
-- combat room;
-- loot room;
-- shop room futura;
+- una o piu combat room;
+- una loot room;
 - boss room.
+
+Regole del prototipo:
+
+- la run standard contiene 7 stanze;
+- ogni stanza usa un'arena confinata riusabile;
+- il portale verde a destra avanza alla stanza collegata;
+- start e loot room hanno il portale subito disponibile;
+- combat e boss room mostrano il portale rosso e bloccato;
+- il portale si sblocca quando tutti i nemici tracciati sono morti;
+- le combat room aumentano progressivamente conteggio, vita, velocita e danno dei nemici;
+- la loot room genera sempre XP, denaro, munizioni e vita;
+- la boss room usa il `Wave Warden` con scaling dungeon;
+- la run termina attraversando il portale dopo la morte del boss;
+- la morte di tutti i player attivi interrompe la run.
+
+Il prototipo e lineare. Diramazioni, shop room, biomi, mappa e scelta del percorso restano futuri.
 
 ## Zombie survival
 
