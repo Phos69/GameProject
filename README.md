@@ -70,6 +70,7 @@ godot --headless --path . --script res://tests/enemy_drop_smoke_test.gd
 godot --headless --path . --script res://tests/survival_wave_smoke_test.gd
 godot --headless --path . --script res://tests/zombie_revamp_foundation_smoke_test.gd
 godot --headless --path . --script res://tests/zombie_spawner_edge_smoke_test.gd
+godot --headless --path . --script res://tests/zombie_biome_wave_director_smoke_test.gd
 godot --headless --path . --script res://tests/boss_smoke_test.gd
 godot --headless --path . --script res://tests/dungeon_smoke_test.gd
 godot --headless --path . --script res://tests/tower_defense_smoke_test.gd

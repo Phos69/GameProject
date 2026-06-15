@@ -12,6 +12,8 @@
 
 ### Added
 
+- Completata Roadmap Revamp Modalita Zombie Milestone Z3 con verifica dei biomi dati e delle wave contestuali.
+- Aggiunto `zombie_biome_wave_director_smoke_test.gd` per validare cinque biomi, partenza nella Pianura Infetta e modificatori tossici su wave/roster/scaling.
 - Completata Roadmap Revamp Modalita Zombie Milestone Z2 con smoke test dello spawn dai bordi camera.
 - `ZombieSpawner` espone parametri per gruppo, tick, ritardo gruppi, helper `is_position_outside_camera_view()` e validazione fuori camera.
 - `ObstacleSystem` e `HazardSystem` riconoscono zone leggere `Node2D` con metadata `zone_radius` per validare spawn blocker e fall zone.

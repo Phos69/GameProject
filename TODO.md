@@ -2,12 +2,6 @@
 
 ## Revamp modalita zombie - tracking attivo
 
-- Milestone Z3: biomi dati e ondate contestuali.
-  - Obiettivo: definire Pianura Infetta, Tossico, Infuocato, Neve e Palude con roster, pesi, risorse e difficolta.
-  - Milestone collegata: `roadmap_revamp_modalita_zombie.md` Milestone 3 e 8.
-  - File/sistemi coinvolti: `BiomeDefinition`, `BiomeManager`, `WaveDirector`, `WaveManager`, HUD futuro.
-  - Criterio di accettazione: la wave legge il bioma corrente e la prima ondata resta semplice con zombie base.
-  - Test richiesto: test bioma iniziale, roster per wave e regressione survival.
 - Milestone Z4: terreno, casse e ostacoli.
   - Obiettivo: popolare il bioma iniziale con casse risorse, barriere, ostacoli e primi impedimenti fisici validati.
   - Milestone collegata: `roadmap_revamp_modalita_zombie.md` Milestone 4, 6 e 7.
@@ -23,6 +17,12 @@
 
 ## Completati recenti
 
+- Roadmap Revamp Modalita Zombie, Milestone Z3: biomi dati e ondate contestuali.
+  - Obiettivo: verificare definizioni bioma complete e wave modificate dal bioma corrente.
+  - Milestone collegata: `roadmap_revamp_modalita_zombie.md` Milestone 3 e 8.
+  - File/sistemi coinvolti: `BiomeDefinition`, `BiomeManager`, `WaveDirector`, `WaveManager`, test smoke dedicato.
+  - Criterio di accettazione: i cinque biomi espongono terreno, ostacoli, casse, zombie, palette, difficolta e risorse; il bioma tossico modifica size, ritmo, scaling e roster.
+  - Test richiesto: `tests/zombie_biome_wave_director_smoke_test.gd`.
 - Roadmap Revamp Modalita Zombie, Milestone Z2: spawn dinamico dai bordi camera.
   - Obiettivo: generare zombie fuori o appena oltre il rettangolo visibile invece che da punti fissi arena.
   - Milestone collegata: `roadmap_revamp_modalita_zombie.md` Milestone 2.

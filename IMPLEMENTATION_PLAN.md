@@ -4,7 +4,7 @@
 
 Roadmap di riferimento: `roadmap_revamp_modalita_zombie.md`.
 
-Stato corrente: Milestone Z2 completata con spawn camera-edge verificato.
+Stato corrente: Milestone Z3 completata con biomi dati e wave contestuali verificati.
 
 ## Ricognizione iniziale
 
@@ -41,7 +41,7 @@ Il revamp non deve sostituire in blocco la survival esistente. I nuovi sistemi v
    - Mantenere compatibilita con test e profili arena esistenti.
    - Verifica: nuovo smoke test dedicato allo spawner.
 
-3. Biomi dati e wave contestuali.
+3. Biomi dati e wave contestuali. Completata.
    - Definire Pianura Infetta, Tossico, Infuocato, Neve e Palude.
    - Collegare `WaveDirector` a pesi, moltiplicatori e regole per bioma.
    - Verifica: test che conferma bioma iniziale e roster base nella prima wave.
@@ -77,3 +77,4 @@ Il revamp non deve sostituire in blocco la survival esistente. I nuovi sistemi v
 - Z2: `godot --headless --path . --script res://tests/zombie_spawner_edge_smoke_test.gd`
 - Z2 regressione: `godot --headless --path . --script res://tests/zombie_revamp_foundation_smoke_test.gd`
 - Z2 regressione survival: `godot --headless --path . --script res://tests/survival_wave_smoke_test.gd`
+- Z3: `godot --headless --path . --script res://tests/zombie_biome_wave_director_smoke_test.gd`
