@@ -21,16 +21,27 @@ class_name PlayerController
 
 var facing_direction: Vector2 = Vector2.RIGHT
 var input_manager
+var game_mode_manager: GameModeManager
 
 func _ready() -> void:
 	add_to_group("players")
 	input_manager = get_tree().get_first_node_in_group("input_manager")
+	game_mode_manager = get_tree().get_first_node_in_group(
+		"game_mode_manager"
+	) as GameModeManager
 	health_component.died.connect(_on_died)
 	_apply_slot_color()
 	_update_aim_line()
 
 func _physics_process(delta: float) -> void:
 	if health_component.is_dead:
+		velocity = Vector2.ZERO
+		return
+	if game_mode_manager == null:
+		game_mode_manager = get_tree().get_first_node_in_group(
+			"game_mode_manager"
+		) as GameModeManager
+	if game_mode_manager != null and not game_mode_manager.is_gameplay_active():
 		velocity = Vector2.ZERO
 		return
 	if input_manager == null:

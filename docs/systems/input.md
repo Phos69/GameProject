@@ -12,7 +12,11 @@ Joypad:
 
 - stick sinistro: movimento;
 - stick destro: mira;
-- spalla/trigger destro: fire action.
+- spalla/trigger destro: fire action;
+- `A`: conferma menu e interazione gameplay;
+- D-pad/stick: navigazione menu.
+
+`InputManager` aggiunge joypad `A` all'azione globale `ui_accept` con device wildcard. Questo rende la conferma menu indipendente dallo slot locale assegnato.
 
 Join/leave multiplayer locale:
 

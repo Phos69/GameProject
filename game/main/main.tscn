@@ -1,4 +1,4 @@
-[gd_scene load_steps=23 format=3]
+[gd_scene load_steps=26 format=3]
 
 [ext_resource type="Script" path="res://game/main/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://game/input/input_manager.gd" id="2_input_manager"]
@@ -22,6 +22,9 @@
 [ext_resource type="Script" path="res://game/modes/dungeon/dungeon_mode.gd" id="20_dungeon_mode"]
 [ext_resource type="Script" path="res://game/modes/tower_defense/tower_defense_mode.gd" id="21_tower_defense_mode"]
 [ext_resource type="Script" path="res://game/modes/tower_defense/tower_defense_wave_controller.gd" id="22_tower_defense_wave_controller"]
+[ext_resource type="Script" path="res://game/saves/save_manager.gd" id="23_save_manager"]
+[ext_resource type="Script" path="res://game/audio/audio_manager.gd" id="24_audio_manager"]
+[ext_resource type="Script" path="res://game/ui/main_menu.gd" id="25_main_menu"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -76,6 +79,12 @@ script = ExtResource("17_health_system")
 [node name="ProgressionManager" type="Node" parent="Systems"]
 script = ExtResource("10_progression_manager")
 
+[node name="SaveManager" type="Node" parent="Systems"]
+script = ExtResource("23_save_manager")
+
+[node name="AudioManager" type="Node" parent="Systems"]
+script = ExtResource("24_audio_manager")
+
 [node name="DungeonGenerator" type="Node" parent="Systems"]
 script = ExtResource("11_dungeon_generator")
 
@@ -121,3 +130,6 @@ position_smoothing_speed = 7.0
 
 [node name="HUD" type="CanvasLayer" parent="."]
 script = ExtResource("15_hud_manager")
+
+[node name="MainMenu" type="CanvasLayer" parent="."]
+script = ExtResource("25_main_menu")

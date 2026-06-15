@@ -33,8 +33,18 @@ func is_player_interact_just_pressed(player_slot: int) -> bool:
 	return Input.is_action_just_pressed(_action(player_slot, "interact"))
 
 func _register_default_actions() -> void:
+	_register_menu_actions()
 	for player_slot in range(1, MAX_PLAYERS + 1):
 		_register_player_actions(player_slot)
+
+func _register_menu_actions() -> void:
+	if not InputMap.has_action(&"ui_accept"):
+		InputMap.add_action(&"ui_accept")
+	var accept_event := InputEventJoypadButton.new()
+	accept_event.device = -1
+	accept_event.button_index = JOY_BUTTON_A
+	if not InputMap.action_has_event(&"ui_accept", accept_event):
+		InputMap.action_add_event(&"ui_accept", accept_event)
 
 func _register_player_actions(player_slot: int) -> void:
 	_ensure_action(_action(player_slot, "move_left"), _joy_motion(player_slot, JOY_AXIS_LEFT_X, -1.0))

@@ -2,6 +2,18 @@
 
 ## Completati recenti
 
+- Milestone 9, packaging e QA Windows.
+  - Obiettivo: installare i template, produrre una release e verificare menu, joypad e audio.
+  - Milestone collegata: Milestone 9.
+  - File/sistemi coinvolti: `export_presets.cfg`, `InputManager`, `AudioManager`, `BuildRuntimeSmoke`, menu e checklist.
+  - Criterio di accettazione: EXE/PCK generati, build smoke exit `0`, controller XInput rilevato e audio WASAPI alimentato.
+  - Test richiesto: suite headless Milestone 3-9, `--build-smoke` e QA visuale.
+- Milestone 9, prima iterazione: menu e progressione persistente.
+  - Obiettivo: avviare il progetto da menu e conservare la progressione party.
+  - Milestone collegata: Milestone 9.
+  - File/sistemi coinvolti: `MainMenu`, `GameModeManager`, `SaveManager`, `ProgressionManager`, `AudioManager`, HUD, export preset.
+  - Criterio di accettazione: il menu seleziona tutte le modalita, il save round-trip ripristina dati validi e il preset Windows viene riconosciuto da Godot.
+  - Test richiesto: `tests/milestone_9_smoke_test.gd`, suite headless completa e checklist manuale Milestone 9.
 - Milestone 8: tower defense giocabile.
   - Obiettivo: difendere un core con torri piazzabili, crediti e ondate su percorso.
   - Milestone collegata: Milestone 8.
@@ -47,21 +59,15 @@
 
 ## Priorita alta
 
-- Milestone 9: progressione persistente, menu, polish e packaging.
-  - Obiettivo: trasformare i prototipi modalita in un flusso avviabile e salvabile.
+- Completare Milestone 9: progressione e polish.
+  - Obiettivo: aggiungere un unlock base, svolgere il primo pass di bilanciamento e completare il feedback gameplay.
   - Milestone collegata: Milestone 9.
-  - File/sistemi coinvolti: `SaveManager`, `ProgressionManager`, menu principale, selezione modalita, audio, export preset.
-  - Criterio di accettazione: il gioco parte da menu, salva dati validi e produce una build desktop avviabile.
-  - Test richiesto: round-trip save/load, checklist menu/modalita e smoke test build esportata.
+  - File/sistemi coinvolti: `ProgressionManager`, armi, nemici, boss, `AudioManager`, menu e salvataggi.
+  - Criterio di accettazione: almeno un unlock persistente influenza una nuova run e i valori base sono documentati e verificati.
+  - Test richiesto: round-trip unlock, regressione save e checklist di bilanciamento/audio.
 
 ## Priorita media
 
-- Menu debug per selezionare modalita.
-  - Obiettivo: sostituire le hotkey `F1`/`F5`/`F6` con una UI per survival, dungeon e tower defense.
-  - Milestone collegata: supporto alle Milestone 5-8.
-  - File/sistemi coinvolti: `GameModeManager`, nuova UI debug.
-  - Criterio di accettazione: ogni modalita registrata puo essere selezionata e avviata.
-  - Test richiesto: smoke test manuale di selezione modalita.
 - Espandere il dungeon oltre il percorso lineare.
   - Obiettivo: aggiungere diramazioni, scelta stanza, shop e predisposizione biomi.
   - Milestone collegata: evoluzione Milestone 7.
@@ -96,29 +102,17 @@
 ## Priorita bassa
 
 - Audio placeholder.
-  - Obiettivo: aggiungere feedback audio minimi per sparo, colpo, pickup e UI.
+  - Obiettivo: estendere il feedback UI gia presente a sparo, colpo e pickup.
   - Milestone collegata: Milestone 9.
   - File/sistemi coinvolti: `AudioManager`, scene gameplay e asset audio.
   - Criterio di accettazione: gli eventi principali emettono audio con volume configurabile.
   - Test richiesto: checklist manuale audio.
-- Salvataggi progressione.
-  - Obiettivo: persistere impostazioni e progressione prevista dal design.
-  - Milestone collegata: Milestone 9.
-  - File/sistemi coinvolti: `SaveManager`, `ProgressionManager`.
-  - Criterio di accettazione: save/load ripristina dati validi e gestisce file assente.
-  - Test richiesto: test automatico round-trip e checklist manuale.
 - Asset definitivi.
   - Obiettivo: sostituire progressivamente i placeholder senza introdurre dipendenze obbligatorie.
   - Milestone collegata: Milestone 9.
   - File/sistemi coinvolti: `assets/` e scene visuali.
   - Criterio di accettazione: leggibilita gameplay invariata e licenze documentate.
   - Test richiesto: revisione visuale delle scene principali.
-- Export desktop.
-  - Obiettivo: produrre una build desktop avviabile.
-  - Milestone collegata: Milestone 9.
-  - File/sistemi coinvolti: preset export, configurazione progetto e README.
-  - Criterio di accettazione: build pulita avviabile senza editor.
-  - Test richiesto: smoke test della build esportata.
 - Ampliare i test automatici.
   - Obiettivo: coprire health, multiplayer, wave e generazione oltre al combat smoke test.
   - Milestone collegata: trasversale.

@@ -139,12 +139,18 @@ Regole raccolta:
 
 ## Progressione
 
-Progressione prevista:
+Progressione implementata:
 
 - XP party;
 - denaro party;
 - livello party;
+- persistenza automatica tra sessioni;
+- ultima modalita selezionata usata dal pulsante `Continue`;
 - upgrade futuri di vita, danno, velocita, fire rate e fortuna drop.
+
+Il gioco parte dal menu principale. La selezione avvia survival, dungeon o tower defense; `Esc` interrompe la run corrente e torna al menu. Il menu mostra livello, XP, denaro e ultima modalita salvata.
+
+Il feedback audio del menu usa toni procedurali placeholder per focus e conferma, senza asset esterni obbligatori. D-pad/stick cambiano focus e joypad `A` conferma da qualunque controller. Audio di combattimento e pickup restano futuri.
 
 ## Dungeon
 
@@ -173,7 +179,7 @@ Il prototipo e lineare. Diramazioni, shop room, biomi, mappa e scelta del percor
 
 ## Zombie survival
 
-La modalita survival usa l'arena principale e parte automaticamente:
+La modalita survival usa l'arena principale e parte dopo la selezione dal menu:
 
 - 3 secondi di preparazione iniziale;
 - 4 secondi di intermissione tra ondate;

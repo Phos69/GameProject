@@ -6,28 +6,31 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 
 ## Flusso runtime attuale
 
-1. `main.tscn` carica manager e world.
-2. `InputManager` registra azioni tastiera/joypad.
-3. `LocalMultiplayerManager` mantiene gli slot locali attivi.
-4. `PlayerManager` ascolta gli slot attivi e spawna/despawna i player.
-5. `PlayerController` legge input e muove il personaggio del proprio slot.
-6. `WeaponSystem` gestisce arma, cooldown, caricatore, riserva e ricarica per il singolo player.
-7. `ProjectileSystem` spawna proiettili che applicano danno tramite `HealthSystem`.
-8. `EnemySystem` spawna nemici e `BasicEnemy` seleziona il player vivo piu vicino.
-9. Alla morte, il nemico chiede a `DropSystem` di generare pickup dalla propria `LootTable`.
-10. `DropPickup` delega l'applicazione della ricompensa a `DropSystem`.
-11. `GameModeManager` avvia `SurvivalMode`, che delega il ciclo delle ondate a `WaveManager`.
-12. `WaveManager` spawna zombie tramite `EnemySystem` e richiede il boss a `SurvivalMode`.
-13. `SurvivalMode` usa `GameModeManager` e `BossSystem` per creare il boss della quinta ondata.
-14. `WaveManager` conta scorte e boss prima di assegnare la ricompensa.
-15. `DungeonMode` genera un layout da seed, istanzia una `DungeonRoom` alla volta e usa nemici, drop e boss condivisi.
-16. `DungeonRoom` controlla pareti, portale e stato locked/unlocked della stanza corrente.
-17. `TowerDefenseMode` gestisce lifecycle, arena, player e richieste costruzione.
-18. `TowerDefenseWaveController` governa ondate e usa `EnemySystem` per i nemici da percorso.
-19. `TowerDefenseManager` mantiene vita core e crediti, mentre gli slot delegano lo spawn delle torri.
-20. `DefenseTower` seleziona target tower defense e spara tramite `ProjectileSystem`.
-21. `IsometricCameraController` segue il gruppo `players`.
-22. `HUDManager` mostra slot, progressione, vita, munizioni, stato modalita e barra boss.
+1. `main.tscn` carica manager, world e `MainMenu`.
+2. `GameModeManager` entra nello stato `menu` senza avviare gameplay.
+3. `SaveManager` carica progressione party e ultima modalita da JSON.
+4. `MainMenu` seleziona una modalita registrata e nasconde la propria UI.
+5. `InputManager` registra azioni tastiera/joypad.
+6. `LocalMultiplayerManager` mantiene gli slot locali attivi.
+7. `PlayerManager` ascolta gli slot attivi e spawna/despawna i player.
+8. `PlayerController` legge input solo quando una modalita gameplay e attiva.
+9. `WeaponSystem` gestisce arma, cooldown, caricatore, riserva e ricarica per il singolo player.
+10. `ProjectileSystem` spawna proiettili che applicano danno tramite `HealthSystem`.
+11. `EnemySystem` spawna nemici e `BasicEnemy` seleziona il player vivo piu vicino.
+12. Alla morte, il nemico chiede a `DropSystem` di generare pickup dalla propria `LootTable`.
+13. `DropPickup` delega l'applicazione della ricompensa a `DropSystem`.
+14. `GameModeManager` avvia `SurvivalMode`, che delega il ciclo delle ondate a `WaveManager`.
+15. `WaveManager` spawna zombie tramite `EnemySystem` e richiede il boss a `SurvivalMode`.
+16. `SurvivalMode` usa `GameModeManager` e `BossSystem` per creare il boss della quinta ondata.
+17. `WaveManager` conta scorte e boss prima di assegnare la ricompensa.
+18. `DungeonMode` genera un layout da seed, istanzia una `DungeonRoom` alla volta e usa nemici, drop e boss condivisi.
+19. `DungeonRoom` controlla pareti, portale e stato locked/unlocked della stanza corrente.
+20. `TowerDefenseMode` gestisce lifecycle, arena, player e richieste costruzione.
+21. `TowerDefenseWaveController` governa ondate e usa `EnemySystem` per i nemici da percorso.
+22. `TowerDefenseManager` mantiene vita core e crediti, mentre gli slot delegano lo spawn delle torri.
+23. `DefenseTower` seleziona target tower defense e spara tramite `ProjectileSystem`.
+24. `IsometricCameraController` segue il gruppo `players`.
+25. `HUDManager` mostra slot, progressione, vita, munizioni, stato modalita e barra boss.
 
 ## Sistemi principali
 
@@ -36,6 +39,9 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `PlayerManager`: spawna/despawna player in base agli slot attivi e tiene il registro degli slot.
 - `PlayerController`: movimento, mira, fire action e colore visuale per slot.
 - `GameModeManager`: registra, arresta e avvia le modalita.
+- `MainMenu`: UI iniziale, selezione modalita, continue e ritorno con `Esc`.
+- `SaveManager`: persistenza JSON versionata e autosave della progressione.
+- `AudioManager`: feedback audio procedurale minimo per la UI.
 - `WeaponData`: risorsa immutabile con danno, fire rate, velocita proiettile, caricatore, riserva e durata ricarica.
 - `WeaponSystem`: stato runtime per-player di arma, cooldown, munizioni e ricarica.
 - `ProjectileSystem` e `Projectile`: spawn, movimento, collisione e consegna del danno.
@@ -103,6 +109,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `Start` attiva lo slot del controller, `Back/Select` disattiva lo slot se non e player 1.
 - `F2`, `F3` e `F4` sono fallback debug per attivare/disattivare gli slot 2, 3 e 4 senza controller fisici.
 - Ogni slot possiede anche l'azione `interact`: joypad `A`, con fallback tastiera `E` per player 1.
+- `InputManager` garantisce che `ui_accept` includa joypad `A` con device globale, cosi ogni controller puo navigare e confermare il menu.
 - `active_slots_changed` e il segnale autoritativo: i sistemi interessati devono ascoltare questo segnale invece di duplicare lo stato multiplayer.
 
 ## Contratti per modalita
@@ -114,6 +121,17 @@ Ogni modalita deriva da `BaseGameMode` e fornisce:
 - condizione di vittoria/sconfitta;
 - richiesta boss;
 - collegamento a spawn nemici, drop e progressione.
+
+Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arresta la modalita corrente; i player restano istanziati ma il loro input gameplay viene sospeso.
+
+## Contratto salvataggi
+
+- Il file predefinito e `user://savegame.json`.
+- Il formato contiene `version`, dati `party` e `settings.last_mode`.
+- `ProgressionManager` espone dati serializzabili e applica valori validati.
+- XP e denaro attivano autosave; il cambio modalita aggiorna `last_mode`.
+- File assente, root non valida o versione non supportata non modificano lo stato runtime.
+- L'auto-persistenza e disabilitata nei test headless, ma save/load espliciti restano disponibili.
 
 ## Contratto survival e wave
 
@@ -157,7 +175,7 @@ Ogni modalita deriva da `BaseGameMode` e fornisce:
 - La loot room usa una `LootTable` e `DropSystem`; i pickup non raccolti vengono rimossi al cambio stanza.
 - Il boss finale viene richiesto tramite `GameModeManager` e `BossSystem`.
 - La sostituzione di una stanza richiesta da un trigger fisico avviene in modo differito.
-- `F5` seleziona dungeon e `F1` torna a survival; una UI completa di selezione resta futura.
+- Il menu principale seleziona dungeon; `F5` e `F1` restano scorciatoie debug.
 - Diramazioni, shop, biomi e persistenza della run non fanno parte del prototipo minimo.
 
 ## Contratto tower defense
@@ -183,6 +201,14 @@ Modalita previste:
 - `survival`: ondate zombie, boss ogni N ondate.
 - `dungeon`: stanze generate, boss finale per livello/area.
 - `tower_defense`: path nemici, base da difendere, boss nelle ondate principali.
+
+## Contratto packaging e QA
+
+- `export_presets.cfg` definisce il preset `Windows Desktop` x86_64.
+- `build/*` e `tests/*` sono esclusi dal pacchetto release.
+- `Main` crea `BuildRuntimeSmoke` solo con l'argomento utente `--build-smoke`.
+- Il runner verifica bootstrap menu, focus, D-pad, joypad `A`, audio UI, avvio survival, HUD e ritorno con `Esc`.
+- Il QA visuale usa `tests/menu_visual_qa.gd` e salva catture temporanee in `build/qa/`.
 
 ## Estendibilita IA
 

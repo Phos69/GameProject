@@ -88,3 +88,24 @@
 - Reso differito lo spawn dei drop da morte per evitare modifiche al physics server durante le collisioni.
 - Aggiunto smoke test headless tower defense e verificata l'intera suite Milestone 3-8.
 - Aggiornata documentazione per stato Milestone 8 e prossima Milestone 9.
+- Avviata Milestone 9 con stato iniziale `menu` al posto dell'avvio automatico survival.
+- Aggiunto menu principale navigabile da tastiera e joypad per survival, dungeon e tower defense.
+- Aggiunti `Continue`, ritorno al menu con `Esc` e sospensione input gameplay nel menu.
+- Implementato `SaveManager` JSON versionato con autosave, validazione e ultima modalita.
+- Esteso `ProgressionManager` con serializzazione e ripristino controllato.
+- Aggiunto feedback audio UI procedurale senza asset esterni.
+- Aggiunto preset export `Windows Desktop`.
+- Generato e avviato headless `build/iso_local_sandbox.pck`.
+- Aggiunto smoke test Milestone 9 per menu, save/load, autosave, dati non validi e selezione modalita.
+- Aggiornati i test survival, boss e dungeon per il nuovo bootstrap da menu.
+- Verificata la suite headless Milestone 3-9 con Godot `4.6.3`.
+- Tentato export Windows; la generazione e bloccata dai template export Godot `4.6.3` assenti nell'ambiente.
+- Installati i template export Windows Godot `4.6.3` dopo verifica SHA-512 ufficiale.
+- Generata la build release `build/iso_local_sandbox.exe` con PCK separato.
+- Aggiunto `BuildRuntimeSmoke` avviabile dalla release con `--build-smoke`.
+- Aggiunto QA visuale ripetibile per menu, focus joypad, survival e ritorno al menu.
+- Corretto il menu aggiungendo joypad `A` all'azione globale `ui_accept`.
+- Esteso `AudioManager` con segnale e conteggio delle frame audio generate.
+- Verificati controller XInput reale, driver audio WASAPI e feedback focus/conferma.
+- Esclusi `tests/` e `build/` dal pacchetto release.
+- Verificata la suite headless Milestone 3-9 e lo smoke della build con exit code `0`.

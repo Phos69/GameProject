@@ -23,6 +23,7 @@ func _run() -> void:
 	await process_frame
 
 	var wave_manager := get_first_node_in_group("wave_manager") as WaveManager
+	var game_mode_manager := get_first_node_in_group("game_mode_manager") as GameModeManager
 	var survival_mode := get_first_node_in_group("survival_mode") as SurvivalMode
 	var local_multiplayer := get_first_node_in_group("local_multiplayer_manager") as LocalMultiplayerManager
 	var player_manager := get_first_node_in_group("player_manager") as PlayerManager
@@ -31,6 +32,7 @@ func _run() -> void:
 	var projectile_system := get_first_node_in_group("projectile_system") as ProjectileSystem
 	var hud := get_first_node_in_group("hud_manager") as HUDManager
 	_expect(wave_manager != null, "wave manager is available")
+	_expect(game_mode_manager != null, "game mode manager is available")
 	_expect(survival_mode != null, "survival mode is available")
 	_expect(local_multiplayer != null, "local multiplayer manager is available")
 	_expect(player_manager != null, "player manager is available")
@@ -40,6 +42,7 @@ func _run() -> void:
 	_expect(hud != null, "HUD manager is available")
 	if (
 		wave_manager == null
+		or game_mode_manager == null
 		or survival_mode == null
 		or local_multiplayer == null
 		or player_manager == null
@@ -79,7 +82,7 @@ func _run() -> void:
 	boss_system.boss_defeated.connect(_on_boss_defeated)
 	projectile_system.projectile_spawned.connect(_on_projectile_spawned)
 
-	survival_mode.start_mode()
+	game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL)
 	wave_manager.current_wave = 4
 	wave_manager.state_timer = 0.0
 	_expect(await _wait_for_boss_wave(wave_manager), "fifth wave starts as a boss wave")

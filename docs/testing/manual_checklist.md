@@ -193,3 +193,36 @@ Il test verifica cambio modalita, percorso, danno core, crediti, costruzione, fu
 - I sistemi non sono duplicati in cartelle diverse.
 - Ogni nuova modalita usa `GameModeManager`.
 - Drop, XP, boss e wave restano sistemi separati.
+
+## Regressione Milestone 9
+
+- Il progetto parte con il menu visibile e nessuna modalita attiva.
+- Il menu mostra livello, XP, denaro e ultima modalita.
+- Tastiera e joypad possono selezionare survival, dungeon e tower defense.
+- Il gameplay HUD appare dopo la selezione.
+- `Esc` arresta la modalita corrente e torna al menu.
+- `Continue` avvia l'ultima modalita salvata.
+- Una variazione di XP o denaro aggiorna `user://savegame.json`.
+- Riavviando il progetto, livello, XP, denaro e ultima modalita vengono ripristinati.
+- Un save con versione non supportata viene ignorato senza azzerare la sessione.
+- Focus e conferma dei pulsanti producono feedback audio.
+- Con i template Godot `4.6.3` installati, il preset `Windows Desktop` genera `build/iso_local_sandbox.exe`.
+- Il pacchetto release non contiene file da `tests/` o `build/`.
+
+## Smoke test Milestone 9
+
+```text
+godot --headless --path . --script res://tests/milestone_9_smoke_test.gd
+godot --path . --rendering-method gl_compatibility --script res://tests/menu_visual_qa.gd
+build/iso_local_sandbox.exe --rendering-method gl_compatibility -- --build-smoke
+```
+
+Esito QA del 15 giugno 2026:
+
+- build smoke exit `0`;
+- menu, focus, survival e ritorno al menu verificati visualmente a 1280x720;
+- controller `XInput Controller` rilevato;
+- D-pad e joypad `A` verificati tramite eventi joypad;
+- driver audio `WASAPI` rilevato;
+- feedback focus: 771 frame audio;
+- feedback conferma: 1543 frame audio.

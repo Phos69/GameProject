@@ -11,7 +11,7 @@ Il progetto vuole diventare una piattaforma modulare per sperimentare tre modali
 - tower defense;
 - boss fight ricorrenti nelle ondate importanti o alla fine dei livelli.
 
-La base attuale contiene Milestone 0-8 come prototipi minimi: repository iniziale, documentazione, progetto Godot, scena pseudo-isometrica, player controllabile, input tastiera/joypad, camera funzionante, multiplayer locale 1-4 player, combat base, nemico melee, drop raccoglibili, zombie survival, boss modulare, dungeon procedurale e tower defense giocabile.
+La base attuale contiene Milestone 0-8 come prototipi minimi e una Milestone 9 avanzata: menu principale, selezione modalita, progressione persistente, feedback audio UI e build Windows verificata.
 
 ## Stack tecnico
 
@@ -38,6 +38,7 @@ res://game/main/main.tscn
 
 Controlli debug:
 
+- Menu: frecce/D-pad o stick per navigare, `Invio`/joypad `A` per confermare e `Esc` per tornare al menu durante una run.
 - Tastiera: `WASD` per movimento, frecce per mira, `Spazio` per sparare e `R` per ricaricare.
 - Tastiera debug multiplayer: `F2`, `F3`, `F4` attivano/disattivano gli slot player 2, 3 e 4.
 - Modalita debug: `F1` avvia survival, `F5` avvia una run dungeon e `F6` avvia tower defense.
@@ -57,7 +58,18 @@ godot --headless --path . --script res://tests/survival_wave_smoke_test.gd
 godot --headless --path . --script res://tests/boss_smoke_test.gd
 godot --headless --path . --script res://tests/dungeon_smoke_test.gd
 godot --headless --path . --script res://tests/tower_defense_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_9_smoke_test.gd
 ```
+
+Export Windows:
+
+```text
+godot --headless --path . --export-release "Windows Desktop" build/iso_local_sandbox.exe
+godot --headless --path . --export-pack "Windows Desktop" build/iso_local_sandbox.pck
+build/iso_local_sandbox.exe --rendering-method gl_compatibility -- --build-smoke
+```
+
+I template Windows ufficiali Godot `4.6.3` devono essere installati in `Godot/export_templates/4.6.3.stable`. EXE e PCK sono stati generati; lo smoke test della release passa con exit code `0`.
 
 ## Struttura cartelle
 
@@ -81,7 +93,7 @@ game/
   procedural/        generatori procedurali
   ui/                HUD e interfaccia
   audio/             audio manager
-  saves/             salvataggi futuri
+  saves/             salvataggi JSON versionati
   debug/             strumenti debug
 docs/                documentazione tecnica e checklist
 prompts/             prompt operativi per task IA futuri
@@ -116,7 +128,10 @@ Completato:
 - XP e denaro condivisi dal party;
 - munizioni, cura e cambio arma applicati solo al player che raccoglie;
 - seconda arma prototipo ottenibile come drop;
-- survival avviato automaticamente dalla scena principale;
+- menu principale mostrato all'avvio;
+- selezione di survival, dungeon e tower defense da tastiera o joypad;
+- ritorno al menu con `Esc` e arresto pulito della modalita attiva;
+- survival avviabile dal menu o con hotkey debug;
 - ondate con spawn scaglionato e conteggio crescente;
 - scaling progressivo di vita, velocita e danno dei nemici;
 - intermissione e ricompense party tra le ondate;
@@ -144,6 +159,16 @@ Completato:
 - torre automatica con targeting e proiettili condivisi;
 - ondate crescenti, ricompense crediti e boss ogni cinque ondate;
 - HUD tower defense con vita core, crediti, ondata e nemici rimasti;
+- salvataggio JSON versionato di livello, XP, denaro e ultima modalita;
+- autosave su variazioni della progressione;
+- rifiuto dei save malformati o con versione non supportata;
+- feedback audio procedurale per focus e conferma menu;
+- preset export `Windows Desktop`;
+- mapping globale `ui_accept` su joypad `A`;
+- build Windows release generata e avviata;
+- smoke test interno della build con menu, joypad, audio e survival;
+- QA visuale a 1280x720 con controller XInput e audio WASAPI;
+- esclusione di `tests/` e `build/` dal pacchetto distribuito;
 - struttura modulare per multiplayer, modalita, combat, proiettili, health, drop, boss, progressione e UI;
 - documentazione iniziale.
 
@@ -153,8 +178,10 @@ Non ancora completato:
 - varianti nemico ranged/tank/runner;
 - respawn o revive dei player;
 - dungeon ramificati, shop, biomi e selezione stanza;
-- salvataggi e packaging.
+- audio gameplay per sparo, colpi e pickup;
+- unlock base, bilanciamento e polish visuale finale;
+- firma digitale dell'eseguibile Windows.
 
 ## Prossime milestone
 
-1. Milestone 9: progressione persistente, menu, polish e packaging.
+1. Completare Milestone 9: unlock base, bilanciamento iniziale, audio gameplay e polish finale.

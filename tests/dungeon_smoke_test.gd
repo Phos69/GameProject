@@ -67,8 +67,10 @@ func _run() -> void:
 	_expect(_links_are_sequential(layout_a), "room links form a traversable sequence")
 
 	wave_manager.base_enemy_count = 1
+	wave_manager.initial_delay = 0.0
 	wave_manager.spawn_interval = 0.0
 	wave_manager.state_timer = 0.0
+	game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL)
 	_expect(
 		await _wait_for_survival_combat(wave_manager),
 		"survival has an active enemy before the mode switch"

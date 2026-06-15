@@ -121,10 +121,21 @@ Stato: completata come prototipo minimo.
 
 ## Milestone 9 - Polish, salvataggi e packaging
 
-Stato: prossima.
+Stato: parzialmente completata.
 
-- Save/load.
-- Menu principale e selezione modalita.
-- Audio e feedback.
-- Bilanciamento.
-- Export desktop.
+- Save/load JSON versionato completato per progressione party e ultima modalita.
+- Autosave progressione e validazione dei dati completati.
+- Menu principale e selezione modalita completati.
+- Ritorno al menu con arresto della modalita attiva completato.
+- Feedback audio UI procedurale completato come placeholder minimo.
+- Preset export Windows completato.
+- Pacchetto PCK generato e avviato headless con successo.
+- Template Windows Godot `4.6.3` installati e verificati tramite checksum ufficiale.
+- Build Windows release generata e avviata con successo.
+- Smoke test interno della build completato con exit code `0`.
+- QA visuale completato su menu, focus joypad, avvio survival e ritorno al menu.
+- Controller XInput reale e driver audio WASAPI rilevati durante il QA.
+- Corretto `ui_accept` per confermare il menu con joypad `A`.
+- `tests/` e `build/` esclusi dal pacchetto release.
+- Smoke test Milestone 9 completato.
+- Unlock base, bilanciamento, audio gameplay, firma e polish visuale restano aperti.

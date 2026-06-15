@@ -4,10 +4,10 @@ class_name GameModeManager
 signal game_mode_changed(mode_id: StringName)
 signal mode_boss_requested(mode_id: StringName, reason: StringName)
 
-@export var default_mode: StringName = &"survival"
+@export var default_mode: StringName = GameConstants.MODE_MENU
 @export var debug_mode_hotkeys: bool = true
 
-var active_mode_id: StringName = &"prototype"
+var active_mode_id: StringName = GameConstants.MODE_MENU
 var registered_modes: Dictionary = {}
 
 func _ready() -> void:
@@ -43,9 +43,18 @@ func register_mode(mode: Node) -> void:
 	if mode_id == active_mode_id and mode.has_method("start_mode"):
 		mode.call_deferred("start_mode")
 
-func set_mode(mode_id: StringName, context: Dictionary = {}) -> void:
+func set_mode(mode_id: StringName, context: Dictionary = {}) -> bool:
 	if active_mode_id == mode_id:
-		return
+		var current_mode: Node = registered_modes.get(active_mode_id)
+		if (
+			current_mode != null
+			and current_mode.has_method("start_mode")
+			and not bool(current_mode.get("is_running"))
+		):
+			current_mode.start_mode(context)
+		return true
+	if mode_id != GameConstants.MODE_MENU and not registered_modes.has(mode_id):
+		return false
 	var previous_mode: Node = registered_modes.get(active_mode_id)
 	if previous_mode != null and previous_mode.has_method("stop_mode"):
 		previous_mode.stop_mode()
@@ -54,6 +63,13 @@ func set_mode(mode_id: StringName, context: Dictionary = {}) -> void:
 	var next_mode: Node = registered_modes.get(active_mode_id)
 	if next_mode != null and next_mode.has_method("start_mode"):
 		next_mode.start_mode(context)
+	return true
+
+func has_mode(mode_id: StringName) -> bool:
+	return registered_modes.has(mode_id)
+
+func is_gameplay_active() -> bool:
+	return registered_modes.has(active_mode_id)
 
 func request_boss(
 	reason: StringName,

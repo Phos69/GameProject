@@ -10,7 +10,7 @@ const DROP_WEAPON: StringName = &"weapon"
 const DROP_AMMO: StringName = &"ammo"
 const DROP_HEALTH: StringName = &"health"
 
+const MODE_MENU: StringName = &"menu"
 const MODE_SURVIVAL: StringName = &"survival"
 const MODE_DUNGEON: StringName = &"dungeon"
 const MODE_TOWER_DEFENSE: StringName = &"tower_defense"
-

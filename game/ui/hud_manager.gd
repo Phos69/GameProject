@@ -22,6 +22,15 @@ func _process(_delta: float) -> void:
 func _refresh() -> void:
 	if status_label == null:
 		return
+	var game_mode_manager := get_tree().get_first_node_in_group(
+		"game_mode_manager"
+	) as GameModeManager
+	visible = (
+		game_mode_manager == null
+		or game_mode_manager.active_mode_id != GameConstants.MODE_MENU
+	)
+	if not visible:
+		return
 
 	var players := get_tree().get_nodes_in_group("players")
 	var active_slots := _get_active_slots(players)

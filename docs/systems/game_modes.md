@@ -8,6 +8,8 @@ Le modalita devono usare sistemi condivisi:
 - `BossSystem` per boss;
 - `DropSystem` e `ProgressionManager` per ricompense.
 
+Il bootstrap entra nello stato `menu`. `MainMenu` avvia una modalita registrata tramite `GameModeManager`; `Esc` torna allo stato `menu` e arresta la modalita corrente. Le hotkey `F1`, `F5` e `F6` restano scorciatoie debug.
+
 ## Survival
 
 `SurvivalMode` viene registrata presso `GameModeManager` e avvia `WaveManager`.
@@ -48,7 +50,7 @@ Flusso:
 5. boss room richiesta tramite `BossSystem`;
 6. completamento dopo boss e portale finale.
 
-Una sola `DungeonRoom` e attiva alla volta. Nemici, drop, health, progressione, boss e HUD restano sistemi condivisi. `F5` avvia dungeon e `F1` torna a survival durante il prototipo.
+Una sola `DungeonRoom` e attiva alla volta. Nemici, drop, health, progressione, boss e HUD restano sistemi condivisi.
 
 ## Tower Defense
 
@@ -64,4 +66,4 @@ Flusso:
 6. ricompensa crediti dopo l'eliminazione o fuga di tutta la wave;
 7. boss ogni cinque ondate tramite `BossSystem`.
 
-I player costruiscono entrando in un `TowerBuildSlot` e usando l'azione `interact`. `TowerDefenseManager` valida il costo e crea una `DefenseTower`, che spara tramite `ProjectileSystem`. `F6` avvia la modalita e `F1` torna a survival.
+I player costruiscono entrando in un `TowerBuildSlot` e usando l'azione `interact`. `TowerDefenseManager` valida il costo e crea una `DefenseTower`, che spara tramite `ProjectileSystem`.
