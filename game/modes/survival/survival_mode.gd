@@ -10,12 +10,14 @@ signal survival_defeated(wave_index: int)
 
 var wave_manager: WaveManager
 var ammo_director: SurvivalAmmoDirector
+var arena_manager: SurvivalArenaManager
 
 func _ready() -> void:
 	mode_id = GameConstants.MODE_SURVIVAL
 	add_to_group("survival_mode")
 	_resolve_wave_manager()
 	_resolve_ammo_director()
+	_resolve_arena_manager()
 
 	var game_mode_manager = get_tree().get_first_node_in_group("game_mode_manager")
 	if game_mode_manager != null:
@@ -41,6 +43,12 @@ func start_mode(context: Dictionary = {}) -> void:
 	super.start_mode(context)
 	_resolve_wave_manager()
 	_resolve_ammo_director()
+	_resolve_arena_manager()
+	if arena_manager != null:
+		var arena_id := StringName(
+			context.get("arena_id", arena_manager.default_arena_id)
+		)
+		arena_manager.activate_arena(arena_id)
 	if ammo_director != null:
 		ammo_director.start_run()
 	if wave_manager != null:
@@ -53,6 +61,8 @@ func stop_mode() -> void:
 		ammo_director.stop_run(true)
 	if wave_manager != null:
 		wave_manager.stop_run(true)
+	if arena_manager != null:
+		arena_manager.deactivate_arena()
 	super.stop_mode()
 
 func should_spawn_boss_for_wave(wave_index: int) -> bool:
@@ -64,13 +74,16 @@ func _on_boss_wave_requested(wave_index: int) -> void:
 		return
 	var wave_offset := maxi(wave_index - 1, 0)
 	var config := {
+		"boss_id": &"wave_warden",
 		"wave_index": wave_index,
 		"health_multiplier": 1.0 + float(wave_offset) * boss_health_scale_per_wave,
 		"damage_multiplier": 1.0 + float(wave_offset) * boss_damage_scale_per_wave
 	}
 	var boss: Node = game_mode_manager.request_boss(
 		StringName("survival_wave_%d" % wave_index),
-		boss_spawn_position,
+		arena_manager.get_boss_spawn_position(boss_spawn_position)
+		if arena_manager != null
+		else boss_spawn_position,
 		null,
 		config
 	)
@@ -89,3 +102,9 @@ func _resolve_wave_manager() -> void:
 func _resolve_ammo_director() -> void:
 	if ammo_director == null:
 		ammo_director = get_node_or_null("AmmoDirector") as SurvivalAmmoDirector
+
+func _resolve_arena_manager() -> void:
+	if arena_manager == null:
+		arena_manager = get_tree().get_first_node_in_group(
+			"survival_arena_manager"
+		) as SurvivalArenaManager

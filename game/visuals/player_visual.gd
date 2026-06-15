@@ -11,16 +11,46 @@ var reload_timer: float = 0.0
 var reload_duration: float = 0.0
 var hurt_flash_timer: float = 0.0
 var is_dead: bool = false
+var is_downed: bool = false
 var weapon_visual_data: WeaponVisualData
+var player_slot: int = 1
+var flash_intensity: float = 1.0
+var glow_intensity: float = 1.0
+var high_contrast: bool = false
+var reduced_motion: bool = false
 
 func _ready() -> void:
+	add_to_group("visual_settings_consumers")
+	VisualSettingsManager.sync_consumer(self)
 	queue_redraw()
 
 func _process(delta: float) -> void:
-	animation_time += delta
+	if not reduced_motion:
+		animation_time += delta
 	fire_flash_timer = maxf(fire_flash_timer - delta, 0.0)
 	reload_timer = maxf(reload_timer - delta, 0.0)
 	hurt_flash_timer = maxf(hurt_flash_timer - delta, 0.0)
+	queue_redraw()
+
+func apply_visual_settings(settings: Dictionary) -> void:
+	flash_intensity = clampf(
+		float(settings.get("flash_intensity", 1.0)),
+		0.0,
+		1.0
+	)
+	glow_intensity = clampf(
+		float(settings.get("glow_intensity", 1.0)),
+		0.0,
+		1.0
+	)
+	high_contrast = bool(settings.get("high_contrast", false))
+	reduced_motion = bool(settings.get("reduced_motion", false))
+	if reduced_motion:
+		animation_time = 0.0
+	queue_redraw()
+
+func set_player_slot(slot: int) -> void:
+	player_slot = clampi(slot, 1, 4)
 	queue_redraw()
 
 func set_slot_color(color: Color) -> void:
@@ -65,10 +95,17 @@ func play_hurt() -> void:
 
 func play_dead() -> void:
 	is_dead = true
+	is_downed = false
+	queue_redraw()
+
+func play_downed() -> void:
+	is_downed = true
+	is_dead = false
 	queue_redraw()
 
 func reset_visual() -> void:
 	is_dead = false
+	is_downed = false
 	fire_flash_timer = 0.0
 	reload_timer = 0.0
 	hurt_flash_timer = 0.0
@@ -77,9 +114,14 @@ func reset_visual() -> void:
 func _draw() -> void:
 	var display_color := accent_color
 	if hurt_flash_timer > 0.0:
-		display_color = Color(1.0, 0.92, 0.82, 1.0)
-	if is_dead:
-		_draw_dead_survivor(display_color)
+		display_color = display_color.lerp(
+			Color(1.0, 0.92, 0.82, 1.0),
+			flash_intensity
+		)
+	if is_dead or is_downed:
+		_draw_dead_survivor(
+			display_color if is_downed else display_color.darkened(0.45)
+		)
 		return
 
 	var walk_phase := sin(animation_time * 11.0) * movement_ratio
@@ -145,14 +187,19 @@ func _draw() -> void:
 			if weapon_visual_data != null
 			else 6.0
 		)
-		var flash_size := base_flash_size + fire_flash_timer * 45.0
+		var flash_size := (
+			base_flash_size + fire_flash_timer * 45.0
+		) * maxf(flash_intensity, 0.1)
 		draw_colored_polygon(
 			PackedVector2Array([
 				muzzle + weapon_direction * flash_size,
 				muzzle + weapon_direction.orthogonal() * 4.0,
 				muzzle - weapon_direction.orthogonal() * 4.0
 			]),
-			Color(muzzle_color, 0.95)
+			Color(
+				muzzle_color,
+				0.95 * flash_intensity * glow_intensity
+			)
 		)
 
 	if reload_timer > 0.0:
@@ -167,7 +214,39 @@ func _draw() -> void:
 			3.0,
 			true
 		)
+	_draw_slot_marker()
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+func _draw_slot_marker() -> void:
+	var center := Vector2(0.0, -39.0)
+	var outline := Color(0.01, 0.015, 0.02, 1.0)
+	var fill := Color.WHITE if high_contrast else accent_color.lightened(0.28)
+	match player_slot:
+		2:
+			var triangle := PackedVector2Array([
+				center + Vector2(0.0, -6.0),
+				center + Vector2(6.0, 5.0),
+				center + Vector2(-6.0, 5.0),
+				center + Vector2(0.0, -6.0)
+			])
+			draw_polyline(triangle, outline, 6.0, true)
+			draw_polyline(triangle, fill, 2.5, true)
+		3:
+			draw_rect(Rect2(center - Vector2(5.0, 5.0), Vector2(10.0, 10.0)), outline, false, 6.0)
+			draw_rect(Rect2(center - Vector2(5.0, 5.0), Vector2(10.0, 10.0)), fill, false, 2.5)
+		4:
+			var diamond := PackedVector2Array([
+				center + Vector2(0.0, -7.0),
+				center + Vector2(7.0, 0.0),
+				center + Vector2(0.0, 7.0),
+				center + Vector2(-7.0, 0.0),
+				center + Vector2(0.0, -7.0)
+			])
+			draw_polyline(diamond, outline, 6.0, true)
+			draw_polyline(diamond, fill, 2.5, true)
+		_:
+			draw_arc(center, 6.0, 0.0, TAU, 18, outline, 6.0, true)
+			draw_arc(center, 6.0, 0.0, TAU, 18, fill, 2.5, true)
 
 func _draw_weapon(
 	hand: Vector2,
@@ -190,7 +269,7 @@ func _draw_weapon(
 	var perpendicular := direction.orthogonal()
 	var muzzle := hand + direction * length
 	match profile_id:
-		&"prototype_blaster":
+		&"prototype_blaster", &"rift_repeater":
 			var rear := hand - direction * 3.0
 			draw_colored_polygon(
 				PackedVector2Array([

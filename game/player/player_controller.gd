@@ -18,6 +18,7 @@ class_name PlayerController
 @onready var aim_line := $AimLine as Line2D
 @onready var weapon_system = $WeaponSystem
 @onready var health_component := $HealthComponent as HealthComponent
+@onready var revive_indicator := $ReviveIndicator as ReviveIndicatorVisual
 
 var facing_direction: Vector2 = Vector2.RIGHT
 var input_manager
@@ -31,17 +32,20 @@ func _ready() -> void:
 		"game_mode_manager"
 	) as GameModeManager
 	health_component.died.connect(_on_died)
+	health_component.downed.connect(_on_downed)
+	health_component.revived.connect(_on_revived)
 	health_component.damaged.connect(_on_damaged)
 	weapon_system.fired.connect(_on_weapon_fired)
 	weapon_system.reload_started.connect(_on_reload_started)
 	weapon_system.weapon_changed.connect(_on_weapon_changed)
 	base_max_health = health_component.max_health
 	_apply_slot_color()
+	visual.set_player_slot(player_slot)
 	visual.set_weapon_data(weapon_system.weapon_data)
 	_update_aim_line()
 
 func _physics_process(delta: float) -> void:
-	if health_component.is_dead:
+	if health_component.is_incapacitated():
 		velocity = Vector2.ZERO
 		visual.set_motion(velocity, move_speed)
 		return
@@ -98,6 +102,7 @@ func _apply_slot_color() -> void:
 		return
 	var index := clampi(player_slot - 1, 0, slot_colors.size() - 1)
 	visual.set_slot_color(slot_colors[index])
+	revive_indicator.set_slot_color(slot_colors[index])
 
 func _handle_weapon_input() -> void:
 	if weapon_system == null:
@@ -114,6 +119,25 @@ func prepare_for_run(max_health_bonus: int = 0) -> void:
 	)
 	velocity = Vector2.ZERO
 	visual.reset_visual()
+	revive_indicator.set_downed(false)
+	aim_line.show()
+
+func set_revive_progress(ratio: float, active: bool) -> void:
+	revive_indicator.set_revive_progress(ratio, active)
+
+func is_downed() -> bool:
+	return health_component.is_downed
+
+func _on_downed() -> void:
+	velocity = Vector2.ZERO
+	visual.play_downed()
+	revive_indicator.set_downed(true)
+	aim_line.hide()
+
+func _on_revived(_current_health: int, _max_health: int) -> void:
+	velocity = Vector2.ZERO
+	visual.reset_visual()
+	revive_indicator.set_downed(false)
 	aim_line.show()
 
 func _on_died() -> void:

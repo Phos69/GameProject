@@ -2,6 +2,48 @@
 
 ## Completati recenti
 
+- Milestone 21: accessibilita, performance e asset pipeline.
+  - Obiettivo: configurare la presentazione senza alterare il gameplay.
+  - Milestone collegata: chiusura di `ROADMAP_VISUAL_GAMEPLAY.md`.
+  - File/sistemi coinvolti: `VisualSettingsManager`, save, menu, HUD, visual, camera e `assets/`.
+  - Criterio di accettazione: preset persistenti, identificatori non solo cromatici e profiling stabile.
+  - Test richiesto: smoke M21 e `tests/visual_accessibility_qa.gd`.
+- Milestone 20: arena, biomi e props interattivi.
+  - Obiettivo: variare la survival senza duplicare controller o bloccare l'AI.
+  - Milestone collegata: evoluzione ambientale delle Milestone 5 e 10.
+  - File/sistemi coinvolti: `SurvivalArenaManager`, profili, palette, `WaveManager`, projectile, health ed effetti.
+  - Criterio di accettazione: due layout, gate leggibili e barile con warning obbligatorio.
+  - Test richiesto: smoke M20, stress roster e `tests/arena_variants_visual_qa.gd`.
+- Milestone 19: secondo boss e registro boss.
+  - Obiettivo: richiedere boss diversi per ID senza cambiare i chiamanti.
+  - Milestone collegata: evoluzione boss delle Milestone 6-8 e 11.
+  - File/sistemi coinvolti: `BossSystem`, `RiftArchitect`, telegraph, loot, HUD e modalita.
+  - Criterio di accettazione: due boss configurabili con pattern, compatibilita e drop distinti.
+  - Test richiesto: `tests/milestone_19_boss_registry_smoke_test.gd` e QA Rift.
+- Milestone 18: audio mix e SFX sostituibili.
+  - Obiettivo: preparare asset licenziati mantenendo fallback e controllo del mix.
+  - Milestone collegata: evoluzione audio delle Milestone 9, 11, 15-17.
+  - File/sistemi coinvolti: `AudioManager`, cue, voice pool, router, save e menu.
+  - Criterio di accettazione: bus, priorita, fallback e volumi persistenti.
+  - Test richiesto: `tests/milestone_18_audio_mix_smoke_test.gd` e `tests/audio_mix_visual_qa.gd`.
+- Milestone 17: fine run, risultati e menu.
+  - Obiettivo: presentare risultati reali e azioni esplicite dopo ogni run.
+  - Milestone collegata: evoluzione UI e lifecycle delle tre modalita.
+  - File/sistemi coinvolti: `RunSessionTracker`, `RunResultsScreen`, `GameModeManager`, save e modalita.
+  - Criterio di accettazione: retry senza duplicati, cambio modalita e save prima del menu.
+  - Test richiesto: `tests/milestone_17_run_results_smoke_test.gd` e `tests/run_results_visual_qa.gd`.
+- Milestone 16: downed e revive multiplayer.
+  - Obiettivo: mantenere coinvolti gli slot locali con recupero cooperativo leggibile.
+  - Milestone collegata: evoluzione health e modalita a ondate.
+  - File/sistemi coinvolti: `HealthComponent`, `ReviveSystem`, player, HUD e modalita.
+  - Criterio di accettazione: revive interrompibile, join/leave sicuri e Field Kit non cumulativo.
+  - Test richiesto: `tests/milestone_16_downed_revive_smoke_test.gd` e `tests/downed_revive_visual_qa.gd`.
+- Milestone 15: zombie ranged e pressione a distanza.
+  - Obiettivo: aggiungere pressione ranged con windup e colpo schivabile.
+  - Milestone collegata: evoluzione gameplay delle Milestone 4, 5 e 12.
+  - File/sistemi coinvolti: `RangedEnemy`, `EnemySystem`, `WaveManager`, `ZombieVisual`, projectile e loot.
+  - Criterio di accettazione: lo shooter e riconoscibile, non spara durante il warning e usa i sistemi condivisi.
+  - Test richiesto: `tests/milestone_15_ranged_enemy_smoke_test.gd` e `tests/ranged_enemy_visual_qa.gd`.
 - Milestone 14: polish finale e presentabilita.
   - Obiettivo: completare identita del `Wave Warden` e coerenza della run survival.
   - Milestone collegata: chiusura del visual gameplay pass delle Milestone 10-13.
@@ -101,12 +143,15 @@
 
 ## Priorita alta
 
-- Variante zombie ranged.
-  - Obiettivo: aggiungere pressione a distanza con windup e proiettile anticipabile.
-  - Milestone collegata: evoluzione gameplay delle Milestone 4, 5 e 12.
-  - File/sistemi coinvolti: enemy scene, `EnemySystem`, wave composition, visual e telegraph.
-  - Criterio di accettazione: lo shooter e distinguibile e il suo colpo puo essere evitato leggendo il warning.
-  - Test richiesto: smoke test spawn/pattern/morte e QA couch multiplayer.
+- Eliminare i warning di cleanup dei test headless.
+  - Obiettivo: terminare la suite senza leak report di `ObjectDB` o access
+    violation intermittenti di Godot 4.6.3.
+  - Milestone collegata: manutenzione trasversale post M21.
+  - File/sistemi coinvolti: runner in `tests/` e lifecycle runtime.
+  - Criterio di accettazione: 100 avvii e shutdown consecutivi della scena
+    principale con exit code `0`; il commit di partenza riproduce il difetto
+    circa 1 volta su 40 sulla macchina di sviluppo.
+  - Test richiesto: suite headless completa e loop dedicato di shutdown.
 
 ## Priorita media
 
@@ -116,27 +161,9 @@
   - File/sistemi coinvolti: `DungeonGenerator`, `DungeonMode`, scene stanza e UI mappa.
   - Criterio di accettazione: almeno un seed produce una scelta reale tra due stanze senza rompere il percorso al boss.
   - Test richiesto: smoke test su piu seed e checklist manuale delle diramazioni.
-- Respawn o revive player.
-  - Obiettivo: definire il recupero di un player morto nelle modalita a ondate.
-  - Milestone collegata: Milestone 5.
-  - File/sistemi coinvolti: `PlayerManager`, `HealthComponent`, `SurvivalMode`, HUD.
-  - Criterio di accettazione: la regola di respawn non interrompe gli altri player locali e viene documentata nel design.
-  - Test richiesto: checklist manuale morte/respawn con due player.
-- Varianti boss.
-  - Obiettivo: aggiungere boss configurabili per dungeon e tower defense riusando `BossSystem`.
-  - Milestone collegata: Milestone 7-8.
-  - File/sistemi coinvolti: `game/bosses/`, `BossSystem`, modalita.
-  - Criterio di accettazione: almeno due boss possono essere richiesti per ID senza cambiare il chiamante.
-  - Test richiesto: smoke test spawn, morte e drop per ogni boss.
 
 ## Priorita bassa
 
-- Mix audio e sostituzione placeholder.
-  - Obiettivo: sostituire gradualmente i toni procedurali con asset licenziati e mix configurabile.
-  - Milestone collegata: evoluzione post-roadmap della Milestone 9.
-  - File/sistemi coinvolti: `AudioManager`, asset audio e impostazioni.
-  - Criterio di accettazione: volume UI/gameplay regolabile e assenza di clipping nelle situazioni affollate.
-  - Test richiesto: checklist manuale audio con 1-4 player.
 - Asset definitivi.
   - Obiettivo: sostituire progressivamente i placeholder senza introdurre dipendenze obbligatorie.
   - Milestone collegata: Milestone 9.

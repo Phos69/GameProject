@@ -38,7 +38,7 @@ signal died(boss: Node)
 )
 @export var loot_table: LootTable = preload("res://game/drops/boss_loot.tres")
 
-@onready var visual := $Visual as WaveWardenVisual
+@onready var visual = $Visual
 @onready var telegraph_visual := $TelegraphVisual as BossTelegraphVisual
 @onready var health_component := $HealthComponent as HealthComponent
 
@@ -272,10 +272,7 @@ func _finish_attack_telegraph() -> void:
 	visual.clear_attack_charge()
 	attack_telegraph_finished.emit(pattern_id)
 
-	if pattern_id == &"radial_burst":
-		perform_radial_burst()
-	else:
-		perform_aimed_volley(direction)
+	_execute_pattern(pattern_id, direction)
 	if pattern_phase > 1:
 		phase_two_pattern_index += 1
 		strafe_sign *= -1.0
@@ -295,6 +292,12 @@ func _get_next_scheduled_pattern() -> StringName:
 	if phase_index > 1 and phase_two_pattern_index % 2 == 0:
 		return &"radial_burst"
 	return &"aimed_volley"
+
+func _execute_pattern(pattern_id: StringName, direction: Vector2) -> void:
+	if pattern_id == &"radial_burst":
+		perform_radial_burst()
+	else:
+		perform_aimed_volley(direction)
 
 func _get_telegraph_duration(pattern_id: StringName) -> float:
 	if pattern_id == &"radial_burst":

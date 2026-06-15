@@ -2,6 +2,7 @@ extends SceneTree
 
 var failures: PackedStringArray = []
 var boss_projectiles: Array[Projectile] = []
+var finishing: bool = false
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -257,12 +258,26 @@ func _expect(condition: bool, message: String) -> void:
 	push_error("FAIL: " + message)
 
 func _finish() -> void:
+	if finishing:
+		return
+	finishing = true
+	var exit_code := 0
 	if failures.is_empty():
 		print("MILESTONE_14_FINAL_POLISH_SMOKE_TEST: PASS")
-		quit(0)
-		return
-	print(
-		"MILESTONE_14_FINAL_POLISH_SMOKE_TEST: FAIL (%d)"
-		% failures.size()
-	)
-	quit(1)
+	else:
+		print(
+			"MILESTONE_14_FINAL_POLISH_SMOKE_TEST: FAIL (%d)"
+			% failures.size()
+		)
+		exit_code = 1
+	call_deferred("_shutdown", exit_code)
+
+func _shutdown(exit_code: int) -> void:
+	for _frame in range(5):
+		await process_frame
+	if current_scene != null:
+		current_scene.queue_free()
+		current_scene = null
+	for _frame in range(5):
+		await process_frame
+	quit(exit_code)

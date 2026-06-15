@@ -4,7 +4,7 @@ Repository: `Phos69/GameProject`
 
 ## Scopo
 
-Questa roadmap contiene esclusivamente lavoro futuro.
+Questa roadmap registra il ciclo visual/gameplay M15-M21, ora completato.
 
 Il prossimo ciclo deve espandere profondita, varieta e presentazione senza
 perdere i principi gia stabiliti:
@@ -27,13 +27,15 @@ perdere i principi gia stabiliti:
 6. Milestone 20 - Arena, Biomi e Props Interattivi
 7. Milestone 21 - Accessibilita, Performance e Asset Pipeline
 
-Le milestone devono essere affrontate una alla volta. Ogni milestone richiede
+Le milestone sono state affrontate una alla volta. Ogni milestone ha incluso
 analisi, implementazione, smoke test, QA visuale, checklist manuale e
 aggiornamento della documentazione coinvolta.
 
 ---
 
 ## Milestone 15 - Zombie Ranged e Pressione a Distanza
+
+Stato: completata come primo pass gameplay e visuale.
 
 ### Obiettivo
 
@@ -84,6 +86,8 @@ senza duplicare health, drop, targeting o tracking delle wave.
 
 ## Milestone 16 - Downed e Revive Multiplayer
 
+Stato: completata come primo pass cooperativo.
+
 ### Obiettivo
 
 Evitare che un player locale resti escluso a lungo dalla partita e creare
@@ -133,6 +137,8 @@ scelte cooperative leggibili durante survival e boss fight.
 
 ## Milestone 17 - Fine Run, Risultati e Menu
 
+Stato: completata come primo flusso UI condiviso.
+
 ### Obiettivo
 
 Sostituire le uscite brusche o puramente testuali con una presentazione chiara
@@ -181,6 +187,8 @@ di vittoria, sconfitta e risultati della sessione.
 
 ## Milestone 18 - Audio Mix e SFX Sostituibili
 
+Stato: completata come infrastruttura audio modulare.
+
 ### Obiettivo
 
 Passare dai soli toni procedurali a un sistema audio pronto per asset
@@ -226,6 +234,8 @@ licenziati, mantenendo fallback funzionanti e controllo del mix.
 ---
 
 ## Milestone 19 - Secondo Boss e Registro Boss
+
+Stato: completata come primo registro boss configurabile.
 
 ### Obiettivo
 
@@ -274,6 +284,8 @@ e non dipende dal solo `Wave Warden`.
 
 ## Milestone 20 - Arena, Biomi e Props Interattivi
 
+Stato: completata come primo sistema arena survival data-driven.
+
 ### Obiettivo
 
 Aumentare varieta e identita ambientale senza compromettere la leggibilita o
@@ -319,6 +331,8 @@ bloccare il movimento degli zombie.
 ---
 
 ## Milestone 21 - Accessibilita, Performance e Asset Pipeline
+
+Stato: completata come primo pass configurabile e misurabile.
 
 ### Obiettivo
 
@@ -377,7 +391,8 @@ graduale dei placeholder con asset definitivi.
 Questi task possono essere affrontati solo quando non allargano una milestone
 in corso:
 
-- eliminare i warning `ObjectDB instances leaked at exit`;
+- stabilizzare lo shutdown headless Godot 4.6.3, inclusi warning `ObjectDB`
+  e l'access violation intermittente gia riproducibile sul commit di partenza;
 - ampliare i test automatici dei lifecycle runtime;
 - firmare digitalmente la build Windows pubblica;
 - aggiungere diramazioni, shop e mappa al dungeon;
@@ -387,7 +402,7 @@ in corso:
 
 ## Definition of Done per Ogni Milestone
 
-Una milestone futura e completata solo quando:
+Una milestone del ciclo e completata solo quando:
 
 1. il design e documentato prima o insieme al codice;
 2. i sistemi condivisi vengono riusati invece di duplicati;

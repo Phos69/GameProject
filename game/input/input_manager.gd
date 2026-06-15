@@ -32,6 +32,9 @@ func is_player_reload_just_pressed(player_slot: int) -> bool:
 func is_player_interact_just_pressed(player_slot: int) -> bool:
 	return Input.is_action_just_pressed(_action(player_slot, "interact"))
 
+func is_player_interact_pressed(player_slot: int) -> bool:
+	return Input.is_action_pressed(_action(player_slot, "interact"))
+
 func _register_default_actions() -> void:
 	_register_menu_actions()
 	for player_slot in range(1, MAX_PLAYERS + 1):

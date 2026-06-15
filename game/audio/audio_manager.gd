@@ -7,62 +7,122 @@ signal gameplay_feedback_generated(
 	source_id: StringName,
 	frames_written: int
 )
+signal cue_played(
+	cue_id: StringName,
+	bus_name: StringName,
+	used_optional_stream: bool,
+	priority: int,
+	frames_written: int
+)
+signal audio_settings_changed(settings: Dictionary)
 
 const MIX_RATE: float = 22050.0
+const AUDIO_EVENT_ROUTER := preload("res://game/audio/audio_event_router.gd")
+const REQUIRED_BUSES: Array[StringName] = [
+	&"Music",
+	&"SFX",
+	&"UI",
+	&"Weapons",
+	&"Enemies",
+	&"Boss",
+	&"Environment"
+]
+
+@export var cue_overrides: Array[AudioCueData] = []
+@export_range(1, 32, 1) var max_optional_voices: int = 12
 
 var ui_player: AudioStreamPlayer
 var ui_stream: AudioStreamGenerator
 var gameplay_player: AudioStreamPlayer
 var gameplay_stream: AudioStreamGenerator
+var generator_players: Dictionary = {}
+var cue_registry: Dictionary = {}
+var last_cue_pitch: Dictionary = {}
+var voice_pool: AudioVoicePool
+var rng := RandomNumberGenerator.new()
+var is_shutting_down: bool = false
 
 func _ready() -> void:
 	add_to_group("audio_manager")
-	ui_player = _create_generator_player("UIAudioPlayer", 0.15, -8.0)
+	rng.randomize()
+	_ensure_audio_buses()
+	_register_default_cues()
+	for cue in cue_overrides:
+		if cue != null and not cue.cue_id.is_empty():
+			cue_registry[cue.cue_id] = cue
+	voice_pool = AudioVoicePool.new()
+	voice_pool.name = "OptionalVoicePool"
+	voice_pool.max_voices = max_optional_voices
+	add_child(voice_pool)
+	for bus_name in REQUIRED_BUSES:
+		if bus_name == &"Music" or bus_name == &"SFX":
+			continue
+		generator_players[bus_name] = _create_generator_player(
+			"%sFallbackPlayer" % bus_name,
+			bus_name,
+			0.30,
+			-10.0
+		)
+	ui_player = generator_players[&"UI"] as AudioStreamPlayer
 	ui_stream = ui_player.stream as AudioStreamGenerator
-	gameplay_player = _create_generator_player(
-		"GameplayAudioPlayer",
-		0.30,
-		-10.0
-	)
+	gameplay_player = generator_players[&"Weapons"] as AudioStreamPlayer
 	gameplay_stream = gameplay_player.stream as AudioStreamGenerator
-	call_deferred("_connect_gameplay_sources")
+	var event_router := AUDIO_EVENT_ROUTER.new()
+	event_router.name = "AudioEventRouter"
+	event_router.audio_manager = self
+	add_child(event_router)
 
-func _create_generator_player(
-	player_name: String,
-	buffer_length: float,
-	volume_db: float
-) -> AudioStreamPlayer:
-	var stream := AudioStreamGenerator.new()
-	stream.mix_rate = MIX_RATE
-	stream.buffer_length = buffer_length
-	var player := AudioStreamPlayer.new()
-	player.name = player_name
-	player.stream = stream
-	player.volume_db = volume_db
-	add_child(player)
-	player.play()
-	return player
+func _exit_tree() -> void:
+	shutdown_audio()
+
+func shutdown_audio() -> void:
+	if is_shutting_down:
+		return
+	is_shutting_down = true
+	if voice_pool != null and is_instance_valid(voice_pool):
+		voice_pool.stop_all()
+	for player_value in generator_players.values():
+		var player := player_value as AudioStreamPlayer
+		if player == null or not is_instance_valid(player):
+			continue
+		player.stop()
+		player.stream = null
+	generator_players.clear()
+	ui_player = null
+	ui_stream = null
+	gameplay_player = null
+	gameplay_stream = null
 
 func play_ui_focus() -> int:
-	var frames_written := _play_tone(ui_player, 440.0, 0.035, 0.08)
+	var frames_written := play_cue(&"ui_focus")
 	ui_feedback_generated.emit(&"focus", frames_written)
 	return frames_written
 
 func play_ui_confirm() -> int:
-	var frames_written := _play_tone(ui_player, 660.0, 0.07, 0.12)
+	var frames_written := play_cue(&"ui_confirm")
 	ui_feedback_generated.emit(&"confirm", frames_written)
 	return frames_written
 
 func play_gameplay_shot(source_id: StringName) -> int:
-	var frequency := 260.0 if String(source_id).begins_with("boss_") else 520.0
-	if source_id == &"defense_tower":
-		frequency = 380.0
-	var frames_written := _play_tone(gameplay_player, frequency, 0.045, 0.09)
+	var bus_name := _shot_bus(source_id)
+	var frequency := _shot_frequency(source_id)
+	var frames_written := play_cue(
+		&"shot",
+		source_id,
+		bus_name,
+		frequency
+	)
 	gameplay_feedback_generated.emit(&"shot", source_id, frames_written)
 	return frames_written
 
 func play_gameplay_impact(source_id: StringName) -> int:
-	var frames_written := _play_tone(gameplay_player, 150.0, 0.055, 0.10)
+	var bus_name := _shot_bus(source_id)
+	var frames_written := play_cue(
+		&"impact",
+		source_id,
+		bus_name,
+		150.0
+	)
 	gameplay_feedback_generated.emit(&"impact", source_id, frames_written)
 	return frames_written
 
@@ -77,7 +137,12 @@ func play_gameplay_pickup(drop_type: StringName) -> int:
 			frequency = 920.0
 		GameConstants.DROP_MONEY:
 			frequency = 820.0
-	var frames_written := _play_tone(gameplay_player, frequency, 0.08, 0.10)
+	var frames_written := play_cue(
+		&"pickup",
+		drop_type,
+		&"Environment",
+		frequency
+	)
 	gameplay_feedback_generated.emit(&"pickup", drop_type, frames_written)
 	return frames_written
 
@@ -85,23 +150,8 @@ func play_weapon_status(
 	feedback_type: StringName,
 	source_id: StringName
 ) -> int:
-	var frequency := 360.0
-	var duration := 0.07
-	match feedback_type:
-		&"low_ammo":
-			frequency = 190.0
-			duration = 0.10
-		&"reload":
-			frequency = 310.0
-		&"fallback":
-			frequency = 430.0
-			duration = 0.11
-	var frames_written := _play_tone(
-		gameplay_player,
-		frequency,
-		duration,
-		0.09
-	)
+	var cue_id := feedback_type
+	var frames_written := play_cue(cue_id, source_id, &"Weapons")
 	gameplay_feedback_generated.emit(feedback_type, source_id, frames_written)
 	return frames_written
 
@@ -109,30 +159,7 @@ func play_boss_feedback(
 	feedback_type: StringName,
 	pattern_id: StringName = &"wave_warden"
 ) -> int:
-	var frequency := 210.0
-	var duration := 0.12
-	var amplitude := 0.10
-	match feedback_type:
-		&"boss_spawn":
-			frequency = 110.0
-			duration = 0.20
-			amplitude = 0.12
-		&"boss_phase":
-			frequency = 95.0
-			duration = 0.24
-			amplitude = 0.13
-		&"boss_telegraph":
-			frequency = (
-				170.0
-				if pattern_id == &"radial_burst"
-				else 245.0
-			)
-	var frames_written := _play_tone(
-		gameplay_player,
-		frequency,
-		duration,
-		amplitude
-	)
+	var frames_written := play_cue(feedback_type, pattern_id, &"Boss")
 	gameplay_feedback_generated.emit(
 		feedback_type,
 		pattern_id,
@@ -140,148 +167,209 @@ func play_boss_feedback(
 	)
 	return frames_written
 
-func _connect_gameplay_sources() -> void:
-	var projectile_system := get_tree().get_first_node_in_group(
-		"projectile_system"
-	) as ProjectileSystem
-	if projectile_system != null:
-		var spawn_callback := Callable(self, "_on_projectile_spawned")
-		if not projectile_system.projectile_spawned.is_connected(spawn_callback):
-			projectile_system.projectile_spawned.connect(spawn_callback)
-		var impact_callback := Callable(self, "_on_projectile_impacted")
-		if not projectile_system.projectile_impacted.is_connected(impact_callback):
-			projectile_system.projectile_impacted.connect(impact_callback)
-	var drop_system := get_tree().get_first_node_in_group(
-		"drop_system"
-	) as DropSystem
-	if drop_system != null:
-		var drop_callback := Callable(self, "_on_drop_collected")
-		if not drop_system.drop_collected.is_connected(drop_callback):
-			drop_system.drop_collected.connect(drop_callback)
-	var player_manager := get_tree().get_first_node_in_group(
-		"player_manager"
-	) as PlayerManager
-	if player_manager != null:
-		var player_callback := Callable(self, "_on_player_spawned")
-		if not player_manager.player_spawned.is_connected(player_callback):
-			player_manager.player_spawned.connect(player_callback)
-	for player in get_tree().get_nodes_in_group("players"):
-		_connect_weapon_system(player)
-	var boss_system := get_tree().get_first_node_in_group(
-		"boss_system"
-	) as BossSystem
-	if boss_system != null:
-		var boss_callback := Callable(self, "_on_boss_spawned")
-		if not boss_system.boss_spawned.is_connected(boss_callback):
-			boss_system.boss_spawned.connect(boss_callback)
-		_connect_boss_feedback(boss_system.get_active_boss())
-
-func _on_projectile_spawned(projectile: Node) -> void:
-	play_gameplay_shot(_get_projectile_source_id(projectile))
-
-func _on_projectile_impacted(
-	projectile: Node,
-	_target: Node,
-	applied_damage: int
-) -> void:
-	if applied_damage > 0:
-		play_gameplay_impact(_get_projectile_source_id(projectile))
-
-func _on_drop_collected(drop_data: Dictionary, _collector: Node) -> void:
-	play_gameplay_pickup(StringName(drop_data.get("type", &"unknown")))
-
-func _on_player_spawned(_player_slot: int, player: Node) -> void:
-	_connect_weapon_system(player)
-
-func _on_boss_spawned(boss: Node) -> void:
-	play_boss_feedback(&"boss_spawn")
-	_connect_boss_feedback(boss)
-
-func _connect_boss_feedback(boss: Node) -> void:
-	if boss == null:
-		return
-	var telegraph_callback := Callable(
-		self,
-		"_on_boss_telegraph_started"
+func play_enemy_feedback(
+	feedback_type: StringName,
+	enemy_id: StringName
+) -> int:
+	var frequency := 180.0
+	match enemy_id:
+		&"survival_runner":
+			frequency = 245.0
+		&"survival_tank":
+			frequency = 105.0
+		&"survival_shooter":
+			frequency = 330.0
+	var cue_id := StringName("enemy_%s" % feedback_type)
+	var frames_written := play_cue(
+		cue_id,
+		enemy_id,
+		&"Enemies",
+		frequency
 	)
-	if (
-		boss.has_signal("attack_telegraph_started")
-		and not boss.is_connected(
-			"attack_telegraph_started",
-			telegraph_callback
+	gameplay_feedback_generated.emit(cue_id, enemy_id, frames_written)
+	return frames_written
+
+func play_run_feedback(feedback_type: StringName) -> int:
+	var frames_written := play_cue(feedback_type)
+	gameplay_feedback_generated.emit(feedback_type, &"run", frames_written)
+	return frames_written
+
+func play_cue(
+	cue_id: StringName,
+	_source_id: StringName = &"",
+	bus_override: StringName = &"",
+	frequency_override: float = 0.0
+) -> int:
+	var cue := cue_registry.get(cue_id) as AudioCueData
+	if cue == null:
+		cue = _make_cue(cue_id, &"SFX", 440.0, 0.08, 0.09, 20)
+	var bus_name := cue.bus_name if bus_override.is_empty() else bus_override
+	var pitch := 1.0 + rng.randf_range(
+		-cue.pitch_variation,
+		cue.pitch_variation
+	)
+	last_cue_pitch[cue_id] = pitch
+	var used_optional_stream := false
+	var frames_written := 0
+	if cue.optional_stream != null and voice_pool != null:
+		used_optional_stream = voice_pool.play_stream(
+			cue.optional_stream,
+			bus_name,
+			0.0,
+			pitch,
+			cue.priority
 		)
-	):
-		boss.connect("attack_telegraph_started", telegraph_callback)
-	var phase_callback := Callable(self, "_on_boss_phase_changed")
-	if (
-		boss.has_signal("phase_changed")
-		and not boss.is_connected("phase_changed", phase_callback)
-	):
-		boss.connect("phase_changed", phase_callback)
+		frames_written = 1 if used_optional_stream else 0
+	if not used_optional_stream:
+		var player := generator_players.get(bus_name) as AudioStreamPlayer
+		if player == null:
+			player = gameplay_player
+		var frequency := (
+			frequency_override
+			if frequency_override > 0.0
+			else cue.fallback_frequency
+		)
+		frames_written = _play_tone(
+			player,
+			frequency * pitch,
+			cue.fallback_duration,
+			cue.fallback_amplitude
+		)
+	cue_played.emit(
+		cue_id,
+		bus_name,
+		used_optional_stream,
+		cue.priority,
+		frames_written
+	)
+	return frames_written
 
-func _on_boss_telegraph_started(
-	pattern_id: StringName,
-	_duration: float,
-	_direction: Vector2
-) -> void:
-	play_boss_feedback(&"boss_telegraph", pattern_id)
-
-func _on_boss_phase_changed(_phase_index: int) -> void:
-	play_boss_feedback(&"boss_phase")
-
-func _connect_weapon_system(player: Node) -> void:
-	var weapon_system := player.get_node_or_null("WeaponSystem") as WeaponSystem
-	if weapon_system == null:
+func set_bus_volume_linear(bus_name: StringName, linear_value: float) -> void:
+	var bus_index := AudioServer.get_bus_index(String(bus_name))
+	if bus_index < 0:
 		return
-	var reload_callback := Callable(
-		self,
-		"_on_weapon_reload_started"
-	).bind(weapon_system)
-	if not weapon_system.reload_started.is_connected(reload_callback):
-		weapon_system.reload_started.connect(reload_callback)
-	var low_ammo_callback := Callable(
-		self,
-		"_on_low_ammo_changed"
-	).bind(weapon_system)
-	if not weapon_system.low_ammo_changed.is_connected(low_ammo_callback):
-		weapon_system.low_ammo_changed.connect(low_ammo_callback)
-	var fallback_callback := Callable(
-		self,
-		"_on_fallback_activated"
-	).bind(weapon_system)
-	if not weapon_system.fallback_activated.is_connected(fallback_callback):
-		weapon_system.fallback_activated.connect(fallback_callback)
+	var value := clampf(linear_value, 0.0, 1.0)
+	AudioServer.set_bus_volume_db(
+		bus_index,
+		linear_to_db(value) if value > 0.0 else -80.0
+	)
+	audio_settings_changed.emit(get_settings_data())
 
-func _on_weapon_reload_started(
-	_duration: float,
-	weapon_system: WeaponSystem
-) -> void:
-	play_weapon_status(&"reload", _get_weapon_source_id(weapon_system))
+func get_bus_volume_linear(bus_name: StringName) -> float:
+	var bus_index := AudioServer.get_bus_index(String(bus_name))
+	if bus_index < 0:
+		return 1.0
+	var volume_db := AudioServer.get_bus_volume_db(bus_index)
+	return 0.0 if volume_db <= -79.0 else clampf(db_to_linear(volume_db), 0.0, 1.0)
 
-func _on_low_ammo_changed(
-	is_low: bool,
-	_total_ammo: int,
-	weapon_system: WeaponSystem
-) -> void:
-	if is_low:
-		play_weapon_status(&"low_ammo", _get_weapon_source_id(weapon_system))
+func get_settings_data() -> Dictionary:
+	return {
+		"master": get_bus_volume_linear(&"Master"),
+		"music": get_bus_volume_linear(&"Music"),
+		"sfx": get_bus_volume_linear(&"SFX")
+	}
 
-func _on_fallback_activated(
-	_weapon_data: WeaponData,
-	weapon_system: WeaponSystem
-) -> void:
-	if weapon_system.has_special_weapon():
-		play_weapon_status(&"fallback", _get_weapon_source_id(weapon_system))
+func restore_settings_data(data: Dictionary) -> void:
+	set_bus_volume_linear(&"Master", float(data.get("master", 1.0)))
+	set_bus_volume_linear(&"Music", float(data.get("music", 0.8)))
+	set_bus_volume_linear(&"SFX", float(data.get("sfx", 0.9)))
 
-func _get_projectile_source_id(projectile: Node) -> StringName:
-	if projectile == null:
-		return &"projectile"
-	return StringName(projectile.get("source_id"))
+func get_active_optional_voice_count() -> int:
+	return voice_pool.get_active_voice_count() if voice_pool != null else 0
 
-func _get_weapon_source_id(weapon_system: WeaponSystem) -> StringName:
-	if weapon_system == null or weapon_system.weapon_data == null:
-		return &"weapon"
-	return weapon_system.weapon_data.weapon_id
+func _ensure_audio_buses() -> void:
+	for bus_name in REQUIRED_BUSES:
+		if AudioServer.get_bus_index(String(bus_name)) < 0:
+			AudioServer.add_bus()
+			var index := AudioServer.bus_count - 1
+			AudioServer.set_bus_name(index, String(bus_name))
+	var sfx_index := AudioServer.get_bus_index("SFX")
+	for bus_name in [&"UI", &"Weapons", &"Enemies", &"Boss", &"Environment"]:
+		var index := AudioServer.get_bus_index(String(bus_name))
+		if index >= 0 and sfx_index >= 0:
+			AudioServer.set_bus_send(index, "SFX")
+
+func _create_generator_player(
+	player_name: String,
+	bus_name: StringName,
+	buffer_length: float,
+	volume_db: float
+) -> AudioStreamPlayer:
+	var stream := AudioStreamGenerator.new()
+	stream.mix_rate = MIX_RATE
+	stream.buffer_length = buffer_length
+	var player := AudioStreamPlayer.new()
+	player.name = player_name
+	player.bus = String(bus_name)
+	player.stream = stream
+	player.volume_db = volume_db
+	add_child(player)
+	player.play()
+	return player
+
+func _register_default_cues() -> void:
+	var cues: Array[AudioCueData] = [
+		_make_cue(&"ui_focus", &"UI", 440.0, 0.035, 0.08, 45),
+		_make_cue(&"ui_confirm", &"UI", 660.0, 0.07, 0.12, 55),
+		_make_cue(&"shot", &"Weapons", 520.0, 0.045, 0.09, 15),
+		_make_cue(&"impact", &"Weapons", 150.0, 0.055, 0.10, 12),
+		_make_cue(&"pickup", &"Environment", 760.0, 0.08, 0.10, 28),
+		_make_cue(&"low_ammo", &"Weapons", 190.0, 0.10, 0.09, 42),
+		_make_cue(&"reload", &"Weapons", 310.0, 0.07, 0.09, 24),
+		_make_cue(&"fallback", &"Weapons", 430.0, 0.11, 0.09, 38),
+		_make_cue(&"boss_spawn", &"Boss", 110.0, 0.20, 0.12, 85),
+		_make_cue(&"boss_phase", &"Boss", 95.0, 0.24, 0.13, 90),
+		_make_cue(&"boss_telegraph", &"Boss", 220.0, 0.12, 0.10, 80),
+		_make_cue(&"enemy_spawn", &"Enemies", 180.0, 0.07, 0.07, 10),
+		_make_cue(&"enemy_death", &"Enemies", 120.0, 0.09, 0.08, 18),
+		_make_cue(&"enemy_telegraph", &"Enemies", 330.0, 0.12, 0.09, 58),
+		_make_cue(&"wave_start", &"Environment", 540.0, 0.14, 0.11, 72),
+		_make_cue(&"wave_clear", &"Environment", 740.0, 0.16, 0.11, 72),
+		_make_cue(&"player_downed", &"UI", 135.0, 0.18, 0.12, 92),
+		_make_cue(&"player_revived", &"UI", 620.0, 0.18, 0.11, 92),
+		_make_cue(&"run_finished", &"UI", 260.0, 0.24, 0.12, 96)
+	]
+	for cue in cues:
+		cue_registry[cue.cue_id] = cue
+
+func _make_cue(
+	cue_id: StringName,
+	bus_name: StringName,
+	frequency: float,
+	duration: float,
+	amplitude: float,
+	priority: int
+) -> AudioCueData:
+	var cue := AudioCueData.new()
+	cue.cue_id = cue_id
+	cue.bus_name = bus_name
+	cue.fallback_frequency = frequency
+	cue.fallback_duration = duration
+	cue.fallback_amplitude = amplitude
+	cue.priority = priority
+	return cue
+
+func _shot_bus(source_id: StringName) -> StringName:
+	if String(source_id).begins_with("boss_"):
+		return &"Boss"
+	if String(source_id).begins_with("enemy_"):
+		return &"Enemies"
+	return &"Weapons"
+
+func _shot_frequency(source_id: StringName) -> float:
+	match source_id:
+		&"starter_pistol":
+			return 520.0
+		&"prototype_blaster":
+			return 640.0
+		&"wave_cannon":
+			return 330.0
+		&"defense_tower":
+			return 380.0
+		&"enemy_shooter":
+			return 290.0
+		_:
+			return 260.0 if String(source_id).begins_with("boss_") else 500.0
 
 func _play_tone(
 	player: AudioStreamPlayer,

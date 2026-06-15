@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="WeaponVisualData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/weapons/weapon_visual_data.gd" id="1_visual"]
+
+[resource]
+script = ExtResource("1_visual")
+profile_id = &"rift_cross"
+projectile_color = Color(0.24, 0.88, 1, 1)
+projectile_glow_color = Color(0.14, 0.68, 1, 0.46)
+projectile_scale = Vector2(1.0, 1.2)
+muzzle_color = Color(0.34, 0.92, 1, 1)
+muzzle_size = 11.0
+trail_length = 22.0
+trail_width = 5.5

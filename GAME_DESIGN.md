@@ -108,10 +108,6 @@ Il `Basic Zombie` usa una posa curva, pelle verde desaturata, abiti scuri e
 braccia protese. Camminata, attacco e reazione al colpo devono essere
 riconoscibili anche ai bordi della camera.
 
-Nemici futuri:
-
-- shooter semplice;
-
 Varianti survival implementate:
 
 `Runner Zombie`:
@@ -136,6 +132,21 @@ Varianti survival implementate:
 
 Basic, runner e tank usano la stessa AI melee e gli stessi contratti health,
 drop e wave. Le differenze sono dati di scena e presentazione visuale.
+
+`Shooter Zombie`:
+
+- 38 HP;
+- velocita 78;
+- mantiene circa 330 pixel dal target e arretra sotto 220;
+- windup da 0,85 secondi con direzione e corsia bloccate;
+- proiettile verde/ciano da 11 danni, distinto dai pattern boss;
+- cooldown da 2,2 secondi;
+- 6 XP garantiti;
+- entra dalla wave 4 ogni quarto slot regolare;
+- ruolo: interrompere il kiting statico lasciando spazio e tempo di reazione.
+
+Lo shooter estende `BasicEnemy` per health, targeting, scaling, morte e drop,
+ma possiede un attacco ranged dedicato. Il telegraph non applica danno.
 
 ## Boss
 
@@ -238,7 +249,24 @@ Progressione implementata:
 
 Ogni nuova run ripristina la vita dei player attivi. Un player che entra durante una run riceve gli stessi bonus persistenti senza accumularli tra modalita.
 
+## Downed e revive
+
+- A zero HP un player entra in stato downed invece di morire subito.
+- Il player downed non si muove, non spara e non viene scelto come target.
+- Un alleato vivo entro 78 pixel puo rianimarlo tenendo interact per 2,4 secondi.
+- Uscire dal raggio, lasciare il tasto, cambiare reviver o lasciare la partita azzera il progresso.
+- Il revive ripristina il 35% della vita massima.
+- `Field Kit` modifica la vita massima della run ma non viene riapplicato dal revive.
+- Survival e dungeon terminano quando tutti gli slot sono downed o morti.
+- Tower defense termina anche per party all-downed, oltre alla distruzione del core.
+
 Il gioco parte dal menu principale. La selezione avvia survival, dungeon o tower defense; `Esc` interrompe la run corrente e torna al menu. Il menu mostra livello, XP, denaro e ultima modalita salvata.
+
+Ogni fine run mostra un riepilogo condiviso con tempo, XP, denaro e nuovi
+unlock. Survival usa `RUN OVER`, il completamento dungeon usa
+`DUNGEON COMPLETE` e la sconfitta tower defense usa `DEFENSE FAILED`.
+Retry riparte con lo stesso context senza accumulare bonus; cambio modalita
+avanza al modo successivo e menu salva prima del ritorno.
 
 Il feedback audio usa toni procedurali placeholder senza asset esterni obbligatori:
 
@@ -247,6 +275,12 @@ Il feedback audio usa toni procedurali placeholder senza asset esterni obbligato
 - impatto solo quando viene applicato danno;
 - pickup con tono differenziato per ammo, cura, denaro e arma;
 - low ammo, reload e attivazione fallback con toni distinti.
+
+Il mix usa bus separati per UI, armi, nemici, boss, ambiente e musica.
+Ogni cue puo ricevere uno stream licenziato opzionale mantenendo il tono
+procedurale come fallback. Gli eventi downed, revive, wave e fine run hanno
+priorita maggiore degli spari ripetuti. Master, Music e SFX sono regolabili
+dal menu e persistiti.
 
 L'HUD aggiunge `LOW`, `RELOAD` e `FALLBACK` allo stato ammo e mostra per 1,75 secondi la quantita di ammo condivisa raccolta.
 
@@ -283,7 +317,7 @@ Regole del prototipo:
 - il portale si sblocca quando tutti i nemici tracciati sono morti;
 - le combat room aumentano progressivamente conteggio, vita, velocita e danno dei nemici;
 - la loot room genera sempre XP, denaro, munizioni e vita;
-- la boss room usa il `Wave Warden` con scaling dungeon;
+- la boss room usa il `Rift Architect` con scaling dungeon;
 - la run termina attraversando il portale dopo la morte del boss;
 - la morte di tutti i player attivi interrompe la run.
 
@@ -291,7 +325,17 @@ Il prototipo e lineare. Diramazioni, shop room, biomi, mappa e scelta del percor
 
 ## Zombie survival
 
-La modalita survival usa l'arena principale e parte dopo la selezione dal menu:
+La modalita survival usa un profilo arena selezionabile e parte dopo la
+selezione dal menu. I profili attuali sono:
+
+- `Industrial Crossroads`: otto ingressi, corsie incrociate e due barili;
+- `Rift Foundry`: sei ingressi radiali, anelli di lettura e tre barili;
+- entrambi usano lo stesso `SurvivalMode`, `WaveManager` e roster;
+- gate e decorazioni non bloccano il pathing diretto degli zombie;
+- il barile e colpibile, mostra area e countdown, poi danneggia tutti gli
+  attori nell'area tramite `HealthSystem`.
+
+Regole della run:
 
 - 3 secondi di preparazione iniziale;
 - 4 secondi di intermissione tra ondate;
@@ -301,6 +345,7 @@ La modalita survival usa l'arena principale e parte dopo la selezione dal menu:
 - +18% vita, +5% velocita e +12% danno per ondata superata;
 - dalla wave 2 ogni terzo zombie regolare e un runner;
 - dalla wave 3, con almeno cinque zombie regolari, l'ultimo e un tank;
+- dalla wave 4 ogni quarto slot regolare e uno shooter, salvo lo slot tank;
 - ogni quinta ondata e marcata come boss wave;
 - ogni boss wave genera 2 zombie di scorta e il `Wave Warden`;
 - la vita boss aumenta del 10% per ondata precedente;
@@ -356,12 +401,20 @@ Feedback visuali implementati:
 
 - Sostituire gradualmente i placeholder procedurali con sprite o skeletal
   animation mantenendo silhouette e contratti attuali.
-- Aggiungere opzioni per ridurre flash, trail e intensita dei telegraph.
-- Introdurre camera shake regolabile solo per eventi importanti.
-- Creare schermate dedicate per victory, defeat e riepilogo run.
 - Rifinire menu e selezione modalita con lo stesso linguaggio delle schede HUD.
 - Sostituire i toni procedurali con SFX mixati e licenziati.
-- Preparare ulteriori biomi senza aumentare il rumore dello sfondo.
+- Preparare biomi dungeon senza aumentare il rumore dello sfondo.
+
+## Accessibilita visuale
+
+- preset `default`, `reduced_motion` e `high_contrast`;
+- flash, glow, trail e shake regolabili separatamente;
+- scala testo HUD configurabile tra 80% e 120%;
+- reduced motion ferma bob, pulse, scale UI e shake, non i timer gameplay;
+- P1-P4 usano circle, triangle, square e diamond oltre al colore;
+- pickup e crate usano icone e silhouette diverse;
+- high contrast rende bianchi bordi HUD, marker e countdown principali;
+- le opzioni sono persistite nel save v4.
 
 ## Tower defense
 

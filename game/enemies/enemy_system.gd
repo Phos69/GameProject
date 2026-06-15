@@ -8,6 +8,7 @@ signal enemy_died(enemy: Node)
 @export var enemy_scene: PackedScene = preload("res://game/enemies/basic_enemy.tscn")
 @export var runner_enemy_scene: PackedScene = preload("res://game/enemies/runner_enemy.tscn")
 @export var tank_enemy_scene: PackedScene = preload("res://game/enemies/tank_enemy.tscn")
+@export var ranged_enemy_scene: PackedScene = preload("res://game/enemies/ranged_enemy.tscn")
 @export var enemy_container_path: NodePath = NodePath("../../World/Enemies")
 @export var spawn_initial_enemies: bool = false
 @export var initial_spawn_points: Array[Vector2] = []
@@ -19,6 +20,7 @@ func _ready() -> void:
 	add_to_group("enemy_system")
 	register_enemy_scene(&"survival_runner", runner_enemy_scene)
 	register_enemy_scene(&"survival_tank", tank_enemy_scene)
+	register_enemy_scene(&"survival_shooter", ranged_enemy_scene)
 	if spawn_initial_enemies:
 		call_deferred("_spawn_initial_enemies")
 

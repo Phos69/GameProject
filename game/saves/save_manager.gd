@@ -6,7 +6,7 @@ signal load_completed(data: Dictionary)
 signal save_failed(path: String, reason: String)
 signal load_failed(path: String, reason: String)
 
-const SAVE_VERSION: int = 2
+const SAVE_VERSION: int = 4
 const DEFAULT_SAVE_PATH: String = "user://savegame.json"
 
 @export var save_path: String = DEFAULT_SAVE_PATH
@@ -16,6 +16,8 @@ const DEFAULT_SAVE_PATH: String = "user://savegame.json"
 @export var auto_persist_in_headless: bool = false
 
 var progression_manager: ProgressionManager
+var audio_manager: AudioManager
+var visual_settings_manager: VisualSettingsManager
 var last_mode: StringName = GameConstants.MODE_SURVIVAL
 var save_pending: bool = false
 var is_loading: bool = false
@@ -36,7 +38,13 @@ func create_empty_save() -> Dictionary:
 			"unlocks": []
 		},
 		"settings": {
-			"last_mode": String(GameConstants.MODE_SURVIVAL)
+			"last_mode": String(GameConstants.MODE_SURVIVAL),
+			"audio": {
+				"master": 1.0,
+				"music": 0.8,
+				"sfx": 0.9
+			},
+			"visual": VisualSettingsManager.DEFAULT_SETTINGS.duplicate(true)
 		}
 	}
 
@@ -45,8 +53,22 @@ func save_game() -> bool:
 	var data := create_empty_save()
 	if progression_manager != null:
 		data["party"] = progression_manager.get_save_data()
+	_resolve_audio_manager()
+	var audio_settings: Dictionary = (
+		audio_manager.get_settings_data()
+		if audio_manager != null
+		else create_empty_save()["settings"]["audio"] as Dictionary
+	)
+	_resolve_visual_settings_manager()
+	var visual_settings: Dictionary = (
+		visual_settings_manager.get_settings_data()
+		if visual_settings_manager != null
+		else create_empty_save()["settings"]["visual"] as Dictionary
+	)
 	data["settings"] = {
-		"last_mode": String(last_mode)
+		"last_mode": String(last_mode),
+		"audio": audio_settings,
+		"visual": visual_settings
 	}
 
 	var temporary_path := save_path + ".tmp"
@@ -117,6 +139,16 @@ func load_game() -> bool:
 		"last_mode",
 		GameConstants.MODE_SURVIVAL
 	)))
+	_resolve_audio_manager()
+	if audio_manager != null:
+		audio_manager.restore_settings_data(
+			settings.get("audio", {}) as Dictionary
+		)
+	_resolve_visual_settings_manager()
+	if visual_settings_manager != null:
+		visual_settings_manager.restore_settings_data(
+			settings.get("visual", {}) as Dictionary
+		)
 	is_loading = false
 	load_completed.emit(data.duplicate(true))
 	return true
@@ -140,6 +172,8 @@ func get_last_mode() -> StringName:
 
 func _initialize() -> void:
 	_resolve_progression_manager()
+	_resolve_audio_manager()
+	_resolve_visual_settings_manager()
 	if progression_manager != null:
 		var progression_callback := Callable(self, "_on_progression_changed")
 		if not progression_manager.experience_changed.is_connected(
@@ -159,6 +193,18 @@ func _initialize() -> void:
 		var mode_callback := Callable(self, "_on_game_mode_changed")
 		if not game_mode_manager.game_mode_changed.is_connected(mode_callback):
 			game_mode_manager.game_mode_changed.connect(mode_callback)
+	if audio_manager != null:
+		var audio_callback := Callable(self, "_on_audio_settings_changed")
+		if not audio_manager.audio_settings_changed.is_connected(audio_callback):
+			audio_manager.audio_settings_changed.connect(audio_callback)
+	if visual_settings_manager != null:
+		var visual_callback := Callable(self, "_on_visual_settings_changed")
+		if not visual_settings_manager.visual_settings_changed.is_connected(
+			visual_callback
+		):
+			visual_settings_manager.visual_settings_changed.connect(
+				visual_callback
+			)
 
 	if auto_load and _auto_persistence_enabled():
 		load_game()
@@ -168,6 +214,18 @@ func _resolve_progression_manager() -> void:
 		progression_manager = get_tree().get_first_node_in_group(
 			"progression_manager"
 		) as ProgressionManager
+
+func _resolve_audio_manager() -> void:
+	if audio_manager == null:
+		audio_manager = get_tree().get_first_node_in_group(
+			"audio_manager"
+		) as AudioManager
+
+func _resolve_visual_settings_manager() -> void:
+	if visual_settings_manager == null:
+		visual_settings_manager = get_tree().get_first_node_in_group(
+			"visual_settings_manager"
+		) as VisualSettingsManager
 
 func _on_progression_changed(_value: int, _secondary_value: int = 0) -> void:
 	if autosave_progression and _auto_persistence_enabled():
@@ -180,6 +238,14 @@ func _on_unlocks_changed(_unlock_ids: Array[StringName]) -> void:
 func _on_game_mode_changed(mode_id: StringName) -> void:
 	if mode_id != GameConstants.MODE_MENU:
 		set_last_mode(mode_id)
+
+func _on_audio_settings_changed(_settings: Dictionary) -> void:
+	if _auto_persistence_enabled():
+		request_save()
+
+func _on_visual_settings_changed(_settings: Dictionary) -> void:
+	if _auto_persistence_enabled():
+		request_save()
 
 func _flush_pending_save() -> void:
 	save_pending = false

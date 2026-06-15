@@ -15,10 +15,37 @@ var owner_node: Node
 var source_id: StringName = &"projectile"
 var visual_data: WeaponVisualData
 var has_hit: bool = false
+var glow_intensity: float = 1.0
+var trail_intensity: float = 1.0
+var default_glow_color: Color
+var default_trail_color: Color
+var default_trail_width: float = 4.0
 
 func _ready() -> void:
+	add_to_group("visual_settings_consumers")
 	body_entered.connect(_on_body_entered)
+	area_entered.connect(_on_area_entered)
+	if glow != null:
+		default_glow_color = glow.color
+	if trail != null:
+		default_trail_color = trail.default_color
+		default_trail_width = trail.width
+	VisualSettingsManager.sync_consumer(self)
 	_apply_visual_data()
+
+func apply_visual_settings(settings: Dictionary) -> void:
+	glow_intensity = clampf(
+		float(settings.get("glow_intensity", 1.0)),
+		0.0,
+		1.0
+	)
+	trail_intensity = clampf(
+		float(settings.get("trail_intensity", 1.0)),
+		0.0,
+		1.0
+	)
+	if is_node_ready():
+		_apply_visual_data()
 
 func launch(
 	direction: Vector2,
@@ -54,7 +81,13 @@ func _physics_process(delta: float) -> void:
 		queue_free()
 
 func _on_body_entered(body: Node2D) -> void:
-	if has_hit or body == owner_node:
+	_try_hit_target(body)
+
+func _on_area_entered(area: Area2D) -> void:
+	_try_hit_target(area)
+
+func _try_hit_target(target: Node) -> void:
+	if has_hit or target == owner_node:
 		return
 
 	has_hit = true
@@ -62,32 +95,49 @@ func _on_body_entered(body: Node2D) -> void:
 	var applied_damage := 0
 	var health_system = get_tree().get_first_node_in_group("health_system")
 	if health_system != null and health_system.has_method("apply_damage"):
-		applied_damage = health_system.apply_damage(body, damage)
+		applied_damage = health_system.apply_damage(target, damage)
 	else:
-		var health_component := body.get_node_or_null("HealthComponent")
+		var health_component := target.get_node_or_null("HealthComponent")
 		if health_component != null and health_component.has_method("apply_damage"):
 			applied_damage = health_component.apply_damage(damage)
-	impacted.emit(body, applied_damage)
+	impacted.emit(target, applied_damage)
 	queue_free()
 
 func _apply_visual_data() -> void:
-	if visual_data == null:
-		return
+	var base_glow_color := default_glow_color
+	var base_trail_color := default_trail_color
+	var base_trail_width_value := default_trail_width
+	var base_trail_length := 16.0
 	if visual != null:
-		visual.color = visual_data.projectile_color
-		visual.scale = visual_data.projectile_scale
-		visual.polygon = _projectile_polygon(visual_data.profile_id)
+		if visual_data != null:
+			visual.color = visual_data.projectile_color
+			visual.scale = visual_data.projectile_scale
+			visual.polygon = _projectile_polygon(visual_data.profile_id)
 	if glow != null:
-		glow.color = visual_data.projectile_glow_color
-		glow.scale = visual_data.projectile_scale
-		glow.polygon = _glow_polygon(visual_data.profile_id)
+		if visual_data != null:
+			base_glow_color = visual_data.projectile_glow_color
+			glow.scale = visual_data.projectile_scale
+			glow.polygon = _glow_polygon(visual_data.profile_id)
+		glow.color = Color(
+			base_glow_color,
+			base_glow_color.a * glow_intensity
+		)
+		glow.visible = glow_intensity > 0.01
 	if trail != null:
+		if visual_data != null:
+			base_trail_color = visual_data.projectile_glow_color
+			base_trail_width_value = visual_data.trail_width
+			base_trail_length = visual_data.trail_length
 		trail.points = PackedVector2Array([
-			Vector2(-visual_data.trail_length, 0.0),
+			Vector2(-base_trail_length, 0.0),
 			Vector2(-3.0, 0.0)
 		])
-		trail.width = visual_data.trail_width
-		trail.default_color = visual_data.projectile_glow_color
+		trail.width = base_trail_width_value * maxf(trail_intensity, 0.05)
+		trail.default_color = Color(
+			base_trail_color,
+			base_trail_color.a * trail_intensity
+		)
+		trail.visible = trail_intensity > 0.01
 
 func _projectile_polygon(profile_id: StringName) -> PackedVector2Array:
 	match profile_id:
@@ -132,6 +182,32 @@ func _projectile_polygon(profile_id: StringName) -> PackedVector2Array:
 				Vector2(10.0, 0.0),
 				Vector2(5.0, 5.0),
 				Vector2(-3.0, 6.0)
+			])
+		&"enemy_shooter":
+			return PackedVector2Array([
+				Vector2(-8.0, -3.0),
+				Vector2(-2.0, -5.0),
+				Vector2(9.0, 0.0),
+				Vector2(-2.0, 5.0),
+				Vector2(-8.0, 3.0)
+			])
+		&"rift_lane", &"rift_repeater":
+			return PackedVector2Array([
+				Vector2(-9.0, -3.5),
+				Vector2(4.0, -3.0),
+				Vector2(11.0, 0.0),
+				Vector2(4.0, 3.0),
+				Vector2(-9.0, 3.5),
+				Vector2(-4.0, 0.0)
+			])
+		&"rift_cross":
+			return PackedVector2Array([
+				Vector2(-7.0, -5.0),
+				Vector2(0.0, -3.0),
+				Vector2(9.0, 0.0),
+				Vector2(0.0, 3.0),
+				Vector2(-7.0, 5.0),
+				Vector2(-3.0, 0.0)
 			])
 		_:
 			return PackedVector2Array([

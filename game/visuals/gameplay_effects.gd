@@ -2,10 +2,28 @@ extends Node2D
 class_name GameplayEffects
 
 var effect_spawn_count: int = 0
+var flash_intensity: float = 1.0
+var glow_intensity: float = 1.0
+var reduced_motion: bool = false
 
 func _ready() -> void:
 	add_to_group("gameplay_effects")
+	add_to_group("visual_settings_consumers")
+	VisualSettingsManager.sync_consumer(self)
 	call_deferred("_connect_systems")
+
+func apply_visual_settings(settings: Dictionary) -> void:
+	flash_intensity = clampf(
+		float(settings.get("flash_intensity", 1.0)),
+		0.0,
+		1.0
+	)
+	glow_intensity = clampf(
+		float(settings.get("glow_intensity", 1.0)),
+		0.0,
+		1.0
+	)
+	reduced_motion = bool(settings.get("reduced_motion", false))
 
 func _connect_systems() -> void:
 	var projectile_system := get_tree().get_first_node_in_group(
@@ -43,7 +61,8 @@ func _on_projectile_spawned(projectile: Node) -> void:
 		color,
 		typed_projectile.get_muzzle_size() * 2.2,
 		0.10,
-		angle
+		angle,
+		flash_intensity
 	)
 
 func _on_projectile_impacted(
@@ -63,8 +82,11 @@ func _on_projectile_impacted(
 		position,
 		Color(1.0, 0.42, 0.24, 1.0),
 		20.0,
-		0.22
+		0.22,
+		0.0,
+		flash_intensity
 	)
+	_request_camera_shake(1.5, 0.08)
 
 func _on_enemy_died(enemy: Node) -> void:
 	if not enemy is Node2D:
@@ -74,7 +96,9 @@ func _on_enemy_died(enemy: Node) -> void:
 		(enemy as Node2D).global_position,
 		Color(0.55, 0.82, 0.34, 1.0),
 		30.0,
-		0.42
+		0.42,
+		0.0,
+		glow_intensity
 	)
 
 func _on_drop_collected(drop_data: Dictionary, collector: Node) -> void:
@@ -86,17 +110,40 @@ func _on_drop_collected(drop_data: Dictionary, collector: Node) -> void:
 		(collector as Node2D).global_position,
 		_color_for_drop(drop_type),
 		24.0,
-		0.34
+		0.34,
+		0.0,
+		glow_intensity
 	)
 
 func spawn_boss_death(position: Vector2) -> GameplayEffect:
-	return _spawn_effect(
+	var effect := _spawn_effect(
 		&"boss_death",
 		position,
 		Color(0.96, 0.24, 0.72, 1.0),
 		82.0,
-		0.78
+		0.78,
+		0.0,
+		glow_intensity
 	)
+	_request_camera_shake(8.0, 0.45)
+	return effect
+
+func spawn_environment_explosion(
+	position: Vector2,
+	color: Color,
+	radius: float
+) -> GameplayEffect:
+	var effect := _spawn_effect(
+		&"environment_explosion",
+		position,
+		color,
+		radius,
+		0.62,
+		0.0,
+		glow_intensity
+	)
+	_request_camera_shake(10.0, 0.50)
+	return effect
 
 func _spawn_effect(
 	kind: StringName,
@@ -104,14 +151,28 @@ func _spawn_effect(
 	color: Color,
 	size: float,
 	lifetime: float,
-	angle: float = 0.0
+	angle: float = 0.0,
+	intensity: float = 1.0
 ) -> GameplayEffect:
 	var effect := GameplayEffect.new()
 	effect.global_position = position
-	effect.configure(kind, color, size, lifetime, angle)
+	effect.configure(
+		kind,
+		color,
+		size,
+		lifetime,
+		angle,
+		intensity,
+		reduced_motion
+	)
 	add_child(effect)
 	effect_spawn_count += 1
 	return effect
+
+func _request_camera_shake(strength: float, duration: float) -> void:
+	var camera := get_viewport().get_camera_2d() as IsometricCameraController
+	if camera != null:
+		camera.request_shake(strength, duration)
 
 func _color_for_drop(drop_type: StringName) -> Color:
 	match drop_type:

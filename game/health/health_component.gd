@@ -3,31 +3,39 @@ class_name HealthComponent
 
 signal damaged(amount: int, current_health: int, max_health: int)
 signal healed(amount: int, current_health: int, max_health: int)
+signal downed()
+signal revived(current_health: int, max_health: int)
 signal died()
 
 @export var max_health: int = 100
 @export var invulnerable: bool = false
+@export var downed_enabled: bool = false
 
 var current_health: int = 100
 var is_dead: bool = false
+var is_downed: bool = false
 
 func _ready() -> void:
 	current_health = max_health
 
 func apply_damage(amount: int) -> int:
-	if invulnerable or is_dead or amount <= 0:
+	if invulnerable or is_dead or is_downed or amount <= 0:
 		return 0
 	var previous_health := current_health
 	current_health = maxi(current_health - amount, 0)
 	var applied_amount := previous_health - current_health
 	damaged.emit(applied_amount, current_health, max_health)
 	if current_health == 0:
-		is_dead = true
-		died.emit()
+		if downed_enabled:
+			is_downed = true
+			downed.emit()
+		else:
+			is_dead = true
+			died.emit()
 	return applied_amount
 
 func heal(amount: int) -> int:
-	if is_dead or amount <= 0:
+	if is_dead or is_downed or amount <= 0:
 		return 0
 	var previous_health := current_health
 	current_health = mini(current_health + amount, max_health)
@@ -38,7 +46,23 @@ func heal(amount: int) -> int:
 
 func reset_health() -> void:
 	is_dead = false
+	is_downed = false
 	current_health = max_health
+
+func revive(health_amount: int) -> bool:
+	if not is_downed or is_dead:
+		return false
+	is_downed = false
+	current_health = clampi(health_amount, 1, max_health)
+	revived.emit(current_health, max_health)
+	return true
+
+func kill_downed() -> void:
+	if not is_downed or is_dead:
+		return
+	is_downed = false
+	is_dead = true
+	died.emit()
 
 func set_max_health(value: int, refill: bool = false) -> void:
 	max_health = maxi(value, 1)
@@ -53,4 +77,7 @@ func get_health_ratio() -> float:
 	return float(current_health) / float(max_health)
 
 func is_alive() -> bool:
-	return not is_dead
+	return not is_dead and not is_downed
+
+func is_incapacitated() -> bool:
+	return is_dead or is_downed

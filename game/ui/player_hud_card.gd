@@ -9,11 +9,39 @@ var weapon_label: Label
 var health_bar: ProgressBar
 var health_label: Label
 var ammo_label: Label
+var hud_text_scale: float = 1.0
+var high_contrast: bool = false
 
 func _ready() -> void:
+	add_to_group("visual_settings_consumers")
 	custom_minimum_size = Vector2(272.0, 92.0)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_ui()
+	_apply_style()
+	VisualSettingsManager.sync_consumer(self)
+
+func apply_visual_settings(settings: Dictionary) -> void:
+	hud_text_scale = clampf(
+		float(settings.get("hud_text_scale", 1.0)),
+		0.80,
+		1.20
+	)
+	high_contrast = bool(settings.get("high_contrast", false))
+	if slot_label != null:
+		slot_label.add_theme_font_size_override(
+			"font_size",
+			roundi(18.0 * hud_text_scale)
+		)
+	if weapon_label != null:
+		weapon_label.add_theme_font_size_override(
+			"font_size",
+			roundi(14.0 * hud_text_scale)
+		)
+	if ammo_label != null:
+		ammo_label.add_theme_font_size_override(
+			"font_size",
+			roundi(17.0 * hud_text_scale)
+		)
 	_apply_style()
 
 func configure(slot: int, color: Color) -> void:
@@ -42,9 +70,11 @@ func refresh(player: Node) -> void:
 		var health_ratio := health_component.get_health_ratio()
 		health_label.modulate = (
 			Color(1.0, 0.48, 0.38, 1.0)
-			if health_ratio <= 0.30
+			if health_ratio <= 0.30 or health_component.is_downed
 			else Color(0.90, 0.96, 0.98, 1.0)
 		)
+		if health_component.is_downed:
+			health_label.text = "DOWNED"
 	if weapon_system != null:
 		ammo_label.text = weapon_system.get_ammo_text()
 		weapon_icon.set_visual_data(
@@ -62,6 +92,10 @@ func refresh(player: Node) -> void:
 			if weapon_system.low_ammo_active
 			else Color(1.0, 0.80, 0.34, 1.0)
 		)
+		if health_component != null and health_component.is_downed:
+			weapon_label.text = "NEEDS REVIVE"
+			ammo_label.text = "HOLD INTERACT"
+			ammo_label.modulate = slot_color.lightened(0.2)
 
 func _build_ui() -> void:
 	var content := VBoxContainer.new()
@@ -119,8 +153,8 @@ func _build_ui() -> void:
 func _apply_style() -> void:
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color(0.025, 0.04, 0.05, 0.92)
-	panel_style.border_color = slot_color
-	panel_style.set_border_width_all(2)
+	panel_style.border_color = Color.WHITE if high_contrast else slot_color
+	panel_style.set_border_width_all(3 if high_contrast else 2)
 	panel_style.corner_radius_top_left = 8
 	panel_style.corner_radius_top_right = 8
 	panel_style.corner_radius_bottom_left = 8
@@ -132,7 +166,9 @@ func _apply_style() -> void:
 	add_theme_stylebox_override("panel", panel_style)
 
 	if slot_label != null:
-		slot_label.modulate = slot_color.lightened(0.2)
+		slot_label.modulate = (
+			Color.WHITE if high_contrast else slot_color.lightened(0.2)
+		)
 	if health_bar != null:
 		var background_style := StyleBoxFlat.new()
 		background_style.bg_color = Color(0.08, 0.10, 0.11, 1.0)

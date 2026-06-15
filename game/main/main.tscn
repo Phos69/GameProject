@@ -1,4 +1,4 @@
-[gd_scene load_steps=28 format=3]
+[gd_scene load_steps=33 format=3]
 
 [ext_resource type="Script" path="res://game/main/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://game/input/input_manager.gd" id="2_input_manager"]
@@ -27,6 +27,11 @@
 [ext_resource type="Script" path="res://game/ui/main_menu.gd" id="25_main_menu"]
 [ext_resource type="Script" path="res://game/modes/survival/survival_ammo_director.gd" id="26_ammo_director"]
 [ext_resource type="Script" path="res://game/visuals/gameplay_effects.gd" id="27_gameplay_effects"]
+[ext_resource type="Script" path="res://game/player/revive_system.gd" id="28_revive_system"]
+[ext_resource type="Script" path="res://game/progression/run_session_tracker.gd" id="29_run_tracker"]
+[ext_resource type="Script" path="res://game/ui/run_results_screen.gd" id="30_run_results"]
+[ext_resource type="Script" path="res://game/environment/survival_arena_manager.gd" id="31_arena_manager"]
+[ext_resource type="Script" path="res://game/visuals/visual_settings_manager.gd" id="32_visual_settings"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -81,8 +86,17 @@ script = ExtResource("16_projectile_system")
 [node name="HealthSystem" type="Node" parent="Systems"]
 script = ExtResource("17_health_system")
 
+[node name="ReviveSystem" type="Node" parent="Systems"]
+script = ExtResource("28_revive_system")
+
 [node name="ProgressionManager" type="Node" parent="Systems"]
 script = ExtResource("10_progression_manager")
+
+[node name="RunSessionTracker" type="Node" parent="Systems"]
+script = ExtResource("29_run_tracker")
+
+[node name="VisualSettingsManager" type="Node" parent="Systems"]
+script = ExtResource("32_visual_settings")
 
 [node name="SaveManager" type="Node" parent="Systems"]
 script = ExtResource("23_save_manager")
@@ -95,6 +109,9 @@ script = ExtResource("11_dungeon_generator")
 
 [node name="TowerDefenseManager" type="Node" parent="Systems"]
 script = ExtResource("12_tower_defense_manager")
+
+[node name="SurvivalArenaManager" type="Node" parent="Systems"]
+script = ExtResource("31_arena_manager")
 
 [node name="World" type="Node2D" parent="."]
 
@@ -113,6 +130,8 @@ script = ExtResource("13_playground")
 [node name="GameplayEffects" type="Node2D" parent="World"]
 z_index = 20
 script = ExtResource("27_gameplay_effects")
+
+[node name="EnvironmentProps" type="Node2D" parent="World" groups=["prototype_arena_content"]]
 
 [node name="CombatTargets" type="Node2D" parent="World"]
 visible = false
@@ -147,3 +166,6 @@ script = ExtResource("15_hud_manager")
 
 [node name="MainMenu" type="CanvasLayer" parent="."]
 script = ExtResource("25_main_menu")
+
+[node name="RunResultsScreen" type="CanvasLayer" parent="."]
+script = ExtResource("30_run_results")

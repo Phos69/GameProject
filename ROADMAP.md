@@ -211,10 +211,106 @@ Stato: completata come chiusura del visual gameplay pass.
 - Precedenza degli annunci per evitare sovrascritture immediate.
 - Smoke test dedicato e QA completa a quattro player a 1280x720.
 
+## Milestone 15 - Zombie Ranged e Pressione a Distanza
+
+Stato: completata come primo pass gameplay e visuale.
+
+- Shooter alto e tossico, distinto dagli archetipi melee.
+- Distanza preferita e ritirata quando il player si avvicina.
+- Windup con direzione bloccata, corsia e countdown world-space.
+- Nessun proiettile creato durante il warning.
+- Proiettile ostile verde/ciano distinto dai pattern boss.
+- Health, scaling, drop e registro condivisi con i sistemi esistenti.
+- Composizione deterministica dalla wave 4.
+- Smoke test dedicato e QA con quattro player.
+
+## Milestone 16 - Downed e Revive Multiplayer
+
+Stato: completata come primo pass cooperativo.
+
+- Stato downed separato dalla morte per i player.
+- Movimento, fuoco, targeting e reward disattivati durante il downed.
+- Revive vicino con interact tenuto e progresso interrompibile.
+- Anello world-space e stato dedicato nelle schede HUD.
+- Ripristino al 35% senza accumulo del bonus `Field Kit`.
+- Join e leave ripuliscono il progresso senza completamenti tardivi.
+- Sconfitta party all-downed nelle tre modalita.
+- Smoke test e QA con quattro player.
+
+## Milestone 17 - Fine Run, Risultati e Menu
+
+Stato: completata come primo flusso UI condiviso.
+
+- Tracker sessione per durata, XP, denaro e unlock.
+- Risultati espliciti per survival, dungeon e tower defense.
+- Retry sul nodo modalita esistente e ultimo context.
+- Cambio modalita ciclico e ritorno al menu.
+- Focus joypad iniziale e input gameplay bloccato sotto l'overlay.
+- Salvataggio sincrono prima del menu.
+- Smoke test dei tre flussi e QA a 1280x720.
+
+## Milestone 18 - Audio Mix e SFX Sostituibili
+
+Stato: completata come infrastruttura audio modulare.
+
+- Bus separati per musica, UI, armi, nemici, boss e ambiente.
+- Cue con stream opzionale e fallback procedurale.
+- Limite voci, priorita e variazione leggera di pitch.
+- Hook per armi, archetipi nemico, wave, downed, revive e risultati.
+- Slider Master, Music e SFX nel menu.
+- Save v3 con round-trip delle impostazioni audio.
+- Smoke test hook/bus e QA menu a 1280x720.
+
+## Milestone 19 - Secondo Boss e Registro Boss
+
+Stato: completata come primo registro boss configurabile.
+
+- `BossSystem` registra scene, ID e compatibilita per modalita.
+- `Wave Warden` resta disponibile in tutte le modalita.
+- `Rift Architect` viene usato come boss finale dungeon.
+- Pattern `lane_sweep` e `cross_burst` con warning world-space distinti.
+- Fase 2, visual dedicato e drop garantito `Rift Repeater`.
+- HUD boss reso generico per nome, fase e warning.
+- Richieste incompatibili rifiutate con segnale tipizzato.
+- Smoke test registry/pattern/drop e due QA visuali a 1280x720.
+
+## Milestone 20 - Arena, Biomi e Props Interattivi
+
+Stato: completata come primo sistema arena survival data-driven.
+
+- `BiomePalette` e `SurvivalArenaProfile` separano dati e controller.
+- Layout `Industrial Crossroads` e `Rift Foundry` selezionabili via context.
+- `SurvivalArenaManager` configura playground, wave, player e supply crate.
+- Gate visibili e non collidenti collegati allo spawn reale.
+- Barili esplosivi colpibili senza bloccare il pathing.
+- Warning temporizzato e area leggibile prima del danno.
+- Danno ad area tramite `HealthSystem` ed effetto condiviso.
+- Smoke test, stress a quattro player e QA di entrambi i layout.
+
+## Milestone 21 - Accessibilita, Performance e Asset Pipeline
+
+Stato: completata come primo pass configurabile e misurabile.
+
+- `VisualSettingsManager` separato dai sistemi gameplay.
+- Preset default, reduced motion e high contrast.
+- Slider per flash, glow, trail, shake e scala testo HUD.
+- Marker geometrici per i quattro player e icone pickup non basate sul colore.
+- Save v4 con impostazioni visuali persistenti.
+- Camera shake e motion reduction applicati solo alla presentazione.
+- Convenzioni import, fallback e registro licenze in `assets/`.
+- Profiling con quattro player, 28 nemici e boss a 16,58 ms medi.
+- Smoke test round-trip/performance e quattro QA a 1280x720.
+
 Attivita post-roadmap:
 
 - sistema ammo survival robusto con fallback infinita, pickup condivisi, supply crate e director anti-frustrazione completato;
 - visual gameplay pass della zombie survival completato;
-- mix audio avanzato;
+- zombie ranged con telegraph e pressione a distanza completato;
+- downed e revive multiplayer completati;
+- risultati, retry e cambio modalita completati;
+- audio mix, cue sostituibili e persistenza completati;
+- secondo boss e registro configurabile completati;
+- arena survival, biomi e props interattivi completati;
+- accessibilita, profiling e pipeline asset completati;
 - asset definitivi e ulteriori pass di bilanciamento;
 - firma digitale della build pubblica.

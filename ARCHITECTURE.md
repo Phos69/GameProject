@@ -17,29 +17,35 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 9. `WeaponSystem` gestisce fallback permanente, speciale, cooldown, caricatori, riserve e ricarica per il singolo player.
 10. `WeaponData` inoltra l'eventuale `WeaponVisualData` a player, HUD e proiettile.
 11. `ProjectileSystem` spawna proiettili che applicano danno tramite `HealthSystem`.
-12. `EnemySystem` spawna scene basic, runner e tank; tutte usano `BasicEnemy` per selezionare il player vivo piu vicino.
+12. `EnemySystem` spawna basic, runner, tank e shooter; gli archetipi riusano targeting, health, scaling, morte e drop condivisi.
 13. Alla morte, il nemico chiede a `DropSystem` di generare pickup dalla propria `LootTable`.
 14. `DropPickup` delega l'applicazione della ricompensa a `DropSystem`.
-15. `GameModeManager` avvia `SurvivalMode`, che delega il ciclo delle ondate a `WaveManager`.
-16. `WaveManager` spawna zombie tramite `EnemySystem` e richiede il boss a `SurvivalMode`.
-17. `SurvivalMode` usa `GameModeManager` e `BossSystem` per creare il boss della quinta ondata.
-18. `WaveManager` conta scorte e boss prima di assegnare la ricompensa.
-19. `DungeonMode` genera un layout da seed, istanzia una `DungeonRoom` alla volta e usa nemici, drop e boss condivisi.
-20. `DungeonRoom` controlla pareti, portale e stato locked/unlocked della stanza corrente.
-21. `TowerDefenseMode` gestisce lifecycle, arena, player e richieste costruzione.
-22. `TowerDefenseWaveController` governa ondate e usa `EnemySystem` per i nemici da percorso.
-23. `TowerDefenseManager` mantiene vita core e crediti, mentre gli slot delegano lo spawn delle torri.
-24. `DefenseTower` seleziona target e inoltra direzione e fuoco a `DefenseTowerVisual`.
-25. `ProgressionManager` prepara i player a ogni nuova run applicando gli unlock persistenti.
-26. `SurvivalAmmoDirector` osserva l'ammo speciale dei player vivi e genera supply crate configurabili.
-27. `AudioManager` ascolta projectile, drop e segnali arma per generare feedback gameplay condiviso.
-28. `IsometricCameraController` segue il gruppo `players`.
-29. `HUDManager` mostra slot, progressione, vita, munizioni, feedback ammo, stato modalita e barra boss.
-30. I componenti visuali di player, zombie, pickup e crate ricevono stato dai rispettivi controller senza possedere logica gameplay.
-31. `BossTelegraphVisual` riceve pattern, direzione e durata da `BasicBoss` senza possedere danno o collisioni.
-32. `WaveWardenVisual` riceve fase, mira, hit e carica senza possedere autorita gameplay.
-33. `CombatAnnouncement` presenta segnali wave e boss tradotti da `HUDManager`.
-34. `GameplayEffects` ascolta i segnali di proiettili, nemici e drop e genera effetti temporanei nel mondo.
+15. `GameModeManager` avvia `SurvivalMode`, che seleziona un profilo tramite `SurvivalArenaManager`.
+16. `SurvivalArenaManager` configura playground, spawn wave, player, crate, gate e props.
+17. `WaveManager` spawna zombie tramite `EnemySystem` e richiede il boss a `SurvivalMode`.
+18. `SurvivalMode` usa `GameModeManager` e `BossSystem` per creare il boss della quinta ondata.
+19. `WaveManager` conta scorte e boss prima di assegnare la ricompensa.
+20. `DungeonMode` genera un layout da seed, istanzia una `DungeonRoom` alla volta e usa nemici, drop e boss condivisi.
+21. `DungeonRoom` controlla pareti, portale e stato locked/unlocked della stanza corrente.
+22. `TowerDefenseMode` gestisce lifecycle, arena, player e richieste costruzione.
+23. `TowerDefenseWaveController` governa ondate e usa `EnemySystem` per i nemici da percorso.
+24. `TowerDefenseManager` mantiene vita core e crediti, mentre gli slot delegano lo spawn delle torri.
+25. `DefenseTower` seleziona target e inoltra direzione e fuoco a `DefenseTowerVisual`.
+26. `ProgressionManager` prepara i player a ogni nuova run applicando gli unlock persistenti.
+27. `ReviveSystem` coordina prossimita, interact tenuto e progresso per i player downed.
+28. `SurvivalAmmoDirector` osserva l'ammo speciale dei player vivi e genera supply crate configurabili.
+29. `AudioEventRouter` traduce eventi gameplay in cue richiesti ad `AudioManager`.
+30. `AudioManager` gestisce bus, fallback, stream opzionali, priorita e volumi.
+31. `VisualSettingsManager` distribuisce solo impostazioni presentazionali e le persiste nel save.
+32. `IsometricCameraController` segue il gruppo e applica shake solo tramite offset.
+33. `HUDManager` mostra slot, progressione, vita, munizioni, stato modalita e boss.
+34. I componenti visuali ricevono stato e profilo senza possedere logica gameplay.
+35. `BossTelegraphVisual` riceve pattern, direzione e durata senza possedere danno.
+36. `WaveWardenVisual` e `RiftArchitectVisual` ricevono solo stato presentazionale.
+37. `CombatAnnouncement` presenta segnali wave e boss tradotti da `HUDManager`.
+38. `GameplayEffects` ascolta segnali pubblici e genera effetti temporanei.
+39. `RunSessionTracker` misura durata e delta progressione tra start e fine run.
+40. `RunResultsScreen` presenta il risultato e delega retry/menu/cambio.
 
 ## Sistemi principali
 
@@ -47,10 +53,17 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `LocalMultiplayerManager`: mantiene gli slot locali attivi, gestisce join/leave e usa mapping deterministico `device joypad + 1 = player_slot`.
 - `PlayerManager`: spawna/despawna player in base agli slot attivi e tiene il registro degli slot.
 - `PlayerController`: movimento, mira, fire action e colore visuale per slot.
+- `ReviveSystem`: progresso cooperativo centralizzato per target downed e reviver vicino.
 - `GameModeManager`: registra, arresta e avvia le modalita.
+- `RunSessionTracker`: traduce i segnali terminali in dati risultato runtime.
+- `RunResultsScreen`: overlay condiviso con focus e azioni di fine run.
 - `MainMenu`: UI iniziale, selezione modalita, continue e ritorno con `Esc`.
 - `SaveManager`: persistenza JSON versionata e autosave della progressione.
-- `AudioManager`: feedback audio procedurale per UI, sparo, impatto, pickup e stato ammo.
+- `VisualSettingsManager`: preset, valori visuali, notifica consumer e persistenza.
+- `AudioManager`: bus, cue, fallback procedurali, stream opzionali e volumi.
+- `AudioCueData`: contratto sostituibile per asset e fallback.
+- `AudioVoicePool`: limite voci e sostituzione guidata dalla priorita.
+- `AudioEventRouter`: hook gameplay separati dalla riproduzione audio.
 - `WeaponData`: risorsa immutabile con statistiche gameplay e riferimento visuale opzionale.
 - `WeaponVisualData`: palette, dimensioni e profilo condivisi da arma, HUD, proiettile e flash.
 - `WeaponSystem`: stato runtime per-player di fallback, speciale, cooldown, munizioni e ricarica.
@@ -58,10 +71,18 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `HealthSystem` e `HealthComponent`: richieste globali di danno/cura e stato vita locale.
 - `EnemySystem`: registro di scene nemico per ID, spawn, contenitore, registro runtime e notifica morte.
 - `BasicEnemy`: AI melee condivisa con stati idle, chase, attack e dead.
+- `RangedEnemy`: specializzazione di `BasicEnemy` con distanza preferita, windup e proiettile ostile.
 - `ZombieVisual`: profili procedurali basic, runner e tank senza autorita gameplay.
-- `BossSystem`: spawn centralizzato, registro del boss attivo e notifica sconfitta.
+- `EnemyShotTelegraphVisual`: corsia e countdown ranged senza collisioni o danno.
+- `BossSystem`: registro scene/compatibilita, spawn per ID, boss attivo e notifica sconfitta.
 - `BasicBoss`: boss modulare con targeting, movimento, fasi e pattern proiettile.
+- `RiftArchitect`: secondo boss con lane sweep, cross burst e visual dedicato.
 - `SurvivalMode`: ciclo survival, condizione di sconfitta e inoltro richieste boss.
+- `SurvivalArenaManager`: selezione profilo e configurazione dei sistemi survival.
+- `SurvivalArenaProfile`: dati di layout, spawn, player, crate, boss e props.
+- `BiomePalette`: palette ambientale indipendente dal controller.
+- `SpawnGateVisual`: ingresso non collidente con feedback sugli spawn reali.
+- `ExplosiveBarrel`: prop damageable non bloccante con warning e danno ad area.
 - `WaveManager`: macchina a stati per intermissione, spawn, combat, reward e boss wave.
 - `SurvivalAmmoDirector`: supporto anti-frustrazione esclusivo della survival.
 - `DungeonGenerator`: generazione deterministica dei dati layout dungeon.
@@ -86,9 +107,38 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `BossTelegraphVisual`: warning world-space per pattern aimed, radial e cambio fase.
 - `WaveWardenVisual`: silhouette, animazione e stato visuale delle due fasi del boss.
 - `PlayerHudCard`: scheda HUD riusabile per ogni slot locale.
+- `ReviveIndicatorVisual`: anello world-space con colore slot e progresso.
 - `WeaponIcon`: icona HUD generata dal profilo dell'arma attiva.
 - `CombatAnnouncement`: banner temporaneo e riusabile per transizioni gameplay.
 - `GameplayEffects`: feedback visuale event-driven senza dipendenze dai controller.
+
+## Contratto fine run
+
+- Le modalita restano proprietarie dei propri segnali di vittoria o sconfitta.
+- `RunSessionTracker` calcola tempo, XP, denaro, unlock e progresso raggiunto.
+- `GameModeManager.finish_run()` blocca il gameplay senza cambiare subito l'ID modalita.
+- Il runtime terminale viene pulito su retry, menu o cambio modalita.
+- Retry riusa il nodo registrato e l'ultimo context.
+- Il ritorno al menu salva prima di emettere il cambio modalita.
+
+## Contratto audio
+
+- I bus `UI`, `Weapons`, `Enemies`, `Boss` ed `Environment` inviano a `SFX`.
+- `AudioCueData.optional_stream` e facoltativo; il fallback resta sempre valido.
+- `AudioVoicePool` non supera il limite configurato e preserva cue prioritari.
+- `AudioEventRouter` puo cambiare senza modificare i sistemi gameplay.
+- Master, Music e SFX sono persistiti nel save v4.
+
+## Contratto impostazioni visuali
+
+- `VisualSettingsManager` non dipende da health, collisioni o controller.
+- I consumer implementano `apply_visual_settings(settings)`.
+- Flash, glow, trail, shake e scala testo sono clampati.
+- Reduced motion agisce solo su clock, pulse, bob, scale UI e camera offset.
+- High contrast rafforza bordi, warning e marker geometrici.
+- Circle, triangle, square e diamond identificano P1-P4 oltre al colore.
+- Pickup e crate conservano icone e silhouette indipendenti dalla palette.
+- Il cambio profilo non modifica damage, velocity, cooldown o hitbox.
 
 ## Contratto presentazione visuale
 
@@ -117,7 +167,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - Palette, silhouette e trail vivono in `WeaponVisualData` e non modificano il bilanciamento.
 - `ProjectileSystem` riceve i dati dello sparo e configura il proiettile prima di aggiungerlo alla scena.
 - Il parametro visuale di `ProjectileSystem` e opzionale per mantenere compatibili boss e chiamanti esistenti.
-- Il proiettile non conosce classi nemico specifiche: colpisce un body damageable e inoltra il danno a `HealthSystem`.
+- Il proiettile non conosce classi nemico specifiche: colpisce body o area damageable e inoltra il danno a `HealthSystem`.
 - `Projectile` emette l'impatto risolto e `ProjectileSystem` lo espone ai sistemi di feedback.
 - `HealthSystem` cerca un figlio `HealthComponent` sul target; player, nemici, boss e bersagli debug possono condividere lo stesso contratto.
 - Collision layer `1`: player e corpi generici.
@@ -136,8 +186,10 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - L'attacco inoltra il danno a `HealthSystem`; non modifica direttamente la vita del player.
 - La morte nasce dal segnale `HealthComponent.died`, disabilita collisioni, genera drop e rimuove il nodo.
 - I dati di movimento, detection, attacco, cooldown, vita e loot sono configurabili dalla scena o da risorse.
-- `EnemySystem` registra `survival_runner` e `survival_tank` su scene dedicate.
-- Basic, runner e tank riusano lo stesso script `BasicEnemy`; non esistono controller AI duplicati.
+- `EnemySystem` registra `survival_runner`, `survival_tank` e `survival_shooter` su scene dedicate.
+- Basic, runner e tank riusano `BasicEnemy`; lo shooter lo estende e sostituisce solo movimento e attacco.
+- Il windup shooter blocca la direzione e crea il proiettile solo alla scadenza.
+- `EnemyShotTelegraphVisual` riceve direzione e durata ma non possiede autorita gameplay.
 - `ZombieVisual.archetype_id` cambia silhouette e animazione senza cambiare collisioni o statistiche.
 - Runner: 18 HP, velocita 155, danno 6 e cooldown 0,62 secondi.
 - Tank: 90 HP, velocita 58, danno 18 e cooldown 1,25 secondi.
@@ -180,10 +232,11 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 ## Contratto salvataggi
 
 - Il file predefinito e `user://savegame.json`.
-- Il formato v2 contiene `version`, dati `party`, `party.unlocks` e `settings.last_mode`.
-- I save v1 restano caricabili; gli unlock deterministici vengono ricostruiti dal livello e riscritti in v2 al salvataggio successivo.
+- Il formato v4 contiene progressione, ultima modalita, audio e impostazioni visuali.
+- I save v1-v3 restano caricabili; i campi assenti ricevono default validati.
 - `ProgressionManager` espone dati serializzabili e applica valori validati.
 - XP, denaro e unlock attivano autosave; il cambio modalita aggiorna `last_mode`.
+- Cambi audio e visuali attivano lo stesso autosave differito.
 - File assente, root non valida o versione non supportata non modificano lo stato runtime.
 - L'auto-persistenza e disabilitata nei test headless, ma save/load espliciti restano disponibili.
 
@@ -215,6 +268,11 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - Gli stati runtime sono `idle`, `intermission`, `spawning`, `combat` e `reward`.
 - Gli zombie vengono creati esclusivamente tramite `EnemySystem.spawn_enemy()`.
 - `WaveManager.get_enemy_id_for_spawn()` compone deterministicamente il roster survival.
+- `SurvivalArenaManager` applica `context.arena_id` senza duplicare `SurvivalMode`.
+- Il profilo attivo configura spawn nemici, player, supply crate e boss.
+- I gate non hanno collisioni; il loro impulso deriva da `WaveManager.enemy_spawned`.
+- I barili sono `Area2D` sul layer damageable e non bloccano il movimento.
+- Un barile letale emette prima il warning e applica danno solo alla scadenza.
 - La wave 1 usa solo basic; dalla wave 2 ogni terzo slot e runner.
 - Dalla wave 3, se sono presenti almeno cinque zombie regolari, l'ultimo slot e tank.
 - Ogni ondata aumenta il conteggio base e passa moltiplicatori a `BasicEnemy`.
@@ -234,7 +292,9 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 ## Contratto boss
 
 - Le modalita richiedono boss tramite `GameModeManager.request_boss()`.
-- `BossSystem` e l'unico proprietario dello spawn e impedisce boss attivi duplicati.
+- `BossSystem` e l'unico proprietario dello spawn, risolve `boss_id` e impedisce boss attivi duplicati.
+- `wave_warden` e compatibile con survival, dungeon e tower defense.
+- `rift_architect` e compatibile con survival e dungeon; il dungeon lo richiede esplicitamente.
 - Il boss riceve un dizionario di configurazione prima di entrare nell'albero.
 - `BasicBoss` usa `HealthComponent` e appartiene al gruppo `damageable_targets`.
 - Il targeting seleziona il player vivo piu vicino e supporta join/leave.

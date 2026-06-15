@@ -114,6 +114,9 @@ func get_enemies_remaining() -> int:
 func get_intermission_time_left() -> float:
 	return state_timer if state == &"intermission" else 0.0
 
+func defeat_run() -> void:
+	_on_base_destroyed()
+
 func _begin_intermission(duration: float) -> void:
 	state = &"intermission"
 	state_timer = maxf(duration, 0.0)
@@ -187,6 +190,7 @@ func _spawn_boss() -> void:
 		path_points[0],
 		null,
 		{
+			"boss_id": &"wave_warden",
 			"wave_index": current_wave,
 			"path_points": path_points,
 			"base_damage": 55,

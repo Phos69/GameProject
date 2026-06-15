@@ -1,0 +1,50 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://game/enemies/ranged_enemy.gd" id="1_enemy"]
+[ext_resource type="Script" path="res://game/health/health_component.gd" id="2_health"]
+[ext_resource type="Script" path="res://game/visuals/zombie_visual.gd" id="3_visual"]
+[ext_resource type="Script" path="res://game/visuals/enemy_shot_telegraph_visual.gd" id="4_telegraph"]
+[ext_resource type="Resource" path="res://game/drops/ranged_enemy_loot.tres" id="5_loot"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_ranged"]
+radius = 15.0
+
+[node name="ShooterZombie" type="CharacterBody2D"]
+collision_layer = 2
+collision_mask = 1
+script = ExtResource("1_enemy")
+enemy_id = &"survival_shooter"
+move_speed = 78.0
+acceleration = 520.0
+detection_range = 1000.0
+attack_range = 520.0
+attack_damage = 11
+attack_cooldown = 2.2
+health_bar_width = 42.0
+health_bar_y = -38.0
+loot_table = ExtResource("5_loot")
+
+[node name="ShotTelegraph" type="Node2D" parent="."]
+z_index = -1
+script = ExtResource("4_telegraph")
+
+[node name="Visual" type="Node2D" parent="."]
+script = ExtResource("3_visual")
+archetype_id = "shooter"
+
+[node name="HealthBarBackground" type="Line2D" parent="."]
+points = PackedVector2Array(-21, -38, 21, -38)
+width = 6.0
+default_color = Color(0.12, 0.12, 0.12, 0.9)
+
+[node name="HealthBar" type="Line2D" parent="."]
+points = PackedVector2Array(-21, -38, 21, -38)
+width = 4.0
+default_color = Color(0.2, 1, 0.18, 1)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_ranged")
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("2_health")
+max_health = 38

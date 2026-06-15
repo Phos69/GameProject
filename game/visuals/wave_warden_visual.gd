@@ -12,14 +12,36 @@ var active_pattern: StringName = &""
 var animation_time: float = 0.0
 var hurt_timer: float = 0.0
 var spawn_timer: float = 0.0
+var flash_intensity: float = 1.0
+var glow_intensity: float = 1.0
+var reduced_motion: bool = false
 
 func _ready() -> void:
+	add_to_group("visual_settings_consumers")
+	VisualSettingsManager.sync_consumer(self)
 	queue_redraw()
 
 func _process(delta: float) -> void:
-	animation_time += delta
+	if not reduced_motion:
+		animation_time += delta
 	hurt_timer = maxf(hurt_timer - delta, 0.0)
 	spawn_timer = maxf(spawn_timer - delta, 0.0)
+	queue_redraw()
+
+func apply_visual_settings(settings: Dictionary) -> void:
+	flash_intensity = clampf(
+		float(settings.get("flash_intensity", 1.0)),
+		0.0,
+		1.0
+	)
+	glow_intensity = clampf(
+		float(settings.get("glow_intensity", 1.0)),
+		0.0,
+		1.0
+	)
+	reduced_motion = bool(settings.get("reduced_motion", false))
+	if reduced_motion:
+		animation_time = 0.0
 	queue_redraw()
 
 func set_facing(direction: Vector2) -> void:
@@ -58,8 +80,15 @@ func _draw() -> void:
 	var armor_color := phase_two_color if phase_two else phase_one_color
 	var energy_color := phase_two_core_color if phase_two else core_color
 	if hurt_timer > 0.0:
-		armor_color = Color(1.0, 0.90, 0.96, 1.0)
-		energy_color = Color.WHITE
+		armor_color = armor_color.lerp(
+			Color(1.0, 0.90, 0.96, 1.0),
+			flash_intensity
+		)
+		energy_color = energy_color.lerp(Color.WHITE, flash_intensity)
+	energy_color = Color(
+		energy_color,
+		energy_color.a * maxf(glow_intensity, 0.25)
+	)
 
 	var hover := sin(animation_time * (3.2 if phase_two else 2.2)) * 3.0
 	var pulse := 0.84 + sin(animation_time * 4.4) * 0.12

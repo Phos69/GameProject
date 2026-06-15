@@ -4,9 +4,23 @@ class_name DropPickupVisual
 var drop_type: StringName = &"unknown"
 var accent_color: Color = Color(0.72, 0.76, 0.80, 1.0)
 var animation_time: float = 0.0
+var high_contrast: bool = false
+var reduced_motion: bool = false
+
+func _ready() -> void:
+	add_to_group("visual_settings_consumers")
+	VisualSettingsManager.sync_consumer(self)
 
 func _process(delta: float) -> void:
-	animation_time += delta
+	if not reduced_motion:
+		animation_time += delta
+	queue_redraw()
+
+func apply_visual_settings(settings: Dictionary) -> void:
+	high_contrast = bool(settings.get("high_contrast", false))
+	reduced_motion = bool(settings.get("reduced_motion", false))
+	if reduced_motion:
+		animation_time = 0.0
 	queue_redraw()
 
 func configure(value: StringName) -> void:
@@ -41,8 +55,8 @@ func _draw() -> void:
 			Vector2(-16.0, -4.0),
 			Vector2(0.0, -17.0)
 		]),
-		accent_color,
-		2.5,
+		Color.WHITE if high_contrast else accent_color,
+		3.5 if high_contrast else 2.5,
 		true
 	)
 	_draw_icon()

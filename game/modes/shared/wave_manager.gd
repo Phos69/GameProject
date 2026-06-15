@@ -10,6 +10,7 @@ signal wave_progress_changed(wave_index: int, enemies_remaining: int)
 signal wave_completed(wave_index: int)
 signal wave_reward_granted(wave_index: int, reward: Dictionary)
 signal boss_wave_requested(wave_index: int)
+signal enemy_spawned(enemy: Node, spawn_position: Vector2, spawn_index: int)
 
 @export var boss_wave_interval: int = GameConstants.DEFAULT_BOSS_WAVE_INTERVAL
 @export var initial_delay: float = 3.0
@@ -139,6 +140,11 @@ func get_active_boss() -> Node:
 	_prune_wave_boss()
 	return wave_boss
 
+func configure_spawn_points(points: Array[Vector2]) -> void:
+	if points.is_empty():
+		return
+	spawn_points = points.duplicate()
+
 func get_enemy_id_for_spawn(
 	wave_index: int,
 	spawn_index: int,
@@ -150,6 +156,8 @@ func get_enemy_id_for_spawn(
 		and spawn_index == regular_total - 1
 	):
 		return &"survival_tank"
+	if wave_index >= 4 and (spawn_index + 1) % 4 == 0:
+		return &"survival_shooter"
 	if wave_index >= 2 and (spawn_index + 1) % 3 == 0:
 		return &"survival_runner"
 	return &"survival_zombie"
@@ -257,6 +265,7 @@ func _spawn_wave_enemy(spawn_index: int) -> void:
 	)
 	if enemy != null:
 		wave_enemies.append(enemy)
+		enemy_spawned.emit(enemy, spawn_position, spawn_index)
 
 func _on_enemy_died(enemy: Node) -> void:
 	if not wave_enemies.has(enemy):

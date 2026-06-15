@@ -7,8 +7,12 @@ var display_timer: float = 0.0
 var display_duration: float = 0.0
 var accent_color: Color = Color(1.0, 0.72, 0.24, 1.0)
 var announcement_id: StringName = &""
+var hud_text_scale: float = 1.0
+var high_contrast: bool = false
+var reduced_motion: bool = false
 
 func _ready() -> void:
+	add_to_group("visual_settings_consumers")
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	anchor_left = 0.5
 	anchor_top = 0.23
@@ -21,6 +25,27 @@ func _ready() -> void:
 	pivot_offset = Vector2(250.0, 54.0)
 	_build_ui()
 	hide()
+	VisualSettingsManager.sync_consumer(self)
+
+func apply_visual_settings(settings: Dictionary) -> void:
+	hud_text_scale = clampf(
+		float(settings.get("hud_text_scale", 1.0)),
+		0.80,
+		1.20
+	)
+	high_contrast = bool(settings.get("high_contrast", false))
+	reduced_motion = bool(settings.get("reduced_motion", false))
+	if title_label != null:
+		title_label.add_theme_font_size_override(
+			"font_size",
+			roundi(28.0 * hud_text_scale)
+		)
+	if subtitle_label != null:
+		subtitle_label.add_theme_font_size_override(
+			"font_size",
+			roundi(15.0 * hud_text_scale)
+		)
+	_apply_style()
 
 func _process(delta: float) -> void:
 	if display_timer <= 0.0:
@@ -29,7 +54,15 @@ func _process(delta: float) -> void:
 	var progress := 1.0 - display_timer / maxf(display_duration, 0.01)
 	var fade := minf(progress / 0.12, (1.0 - progress) / 0.18)
 	modulate.a = clampf(fade, 0.0, 1.0)
-	scale = Vector2.ONE * lerpf(1.06, 1.0, minf(progress / 0.18, 1.0))
+	scale = (
+		Vector2.ONE
+		if reduced_motion
+		else Vector2.ONE * lerpf(
+			1.06,
+			1.0,
+			minf(progress / 0.18, 1.0)
+		)
+	)
 	if display_timer <= 0.0:
 		hide()
 
@@ -51,7 +84,7 @@ func show_announcement(
 	subtitle_label.modulate = Color(0.88, 0.92, 0.94, 1.0)
 	_apply_style()
 	modulate.a = 0.0
-	scale = Vector2(1.06, 1.06)
+	scale = Vector2.ONE if reduced_motion else Vector2(1.06, 1.06)
 	show()
 
 func is_active() -> bool:
@@ -81,9 +114,11 @@ func _build_ui() -> void:
 func _apply_style() -> void:
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color(0.02, 0.025, 0.04, 0.88)
-	panel_style.border_color = Color(accent_color, 0.92)
-	panel_style.border_width_top = 2
-	panel_style.border_width_bottom = 2
+	panel_style.border_color = (
+		Color.WHITE if high_contrast else Color(accent_color, 0.92)
+	)
+	panel_style.border_width_top = 3 if high_contrast else 2
+	panel_style.border_width_bottom = 3 if high_contrast else 2
 	panel_style.corner_radius_top_left = 10
 	panel_style.corner_radius_top_right = 10
 	panel_style.corner_radius_bottom_left = 10

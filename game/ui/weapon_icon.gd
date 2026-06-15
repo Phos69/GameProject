@@ -26,7 +26,7 @@ func _draw() -> void:
 		secondary = visual_data.secondary_color
 	var center := Vector2(17.0, 12.0)
 	match profile_id:
-		&"prototype_blaster":
+		&"prototype_blaster", &"rift_repeater":
 			draw_colored_polygon(
 				PackedVector2Array([
 					center + Vector2(-14.0, -5.0),

@@ -11,10 +11,9 @@ Il progetto vuole diventare una piattaforma modulare per sperimentare tre modali
 - tower defense;
 - boss fight ricorrenti nelle ondate importanti o alla fine dei livelli.
 
-La base attuale contiene Milestone 0-14 completate: tre modalita giocabili,
-progressione persistente, build Windows verificata e un primo pass visuale
-modulare completo della zombie survival, dalla leggibilita degli attori alla
-presentazione della boss wave.
+La base attuale contiene Milestone 0-21 completate: tre modalita giocabili,
+progressione persistente, build Windows verificata e sistemi modulari per
+visual, co-op, risultati, audio, boss e varianti arena survival.
 
 ## Stack tecnico
 
@@ -103,6 +102,7 @@ game/
   audio/             audio manager
   saves/             salvataggi JSON versionati
   visuals/           visual modulari ed effetti gameplay sostituibili
+  environment/       profili arena, palette, gate e props interattivi
   debug/             strumenti debug
 docs/                documentazione tecnica e checklist
 prompts/             prompt operativi per task IA futuri
@@ -192,6 +192,18 @@ Completato:
 - proiettili boss aimed/radial con profili, glow e trail distinti;
 - effetto morte boss e presentazione del drop speciale;
 - runner e tank con silhouette, statistiche e loot distinti;
+- shooter ranged con distanza preferita, windup, corsia telegrafata e colpo schivabile;
+- stato downed e revive locale con input tenuto, anello world-space e HUD;
+- schermate risultati condivise con durata, progressione, retry e cambio modalita;
+- bus audio separati, cue sostituibili, fallback e volumi persistenti;
+- registro boss per ID con compatibilita esplicita per modalita;
+- boss dungeon `Rift Architect` con due pattern, fase e drop dedicati;
+- due arena survival data-driven con palette, spawn e player start distinti;
+- gate zombie visibili e non collidenti collegati allo spawn reale;
+- barili esplosivi con warning world-space e danno tramite `HealthSystem`;
+- impostazioni visuali persistenti per flash, glow, trail, shake e testo HUD;
+- preset default, comfort e high contrast con marker geometrici player;
+- pipeline asset con fallback, import coerenti e registro attribuzioni;
 - pistola, blaster e Wave Cannon con silhouette, icone HUD e proiettili distinti;
 - torre con base esagonale, doppia canna, tracking e feedback di fuoco;
 - primo pass di bilanciamento sulle armi base;
@@ -206,16 +218,13 @@ Completato:
 
 Non ancora completato:
 
-- ulteriori boss, pattern avanzati e telegraph;
-- variante nemico ranged;
-- respawn o revive dei player;
+- ulteriori boss e pattern avanzati;
 - dungeon ramificati, shop, biomi e selezione stanza;
-- mix audio e polish visuale avanzato opzionale;
 - asset definitivi e ulteriori pass di bilanciamento;
 - firma digitale dell'eseguibile Windows.
 
 ## Prossimi obiettivi post-roadmap
 
-1. Introdurre uno zombie ranged con telegraph leggibile.
-2. Espandere il dungeon con diramazioni, shop e biomi.
-3. Introdurre revive locale e ulteriori unlock.
+1. Espandere il dungeon con diramazioni, shop e biomi dedicati.
+2. Sostituire gradualmente i placeholder con asset licenziati.
+3. Affinare bilanciamento e performance dopo playtest reali.

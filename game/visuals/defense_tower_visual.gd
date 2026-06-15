@@ -10,9 +10,33 @@ var tracking_target: bool = false
 var fire_flash_timer: float = 0.0
 var recoil_timer: float = 0.0
 var animation_time: float = 0.0
+var flash_intensity: float = 1.0
+var glow_intensity: float = 1.0
+var reduced_motion: bool = false
+
+func _ready() -> void:
+	add_to_group("visual_settings_consumers")
+	VisualSettingsManager.sync_consumer(self)
+
+func apply_visual_settings(settings: Dictionary) -> void:
+	flash_intensity = clampf(
+		float(settings.get("flash_intensity", 1.0)),
+		0.0,
+		1.0
+	)
+	glow_intensity = clampf(
+		float(settings.get("glow_intensity", 1.0)),
+		0.0,
+		1.0
+	)
+	reduced_motion = bool(settings.get("reduced_motion", false))
+	if reduced_motion:
+		animation_time = 0.0
+	queue_redraw()
 
 func _process(delta: float) -> void:
-	animation_time += delta
+	if not reduced_motion:
+		animation_time += delta
 	fire_flash_timer = maxf(fire_flash_timer - delta, 0.0)
 	recoil_timer = maxf(recoil_timer - delta, 0.0)
 	if not tracking_target:
@@ -83,14 +107,18 @@ func _draw() -> void:
 		]),
 		primary
 	)
-	var pulse := 0.68 + sin(animation_time * 3.2) * 0.16
+	var pulse := (
+		0.76
+		if reduced_motion
+		else 0.68 + sin(animation_time * 3.2) * 0.16
+	)
 	draw_arc(
 		Vector2.ZERO,
 		19.0,
 		0.0,
 		TAU,
 		24,
-		Color(glow, glow.a * pulse),
+		Color(glow, glow.a * pulse * glow_intensity),
 		3.0,
 		true
 	)
@@ -133,7 +161,11 @@ func _draw() -> void:
 	)
 	draw_circle(Vector2.ZERO, 15.0, Color(0.025, 0.04, 0.055, 1.0))
 	draw_circle(Vector2.ZERO, 11.0, secondary.darkened(0.26))
-	draw_circle(Vector2.ZERO, 5.5, Color(glow, 0.90))
+	draw_circle(
+		Vector2.ZERO,
+		5.5,
+		Color(glow, 0.90 * glow_intensity)
+	)
 
 	if tracking_target:
 		draw_arc(
@@ -152,12 +184,14 @@ func _draw() -> void:
 			if visual_data != null
 			else secondary
 		)
-		var flash_size := 8.0 + fire_flash_timer * 65.0
+		var flash_size := (
+			8.0 + fire_flash_timer * 65.0
+		) * maxf(flash_intensity, 0.1)
 		draw_colored_polygon(
 			PackedVector2Array([
 				barrel_end + aim_direction * flash_size,
 				barrel_end + perpendicular * 6.0,
 				barrel_end - perpendicular * 6.0
 			]),
-			Color(muzzle_color, 0.96)
+			Color(muzzle_color, 0.96 * flash_intensity)
 		)

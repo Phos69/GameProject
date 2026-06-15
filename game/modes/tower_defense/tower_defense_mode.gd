@@ -54,6 +54,20 @@ func _ready() -> void:
 	if mode_manager != null:
 		mode_manager.register_mode(self)
 
+func _process(_delta: float) -> void:
+	if not is_running or state == &"defeated":
+		return
+	var players := get_tree().get_nodes_in_group("players")
+	if players.is_empty():
+		return
+	for player in players:
+		var health_component := player.get_node_or_null(
+			"HealthComponent"
+		) as HealthComponent
+		if health_component != null and health_component.is_alive():
+			return
+	wave_controller.defeat_run()
+
 func start_mode(context: Dictionary = {}) -> void:
 	if is_running or not _resolve_systems():
 		return

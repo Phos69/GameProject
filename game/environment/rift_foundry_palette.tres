@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="BiomePalette" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/environment/biome_palette.gd" id="1_palette"]
+
+[resource]
+script = ExtResource("1_palette")
+biome_id = &"rift_foundry"
+display_name = "Rift Foundry"
+background_color = Color(0.045, 0.04, 0.075, 1)
+floor_color = Color(0.12, 0.115, 0.17, 1)
+alternate_floor_color = Color(0.16, 0.15, 0.22, 1)
+grid_color = Color(0.25, 0.28, 0.38, 0.66)
+major_grid_color = Color(0.32, 0.58, 0.62, 0.78)
+lane_color = Color(0.24, 0.76, 0.78, 0.28)
+hazard_color = Color(0.74, 0.3, 0.68, 0.78)
+gate_color = Color(0.34, 0.9, 0.88, 1)
+prop_color = Color(0.34, 0.24, 0.46, 1)
+

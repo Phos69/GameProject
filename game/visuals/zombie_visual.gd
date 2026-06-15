@@ -1,16 +1,34 @@
 extends Node2D
 class_name ZombieVisual
 
-@export_enum("basic", "runner", "tank") var archetype_id: String = "basic"
+@export_enum("basic", "runner", "tank", "shooter") var archetype_id: String = "basic"
 
 var facing_direction: Vector2 = Vector2.LEFT
 var movement_ratio: float = 0.0
 var animation_time: float = 0.0
 var hit_flash_timer: float = 0.0
 var current_state: StringName = &"idle"
+var flash_intensity: float = 1.0
+var reduced_motion: bool = false
+
+func _ready() -> void:
+	add_to_group("visual_settings_consumers")
+	VisualSettingsManager.sync_consumer(self)
+
+func apply_visual_settings(settings: Dictionary) -> void:
+	flash_intensity = clampf(
+		float(settings.get("flash_intensity", 1.0)),
+		0.0,
+		1.0
+	)
+	reduced_motion = bool(settings.get("reduced_motion", false))
+	if reduced_motion:
+		animation_time = 0.0
+	queue_redraw()
 
 func _process(delta: float) -> void:
-	animation_time += delta
+	if not reduced_motion:
+		animation_time += delta
 	hit_flash_timer = maxf(hit_flash_timer - delta, 0.0)
 	queue_redraw()
 
@@ -39,6 +57,8 @@ func get_silhouette_size() -> Vector2:
 			return Vector2(31.0, 50.0)
 		"tank":
 			return Vector2(68.0, 66.0)
+		"shooter":
+			return Vector2(42.0, 66.0)
 		_:
 			return Vector2(46.0, 52.0)
 
@@ -48,6 +68,8 @@ func _draw() -> void:
 			_draw_runner()
 		"tank":
 			_draw_tank()
+		"shooter":
+			_draw_shooter()
 		_:
 			_draw_basic()
 
@@ -57,8 +79,14 @@ func _draw_basic() -> void:
 	var skin_color := Color(0.48, 0.66, 0.35, 1.0)
 	var shirt_color := Color(0.27, 0.34, 0.31, 1.0)
 	if hit_flash_timer > 0.0:
-		skin_color = Color(0.98, 0.78, 0.64, 1.0)
-		shirt_color = Color(0.72, 0.30, 0.25, 1.0)
+		skin_color = skin_color.lerp(
+			Color(0.98, 0.78, 0.64, 1.0),
+			flash_intensity
+		)
+		shirt_color = shirt_color.lerp(
+			Color(0.72, 0.30, 0.25, 1.0),
+			flash_intensity
+		)
 
 	draw_colored_polygon(
 		_ellipse_points(Vector2(0.0, 18.0), Vector2(23.0, 8.0), 18),
@@ -118,8 +146,14 @@ func _draw_runner() -> void:
 	var skin_color := Color(0.62, 0.78, 0.34, 1.0)
 	var shirt_color := Color(0.38, 0.20, 0.22, 1.0)
 	if hit_flash_timer > 0.0:
-		skin_color = Color(1.0, 0.84, 0.62, 1.0)
-		shirt_color = Color(0.86, 0.32, 0.24, 1.0)
+		skin_color = skin_color.lerp(
+			Color(1.0, 0.84, 0.62, 1.0),
+			flash_intensity
+		)
+		shirt_color = shirt_color.lerp(
+			Color(0.86, 0.32, 0.24, 1.0),
+			flash_intensity
+		)
 
 	draw_colored_polygon(
 		_ellipse_points(Vector2(0.0, 17.0), Vector2(17.0, 6.0), 18),
@@ -193,8 +227,14 @@ func _draw_tank() -> void:
 	var armor_color := Color(0.25, 0.29, 0.27, 1.0)
 	var hazard_color := Color(0.86, 0.46, 0.16, 1.0)
 	if hit_flash_timer > 0.0:
-		skin_color = Color(0.96, 0.74, 0.58, 1.0)
-		armor_color = Color(0.70, 0.34, 0.24, 1.0)
+		skin_color = skin_color.lerp(
+			Color(0.96, 0.74, 0.58, 1.0),
+			flash_intensity
+		)
+		armor_color = armor_color.lerp(
+			Color(0.70, 0.34, 0.24, 1.0),
+			flash_intensity
+		)
 
 	draw_colored_polygon(
 		_ellipse_points(Vector2(0.0, 22.0), Vector2(34.0, 10.0), 20),
@@ -272,6 +312,92 @@ func _draw_tank() -> void:
 		10.0,
 		true
 	)
+
+func _draw_shooter() -> void:
+	var sway := sin(animation_time * 3.8) * 2.0
+	var step := sin(animation_time * 7.0) * movement_ratio * 3.0
+	var skin_color := Color(0.34, 0.68, 0.58, 1.0)
+	var cloth_color := Color(0.10, 0.24, 0.24, 1.0)
+	var toxin_color := Color(0.24, 0.96, 0.70, 1.0)
+	if hit_flash_timer > 0.0:
+		skin_color = skin_color.lerp(
+			Color(0.86, 1.0, 0.90, 1.0),
+			flash_intensity
+		)
+		cloth_color = cloth_color.lerp(
+			Color(0.30, 0.62, 0.54, 1.0),
+			flash_intensity
+		)
+
+	draw_colored_polygon(
+		_ellipse_points(Vector2(0.0, 21.0), Vector2(21.0, 7.0), 18),
+		Color(0.01, 0.02, 0.02, 0.52)
+	)
+	draw_line(
+		Vector2(-7.0, 10.0),
+		Vector2(-9.0 + step, 27.0),
+		Color(0.07, 0.13, 0.13, 1.0),
+		6.0,
+		true
+	)
+	draw_line(
+		Vector2(7.0, 10.0),
+		Vector2(9.0 - step, 27.0),
+		Color(0.07, 0.13, 0.13, 1.0),
+		6.0,
+		true
+	)
+	draw_colored_polygon(
+		PackedVector2Array([
+			Vector2(-13.0, -18.0 + sway),
+			Vector2(13.0, -15.0 - sway),
+			Vector2(16.0, 13.0),
+			Vector2(0.0, 20.0),
+			Vector2(-16.0, 13.0)
+		]),
+		Color(0.025, 0.06, 0.06, 1.0)
+	)
+	draw_colored_polygon(
+		PackedVector2Array([
+			Vector2(-10.0, -15.0 + sway),
+			Vector2(10.0, -12.0 - sway),
+			Vector2(12.0, 10.0),
+			Vector2(0.0, 15.0),
+			Vector2(-12.0, 10.0)
+		]),
+		cloth_color
+	)
+	var spine_direction := -facing_direction.normalized()
+	for index in range(4):
+		var spine_origin := Vector2(0.0, -11.0 + float(index) * 8.0)
+		draw_line(
+			spine_origin,
+			spine_origin + spine_direction * (13.0 + float(index % 2) * 4.0),
+			Color(toxin_color, 0.78),
+			3.0,
+			true
+		)
+	var head_position := Vector2(facing_direction.x * 4.0, -27.0 + sway)
+	draw_circle(head_position, 11.0, Color(0.025, 0.06, 0.06, 1.0))
+	draw_circle(head_position, 8.5, skin_color)
+	draw_circle(head_position + facing_direction * 4.5, 2.0, toxin_color)
+	var arm_direction := facing_direction.normalized()
+	var weapon_origin := Vector2(0.0, -6.0)
+	draw_line(
+		weapon_origin - arm_direction.orthogonal() * 6.0,
+		weapon_origin + arm_direction * 25.0,
+		skin_color.darkened(0.14),
+		5.0,
+		true
+	)
+	draw_line(
+		weapon_origin + arm_direction.orthogonal() * 6.0,
+		weapon_origin + arm_direction * 25.0,
+		skin_color,
+		5.0,
+		true
+	)
+	draw_circle(weapon_origin + arm_direction * 27.0, 5.0, Color(toxin_color, 0.9))
 
 func _ellipse_points(center: Vector2, radius: Vector2, segments: int) -> PackedVector2Array:
 	var points := PackedVector2Array()

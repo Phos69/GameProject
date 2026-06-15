@@ -216,6 +216,7 @@ func _spawn_boss() -> void:
 		boss_spawn_position,
 		null,
 		{
+			"boss_id": &"rift_architect",
 			"health_multiplier": 1.20,
 			"damage_multiplier": 1.10
 		}

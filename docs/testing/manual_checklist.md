@@ -327,6 +327,100 @@ godot --headless --path . --script res://tests/tower_defense_smoke_test.gd
 
 Il test verifica cambio modalita, percorso, danno core, crediti, costruzione, fuoco torre, boss wave, HUD, sconfitta e pulizia runtime.
 
+## Regressione Milestone 16
+
+- Un danno letale porta il player in stato downed senza rimuovere il colore slot.
+- Il player downed non si muove, non spara e non viene targettato.
+- Tenere `E` o joypad `A` vicino al target avanza l'anello.
+- Lasciare interact o uscire dal raggio azzera il progresso.
+- Il revive ripristina il 35% degli HP massimi.
+- `Field Kit` resta a 120 HP massimi dopo revive e nuove run.
+- Il leave del reviver interrompe senza completamenti tardivi.
+- Survival, dungeon e tower defense risolvono un party interamente downed.
+
+```text
+godot --headless --path . --script res://tests/milestone_16_downed_revive_smoke_test.gd
+godot --path . --rendering-method gl_compatibility --script res://tests/downed_revive_visual_qa.gd
+```
+
+## Regressione Milestone 17
+
+- Survival, dungeon e tower defense mostrano un titolo terminale esplicito.
+- Tempo, XP, denaro e unlock derivano dalla sessione reale.
+- Retry riusa la modalita senza duplicare nodi o bonus.
+- Il focus iniziale resta visibile da joypad.
+- Cambio modalita avvia il modo successivo.
+- Il ritorno al menu salva prima del cambio stato.
+
+```text
+godot --headless --path . --script res://tests/milestone_17_run_results_smoke_test.gd
+godot --path . --rendering-method gl_compatibility --script res://tests/run_results_visual_qa.gd
+```
+
+## Regressione Milestone 18
+
+- Tutti i bus richiesti esistono e le categorie inviano a SFX.
+- Asset opzionali assenti usano fallback senza errori.
+- Le tre armi hanno fallback distinti.
+- Shooter, wave, downed, revive e risultati generano cue.
+- Il limite voci non viene superato nelle situazioni affollate.
+- Master, Music e SFX persistono dopo il riavvio.
+
+```text
+godot --headless --path . --script res://tests/milestone_18_audio_mix_smoke_test.gd
+godot --path . --rendering-method gl_compatibility --script res://tests/audio_mix_visual_qa.gd
+```
+
+## Regressione Milestone 19
+
+- Survival e tower defense continuano a generare il `Wave Warden`.
+- Il dungeon genera il `Rift Architect`.
+- Lane sweep mostra sempre il varco sicuro prima dei proiettili.
+- Cross burst mostra gli assi e il countdown prima del fuoco.
+- L'HUD usa nome e fase del boss attivo.
+- Il Rift Architect genera il `Rift Repeater`.
+- Una richiesta incompatibile viene rifiutata senza spawn.
+
+```text
+godot --headless --path . --script res://tests/milestone_19_boss_registry_smoke_test.gd
+godot --path . --rendering-method gl_compatibility --script res://tests/rift_architect_visual_qa.gd
+```
+
+## Regressione Milestone 20
+
+- `Industrial Crossroads` e `Rift Foundry` usano lo stesso controller survival.
+- Ogni punto spawn ha un gate visibile ma non collidente.
+- Quattro player restano distinguibili in entrambi i layout.
+- Basic, runner, tank e shooter attraversano gate e props senza blocchi.
+- Un proiettile player puo armare il barile.
+- Nessun danno viene applicato durante il warning.
+- Il cerchio di esplosione e leggibile prima della detonazione.
+- Cambio modalita e stop survival rimuovono gate e props runtime.
+
+```text
+godot --headless --path . --script res://tests/milestone_20_arena_environment_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_20_arena_stress_test.gd
+godot --path . --rendering-method gl_compatibility --script res://tests/arena_variants_visual_qa.gd
+```
+
+## Regressione Milestone 21
+
+- Ogni controllo visuale aggiorna la scena senza riavvio.
+- Save/load ripristina flash, glow, trail, shake, testo e toggle.
+- Glow e trail a zero non cambiano danno o velocita del proiettile.
+- Reduced motion rimuove shake, bob e pulse senza cambiare i countdown.
+- P1-P4 restano distinguibili tramite marker geometrici.
+- Pickup e crate restano identificabili senza affidarsi al colore.
+- High contrast rinforza HUD, marker e warning.
+- Il menu visuale resta interamente visibile a 1280x720.
+- Il profilo con 4 player, roster misto e boss resta sotto il budget registrato.
+- Ogni asset esterno aggiunto compare in `assets/ATTRIBUTION.md`.
+
+```text
+godot --headless --path . --script res://tests/milestone_21_visual_settings_performance_smoke_test.gd
+godot --path . --rendering-method gl_compatibility --script res://tests/visual_accessibility_qa.gd
+```
+
 ## Regressione architettura
 
 - I sistemi non sono duplicati in cartelle diverse.
@@ -343,7 +437,8 @@ Il test verifica cambio modalita, percorso, danno core, crediti, costruzione, fu
 - `Continue` avvia l'ultima modalita salvata.
 - Una variazione di XP o denaro aggiorna `user://savegame.json`.
 - Riavviando il progetto, livello, XP, denaro e ultima modalita vengono ripristinati.
-- Un save v1 viene caricato e riscritto come v2 senza perdere progressione.
+- Un save v1 viene caricato e riscritto nello schema corrente senza perdere
+  progressione.
 - Raggiungere il livello party 2 sblocca `Field Kit`.
 - Il menu mostra lo stato di `Field Kit`.
 - Con `Field Kit`, ogni nuova run parte a 120/120 HP.

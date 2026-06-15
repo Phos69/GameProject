@@ -10,6 +10,27 @@ class_name IsometricPlayground
 @export var concrete_color: Color = Color(0.16, 0.18, 0.17, 1.0)
 @export var hazard_color: Color = Color(0.72, 0.53, 0.16, 0.78)
 
+var arena_id: StringName = &"industrial_crossroads"
+var layout_kind: StringName = &"crossroads"
+var lane_color: Color = Color(0.66, 0.61, 0.43, 0.26)
+var alternate_concrete_color: Color = Color(0.19, 0.21, 0.20, 1.0)
+
+func configure_arena(profile: SurvivalArenaProfile) -> void:
+	if profile == null:
+		return
+	arena_id = profile.arena_id
+	layout_kind = profile.layout_kind
+	grid_radius = profile.grid_radius
+	if profile.biome != null:
+		floor_color = profile.biome.background_color
+		concrete_color = profile.biome.floor_color
+		alternate_concrete_color = profile.biome.alternate_floor_color
+		line_color = profile.biome.grid_color
+		major_line_color = profile.biome.major_grid_color
+		lane_color = profile.biome.lane_color
+		hazard_color = profile.biome.hazard_color
+	queue_redraw()
+
 func _draw() -> void:
 	var arena_size := Vector2(tile_width * grid_radius * 1.45, tile_height * grid_radius * 1.45)
 	draw_rect(Rect2(-arena_size, arena_size * 2.0), floor_color, true)
@@ -19,12 +40,20 @@ func _draw() -> void:
 			if abs(x) + abs(y) <= grid_radius:
 				_draw_tile(Vector2i(x, y))
 
-	_draw_faded_lane(Vector2i(-grid_radius + 1, 0), Vector2i(grid_radius - 1, 0))
-	_draw_faded_lane(Vector2i(0, -grid_radius + 1), Vector2i(0, grid_radius - 1))
+	if layout_kind == &"ring":
+		_draw_ring_layout()
+	else:
+		_draw_faded_lane(Vector2i(-grid_radius + 1, 0), Vector2i(grid_radius - 1, 0))
+		_draw_faded_lane(Vector2i(0, -grid_radius + 1), Vector2i(0, grid_radius - 1))
 	_draw_boundary_markers()
-	_draw_barricade(Vector2(-485.0, -120.0), -0.16)
-	_draw_barricade(Vector2(470.0, 135.0), PI - 0.16)
-	_draw_barricade(Vector2(-120.0, 285.0), -0.62)
+	if layout_kind == &"ring":
+		_draw_barricade(Vector2(-410.0, -100.0), 0.18)
+		_draw_barricade(Vector2(410.0, 100.0), PI + 0.18)
+		_draw_barricade(Vector2(0.0, 280.0), -0.58)
+	else:
+		_draw_barricade(Vector2(-485.0, -120.0), -0.16)
+		_draw_barricade(Vector2(470.0, 135.0), PI - 0.16)
+		_draw_barricade(Vector2(-120.0, 285.0), -0.62)
 
 func _draw_tile(cell: Vector2i) -> void:
 	var center := iso_to_screen(cell)
@@ -50,11 +79,34 @@ func _draw_faded_lane(start_cell: Vector2i, end_cell: Vector2i) -> void:
 	draw_dashed_line(
 		start,
 		finish,
-		Color(0.66, 0.61, 0.43, 0.26),
+		lane_color,
 		2.5,
 		18.0,
 		true
 	)
+
+func _draw_ring_layout() -> void:
+	for radius in [128.0, 242.0]:
+		draw_arc(
+			Vector2.ZERO,
+			radius,
+			0.0,
+			TAU,
+			72,
+			lane_color,
+			3.0,
+			true
+		)
+	for index in range(6):
+		var direction := Vector2.RIGHT.rotated(TAU * float(index) / 6.0)
+		draw_dashed_line(
+			direction * 70.0,
+			direction * 430.0,
+			Color(lane_color, lane_color.a * 0.86),
+			2.0,
+			16.0,
+			true
+		)
 
 func _draw_boundary_markers() -> void:
 	for index in range(-grid_radius + 1, grid_radius):
@@ -100,7 +152,12 @@ func _draw_barricade(position: Vector2, angle: float) -> void:
 func _tile_color(cell: Vector2i) -> Color:
 	var variant: int = absi(cell.x * 11 + cell.y * 17) % 5
 	var blend := float(variant) * 0.025
-	var color := concrete_color.lightened(blend)
+	var base_color := (
+		alternate_concrete_color
+		if layout_kind == &"ring" and (cell.x + cell.y) % 3 == 0
+		else concrete_color
+	)
+	var color := base_color.lightened(blend)
 	if (cell.x + cell.y) % 4 == 0:
 		color = color.darkened(0.035)
 	return color

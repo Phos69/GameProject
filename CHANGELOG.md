@@ -4,6 +4,52 @@
 
 ### Added
 
+- Completata Milestone 21 con accessibilita, profiling e pipeline asset.
+- Aggiunto `VisualSettingsManager` con preset default, comfort e contrast.
+- Aggiunti controlli menu per flash, glow, trail, shake e scala testo HUD.
+- Aggiunti high contrast, reduced motion e marker geometrici player.
+- Esteso il save alla versione 4 con round-trip delle impostazioni visuali.
+- Collegati proiettili, effetti, camera, HUD, telegraph e visual ai profili.
+- Aggiunti documenti import/fallback e registro attribuzioni in `assets/`.
+- Aggiunti smoke test M21, profiling affollato e quattro QA a 1280x720.
+- Completata Milestone 20 con arena survival, biomi e props data-driven.
+- Aggiunti `BiomePalette`, `SurvivalArenaProfile` e `SurvivalArenaManager`.
+- Aggiunti layout `Industrial Crossroads` e `Rift Foundry`.
+- Aggiunti gate spawn non collidenti con impulso sugli spawn reali.
+- Aggiunti barili esplosivi con collisione proiettile, warning e danno ad area.
+- Estesi projectile ed effetti per props damageable e detonazioni ambientali.
+- Aggiunti smoke, stress test e QA M20 a quattro player.
+- Completata Milestone 19 con secondo boss e registro configurabile.
+- Aggiunto `Rift Architect` con fase 2, lane sweep e cross burst.
+- Aggiunti compatibilita boss per modalita e rifiuti tipizzati.
+- Aggiunti `Rift Repeater`, loot dedicato e HUD boss generico.
+- Aggiunti smoke test registry e QA dei due telegraph Rift.
+- Completata Milestone 18 con bus audio, cue sostituibili e mix persistente.
+- Aggiunti `AudioCueData`, `AudioVoicePool` e `AudioEventRouter`.
+- Aggiunti bus UI, armi, nemici, boss, ambiente, musica e SFX.
+- Aggiunti fallback distinti, pitch variation, priorita e limite voci.
+- Aggiunti cue per shooter, wave, downed, revive e risultati.
+- Esteso il menu con slider Master, Music e SFX.
+- Esteso il save alla versione 3 con impostazioni audio.
+- Aggiunti smoke test M18 e QA menu a 1280x720.
+- Completata Milestone 17 con risultati condivisi e flussi di fine run.
+- Aggiunto `RunSessionTracker` per durata, XP, denaro e unlock della sessione.
+- Aggiunto `RunResultsScreen` con retry, cambio modalita e menu.
+- Esteso `GameModeManager` con stato risultati, context di retry e cambio modalita.
+- Aggiunto salvataggio sincrono prima del ritorno al menu.
+- Aggiunti smoke test M17 e QA visuale a 1280x720.
+- Completata Milestone 16 con stato downed e revive locale.
+- Esteso `HealthComponent` con downed opzionale, revive e stato incapacitated.
+- Aggiunto `ReviveSystem` con raggio, input tenuto, progresso e interruzione.
+- Aggiunti posa downed, anello world-space e stato dedicato nelle schede HUD.
+- Estese le condizioni di sconfitta party a survival, dungeon e tower defense.
+- Aggiunti smoke test M16 e QA visuale a quattro player.
+- Completata Milestone 15 con lo zombie ranged `Shooter`.
+- Aggiunto `RangedEnemy` con distanza preferita, ritirata, windup e mira bloccata.
+- Aggiunto telegraph world-space con corsia e countdown prima del proiettile.
+- Aggiunti silhouette shooter, loot dedicato e profilo proiettile verde/ciano.
+- Estesa la composizione survival con shooter deterministici dalla wave 4.
+- Aggiunti smoke test M15 e QA visuale a quattro player.
 - Completata Milestone 14 come chiusura del visual gameplay pass.
 - Aggiunto `WaveWardenVisual` segmentato e animato per fase, mira, hit e carica.
 - Aggiunti profili aimed/radial con glow e trail per i proiettili del boss.
@@ -163,7 +209,12 @@
 
 ### Changed
 
-- Riscritta `ROADMAP_VISUAL_GAMEPLAY.md` eliminando le milestone completate e definendo il piano futuro M15-M21.
+- Allineati i runner boss e stress a un teardown esplicito delle scene.
+- Aggiunta chiusura idempotente dei player audio e degli stream procedurali.
+- Documentato il crash headless intermittente di Godot 4.6.3 gia presente nel
+  commit di partenza e separato dalle regressioni funzionali M15-M21.
+- Aggiornata `ROADMAP_VISUAL_GAMEPLAY.md` con stato e risultati del ciclo
+  completato M15-M21.
 - Sostituiti i poligoni statici del `Wave Warden` con un visual modulare.
 - Gli annunci importanti mantengono precedenza sull'intermissione successiva.
 - Sostituito il visual statico della torre con un componente animato senza cambiare targeting o bilanciamento.

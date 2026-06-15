@@ -14,6 +14,9 @@ var player_cards: Dictionary = {}
 var pickup_feedback_text: String = ""
 var pickup_feedback_timer: float = 0.0
 var boss_warning_timer: float = 0.0
+var last_boss_display_name: String = "BOSS"
+var hud_text_scale: float = 1.0
+var high_contrast: bool = false
 
 const SLOT_COLORS: Array[Color] = [
 	Color(0.18, 0.74, 0.95, 1.0),
@@ -24,6 +27,7 @@ const SLOT_COLORS: Array[Color] = [
 
 func _ready() -> void:
 	add_to_group("hud_manager")
+	add_to_group("visual_settings_consumers")
 	_create_status_hud()
 	_create_player_hud()
 	_create_boss_hud()
@@ -32,6 +36,45 @@ func _ready() -> void:
 	call_deferred("_connect_boss_system")
 	call_deferred("_connect_run_feedback")
 	_refresh()
+	VisualSettingsManager.sync_consumer(self)
+
+func apply_visual_settings(settings: Dictionary) -> void:
+	hud_text_scale = clampf(
+		float(settings.get("hud_text_scale", 1.0)),
+		0.80,
+		1.20
+	)
+	high_contrast = bool(settings.get("high_contrast", false))
+	if status_label != null:
+		status_label.add_theme_font_size_override(
+			"font_size",
+			roundi(16.0 * hud_text_scale)
+		)
+		status_label.modulate = (
+			Color.WHITE
+			if high_contrast
+			else Color(0.90, 0.96, 1.0, 1.0)
+		)
+	if boss_name_label != null:
+		boss_name_label.add_theme_font_size_override(
+			"font_size",
+			roundi(20.0 * hud_text_scale)
+		)
+	if boss_warning_label != null:
+		boss_warning_label.add_theme_font_size_override(
+			"font_size",
+			roundi(16.0 * hud_text_scale)
+		)
+		boss_warning_label.modulate = (
+			Color.WHITE
+			if high_contrast
+			else Color(1.0, 0.44, 0.24, 1.0)
+		)
+	for card in player_cards.values():
+		if card is PlayerHudCard:
+			(card as PlayerHudCard).apply_visual_settings(settings)
+	if combat_announcement != null:
+		combat_announcement.apply_visual_settings(settings)
 
 func _create_status_hud() -> void:
 	status_panel = PanelContainer.new()
@@ -192,6 +235,12 @@ func _get_mode_title() -> String:
 				return "Procedural Dungeon"
 			GameConstants.MODE_TOWER_DEFENSE:
 				return "Tower Defense"
+			GameConstants.MODE_SURVIVAL:
+				var arena_manager := get_tree().get_first_node_in_group(
+					"survival_arena_manager"
+				) as SurvivalArenaManager
+				if arena_manager != null:
+					return arena_manager.get_active_display_name()
 	return "Survival Arena"
 
 func _format_mode_status() -> String:
@@ -424,10 +473,12 @@ func _connect_boss_feedback(boss: Node) -> void:
 
 func _on_boss_spawned(boss: Node) -> void:
 	_connect_boss_feedback(boss)
+	last_boss_display_name = str(boss.get("display_name"))
+	_refresh_boss_hud()
 	if combat_announcement != null:
 		combat_announcement.show_announcement(
 			&"boss_spawn",
-			"WAVE WARDEN",
+			last_boss_display_name.to_upper(),
 			"BOSS INCOMING",
 			Color(0.96, 0.24, 0.70, 1.0),
 			2.0
@@ -437,7 +488,7 @@ func _on_boss_defeated(_mode_id: StringName) -> void:
 	if combat_announcement != null:
 		combat_announcement.show_announcement(
 			&"boss_defeated",
-			"WARDEN DOWN",
+			"%s DOWN" % last_boss_display_name.to_upper(),
 			"SPECIAL DROP AVAILABLE",
 			Color(0.34, 0.92, 0.72, 1.0),
 			2.1
@@ -451,6 +502,10 @@ func _on_boss_telegraph_started(
 	match pattern_id:
 		&"radial_burst":
 			boss_warning_label.text = "RADIAL BURST - FIND A GAP"
+		&"lane_sweep":
+			boss_warning_label.text = "LANE SWEEP - FIND THE GAP"
+		&"cross_burst":
+			boss_warning_label.text = "CROSS BURST - ROTATE"
 		_:
 			boss_warning_label.text = "AIMED VOLLEY - MOVE"
 	boss_warning_label.modulate = Color(1.0, 0.44, 0.24, 1.0)
