@@ -26,6 +26,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			set_mode(GameConstants.MODE_SURVIVAL)
 		KEY_F5:
 			set_mode(GameConstants.MODE_DUNGEON)
+		KEY_F6:
+			set_mode(GameConstants.MODE_TOWER_DEFENSE)
 		_:
 			return
 	get_viewport().set_input_as_handled()

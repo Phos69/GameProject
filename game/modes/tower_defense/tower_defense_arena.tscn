@@ -1,0 +1,62 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://game/modes/tower_defense/tower_defense_arena.gd" id="1_arena"]
+[ext_resource type="PackedScene" path="res://game/modes/tower_defense/tower_build_slot.tscn" id="2_slot"]
+
+[node name="TowerDefenseArena" type="Node2D"]
+script = ExtResource("1_arena")
+
+[node name="Ground" type="Polygon2D" parent="."]
+color = Color(0.07, 0.11, 0.15, 1)
+polygon = PackedVector2Array(-620, -330, 620, -330, 620, 330, -620, 330)
+
+[node name="PathLine" type="Line2D" parent="."]
+width = 58.0
+default_color = Color(0.42, 0.29, 0.2, 1)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="PathCenter" type="Line2D" parent="."]
+points = PackedVector2Array(-540, -210, -320, -210, -180, 80, 80, 80, 220, -150, 500, -150)
+width = 4.0
+default_color = Color(0.9, 0.68, 0.32, 0.8)
+
+[node name="SpawnMarker" type="Polygon2D" parent="."]
+position = Vector2(-540, -210)
+color = Color(0.92, 0.28, 0.2, 1)
+polygon = PackedVector2Array(-22, -22, 22, -22, 22, 22, -22, 22)
+
+[node name="Core" type="Polygon2D" parent="."]
+position = Vector2(500, -150)
+color = Color(0.25, 0.72, 0.95, 1)
+polygon = PackedVector2Array(0, -48, 42, -24, 42, 24, 0, 48, -42, 24, -42, -24)
+
+[node name="CoreInner" type="Polygon2D" parent="."]
+position = Vector2(500, -150)
+color = Color(0.88, 0.96, 1, 1)
+polygon = PackedVector2Array(0, -24, 20, -12, 20, 12, 0, 24, -20, 12, -20, -12)
+
+[node name="BaseHealthBackground" type="Line2D" parent="."]
+points = PackedVector2Array(456, -205, 544, -205)
+width = 8.0
+default_color = Color(0.12, 0.12, 0.12, 0.95)
+
+[node name="BaseHealthBar" type="Line2D" parent="."]
+points = PackedVector2Array(456, -205, 544, -205)
+width = 5.0
+default_color = Color(0.2, 1, 0.18, 1)
+
+[node name="BuildSlots" type="Node2D" parent="."]
+
+[node name="SlotA" parent="BuildSlots" instance=ExtResource("2_slot")]
+position = Vector2(-270, 20)
+slot_id = &"slot_a"
+
+[node name="SlotB" parent="BuildSlots" instance=ExtResource("2_slot")]
+position = Vector2(35, -55)
+slot_id = &"slot_b"
+
+[node name="SlotC" parent="BuildSlots" instance=ExtResource("2_slot")]
+position = Vector2(300, 15)
+slot_id = &"slot_c"

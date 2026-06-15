@@ -11,11 +11,17 @@ signal enemy_died(enemy: Node)
 @export var initial_spawn_points: Array[Vector2] = []
 
 var active_enemies: Array[Node] = []
+var registered_enemy_scenes: Dictionary = {}
 
 func _ready() -> void:
 	add_to_group("enemy_system")
 	if spawn_initial_enemies:
 		call_deferred("_spawn_initial_enemies")
+
+func register_enemy_scene(enemy_id: StringName, scene: PackedScene) -> void:
+	if enemy_id.is_empty() or scene == null:
+		return
+	registered_enemy_scenes[enemy_id] = scene
 
 func spawn_enemy(
 	enemy_id: StringName,
@@ -24,11 +30,14 @@ func spawn_enemy(
 	spawn_config: Dictionary = {}
 ) -> Node:
 	enemy_spawn_requested.emit(enemy_id, position)
-	if enemy_scene == null:
+	var scene := registered_enemy_scenes.get(enemy_id, enemy_scene) as PackedScene
+	if scene == null:
 		return null
 
-	var enemy := enemy_scene.instantiate()
-	if enemy is BasicEnemy:
+	var enemy := scene.instantiate()
+	if enemy.has_method("configure_spawn"):
+		enemy.configure_spawn(spawn_config)
+	elif enemy is BasicEnemy:
 		(enemy as BasicEnemy).enemy_id = enemy_id
 		(enemy as BasicEnemy).configure_wave_scaling(spawn_config)
 	if enemy is Node2D:

@@ -22,8 +22,12 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 14. `WaveManager` conta scorte e boss prima di assegnare la ricompensa.
 15. `DungeonMode` genera un layout da seed, istanzia una `DungeonRoom` alla volta e usa nemici, drop e boss condivisi.
 16. `DungeonRoom` controlla pareti, portale e stato locked/unlocked della stanza corrente.
-17. `IsometricCameraController` segue il gruppo `players`.
-18. `HUDManager` mostra slot, progressione, vita, munizioni, stato modalita e barra boss.
+17. `TowerDefenseMode` gestisce lifecycle, arena, player e richieste costruzione.
+18. `TowerDefenseWaveController` governa ondate e usa `EnemySystem` per i nemici da percorso.
+19. `TowerDefenseManager` mantiene vita core e crediti, mentre gli slot delegano lo spawn delle torri.
+20. `DefenseTower` seleziona target tower defense e spara tramite `ProjectileSystem`.
+21. `IsometricCameraController` segue il gruppo `players`.
+22. `HUDManager` mostra slot, progressione, vita, munizioni, stato modalita e barra boss.
 
 ## Sistemi principali
 
@@ -36,7 +40,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `WeaponSystem`: stato runtime per-player di arma, cooldown, munizioni e ricarica.
 - `ProjectileSystem` e `Projectile`: spawn, movimento, collisione e consegna del danno.
 - `HealthSystem` e `HealthComponent`: richieste globali di danno/cura e stato vita locale.
-- `EnemySystem`: spawn, contenitore, registro runtime e notifica morte nemici.
+- `EnemySystem`: registro di scene nemico per ID, spawn, contenitore, registro runtime e notifica morte.
 - `BasicEnemy`: AI melee con stati idle, chase, attack e dead.
 - `BossSystem`: spawn centralizzato, registro del boss attivo e notifica sconfitta.
 - `BasicBoss`: boss modulare con targeting, movimento, fasi e pattern proiettile.
@@ -45,7 +49,13 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `DungeonGenerator`: generazione deterministica dei dati layout dungeon.
 - `DungeonMode`: avanzamento stanza, encounter, loot, boss e completamento run.
 - `DungeonRoom`: rappresentazione riusabile della stanza attiva e portale di transizione.
-- `TowerDefenseManager`: base health e contratto tower defense.
+- `TowerDefenseMode`: lifecycle della modalita, arena, player, costruzione e pulizia runtime.
+- `TowerDefenseWaveController`: macchina a stati per intermissione, spawn, combat, boss e reward.
+- `TowerDefenseManager`: vita core, crediti di run e acquisto centralizzato delle torri.
+- `TowerDefenseArena`: percorso, rappresentazione core, spawn party e slot costruzione.
+- `TowerDefenseEnemy`: movimento a waypoint, danno al core e contratto health/drop condiviso.
+- `TowerBuildSlot`: rileva il player e inoltra la richiesta di costruzione.
+- `DefenseTower`: targeting automatico e sparo tramite `ProjectileSystem`.
 - `DropEntry` e `LootTable`: dati tipizzati per chance, quantita e arma associata.
 - `DropSystem`: roll, spawn pickup e applicazione centralizzata delle ricompense.
 - `DropPickup`: rappresentazione fisica e raccolta da parte dei player.
@@ -92,6 +102,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - Un joypad con `device = 0` controlla lo slot 1, `device = 1` controlla lo slot 2, e cosi via.
 - `Start` attiva lo slot del controller, `Back/Select` disattiva lo slot se non e player 1.
 - `F2`, `F3` e `F4` sono fallback debug per attivare/disattivare gli slot 2, 3 e 4 senza controller fisici.
+- Ogni slot possiede anche l'azione `interact`: joypad `A`, con fallback tastiera `E` per player 1.
 - `active_slots_changed` e il segnale autoritativo: i sistemi interessati devono ascoltare questo segnale invece di duplicare lo stato multiplayer.
 
 ## Contratti per modalita
@@ -148,6 +159,24 @@ Ogni modalita deriva da `BaseGameMode` e fornisce:
 - La sostituzione di una stanza richiesta da un trigger fisico avviene in modo differito.
 - `F5` seleziona dungeon e `F1` torna a survival; una UI completa di selezione resta futura.
 - Diramazioni, shop, biomi e persistenza della run non fanno parte del prototipo minimo.
+
+## Contratto tower defense
+
+- `F6` seleziona `TowerDefenseMode`; il cambio modalita arresta e ripulisce survival o dungeon.
+- La modalita istanzia una `TowerDefenseArena` e nasconde il playground prototipo.
+- `TowerDefenseWaveController` e autoritativo per stato, indice wave, spawn e bersagli tracciati.
+- Il percorso e un `PackedVector2Array` convertito in coordinate globali dall'arena.
+- `EnemySystem.register_enemy_scene()` associa l'ID `tower_defense_raider` alla scena dedicata.
+- `TowerDefenseEnemy` segue i waypoint senza selezionare player; alla fine chiama `TowerDefenseManager.damage_base()`.
+- Vita, morte, drop e collisione proiettile continuano a usare `HealthComponent`, `DropSystem` e `ProjectileSystem`.
+- I crediti sono valuta di run separata dal denaro party e vengono azzerati all'avvio della modalita.
+- `TowerBuildSlot` rileva player sovrapposti e richiede la costruzione con l'azione `interact`.
+- `TowerDefenseManager` valida disponibilita e costo prima di creare la torre.
+- `DefenseTower` considera solo nodi nel gruppo `tower_defense_targets`.
+- Le boss wave richiedono il `Wave Warden` tramite `GameModeManager` e `BossSystem`.
+- `BasicBoss` mantiene il comportamento action normale, ma se riceve `path_points` usa il percorso e danneggia il core al termine.
+- La distruzione del core porta la modalita in stato `defeated` e ripulisce la wave.
+- Percorsi multipli, upgrade, vendita, riparazione e tipi torre aggiuntivi restano futuri.
 
 Modalita previste:
 

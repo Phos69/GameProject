@@ -74,3 +74,17 @@
 - Corretto lo stop di survival per ripulire nemici e boss prima del cambio modalita.
 - Aggiunto smoke test headless dungeon su generazione, transizioni, combat, loot, boss e ritorno a survival.
 - Aggiornata documentazione per stato Milestone 7 e prossima Milestone 8.
+- Completata Milestone 8 come prototipo minimo tower defense.
+- Aggiunta arena dedicata con percorso a waypoint, core da difendere e tre slot costruzione.
+- Aggiunto `TowerDefenseEnemy` con scaling, danno al core, health e drop condivisi.
+- Esteso `EnemySystem` con registrazione di scene nemico per ID.
+- Esteso `TowerDefenseManager` con reset run, crediti e acquisto centralizzato delle torri.
+- Aggiunti `TowerBuildSlot` e input `interact` con `E`/joypad `A`.
+- Aggiunta `DefenseTower` con targeting automatico e sparo tramite `ProjectileSystem`.
+- Implementato ciclo ondate tower defense con spawn progressivo, ricompense e sconfitta core.
+- Estratta la macchina a stati in `TowerDefenseWaveController` per mantenere modulare la modalita.
+- Integrato il `Wave Warden` nelle boss wave tower defense tramite percorso opzionale.
+- Aggiunti hotkey `F6` e stato HUD per core, crediti, wave e nemici.
+- Reso differito lo spawn dei drop da morte per evitare modifiche al physics server durante le collisioni.
+- Aggiunto smoke test headless tower defense e verificata l'intera suite Milestone 3-8.
+- Aggiornata documentazione per stato Milestone 8 e prossima Milestone 9.

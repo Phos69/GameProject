@@ -161,6 +161,33 @@ godot --headless --path . --script res://tests/dungeon_smoke_test.gd
 
 Il test verifica seed deterministico, celle uniche, link, transizione fisica, combat, loot, boss, completamento e ritorno a survival.
 
+## Regressione tower defense
+
+- `F6` arresta la modalita corrente e apre l'arena tower defense.
+- L'HUD mostra vita core, crediti, ondata e nemici rimasti.
+- Il core parte da 250 HP e la run da 75 crediti.
+- I nemici arancioni seguono l'intero percorso.
+- Un nemico che arriva al core infligge 12 danni base.
+- Entrare in uno slot azzurro e premere `E` costruisce una torre per 25 crediti.
+- Con joypad, il pulsante `A` costruisce per lo slot player associato.
+- Uno slot occupato non consente una seconda costruzione.
+- Una torre acquisisce automaticamente i bersagli sul percorso e usa proiettili visibili.
+- Eliminare un nemico assegna 4 crediti.
+- Completare una wave assegna la ricompensa crediti mostrata nell'HUD.
+- Conteggio e statistiche dei nemici aumentano nelle ondate successive.
+- La quinta ondata genera tre scorte e il `Wave Warden`.
+- La boss wave termina solo quando scorte e boss sono morti o hanno raggiunto il core.
+- Se il core raggiunge 0 HP, la run entra in stato `DEFENSE FAILED`.
+- `F1` ripulisce arena e torri e riavvia survival.
+
+## Smoke test tower defense
+
+```text
+godot --headless --path . --script res://tests/tower_defense_smoke_test.gd
+```
+
+Il test verifica cambio modalita, percorso, danno core, crediti, costruzione, fuoco torre, boss wave, HUD, sconfitta e pulizia runtime.
+
 ## Regressione architettura
 
 - I sistemi non sono duplicati in cartelle diverse.

@@ -207,10 +207,42 @@ L'HUD mostra:
 
 ## Tower defense
 
-La modalita tower defense prevede:
+La modalita tower defense implementata usa un'arena dedicata:
 
-- una base con vita;
-- path nemici;
-- punti torre;
-- ondate;
-- boss nelle ondate principali.
+- core da 250 HP;
+- percorso fisso a sei waypoint;
+- tre slot torre;
+- 75 crediti iniziali;
+- costo di una torre: 25 crediti;
+- costruzione entrando nello slot e premendo `E` o joypad `A`;
+- sconfitta quando il core raggiunge 0 HP.
+
+Nemico `Tower Defense Raider`:
+
+- 38 HP base;
+- velocita 105;
+- 12 danni al core se completa il percorso;
+- 4 crediti se eliminato;
+- vita +16%, velocita +4% e danno core +12% per ondata superata.
+
+Torre prototipo:
+
+- range 260;
+- 2,5 colpi al secondo;
+- 16 danni per colpo;
+- targeting automatico del bersaglio valido piu vicino;
+- usa i proiettili e il sistema danni condivisi.
+
+Regole ondate:
+
+- 3 secondi di preparazione iniziale;
+- 4 secondi di intermissione;
+- ondata 1 con 4 nemici;
+- 2 nemici aggiuntivi per ondata;
+- spawn ogni 0,55 secondi;
+- ricompensa completamento: `12 + 4N` crediti;
+- ogni quinta ondata genera 3 scorte e il `Wave Warden`;
+- boss eliminato: 20 crediti;
+- boss arrivato al core: 55 danni.
+
+I player possono continuare a muoversi e sparare direttamente ai nemici. Crediti, torri e core appartengono alla run tower defense; denaro e XP party restano separati. Percorsi multipli, tipi torre, upgrade, vendita e riparazione non sono ancora implementati.

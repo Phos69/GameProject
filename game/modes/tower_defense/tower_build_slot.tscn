@@ -1,0 +1,32 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://game/modes/tower_defense/tower_build_slot.gd" id="1_slot"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_slot"]
+radius = 38.0
+
+[node name="TowerBuildSlot" type="Area2D"]
+collision_layer = 0
+collision_mask = 1
+monitoring = true
+script = ExtResource("1_slot")
+
+[node name="Visual" type="Polygon2D" parent="."]
+color = Color(0.22, 0.72, 0.88, 0.42)
+polygon = PackedVector2Array(0, -34, 29, -17, 29, 17, 0, 34, -29, 17, -29, -17)
+
+[node name="Outline" type="Line2D" parent="."]
+points = PackedVector2Array(0, -34, 29, -17, 29, 17, 0, 34, -29, 17, -29, -17, 0, -34)
+width = 3.0
+default_color = Color(0.42, 0.9, 1, 0.9)
+
+[node name="PromptLabel" type="Label" parent="."]
+offset_left = -34.0
+offset_top = 38.0
+offset_right = 34.0
+offset_bottom = 78.0
+text = "E / A\n25 C"
+horizontal_alignment = 1
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_slot")

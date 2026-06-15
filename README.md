@@ -11,7 +11,7 @@ Il progetto vuole diventare una piattaforma modulare per sperimentare tre modali
 - tower defense;
 - boss fight ricorrenti nelle ondate importanti o alla fine dei livelli.
 
-La base attuale contiene Milestone 0-7 come prototipi minimi: repository iniziale, documentazione, progetto Godot, scena pseudo-isometrica, player controllabile, input tastiera/joypad, camera funzionante, multiplayer locale 1-4 player, combat base, nemico melee, drop raccoglibili, zombie survival, boss modulare e dungeon procedurale giocabile.
+La base attuale contiene Milestone 0-8 come prototipi minimi: repository iniziale, documentazione, progetto Godot, scena pseudo-isometrica, player controllabile, input tastiera/joypad, camera funzionante, multiplayer locale 1-4 player, combat base, nemico melee, drop raccoglibili, zombie survival, boss modulare, dungeon procedurale e tower defense giocabile.
 
 ## Stack tecnico
 
@@ -40,10 +40,11 @@ Controlli debug:
 
 - Tastiera: `WASD` per movimento, frecce per mira, `Spazio` per sparare e `R` per ricaricare.
 - Tastiera debug multiplayer: `F2`, `F3`, `F4` attivano/disattivano gli slot player 2, 3 e 4.
-- Modalita debug: `F1` avvia survival, `F5` avvia una run dungeon.
+- Modalita debug: `F1` avvia survival, `F5` avvia una run dungeon e `F6` avvia tower defense.
 - Joypad: stick sinistro per movimento, stick destro per mira, trigger/spalla destra per sparare e pulsante `X` per ricaricare.
 - Joypad multiplayer: `Start` attiva lo slot del controller, `Back/Select` lascia lo slot se non e player 1.
 - Dungeon: attraversare il portale verde a destra; nelle stanze combat e boss diventa verde solo dopo aver eliminato tutti i bersagli.
+- Tower defense: entrare in uno slot azzurro e premere `E` o pulsante joypad `A` per costruire una torre se ci sono crediti sufficienti.
 
 La suite e stata verificata con Godot `4.6.3`. Se `godot` non e nel PATH, usare l'eseguibile Godot installato localmente o avviare i test dall'editor.
 
@@ -55,6 +56,7 @@ godot --headless --path . --script res://tests/enemy_drop_smoke_test.gd
 godot --headless --path . --script res://tests/survival_wave_smoke_test.gd
 godot --headless --path . --script res://tests/boss_smoke_test.gd
 godot --headless --path . --script res://tests/dungeon_smoke_test.gd
+godot --headless --path . --script res://tests/tower_defense_smoke_test.gd
 ```
 
 ## Struttura cartelle
@@ -134,7 +136,14 @@ Completato:
 - loot room con XP, denaro, munizioni e vita;
 - boss finale richiesto tramite il `BossSystem` condiviso;
 - HUD dungeon con seed, stanza corrente, stato uscita e nemici rimasti;
-- hotkey debug `F1`/`F5` per passare tra survival e dungeon;
+- hotkey debug `F1`/`F5`/`F6` per passare tra survival, dungeon e tower defense;
+- tower defense avviabile con `F6`;
+- arena dedicata con percorso a waypoint e core da 250 HP;
+- nemici da percorso che danneggiano il core se raggiungono la fine;
+- tre slot costruzione con crediti di run e input `E`/joypad `A`;
+- torre automatica con targeting e proiettili condivisi;
+- ondate crescenti, ricompense crediti e boss ogni cinque ondate;
+- HUD tower defense con vita core, crediti, ondata e nemici rimasti;
 - struttura modulare per multiplayer, modalita, combat, proiettili, health, drop, boss, progressione e UI;
 - documentazione iniziale.
 
@@ -144,10 +153,8 @@ Non ancora completato:
 - varianti nemico ranged/tank/runner;
 - respawn o revive dei player;
 - dungeon ramificati, shop, biomi e selezione stanza;
-- tower defense giocabile;
 - salvataggi e packaging.
 
 ## Prossime milestone
 
-1. Milestone 8: tower defense.
-2. Milestone 9: progressione persistente, polish e packaging.
+1. Milestone 9: progressione persistente, menu, polish e packaging.

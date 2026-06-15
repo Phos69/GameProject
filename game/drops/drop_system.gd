@@ -33,8 +33,24 @@ func spawn_drops(
 	origin: Vector2,
 	parent: Node = null
 ) -> Array[Node]:
-	var pickups: Array[Node] = []
 	var drops := roll_drops(source, loot_table)
+	return _spawn_drop_data(drops, origin, parent)
+
+func spawn_drops_deferred(
+	source: Node,
+	loot_table: LootTable,
+	origin: Vector2,
+	parent: Node = null
+) -> void:
+	var drops := roll_drops(source, loot_table)
+	call_deferred("_spawn_drop_data", drops, origin, parent)
+
+func _spawn_drop_data(
+	drops: Array[Dictionary],
+	origin: Vector2,
+	parent: Node = null
+) -> Array[Node]:
+	var pickups: Array[Node] = []
 	if pickup_scene == null:
 		return pickups
 

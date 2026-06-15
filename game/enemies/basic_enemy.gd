@@ -144,8 +144,8 @@ func _on_died() -> void:
 	health_bar.hide()
 
 	var drop_system = get_tree().get_first_node_in_group("drop_system")
-	if drop_system != null and drop_system.has_method("spawn_drops"):
-		drop_system.spawn_drops(self, loot_table, global_position)
+	if drop_system != null and drop_system.has_method("spawn_drops_deferred"):
+		drop_system.spawn_drops_deferred(self, loot_table, global_position)
 
 	died.emit(self)
 	queue_free()

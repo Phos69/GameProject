@@ -105,18 +105,26 @@ Stato: completata come prototipo minimo.
 
 ## Milestone 8 - Tower defense
 
-Stato: prossima.
+Stato: completata come prototipo minimo.
 
-- Path nemici.
-- Base da difendere.
-- Torri piazzabili.
-- Boss nelle ondate principali.
+- Arena tower defense dedicata e avviabile con `F6`.
+- Macchina a stati delle ondate separata in `TowerDefenseWaveController`.
+- Percorso fisso a waypoint condiviso da nemici e boss.
+- Core da difendere con vita e condizione di sconfitta.
+- Crediti di run, tre slot costruzione e costo torre.
+- Input costruzione `E`/joypad `A` per ogni player locale.
+- Torre automatica con targeting, range e proiettili condivisi.
+- Ondate con spawn progressivo, scaling e ricompense crediti.
+- Boss ogni cinque ondate tramite `BossSystem`.
+- HUD con core, crediti, ondata e nemici rimasti.
+- Smoke test headless su percorso, costruzione, torre, boss e sconfitta.
 
 ## Milestone 9 - Polish, salvataggi e packaging
 
-Stato: pianificata.
+Stato: prossima.
 
 - Save/load.
+- Menu principale e selezione modalita.
 - Audio e feedback.
 - Bilanciamento.
 - Export desktop.

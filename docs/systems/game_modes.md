@@ -52,4 +52,16 @@ Una sola `DungeonRoom` e attiva alla volta. Nemici, drop, health, progressione, 
 
 ## Tower Defense
 
-Usa base health, path nemici, torri e boss nelle ondate principali.
+`TowerDefenseMode` istanzia una `TowerDefenseArena` separata e delega il ciclo ondate a `TowerDefenseWaveController`.
+
+Flusso:
+
+1. reset di core e crediti;
+2. intermissione;
+3. spawn progressivo tramite `EnemySystem`;
+4. movimento nemici lungo i waypoint;
+5. danno al core per i nemici che raggiungono la fine;
+6. ricompensa crediti dopo l'eliminazione o fuga di tutta la wave;
+7. boss ogni cinque ondate tramite `BossSystem`.
+
+I player costruiscono entrando in un `TowerBuildSlot` e usando l'azione `interact`. `TowerDefenseManager` valida il costo e crea una `DefenseTower`, che spara tramite `ProjectileSystem`. `F6` avvia la modalita e `F1` torna a survival.

@@ -1,4 +1,4 @@
-[gd_scene load_steps=21 format=3]
+[gd_scene load_steps=23 format=3]
 
 [ext_resource type="Script" path="res://game/main/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://game/input/input_manager.gd" id="2_input_manager"]
@@ -20,6 +20,8 @@
 [ext_resource type="PackedScene" path="res://game/debug/combat_target.tscn" id="18_combat_target"]
 [ext_resource type="Script" path="res://game/modes/survival/survival_mode.gd" id="19_survival_mode"]
 [ext_resource type="Script" path="res://game/modes/dungeon/dungeon_mode.gd" id="20_dungeon_mode"]
+[ext_resource type="Script" path="res://game/modes/tower_defense/tower_defense_mode.gd" id="21_tower_defense_mode"]
+[ext_resource type="Script" path="res://game/modes/tower_defense/tower_defense_wave_controller.gd" id="22_tower_defense_wave_controller"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -40,6 +42,12 @@ script = ExtResource("19_survival_mode")
 
 [node name="DungeonMode" type="Node" parent="Modes"]
 script = ExtResource("20_dungeon_mode")
+
+[node name="TowerDefenseMode" type="Node" parent="Modes"]
+script = ExtResource("21_tower_defense_mode")
+
+[node name="WaveController" type="Node" parent="Modes/TowerDefenseMode"]
+script = ExtResource("22_tower_defense_wave_controller")
 
 [node name="PlayerManager" type="Node" parent="."]
 script = ExtResource("5_player_manager")
@@ -99,6 +107,10 @@ position = Vector2(210, 145)
 position = Vector2(-240, -80)
 
 [node name="DungeonRooms" type="Node2D" parent="World"]
+
+[node name="TowerDefenseArenas" type="Node2D" parent="World"]
+
+[node name="Towers" type="Node2D" parent="World"]
 
 [node name="Camera2D" type="Camera2D" parent="."]
 script = ExtResource("14_camera")

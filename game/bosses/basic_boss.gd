@@ -4,6 +4,7 @@ class_name BasicBoss
 signal phase_changed(phase_index: int)
 signal target_changed(target: Node)
 signal attack_pattern_started(pattern_id: StringName, projectile_count: int)
+signal base_reached(boss: Node, damage: int)
 signal died(boss: Node)
 
 @export var boss_id: StringName = &"wave_warden"
@@ -37,15 +38,27 @@ var wave_index: int = 0
 var health_multiplier: float = 1.0
 var damage_multiplier: float = 1.0
 var is_dead: bool = false
+var path_points: PackedVector2Array = PackedVector2Array()
+var path_index: int = 1
+var base_damage: int = 40
 
 func configure_boss(config: Dictionary) -> void:
 	wave_index = int(config.get("wave_index", 0))
 	health_multiplier = maxf(float(config.get("health_multiplier", 1.0)), 0.01)
 	damage_multiplier = maxf(float(config.get("damage_multiplier", 1.0)), 0.01)
+	base_damage = maxi(int(config.get("base_damage", base_damage)), 1)
+	var configured_path = config.get("path_points", PackedVector2Array())
+	if configured_path is PackedVector2Array:
+		path_points = configured_path
+	elif configured_path is Array:
+		for point in configured_path:
+			path_points.append(Vector2(point))
 
 func _ready() -> void:
 	add_to_group("bosses")
 	add_to_group("damageable_targets")
+	if not path_points.is_empty():
+		add_to_group("tower_defense_targets")
 	_apply_scaling()
 	health_component.damaged.connect(_on_damaged)
 	health_component.died.connect(_on_died)
@@ -53,6 +66,9 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	if is_dead:
+		return
+	if not path_points.is_empty():
+		_update_path_movement(delta)
 		return
 
 	target_refresh_timer = maxf(target_refresh_timer - delta, 0.0)
@@ -69,6 +85,36 @@ func _physics_process(delta: float) -> void:
 	_update_movement(delta)
 	if attack_timer <= 0.0:
 		_perform_scheduled_pattern()
+
+func _update_path_movement(delta: float) -> void:
+	if path_index >= path_points.size():
+		_reach_base()
+		return
+	var target_point := path_points[path_index]
+	var travel_distance := move_speed * delta
+	if global_position.distance_to(target_point) <= maxf(12.0, travel_distance):
+		global_position = target_point
+		path_index += 1
+		if path_index >= path_points.size():
+			_reach_base()
+			return
+		target_point = path_points[path_index]
+	var direction := global_position.direction_to(target_point)
+	velocity = direction * move_speed
+	global_position = global_position.move_toward(target_point, travel_distance)
+
+func _reach_base() -> void:
+	if is_dead:
+		return
+	is_dead = true
+	velocity = Vector2.ZERO
+	collision_layer = 0
+	collision_mask = 0
+	var tower_defense_manager := get_tree().get_first_node_in_group("tower_defense_manager")
+	if tower_defense_manager != null:
+		tower_defense_manager.damage_base(base_damage)
+	base_reached.emit(self, base_damage)
+	queue_free()
 
 func perform_aimed_volley() -> int:
 	if not _is_valid_target(target):
@@ -178,7 +224,7 @@ func _on_died() -> void:
 	collision_mask = 0
 	var drop_system = get_tree().get_first_node_in_group("drop_system")
 	if drop_system != null:
-		drop_system.spawn_drops(self, loot_table, global_position)
+		drop_system.spawn_drops_deferred(self, loot_table, global_position)
 	died.emit(self)
 	queue_free()
 

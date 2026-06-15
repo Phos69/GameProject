@@ -91,17 +91,29 @@ func _format_combat_status(players: Array[Node]) -> String:
 
 func _get_mode_title() -> String:
 	var game_mode_manager := get_tree().get_first_node_in_group("game_mode_manager") as GameModeManager
-	if game_mode_manager != null and game_mode_manager.active_mode_id == GameConstants.MODE_DUNGEON:
-		return "Procedural Dungeon"
+	if game_mode_manager != null:
+		match game_mode_manager.active_mode_id:
+			GameConstants.MODE_DUNGEON:
+				return "Procedural Dungeon"
+			GameConstants.MODE_TOWER_DEFENSE:
+				return "Tower Defense"
 	return "Survival Arena"
 
 func _format_mode_status() -> String:
 	var game_mode_manager := get_tree().get_first_node_in_group("game_mode_manager") as GameModeManager
-	if game_mode_manager != null and game_mode_manager.active_mode_id == GameConstants.MODE_DUNGEON:
-		var dungeon_mode := get_tree().get_first_node_in_group("dungeon_mode") as DungeonMode
-		if dungeon_mode == null:
-			return "Dungeon idle"
-		return "%s  Seed %d" % [dungeon_mode.get_status_text(), dungeon_mode.run_seed]
+	if game_mode_manager != null:
+		if game_mode_manager.active_mode_id == GameConstants.MODE_DUNGEON:
+			var dungeon_mode := get_tree().get_first_node_in_group("dungeon_mode") as DungeonMode
+			if dungeon_mode == null:
+				return "Dungeon idle"
+			return "%s  Seed %d" % [dungeon_mode.get_status_text(), dungeon_mode.run_seed]
+		if game_mode_manager.active_mode_id == GameConstants.MODE_TOWER_DEFENSE:
+			var tower_defense_mode := get_tree().get_first_node_in_group(
+				"tower_defense_mode"
+			) as TowerDefenseMode
+			if tower_defense_mode == null:
+				return "Defense idle"
+			return tower_defense_mode.get_status_text()
 	return _format_wave_status()
 
 func _format_wave_status() -> String:

@@ -2,6 +2,12 @@
 
 ## Completati recenti
 
+- Milestone 8: tower defense giocabile.
+  - Obiettivo: difendere un core con torri piazzabili, crediti e ondate su percorso.
+  - Milestone collegata: Milestone 8.
+  - File/sistemi coinvolti: `TowerDefenseMode`, `TowerDefenseWaveController`, `TowerDefenseManager`, `TowerDefenseArena`, `TowerDefenseEnemy`, `TowerBuildSlot`, `DefenseTower`, `EnemySystem`, `BossSystem`, `HUDManager`.
+  - Criterio di accettazione: i nemici seguono il path e danneggiano il core, una torre acquistata li attacca e le boss wave usano il sistema condiviso.
+  - Test richiesto: `tests/tower_defense_smoke_test.gd` e checklist manuale tower defense.
 - Milestone 7: dungeon procedurale giocabile.
   - Obiettivo: generare e attraversare start room, combat room, loot room e boss room.
   - Milestone collegata: Milestone 7.
@@ -41,17 +47,17 @@
 
 ## Priorita alta
 
-- Milestone 8: implementare base tower defense, path nemici e torri piazzabili.
-  - Obiettivo: creare il loop minimo di difesa della base con economia.
-  - Milestone collegata: Milestone 8.
-  - File/sistemi coinvolti: `TowerDefenseMode`, `TowerDefenseManager`, path, torri e base.
-  - Criterio di accettazione: i nemici seguono il path, danneggiano la base e una torre puo eliminarli.
-  - Test richiesto: smoke test tower defense e checklist manuale di una ondata completa.
+- Milestone 9: progressione persistente, menu, polish e packaging.
+  - Obiettivo: trasformare i prototipi modalita in un flusso avviabile e salvabile.
+  - Milestone collegata: Milestone 9.
+  - File/sistemi coinvolti: `SaveManager`, `ProgressionManager`, menu principale, selezione modalita, audio, export preset.
+  - Criterio di accettazione: il gioco parte da menu, salva dati validi e produce una build desktop avviabile.
+  - Test richiesto: round-trip save/load, checklist menu/modalita e smoke test build esportata.
 
 ## Priorita media
 
 - Menu debug per selezionare modalita.
-  - Obiettivo: sostituire le hotkey `F1`/`F5` con una UI per survival, dungeon e tower defense.
+  - Obiettivo: sostituire le hotkey `F1`/`F5`/`F6` con una UI per survival, dungeon e tower defense.
   - Milestone collegata: supporto alle Milestone 5-8.
   - File/sistemi coinvolti: `GameModeManager`, nuova UI debug.
   - Criterio di accettazione: ogni modalita registrata puo essere selezionata e avviata.
