@@ -31,6 +31,9 @@ func _run() -> void:
 	var boss_system := get_first_node_in_group("boss_system") as BossSystem
 	var projectile_system := get_first_node_in_group("projectile_system") as ProjectileSystem
 	var hud := get_first_node_in_group("hud_manager") as HUDManager
+	var ammo_director := get_first_node_in_group(
+		"survival_ammo_director"
+	) as SurvivalAmmoDirector
 	_expect(wave_manager != null, "wave manager is available")
 	_expect(game_mode_manager != null, "game mode manager is available")
 	_expect(survival_mode != null, "survival mode is available")
@@ -40,6 +43,7 @@ func _run() -> void:
 	_expect(boss_system != null, "boss system is available")
 	_expect(projectile_system != null, "projectile system is available")
 	_expect(hud != null, "HUD manager is available")
+	_expect(ammo_director != null, "survival ammo director is available")
 	if (
 		wave_manager == null
 		or game_mode_manager == null
@@ -50,6 +54,7 @@ func _run() -> void:
 		or boss_system == null
 		or projectile_system == null
 		or hud == null
+		or ammo_director == null
 	):
 		_finish()
 		return
@@ -101,6 +106,10 @@ func _run() -> void:
 	_expect(wave_manager.get_enemies_remaining() == 1, "boss keeps the wave active")
 	_expect(boss_health.max_health == 504, "fifth wave scales boss health")
 	_expect(boss.projectile_damage == 13, "fifth wave scales boss damage")
+	_expect(
+		not ammo_director.get_active_crates().is_empty(),
+		"boss wave starts with a guaranteed ammo source"
+	)
 
 	await process_frame
 	_expect(hud.boss_health_bar.visible, "boss health bar is visible")

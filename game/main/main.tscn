@@ -1,4 +1,4 @@
-[gd_scene load_steps=26 format=3]
+[gd_scene load_steps=27 format=3]
 
 [ext_resource type="Script" path="res://game/main/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://game/input/input_manager.gd" id="2_input_manager"]
@@ -25,6 +25,7 @@
 [ext_resource type="Script" path="res://game/saves/save_manager.gd" id="23_save_manager"]
 [ext_resource type="Script" path="res://game/audio/audio_manager.gd" id="24_audio_manager"]
 [ext_resource type="Script" path="res://game/ui/main_menu.gd" id="25_main_menu"]
+[ext_resource type="Script" path="res://game/modes/survival/survival_ammo_director.gd" id="26_ammo_director"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -42,6 +43,9 @@ script = ExtResource("4_game_mode_manager")
 
 [node name="SurvivalMode" type="Node" parent="Modes"]
 script = ExtResource("19_survival_mode")
+
+[node name="AmmoDirector" type="Node" parent="Modes/SurvivalMode"]
+script = ExtResource("26_ammo_director")
 
 [node name="DungeonMode" type="Node" parent="Modes"]
 script = ExtResource("20_dungeon_mode")

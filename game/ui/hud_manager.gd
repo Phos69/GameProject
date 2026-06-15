@@ -4,6 +4,8 @@ class_name HUDManager
 var status_label: Label
 var boss_name_label: Label
 var boss_health_bar: ProgressBar
+var pickup_feedback_text: String = ""
+var pickup_feedback_timer: float = 0.0
 
 func _ready() -> void:
 	add_to_group("hud_manager")
@@ -14,9 +16,13 @@ func _ready() -> void:
 	status_label.modulate = Color(0.90, 0.96, 1.0, 1.0)
 	add_child(status_label)
 	_create_boss_hud()
+	_connect_drop_feedback()
 	_refresh()
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	pickup_feedback_timer = maxf(pickup_feedback_timer - delta, 0.0)
+	if pickup_feedback_timer <= 0.0:
+		pickup_feedback_text = ""
 	_refresh()
 
 func _refresh() -> void:
@@ -57,6 +63,8 @@ func _refresh() -> void:
 	var mode_status := _format_mode_status()
 	if not mode_status.is_empty():
 		status_label.text += "\n" + mode_status
+	if not pickup_feedback_text.is_empty():
+		status_label.text += "\n" + pickup_feedback_text
 	_refresh_boss_hud()
 
 func _get_active_slots(players: Array[Node]) -> Array:
@@ -217,3 +225,18 @@ func _refresh_boss_hud() -> void:
 	boss_health_bar.value = float(health_component.current_health)
 	boss_name_label.show()
 	boss_health_bar.show()
+
+func _connect_drop_feedback() -> void:
+	var drop_system := get_tree().get_first_node_in_group("drop_system") as DropSystem
+	if drop_system == null:
+		return
+	var callback := Callable(self, "_on_drop_collected")
+	if not drop_system.drop_collected.is_connected(callback):
+		drop_system.drop_collected.connect(callback)
+
+func _on_drop_collected(drop_data: Dictionary, _collector: Node) -> void:
+	var drop_type := StringName(drop_data.get("type", &"unknown"))
+	if drop_type != GameConstants.DROP_AMMO:
+		return
+	pickup_feedback_text = "AMMO SHARED +%d" % int(drop_data.get("amount", 0))
+	pickup_feedback_timer = 1.75

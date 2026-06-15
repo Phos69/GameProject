@@ -31,6 +31,9 @@ func _run() -> void:
 	var progression := get_first_node_in_group("progression_manager") as ProgressionManager
 	var hud := get_first_node_in_group("hud_manager") as HUDManager
 	var boss_system := get_first_node_in_group("boss_system") as BossSystem
+	var ammo_director := get_first_node_in_group(
+		"survival_ammo_director"
+	) as SurvivalAmmoDirector
 	_expect(wave_manager != null, "wave manager is available")
 	_expect(game_mode_manager != null, "game mode manager is available")
 	_expect(survival_mode != null, "survival mode is registered")
@@ -40,6 +43,7 @@ func _run() -> void:
 	_expect(progression != null, "progression manager is available")
 	_expect(hud != null, "HUD manager is available")
 	_expect(boss_system != null, "boss system hook is available")
+	_expect(ammo_director != null, "survival ammo director is available")
 	if (
 		wave_manager == null
 		or game_mode_manager == null
@@ -50,6 +54,7 @@ func _run() -> void:
 		or progression == null
 		or hud == null
 		or boss_system == null
+		or ammo_director == null
 	):
 		_finish()
 		return
@@ -84,6 +89,8 @@ func _run() -> void:
 
 	var player_one_health := player_one.get_node("HealthComponent") as HealthComponent
 	var player_one_weapon := player_one.get_node("WeaponSystem") as WeaponSystem
+	var blaster := load("res://game/weapons/prototype_blaster.tres") as WeaponData
+	player_one_weapon.equip_weapon(blaster)
 	var player_one_starting_reserve := player_one_weapon.reserve_ammo
 
 	game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL)
@@ -119,6 +126,7 @@ func _run() -> void:
 		_finish()
 		return
 	var player_two_weapon := player_two.get_node("WeaponSystem") as WeaponSystem
+	player_two_weapon.equip_weapon(blaster)
 	var player_two_starting_reserve := player_two_weapon.reserve_ammo
 
 	_expect(await _wait_for_wave_combat(wave_manager, 2), "wave two reaches combat state")
@@ -135,6 +143,16 @@ func _run() -> void:
 	await process_frame
 	_expect("Wave 2" in hud.status_label.text, "HUD displays the current wave")
 	_expect("Enemies 3/3" in hud.status_label.text, "HUD displays remaining enemies")
+	var saved_current_ammo := player_one_weapon.current_ammo
+	var saved_reserve_ammo := player_one_weapon.reserve_ammo
+	player_one_weapon.current_ammo = 0
+	player_one_weapon.reserve_ammo = 0
+	_expect(
+		ammo_director.evaluate_ammo_pressure(),
+		"ammo director spawns support when a living player has low special ammo"
+	)
+	player_one_weapon.current_ammo = saved_current_ammo
+	player_one_weapon.reserve_ammo = saved_reserve_ammo
 	_freeze_and_kill_wave(wave_manager, health_system)
 	_expect(await _wait_for_completed_wave(2), "wave two completes")
 	_expect(progression.money == 10, "wave two adds its party reward")
@@ -158,6 +176,23 @@ func _run() -> void:
 		boss_requests.has(&"survival_wave_3"),
 		"survival mode forwards the boss request to BossSystem"
 	)
+	var boss_supply_crates := ammo_director.get_active_crates()
+	_expect(
+		not boss_supply_crates.is_empty(),
+		"boss wave has a guaranteed supply crate"
+	)
+	if not boss_supply_crates.is_empty():
+		var supply_crate := boss_supply_crates[0]
+		_expect(
+			supply_crate.try_open(player_one),
+			"supply crate opens and rolls its configured ammo and health loot"
+		)
+		await process_frame
+		_expect(
+			_has_pickup_type(GameConstants.DROP_AMMO)
+			and _has_pickup_type(GameConstants.DROP_HEALTH),
+			"supply crate produces ammo and health pickups"
+		)
 	_freeze_and_kill_wave(wave_manager, health_system)
 	_expect(await _wait_for_completed_wave(3), "wave three completes")
 	_expect(progression.money == 18, "three wave rewards accumulate correctly")
@@ -172,6 +207,24 @@ func _run() -> void:
 	_expect(
 		int(wave_manager.last_reward.get("money", 0)) == 8,
 		"wave manager exposes the latest reward to the HUD"
+	)
+
+	player_one_weapon.current_ammo = 0
+	player_one_weapon.reserve_ammo = 0
+	player_two_weapon.current_ammo = 0
+	player_two_weapon.reserve_ammo = 0
+	_expect(
+		player_one_weapon.try_fire(player_one.global_position, Vector2.RIGHT, player_one),
+		"player one can still fire through the fallback at zero special ammo"
+	)
+	_expect(
+		player_two_weapon.try_fire(player_two.global_position, Vector2.LEFT, player_two),
+		"player two can still fire through the fallback at zero special ammo"
+	)
+	_expect(
+		player_one_weapon.is_fallback_active()
+		and player_two_weapon.is_fallback_active(),
+		"survival cannot leave all living players without a firing option"
 	)
 
 	survival_mode.stop_mode()
@@ -239,6 +292,15 @@ func _on_boss_wave_requested(wave_index: int) -> void:
 
 func _on_boss_requested(_mode_id: StringName, reason: StringName) -> void:
 	boss_requests.append(reason)
+
+func _has_pickup_type(drop_type: StringName) -> bool:
+	for pickup in get_nodes_in_group("drop_pickups"):
+		if (
+			pickup is DropPickup
+			and StringName((pickup as DropPickup).drop_data.get("type", &"")) == drop_type
+		):
+			return true
+	return false
 
 func _expect(condition: bool, message: String) -> void:
 	if condition:

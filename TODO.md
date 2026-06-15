@@ -2,6 +2,12 @@
 
 ## Completati recenti
 
+- Evoluzione post-roadmap: ammo survival anti-frustrazione.
+  - Obiettivo: garantire sempre una risposta di fuoco mantenendo tensione sulle armi speciali.
+  - Milestone collegata: evoluzione post-roadmap delle Milestone 3, 4, 5 e 9.
+  - File/sistemi coinvolti: `WeaponSystem`, `DropSystem`, `SupplyCrate`, `SurvivalAmmoDirector`, HUD, audio, survival e smoke test.
+  - Criterio di accettazione: fallback infinita con reload, speciali finite, ammo condivisa, supporto low-ammo e fonte garantita boss.
+  - Test richiesto: smoke test combat, enemy/drop, survival e boss, piu regressione dungeon/tower defense.
 - Milestone 9, completamento prototipo minimo.
   - Obiettivo: aggiungere un unlock persistente, feedback audio gameplay e primo bilanciamento.
   - Milestone collegata: Milestone 9.

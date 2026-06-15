@@ -115,8 +115,9 @@ Completato:
 - join/leave locale per slot 2-4;
 - spawn/despawn dinamico dei player locali;
 - HUD con slot locali attivi;
-- pistola base configurata tramite `WeaponData`;
-- munizioni, riserva e ricarica indipendenti per ogni player;
+- `Starter Pistol` configurata tramite `WeaponData` con riserva infinita;
+- slot fallback permanente e slot arma speciale con stato indipendente per ogni player;
+- fallback automatico quando una speciale esaurisce caricatore e riserva;
 - proiettili con collisione e danno tramite `HealthSystem`;
 - bersagli statici con vita nella scena principale;
 - HUD per-player con vita e munizioni;
@@ -126,7 +127,8 @@ Completato:
 - loot table tipizzate con probabilita e quantita configurabili;
 - pickup fisici per XP, denaro, munizioni, vita e armi;
 - XP e denaro condivisi dal party;
-- munizioni, cura e cambio arma applicati solo al player che raccoglie;
+- munizioni condivise tra tutti i player vivi con arma speciale;
+- cura e cambio arma applicati solo al player che raccoglie;
 - seconda arma prototipo ottenibile come drop;
 - menu principale mostrato all'avvio;
 - selezione di survival, dungeon e tower defense da tastiera o joypad;
@@ -135,6 +137,8 @@ Completato:
 - ondate con spawn scaglionato e conteggio crescente;
 - scaling progressivo di vita, velocita e danno dei nemici;
 - intermissione e ricompense party tra le ondate;
+- ammo director survival con soglia anti-frustrazione e cooldown configurabili;
+- supply crate con drop ammo/vita e fonte garantita nelle boss wave;
 - HUD con ondata, nemici rimasti, countdown e ultima ricompensa;
 - boss reale ogni cinque ondate, integrato nel conteggio e nel completamento della wave;
 - sconfitta survival quando tutti i player attivi sono morti;
@@ -167,6 +171,7 @@ Completato:
 - reset idempotente della salute a ogni nuova run e sui player che entrano durante il gameplay;
 - feedback audio procedurale per focus e conferma menu;
 - feedback audio procedurale per sparo, impatto valido e pickup;
+- feedback HUD/audio per low ammo, reload, fallback e ammo condivisa;
 - primo pass di bilanciamento sulle armi base;
 - preset export `Windows Desktop`;
 - mapping globale `ui_accept` su joypad `A`;

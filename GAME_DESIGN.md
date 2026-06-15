@@ -38,9 +38,19 @@ Arma prototipo implementata:
 - 10 danni per colpo;
 - 6 colpi al secondo;
 - caricatore da 12;
-- riserva iniziale da 36;
+- riserva infinita;
 - ricarica da 1 secondo;
-- munizioni e ricarica separate per ogni player.
+- resta sempre disponibile come fallback;
+- munizioni, caricatore e ricarica separate per ogni player.
+
+Regole fallback:
+
+- ogni player mantiene uno slot fallback e uno slot arma speciale;
+- le armi speciali conservano caricatore e riserva quando entra in uso la fallback;
+- se una speciale non puo ricaricare, lo stesso input fire attiva e spara la `Starter Pistol`;
+- la pistola infinita deve comunque ricaricare il caricatore;
+- un pickup ammo ripristina la riserva della speciale, la riattiva e avvia il reload;
+- la fallback e affidabile ma resta meno efficace delle speciali.
 
 Seconda arma prototipo:
 
@@ -132,10 +142,19 @@ Loot table prototipo del `Basic Zombie`:
 Regole raccolta:
 
 - XP e denaro sono condivisi dal party;
-- munizioni e vita vanno al player che raccoglie;
+- le munizioni vengono assegnate per intero alle speciali di tutti i player vivi;
+- la vita va al player che raccoglie;
 - un pickup vita resta a terra se il player e gia a vita piena;
+- un pickup ammo resta a terra se nessun player vivo possiede una speciale;
 - un drop arma equipaggia immediatamente il player che lo raccoglie;
 - non esistono ancora inventario, confronto arma o scambio tra player.
+
+Supply crate:
+
+- contenitore semplice apribile al contatto da un player vivo;
+- genera pickup tramite una `LootTable`, senza valori hardcoded nei nemici;
+- drop garantiti attuali: 10-14 ammo speciale e 16-22 HP;
+- viene usata dal director survival e prima delle boss wave.
 
 ## Progressione
 
@@ -159,15 +178,22 @@ Il feedback audio usa toni procedurali placeholder senza asset esterni obbligato
 - focus e conferma nel menu;
 - sparo per armi player, boss e torri;
 - impatto solo quando viene applicato danno;
-- pickup con tono differenziato per cura, denaro e arma.
+- pickup con tono differenziato per ammo, cura, denaro e arma;
+- low ammo, reload e attivazione fallback con toni distinti.
+
+L'HUD aggiunge `LOW`, `RELOAD` e `FALLBACK` allo stato ammo e mostra per 1,75 secondi la quantita di ammo condivisa raccolta.
 
 D-pad/stick cambiano focus e joypad `A` conferma da qualunque controller. Mix avanzato e asset audio definitivi restano futuri.
 
 ## Bilanciamento iniziale
 
 - `Starter Pistol`: 60 danni teorici al secondo, tre colpi per un `Basic Zombie`.
+- La riserva infinita della `Starter Pistol` non rimuove il caricatore da 12 ne il reload da 1 secondo.
 - `Prototype Blaster`: 72 danni teorici al secondo, due colpi per un `Basic Zombie`.
 - `Wave Cannon`: 84 danni teorici al secondo e caricatore ridotto da arma boss.
+- Low ammo speciale: 8 colpi totali o meno tra caricatore e riserva.
+- Ammo director: valutazione ogni 1 secondo, cooldown crate 12 secondi, massimo 1 crate anti-frustrazione attiva.
+- Supply crate: 10-14 ammo condivisa e 16-22 HP.
 - `Field Kit`: +20 HP, pari a circa due colpi boss base o due attacchi zombie aggiuntivi.
 - Lo scaling delle modalita resta invariato in questo primo pass e sara rivalutato con varianti nemico.
 
@@ -216,10 +242,18 @@ La modalita survival usa l'arena principale e parte dopo la selezione dal menu:
 Ricompense al completamento dell'ondata `N`:
 
 - denaro party: `2 + 2N`;
-- munizioni per ogni player vivo: `3 + N`;
+- munizioni speciali per ogni player vivo: `3 + N`;
 - cura per ogni player vivo: `4 + 2N`.
 
 I drop individuali dei nemici restano attivi durante le ondate e sono separati dalla ricompensa di completamento.
+
+Ammo director survival:
+
+- ignora i player che possiedono solo la fallback infinita;
+- se almeno un player vivo con speciale scende a 8 colpi totali o meno, puo generare una supply crate;
+- usa un cooldown di 12 secondi per evitare sovrabbondanza;
+- genera una fonte supply garantita durante l'intermissione prima della boss wave;
+- se la boss wave parte senza intermissione, genera la fonte all'inizio della wave.
 
 L'HUD mostra:
 
@@ -228,6 +262,8 @@ L'HUD mostra:
 - nemici rimasti sul totale;
 - ultima ricompensa;
 - vita e munizioni di ogni player;
+- stato low ammo, reload e fallback;
+- conferma temporanea dei pickup ammo condivisi;
 - XP e denaro party.
 
 ## Tower defense

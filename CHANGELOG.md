@@ -4,6 +4,14 @@
 
 ### Added
 
+- Aggiunta `Starter Pistol` con riserva infinita, caricatore e reload invariati.
+- Esteso `WeaponSystem` con fallback permanente e stato separato dell'arma speciale.
+- Aggiunto fallback shot automatico quando una speciale esaurisce caricatore e riserva.
+- Aggiunta distribuzione completa dei pickup ammo alle speciali di tutti i player vivi.
+- Aggiunte supply crate configurabili via `LootTable` con ammo e cura.
+- Aggiunto `SurvivalAmmoDirector` con soglia low-ammo, cooldown e fonte garantita boss.
+- Aggiunti feedback HUD/audio per low ammo, reload, fallback e ammo condivisa.
+- Estesi gli smoke test combat, drop, survival e boss per il nuovo contratto ammo.
 - Inizializzato repository Git.
 - Creato progetto Godot 4.x testuale.
 - Creata struttura cartelle per core, input, multiplayer, player, camera, combat, modalita, drop, progressione, UI, audio e salvataggi.
@@ -124,6 +132,8 @@
 
 ### Changed
 
+- I drop ammo sostengono solo le armi speciali; la fallback non dipende dai drop.
+- Le ricompense ammo survival vengono applicate agli slot speciali dei player vivi.
 - Ridotto il fire rate della `Starter Pistol` da 7 a 6 colpi al secondo.
 - Aumentato il fire rate del `Prototype Blaster` da 4 a 4,5 colpi al secondo.
 - Ogni nuova run ripristina la vita dei player prima di applicare gli unlock persistenti.

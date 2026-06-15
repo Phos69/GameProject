@@ -9,11 +9,13 @@ signal survival_defeated(wave_index: int)
 @export var boss_damage_scale_per_wave: float = 0.08
 
 var wave_manager: WaveManager
+var ammo_director: SurvivalAmmoDirector
 
 func _ready() -> void:
 	mode_id = GameConstants.MODE_SURVIVAL
 	add_to_group("survival_mode")
 	_resolve_wave_manager()
+	_resolve_ammo_director()
 
 	var game_mode_manager = get_tree().get_first_node_in_group("game_mode_manager")
 	if game_mode_manager != null:
@@ -38,12 +40,17 @@ func start_mode(context: Dictionary = {}) -> void:
 		return
 	super.start_mode(context)
 	_resolve_wave_manager()
+	_resolve_ammo_director()
+	if ammo_director != null:
+		ammo_director.start_run()
 	if wave_manager != null:
 		wave_manager.start_run()
 
 func stop_mode() -> void:
 	if not is_running:
 		return
+	if ammo_director != null:
+		ammo_director.stop_run(true)
 	if wave_manager != null:
 		wave_manager.stop_run(true)
 	super.stop_mode()
@@ -78,3 +85,7 @@ func _resolve_wave_manager() -> void:
 	var callback := Callable(self, "_on_boss_wave_requested")
 	if not wave_manager.boss_wave_requested.is_connected(callback):
 		wave_manager.boss_wave_requested.connect(callback)
+
+func _resolve_ammo_director() -> void:
+	if ammo_director == null:
+		ammo_director = get_node_or_null("AmmoDirector") as SurvivalAmmoDirector

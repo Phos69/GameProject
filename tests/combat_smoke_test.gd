@@ -73,12 +73,61 @@ func _run() -> void:
 	_expect(weapon_two.current_ammo == 12, "player two ammunition remains independent")
 
 	weapon_one.current_ammo = 0
-	weapon_one.reserve_ammo = 36
-	_expect(weapon_one.start_reload(), "reload starts with an empty magazine")
+	weapon_one.reserve_ammo = 0
+	_expect(
+		weapon_one.start_reload(),
+		"infinite-reserve weapon reload starts with an empty magazine"
+	)
+	_expect("RELOAD" in weapon_one.get_ammo_text(), "HUD ammo text exposes reload state")
+	_expect(
+		gameplay_feedback_events.has(&"reload"),
+		"reload starts with gameplay feedback"
+	)
 	for _frame in range(70):
 		await physics_frame
-	_expect(weapon_one.current_ammo == 12, "reload fills the magazine")
-	_expect(weapon_one.reserve_ammo == 24, "reload consumes reserve ammunition")
+	_expect(weapon_one.current_ammo == 12, "infinite reserve reload fills the magazine")
+	_expect(weapon_one.reserve_ammo == 0, "infinite reserve reload consumes no reserve")
+
+	var blaster := load("res://game/weapons/prototype_blaster.tres") as WeaponData
+	_expect(weapon_one.equip_weapon(blaster), "a finite special weapon can be equipped")
+	weapon_one.current_ammo = 1
+	weapon_one.reserve_ammo = 0
+	_expect(
+		weapon_one.try_fire(player_one.global_position, Vector2.RIGHT, player_one),
+		"the last special round can be fired"
+	)
+	_expect("LOW" in weapon_one.get_ammo_text(), "HUD ammo text exposes low special ammo")
+	_expect(
+		gameplay_feedback_events.has(&"low_ammo"),
+		"low special ammo emits gameplay feedback"
+	)
+	weapon_one.cooldown = 0.0
+	_expect(
+		weapon_one.try_fire(player_one.global_position, Vector2.RIGHT, player_one),
+		"empty special weapon fires through the infinite fallback"
+	)
+	_expect(weapon_one.is_fallback_active(), "fallback weapon becomes active")
+	_expect(
+		weapon_one.weapon_data.weapon_id == &"starter_pistol",
+		"Starter Pistol remains the fallback weapon"
+	)
+	_expect(weapon_one.current_ammo == 11, "fallback shot consumes its magazine")
+	_expect(
+		"FALLBACK" in weapon_one.get_ammo_text(),
+		"HUD ammo text exposes fallback state"
+	)
+	_expect(
+		gameplay_feedback_events.has(&"fallback"),
+		"fallback activation emits gameplay feedback"
+	)
+	_expect(
+		weapon_one.add_reserve_ammo(5) == 5,
+		"special ammo can be restored while fallback is active"
+	)
+	_expect(
+		not weapon_one.is_fallback_active() and weapon_one.is_reloading,
+		"restored special weapon becomes active and starts reloading"
+	)
 
 	_finish()
 

@@ -14,7 +14,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 6. `LocalMultiplayerManager` mantiene gli slot locali attivi.
 7. `PlayerManager` ascolta gli slot attivi e spawna/despawna i player.
 8. `PlayerController` legge input solo quando una modalita gameplay e attiva.
-9. `WeaponSystem` gestisce arma, cooldown, caricatore, riserva e ricarica per il singolo player.
+9. `WeaponSystem` gestisce fallback permanente, speciale, cooldown, caricatori, riserve e ricarica per il singolo player.
 10. `ProjectileSystem` spawna proiettili che applicano danno tramite `HealthSystem`.
 11. `EnemySystem` spawna nemici e `BasicEnemy` seleziona il player vivo piu vicino.
 12. Alla morte, il nemico chiede a `DropSystem` di generare pickup dalla propria `LootTable`.
@@ -30,9 +30,10 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 22. `TowerDefenseManager` mantiene vita core e crediti, mentre gli slot delegano lo spawn delle torri.
 23. `DefenseTower` seleziona target tower defense e spara tramite `ProjectileSystem`.
 24. `ProgressionManager` prepara i player a ogni nuova run applicando gli unlock persistenti.
-25. `AudioManager` ascolta projectile e drop per generare feedback gameplay condiviso.
-26. `IsometricCameraController` segue il gruppo `players`.
-27. `HUDManager` mostra slot, progressione, vita, munizioni, stato modalita e barra boss.
+25. `SurvivalAmmoDirector` osserva l'ammo speciale dei player vivi e genera supply crate configurabili.
+26. `AudioManager` ascolta projectile, drop e segnali arma per generare feedback gameplay condiviso.
+27. `IsometricCameraController` segue il gruppo `players`.
+28. `HUDManager` mostra slot, progressione, vita, munizioni, feedback ammo, stato modalita e barra boss.
 
 ## Sistemi principali
 
@@ -43,9 +44,9 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `GameModeManager`: registra, arresta e avvia le modalita.
 - `MainMenu`: UI iniziale, selezione modalita, continue e ritorno con `Esc`.
 - `SaveManager`: persistenza JSON versionata e autosave della progressione.
-- `AudioManager`: feedback audio procedurale per UI, sparo, impatto e pickup.
+- `AudioManager`: feedback audio procedurale per UI, sparo, impatto, pickup e stato ammo.
 - `WeaponData`: risorsa immutabile con danno, fire rate, velocita proiettile, caricatore, riserva e durata ricarica.
-- `WeaponSystem`: stato runtime per-player di arma, cooldown, munizioni e ricarica.
+- `WeaponSystem`: stato runtime per-player di fallback, speciale, cooldown, munizioni e ricarica.
 - `ProjectileSystem` e `Projectile`: spawn, movimento, collisione e consegna del danno.
 - `HealthSystem` e `HealthComponent`: richieste globali di danno/cura e stato vita locale.
 - `EnemySystem`: registro di scene nemico per ID, spawn, contenitore, registro runtime e notifica morte.
@@ -54,6 +55,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `BasicBoss`: boss modulare con targeting, movimento, fasi e pattern proiettile.
 - `SurvivalMode`: ciclo survival, condizione di sconfitta e inoltro richieste boss.
 - `WaveManager`: macchina a stati per intermissione, spawn, combat, reward e boss wave.
+- `SurvivalAmmoDirector`: supporto anti-frustrazione esclusivo della survival.
 - `DungeonGenerator`: generazione deterministica dei dati layout dungeon.
 - `DungeonMode`: avanzamento stanza, encounter, loot, boss e completamento run.
 - `DungeonRoom`: rappresentazione riusabile della stanza attiva e portale di transizione.
@@ -67,12 +69,17 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `DropEntry` e `LootTable`: dati tipizzati per chance, quantita e arma associata.
 - `DropSystem`: roll, spawn pickup e applicazione centralizzata delle ricompense.
 - `DropPickup`: rappresentazione fisica e raccolta da parte dei player.
+- `SupplyCrate`: contenitore fisico configurato da `LootTable` per ammo e cura.
 - `ProgressionManager`: XP, livello, denaro, unlock party e bonus di inizio run.
 - `HUDManager`: UI prototipo.
 
 ## Contratto combat
 
 - Ogni istanza player possiede il proprio `WeaponSystem`; caricatore, riserva e cooldown non sono condivisi.
+- Ogni `WeaponSystem` conserva sempre una fallback infinita e al massimo una speciale finita.
+- Esaurire caricatore e riserva della speciale attiva la fallback e tenta lo sparo nello stesso input.
+- La fallback infinita conserva caricatore e reload; solo la riserva e virtualmente infinita.
+- Un nuovo rifornimento della speciale la riattiva e avvia il reload.
 - Le statistiche di bilanciamento vivono in risorse `WeaponData`, non nel controller player.
 - `ProjectileSystem` riceve i dati dello sparo e configura il proiettile prima di aggiungerlo alla scena.
 - Il proiettile non conosce classi nemico specifiche: colpisce un body damageable e inoltra il danno a `HealthSystem`.
@@ -100,9 +107,12 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - Ogni nemico possiede una `LootTable` composta da risorse `DropEntry`.
 - `DropSystem` e l'unico sistema che esegue roll, crea pickup e applica ricompense.
 - XP e denaro aggiornano `ProgressionManager` e sono condivisi dal party.
-- Munizioni, cura e arma vengono applicate al player che raccoglie.
+- Le munizioni vengono applicate alle speciali di tutti i player vivi.
+- Cura e arma vengono applicate al player che raccoglie.
 - Un pickup non viene consumato se la ricompensa non puo essere applicata, per esempio cura su vita piena.
+- Un pickup ammo non viene consumato se nessun player vivo possiede una speciale.
 - Il drop arma equipaggia immediatamente il relativo `WeaponData`; inventario e scelta arma restano futuri.
+- Le supply crate usano una `LootTable` e generano pickup standard tramite `DropSystem`.
 
 ## Contratto multiplayer locale
 
@@ -152,6 +162,7 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - `ProjectileSystem.projectile_spawned` genera il feedback di sparo.
 - Solo un impatto con danno applicato genera il feedback di colpo.
 - `DropSystem.drop_collected` genera il feedback pickup in base al tipo raccolto.
+- `WeaponSystem` genera feedback per low ammo, reload e fallback.
 - I toni procedurali restano placeholder e non richiedono asset esterni.
 
 ## Contratto survival e wave
@@ -165,6 +176,11 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - Ogni ondata aumenta il conteggio base e passa moltiplicatori a `BasicEnemy`.
 - Solo le morti dei nemici registrati nella wave contribuiscono al completamento.
 - Le ricompense tra ondate aggiungono denaro party e munizioni/cura ai player attivi vivi.
+- Le ricompense ammo alimentano solo lo slot speciale; la fallback non necessita drop.
+- `SurvivalAmmoDirector` valuta ogni secondo i player vivi con speciale.
+- Sotto la soglia configurata di 8 colpi totali puo generare una supply crate, con cooldown di 12 secondi.
+- Ogni boss wave riceve una supply crate garantita prima dell'avvio o all'inizio della wave.
+- Le crate attive non aperte vengono rimosse quando survival si arresta.
 - Join e leave non modificano il conteggio nemici; i nuovi player partecipano alle ricompense successive.
 - Ogni quinta ondata emette `boss_wave_requested` e `SurvivalMode` la inoltra a `BossSystem`.
 - La boss wave usa due zombie di scorta e un boss registrato separatamente.

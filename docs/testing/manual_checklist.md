@@ -34,12 +34,16 @@
 
 ## Regressione combat
 
-- L'HUD mostra `HP 100/100` e `Ammo 12/36` per ogni player appena spawnato.
+- L'HUD mostra `HP 100/100` e `Ammo 12/INF` per ogni player appena spawnato.
 - Sparare riduce il caricatore di una unita per colpo valido.
 - Le munizioni di un player non modificano quelle degli altri player.
 - Tenere premuto fire rispetta il fire rate della pistola.
-- `R` o pulsante `X` avvia la ricarica e l'HUD mostra il suffisso `R`.
-- Dopo un secondo il caricatore viene riempito consumando la riserva.
+- `R` o pulsante `X` avvia la ricarica e l'HUD mostra `RELOAD`.
+- Dopo un secondo il caricatore viene riempito senza consumare una riserva finita.
+- Equipaggiare una speciale mantiene disponibile la `Starter Pistol`.
+- Con speciale a 0/0, premere fire spara nello stesso input con la fallback.
+- L'HUD mostra `FALLBACK` e il feedback audio dedicato.
+- Un pickup ammo riattiva la speciale e avvia il reload.
 - Un proiettile che colpisce un bersaglio rosso riduce la sua barra vita.
 - Quattro colpi della pistola distruggono un bersaglio da 40 HP.
 - I proiettili non collidono con il player che li ha sparati.
@@ -52,7 +56,7 @@ Eseguire con Godot 4.x disponibile nel PATH:
 godot --headless --path . --script res://tests/combat_smoke_test.gd
 ```
 
-Il test verifica scena principale, due player locali, sparo, collisione, danno, munizioni indipendenti e ricarica.
+Il test verifica scena principale, due player locali, sparo, collisione, danno, reload infinito e fallback da speciale esaurita.
 
 ## Regressione nemici
 
@@ -70,7 +74,10 @@ Il test verifica scena principale, due player locali, sparo, collisione, danno, 
 
 - Ogni nemico morto genera sempre un pickup XP.
 - I pickup denaro aggiornano il totale party nell'HUD.
-- I pickup munizioni aggiornano solo la riserva del raccoglitore.
+- I pickup munizioni aggiornano la speciale di tutti i player vivi.
+- Un player morto non riceve ammo condivisa.
+- Se nessun player vivo possiede una speciale, il pickup ammo resta a terra.
+- L'HUD mostra temporaneamente `AMMO SHARED +N`.
 - I pickup vita curano solo il raccoglitore danneggiato.
 - Un pickup vita non sparisce se raccolto a vita piena.
 - Il pickup arma viola equipaggia il `Prototype Blaster`.
@@ -83,7 +90,7 @@ Il test verifica scena principale, due player locali, sparo, collisione, danno, 
 godot --headless --path . --script res://tests/enemy_drop_smoke_test.gd
 ```
 
-Il test verifica spawn, chase, retarget, attack, danno da proiettile, morte, pickup XP e tutti i tipi di ricompensa con due player.
+Il test verifica spawn, chase, retarget, attack, danno, morte, pickup XP, ammo condivisa e isolamento del cambio arma con due player.
 
 ## Regressione zombie survival
 
@@ -93,6 +100,13 @@ Il test verifica spawn, chase, retarget, attack, danno da proiettile, morte, pic
 - L'ondata termina solo dopo la morte di tutti i nemici registrati.
 - Alla fine dell'ondata il party riceve denaro.
 - Ogni player vivo riceve munizioni e cura.
+- Le munizioni di reward alimentano solo le armi speciali.
+- Portare una speciale a 8 colpi totali o meno genera una supply crate dopo la valutazione del director.
+- La supply crate genera pickup ammo e vita.
+- Durante l'intermissione prima di ogni boss wave compare almeno una fonte supply garantita.
+- Se la boss wave parte senza intermissione, la fonte compare all'inizio della wave.
+- Con tutte le speciali a 0/0, ogni player vivo puo ancora sparare con la fallback.
+- Uscire dalla survival rimuove le supply crate non aperte.
 - La nuova ondata parte dopo 4 secondi.
 - Ogni ondata aggiunge 2 zombie.
 - Vita, velocita e danno degli zombie aumentano tra le ondate.
@@ -109,11 +123,12 @@ Il test verifica spawn, chase, retarget, attack, danno da proiettile, morte, pic
 godot --headless --path . --script res://tests/survival_wave_smoke_test.gd
 ```
 
-Il test verifica tre ondate, spawn progressivo, scaling, ricompense, HUD, join player e richiesta boss.
+Il test verifica tre ondate, scaling, reward, director low-ammo, supply crate boss, join multiplayer e fallback per tutti i player vivi.
 
 ## Regressione boss
 
 - La quinta ondata genera un solo `Wave Warden`.
+- La boss wave dispone di una supply crate garantita.
 - La barra boss mostra nome, fase e vita.
 - Il boss seleziona il player vivo piu vicino.
 - Il boss mantiene distanza e movimento laterale.

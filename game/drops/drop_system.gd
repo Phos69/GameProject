@@ -113,10 +113,17 @@ func _add_money(amount: int) -> bool:
 	return true
 
 func _add_ammo(collector: Node, amount: int) -> bool:
-	var weapon_system := collector.get_node_or_null("WeaponSystem") as WeaponSystem
-	if weapon_system == null:
+	if amount <= 0:
 		return false
-	return weapon_system.add_reserve_ammo(amount) > 0
+	var applied_to_players := 0
+	for player in get_tree().get_nodes_in_group("players"):
+		var health_component := player.get_node_or_null("HealthComponent") as HealthComponent
+		if health_component == null or not health_component.is_alive():
+			continue
+		var weapon_system := player.get_node_or_null("WeaponSystem") as WeaponSystem
+		if weapon_system != null and weapon_system.add_reserve_ammo(amount) > 0:
+			applied_to_players += 1
+	return applied_to_players > 0
 
 func _heal_collector(collector: Node, amount: int) -> bool:
 	var health_system = get_tree().get_first_node_in_group("health_system")

@@ -139,6 +139,9 @@ func _run() -> void:
 		return
 
 	var weapon_two := player_two.get_node("WeaponSystem") as WeaponSystem
+	var blaster := load("res://game/weapons/prototype_blaster.tres") as WeaponData
+	weapon_one.equip_weapon(blaster)
+	weapon_two.equip_weapon(blaster)
 	var reserve_one_before := weapon_one.reserve_ammo
 	var reserve_two_before := weapon_two.reserve_ammo
 	_expect(
@@ -156,8 +159,20 @@ func _run() -> void:
 		),
 		"ammo drop can be collected"
 	)
-	_expect(weapon_one.reserve_ammo == reserve_one_before + 7, "ammo applies to the collector")
-	_expect(weapon_two.reserve_ammo == reserve_two_before, "ammo does not affect another player")
+	_expect(
+		weapon_one.reserve_ammo == reserve_one_before + 7,
+		"ammo applies to the collector special weapon"
+	)
+	_expect(
+		weapon_two.reserve_ammo == reserve_two_before + 7,
+		"ammo is shared with another living player special weapon"
+	)
+	await process_frame
+	var hud := get_first_node_in_group("hud_manager") as HUDManager
+	_expect(
+		hud != null and hud.pickup_feedback_text == "AMMO SHARED +7",
+		"HUD queues shared ammo pickup feedback"
+	)
 
 	_expect(
 		drop_system.collect_drop(
@@ -168,20 +183,26 @@ func _run() -> void:
 	)
 	_expect(player_health.current_health == 97, "health drop heals the collector")
 
-	var blaster := load("res://game/weapons/prototype_blaster.tres") as WeaponData
+	var wave_cannon := load("res://game/weapons/wave_cannon.tres") as WeaponData
 	_expect(
 		drop_system.collect_drop(
 			{
 				"type": GameConstants.DROP_WEAPON,
 				"amount": 1,
-				"weapon_data": blaster
+				"weapon_data": wave_cannon
 			},
 			player_one
 		),
 		"weapon drop can be collected"
 	)
-	_expect(weapon_one.weapon_data.weapon_id == &"prototype_blaster", "weapon drop equips the collector")
-	_expect(weapon_two.weapon_data.weapon_id == &"starter_pistol", "weapon drop leaves other players unchanged")
+	_expect(
+		weapon_one.weapon_data.weapon_id == &"wave_cannon",
+		"weapon drop equips the collector"
+	)
+	_expect(
+		weapon_two.weapon_data.weapon_id == &"prototype_blaster",
+		"weapon drop leaves other players unchanged"
+	)
 
 	_finish()
 

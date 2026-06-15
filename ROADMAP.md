@@ -147,6 +147,7 @@ Stato: completata come prototipo minimo.
 
 Attivita post-roadmap:
 
+- sistema ammo survival robusto con fallback infinita, pickup condivisi, supply crate e director anti-frustrazione completato;
 - telegraph e mix audio avanzato;
 - asset definitivi e ulteriori pass di bilanciamento;
 - firma digitale della build pubblica.

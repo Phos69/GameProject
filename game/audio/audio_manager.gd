@@ -69,6 +69,8 @@ func play_gameplay_impact(source_id: StringName) -> int:
 func play_gameplay_pickup(drop_type: StringName) -> int:
 	var frequency := 760.0
 	match drop_type:
+		GameConstants.DROP_AMMO:
+			frequency = 700.0
 		GameConstants.DROP_HEALTH:
 			frequency = 620.0
 		GameConstants.DROP_WEAPON:
@@ -77,6 +79,30 @@ func play_gameplay_pickup(drop_type: StringName) -> int:
 			frequency = 820.0
 	var frames_written := _play_tone(gameplay_player, frequency, 0.08, 0.10)
 	gameplay_feedback_generated.emit(&"pickup", drop_type, frames_written)
+	return frames_written
+
+func play_weapon_status(
+	feedback_type: StringName,
+	source_id: StringName
+) -> int:
+	var frequency := 360.0
+	var duration := 0.07
+	match feedback_type:
+		&"low_ammo":
+			frequency = 190.0
+			duration = 0.10
+		&"reload":
+			frequency = 310.0
+		&"fallback":
+			frequency = 430.0
+			duration = 0.11
+	var frames_written := _play_tone(
+		gameplay_player,
+		frequency,
+		duration,
+		0.09
+	)
+	gameplay_feedback_generated.emit(feedback_type, source_id, frames_written)
 	return frames_written
 
 func _connect_gameplay_sources() -> void:
@@ -97,6 +123,15 @@ func _connect_gameplay_sources() -> void:
 		var drop_callback := Callable(self, "_on_drop_collected")
 		if not drop_system.drop_collected.is_connected(drop_callback):
 			drop_system.drop_collected.connect(drop_callback)
+	var player_manager := get_tree().get_first_node_in_group(
+		"player_manager"
+	) as PlayerManager
+	if player_manager != null:
+		var player_callback := Callable(self, "_on_player_spawned")
+		if not player_manager.player_spawned.is_connected(player_callback):
+			player_manager.player_spawned.connect(player_callback)
+	for player in get_tree().get_nodes_in_group("players"):
+		_connect_weapon_system(player)
 
 func _on_projectile_spawned(projectile: Node) -> void:
 	play_gameplay_shot(_get_projectile_source_id(projectile))
@@ -112,10 +147,62 @@ func _on_projectile_impacted(
 func _on_drop_collected(drop_data: Dictionary, _collector: Node) -> void:
 	play_gameplay_pickup(StringName(drop_data.get("type", &"unknown")))
 
+func _on_player_spawned(_player_slot: int, player: Node) -> void:
+	_connect_weapon_system(player)
+
+func _connect_weapon_system(player: Node) -> void:
+	var weapon_system := player.get_node_or_null("WeaponSystem") as WeaponSystem
+	if weapon_system == null:
+		return
+	var reload_callback := Callable(
+		self,
+		"_on_weapon_reload_started"
+	).bind(weapon_system)
+	if not weapon_system.reload_started.is_connected(reload_callback):
+		weapon_system.reload_started.connect(reload_callback)
+	var low_ammo_callback := Callable(
+		self,
+		"_on_low_ammo_changed"
+	).bind(weapon_system)
+	if not weapon_system.low_ammo_changed.is_connected(low_ammo_callback):
+		weapon_system.low_ammo_changed.connect(low_ammo_callback)
+	var fallback_callback := Callable(
+		self,
+		"_on_fallback_activated"
+	).bind(weapon_system)
+	if not weapon_system.fallback_activated.is_connected(fallback_callback):
+		weapon_system.fallback_activated.connect(fallback_callback)
+
+func _on_weapon_reload_started(
+	_duration: float,
+	weapon_system: WeaponSystem
+) -> void:
+	play_weapon_status(&"reload", _get_weapon_source_id(weapon_system))
+
+func _on_low_ammo_changed(
+	is_low: bool,
+	_total_ammo: int,
+	weapon_system: WeaponSystem
+) -> void:
+	if is_low:
+		play_weapon_status(&"low_ammo", _get_weapon_source_id(weapon_system))
+
+func _on_fallback_activated(
+	_weapon_data: WeaponData,
+	weapon_system: WeaponSystem
+) -> void:
+	if weapon_system.has_special_weapon():
+		play_weapon_status(&"fallback", _get_weapon_source_id(weapon_system))
+
 func _get_projectile_source_id(projectile: Node) -> StringName:
 	if projectile == null:
 		return &"projectile"
 	return StringName(projectile.get("source_id"))
+
+func _get_weapon_source_id(weapon_system: WeaponSystem) -> StringName:
+	if weapon_system == null or weapon_system.weapon_data == null:
+		return &"weapon"
+	return weapon_system.weapon_data.weapon_id
 
 func _play_tone(
 	player: AudioStreamPlayer,
