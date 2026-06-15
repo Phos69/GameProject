@@ -13,6 +13,8 @@ var volume_sliders: Dictionary = {}
 var visual_settings_panel: PanelContainer
 var visual_controls: Dictionary = {}
 var primary_panel: PanelContainer
+var character_select_panel: PanelContainer
+var character_card_buttons: Array[Button] = []
 
 var game_mode_manager: GameModeManager
 var save_manager: SaveManager
@@ -29,6 +31,17 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not event is InputEventKey:
 		return
 	var key_event := event as InputEventKey
+	if (
+		key_event.pressed
+		and not key_event.echo
+		and key_event.keycode == KEY_ESCAPE
+		and is_open()
+		and character_select_panel != null
+		and character_select_panel.visible
+	):
+		_close_character_select()
+		get_viewport().set_input_as_handled()
+		return
 	if (
 		key_event.pressed
 		and not key_event.echo
@@ -183,6 +196,60 @@ func _create_ui() -> void:
 	controls.modulate = Color(0.68, 0.74, 0.82, 1.0)
 	content.add_child(controls)
 	_create_visual_settings_panel(center)
+	_create_character_select_panel(center)
+
+func _create_character_select_panel(parent: Control) -> void:
+	character_select_panel = PanelContainer.new()
+	character_select_panel.name = "CharacterSelectPanel"
+	character_select_panel.custom_minimum_size = Vector2(760.0, 640.0)
+	parent.add_child(character_select_panel)
+
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 9)
+	character_select_panel.add_child(content)
+
+	var title := Label.new()
+	title.text = "CHARACTER SELECT"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 26)
+	title.modulate = Color(0.55, 0.88, 1.0, 1.0)
+	content.add_child(title)
+
+	var subtitle := Label.new()
+	subtitle.text = "Choose the survivor profile for the zombie run"
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.modulate = Color(0.72, 0.80, 0.88, 1.0)
+	content.add_child(subtitle)
+
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 10)
+	grid.add_theme_constant_override("v_separation", 10)
+	content.add_child(grid)
+
+	for profile in RpgCharacterRegistry.get_character_profiles():
+		var button := Button.new()
+		button.text = _format_character_card(profile)
+		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		button.custom_minimum_size = Vector2(360.0, 205.0)
+		button.add_theme_font_size_override("font_size", 13)
+		button.pressed.connect(
+			_select_survival_character.bind(
+				StringName(profile.get("id", &""))
+			)
+		)
+		button.focus_entered.connect(_play_focus)
+		grid.add_child(button)
+		character_card_buttons.append(button)
+
+	var back_button := Button.new()
+	back_button.text = "Back"
+	back_button.custom_minimum_size = Vector2(440.0, 44.0)
+	back_button.pressed.connect(_close_character_select)
+	back_button.focus_entered.connect(_play_focus)
+	content.add_child(back_button)
+	character_select_panel.hide()
 
 func _create_visual_settings_panel(parent: Control) -> void:
 	visual_settings_panel = PanelContainer.new()
@@ -366,10 +433,16 @@ func _continue_game() -> void:
 		if save_manager != null
 		else GameConstants.MODE_SURVIVAL
 	)
-	start_selected_mode(mode_id)
+	if mode_id == GameConstants.MODE_SURVIVAL:
+		_open_character_select()
+	else:
+		start_selected_mode(mode_id)
 
 func _select_mode(mode_id: StringName) -> void:
-	start_selected_mode(mode_id)
+	if mode_id == GameConstants.MODE_SURVIVAL:
+		_open_character_select()
+	else:
+		start_selected_mode(mode_id)
 
 func _quit_game() -> void:
 	_play_confirm()
@@ -384,6 +457,7 @@ func _on_game_mode_changed(mode_id: StringName) -> void:
 func _show_menu() -> void:
 	show()
 	_close_visual_settings(false)
+	_close_character_select(false)
 	_refresh_save_status()
 	_refresh_audio_controls()
 	_refresh_visual_controls()
@@ -428,6 +502,53 @@ func _mode_label(mode_id: StringName) -> String:
 			return "Tower Defense"
 		_:
 			return "Zombie Survival"
+
+func _format_character_card(profile: Dictionary) -> String:
+	return (
+		"%s\n%s  Weapon: %s\nHP %d  ATK %d  DEF %d  SPD %.2f\n"
+		+ "Passive: %s\n%s\nSuper: %s\n%s\nDifficulty: %s"
+	) % [
+		str(profile.get("display_name", "Survivor")).to_upper(),
+		str(profile.get("class_name", "Survivor")),
+		str(profile.get("base_weapon_name", "Starter Pistol")),
+		int(profile.get("max_hp", 100)),
+		int(profile.get("attack", 0)),
+		int(profile.get("defense", 0)),
+		float(profile.get("speed", 1.0)),
+		str(profile.get("passive_name", "")),
+		str(profile.get("passive_description", "")),
+		str(profile.get("super_name", "")),
+		str(profile.get("super_description", "")),
+		str(profile.get("difficulty", "Media"))
+	]
+
+func _open_character_select() -> void:
+	_resolve_managers()
+	primary_panel.hide()
+	if visual_settings_panel != null:
+		visual_settings_panel.hide()
+	character_select_panel.show()
+	if not character_card_buttons.is_empty():
+		character_card_buttons[0].grab_focus()
+
+func _close_character_select(grab_focus: bool = true) -> void:
+	if character_select_panel == null or primary_panel == null:
+		return
+	character_select_panel.hide()
+	primary_panel.show()
+	if grab_focus and first_mode_button != null:
+		first_mode_button.grab_focus()
+
+func _select_survival_character(character_id: StringName) -> void:
+	_resolve_managers()
+	if game_mode_manager == null:
+		return
+	if not game_mode_manager.has_mode(GameConstants.MODE_SURVIVAL):
+		return
+	_play_confirm()
+	var context := {"character_id": character_id}
+	if game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL, context):
+		mode_selected.emit(GameConstants.MODE_SURVIVAL)
 
 func _on_progression_changed(_experience: int, _level: int) -> void:
 	_refresh_save_status()

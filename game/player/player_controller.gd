@@ -17,6 +17,7 @@ class_name PlayerController
 @onready var visual := $Visual as PlayerVisual
 @onready var aim_line := $AimLine as Line2D
 @onready var weapon_system = $WeaponSystem
+@onready var rpg_component := $RpgPlayerComponent as RpgPlayerComponent
 @onready var health_component := $HealthComponent as HealthComponent
 @onready var revive_indicator := $ReviveIndicator as ReviveIndicatorVisual
 
@@ -121,6 +122,15 @@ func prepare_for_run(max_health_bonus: int = 0) -> void:
 	visual.reset_visual()
 	revive_indicator.set_downed(false)
 	aim_line.show()
+
+func apply_rpg_character(character_id: StringName) -> bool:
+	if rpg_component == null:
+		return false
+	return rpg_component.apply_character(character_id)
+
+func clear_rpg_character() -> void:
+	if rpg_component != null:
+		rpg_component.clear_character()
 
 func set_revive_progress(ratio: float, active: bool) -> void:
 	revive_indicator.set_revive_progress(ratio, active)

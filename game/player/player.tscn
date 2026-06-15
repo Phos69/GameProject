@@ -1,10 +1,11 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://game/player/player_controller.gd" id="1_player_controller"]
 [ext_resource type="Script" path="res://game/weapons/weapon_system.gd" id="2_weapon_system"]
 [ext_resource type="Script" path="res://game/health/health_component.gd" id="3_health_component"]
 [ext_resource type="Script" path="res://game/visuals/player_visual.gd" id="4_player_visual"]
 [ext_resource type="Script" path="res://game/player/revive_indicator_visual.gd" id="5_revive_indicator"]
+[ext_resource type="Script" path="res://game/rpg/rpg_player_component.gd" id="6_rpg_player_component"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_player"]
 radius = 14.0
@@ -31,6 +32,9 @@ shape = SubResource("CircleShape2D_player")
 
 [node name="WeaponSystem" type="Node2D" parent="."]
 script = ExtResource("2_weapon_system")
+
+[node name="RpgPlayerComponent" type="Node" parent="."]
+script = ExtResource("6_rpg_player_component")
 
 [node name="HealthComponent" type="Node" parent="."]
 script = ExtResource("3_health_component")

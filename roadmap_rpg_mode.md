@@ -10,6 +10,18 @@ Trasformare la modalità zombie in una modalità più RPG: prima della partita i
 
 # Milestone 1 — Selezione personaggio pre-partita
 
+Stato: completata come primo pass di flusso pre-run.
+
+Implementato:
+
+- catalogo centralizzato dei quattro personaggi iniziali;
+- pannello `Character Select` aperto prima della zombie survival;
+- passaggio di `character_id` nel context di `GameModeManager`;
+- applicazione del profilo scelto ai player attivi e ai join durante la run;
+- smoke test dedicato `tests/milestone_rpg_1_character_select_smoke_test.gd`.
+
+Limite noto: in questo pass la scelta e unica per la party; selezione per-slot e bilanciamento completo arrivano nelle milestone successive.
+
 ## Goal
 
 Prima di iniziare una run, il player deve scegliere una classe/personaggio.

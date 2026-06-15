@@ -4,6 +4,10 @@
 
 ### Added
 
+- Avviata roadmap RPG Mode con Milestone 1: selezione personaggio pre-run per la survival.
+- Aggiunti `RpgCharacterRegistry` e `RpgPlayerComponent` come contratto iniziale per classi, arma base, passiva e super.
+- Aggiunto pannello `Character Select` nel menu prima dell'avvio zombie survival.
+- Aggiunto smoke test `milestone_rpg_1_character_select_smoke_test.gd`.
 - Completata Milestone 21 con accessibilita, profiling e pipeline asset.
 - Aggiunto `VisualSettingsManager` con preset default, comfort e contrast.
 - Aggiunti controlli menu per flash, glow, trail, shake e scala testo HUD.

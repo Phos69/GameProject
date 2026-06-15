@@ -11,6 +11,8 @@ signal survival_defeated(wave_index: int)
 var wave_manager: WaveManager
 var ammo_director: SurvivalAmmoDirector
 var arena_manager: SurvivalArenaManager
+var player_manager: PlayerManager
+var selected_character_id: StringName = RpgCharacterRegistry.DEFAULT_CHARACTER_ID
 
 func _ready() -> void:
 	mode_id = GameConstants.MODE_SURVIVAL
@@ -18,6 +20,7 @@ func _ready() -> void:
 	_resolve_wave_manager()
 	_resolve_ammo_director()
 	_resolve_arena_manager()
+	_resolve_player_manager()
 
 	var game_mode_manager = get_tree().get_first_node_in_group("game_mode_manager")
 	if game_mode_manager != null:
@@ -44,6 +47,14 @@ func start_mode(context: Dictionary = {}) -> void:
 	_resolve_wave_manager()
 	_resolve_ammo_director()
 	_resolve_arena_manager()
+	_resolve_player_manager()
+	selected_character_id = StringName(
+		context.get(
+			"character_id",
+			RpgCharacterRegistry.DEFAULT_CHARACTER_ID
+		)
+	)
+	_apply_character_to_active_players()
 	if arena_manager != null:
 		var arena_id := StringName(
 			context.get("arena_id", arena_manager.default_arena_id)
@@ -108,3 +119,26 @@ func _resolve_arena_manager() -> void:
 		arena_manager = get_tree().get_first_node_in_group(
 			"survival_arena_manager"
 		) as SurvivalArenaManager
+
+func _resolve_player_manager() -> void:
+	if player_manager == null:
+		player_manager = get_tree().get_first_node_in_group(
+			"player_manager"
+		) as PlayerManager
+	if player_manager == null:
+		return
+	var spawn_callback := Callable(self, "_on_player_spawned")
+	if not player_manager.player_spawned.is_connected(spawn_callback):
+		player_manager.player_spawned.connect(spawn_callback)
+
+func _apply_character_to_active_players() -> void:
+	for player in get_tree().get_nodes_in_group("players"):
+		_apply_character_to_player(player)
+
+func _apply_character_to_player(player: Node) -> void:
+	if player != null and player.has_method("apply_rpg_character"):
+		player.apply_rpg_character(selected_character_id)
+
+func _on_player_spawned(_player_slot: int, player: Node) -> void:
+	if is_running:
+		_apply_character_to_player(player)

@@ -18,6 +18,7 @@ Un action sandbox locale dove 1-4 giocatori affrontano arene, dungeon e difese a
 - 1-4 player locali implementati come prototipo minimo.
 - Player 1 e sempre presente.
 - Player 2-4 possono entrare/uscire durante la scena.
+- La zombie survival ora passa da una selezione personaggio prima della run.
 - Ogni player avra vita, arma e munizioni proprie.
 - XP e denaro sono per default condivisi dal party per semplificare il multiplayer locale.
 - Ogni player usa un colore diverso per restare leggibile nella camera condivisa.
@@ -285,6 +286,23 @@ dal menu e persistiti.
 L'HUD aggiunge `LOW`, `RELOAD` e `FALLBACK` allo stato ammo e mostra per 1,75 secondi la quantita di ammo condivisa raccolta.
 
 D-pad/stick cambiano focus e joypad `A` conferma da qualunque controller. Mix avanzato e asset audio definitivi restano futuri.
+
+## RPG Mode
+
+La roadmap RPG Mode introduce personaggi selezionabili prima della zombie
+survival. Il primo pass include quattro profili iniziali nel catalogo
+centralizzato:
+
+- `Ranger`: arco, precisione, critici e posizionamento a distanza.
+- `Pistoliere`: pistola, cadenza alta e mobilita accessibile.
+- `Berserker`: ascia, danno alto e rischio da corto raggio.
+- `Spadaccino`: spada, difesa e fendenti rapidi.
+
+Il menu mostra una card per ogni profilo con nome, classe, arma base,
+statistiche iniziali, passiva, super e difficolta. La scelta e passata alla
+survival come `character_id` e applicata ai player attivi tramite
+`RpgPlayerComponent`; le milestone successive attivano statistiche, armi,
+XP, passive, adrenalina, super e HUD dedicato.
 
 ## Bilanciamento iniziale
 

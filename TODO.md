@@ -2,6 +2,12 @@
 
 ## Completati recenti
 
+- Roadmap RPG Mode, Milestone 1: selezione personaggio pre-partita.
+  - Obiettivo: obbligare la zombie survival a passare da una scelta classe prima della run.
+  - Milestone collegata: `roadmap_rpg_mode.md` Milestone 1.
+  - File/sistemi coinvolti: `MainMenu`, `SurvivalMode`, `RpgCharacterRegistry`, `RpgPlayerComponent`, player scene e HUD futuro.
+  - Criterio di accettazione: il menu apre `Character Select`, la survival non parte prima della scelta e il `character_id` scelto viene applicato al player.
+  - Test richiesto: `tests/milestone_rpg_1_character_select_smoke_test.gd`; verifica manuale menu con tastiera/joypad.
 - Milestone 21: accessibilita, performance e asset pipeline.
   - Obiettivo: configurare la presentazione senza alterare il gameplay.
   - Milestone collegata: chiusura di `ROADMAP_VISUAL_GAMEPLAY.md`.

@@ -9,7 +9,8 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 1. `main.tscn` carica manager, world e `MainMenu`.
 2. `GameModeManager` entra nello stato `menu` senza avviare gameplay.
 3. `SaveManager` carica progressione party, unlock e ultima modalita da JSON.
-4. `MainMenu` seleziona una modalita registrata e nasconde la propria UI.
+4. `MainMenu` seleziona una modalita registrata; per survival apre prima
+   `Character Select` e passa `character_id` nel context.
 5. `InputManager` registra azioni tastiera/joypad.
 6. `LocalMultiplayerManager` mantiene gli slot locali attivi.
 7. `PlayerManager` ascolta gli slot attivi e spawna/despawna i player.
@@ -20,7 +21,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 12. `EnemySystem` spawna basic, runner, tank e shooter; gli archetipi riusano targeting, health, scaling, morte e drop condivisi.
 13. Alla morte, il nemico chiede a `DropSystem` di generare pickup dalla propria `LootTable`.
 14. `DropPickup` delega l'applicazione della ricompensa a `DropSystem`.
-15. `GameModeManager` avvia `SurvivalMode`, che seleziona un profilo tramite `SurvivalArenaManager`.
+15. `GameModeManager` avvia `SurvivalMode`, che applica il profilo RPG scelto e seleziona un profilo arena tramite `SurvivalArenaManager`.
 16. `SurvivalArenaManager` configura playground, spawn wave, player, crate, gate e props.
 17. `WaveManager` spawna zombie tramite `EnemySystem` e richiede il boss a `SurvivalMode`.
 18. `SurvivalMode` usa `GameModeManager` e `BossSystem` per creare il boss della quinta ondata.
@@ -57,7 +58,9 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `GameModeManager`: registra, arresta e avvia le modalita.
 - `RunSessionTracker`: traduce i segnali terminali in dati risultato runtime.
 - `RunResultsScreen`: overlay condiviso con focus e azioni di fine run.
-- `MainMenu`: UI iniziale, selezione modalita, continue e ritorno con `Esc`.
+- `MainMenu`: UI iniziale, selezione modalita, `Character Select` survival, continue e ritorno con `Esc`.
+- `RpgCharacterRegistry`: catalogo centralizzato dei personaggi RPG iniziali.
+- `RpgPlayerComponent`: profilo RPG runtime applicato ai player della survival.
 - `SaveManager`: persistenza JSON versionata e autosave della progressione.
 - `VisualSettingsManager`: preset, valori visuali, notifica consumer e persistenza.
 - `AudioManager`: bus, cue, fallback procedurali, stream opzionali e volumi.
@@ -262,6 +265,9 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 ## Contratto survival e wave
 
 - `GameModeManager.register_mode()` avvia la modalita registrata se coincide con `default_mode`.
+- La survival avviata dal menu riceve `context.character_id` dalla schermata `Character Select`.
+- In assenza di context, per hotkey/debug viene usato il profilo default `pistoliere`.
+- Il profilo selezionato e applicato ai player attivi e ai player che entrano durante la run.
 - `SurvivalMode` avvia e arresta `WaveManager` e controlla la sconfitta del party.
 - L'arresto di survival rimuove i nemici e il boss della wave prima di attivare un'altra modalita.
 - `WaveManager` e autoritativo per indice ondata, stato, spawn pendenti e nemici della wave.
