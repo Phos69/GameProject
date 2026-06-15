@@ -15,12 +15,25 @@ class_name BiomeDefinition
 @export var danger_summary: String = "Low environmental danger"
 @export var resource_summary: String = "Ammo and medical supplies"
 @export var enemy_summary: String = "Basic zombies"
+@export var biome_size: Vector2i = Vector2i(200, 200)
 
 @export var terrain_tags: Array[StringName] = []
+@export var terrain_tile_ids: Array[StringName] = []
+@export var decoration_tile_ids: Array[StringName] = []
+@export var blocking_tile_ids: Array[StringName] = []
+@export var hazard_tile_ids: Array[StringName] = []
+@export var slowing_tile_ids: Array[StringName] = []
+@export var fall_tile_ids: Array[StringName] = [&"fall_zone"]
 @export var obstacle_ids: Array[StringName] = []
+@export var large_obstacle_ids: Array[StringName] = []
 @export var crate_ids: Array[StringName] = []
 @export var hazard_ids: Array[StringName] = []
 @export var resource_tags: Array[StringName] = []
+@export var passage_type_ids: Array[StringName] = []
+@export var border_rules: Dictionary = {}
+@export var road_generation_rules: Dictionary = {}
+@export var building_generation_rules: Dictionary = {}
+@export var hazard_generation_rules: Dictionary = {}
 
 @export var allowed_zombie_types: Array[StringName] = [&"survival_zombie"]
 @export var weighted_zombie_ids: Array[StringName] = [&"survival_zombie"]
@@ -44,6 +57,11 @@ class_name BiomeDefinition
 @export_range(0.0, 1.0, 0.01) var elite_spawn_chance: float = 0.0
 @export_range(0.0, 1.0, 0.01) var boss_spawn_chance: float = 0.0
 @export_range(0.0, 1.0, 0.01) var environmental_hazard_chance: float = 0.0
+
+func get_biome_size() -> Vector2i:
+	if biome_size.x <= 0 or biome_size.y <= 0:
+		return Vector2i(200, 200)
+	return biome_size
 
 func resolve_enemy_id(
 	wave_index: int,

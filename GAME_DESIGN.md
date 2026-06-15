@@ -423,6 +423,10 @@ selezione dal menu. I profili attuali sono:
 
 Il revamp zombie e completo come prima versione giocabile:
 
+- a inizio run viene generata una mappa globale seed-based con celle bioma
+  `200x200`;
+- lo stesso seed ricrea biomi, confini, passaggi, strade, ostacoli, casse e
+  fall zone;
 - ogni run parte dalla `Pianura Infetta`, il bioma iniziale semplice;
 - il party puo attraversare in sequenza Pianura, Tossico, Infuocato, Neve e Palude;
 - ogni area ha almeno un confine attraversabile o di ritorno e un confine fisicamente bloccato;
@@ -439,6 +443,10 @@ Identita dei biomi:
 - `Bioma Neve`: ghiaccio, neve alta, kit termici e zombie corazzati;
 - `Bioma Palude`: acqua profonda, fango, loot organico e zombie emergenti;
 - tutti i layout sono deterministici e mantengono una corsia centrale;
+- ogni layout generato contiene strade, corridoi e ostacoli grandi che
+  influenzano movimento e combattimento invece di restare solo decorazione;
+- i lati collegati tra biomi hanno muri o barriere con almeno un passaggio
+  raggiungibile; i lati senza vicino diventano fall zone;
 - casse e spawn vengono validati contro ostacoli e hazard.
 
 Zombie tematici:

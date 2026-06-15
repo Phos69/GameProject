@@ -1,5 +1,10 @@
 # Roadmap — Motore di Generazione Mappe e Biomi
 
+## Stato
+
+Completata come primo pass procedurale integrato. I dettagli tecnici e le
+verifiche sono riepilogati nella sezione finale "Stato implementazione".
+
 ## Obiettivo
 
 Creare un motore procedurale seed-based per generare:
@@ -799,3 +804,34 @@ Il motore di generazione mappe e biomi è completo quando:
 - casse, ostacoli e nemici rispettano il bioma;
 - la modalità zombie usa la mappa generata;
 - è possibile visualizzare debug overlay e seed corrente.
+
+## Stato implementazione
+
+Completata come primo pass procedurale integrato.
+
+Implementazione principale:
+
+- `game/procedural/world_generation/world_generation_seed.gd`
+- `game/procedural/world_generation/biome_world_generator.gd`
+- `game/procedural/world_generation/biome_map_generator.gd`
+- `game/procedural/world_generation/border_generator.gd`
+- `game/procedural/world_generation/biome_passage_generator.gd`
+- `game/procedural/world_generation/biome_terrain_generator.gd`
+- `game/procedural/world_generation/obstacle_layout_generator.gd`
+- `game/procedural/world_generation/fall_boundary_generator.gd`
+- `game/procedural/world_generation/map_validation_system.gd`
+- `game/procedural/world_generation/biome_map_debug_overlay.gd`
+
+Integrazione runtime:
+
+- `BiomeManager` genera la mappa seed-based a inizio run e assegna i layout generati alle `BiomeDefinition`.
+- `BiomeTransitionSystem` crea i gate dai `BiomePassage` della cella corrente.
+- `ZombieSpawner` rifiuta posizioni fuori dalla zona generata o dentro fall zone/hazard.
+- `BiomeEnvironmentLayout` conserva zona `200x200`, rettangoli logici, seed e report di validazione.
+
+Verifica:
+
+- `godot --headless --path . --script res://tests/biome_world_generation_smoke_test.gd`
+- regressioni eseguite: foundation zombie, ambiente zombie, transizioni bioma, spawner edge e survival wave.
+
+Milestone 1-12: completate.

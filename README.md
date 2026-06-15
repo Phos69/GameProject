@@ -77,6 +77,7 @@ godot --headless --path . --script res://tests/zombie_biome_transition_smoke_tes
 godot --headless --path . --script res://tests/zombie_biome_enemy_smoke_test.gd
 godot --headless --path . --script res://tests/zombie_revamp_ten_wave_smoke_test.gd
 godot --headless --path . --script res://tests/zombie_revamp_ten_minute_soak_test.gd
+godot --headless --path . --script res://tests/biome_world_generation_smoke_test.gd
 godot --headless --path . --script res://tests/boss_smoke_test.gd
 godot --headless --path . --script res://tests/dungeon_smoke_test.gd
 godot --headless --path . --script res://tests/tower_defense_smoke_test.gd
@@ -187,6 +188,7 @@ Completato:
 - profili classe RPG data-driven tramite risorse `RpgCharacterData`;
 - feedback world-space e cue procedurali dedicati per level-up e super RPG;
 - revamp zombie completo con controller, biomi, wave director, spawner camera-edge, transizioni e sistemi ambientali modulari;
+- motore procedurale seed-based per mappa globale biomi, celle `200x200`, passaggi, fall boundary, layout interno e validazione pathfinding;
 - cinque biomi giocabili nella stessa run, con partenza forzata dalla `Pianura Infetta`;
 - spawn zombie delegato a `ZombieSpawner` dai bordi della camera, con fallback ai punti arena esistenti;
 - layout ambientali data-driven per Pianura, Tossico, Infuocato, Neve e Palude;

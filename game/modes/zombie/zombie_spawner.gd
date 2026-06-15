@@ -48,6 +48,8 @@ func get_spawn_position(
 func is_spawn_position_valid(position: Vector2, _biome = null) -> bool:
 	if not is_position_outside_camera_view(position):
 		return false
+	if not _is_position_inside_generated_biome(position, _biome):
+		return false
 	if _is_too_close_to_players(position):
 		return false
 	if _is_position_blocked_by_obstacles(position):
@@ -207,6 +209,14 @@ func _is_position_hazardous(position: Vector2) -> bool:
 		and hazard_system.has_method("is_position_hazardous")
 		and hazard_system.is_position_hazardous(position)
 	)
+
+func _is_position_inside_generated_biome(position: Vector2, biome) -> bool:
+	if biome == null:
+		return true
+	var layout := biome.get("environment_layout") as BiomeEnvironmentLayout
+	if layout == null or not layout.has_generated_map_data():
+		return true
+	return layout.is_world_position_inside_zone(position)
 
 func _unit_sample(spawn_index: int, attempt: int, salt: int) -> float:
 	var raw := absi(spawn_index * 110351 + attempt * 9176 + salt * 131)

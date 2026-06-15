@@ -12,6 +12,13 @@
 
 ### Added
 
+- Completata la Roadmap Motore di Generazione Mappe e Biomi come primo motore procedurale integrato.
+- Aggiunti `WorldGenerationSeed`, `BiomeWorldGenerator`, `BiomeMapGenerator`, `BorderGenerator`, `BiomePassageGenerator`, `BiomeTerrainGenerator`, `ObstacleLayoutGenerator`, `FallBoundaryGenerator` e `MapValidationSystem`.
+- La zombie survival genera a inizio run una mappa globale seed-based con celle bioma `200x200`, bordi con passaggi condivisi, fall boundary sui lati esterni e layout interni validati.
+- I layout bioma generati includono strade, corridoi, case/ostacoli grandi, casse, hazard tematici e dati di validazione flood-fill.
+- `BiomeManager` espone seed, firma di generazione, cella corrente e mappa generata; `BiomeTransitionSystem` usa i passaggi generati per creare i gate runtime.
+- Aggiunto `BiomeMapDebugOverlay` con seed corrente, riepilogo celle e richieste di rigenerazione stesso/nuovo seed.
+- Aggiunto smoke test `tests/biome_world_generation_smoke_test.gd` per determinismo, confini, fall zone, validazione e integrazione survival.
 - Completata integralmente la Roadmap Revamp Modalita Zombie fino alla Milestone Z12.
 - Aggiunti quattro layout data-driven avanzati per Tossico, Infuocato, Neve e Palude, con terreno, ostacoli, casse, hazard e confini fisici dedicati.
 - Aggiunti `BiomeTransitionSystem` e `BiomeTransitionGate` per attraversare in sequenza tutti i cinque biomi durante la stessa run.

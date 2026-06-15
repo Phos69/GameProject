@@ -52,6 +52,8 @@ func configure_biome(biome: BiomeDefinition) -> void:
 		if active_biome.palette != null
 		else Color(0.42, 0.90, 0.58, 1.0)
 	)
+	if _spawn_generated_map_gates(color):
+		return
 	if not active_biome.next_biome_id.is_empty():
 		_spawn_gate(
 			active_biome.next_biome_id,
@@ -129,7 +131,18 @@ func _on_gate_body_entered(
 		transition_to(gate.target_biome_id, gate.direction_id)
 
 func _move_party_to_entry(direction_id: StringName) -> void:
-	var entry_x := -party_entry_offset if direction_id == &"east" else party_entry_offset
+	var entry_position := Vector2.ZERO
+	match direction_id:
+		&"east":
+			entry_position = Vector2(-party_entry_offset, 0.0)
+		&"west":
+			entry_position = Vector2(party_entry_offset, 0.0)
+		&"north":
+			entry_position = Vector2(0.0, party_entry_offset)
+		&"south":
+			entry_position = Vector2(0.0, -party_entry_offset)
+		_:
+			entry_position = Vector2(-party_entry_offset, 0.0)
 	var players := get_tree().get_nodes_in_group("players")
 	players.sort_custom(func(a: Node, b: Node) -> bool:
 		return int(a.get("player_slot")) < int(b.get("player_slot"))
@@ -138,15 +151,61 @@ func _move_party_to_entry(direction_id: StringName) -> void:
 		var player := players[index] as Node2D
 		if player == null:
 			continue
-		player.global_position = Vector2(
-			entry_x,
-			(float(index) - float(players.size() - 1) * 0.5) * 44.0
-		)
+		var party_offset := (float(index) - float(players.size() - 1) * 0.5) * 44.0
+		if direction_id == &"north" or direction_id == &"south":
+			player.global_position = entry_position + Vector2(party_offset, 0.0)
+		else:
+			player.global_position = entry_position + Vector2(0.0, party_offset)
 		if player is CharacterBody2D:
 			(player as CharacterBody2D).velocity = Vector2.ZERO
 
 func _resolve_biome_manager() -> BiomeManager:
 	return get_tree().get_first_node_in_group("biome_manager") as BiomeManager
+
+func _spawn_generated_map_gates(color: Color) -> bool:
+	if biome_manager == null:
+		biome_manager = _resolve_biome_manager()
+	if biome_manager == null or not biome_manager.has_method("get_current_biome_cell"):
+		return false
+	var cell := biome_manager.get_current_biome_cell() as BiomeCell
+	if cell == null or cell.passages.is_empty():
+		return false
+	for passage in cell.passages:
+		_spawn_gate(
+			passage.to_biome_id,
+			passage.side,
+			_get_gate_position_for_passage(passage, cell),
+			color
+		)
+	return true
+
+func _get_gate_position_for_passage(
+	passage: BiomePassage,
+	cell: BiomeCell
+) -> Vector2:
+	var layout := (
+		cell.generated_layout
+		if cell.generated_layout != null
+		else active_biome.environment_layout
+	)
+	var scale := (
+		layout.logical_tile_scale
+		if layout != null
+		else 8.0
+	)
+	var zone_size := cell.get_zone_size()
+	var half_world := Vector2(zone_size) * scale * 0.5
+	var margin := 45.0
+	var offset := (float(passage.position) - float(zone_size.y) * 0.5) * scale
+	match passage.side:
+		&"north":
+			return Vector2(offset, -half_world.y + margin)
+		&"south":
+			return Vector2(offset, half_world.y - margin)
+		&"west":
+			return Vector2(-half_world.x + margin, offset)
+		_:
+			return Vector2(half_world.x - margin, offset)
 
 func _get_environment_container() -> Node:
 	var container := get_node_or_null(environment_container_path)

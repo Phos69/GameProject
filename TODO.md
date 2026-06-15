@@ -1,5 +1,14 @@
 # TODO
 
+## Motore generazione mappe e biomi - completato
+
+- Roadmap motore generazione mappe e biomi completata come primo pass procedurale integrato.
+  - Obiettivo: generare una mappa globale seed-based con celle bioma `200x200`, passaggi, fall zone, layout interni e validazione giocabilita.
+  - Milestone collegata: `roadmap_motore_generazione_mappe_biomi.md` Milestone 1-12.
+  - File/sistemi coinvolti: `game/procedural/world_generation/`, `BiomeManager`, `BiomeTransitionSystem`, `ZombieSpawner`, `BiomeDefinition`, `BiomeEnvironmentLayout`.
+  - Criterio di accettazione: stesso seed produce la stessa mappa, seed diverso cambia la firma, ogni cella ha bordi coerenti, passaggi raggiungibili, fall boundary sui lati esterni e layout validato.
+  - Test richiesto: `tests/biome_world_generation_smoke_test.gd`, regressioni `zombie_revamp_foundation_smoke_test.gd`, `zombie_environment_milestone_smoke_test.gd`, `zombie_biome_transition_smoke_test.gd`, `zombie_spawner_edge_smoke_test.gd` e `survival_wave_smoke_test.gd`.
+
 ## Revamp modalita zombie - completato
 
 - Roadmap Z1-Z12 completata.

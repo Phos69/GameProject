@@ -23,6 +23,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 14. `DropPickup` delega l'applicazione della ricompensa a `DropSystem`.
 15. `GameModeManager` avvia `SurvivalMode`, che applica il profilo RPG scelto e seleziona un profilo arena tramite `SurvivalArenaManager`.
 16. `ZombieModeController` avvia i componenti revamp zombie e forza il bioma iniziale tramite `BiomeManager`.
+17. `BiomeManager` genera una mappa seed-based tramite `BiomeWorldGenerator`, con celle bioma `200x200`, passaggi condivisi, fall boundary e layout validati.
 17. `BiomeTransitionSystem` crea i confini attraversabili e richiede al controller di applicare il nuovo bioma al party.
 18. `SurvivalArenaManager` configura playground, player, crate, gate e fallback spawn per lo spawner.
 19. `HazardSystem` genera fall zone e hazard ambientali, aggiorna posizioni sicure, status e modificatori movimento.
@@ -88,6 +89,16 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `SurvivalMode`: ciclo survival, condizione di sconfitta e inoltro richieste boss.
 - `ZombieModeController`: coordinatore interno del revamp survival per bioma, terrain, casse, ostacoli e hazard.
 - `BiomeManager`: registro biomi, bioma corrente e selezione iniziale della `Pianura Infetta`.
+- `WorldGenerationSeed`: seed globale di run e derivazione deterministica degli stream RNG per mappa, terreno, ostacoli, bordi, loot e spawn.
+- `BiomeWorldGenerator`: orchestratore della pipeline procedurale globale per mappa biomi, layout per cella e debug seed.
+- `BiomeMapGenerator`: costruisce la griglia di `BiomeCell` `200x200`, assegna tipi bioma, coordinate globali, vicini e seed locali.
+- `BorderGenerator`: calcola lati connessi e lati esterni di caduta per ogni cella bioma.
+- `BiomePassageGenerator`: crea passaggi condivisi e allineati tra celle confinanti.
+- `BiomeTerrainGenerator`: genera il layout interno del bioma attivo e collega ostacoli, casse, hazard e report di validazione.
+- `ObstacleLayoutGenerator`: produce strade, corridoi, case grandi, ostacoli secondari e muri sui lati connessi.
+- `FallBoundaryGenerator`: trasforma i lati senza vicino in `fall_zone` data-driven con il contratto di danno ambientale esistente.
+- `MapValidationSystem`: valida con flood-fill spawn, corridoi, passaggi e casse raggiungibili prima dell'uso runtime.
+- `BiomeMapDebugOverlay`: espone seed corrente, riepilogo celle/passaggi e richieste di rigenerazione per debug.
 - `BiomeDefinition`: risorsa dati con terreno, ostacoli, casse, zombie ammessi, pesi, palette e moltiplicatori.
 - `BiomeTransitionSystem`: gate est/ovest, spostamento party e transizione tra definizioni adiacenti.
 - `BiomeTransitionGate`: area non bloccante e leggibile che richiede il cambio bioma.
@@ -311,8 +322,11 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - `SurvivalMode` avvia e arresta `WaveManager` e controlla la sconfitta del party.
 - `SurvivalMode` avvia e arresta `ZombieModeController` prima del ciclo wave.
 - `BiomeManager` e il punto unico per leggere il bioma corrente della survival.
+- Ogni run survival genera o rigenera una mappa globale seed-based; in assenza di seed manuale usa un seed default stabile, mentre un context `world_seed` permette riproduzione e debug.
+- La mappa globale contiene celle `200x200`, seed locali, vicini, bordi, passaggi, fall boundary e layout ambientali validati prima di essere assegnati alle `BiomeDefinition`.
 - Ogni nuova run survival riparte dalla `Pianura Infetta`.
 - `BiomeTransitionSystem` collega Pianura, Tossico, Infuocato, Neve e Palude; il party condivide un solo bioma corrente.
+- Quando e disponibile una cella procedurale corrente, `BiomeTransitionSystem` genera i gate dai `BiomePassage`; il fallback `previous_biome_id`/`next_biome_id` resta per compatibilita.
 - Il cambio bioma rigenera terreno, ostacoli, casse, hazard e gate senza riavviare `WaveManager`.
 - `WaveDirector` legge il bioma corrente per risolvere roster, moltiplicatori, ritmo spawn e drop.
 - Lo scaling contestuale considera wave, player vivi, tempo sopravvissuto e profondita del bioma.

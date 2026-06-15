@@ -303,6 +303,7 @@ Stato: completata come primo pass configurabile e misurabile.
 
 Attivita post-roadmap:
 
+- roadmap motore generazione mappe e biomi completata come primo pass: seed globale, mappa biomi `200x200`, confini, passaggi, fall zone, layout interni, validazione flood-fill e integrazione zombie;
 - roadmap revamp modalita zombie completata fino alla Milestone Z12: cinque biomi attraversabili, spawn camera-edge, wave contestuali, layout, loot, hazard, zombie tematici, HUD e test di durata;
 - sistema ammo survival robusto con fallback infinita, pickup condivisi, supply crate e director anti-frustrazione completato;
 - visual gameplay pass della zombie survival completato;
