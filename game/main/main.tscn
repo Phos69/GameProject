@@ -1,4 +1,4 @@
-[gd_scene load_steps=33 format=3]
+[gd_scene load_steps=41 format=3]
 
 [ext_resource type="Script" path="res://game/main/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://game/input/input_manager.gd" id="2_input_manager"]
@@ -32,6 +32,14 @@
 [ext_resource type="Script" path="res://game/ui/run_results_screen.gd" id="30_run_results"]
 [ext_resource type="Script" path="res://game/environment/survival_arena_manager.gd" id="31_arena_manager"]
 [ext_resource type="Script" path="res://game/visuals/visual_settings_manager.gd" id="32_visual_settings"]
+[ext_resource type="Script" path="res://game/modes/zombie/zombie_mode_controller.gd" id="33_zombie_controller"]
+[ext_resource type="Script" path="res://game/modes/zombie/biome_manager.gd" id="34_biome_manager"]
+[ext_resource type="Script" path="res://game/modes/zombie/wave_director.gd" id="35_wave_director"]
+[ext_resource type="Script" path="res://game/modes/zombie/zombie_spawner.gd" id="36_zombie_spawner"]
+[ext_resource type="Script" path="res://game/modes/zombie/terrain_generator.gd" id="37_terrain_generator"]
+[ext_resource type="Script" path="res://game/modes/zombie/resource_crate_system.gd" id="38_resource_crate_system"]
+[ext_resource type="Script" path="res://game/modes/zombie/obstacle_system.gd" id="39_obstacle_system"]
+[ext_resource type="Script" path="res://game/modes/zombie/hazard_system.gd" id="40_hazard_system"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -52,6 +60,30 @@ script = ExtResource("19_survival_mode")
 
 [node name="AmmoDirector" type="Node" parent="Modes/SurvivalMode"]
 script = ExtResource("26_ammo_director")
+
+[node name="ZombieModeController" type="Node" parent="Modes/SurvivalMode"]
+script = ExtResource("33_zombie_controller")
+
+[node name="BiomeManager" type="Node" parent="Modes/SurvivalMode/ZombieModeController"]
+script = ExtResource("34_biome_manager")
+
+[node name="WaveDirector" type="Node" parent="Modes/SurvivalMode/ZombieModeController"]
+script = ExtResource("35_wave_director")
+
+[node name="ZombieSpawner" type="Node" parent="Modes/SurvivalMode/ZombieModeController"]
+script = ExtResource("36_zombie_spawner")
+
+[node name="TerrainGenerator" type="Node" parent="Modes/SurvivalMode/ZombieModeController"]
+script = ExtResource("37_terrain_generator")
+
+[node name="ResourceCrateSystem" type="Node" parent="Modes/SurvivalMode/ZombieModeController"]
+script = ExtResource("38_resource_crate_system")
+
+[node name="ObstacleSystem" type="Node" parent="Modes/SurvivalMode/ZombieModeController"]
+script = ExtResource("39_obstacle_system")
+
+[node name="HazardSystem" type="Node" parent="Modes/SurvivalMode/ZombieModeController"]
+script = ExtResource("40_hazard_system")
 
 [node name="DungeonMode" type="Node" parent="Modes"]
 script = ExtResource("20_dungeon_mode")

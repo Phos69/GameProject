@@ -53,8 +53,12 @@ var wave_enemies: Array[Node] = []
 var wave_boss: Node
 var boss_spawn_pending: bool = false
 var last_reward: Dictionary = {}
+var current_wave_biome_id: StringName = &""
+var active_spawn_rate_multiplier: float = 1.0
 
 var enemy_system: EnemySystem
+var wave_director
+var zombie_spawner
 
 func _ready() -> void:
 	add_to_group("wave_manager")
@@ -78,6 +82,8 @@ func start_run() -> void:
 		return
 	if not _resolve_enemy_system():
 		return
+	_resolve_wave_director()
+	_resolve_zombie_spawner()
 
 	current_wave = 0
 	wave_running = false
@@ -88,6 +94,8 @@ func start_run() -> void:
 	wave_boss = null
 	boss_spawn_pending = false
 	pending_spawn_count = 0
+	current_wave_biome_id = &""
+	active_spawn_rate_multiplier = 1.0
 	run_started.emit()
 	_begin_intermission(initial_delay)
 
@@ -144,12 +152,22 @@ func configure_spawn_points(points: Array[Vector2]) -> void:
 	if points.is_empty():
 		return
 	spawn_points = points.duplicate()
+	_resolve_zombie_spawner()
+	if zombie_spawner != null:
+		zombie_spawner.configure_fallback_spawn_points(spawn_points)
 
 func get_enemy_id_for_spawn(
 	wave_index: int,
 	spawn_index: int,
 	regular_total: int
 ) -> StringName:
+	_resolve_wave_director()
+	if wave_director != null:
+		return wave_director.get_enemy_id_for_spawn(
+			wave_index,
+			spawn_index,
+			regular_total
+		)
 	if (
 		wave_index >= 3
 		and regular_total >= 5
@@ -186,6 +204,18 @@ func _resolve_enemy_system() -> bool:
 		enemy_system.enemy_died.connect(callback)
 	return true
 
+func _resolve_wave_director() -> void:
+	if wave_director == null:
+		wave_director = get_tree().get_first_node_in_group(
+			"wave_director"
+		)
+
+func _resolve_zombie_spawner() -> void:
+	if zombie_spawner == null:
+		zombie_spawner = get_tree().get_first_node_in_group(
+			"zombie_spawner"
+		)
+
 func _begin_intermission(duration: float) -> void:
 	state = &"intermission"
 	state_timer = maxf(duration, 0.0)
@@ -194,16 +224,27 @@ func _begin_intermission(duration: float) -> void:
 func _start_next_wave() -> void:
 	if not run_active or not _resolve_enemy_system():
 		return
+	_resolve_wave_director()
+	_resolve_zombie_spawner()
 
 	current_wave += 1
 	wave_running = true
 	current_wave_is_boss = should_spawn_boss(current_wave)
-	current_wave_regular_total = (
+	var base_regular_total := (
 		boss_wave_escort_count
 		if current_wave_is_boss
 		else base_enemy_count + (current_wave - 1) * enemy_count_growth
 	)
+	var wave_config := _configure_current_wave(base_regular_total)
+	current_wave_regular_total = int(
+		wave_config.get("regular_total", base_regular_total)
+	)
 	current_wave_regular_total = maxi(current_wave_regular_total, 0)
+	current_wave_biome_id = StringName(wave_config.get("biome_id", &""))
+	active_spawn_rate_multiplier = maxf(
+		float(wave_config.get("spawn_rate_multiplier", 1.0)),
+		0.05
+	)
 	current_wave_enemy_total = current_wave_regular_total + (1 if current_wave_is_boss else 0)
 	current_wave_enemy_total = maxi(current_wave_enemy_total, 1)
 	pending_spawn_count = current_wave_regular_total
@@ -230,20 +271,24 @@ func _process_spawning(delta: float) -> void:
 
 	_spawn_wave_enemy(current_wave_regular_total - pending_spawn_count)
 	pending_spawn_count -= 1
-	spawn_timer = maxf(spawn_interval, 0.0)
+	spawn_timer = maxf(spawn_interval / active_spawn_rate_multiplier, 0.0)
 	wave_progress_changed.emit(current_wave, get_enemies_remaining())
 	if pending_spawn_count <= 0:
 		state = &"combat"
 		_check_wave_completion()
 
 func _spawn_wave_enemy(spawn_index: int) -> void:
-	if spawn_points.is_empty():
+	if spawn_points.is_empty() and zombie_spawner == null:
 		return
 
 	var wave_offset := maxi(current_wave - 1, 0)
 	var health_multiplier := 1.0 + float(wave_offset) * health_scale_per_wave
 	var move_multiplier := 1.0 + float(wave_offset) * move_speed_scale_per_wave
 	var damage_multiplier := 1.0 + float(wave_offset) * damage_scale_per_wave
+	var biome_scaling := _get_wave_director_scaling()
+	health_multiplier *= float(biome_scaling.get("health", 1.0))
+	move_multiplier *= float(biome_scaling.get("move_speed", 1.0))
+	damage_multiplier *= float(biome_scaling.get("damage", 1.0))
 
 	var spawn_config := {
 		"wave_index": current_wave,
@@ -251,12 +296,12 @@ func _spawn_wave_enemy(spawn_index: int) -> void:
 		"move_speed_multiplier": move_multiplier,
 		"damage_multiplier": damage_multiplier
 	}
-	var spawn_position := spawn_points[spawn_index % spawn_points.size()]
 	var enemy_id := get_enemy_id_for_spawn(
 		current_wave,
 		spawn_index,
 		current_wave_regular_total
 	)
+	var spawn_position := _get_spawn_position(spawn_index, enemy_id)
 	var enemy := enemy_system.spawn_enemy(
 		enemy_id,
 		spawn_position,
@@ -266,6 +311,42 @@ func _spawn_wave_enemy(spawn_index: int) -> void:
 	if enemy != null:
 		wave_enemies.append(enemy)
 		enemy_spawned.emit(enemy, spawn_position, spawn_index)
+
+func _configure_current_wave(base_regular_total: int) -> Dictionary:
+	if wave_director == null:
+		return {
+			"regular_total": base_regular_total,
+			"biome_id": &"",
+			"spawn_rate_multiplier": 1.0
+		}
+	return wave_director.configure_wave(
+		current_wave,
+		current_wave_is_boss,
+		base_regular_total
+	)
+
+func _get_spawn_position(spawn_index: int, enemy_id: StringName) -> Vector2:
+	_resolve_zombie_spawner()
+	if zombie_spawner != null:
+		var biome = (
+			wave_director.get_current_biome()
+			if wave_director != null
+			else null
+		)
+		return zombie_spawner.get_spawn_position(spawn_index, enemy_id, biome)
+	if spawn_points.is_empty():
+		return Vector2.ZERO
+	return spawn_points[spawn_index % spawn_points.size()]
+
+func _get_wave_director_scaling() -> Dictionary:
+	_resolve_wave_director()
+	if wave_director == null:
+		return {
+			"health": 1.0,
+			"move_speed": 1.0,
+			"damage": 1.0
+		}
+	return wave_director.get_wave_scaling_multipliers()
 
 func _on_enemy_died(enemy: Node) -> void:
 	if not wave_enemies.has(enemy):

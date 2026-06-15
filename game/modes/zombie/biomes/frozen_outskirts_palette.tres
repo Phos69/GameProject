@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="BiomePalette" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/environment/biome_palette.gd" id="1_palette"]
+
+[resource]
+script = ExtResource("1_palette")
+biome_id = &"frozen_outskirts"
+display_name = "Bioma Neve"
+background_color = Color(0.075, 0.095, 0.115, 1)
+floor_color = Color(0.18, 0.24, 0.27, 1)
+alternate_floor_color = Color(0.14, 0.20, 0.24, 1)
+grid_color = Color(0.28, 0.42, 0.48, 0.62)
+major_grid_color = Color(0.55, 0.74, 0.82, 0.76)
+lane_color = Color(0.52, 0.80, 0.92, 0.20)
+hazard_color = Color(0.55, 0.90, 1.00, 0.72)
+gate_color = Color(0.56, 0.82, 0.94, 1)
+prop_color = Color(0.30, 0.36, 0.40, 1)

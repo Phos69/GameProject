@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="BiomePalette" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/environment/biome_palette.gd" id="1_palette"]
+
+[resource]
+script = ExtResource("1_palette")
+biome_id = &"infected_plains"
+display_name = "Pianura Infetta"
+background_color = Color(0.075, 0.085, 0.06, 1)
+floor_color = Color(0.18, 0.20, 0.13, 1)
+alternate_floor_color = Color(0.15, 0.17, 0.11, 1)
+grid_color = Color(0.22, 0.26, 0.18, 0.65)
+major_grid_color = Color(0.42, 0.46, 0.28, 0.78)
+lane_color = Color(0.62, 0.56, 0.31, 0.24)
+hazard_color = Color(0.74, 0.58, 0.16, 0.78)
+gate_color = Color(0.50, 0.78, 0.36, 1)
+prop_color = Color(0.38, 0.30, 0.16, 1)

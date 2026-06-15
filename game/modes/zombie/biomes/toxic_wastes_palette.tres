@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="BiomePalette" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/environment/biome_palette.gd" id="1_palette"]
+
+[resource]
+script = ExtResource("1_palette")
+biome_id = &"toxic_wastes"
+display_name = "Bioma Tossico"
+background_color = Color(0.035, 0.075, 0.052, 1)
+floor_color = Color(0.10, 0.19, 0.12, 1)
+alternate_floor_color = Color(0.08, 0.15, 0.11, 1)
+grid_color = Color(0.16, 0.36, 0.20, 0.62)
+major_grid_color = Color(0.38, 0.68, 0.29, 0.78)
+lane_color = Color(0.33, 0.86, 0.32, 0.23)
+hazard_color = Color(0.28, 0.95, 0.32, 0.76)
+gate_color = Color(0.42, 0.90, 0.58, 1)
+prop_color = Color(0.20, 0.42, 0.24, 1)

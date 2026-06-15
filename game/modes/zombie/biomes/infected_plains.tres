@@ -1,0 +1,38 @@
+[gd_resource type="Resource" script_class="BiomeDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://game/modes/zombie/biome_definition.gd" id="1_definition"]
+[ext_resource type="Resource" path="res://game/modes/zombie/biomes/infected_plains_palette.tres" id="2_palette"]
+
+[resource]
+script = ExtResource("1_definition")
+biome_id = &"infected_plains"
+display_name = "Pianura Infetta"
+description = "Bioma iniziale leggibile con zombie base, pochi ostacoli e risorse comuni."
+is_starting_biome = true
+difficulty_rating = 1.0
+palette = ExtResource("2_palette")
+terrain_tags = Array[StringName]([&"dry_grass", &"dirt", &"broken_fence"])
+obstacle_ids = Array[StringName]([&"small_rock", &"broken_fence", &"wood_barrier"])
+crate_ids = Array[StringName]([&"common", &"medical"])
+hazard_ids = Array[StringName]([])
+resource_tags = Array[StringName]([&"ammo_base", &"small_medkit", &"common_materials"])
+allowed_zombie_types = Array[StringName]([&"survival_zombie", &"survival_runner", &"survival_tank", &"survival_shooter"])
+weighted_zombie_ids = Array[StringName]([&"survival_zombie", &"survival_runner", &"survival_tank", &"survival_shooter"])
+weighted_zombie_values = Array[float]([1.0, 0.18, 0.08, 0.06])
+base_enemy_id = &"survival_zombie"
+runner_enemy_id = &"survival_runner"
+tank_enemy_id = &"survival_tank"
+shooter_enemy_id = &"survival_shooter"
+runner_start_wave = 2
+tank_start_wave = 3
+shooter_start_wave = 4
+special_start_wave = 2
+wave_size_multiplier = 1.0
+spawn_rate_multiplier = 1.0
+health_multiplier = 1.0
+move_speed_multiplier = 1.0
+damage_multiplier = 1.0
+resource_drop_modifier = 1.0
+elite_spawn_chance = 0.02
+boss_spawn_chance = 0.0
+environmental_hazard_chance = 0.0

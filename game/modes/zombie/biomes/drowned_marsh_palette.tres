@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="BiomePalette" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/environment/biome_palette.gd" id="1_palette"]
+
+[resource]
+script = ExtResource("1_palette")
+biome_id = &"drowned_marsh"
+display_name = "Bioma Palude"
+background_color = Color(0.040, 0.075, 0.078, 1)
+floor_color = Color(0.09, 0.15, 0.14, 1)
+alternate_floor_color = Color(0.07, 0.12, 0.13, 1)
+grid_color = Color(0.15, 0.31, 0.32, 0.62)
+major_grid_color = Color(0.28, 0.55, 0.57, 0.78)
+lane_color = Color(0.25, 0.62, 0.66, 0.22)
+hazard_color = Color(0.16, 0.62, 0.72, 0.76)
+gate_color = Color(0.32, 0.76, 0.82, 1)
+prop_color = Color(0.18, 0.30, 0.25, 1)

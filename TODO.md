@@ -1,7 +1,40 @@
 # TODO
 
+## Revamp modalita zombie - tracking attivo
+
+- Milestone Z2: spawn dinamico dai bordi camera.
+  - Obiettivo: generare zombie fuori o appena oltre il rettangolo visibile invece che da punti fissi arena.
+  - Milestone collegata: `roadmap_revamp_modalita_zombie.md` Milestone 2.
+  - File/sistemi coinvolti: `ZombieSpawner`, `WaveManager`, camera, player manager, profili arena come fallback.
+  - Criterio di accettazione: gli spawn sono sui bordi nord/sud/est/ovest, non troppo vicini ai player e hanno fallback stabile.
+  - Test richiesto: smoke test headless dello spawner e regressione survival.
+- Milestone Z3: biomi dati e ondate contestuali.
+  - Obiettivo: definire Pianura Infetta, Tossico, Infuocato, Neve e Palude con roster, pesi, risorse e difficolta.
+  - Milestone collegata: `roadmap_revamp_modalita_zombie.md` Milestone 3 e 8.
+  - File/sistemi coinvolti: `BiomeDefinition`, `BiomeManager`, `WaveDirector`, `WaveManager`, HUD futuro.
+  - Criterio di accettazione: la wave legge il bioma corrente e la prima ondata resta semplice con zombie base.
+  - Test richiesto: test bioma iniziale, roster per wave e regressione survival.
+- Milestone Z4: terreno, casse e ostacoli.
+  - Obiettivo: popolare il bioma iniziale con casse risorse, barriere, ostacoli e primi impedimenti fisici validati.
+  - Milestone collegata: `roadmap_revamp_modalita_zombie.md` Milestone 4, 6 e 7.
+  - File/sistemi coinvolti: `TerrainGenerator`, `ResourceCrateSystem`, `ObstacleSystem`, `SurvivalArenaManager`, `DropSystem`.
+  - Criterio di accettazione: la mappa non e vuota, le casse sono raggiungibili e gli ostacoli non bloccano completamente il pathing.
+  - Test richiesto: smoke ambiente e checklist manuale survival.
+- Milestone Z5: hazard e caduta.
+  - Obiettivo: introdurre zone `fall_zone` con 20 HP di danno, respawn su ultima posizione sicura e invulnerabilita breve.
+  - Milestone collegata: `roadmap_revamp_modalita_zombie.md` Milestone 5.
+  - File/sistemi coinvolti: `HazardSystem`, player, `HealthSystem`, terreno e validazione spawn.
+  - Criterio di accettazione: il player non resta bloccato nella zona di caduta e gli zombie non spawnano dentro hazard.
+  - Test richiesto: smoke hazard e verifica manuale del feedback.
+
 ## Completati recenti
 
+- Roadmap Revamp Modalita Zombie, Milestone Z1: fondamenta modulari.
+  - Obiettivo: separare la logica zombie in componenti dedicati mantenendo avviabile la survival esistente.
+  - Milestone collegata: `roadmap_revamp_modalita_zombie.md` Milestone 1.
+  - File/sistemi coinvolti: `ZombieModeController`, `BiomeManager`, `BiomeDefinition`, `WaveDirector`, `ZombieSpawner`, `TerrainGenerator`, `ResourceCrateSystem`, `ObstacleSystem`, `HazardSystem`, `SurvivalMode`, `WaveManager`, `SurvivalArenaManager`.
+  - Criterio di accettazione: la run parte dalla `Pianura Infetta`, `WaveManager` delega roster/spawn ai nuovi componenti e conserva fallback verso i profili arena.
+  - Test richiesto: `tests/zombie_revamp_foundation_smoke_test.gd`, `tests/survival_wave_smoke_test.gd`, `tests/milestone_20_arena_environment_smoke_test.gd`.
 - Roadmap RPG Mode, Milestone 12: polish grafico e feedback.
   - Obiettivo: dare feedback visivo/audio dedicato agli eventi RPG importanti senza cambiare gameplay.
   - Milestone collegata: `roadmap_rpg_mode.md` Milestone 12.

@@ -127,6 +127,7 @@ game/
   saves/             salvataggi JSON versionati
   visuals/           visual modulari ed effetti gameplay sostituibili
   environment/       profili arena, palette, gate e props interattivi
+  modes/zombie/      componenti revamp survival: biomi, spawner e wave director
   debug/             strumenti debug
 docs/                documentazione tecnica e checklist
 prompts/             prompt operativi per task IA futuri
@@ -176,6 +177,9 @@ Completato:
 - primo pass di bilanciamento RPG per differenziare meglio range, accessibilita, rischio e difesa;
 - profili classe RPG data-driven tramite risorse `RpgCharacterData`;
 - feedback world-space e cue procedurali dedicati per level-up e super RPG;
+- fondazione revamp zombie con componenti separati per controller, biomi, wave director, spawner camera-edge e sistemi ambientali;
+- cinque definizioni bioma iniziali, con partenza forzata dalla `Pianura Infetta`;
+- spawn zombie delegato a `ZombieSpawner` dai bordi della camera, con fallback ai punti arena esistenti;
 - selezione di survival, dungeon e tower defense da tastiera o joypad;
 - ritorno al menu con `Esc` e arresto pulito della modalita attiva;
 - survival avviabile dal menu o con hotkey debug;
@@ -255,6 +259,7 @@ Completato:
 Non ancora completato:
 
 - ulteriori boss e pattern avanzati;
+- completare revamp zombie con terreno fisico, casse ambientali, ostacoli, fall zone e transizioni bioma;
 - dungeon ramificati, shop, biomi e selezione stanza;
 - asset definitivi e ulteriori pass di bilanciamento;
 - firma digitale dell'eseguibile Windows.
@@ -262,5 +267,6 @@ Non ancora completato:
 ## Prossimi obiettivi post-roadmap
 
 1. Espandere il dungeon con diramazioni, shop e biomi dedicati.
-2. Sostituire gradualmente i placeholder con asset licenziati.
-3. Affinare bilanciamento e performance dopo playtest reali.
+2. Proseguire il revamp zombie con terrain generator, casse, ostacoli e hazard.
+3. Sostituire gradualmente i placeholder con asset licenziati.
+4. Affinare bilanciamento e performance dopo playtest reali.

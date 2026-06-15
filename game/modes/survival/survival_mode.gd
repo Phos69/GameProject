@@ -11,6 +11,7 @@ signal survival_defeated(wave_index: int)
 var wave_manager: WaveManager
 var ammo_director: SurvivalAmmoDirector
 var arena_manager: SurvivalArenaManager
+var zombie_mode_controller
 var player_manager: PlayerManager
 var selected_character_id: StringName = &""
 
@@ -20,6 +21,7 @@ func _ready() -> void:
 	_resolve_wave_manager()
 	_resolve_ammo_director()
 	_resolve_arena_manager()
+	_resolve_zombie_mode_controller()
 	_resolve_player_manager()
 
 	var game_mode_manager = get_tree().get_first_node_in_group("game_mode_manager")
@@ -47,6 +49,7 @@ func start_mode(context: Dictionary = {}) -> void:
 	_resolve_wave_manager()
 	_resolve_ammo_director()
 	_resolve_arena_manager()
+	_resolve_zombie_mode_controller()
 	_resolve_player_manager()
 	selected_character_id = (
 		StringName(context.get("character_id", &""))
@@ -59,6 +62,8 @@ func start_mode(context: Dictionary = {}) -> void:
 			context.get("arena_id", arena_manager.default_arena_id)
 		)
 		arena_manager.activate_arena(arena_id)
+	if zombie_mode_controller != null:
+		zombie_mode_controller.start_run(context)
 	if ammo_director != null:
 		ammo_director.start_run()
 	if wave_manager != null:
@@ -71,6 +76,8 @@ func stop_mode() -> void:
 		ammo_director.stop_run(true)
 	if wave_manager != null:
 		wave_manager.stop_run(true)
+	if zombie_mode_controller != null:
+		zombie_mode_controller.stop_run()
 	if arena_manager != null:
 		arena_manager.deactivate_arena()
 	super.stop_mode()
@@ -118,6 +125,12 @@ func _resolve_arena_manager() -> void:
 		arena_manager = get_tree().get_first_node_in_group(
 			"survival_arena_manager"
 		) as SurvivalArenaManager
+
+func _resolve_zombie_mode_controller() -> void:
+	if zombie_mode_controller == null:
+		zombie_mode_controller = get_tree().get_first_node_in_group(
+			"zombie_mode_controller"
+		)
 
 func _resolve_player_manager() -> void:
 	if player_manager == null:

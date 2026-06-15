@@ -421,6 +421,14 @@ selezione dal menu. I profili attuali sono:
 - il barile e colpibile, mostra area e countdown, poi danneggia tutti gli
   attori nell'area tramite `HealthSystem`.
 
+Il revamp zombie e avviato come fondazione modulare:
+
+- ogni run parte dalla `Pianura Infetta`, il bioma iniziale semplice;
+- le definizioni dati coprono Pianura Infetta, Tossico, Infuocato, Neve e Palude;
+- le ondate leggono il bioma corrente tramite `WaveDirector`;
+- lo spawn reale degli zombie viene richiesto a `ZombieSpawner` sui bordi della camera;
+- i vecchi punti arena restano fallback e supporto visuale per i gate.
+
 Regole della run:
 
 - 3 secondi di preparazione iniziale;
@@ -432,6 +440,7 @@ Regole della run:
 - dalla wave 2 ogni terzo zombie regolare e un runner;
 - dalla wave 3, con almeno cinque zombie regolari, l'ultimo e un tank;
 - dalla wave 4 ogni quarto slot regolare e uno shooter, salvo lo slot tank;
+- nella fondazione revamp, questi ruoli sono risolti dal bioma iniziale per mantenere compatibilita con il roster esistente;
 - ogni quinta ondata e marcata come boss wave;
 - ogni boss wave genera 2 zombie di scorta e il `Wave Warden`;
 - la vita boss aumenta del 10% per ondata precedente;

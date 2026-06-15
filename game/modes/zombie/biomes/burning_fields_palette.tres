@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="BiomePalette" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/environment/biome_palette.gd" id="1_palette"]
+
+[resource]
+script = ExtResource("1_palette")
+biome_id = &"burning_fields"
+display_name = "Bioma Infuocato"
+background_color = Color(0.10, 0.055, 0.04, 1)
+floor_color = Color(0.20, 0.105, 0.075, 1)
+alternate_floor_color = Color(0.16, 0.075, 0.058, 1)
+grid_color = Color(0.38, 0.16, 0.10, 0.62)
+major_grid_color = Color(0.72, 0.31, 0.13, 0.78)
+lane_color = Color(0.92, 0.44, 0.18, 0.21)
+hazard_color = Color(1.00, 0.35, 0.08, 0.78)
+gate_color = Color(0.95, 0.62, 0.22, 1)
+prop_color = Color(0.38, 0.20, 0.12, 1)

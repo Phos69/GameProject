@@ -12,6 +12,11 @@
 
 ### Added
 
+- Avviata Roadmap Revamp Modalita Zombie con Milestone Z1: fondamenta modulari.
+- Aggiunti `ZombieModeController`, `BiomeManager`, `BiomeDefinition`, `WaveDirector`, `ZombieSpawner` e stub ambientali per terreno, casse, ostacoli e hazard.
+- Aggiunte definizioni dati per Pianura Infetta, Tossico, Infuocato, Neve e Palude con palette, roster, risorse, ostacoli e moltiplicatori iniziali.
+- `WaveManager` ora delega composizione wave e spawn position ai componenti zombie, mantenendo fallback ai punti arena esistenti.
+- Aggiunto smoke test `zombie_revamp_foundation_smoke_test.gd`.
 - Completata Roadmap RPG Mode Milestone 12 con feedback polish per level-up e super.
 - `GameplayEffects` ora genera effetti dedicati `rpg_level_up` e `rpg_super` dai segnali RPG.
 - `AudioEventRouter` collega level-up e super RPG a cue procedurali dedicati.

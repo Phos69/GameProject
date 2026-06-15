@@ -100,6 +100,11 @@ func _apply_profile_to_systems(profile: SurvivalArenaProfile) -> void:
 	) as WaveManager
 	if wave_manager != null:
 		wave_manager.configure_spawn_points(profile.enemy_spawn_points)
+	var zombie_spawner = get_tree().get_first_node_in_group(
+		"zombie_spawner"
+	)
+	if zombie_spawner != null:
+		zombie_spawner.configure_fallback_spawn_points(profile.enemy_spawn_points)
 	var player_manager := get_tree().get_first_node_in_group(
 		"player_manager"
 	) as PlayerManager
