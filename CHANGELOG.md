@@ -4,6 +4,9 @@
 
 ### Added
 
+- Completata Roadmap RPG Mode Milestone 10 con primo pass di bilanciamento classi/armi.
+- Aggiustati profili e armi RPG per rendere Ranger, Pistoliere, Berserker e Spadaccino piu distinti.
+- Aggiunto smoke test `milestone_rpg_10_balance_smoke_test.gd` con criteri relativi di identita classe.
 - Completata Roadmap RPG Mode Milestone 9 con HUD RPG piu grafico e leggibile.
 - Aggiunto `RpgHudIcon` procedurale per ritratto classe e icona super senza asset esterni.
 - `PlayerHudCard` ora mostra ritratto personaggio, icona super ready, HP, ammo pips, XP, adrenalina e buff passivi in una scheda stabile.

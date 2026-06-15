@@ -75,6 +75,7 @@ godot --headless --path . --script res://tests/milestone_rpg_6_xp_level_smoke_te
 godot --headless --path . --script res://tests/milestone_rpg_7_passives_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_rpg_8_adrenaline_super_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_rpg_9_hud_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_rpg_10_balance_smoke_test.gd
 ```
 
 Export Windows:
@@ -158,6 +159,7 @@ Completato:
 - passive automatiche RPG per Ranger, Pistoliere, Berserker e Spadaccino con stato visibile nell'HUD;
 - adrenalina RPG da combat e fine ondata, con super attivabile a 100 per ogni classe;
 - HUD RPG con ritratto classe, icona arma, pips ammo, barre XP/adrenalina e icona super ready;
+- primo pass di bilanciamento RPG per differenziare meglio range, accessibilita, rischio e difesa;
 - selezione di survival, dungeon e tower defense da tastiera o joypad;
 - ritorno al menu con `Esc` e arresto pulito della modalita attiva;
 - survival avviabile dal menu o con hotkey debug;

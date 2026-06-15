@@ -93,7 +93,7 @@ func _run() -> void:
 		20,
 		guard_target
 	)
-	_expect(guarded_damage == 12, "spadaccino guard reduces incoming damage")
+	_expect(guarded_damage == 11, "spadaccino guard reduces incoming damage")
 	_expect(
 		rpg_component.get_active_passive_text() == "GUARDIA -20%",
 		"spadaccino passive is visible after a hit"

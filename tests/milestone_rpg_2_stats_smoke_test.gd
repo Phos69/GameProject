@@ -53,18 +53,18 @@ func _run() -> void:
 		"HealthComponent"
 	) as HealthComponent
 	_expect(rpg_component.character_id == &"berserker", "berserker profile is applied")
-	_expect(health_component.max_health == 120, "class max HP is applied")
-	_expect(is_equal_approx(player_one.move_speed, 260.0 * 0.92), "class speed multiplier is applied")
-	_expect(rpg_component.get_attack() == 11, "class attack is exposed")
+	_expect(health_component.max_health == 125, "class max HP is applied")
+	_expect(is_equal_approx(player_one.move_speed, 260.0 * 0.90), "class speed multiplier is applied")
+	_expect(rpg_component.get_attack() == 12, "class attack is exposed")
 	_expect(rpg_component.get_defense() == 1, "class defense is exposed")
 
 	rpg_component.add_experience(45)
 	await process_frame
 	_expect(rpg_component.level == 2, "run XP levels up the character")
-	_expect(rpg_component.get_max_hp() == 130, "level up increases max HP")
-	_expect(rpg_component.get_attack() == 13, "level up increases attack")
+	_expect(rpg_component.get_max_hp() == 135, "level up increases max HP")
+	_expect(rpg_component.get_attack() == 14, "level up increases attack")
 	_expect(rpg_component.get_defense() == 2, "level up increases defense")
-	_expect(health_component.max_health == 130, "player health max follows RPG level")
+	_expect(health_component.max_health == 135, "player health max follows RPG level")
 
 	var enemy := BasicEnemy.new()
 	enemy.defense = 4
@@ -74,7 +74,7 @@ func _run() -> void:
 		Vector2.ZERO,
 		&"test"
 	)
-	_expect(resolved_damage == 19, "outgoing formula adds attack and subtracts target defense")
+	_expect(resolved_damage == 20, "outgoing formula adds attack and subtracts target defense")
 
 	var applied_damage := health_system.apply_damage(
 		player_one,

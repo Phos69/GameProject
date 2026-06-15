@@ -196,7 +196,7 @@ Ogni arma deve avere gameplay diverso: range, scatter, danno, ammo, reload e hit
 ### Arco
 
 ```text
-damage: 18
+damage: 20
 range: 750
 scatter: 2°
 ammo: 1
@@ -211,9 +211,9 @@ Gameplay: arma precisa, forte se il player mira bene.
 ### Pistola
 
 ```text
-damage: 10
+damage: 9
 range: 520
-scatter: 7°
+scatter: 8°
 ammo: 8
 reloadTime: 1.2s
 fireRate: alta
@@ -226,7 +226,7 @@ Gameplay: facile da usare, buona contro zombie singoli o piccoli gruppi.
 ### Ascia
 
 ```text
-damage: 26
+damage: 28
 range: 95
 scatter: 0°
 ammo: 3
@@ -241,11 +241,11 @@ Gameplay: colpi pesanti, rischiosa perché richiede vicinanza.
 ### Spada
 
 ```text
-damage: 15
-range: 125
+damage: 14
+range: 135
 scatter: 0°
 ammo: 4
-reloadTime: 0.9s
+reloadTime: 0.85s
 fireRate: media
 projectileSpeed: melee
 hitbox: 110x45 frontale
@@ -746,6 +746,18 @@ Il giocatore deve poter capire tutto senza leggere etichette piccole.
 ---
 
 # Milestone 10 — Bilanciamento prima versione
+
+Stato: completata come primo pass dati.
+
+Implementato:
+
+- Ranger fragile ma piu incisivo a distanza: arco 20 danni e attacco classe 9;
+- Pistoliere piu rapido ma con DPS grezzo limitato: pistola 9 danni, fire rate 5,8 e scatter 8;
+- Berserker piu estremo: 125 HP, attacco 12, ascia 28 danni e velocita 0,90;
+- Spadaccino piu difensivo e controllato: 112 HP, difesa 6, spada range 135 e reload 0,85s;
+- smoke test dedicato `tests/milestone_rpg_10_balance_smoke_test.gd` con criteri relativi di identita classe.
+
+Limite noto: i numeri sono ancora da validare con playtest reali e telemetria manuale.
 
 ## Goal
 

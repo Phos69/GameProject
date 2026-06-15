@@ -324,10 +324,10 @@ passivo attivo.
 
 Armi base RPG attive:
 
-- `Arco`: 18 danni, range 750, scatter 2 gradi, 1 freccia e reload 0,55s.
-- `Pistola`: 10 danni, range 520, scatter 7 gradi, 8 colpi e reload 1,2s.
-- `Ascia`: 26 danni, range 95, 3 swing e reload 1,6s.
-- `Spada`: 15 danni, range 125, 4 fendenti e reload 0,9s.
+- `Arco`: 20 danni, range 750, scatter 2 gradi, 1 freccia e reload 0,55s.
+- `Pistola`: 9 danni, range 520, scatter 8 gradi, 8 colpi e reload 1,2s.
+- `Ascia`: 28 danni, range 95, 3 swing e reload 1,6s.
+- `Spada`: 14 danni, range 135, 4 fendenti e reload 0,85s.
 
 Le armi base hanno riserva infinita ma conservano caricatore e reload. Le
 hitbox sono configurate separatamente dal visual: pistola circle, arco capsule,
@@ -362,7 +362,12 @@ Adrenalina e super:
 - `Berserker`: `Terremoto di Sangue`, danno ad area attorno al player;
 - `Spadaccino`: `Lama Fantasma`, dash offensivo con breve invulnerabilita.
 
-Le milestone successive rifiniscono HUD grafico, bilanciamento e polish feedback.
+Il primo pass di bilanciamento rende il Ranger fragile ma premiato a distanza,
+il Pistoliere rapido e accessibile senza superare 85 DPS teorici grezzi, il
+Berserker il piu resistente e lento, e lo Spadaccino il piu difensivo tra le
+classi iniziali.
+
+Le milestone successive rifiniscono configurazione data-driven e polish feedback.
 
 ## Bilanciamento iniziale
 

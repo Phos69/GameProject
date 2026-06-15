@@ -8,8 +8,8 @@
 script = ExtResource("1_weapon_data")
 weapon_id = &"rpg_axe"
 display_name = "Ascia"
-damage = 26
-fire_rate = 1.25
+damage = 28
+fire_rate = 1.15
 projectile_speed = 320.0
 max_range = 95.0
 scatter_degrees = 0.0

@@ -47,10 +47,10 @@ func _run() -> void:
 	var pistol := load("res://game/weapons/rpg_pistol.tres") as WeaponData
 	var axe := load("res://game/weapons/rpg_axe.tres") as WeaponData
 	var sword := load("res://game/weapons/rpg_sword.tres") as WeaponData
-	_expect(bow.damage == 18 and bow.max_range == 750.0, "bow has long precise profile")
-	_expect(pistol.magazine_size == 8 and pistol.scatter_degrees == 7.0, "pistol has eight shots and scatter")
-	_expect(axe.damage == 26 and axe.max_range == 95.0, "axe is high damage and short range")
-	_expect(sword.magazine_size == 4 and sword.reload_duration == 0.9, "sword has fast four-swing reload")
+	_expect(bow.damage == 20 and bow.max_range == 750.0, "bow has long precise profile")
+	_expect(pistol.magazine_size == 8 and pistol.scatter_degrees == 8.0, "pistol has eight shots and scatter")
+	_expect(axe.damage == 28 and axe.max_range == 95.0, "axe is high damage and short range")
+	_expect(sword.magazine_size == 4 and sword.reload_duration == 0.85, "sword has fast four-swing reload")
 
 	player.queue_free()
 	_finish()

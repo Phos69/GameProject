@@ -2,6 +2,12 @@
 
 ## Completati recenti
 
+- Roadmap RPG Mode, Milestone 10: bilanciamento prima versione.
+  - Obiettivo: rendere le quattro classi iniziali chiaramente diverse senza cercare ancora la perfezione.
+  - Milestone collegata: `roadmap_rpg_mode.md` Milestone 10.
+  - File/sistemi coinvolti: `RpgCharacterRegistry`, risorse `game/weapons/rpg_*`, smoke test RPG esistenti.
+  - Criterio di accettazione: Ranger ha payoff a distanza, Pistoliere resta accessibile ma non fuori scala, Berserker e piu rischioso/pesante e Spadaccino piu difensivo.
+  - Test richiesto: `tests/milestone_rpg_10_balance_smoke_test.gd`; playtest survival manuale con tutte le classi.
 - Roadmap RPG Mode, Milestone 9: HUD grafica RPG.
   - Obiettivo: rendere leggibili graficamente classe, arma, HP, ammo, XP, adrenalina, super e passive.
   - Milestone collegata: `roadmap_rpg_mode.md` Milestone 9.
