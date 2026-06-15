@@ -325,6 +325,7 @@ func _grant_wave_reward() -> Dictionary:
 		) as RpgPlayerComponent
 		if rpg_component != null:
 			rpg_component.add_experience(int(reward["experience"]))
+			rpg_component.notify_wave_completed()
 		if health_system != null:
 			health_system.heal(player, int(reward["health"]))
 	return reward

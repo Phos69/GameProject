@@ -6,6 +6,8 @@ signal stats_changed()
 signal experience_changed(experience: int, level: int, experience_to_next: int)
 signal leveled_up(level: int)
 signal passive_state_changed()
+signal adrenaline_changed(adrenaline: int, max_adrenaline: int, super_ready: bool)
+signal super_activated(super_id: StringName, super_name: String)
 
 var character_id: StringName = &""
 var character_profile: Dictionary = {}
@@ -16,14 +18,29 @@ var quick_hand_timer: float = 0.0
 var perfect_guard_timer: float = 0.0
 var passive_notice_text: String = ""
 var passive_notice_timer: float = 0.0
+var adrenaline: int = 0
+var super_notice_text: String = ""
+var super_notice_timer: float = 0.0
+var final_barrage_timer: float = 0.0
+var final_barrage_fire_timer: float = 0.0
+var super_invulnerable_timer: float = 0.0
+var super_invulnerable_previous: bool = false
 
 const MAX_HP_PER_LEVEL: int = 10
 const ATTACK_PER_LEVEL: int = 2
 const DEFENSE_PER_LEVEL: int = 1
+const ADRENALINE_MAX: int = 100
+const ADRENALINE_HIT_GAIN: int = 1
+const ADRENALINE_KILL_GAIN: int = 5
+const ADRENALINE_WAVE_GAIN: int = 10
 const PASSIVE_PREDATOR_EYE := &"predator_eye"
 const PASSIVE_QUICK_HAND := &"quick_hand"
 const PASSIVE_BLOOD_FURY := &"blood_fury"
 const PASSIVE_PERFECT_GUARD := &"perfect_guard"
+const SUPER_ARROW_RAIN := &"arrow_rain"
+const SUPER_FINAL_BARRAGE := &"final_barrage"
+const SUPER_BLOOD_QUAKE := &"blood_quake"
+const SUPER_PHANTOM_BLADE := &"phantom_blade"
 const PREDATOR_EYE_MAX_DISTANCE: float = 650.0
 const PREDATOR_EYE_MAX_DAMAGE_BONUS: float = 0.30
 const PREDATOR_EYE_NOTICE_DURATION: float = 0.85
@@ -33,6 +50,10 @@ const BLOOD_FURY_HEALTH_THRESHOLD: float = 0.40
 const BLOOD_FURY_DAMAGE_MULTIPLIER: float = 1.25
 const PERFECT_GUARD_DURATION: float = 1.5
 const PERFECT_GUARD_DAMAGE_MULTIPLIER: float = 0.80
+const SUPER_NOTICE_DURATION: float = 1.80
+const FINAL_BARRAGE_DURATION: float = 4.0
+const FINAL_BARRAGE_FIRE_INTERVAL: float = 0.11
+const PHANTOM_BLADE_INVULNERABLE_DURATION: float = 0.35
 
 func _process(delta: float) -> void:
 	var changed := false
@@ -49,6 +70,7 @@ func _process(delta: float) -> void:
 			changed = true
 	if changed:
 		passive_state_changed.emit()
+	_tick_super_timers(delta)
 
 func apply_character(next_character_id: StringName) -> bool:
 	if not RpgCharacterRegistry.is_character_available(next_character_id):
@@ -85,11 +107,16 @@ func get_passive_name() -> String:
 func get_super_name() -> String:
 	return str(character_profile.get("super_name", ""))
 
+func get_super_id() -> StringName:
+	return StringName(character_profile.get("super_id", &""))
+
 func reset_run_progression() -> void:
 	level = 1
 	experience = 0
 	experience_to_next_level = 45
+	_set_adrenaline(0)
 	_reset_passive_state()
+	_reset_super_state()
 	experience_changed.emit(experience, level, experience_to_next_level)
 
 func add_experience(amount: int) -> void:
@@ -135,6 +162,96 @@ func get_experience_ratio() -> float:
 		0.0,
 		1.0
 	)
+
+func get_adrenaline_ratio() -> float:
+	return clampf(float(adrenaline) / float(ADRENALINE_MAX), 0.0, 1.0)
+
+func is_super_ready() -> bool:
+	return has_character() and adrenaline >= ADRENALINE_MAX
+
+func add_adrenaline(amount: int) -> void:
+	if amount <= 0 or not has_character():
+		return
+	_set_adrenaline(adrenaline + _scale_adrenaline_gain(amount))
+
+func notify_damage_dealt(
+	applied_damage: int,
+	_target: Node,
+	_source_id: StringName = &""
+) -> void:
+	if applied_damage > 0:
+		add_adrenaline(ADRENALINE_HIT_GAIN)
+
+func notify_damage_taken(applied_damage: int, _source: Node = null) -> void:
+	if applied_damage > 0:
+		add_adrenaline(ADRENALINE_HIT_GAIN)
+
+func notify_kill_confirmed() -> void:
+	add_adrenaline(ADRENALINE_KILL_GAIN)
+
+func notify_wave_completed() -> void:
+	add_adrenaline(ADRENALINE_WAVE_GAIN)
+
+func try_activate_super(direction: Vector2 = Vector2.RIGHT) -> bool:
+	if not is_super_ready():
+		return false
+	var player := get_parent() as Node2D
+	if player == null:
+		return false
+
+	var activated := false
+	match get_super_id():
+		SUPER_ARROW_RAIN:
+			activated = RpgSuperResolver.execute_arrow_rain(
+				self,
+				player,
+				direction
+			)
+		SUPER_FINAL_BARRAGE:
+			final_barrage_timer = FINAL_BARRAGE_DURATION
+			final_barrage_fire_timer = 0.0
+			_fire_final_barrage_shot()
+			final_barrage_fire_timer = FINAL_BARRAGE_FIRE_INTERVAL
+			activated = true
+		SUPER_BLOOD_QUAKE:
+			activated = RpgSuperResolver.execute_blood_quake(self, player)
+		SUPER_PHANTOM_BLADE:
+			activated = RpgSuperResolver.execute_phantom_blade(
+				self,
+				player,
+				direction
+			)
+			if activated:
+				_begin_super_invulnerability()
+
+	if not activated:
+		return false
+	_set_adrenaline(0)
+	_set_super_notice(get_super_name().to_upper(), SUPER_NOTICE_DURATION)
+	super_activated.emit(get_super_id(), get_super_name())
+	return true
+
+func get_super_status_text() -> String:
+	if super_notice_timer > 0.0:
+		return super_notice_text
+	if final_barrage_timer > 0.0:
+		return "SCARICA FINALE"
+	if is_super_ready():
+		return "SUPER READY"
+	if has_character():
+		return get_super_name()
+	return "SUPER"
+
+func get_current_weapon_damage() -> int:
+	var parent_node := get_parent()
+	if parent_node == null:
+		return 10
+	var weapon_system := parent_node.get_node_or_null(
+		"WeaponSystem"
+	) as WeaponSystem
+	if weapon_system == null or weapon_system.weapon_data == null:
+		return 10
+	return weapon_system.weapon_data.damage
 
 func resolve_outgoing_damage(
 	weapon_damage: int,
@@ -291,3 +408,64 @@ func _get_parent_health_component() -> HealthComponent:
 	if parent_node == null:
 		return null
 	return parent_node.get_node_or_null("HealthComponent") as HealthComponent
+
+func _set_adrenaline(value: int) -> void:
+	var previous := adrenaline
+	adrenaline = clampi(value, 0, ADRENALINE_MAX)
+	if adrenaline != previous:
+		adrenaline_changed.emit(adrenaline, ADRENALINE_MAX, is_super_ready())
+
+func _scale_adrenaline_gain(amount: int) -> int:
+	var gain_multiplier := maxf(
+		float(character_profile.get("adrenaline_gain", 1.0)),
+		0.10
+	)
+	return maxi(1, roundi(float(amount) * gain_multiplier))
+
+func _tick_super_timers(delta: float) -> void:
+	if final_barrage_timer > 0.0:
+		final_barrage_timer = maxf(final_barrage_timer - delta, 0.0)
+		final_barrage_fire_timer = maxf(final_barrage_fire_timer - delta, 0.0)
+		if final_barrage_timer > 0.0 and final_barrage_fire_timer <= 0.0:
+			_fire_final_barrage_shot()
+			final_barrage_fire_timer = FINAL_BARRAGE_FIRE_INTERVAL
+	if super_invulnerable_timer > 0.0:
+		super_invulnerable_timer = maxf(super_invulnerable_timer - delta, 0.0)
+		if super_invulnerable_timer <= 0.0:
+			_restore_super_invulnerability()
+	if super_notice_timer > 0.0:
+		super_notice_timer = maxf(super_notice_timer - delta, 0.0)
+		if super_notice_timer <= 0.0:
+			super_notice_text = ""
+
+func _fire_final_barrage_shot() -> bool:
+	var player := get_parent() as Node2D
+	if player == null:
+		return false
+	return RpgSuperResolver.fire_final_barrage_shot(self, player)
+
+func _begin_super_invulnerability() -> void:
+	var health_component := _get_parent_health_component()
+	if health_component == null:
+		return
+	super_invulnerable_previous = health_component.invulnerable
+	health_component.invulnerable = true
+	super_invulnerable_timer = PHANTOM_BLADE_INVULNERABLE_DURATION
+
+func _restore_super_invulnerability() -> void:
+	var health_component := _get_parent_health_component()
+	if health_component != null:
+		health_component.invulnerable = super_invulnerable_previous
+	super_invulnerable_timer = 0.0
+
+func _set_super_notice(text: String, duration: float) -> void:
+	super_notice_text = text
+	super_notice_timer = maxf(duration, 0.0)
+
+func _reset_super_state() -> void:
+	if super_invulnerable_timer > 0.0:
+		_restore_super_invulnerability()
+	final_barrage_timer = 0.0
+	final_barrage_fire_timer = 0.0
+	super_notice_text = ""
+	super_notice_timer = 0.0

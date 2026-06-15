@@ -118,7 +118,15 @@ func _handle_weapon_input() -> void:
 		return
 	if input_manager.is_player_reload_just_pressed(player_slot):
 		weapon_system.start_reload()
-	if input_manager.is_player_fire_pressed(player_slot):
+	var super_activated := false
+	if input_manager.is_player_super_just_pressed(player_slot):
+		super_activated = (
+			rpg_component != null
+			and rpg_component.try_activate_super(facing_direction)
+		)
+		if super_activated:
+			visual.play_fire()
+	if not super_activated and input_manager.is_player_fire_pressed(player_slot):
 		weapon_system.try_fire(global_position + facing_direction * 22.0, facing_direction, self)
 
 func prepare_for_run(max_health_bonus: int = 0) -> void:

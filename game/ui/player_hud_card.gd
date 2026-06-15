@@ -14,6 +14,8 @@ var ammo_pips_container: HBoxContainer
 var reload_bar: ProgressBar
 var xp_bar: ProgressBar
 var stats_label: Label
+var adrenaline_bar: ProgressBar
+var super_label: Label
 var passive_label: Label
 var ammo_pips: Array[ColorRect] = []
 var hud_text_scale: float = 1.0
@@ -21,7 +23,7 @@ var high_contrast: bool = false
 
 func _ready() -> void:
 	add_to_group("visual_settings_consumers")
-	custom_minimum_size = Vector2(292.0, 158.0)
+	custom_minimum_size = Vector2(292.0, 178.0)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_ui()
 	_apply_style()
@@ -59,6 +61,11 @@ func apply_visual_settings(settings: Dictionary) -> void:
 			"font_size",
 			roundi(12.0 * hud_text_scale)
 		)
+	if super_label != null:
+		super_label.add_theme_font_size_override(
+			"font_size",
+			roundi(12.0 * hud_text_scale)
+		)
 	if passive_label != null:
 		passive_label.add_theme_font_size_override(
 			"font_size",
@@ -87,6 +94,9 @@ func refresh(player: Node) -> void:
 	slot_label.text = "P%d" % player_slot
 	class_label.text = "Survivor"
 	stats_label.text = "ATK 0  DEF 0  SPD 1.00"
+	super_label.text = "SUPER"
+	adrenaline_bar.max_value = 1.0
+	adrenaline_bar.value = 0.0
 	passive_label.text = ""
 	passive_label.hide()
 	xp_bar.max_value = 1.0
@@ -98,6 +108,14 @@ func refresh(player: Node) -> void:
 			rpg_component.get_class_name()
 		]
 		stats_label.text = rpg_component.get_stats_text()
+		adrenaline_bar.max_value = float(RpgPlayerComponent.ADRENALINE_MAX)
+		adrenaline_bar.value = float(rpg_component.adrenaline)
+		super_label.text = rpg_component.get_super_status_text()
+		super_label.modulate = (
+			Color(0.54, 1.0, 0.74, 1.0)
+			if rpg_component.is_super_ready()
+			else Color(0.70, 0.88, 0.96, 1.0)
+		)
 		var passive_text := rpg_component.get_active_passive_text()
 		if not passive_text.is_empty():
 			passive_label.text = passive_text
@@ -234,6 +252,27 @@ func _build_ui() -> void:
 	stats_label.modulate = Color(0.74, 0.84, 0.92, 1.0)
 	xp_row.add_child(stats_label)
 
+	var adrenaline_row := HBoxContainer.new()
+	adrenaline_row.add_theme_constant_override("separation", 8)
+	content.add_child(adrenaline_row)
+	var adrenaline_icon := Label.new()
+	adrenaline_icon.text = "!"
+	adrenaline_icon.custom_minimum_size = Vector2(28.0, 16.0)
+	adrenaline_icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	adrenaline_icon.modulate = Color(0.38, 1.0, 0.72, 1.0)
+	adrenaline_row.add_child(adrenaline_icon)
+	adrenaline_bar = ProgressBar.new()
+	adrenaline_bar.custom_minimum_size = Vector2(126.0, 12.0)
+	adrenaline_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	adrenaline_bar.show_percentage = false
+	adrenaline_row.add_child(adrenaline_bar)
+	super_label = Label.new()
+	super_label.custom_minimum_size = Vector2(120.0, 17.0)
+	super_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	super_label.add_theme_font_size_override("font_size", 12)
+	super_label.modulate = Color(0.70, 0.88, 0.96, 1.0)
+	adrenaline_row.add_child(super_label)
+
 	passive_label = Label.new()
 	passive_label.custom_minimum_size = Vector2(250.0, 16.0)
 	passive_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -314,6 +353,24 @@ func _apply_style() -> void:
 		reload_fill_style.corner_radius_bottom_left = 4
 		reload_fill_style.corner_radius_bottom_right = 4
 		reload_bar.add_theme_stylebox_override("fill", reload_fill_style)
+	if adrenaline_bar != null:
+		var adrenaline_background_style := StyleBoxFlat.new()
+		adrenaline_background_style.bg_color = Color(0.04, 0.10, 0.09, 1.0)
+		adrenaline_background_style.corner_radius_top_left = 4
+		adrenaline_background_style.corner_radius_top_right = 4
+		adrenaline_background_style.corner_radius_bottom_left = 4
+		adrenaline_background_style.corner_radius_bottom_right = 4
+		adrenaline_bar.add_theme_stylebox_override(
+			"background",
+			adrenaline_background_style
+		)
+		var adrenaline_fill_style := StyleBoxFlat.new()
+		adrenaline_fill_style.bg_color = Color(0.28, 0.92, 0.62, 1.0)
+		adrenaline_fill_style.corner_radius_top_left = 4
+		adrenaline_fill_style.corner_radius_top_right = 4
+		adrenaline_fill_style.corner_radius_bottom_left = 4
+		adrenaline_fill_style.corner_radius_bottom_right = 4
+		adrenaline_bar.add_theme_stylebox_override("fill", adrenaline_fill_style)
 
 func _refresh_ammo_widgets(weapon_system: WeaponSystem) -> void:
 	if weapon_system == null or weapon_system.weapon_data == null:

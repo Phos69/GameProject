@@ -4,6 +4,13 @@
 
 ### Added
 
+- Completata Roadmap RPG Mode Milestone 8 con adrenalina e super per le quattro classi.
+- `RpgPlayerComponent` ora gestisce adrenalina, ready state, attivazione super e timer dedicati.
+- Aggiunto `RpgSuperResolver` per Pioggia di Frecce, Scarica Finale, Terremoto di Sangue e Lama Fantasma.
+- `HealthSystem`, kill XP e reward wave alimentano l'adrenalina da hit, danno subito, kill e fine ondata.
+- Aggiunto input super con `Q` per tastiera e joypad `Y`.
+- Le schede HUD mostrano barra adrenalina e stato della super.
+- Aggiunto smoke test `milestone_rpg_8_adrenaline_super_smoke_test.gd`.
 - Completata Roadmap RPG Mode Milestone 7 con passive automatiche per le quattro classi.
 - `RpgPlayerComponent` ora applica Occhio del Predatore, Mano Veloce, Furia di Sangue e Guardia Perfetta.
 - `WeaponSystem` legge il moltiplicatore fire rate temporaneo del Pistoliere dopo il reload.

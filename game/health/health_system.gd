@@ -33,7 +33,14 @@ func apply_damage(
 		}
 	var health_component := _find_health_component(target)
 	if health_component != null:
-		return health_component.apply_damage(resolved_amount)
+		var applied_damage := health_component.apply_damage(resolved_amount)
+		_notify_rpg_damage_applied(
+			target,
+			source,
+			source_id,
+			applied_damage
+		)
+		return applied_damage
 	return 0
 
 func get_last_damage_source(target: Node) -> Node:
@@ -94,3 +101,18 @@ func _find_rpg_component(node: Node) -> RpgPlayerComponent:
 	if node != null and node.has_node("RpgPlayerComponent"):
 		return node.get_node("RpgPlayerComponent") as RpgPlayerComponent
 	return null
+
+func _notify_rpg_damage_applied(
+	target: Node,
+	source: Node,
+	source_id: StringName,
+	applied_damage: int
+) -> void:
+	if applied_damage <= 0:
+		return
+	var source_rpg := _find_rpg_component(source)
+	if source_rpg != null:
+		source_rpg.notify_damage_dealt(applied_damage, target, source_id)
+	var target_rpg := _find_rpg_component(target)
+	if target_rpg != null and source != null:
+		target_rpg.notify_damage_taken(applied_damage, source)

@@ -89,6 +89,11 @@ Controlli ricarica:
 - tastiera player 1: `R`;
 - joypad: pulsante `X` dello slot associato.
 
+Controlli super RPG:
+
+- tastiera player 1: `Q`;
+- joypad: pulsante `Y` dello slot associato.
+
 La scena principale include bersagli statici da 40 HP per verificare danno, barra vita e morte. Questi bersagli sono strumenti di prototipo, non nemici della modalita.
 
 ## Nemici
@@ -343,7 +348,20 @@ Passive RPG attive:
 - `Berserker`: sotto il 40% HP infligge +25% danno;
 - `Spadaccino`: dopo un colpo valido riceve -20% danno subito per 1,5 secondi.
 
-Le milestone successive collegano adrenalina, super e polish feedback.
+Adrenalina e super:
+
+- cap adrenalina: 100;
+- hit inflitto: +1 adrenalina, modificata dal moltiplicatore classe;
+- danno subito: +1 adrenalina, modificata dal moltiplicatore classe;
+- kill: +5 adrenalina, modificata dal moltiplicatore classe;
+- fine ondata: +10 adrenalina, modificata dal moltiplicatore classe;
+- usare la super consuma tutta l'adrenalina e la riporta a 0;
+- `Ranger`: `Pioggia di Frecce`, 12 frecce in cono davanti al player;
+- `Pistoliere`: `Scarica Finale`, auto-fire per 4 secondi verso bersagli vicini;
+- `Berserker`: `Terremoto di Sangue`, danno ad area attorno al player;
+- `Spadaccino`: `Lama Fantasma`, dash offensivo con breve invulnerabilita.
+
+Le milestone successive rifiniscono HUD grafico, bilanciamento e polish feedback.
 
 ## Bilanciamento iniziale
 

@@ -41,10 +41,10 @@ res://game/main/main.tscn
 Controlli debug:
 
 - Menu: frecce/D-pad o stick per navigare, `Invio`/joypad `A` per confermare e `Esc` per tornare al menu durante una run.
-- Tastiera: `WASD` per movimento, frecce per mira, `Spazio` per sparare e `R` per ricaricare.
+- Tastiera: `WASD` per movimento, frecce per mira, `Spazio` per sparare, `R` per ricaricare e `Q` per la super RPG.
 - Tastiera debug multiplayer: `F2`, `F3`, `F4` attivano/disattivano gli slot player 2, 3 e 4.
 - Modalita debug: `F1` avvia survival, `F5` avvia una run dungeon e `F6` avvia tower defense.
-- Joypad: stick sinistro per movimento, stick destro per mira, trigger/spalla destra per sparare e pulsante `X` per ricaricare.
+- Joypad: stick sinistro per movimento, stick destro per mira, trigger/spalla destra per sparare, pulsante `X` per ricaricare e pulsante `Y` per la super RPG.
 - Joypad multiplayer: `Start` attiva lo slot del controller, `Back/Select` lascia lo slot se non e player 1.
 - Dungeon: attraversare il portale verde a destra; nelle stanze combat e boss diventa verde solo dopo aver eliminato tutti i bersagli.
 - Tower defense: entrare in uno slot azzurro e premere `E` o pulsante joypad `A` per costruire una torre se ci sono crediti sufficienti.
@@ -73,6 +73,7 @@ godot --headless --path . --script res://tests/milestone_rpg_4_hitbox_smoke_test
 godot --headless --path . --script res://tests/milestone_rpg_5_ammo_reload_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_rpg_6_xp_level_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_rpg_7_passives_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_rpg_8_adrenaline_super_smoke_test.gd
 ```
 
 Export Windows:
@@ -154,6 +155,7 @@ Completato:
 - pips ammo e barra reload nel player HUD per le armi RPG;
 - XP RPG assegnata al killer e a fine ondata senza pickup XP dagli zombie;
 - passive automatiche RPG per Ranger, Pistoliere, Berserker e Spadaccino con stato visibile nell'HUD;
+- adrenalina RPG da combat e fine ondata, con super attivabile a 100 per ogni classe;
 - selezione di survival, dungeon e tower defense da tastiera o joypad;
 - ritorno al menu con `Esc` e arresto pulito della modalita attiva;
 - survival avviabile dal menu o con hotkey debug;

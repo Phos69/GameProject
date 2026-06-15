@@ -2,6 +2,12 @@
 
 ## Completati recenti
 
+- Roadmap RPG Mode, Milestone 8: adrenalina e super.
+  - Obiettivo: caricare una risorsa super da combat e spenderla in abilita diverse per classe.
+  - Milestone collegata: `roadmap_rpg_mode.md` Milestone 8.
+  - File/sistemi coinvolti: `RpgPlayerComponent`, `RpgSuperResolver`, `HealthSystem`, `WaveManager`, `InputManager`, `PlayerHudCard`.
+  - Criterio di accettazione: adrenalina arriva da hit, danno subito, kill e fine ondata; a 100 la super parte con input dedicato e torna a 0.
+  - Test richiesto: `tests/milestone_rpg_8_adrenaline_super_smoke_test.gd`; verifica manuale super con `Q`/joypad `Y`.
 - Roadmap RPG Mode, Milestone 7: passive skill per personaggio.
   - Obiettivo: rendere automatica e visibile una passiva distinta per ogni classe iniziale.
   - Milestone collegata: `roadmap_rpg_mode.md` Milestone 7.

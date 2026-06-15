@@ -550,6 +550,21 @@ Ogni passiva deve essere:
 
 # Milestone 8 — Adrenalina e Super
 
+Stato: completata come primo pass runtime.
+
+Implementato:
+
+- adrenalina per-run su `RpgPlayerComponent`, cap a 100 e barra HUD;
+- guadagno adrenalina da hit inflitti, danno subito, kill e fine ondata;
+- input super dedicato: `Q` su tastiera e joypad `Y`;
+- `Pioggia di Frecce`: 12 frecce in cono davanti al Ranger;
+- `Scarica Finale`: auto-fire temporaneo del Pistoliere verso bersagli vicini;
+- `Terremoto di Sangue`: danno ad area attorno al Berserker;
+- `Lama Fantasma`: dash in avanti dello Spadaccino con danno lungo il percorso e invulnerabilita breve;
+- smoke test dedicato `tests/milestone_rpg_8_adrenaline_super_smoke_test.gd`.
+
+Limite noto: knockback, stun e animazioni dedicate sono ancora placeholder e arrivano nel polish feedback.
+
 ## Goal
 
 Ogni personaggio deve avere una super diversa, utilizzabile quando la barra adrenalina è piena.

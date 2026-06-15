@@ -210,3 +210,4 @@ func _grant_kill_experience() -> void:
 	) as RpgPlayerComponent
 	if rpg_component != null:
 		rpg_component.add_experience(kill_experience)
+		rpg_component.notify_kill_confirmed()

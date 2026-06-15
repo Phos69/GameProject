@@ -60,7 +60,8 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `RunResultsScreen`: overlay condiviso con focus e azioni di fine run.
 - `MainMenu`: UI iniziale, selezione modalita, `Character Select` survival, continue e ritorno con `Esc`.
 - `RpgCharacterRegistry`: catalogo centralizzato dei personaggi RPG iniziali.
-- `RpgPlayerComponent`: profilo RPG runtime, statistiche, XP per-run, passive automatiche e formule danno del player survival.
+- `RpgPlayerComponent`: profilo RPG runtime, statistiche, XP per-run, adrenalina, passive automatiche, super e formule danno del player survival.
+- `RpgSuperResolver`: esecuzione delle super RPG usando `ProjectileSystem`, `HealthSystem` e bersagli damageable condivisi.
 - `SaveManager`: persistenza JSON versionata e autosave della progressione.
 - `VisualSettingsManager`: preset, valori visuali, notifica consumer e persistenza.
 - `AudioManager`: bus, cue, fallback procedurali, stream opzionali e volumi.
@@ -174,6 +175,8 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `WeaponSystem.get_reload_ratio()` espone il progresso reload; il moltiplicatore `reload_speed` RPG riduce la durata.
 - `WeaponSystem` legge il moltiplicatore fire rate RPG solo dal componente del proprio player, usato dalla passiva `Mano Veloce`.
 - Le passive RPG modificano danno, cadenza o mitigazione attraverso `RpgPlayerComponent`, senza duplicare collisioni o logica proiettile.
+- Le super RPG consumano 100 adrenalina e delegano proiettili/danni ai sistemi condivisi, senza creare un combat path separato.
+- L'adrenalina arriva da danno applicato, danno subito, kill confermate e reward wave survival.
 - Palette, silhouette e trail vivono in `WeaponVisualData` e non modificano il bilanciamento.
 - `ProjectileSystem` riceve i dati dello sparo e configura il proiettile prima di aggiungerlo alla scena.
 - Il parametro visuale di `ProjectileSystem` e opzionale per mantenere compatibili boss e chiamanti esistenti.
@@ -227,6 +230,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `Start` attiva lo slot del controller, `Back/Select` disattiva lo slot se non e player 1.
 - `F2`, `F3` e `F4` sono fallback debug per attivare/disattivare gli slot 2, 3 e 4 senza controller fisici.
 - Ogni slot possiede anche l'azione `interact`: joypad `A`, con fallback tastiera `E` per player 1.
+- Ogni slot possiede l'azione `super`: joypad `Y`, con fallback tastiera `Q` per player 1.
 - `InputManager` garantisce che `ui_accept` includa joypad `A` con device globale, cosi ogni controller puo navigare e confermare il menu.
 - `active_slots_changed` e il segnale autoritativo: i sistemi interessati devono ascoltare questo segnale invece di duplicare lo stato multiplayer.
 
@@ -278,7 +282,7 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - La survival avviata dal menu riceve `context.character_id` dalla schermata `Character Select`.
 - In assenza di context, hotkey/debug e test mantengono il profilo sandbox generico precedente.
 - Il profilo selezionato e applicato ai player attivi e ai player che entrano durante la run.
-- Il profilo survival modifica HP massimi, velocita, attacco, difesa, passive e progressione per-run del player.
+- Il profilo survival modifica HP massimi, velocita, attacco, difesa, passive, super, adrenalina e progressione per-run del player.
 - `SurvivalMode` avvia e arresta `WaveManager` e controlla la sconfitta del party.
 - L'arresto di survival rimuove i nemici e il boss della wave prima di attivare un'altra modalita.
 - `WaveManager` e autoritativo per indice ondata, stato, spawn pendenti e nemici della wave.
