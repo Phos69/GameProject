@@ -167,6 +167,9 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - La fallback infinita conserva caricatore e reload; solo la riserva e virtualmente infinita.
 - Un nuovo rifornimento della speciale la riattiva e avvia il reload.
 - Le statistiche di bilanciamento vivono in risorse `WeaponData`, non nel controller player.
+- Le armi RPG di base sono `WeaponData` dedicate e vengono equipaggiate dal profilo `RpgPlayerComponent`.
+- `WeaponData.max_range` limita la vita del proiettile senza cambiare la scena projectile.
+- `WeaponData.scatter_degrees` viene applicato da `WeaponSystem` alla direzione di sparo.
 - Palette, silhouette e trail vivono in `WeaponVisualData` e non modificano il bilanciamento.
 - `ProjectileSystem` riceve i dati dello sparo e configura il proiettile prima di aggiungerlo alla scena.
 - Il parametro visuale di `ProjectileSystem` e opzionale per mantenere compatibili boss e chiamanti esistenti.

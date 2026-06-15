@@ -3,6 +3,13 @@ class_name RpgCharacterRegistry
 
 const DEFAULT_CHARACTER_ID: StringName = &"pistoliere"
 
+const BASE_WEAPON_PATHS: Dictionary = {
+	&"bow": "res://game/weapons/rpg_bow.tres",
+	&"pistol": "res://game/weapons/rpg_pistol.tres",
+	&"axe": "res://game/weapons/rpg_axe.tres",
+	&"sword": "res://game/weapons/rpg_sword.tres"
+}
+
 const CHARACTER_PROFILES: Dictionary = {
 	&"ranger": {
 		"id": &"ranger",
@@ -121,3 +128,9 @@ static func is_character_available(character_id: StringName) -> bool:
 static func get_character_label(character_id: StringName) -> String:
 	var profile := get_character_profile(character_id)
 	return str(profile.get("display_name", "Pistoliere"))
+
+static func load_base_weapon(weapon_id: StringName) -> WeaponData:
+	var path := str(BASE_WEAPON_PATHS.get(weapon_id, ""))
+	if path.is_empty():
+		return null
+	return load(path) as WeaponData

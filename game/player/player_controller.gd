@@ -1,6 +1,8 @@
 extends CharacterBody2D
 class_name PlayerController
 
+const STARTER_WEAPON: WeaponData = preload("res://game/weapons/starter_pistol.tres")
+
 @export_range(1, 4) var player_slot: int = 1
 @export var move_speed: float = 260.0
 @export var acceleration: float = 1700.0
@@ -130,6 +132,8 @@ func apply_rpg_character(character_id: StringName) -> bool:
 	if rpg_component == null:
 		return false
 	var applied := rpg_component.apply_character(character_id)
+	if applied:
+		_equip_rpg_base_weapon()
 	if applied and game_mode_manager != null and game_mode_manager.is_gameplay_active():
 		_apply_rpg_runtime_stats(true)
 	return applied
@@ -137,6 +141,8 @@ func apply_rpg_character(character_id: StringName) -> bool:
 func clear_rpg_character() -> void:
 	if rpg_component != null:
 		rpg_component.clear_character()
+	if weapon_system != null:
+		weapon_system.equip_weapon(STARTER_WEAPON)
 	_apply_rpg_runtime_stats(true)
 
 func set_revive_progress(ratio: float, active: bool) -> void:
@@ -186,6 +192,16 @@ func _apply_rpg_runtime_stats(refill_health: bool) -> void:
 		speed_multiplier = rpg_component.get_speed_multiplier()
 	health_component.set_max_health(resolved_max_health, refill_health)
 	move_speed = base_move_speed * speed_multiplier
+
+func _equip_rpg_base_weapon() -> void:
+	if rpg_component == null or not rpg_component.has_character():
+		return
+	var weapon_id := StringName(
+		rpg_component.character_profile.get("base_weapon_id", &"")
+	)
+	var base_weapon := RpgCharacterRegistry.load_base_weapon(weapon_id)
+	if base_weapon != null and weapon_system != null:
+		weapon_system.equip_weapon(base_weapon)
 
 func _on_rpg_stats_changed() -> void:
 	if health_component == null:

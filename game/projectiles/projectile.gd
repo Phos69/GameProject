@@ -53,13 +53,20 @@ func launch(
 	owner_ref: Node = null,
 	damage_amount: int = 10,
 	damage_source_id: StringName = &"projectile",
-	projectile_visual_data: WeaponVisualData = null
+	projectile_visual_data: WeaponVisualData = null,
+	max_range: float = 0.0
 ) -> void:
 	velocity = direction.normalized() * speed
 	owner_node = owner_ref
 	damage = damage_amount
 	source_id = damage_source_id
 	visual_data = projectile_visual_data
+	if max_range > 0.0:
+		lifetime = (
+			max_range / maxf(speed, 1.0)
+			if speed > 0.0
+			else minf(lifetime, 0.15)
+		)
 	rotation = direction.angle()
 	if is_node_ready():
 		_apply_visual_data()
@@ -196,6 +203,38 @@ func _projectile_polygon(profile_id: StringName) -> PackedVector2Array:
 				Vector2(9.0, 0.0),
 				Vector2(-2.0, 5.0),
 				Vector2(-8.0, 3.0)
+			])
+		&"rpg_bow":
+			return PackedVector2Array([
+				Vector2(-13.0, -2.0),
+				Vector2(12.0, 0.0),
+				Vector2(-13.0, 2.0),
+				Vector2(-8.0, 0.0)
+			])
+		&"rpg_pistol":
+			return PackedVector2Array([
+				Vector2(-4.5, -3.5),
+				Vector2(5.5, -3.5),
+				Vector2(7.0, 0.0),
+				Vector2(5.5, 3.5),
+				Vector2(-4.5, 3.5)
+			])
+		&"rpg_axe":
+			return PackedVector2Array([
+				Vector2(-10.0, -8.0),
+				Vector2(8.0, -10.0),
+				Vector2(13.0, 0.0),
+				Vector2(8.0, 10.0),
+				Vector2(-10.0, 8.0),
+				Vector2(-4.0, 0.0)
+			])
+		&"rpg_sword":
+			return PackedVector2Array([
+				Vector2(-8.0, -5.0),
+				Vector2(10.0, -4.0),
+				Vector2(15.0, 0.0),
+				Vector2(10.0, 4.0),
+				Vector2(-8.0, 5.0)
 			])
 		&"rift_lane", &"rift_repeater":
 			return PackedVector2Array([

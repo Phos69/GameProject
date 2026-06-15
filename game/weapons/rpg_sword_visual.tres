@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="WeaponVisualData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/weapons/weapon_visual_data.gd" id="1_visual"]
+
+[resource]
+script = ExtResource("1_visual")
+profile_id = &"rpg_sword"
+primary_color = Color(0.16, 0.18, 0.22, 1)
+secondary_color = Color(0.64, 0.86, 1, 1)
+glow_color = Color(0.46, 0.78, 1, 0.26)
+muzzle_color = Color(0.74, 0.92, 1, 1)
+projectile_color = Color(0.68, 0.88, 1, 1)
+projectile_glow_color = Color(0.46, 0.78, 1, 0.28)
+projectile_scale = Vector2(1.45, 0.75)
+weapon_length = 29.0
+weapon_width = 5.0
+muzzle_size = 8.0
+trail_length = 12.0
+trail_width = 5.0

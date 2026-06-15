@@ -312,8 +312,18 @@ Statistiche attive:
 - livello per-run con `+10 HP`, `+2 attacco` e `+1 difesa`.
 
 Le schede HUD player mostrano livello, classe, barra XP, HP, ammo e riga
-ATK/DEF/SPD. Le milestone successive collegano fonti XP reali, armi dedicate,
-passive, adrenalina, super e polish feedback.
+ATK/DEF/SPD.
+
+Armi base RPG attive:
+
+- `Arco`: 18 danni, range 750, scatter 2 gradi, 1 freccia e reload 0,55s.
+- `Pistola`: 10 danni, range 520, scatter 7 gradi, 8 colpi e reload 1,2s.
+- `Ascia`: 26 danni, range 95, 3 swing e reload 1,6s.
+- `Spada`: 15 danni, range 125, 4 fendenti e reload 0,9s.
+
+Le armi base hanno riserva infinita ma conservano caricatore e reload. Le
+milestone successive collegano fonti XP reali, hitbox melee dedicate, passive,
+adrenalina, super e polish feedback.
 
 ## Bilanciamento iniziale
 

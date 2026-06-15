@@ -71,7 +71,7 @@ func try_fire(origin: Vector2, direction: Vector2, owner_ref: Node = null) -> bo
 	_store_active_ammo()
 	ammo_changed.emit(current_ammo, reserve_ammo)
 	_refresh_low_ammo_state()
-	var normalized_direction := direction.normalized()
+	var normalized_direction := _apply_weapon_scatter(direction.normalized())
 	fired.emit(origin, normalized_direction, weapon_data.damage)
 
 	if weapon_data.projectile_scene != null:
@@ -85,7 +85,8 @@ func try_fire(origin: Vector2, direction: Vector2, owner_ref: Node = null) -> bo
 				weapon_data.projectile_scene,
 				weapon_data.damage,
 				weapon_data.weapon_id,
-				weapon_data.visual_data
+				weapon_data.visual_data,
+				weapon_data.max_range
 			)
 		else:
 			var projectile := weapon_data.projectile_scene.instantiate()
@@ -98,7 +99,8 @@ func try_fire(origin: Vector2, direction: Vector2, owner_ref: Node = null) -> bo
 					owner_ref,
 					weapon_data.damage,
 					weapon_data.weapon_id,
-					weapon_data.visual_data
+					weapon_data.visual_data,
+					weapon_data.max_range
 				)
 			var root := get_tree().current_scene
 			if root != null:
@@ -280,3 +282,9 @@ func _refresh_low_ammo_state() -> void:
 		return
 	low_ammo_active = is_low
 	low_ammo_changed.emit(low_ammo_active, maxi(get_special_ammo_total(), 0))
+
+func _apply_weapon_scatter(direction: Vector2) -> Vector2:
+	if weapon_data == null or weapon_data.scatter_degrees <= 0.0:
+		return direction
+	var scatter_radians := deg_to_rad(weapon_data.scatter_degrees)
+	return direction.rotated(randf_range(-scatter_radians, scatter_radians))

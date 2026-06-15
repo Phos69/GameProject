@@ -26,6 +26,62 @@ func _draw() -> void:
 		secondary = visual_data.secondary_color
 	var center := Vector2(17.0, 12.0)
 	match profile_id:
+		&"rpg_bow":
+			draw_arc(center, 15.0, -0.85, 0.85, 16, primary, 3.0, true)
+			draw_line(
+				center + Vector2(9.0, -11.0),
+				center + Vector2(9.0, 11.0),
+				secondary,
+				1.7,
+				true
+			)
+			draw_line(
+				center + Vector2(-13.0, 0.0),
+				center + Vector2(15.0, 0.0),
+				secondary,
+				2.0,
+				true
+			)
+		&"rpg_axe":
+			draw_line(
+				center + Vector2(-13.0, 8.0),
+				center + Vector2(10.0, -8.0),
+				primary,
+				4.0,
+				true
+			)
+			draw_colored_polygon(
+				PackedVector2Array([
+					center + Vector2(6.0, -11.0),
+					center + Vector2(17.0, -7.0),
+					center + Vector2(15.0, 4.0),
+					center + Vector2(5.0, 6.0),
+					center + Vector2(9.0, -2.0)
+				]),
+				secondary
+			)
+		&"rpg_sword":
+			draw_line(
+				center + Vector2(-12.0, 8.0),
+				center + Vector2(14.0, -8.0),
+				secondary,
+				4.0,
+				true
+			)
+			draw_line(
+				center + Vector2(-6.0, 4.0),
+				center + Vector2(-1.0, 11.0),
+				primary,
+				4.0,
+				true
+			)
+			draw_line(
+				center + Vector2(-9.0, 3.0),
+				center + Vector2(-2.0, -2.0),
+				primary,
+				3.0,
+				true
+			)
 		&"prototype_blaster", &"rift_repeater":
 			draw_colored_polygon(
 				PackedVector2Array([

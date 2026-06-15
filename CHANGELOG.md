@@ -4,6 +4,11 @@
 
 ### Added
 
+- Completata Roadmap RPG Mode Milestone 3 con armi base differenziate per le quattro classi.
+- Aggiunti `rpg_bow`, `rpg_pistol`, `rpg_axe` e `rpg_sword` come `WeaponData` con range, scatter, danno, ammo e reload distinti.
+- Esteso `WeaponData` con `max_range` e `scatter_degrees`, applicati da `WeaponSystem` e `Projectile`.
+- Aggiunti profili visuali procedurali per arco, pistola, ascia e spada.
+- Aggiunto smoke test `milestone_rpg_3_weapons_smoke_test.gd`.
 - Completata Roadmap RPG Mode Milestone 2 con statistiche classe, progressione per-run e formule danno.
 - Esteso `RpgPlayerComponent` con livello, XP, HP/attacco/difesa scalati e risoluzione danni.
 - Collegati `HealthSystem`, proiettili e attacchi nemici alla sorgente del danno.

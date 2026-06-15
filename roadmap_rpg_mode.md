@@ -165,6 +165,19 @@ Le statistiche devono essere mostrate graficamente nella UI, non solo come testo
 
 # Milestone 3 — Armi base differenziate
 
+Stato: completata come primo pass `WeaponData`.
+
+Implementato:
+
+- quattro armi base RPG: `rpg_bow`, `rpg_pistol`, `rpg_axe`, `rpg_sword`;
+- equip automatico dell'arma base dal profilo personaggio;
+- campi `max_range` e `scatter_degrees` in `WeaponData`;
+- range proiettile derivato da `max_range` e scatter applicato allo sparo;
+- profili visuali procedurali per arma world-space, icona HUD e proiettile;
+- smoke test dedicato `tests/milestone_rpg_3_weapons_smoke_test.gd`.
+
+Limite noto: ascia e spada usano ancora proiettili corti; le collisioni melee dedicate vengono completate nella Milestone 4.
+
 ## Goal
 
 Ogni arma deve avere gameplay diverso: range, scatter, danno, ammo, reload e hitbox proiettile.

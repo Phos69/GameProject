@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="WeaponVisualData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/weapons/weapon_visual_data.gd" id="1_visual"]
+
+[resource]
+script = ExtResource("1_visual")
+profile_id = &"rpg_bow"
+primary_color = Color(0.18, 0.12, 0.08, 1)
+secondary_color = Color(0.78, 0.58, 0.32, 1)
+glow_color = Color(0.9, 0.68, 0.34, 0.22)
+muzzle_color = Color(1, 0.86, 0.44, 1)
+projectile_color = Color(0.95, 0.78, 0.42, 1)
+projectile_glow_color = Color(1, 0.8, 0.38, 0.22)
+projectile_scale = Vector2(1.35, 0.8)
+weapon_length = 30.0
+weapon_width = 4.0
+muzzle_size = 5.0
+trail_length = 24.0
+trail_width = 2.2

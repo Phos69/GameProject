@@ -6,6 +6,8 @@ class_name WeaponData
 @export_range(1, 1000) var damage: int = 10
 @export_range(0.1, 30.0, 0.1) var fire_rate: float = 5.0
 @export_range(1.0, 2000.0, 1.0) var projectile_speed: float = 600.0
+@export_range(0.0, 3000.0, 1.0) var max_range: float = 0.0
+@export_range(0.0, 45.0, 0.1) var scatter_degrees: float = 0.0
 @export_range(1, 999) var magazine_size: int = 12
 @export_range(0, 9999) var starting_reserve_ammo: int = 36
 @export_range(1, 100) var ammo_per_shot: int = 1

@@ -2,6 +2,12 @@
 
 ## Completati recenti
 
+- Roadmap RPG Mode, Milestone 3: armi base differenziate.
+  - Obiettivo: dare a Ranger, Pistoliere, Berserker e Spadaccino armi base con profili gameplay diversi.
+  - Milestone collegata: `roadmap_rpg_mode.md` Milestone 3.
+  - File/sistemi coinvolti: `WeaponData`, `WeaponSystem`, `Projectile`, `RpgCharacterRegistry`, profili `game/weapons/rpg_*`, `PlayerVisual`, `WeaponIcon`.
+  - Criterio di accettazione: ogni profilo equipaggia la propria arma e le armi differiscono per danno, range, scatter, caricatore e reload.
+  - Test richiesto: `tests/milestone_rpg_3_weapons_smoke_test.gd`; regressione combat e survival con character select.
 - Roadmap RPG Mode, Milestone 2: sistema classi e statistiche RPG.
   - Obiettivo: rendere HP, attacco, difesa, velocita e level-up propri del personaggio scelto.
   - Milestone collegata: `roadmap_rpg_mode.md` Milestone 2.

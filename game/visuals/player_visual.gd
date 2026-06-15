@@ -269,6 +269,68 @@ func _draw_weapon(
 	var perpendicular := direction.orthogonal()
 	var muzzle := hand + direction * length
 	match profile_id:
+		&"rpg_bow":
+			var bow_center := hand + direction * length * 0.42
+			draw_line(
+				bow_center - perpendicular * width * 2.4,
+				bow_center + perpendicular * width * 2.4,
+				primary,
+				width,
+				true
+			)
+			draw_arc(
+				bow_center,
+				width * 3.3,
+				direction.angle() - 0.95,
+				direction.angle() + 0.95,
+				18,
+				secondary,
+				2.0,
+				true
+			)
+			draw_line(
+				hand,
+				muzzle,
+				secondary,
+				1.6,
+				true
+			)
+		&"rpg_axe":
+			draw_line(
+				hand - direction * 3.0,
+				muzzle,
+				primary,
+				width * 0.55,
+				true
+			)
+			draw_colored_polygon(
+				PackedVector2Array([
+					muzzle - direction * 8.0 + perpendicular * width * 1.10,
+					muzzle + perpendicular * width * 0.40,
+					muzzle - direction * 4.0 - perpendicular * width * 1.15,
+					muzzle - direction * 14.0 - perpendicular * width * 0.45,
+					muzzle - direction * 10.0 + perpendicular * width * 0.30
+				]),
+				secondary
+			)
+		&"rpg_sword":
+			draw_line(
+				hand - direction * 3.0,
+				hand + direction * 7.0,
+				primary,
+				width * 1.4,
+				true
+			)
+			draw_colored_polygon(
+				PackedVector2Array([
+					hand + direction * 5.0 + perpendicular * width * 0.34,
+					muzzle + perpendicular * width * 0.20,
+					muzzle + direction * 5.0,
+					muzzle - perpendicular * width * 0.20,
+					hand + direction * 5.0 - perpendicular * width * 0.34
+				]),
+				secondary
+			)
 		&"prototype_blaster", &"rift_repeater":
 			var rear := hand - direction * 3.0
 			draw_colored_polygon(

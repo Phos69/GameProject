@@ -17,7 +17,8 @@ func spawn_projectile(
 	projectile_scene: PackedScene = null,
 	damage: int = 1,
 	source_id: StringName = &"projectile",
-	visual_data: WeaponVisualData = null
+	visual_data: WeaponVisualData = null,
+	max_range: float = 0.0
 ) -> Node:
 	var scene := projectile_scene if projectile_scene != null else default_projectile_scene
 	if scene == null:
@@ -33,7 +34,8 @@ func spawn_projectile(
 			owner_ref,
 			damage,
 			source_id,
-			visual_data
+			visual_data,
+			max_range
 		)
 	if projectile.has_signal("impacted"):
 		projectile.connect(
