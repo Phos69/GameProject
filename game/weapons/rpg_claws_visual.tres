@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="WeaponVisualData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/weapons/weapon_visual_data.gd" id="1_visual"]
+
+[resource]
+script = ExtResource("1_visual")
+profile_id = &"rpg_claws"
+primary_color = Color(0.12, 0.13, 0.16, 1)
+secondary_color = Color(0.86, 0.92, 1.0, 1)
+glow_color = Color(0.90, 0.12, 0.10, 0.30)
+muzzle_color = Color(1.0, 0.20, 0.14, 1)
+projectile_color = Color(0.86, 0.90, 0.96, 1)
+projectile_glow_color = Color(0.94, 0.12, 0.10, 0.26)
+projectile_scale = Vector2(1.4, 1.0)
+weapon_length = 18.0
+weapon_width = 8.0
+muzzle_size = 8.0
+trail_length = 9.0
+trail_width = 5.5

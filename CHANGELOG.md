@@ -329,3 +329,8 @@
 - Ridotto il fire rate della `Starter Pistol` da 7 a 6 colpi al secondo.
 - Aumentato il fire rate del `Prototype Blaster` da 4 a 4,5 colpi al secondo.
 - Ogni nuova run ripristina la vita dei player prima di applicare gli unlock persistenti.
+- Aggiunti nomi propri, palette e path artistici data-driven ai quattro profili RPG zombie survival.
+- Aggiornati Character Select, HUD e visual procedurale player per distinguere Mira, Dante, Bruna e Kael senza cambiare meccaniche.
+- Aggiunta checklist visuale per validare silhouette, palette e sostituzione asset definitivi.
+- Aggiunte tre classi RPG avanzate: Mago, Domatrice con Briciola e Licantropo trasformabile.
+- Aggiunti weapon data, palette placeholder, passive e super prototipali per Elio, Nina e Rocco.

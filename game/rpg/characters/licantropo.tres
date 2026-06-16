@@ -1,0 +1,38 @@
+[gd_resource type="Resource" script_class="RpgCharacterData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/rpg/rpg_character_data.gd" id="1_character_data"]
+
+[resource]
+script = ExtResource("1_character_data")
+character_id = &"licantropo"
+display_name = "Licantropo"
+hero_name = "Rocco Lunastorta"
+class_label = "Licantropo"
+base_weapon_id = &"claws"
+base_weapon_name = "Artigli"
+max_hp = 116
+attack = 8
+defense = 4
+speed = 1.06
+reload_speed = 1.20
+adrenaline_gain = 1.14
+crit_chance = 0.06
+crit_multiplier = 1.50
+passive_id = &"blood_scent"
+passive_name = "Odore del Sangue"
+passive_description = "Bonus danno contro zombie sotto il 50% HP."
+super_id = &"beast_night"
+super_name = "Notte Bestiale"
+super_description = "Trasformazione breve con onda d'urto e slash enormi."
+difficulty = "Alta"
+portrait_full_path = "res://assets/characters/licantropo/rendered/licantropo_portrait_full.png"
+portrait_hud_path = "res://assets/characters/licantropo/rendered/licantropo_portrait_hud.png"
+gameplay_palette_id = "moon_fury"
+sprite_sheet_path = "res://assets/characters/licantropo/sprites/licantropo_body_idle.png"
+weapon_sprite_path = "res://assets/characters/licantropo/weapons/licantropo_weapon.png"
+passive_icon_path = "res://assets/characters/licantropo/ui/licantropo_passive_icon.png"
+super_icon_path = "res://assets/characters/licantropo/ui/licantropo_super_icon.png"
+animation_profile_id = "licantropo_prototype"
+palette_primary = Color(0.16, 0.17, 0.20, 1)
+palette_secondary = Color(0.22, 0.30, 0.48, 1)
+palette_accent = Color(0.94, 0.10, 0.08, 1)

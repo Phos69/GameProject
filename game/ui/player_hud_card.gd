@@ -112,17 +112,21 @@ func refresh(player: Node) -> void:
 	xp_bar.value = 0.0
 	if rpg_component != null and rpg_component.has_character():
 		slot_label.text = "P%d  LV %d" % [player_slot, rpg_component.level]
-		class_label.text = "%s  %s" % [
-			rpg_component.get_display_name(),
-			rpg_component.get_class_name()
+		class_label.text = "%s  %s · %s" % [
+			rpg_component.get_hero_name(),
+			rpg_component.get_class_name(),
+			rpg_component.get_base_weapon_name()
 		]
 		stats_label.text = rpg_component.get_stats_text()
-		portrait_icon.set_icon(rpg_component.character_id, slot_color)
+		portrait_icon.set_icon(
+			rpg_component.character_id,
+			Color(rpg_component.character_profile.get("palette_accent", slot_color))
+		)
 		adrenaline_bar.max_value = float(RpgPlayerComponent.ADRENALINE_MAX)
 		adrenaline_bar.value = float(rpg_component.adrenaline)
 		super_icon.set_icon(
 			rpg_component.get_super_id(),
-			Color(0.38, 1.0, 0.72, 1.0),
+			Color(rpg_component.character_profile.get("palette_accent", Color(0.38, 1.0, 0.72, 1.0))),
 			rpg_component.is_super_ready()
 		)
 		super_label.text = rpg_component.get_super_status_text()

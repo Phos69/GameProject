@@ -48,6 +48,12 @@ func _draw() -> void:
 			_draw_quake(center, primary, secondary)
 		&"spadaccino", &"phantom_blade":
 			_draw_blade(center, primary, secondary)
+		&"mago", &"falling_star", &"arcane_resonance":
+			_draw_rune(center, primary, secondary)
+		&"domatrice", &"scrap_pack", &"briciola_attack":
+			_draw_paw(center, primary, secondary)
+		&"licantropo", &"beast_night", &"blood_scent":
+			_draw_claw(center, primary, secondary)
 		_:
 			_draw_survivor(center, primary, secondary)
 
@@ -86,3 +92,26 @@ func _draw_survivor(center: Vector2, primary: Color, secondary: Color) -> void:
 	draw_rect(Rect2(center + Vector2(-6.0, -1.0), Vector2(12.0, 10.0)), primary, true)
 	draw_line(center + Vector2(-5.0, 4.0), center + Vector2(-10.0, 11.0), primary, 2.0, true)
 	draw_line(center + Vector2(5.0, 4.0), center + Vector2(10.0, 11.0), primary, 2.0, true)
+
+func _draw_rune(center: Vector2, primary: Color, secondary: Color) -> void:
+	var points := PackedVector2Array([
+		center + Vector2(0.0, -11.0),
+		center + Vector2(10.0, 7.0),
+		center + Vector2(-10.0, 7.0),
+		center + Vector2(0.0, -11.0)
+	])
+	draw_polyline(points, primary, 2.5, true)
+	draw_circle(center, 4.5, secondary)
+	draw_arc(center, 13.0, 0.0, TAU, 24, primary.darkened(0.15), 2.0, true)
+
+func _draw_paw(center: Vector2, primary: Color, secondary: Color) -> void:
+	draw_circle(center + Vector2(0.0, 4.0), 6.0, primary)
+	for offset in [Vector2(-7.0, -4.0), Vector2(-2.5, -8.0), Vector2(3.0, -8.0), Vector2(8.0, -4.0)]:
+		draw_circle(center + offset, 2.8, secondary)
+	draw_line(center + Vector2(-10.0, 9.0), center + Vector2(10.0, 9.0), primary.darkened(0.25), 2.0, true)
+
+func _draw_claw(center: Vector2, primary: Color, secondary: Color) -> void:
+	for index in range(3):
+		var x_offset := -6.0 + float(index) * 6.0
+		draw_line(center + Vector2(x_offset, 9.0), center + Vector2(x_offset + 5.0, -10.0), secondary, 3.0, true)
+	draw_arc(center, 12.0, 0.25, PI - 0.25, 18, primary, 2.5, true)

@@ -25,6 +25,10 @@ var final_barrage_timer: float = 0.0
 var final_barrage_fire_timer: float = 0.0
 var super_invulnerable_timer: float = 0.0
 var super_invulnerable_previous: bool = false
+var arcane_hit_count: int = 0
+var briciola_companion: BriciolaCompanion
+var beast_night_timer: float = 0.0
+var beast_recovery_timer: float = 0.0
 
 const MAX_HP_PER_LEVEL: int = 10
 const ATTACK_PER_LEVEL: int = 2
@@ -37,10 +41,16 @@ const PASSIVE_PREDATOR_EYE := &"predator_eye"
 const PASSIVE_QUICK_HAND := &"quick_hand"
 const PASSIVE_BLOOD_FURY := &"blood_fury"
 const PASSIVE_PERFECT_GUARD := &"perfect_guard"
+const PASSIVE_ARCANE_RESONANCE := &"arcane_resonance"
+const PASSIVE_BRICIOLA_ATTACK := &"briciola_attack"
+const PASSIVE_BLOOD_SCENT := &"blood_scent"
 const SUPER_ARROW_RAIN := &"arrow_rain"
 const SUPER_FINAL_BARRAGE := &"final_barrage"
 const SUPER_BLOOD_QUAKE := &"blood_quake"
 const SUPER_PHANTOM_BLADE := &"phantom_blade"
+const SUPER_FALLING_STAR := &"falling_star"
+const SUPER_SCRAP_PACK := &"scrap_pack"
+const SUPER_BEAST_NIGHT := &"beast_night"
 const PREDATOR_EYE_MAX_DISTANCE: float = 650.0
 const PREDATOR_EYE_MAX_DAMAGE_BONUS: float = 0.30
 const PREDATOR_EYE_NOTICE_DURATION: float = 0.85
@@ -54,6 +64,15 @@ const SUPER_NOTICE_DURATION: float = 1.80
 const FINAL_BARRAGE_DURATION: float = 4.0
 const FINAL_BARRAGE_FIRE_INTERVAL: float = 0.11
 const PHANTOM_BLADE_INVULNERABLE_DURATION: float = 0.35
+const ARCANE_RESONANCE_HITS: int = 3
+const ARCANE_RESONANCE_RADIUS: float = 86.0
+const ARCANE_RESONANCE_DAMAGE_MULTIPLIER: float = 0.45
+const SCRAP_PACK_DURATION: float = 5.0
+const BEAST_NIGHT_DURATION: float = 6.0
+const BEAST_RECOVERY_DURATION: float = 0.75
+const BEAST_DAMAGE_MULTIPLIER: float = 1.45
+const BLOOD_SCENT_HEALTH_THRESHOLD: float = 0.50
+const BLOOD_SCENT_DAMAGE_MULTIPLIER: float = 1.30
 
 func _process(delta: float) -> void:
 	var changed := false
@@ -68,6 +87,9 @@ func _process(delta: float) -> void:
 		if passive_notice_timer <= 0.0:
 			passive_notice_text = ""
 			changed = true
+	if beast_recovery_timer > 0.0:
+		beast_recovery_timer = maxf(beast_recovery_timer - delta, 0.0)
+		changed = changed or beast_recovery_timer <= 0.0
 	if changed:
 		passive_state_changed.emit()
 	_tick_super_timers(delta)
@@ -80,6 +102,7 @@ func apply_character(next_character_id: StringName) -> bool:
 	reset_run_progression()
 	character_changed.emit(character_id, character_profile.duplicate(true))
 	stats_changed.emit()
+	_update_companion_presence()
 	return true
 
 func clear_character() -> void:
@@ -88,12 +111,16 @@ func clear_character() -> void:
 	reset_run_progression()
 	character_changed.emit(character_id, {})
 	stats_changed.emit()
+	_update_companion_presence()
 
 func has_character() -> bool:
 	return not character_id.is_empty() and not character_profile.is_empty()
 
 func get_display_name() -> String:
 	return str(character_profile.get("display_name", "Survivor"))
+
+func get_hero_name() -> String:
+	return str(character_profile.get("hero_name", get_display_name()))
 
 func get_class_name() -> String:
 	return str(character_profile.get("class_name", "Survivor"))
@@ -176,11 +203,13 @@ func add_adrenaline(amount: int) -> void:
 
 func notify_damage_dealt(
 	applied_damage: int,
-	_target: Node,
-	_source_id: StringName = &""
+	target: Node,
+	source_id: StringName = &""
 ) -> void:
 	if applied_damage > 0:
 		add_adrenaline(ADRENALINE_HIT_GAIN)
+		if get_passive_id() == PASSIVE_ARCANE_RESONANCE and source_id != PASSIVE_ARCANE_RESONANCE:
+			_notify_arcane_hit(target)
 
 func notify_damage_taken(applied_damage: int, _source: Node = null) -> void:
 	if applied_damage > 0:
@@ -223,6 +252,14 @@ func try_activate_super(direction: Vector2 = Vector2.RIGHT) -> bool:
 			)
 			if activated:
 				_begin_super_invulnerability()
+		SUPER_FALLING_STAR:
+			activated = RpgSuperResolver.execute_falling_star(self, player)
+		SUPER_SCRAP_PACK:
+			activated = _activate_scrap_pack()
+		SUPER_BEAST_NIGHT:
+			activated = RpgSuperResolver.execute_beast_night(self, player)
+			if activated:
+				_begin_beast_night()
 
 	if not activated:
 		return false
@@ -236,6 +273,10 @@ func get_super_status_text() -> String:
 		return super_notice_text
 	if final_barrage_timer > 0.0:
 		return "SCARICA FINALE"
+	if beast_night_timer > 0.0:
+		return "NOTTE BESTIALE"
+	if beast_recovery_timer > 0.0:
+		return "RECUPERO"
 	if is_super_ready():
 		return "SUPER READY"
 	if has_character():
@@ -271,6 +312,8 @@ func resolve_outgoing_damage(
 	)
 	if get_passive_id() == PASSIVE_PERFECT_GUARD and _can_trigger_guard(target):
 		_activate_perfect_guard()
+	if beast_night_timer > 0.0:
+		resolved_damage = roundi(float(resolved_damage) * BEAST_DAMAGE_MULTIPLIER)
 	return maxi(1, resolved_damage)
 
 func resolve_incoming_damage(raw_damage: int, _source: Node = null) -> int:
@@ -301,6 +344,15 @@ func get_active_passive_text() -> String:
 			if _is_blood_fury_active():
 				return "FURIA +25%"
 		PASSIVE_PREDATOR_EYE:
+			if passive_notice_timer > 0.0:
+				return passive_notice_text
+		PASSIVE_ARCANE_RESONANCE:
+			if passive_notice_timer > 0.0:
+				return passive_notice_text
+		PASSIVE_BRICIOLA_ATTACK:
+			if briciola_companion != null and is_instance_valid(briciola_companion):
+				return "BRICIOLA"
+		PASSIVE_BLOOD_SCENT:
 			if passive_notice_timer > 0.0:
 				return passive_notice_text
 	return ""
@@ -344,6 +396,8 @@ func _get_outgoing_passive_multiplier(
 		PASSIVE_BLOOD_FURY:
 			if _is_blood_fury_active():
 				return BLOOD_FURY_DAMAGE_MULTIPLIER
+		PASSIVE_BLOOD_SCENT:
+			return _get_blood_scent_multiplier(target)
 	return 1.0
 
 func _get_predator_eye_multiplier(target: Node, hit_position: Vector2) -> float:
@@ -394,10 +448,12 @@ func _reset_passive_state() -> void:
 	var had_active_state := (
 		quick_hand_timer > 0.0
 		or perfect_guard_timer > 0.0
+		or arcane_hit_count > 0
 		or not passive_notice_text.is_empty()
 	)
 	quick_hand_timer = 0.0
 	perfect_guard_timer = 0.0
+	arcane_hit_count = 0
 	passive_notice_text = ""
 	passive_notice_timer = 0.0
 	if had_active_state:
@@ -433,6 +489,10 @@ func _tick_super_timers(delta: float) -> void:
 		super_invulnerable_timer = maxf(super_invulnerable_timer - delta, 0.0)
 		if super_invulnerable_timer <= 0.0:
 			_restore_super_invulnerability()
+	if beast_night_timer > 0.0:
+		beast_night_timer = maxf(beast_night_timer - delta, 0.0)
+		if beast_night_timer <= 0.0:
+			_end_beast_night()
 	if super_notice_timer > 0.0:
 		super_notice_timer = maxf(super_notice_timer - delta, 0.0)
 		if super_notice_timer <= 0.0:
@@ -467,5 +527,85 @@ func _reset_super_state() -> void:
 		_restore_super_invulnerability()
 	final_barrage_timer = 0.0
 	final_barrage_fire_timer = 0.0
+	beast_night_timer = 0.0
+	beast_recovery_timer = 0.0
 	super_notice_text = ""
 	super_notice_timer = 0.0
+
+func _notify_arcane_hit(target: Node) -> void:
+	if target == null:
+		return
+	arcane_hit_count += 1
+	if arcane_hit_count < ARCANE_RESONANCE_HITS:
+		_set_passive_notice("RUNE %d/%d" % [arcane_hit_count, ARCANE_RESONANCE_HITS], 0.55)
+		return
+	arcane_hit_count = 0
+	var player := get_parent() as Node2D
+	var target_node := target as Node2D
+	if player == null or target_node == null:
+		return
+	var health_system := get_tree().get_first_node_in_group("health_system") as HealthSystem
+	if health_system == null:
+		return
+	var damage := maxi(1, roundi(float(get_current_weapon_damage()) * ARCANE_RESONANCE_DAMAGE_MULTIPLIER))
+	for candidate in get_tree().get_nodes_in_group("damageable_targets"):
+		if not (candidate is Node2D):
+			continue
+		var health_component := candidate.get_node_or_null("HealthComponent") as HealthComponent
+		if health_component == null or not health_component.is_alive():
+			continue
+		if target_node.global_position.distance_to((candidate as Node2D).global_position) <= ARCANE_RESONANCE_RADIUS:
+			health_system.apply_damage(candidate, damage, player, PASSIVE_ARCANE_RESONANCE, (candidate as Node2D).global_position)
+	_set_passive_notice("RISONANZA", 0.90)
+
+func _get_blood_scent_multiplier(target: Node) -> float:
+	if target == null:
+		return 1.0
+	var health_component := target.get_node_or_null("HealthComponent") as HealthComponent
+	if health_component != null and health_component.get_health_ratio() <= BLOOD_SCENT_HEALTH_THRESHOLD:
+		_set_passive_notice("ODORE +30%", 0.75)
+		return BLOOD_SCENT_DAMAGE_MULTIPLIER
+	return 1.0
+
+func _update_companion_presence() -> void:
+	if get_passive_id() == PASSIVE_BRICIOLA_ATTACK:
+		_ensure_briciola_companion()
+	else:
+		_remove_briciola_companion()
+
+func _ensure_briciola_companion() -> void:
+	if briciola_companion != null and is_instance_valid(briciola_companion):
+		return
+	var player := get_parent() as Node2D
+	if player == null or player.get_parent() == null:
+		return
+	briciola_companion = BriciolaCompanion.new()
+	player.get_parent().add_child(briciola_companion)
+	briciola_companion.setup(player)
+
+func _remove_briciola_companion() -> void:
+	if briciola_companion != null and is_instance_valid(briciola_companion):
+		briciola_companion.queue_free()
+	briciola_companion = null
+
+func _activate_scrap_pack() -> bool:
+	_ensure_briciola_companion()
+	if briciola_companion == null or not is_instance_valid(briciola_companion):
+		return false
+	briciola_companion.start_frenzy(SCRAP_PACK_DURATION)
+	_set_passive_notice("BRANCO", SCRAP_PACK_DURATION)
+	return true
+
+func _begin_beast_night() -> void:
+	beast_night_timer = BEAST_NIGHT_DURATION
+	beast_recovery_timer = 0.0
+	_begin_super_invulnerability()
+	super_invulnerable_timer = BEAST_NIGHT_DURATION
+
+func _end_beast_night() -> void:
+	_restore_super_invulnerability()
+	beast_recovery_timer = BEAST_RECOVERY_DURATION
+	passive_state_changed.emit()
+
+func is_beast_transformed() -> bool:
+	return beast_night_timer > 0.0

@@ -11,6 +11,12 @@ const BLOOD_QUAKE_DAMAGE_MULTIPLIER: float = 2.10
 const PHANTOM_BLADE_DISTANCE: float = 180.0
 const PHANTOM_BLADE_WIDTH: float = 62.0
 const PHANTOM_BLADE_DAMAGE_MULTIPLIER: float = 1.65
+const FALLING_STAR_SEARCH_RADIUS: float = 620.0
+const FALLING_STAR_IMPACT_RADIUS: float = 145.0
+const FALLING_STAR_DAMAGE_MULTIPLIER: float = 2.35
+const FALLING_STAR_EDGE_MULTIPLIER: float = 0.58
+const BEAST_NIGHT_SHOCKWAVE_RADIUS: float = 130.0
+const BEAST_NIGHT_SHOCKWAVE_MULTIPLIER: float = 1.75
 
 static func execute_arrow_rain(
 	component: RpgPlayerComponent,
@@ -132,6 +138,43 @@ static func execute_phantom_blade(
 		)
 	return true
 
+
+static func execute_falling_star(
+	component: RpgPlayerComponent,
+	player: Node2D
+) -> bool:
+	var health_system := _get_health_system(player)
+	if health_system == null:
+		return false
+	var impact_position := _find_dense_cluster_position(
+		player,
+		FALLING_STAR_SEARCH_RADIUS,
+		FALLING_STAR_IMPACT_RADIUS
+	)
+	if impact_position == Vector2(INF, INF):
+		return false
+	var center_damage := maxi(1, roundi(float(component.get_current_weapon_damage()) * FALLING_STAR_DAMAGE_MULTIPLIER))
+	var edge_damage := maxi(1, roundi(float(center_damage) * FALLING_STAR_EDGE_MULTIPLIER))
+	for target in _get_damageable_targets(player):
+		var distance := impact_position.distance_to(target.global_position)
+		if distance > FALLING_STAR_IMPACT_RADIUS:
+			continue
+		var damage := center_damage if distance <= FALLING_STAR_IMPACT_RADIUS * 0.45 else edge_damage
+		health_system.apply_damage(target, damage, player, component.get_super_id(), target.global_position)
+	return true
+
+static func execute_beast_night(
+	component: RpgPlayerComponent,
+	player: Node2D
+) -> bool:
+	var health_system := _get_health_system(player)
+	if health_system == null:
+		return true
+	var damage := maxi(1, roundi(float(component.get_current_weapon_damage()) * BEAST_NIGHT_SHOCKWAVE_MULTIPLIER))
+	for target in _find_targets_in_radius(player, BEAST_NIGHT_SHOCKWAVE_RADIUS):
+		health_system.apply_damage(target, damage, player, component.get_super_id(), target.global_position)
+	return true
+
 static func _get_weapon_data(player: Node) -> WeaponData:
 	var weapon_system := player.get_node_or_null("WeaponSystem") as WeaponSystem
 	if weapon_system == null:
@@ -172,6 +215,25 @@ static func _find_targets_in_radius(
 		if player.global_position.distance_to(target.global_position) <= radius:
 			targets.append(target)
 	return targets
+
+static func _find_dense_cluster_position(
+	player: Node2D,
+	search_radius: float,
+	cluster_radius: float
+) -> Vector2:
+	var best_position := Vector2(INF, INF)
+	var best_count := 0
+	for target in _get_damageable_targets(player):
+		if player.global_position.distance_to(target.global_position) > search_radius:
+			continue
+		var count := 0
+		for other in _get_damageable_targets(player):
+			if target.global_position.distance_to(other.global_position) <= cluster_radius:
+				count += 1
+		if count > best_count:
+			best_count = count
+			best_position = target.global_position
+	return best_position
 
 static func _find_targets_in_segment(
 	player: Node2D,

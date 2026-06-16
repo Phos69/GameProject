@@ -505,12 +505,13 @@ func _mode_label(mode_id: StringName) -> String:
 
 func _format_character_card(profile: Dictionary) -> String:
 	return (
-		"%s\n%s  Weapon: %s\nHP %d  ATK %d  DEF %d  SPD %.2f\n"
+		"%s\n%s · %s  Palette: %s\nHP %d  ATK %d  DEF %d  SPD %.2f\n"
 		+ "Passive: %s\n%s\nSuper: %s\n%s\nDifficulty: %s"
 	) % [
-		str(profile.get("display_name", "Survivor")).to_upper(),
+		str(profile.get("hero_name", profile.get("display_name", "Survivor"))).to_upper(),
 		str(profile.get("class_name", "Survivor")),
 		str(profile.get("base_weapon_name", "Starter Pistol")),
+		str(profile.get("gameplay_palette_id", "default")),
 		int(profile.get("max_hp", 100)),
 		int(profile.get("attack", 0)),
 		int(profile.get("defense", 0)),
