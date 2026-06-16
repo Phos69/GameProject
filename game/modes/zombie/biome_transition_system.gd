@@ -21,6 +21,7 @@ const TRANSITION_GATE_SCRIPT = preload(
 @export var west_gate_position: Vector2 = Vector2(-555.0, 0.0)
 @export var party_entry_offset: float = 410.0
 @export_range(0.1, 3.0, 0.1) var transition_cooldown: float = 0.8
+@export var move_party_on_transition: bool = false
 
 var biome_manager: BiomeManager
 var active_biome: BiomeDefinition
@@ -78,7 +79,8 @@ func stop_run() -> void:
 
 func transition_to(
 	target_biome_id: StringName,
-	direction_id: StringName = &"east"
+	direction_id: StringName = &"east",
+	target_region_id: StringName = &""
 ) -> bool:
 	if not is_active or target_biome_id.is_empty():
 		return false
@@ -89,9 +91,15 @@ func transition_to(
 	if biome_manager == null:
 		return false
 	var previous_id := biome_manager.get_current_biome_id()
-	if not biome_manager.set_current_biome(target_biome_id):
+	var changed := (
+		biome_manager.set_current_region(target_region_id)
+		if not target_region_id.is_empty()
+		else biome_manager.set_current_biome(target_biome_id)
+	)
+	if not changed:
 		return false
-	_move_party_to_entry(direction_id)
+	if move_party_on_transition:
+		_move_party_to_entry(direction_id)
 	cooldown_timer = transition_cooldown
 	biome_transitioned.emit(previous_id, target_biome_id)
 	return true
@@ -104,7 +112,8 @@ func _spawn_gate(
 	target_biome_id: StringName,
 	direction_id: StringName,
 	gate_position: Vector2,
-	color: Color
+	color: Color,
+	target_region_id: StringName = &""
 ) -> void:
 	var container := _get_environment_container()
 	if container == null:
@@ -113,7 +122,13 @@ func _spawn_gate(
 	if gate == null:
 		return
 	gate.name = "%sTransitionGate" % String(direction_id).capitalize()
-	gate.configure(target_biome_id, direction_id, gate_position, color)
+	gate.configure(
+		target_biome_id,
+		direction_id,
+		gate_position,
+		color,
+		target_region_id
+	)
 	container.add_child(gate)
 	gate.body_entered.connect(_on_gate_body_entered.bind(gate))
 	active_gates.append(gate)
@@ -128,7 +143,7 @@ func _on_gate_body_entered(
 		and gate != null
 		and is_instance_valid(gate)
 	):
-		transition_to(gate.target_biome_id, gate.direction_id)
+		transition_to(gate.target_biome_id, gate.direction_id, gate.target_region_id)
 
 func _move_party_to_entry(direction_id: StringName) -> void:
 	var entry_position := Vector2.ZERO
@@ -175,7 +190,8 @@ func _spawn_generated_map_gates(color: Color) -> bool:
 			passage.to_biome_id,
 			passage.side,
 			_get_gate_position_for_passage(passage, cell),
-			color
+			color,
+			passage.to_cell_id
 		)
 	return true
 

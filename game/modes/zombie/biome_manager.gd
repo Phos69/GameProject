@@ -2,6 +2,7 @@ extends Node
 class_name BiomeManager
 
 signal current_biome_changed(biome_id: StringName, display_name: String)
+signal current_region_changed(region_id: StringName, biome_id: StringName)
 
 const INFECTED_PLAINS = preload(
 	"res://game/modes/zombie/biomes/infected_plains.tres"
@@ -41,6 +42,7 @@ func _ready() -> void:
 
 func start_run(context: Dictionary = {}) -> void:
 	_ensure_world_generator()
+	current_biome_cell = null
 	active_world_data = world_generator.generate_world(context, biomes)
 	_apply_generated_layouts()
 	select_starting_biome()
@@ -56,18 +58,19 @@ func register_biome(definition) -> void:
 func select_starting_biome() -> bool:
 	var start_cell := _get_start_cell()
 	if start_cell != null:
-		current_biome_cell = start_cell
-		return set_current_biome(start_cell.biome_id)
+		return set_current_region(start_cell.id)
 	for definition in biomes.values():
 		if definition != null and bool(definition.get("is_starting_biome")):
 			return set_current_biome(StringName(definition.get("biome_id")))
 	return set_current_biome(default_biome_id)
 
 func set_current_biome(biome_id: StringName) -> bool:
+	_update_current_cell_for_biome(biome_id)
+	if current_biome_cell != null and current_biome_cell.biome_id == biome_id:
+		return set_current_region(current_biome_cell.id)
 	var next_biome = biomes.get(biome_id)
 	if next_biome == null:
 		return false
-	_update_current_cell_for_biome(biome_id)
 	if current_biome == next_biome:
 		return true
 	current_biome = next_biome
@@ -75,6 +78,25 @@ func set_current_biome(biome_id: StringName) -> bool:
 		StringName(current_biome.get("biome_id")),
 		String(current_biome.get("display_name"))
 	)
+	return true
+
+func set_current_region(region_id: StringName) -> bool:
+	var cell := get_cell_by_region_id(region_id)
+	if cell == null:
+		return false
+	var next_biome = biomes.get(cell.biome_id)
+	if next_biome == null:
+		return false
+	var previous_biome = current_biome
+	current_biome_cell = cell
+	current_biome = next_biome
+	_apply_cell_layout_to_definition(cell)
+	current_region_changed.emit(cell.id, cell.biome_id)
+	if previous_biome != current_biome:
+		current_biome_changed.emit(
+			StringName(current_biome.get("biome_id")),
+			String(current_biome.get("display_name"))
+		)
 	return true
 
 func get_current_biome():
@@ -99,6 +121,9 @@ func get_available_biome_ids() -> Array[StringName]:
 func get_current_biome_cell() -> BiomeCell:
 	return current_biome_cell
 
+func get_current_region_id() -> StringName:
+	return current_biome_cell.id if current_biome_cell != null else &""
+
 func get_generated_biome_map() -> Array[BiomeCell]:
 	if not active_world_data.has("cells"):
 		return []
@@ -115,6 +140,11 @@ func get_generation_seed() -> int:
 func get_generation_signature() -> String:
 	_ensure_world_generator()
 	return world_generator.get_map_signature()
+
+func get_world_graph() -> WorldGraph:
+	if active_world_data.has("world_graph"):
+		return active_world_data["world_graph"] as WorldGraph
+	return null
 
 func get_seed_record() -> Dictionary:
 	_ensure_world_generator()
@@ -166,8 +196,6 @@ func _apply_generated_layouts() -> void:
 		var definition := biomes.get(cell.biome_id, null) as BiomeDefinition
 		if definition == null or cell.generated_layout == null:
 			continue
-		definition.environment_layout = cell.generated_layout
-		definition.biome_size = cell.generated_layout.zone_size
 		definition.obstacle_ids = _merge_string_name_arrays(
 			definition.obstacle_ids,
 			cell.generated_layout.obstacle_ids
@@ -191,6 +219,8 @@ func _apply_generated_layouts() -> void:
 			definition.passage_type_ids,
 			passage_types
 		)
+	if current_biome_cell != null:
+		_apply_cell_layout_to_definition(current_biome_cell)
 
 func _update_current_cell_for_biome(biome_id: StringName) -> void:
 	_ensure_world_generator()
@@ -205,6 +235,21 @@ func _get_start_cell() -> BiomeCell:
 	if active_world_data.has("start_cell"):
 		return active_world_data["start_cell"] as BiomeCell
 	return null
+
+func get_cell_by_region_id(region_id: StringName) -> BiomeCell:
+	for cell in get_generated_biome_map():
+		if cell.id == region_id:
+			return cell
+	return null
+
+func _apply_cell_layout_to_definition(cell: BiomeCell) -> void:
+	if cell == null or cell.generated_layout == null:
+		return
+	var definition := biomes.get(cell.biome_id, null) as BiomeDefinition
+	if definition == null:
+		return
+	definition.environment_layout = cell.generated_layout
+	definition.biome_size = cell.generated_layout.zone_size
 
 func _merge_string_name_arrays(
 	first: Array[StringName],

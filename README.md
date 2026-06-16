@@ -54,9 +54,11 @@ Controlli debug:
 - Menu: frecce/D-pad o stick per navigare, `Invio`/joypad `A` per confermare.
 - Partita: joypad `Start` o `P` apre/chiude la pausa; `Esc` torna al menu principale arrestando la run.
 - Tastiera: `WASD` per movimento, frecce per mira, `Spazio` per sparare, `R` per ricaricare e `Q` per la super RPG.
+- Tastiera: `Shift`/`Ctrl` esegue dodge/roll, `M` apre o chiude la mappa dei territori esplorati.
 - Tastiera debug multiplayer: `F2`, `F3`, `F4` attivano/disattivano gli slot player 2, 3 e 4.
 - Modalita debug: `F1` avvia survival, `F5` avvia una run dungeon e `F6` avvia tower defense.
 - Joypad: stick sinistro per movimento, stick destro per mira, trigger/spalla destra per sparare, pulsante `X` per ricaricare e pulsante `Y` per la super RPG.
+- Joypad: pulsante `B` per dodge/roll, `Back/Select/View` apre o chiude la mappa dei territori esplorati.
 - Joypad multiplayer: nel menu `Start` attiva lo slot del controller, `Back/Select` lascia lo slot se non e player 1.
 - Dungeon: attraversare il portale verde a destra; nelle stanze combat e boss diventa verde solo dopo aver eliminato tutti i bersagli.
 - Tower defense: entrare in uno slot azzurro e premere `E` o pulsante joypad `A` per costruire una torre se ci sono crediti sufficienti.
@@ -76,7 +78,7 @@ I profili RPG zombie survival mantengono gli ID tecnici `ranger`, `pistoliere`, 
 - `Nina Bullone` — Domatrice · Fionda magnetica, palette turchese/rame e companion Briciola.
 - `Rocco Lunastorta` — Licantropo · Artigli, palette grigio/luna/rosso e trasformazione super.
 
-I campi artistici in `RpgCharacterData` collegano palette, ritratti, sprite, weapon visual e icone passive/super senza rendere obbligatori asset esterni. Finche i PNG definitivi non esistono, `PlayerVisual` e `RpgHudIcon` disegnano placeholder procedurali coerenti con silhouette e colori. Per sostituire gli asset, popolare i path `assets/characters/<id>/...` nei `.tres` e validare la checklist `docs/rpg_character_visual_checklist.md`.
+I campi artistici in `RpgCharacterData` collegano palette, ritratti, sprite, weapon visual e icone passive/super senza rendere obbligatori asset esterni. Mira Vento, Bruna Spaccaferro, Nina Bullone e Rocco Lunastorta hanno portrait PNG definitivi collegati al Character Select; gli altri profili continuano a usare i placeholder SVG/procedurali. Per sostituire gli asset, popolare i path `assets/characters/<id>/...` nei `.tres` e validare la checklist `docs/rpg_character_visual_checklist.md`.
 
 Smoke test headless:
 
@@ -94,6 +96,13 @@ godot --headless --path . --script res://tests/zombie_biome_enemy_smoke_test.gd
 godot --headless --path . --script res://tests/zombie_revamp_ten_wave_smoke_test.gd
 godot --headless --path . --script res://tests/zombie_revamp_ten_minute_soak_test.gd
 godot --headless --path . --script res://tests/biome_world_generation_smoke_test.gd
+godot --headless --path . --script res://tests/world_graph_connectivity_smoke_test.gd
+godot --headless --path . --script res://tests/persistent_world_generation_smoke_test.gd
+godot --headless --path . --script res://tests/open_passage_transition_smoke_test.gd
+godot --headless --path . --script res://tests/isometric_biome_terrain_coverage_smoke_test.gd
+godot --headless --path . --script res://tests/fall_boundary_visual_logic_smoke_test.gd
+godot --headless --path . --script res://tests/player_dodge_gap_smoke_test.gd
+godot --headless --path . --script res://tests/exploration_map_smoke_test.gd
 godot --headless --path . --script res://tests/biome_debug_overlay_smoke_test.gd
 godot --headless --path . --script res://tests/biome_mini_events_smoke_test.gd
 godot --headless --path . --script res://tests/boss_smoke_test.gd
@@ -151,6 +160,7 @@ game/
   progression/       XP, denaro e progressione
   modes/             modalita survival, dungeon, tower defense
   procedural/        generatori procedurali
+  world/             grafo persistente, regioni e stato esplorazione
   ui/                HUD e interfaccia
   audio/             audio manager
   settings/          impostazioni video e stato configurabile condiviso
@@ -161,7 +171,7 @@ game/
   debug/             strumenti debug
 docs/                documentazione tecnica e checklist
 prompts/             prompt operativi per task IA futuri
-assets/              sprite, tileset, audio, font, UI
+assets/              sprite, tileset, audio, font, UI e manifest isometrici
 tests/               test e checklist automatizzabili futuri
 ```
 
@@ -209,6 +219,10 @@ Completato:
 - feedback world-space e cue procedurali dedicati per level-up e super RPG;
 - revamp zombie completo con controller, biomi, wave director, spawner camera-edge, transizioni e sistemi ambientali modulari;
 - motore procedurale seed-based per mappa globale biomi, celle `200x200`, passaggi, fall boundary, layout interno e validazione pathfinding;
+- megamappa persistente seed-based con grafo connesso, regioni `200x200`, passaggi fisici aperti, stato esplorazione salvabile e mappa consultabile;
+- classificazione completa del terreno `200x200` come walkable, obstacle, hazard, border, void o fall zone;
+- dodge/roll per player con cooldown, invulnerabilita breve e validazione per piccoli gap attraversabili;
+- manifest iniziale `assets/environment/isometric/manifest.json` per censire ostacoli e props da sostituire con versioni isometriche coerenti;
 - cinque biomi giocabili nella stessa run, con partenza forzata dalla `Pianura Infetta`;
 - spawn zombie delegato a `ZombieSpawner` dai bordi della camera, con fallback ai punti arena esistenti;
 - layout ambientali data-driven per Pianura, Tossico, Infuocato, Neve e Palude;

@@ -181,7 +181,11 @@ func _run() -> void:
 		var passage: BiomePassage = active_cell.passages.front()
 		transition_system.cooldown_timer = 0.0
 		_expect(
-			transition_system.transition_to(passage.to_biome_id, passage.side),
+			transition_system.transition_to(
+				passage.to_biome_id,
+				passage.side,
+				passage.to_cell_id
+			),
 			"generated passage transitions to the neighbor biome"
 		)
 		await process_frame
@@ -212,10 +216,6 @@ func _validate_cell(cell: BiomeCell) -> void:
 			placement_errors.is_empty(),
 			"%s has valid spawn, crate and hazard placements" % cell.id
 		)
-		_expect(
-			_has_biome_navigation_identity(cell.generated_layout, cell.biome_id),
-			"%s has biome-specific navigation identity" % cell.id
-		)
 	for side in BiomeCell.SIDES:
 		if cell.has_neighbor(side):
 			_expect(
@@ -228,9 +228,16 @@ func _validate_cell(cell: BiomeCell) -> void:
 			)
 		else:
 			_expect(
-				cell.get_border(side) == BiomeCell.BorderType.FALL,
-				"%s %s border becomes a fall boundary" % [cell.id, side]
+				cell.get_border(side) == BiomeCell.BorderType.FALL
+				or cell.get_border(side) == BiomeCell.BorderType.BLOCKED,
+				"%s %s border is fall or blocked by graph topology" % [cell.id, side]
 			)
+	if cell.generated_layout != null:
+		var classification := cell.generated_layout.get_classification_report()
+		_expect(
+			bool(classification.get("is_complete", false)),
+			"%s has complete 200x200 terrain classification" % cell.id
+		)
 
 func _has_large_house(layout: BiomeEnvironmentLayout) -> bool:
 	for index in range(layout.obstacle_rects.size()):

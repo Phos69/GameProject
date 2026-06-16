@@ -25,12 +25,24 @@ func _run() -> void:
 	var player_manager := get_first_node_in_group(
 		"player_manager"
 	) as PlayerManager
+	var local_multiplayer := get_first_node_in_group(
+		"local_multiplayer_manager"
+	) as LocalMultiplayerManager
 	_expect(main_menu != null, "main menu is available")
 	_expect(game_mode_manager != null, "game mode manager is available")
 	_expect(player_manager != null, "player manager is available")
-	if main_menu == null or game_mode_manager == null or player_manager == null:
+	_expect(local_multiplayer != null, "local multiplayer manager is available")
+	if (
+		main_menu == null
+		or game_mode_manager == null
+		or player_manager == null
+		or local_multiplayer == null
+	):
 		_finish()
 		return
+
+	local_multiplayer.activate_slot(2)
+	await process_frame
 
 	main_menu._select_mode(GameConstants.MODE_SURVIVAL)
 	await process_frame
@@ -42,8 +54,27 @@ func _run() -> void:
 		game_mode_manager.active_mode_id == GameConstants.MODE_MENU,
 		"survival gameplay does not start before character confirmation"
 	)
+	_expect(
+		main_menu.character_start_button.disabled,
+		"survival start remains disabled until active slots choose characters"
+	)
 
-	main_menu._select_survival_character(&"ranger")
+	main_menu._assign_character_to_slot(1, &"ranger")
+	main_menu._assign_character_to_slot(2, &"berserker")
+	await process_frame
+	_expect(
+		not main_menu.character_start_button.disabled,
+		"survival start enables when every active slot has a character"
+	)
+	_expect(
+		StringName(main_menu.character_selection_by_slot.get(1, &"")) == &"ranger",
+		"player one slot stores Ranger"
+	)
+	_expect(
+		StringName(main_menu.character_selection_by_slot.get(2, &"")) == &"berserker",
+		"player two slot stores Berserker"
+	)
+	main_menu._start_survival_with_selected_characters()
 	await process_frame
 	await process_frame
 	_expect(
@@ -65,6 +96,23 @@ func _run() -> void:
 			_expect(
 				rpg_component.get_base_weapon_name() == "Arco",
 				"selected character exposes base weapon"
+			)
+
+	var player_two := player_manager.players.get(2) as PlayerController
+	_expect(player_two != null, "player two remains spawned")
+	if player_two != null:
+		var rpg_component_two := player_two.get_node_or_null(
+			"RpgPlayerComponent"
+		) as RpgPlayerComponent
+		_expect(rpg_component_two != null, "player two has RPG component")
+		if rpg_component_two != null:
+			_expect(
+				rpg_component_two.character_id == &"berserker",
+				"second selected character is applied to player two"
+			)
+			_expect(
+				rpg_component_two.get_base_weapon_name() == "Ascia",
+				"second selected character exposes base weapon"
 			)
 
 	_finish()

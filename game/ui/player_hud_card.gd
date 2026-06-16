@@ -316,12 +316,25 @@ func _build_ui() -> void:
 func _refresh_status_widgets(player: Node) -> void:
 	if status_label == null:
 		return
+	var dodge_component := player.get_node_or_null(
+		"PlayerDodgeComponent"
+	) as PlayerDodgeComponent
+	var dodge_text := ""
+	if dodge_component != null and dodge_component.get_cooldown_ratio() > 0.0:
+		dodge_text = "ROLL %.0f%%" % [
+			(1.0 - dodge_component.get_cooldown_ratio()) * 100.0
+		]
 	var hazard_system := get_tree().get_first_node_in_group("hazard_system") as HazardSystem
 	if hazard_system == null:
-		status_label.hide()
+		if dodge_text.is_empty():
+			status_label.hide()
+		else:
+			status_label.text = dodge_text
+			status_label.modulate = Color(0.72, 0.92, 1.0, 1.0)
+			status_label.show()
 		return
 	var snapshots := hazard_system.get_player_status_snapshots(player)
-	if snapshots.is_empty():
+	if snapshots.is_empty() and dodge_text.is_empty():
 		status_label.hide()
 		return
 	var parts := PackedStringArray()
@@ -330,6 +343,10 @@ func _refresh_status_widgets(player: Node) -> void:
 		var id := StringName(snapshot.get("id", &""))
 		parts.append("%s %.0fs" % [_status_short_label(id), ceilf(float(snapshot.get("time_left", 0.0)))])
 		color = _status_color(id)
+	if not dodge_text.is_empty():
+		parts.append(dodge_text)
+		if snapshots.is_empty():
+			color = Color(0.72, 0.92, 1.0, 1.0)
 	status_label.text = " ".join(parts)
 	status_label.modulate = Color.WHITE if high_contrast else color
 	status_label.show()

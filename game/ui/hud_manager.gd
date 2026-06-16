@@ -10,6 +10,7 @@ var boss_health_bar: ProgressBar
 var boss_health_fill_style: StyleBoxFlat
 var boss_warning_label: Label
 var combat_announcement: CombatAnnouncement
+var exploration_map_panel: ExplorationMapPanel
 var player_cards_container: HBoxContainer
 var player_cards: Dictionary = {}
 var pickup_feedback_text: String = ""
@@ -33,9 +34,11 @@ func _ready() -> void:
 	_create_player_hud()
 	_create_boss_hud()
 	_create_combat_announcement()
+	_create_exploration_map()
 	_connect_drop_feedback()
 	call_deferred("_connect_boss_system")
 	call_deferred("_connect_run_feedback")
+	call_deferred("_connect_world_runtime")
 	_refresh()
 	VisualSettingsManager.sync_consumer(self)
 
@@ -108,7 +111,20 @@ func _process(delta: float) -> void:
 	if pickup_feedback_timer <= 0.0:
 		pickup_feedback_text = ""
 	boss_warning_timer = maxf(boss_warning_timer - delta, 0.0)
+	if exploration_map_panel != null and exploration_map_panel.visible:
+		_refresh_exploration_map()
 	_refresh()
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not event.is_action_pressed(&"world_map"):
+		return
+	var game_mode_manager := get_tree().get_first_node_in_group(
+		"game_mode_manager"
+	) as GameModeManager
+	if game_mode_manager != null and not game_mode_manager.is_gameplay_active():
+		return
+	_toggle_exploration_map()
+	get_viewport().set_input_as_handled()
 
 func _refresh() -> void:
 	if status_label == null:
@@ -474,6 +490,11 @@ func _create_combat_announcement() -> void:
 	combat_announcement.name = "CombatAnnouncement"
 	add_child(combat_announcement)
 
+func _create_exploration_map() -> void:
+	exploration_map_panel = ExplorationMapPanel.new()
+	exploration_map_panel.name = "ExplorationMapPanel"
+	add_child(exploration_map_panel)
+
 func _refresh_boss_hud() -> void:
 	if (
 		boss_panel == null
@@ -643,6 +664,40 @@ func _connect_run_feedback() -> void:
 		):
 			biome_manager.current_biome_changed.connect(biome_callback)
 		_apply_biome_hud_theme(biome_manager.get_current_biome())
+
+func _connect_world_runtime() -> void:
+	var world_runtime := get_tree().get_first_node_in_group(
+		"world_runtime"
+	) as WorldRuntime
+	if world_runtime == null:
+		return
+	var callback := Callable(self, "_on_exploration_changed")
+	if not world_runtime.exploration_changed.is_connected(callback):
+		world_runtime.exploration_changed.connect(callback)
+	_refresh_exploration_map()
+
+func _on_exploration_changed(_state: WorldExplorationState) -> void:
+	_refresh_exploration_map()
+
+func _toggle_exploration_map() -> void:
+	if exploration_map_panel == null:
+		return
+	_refresh_exploration_map()
+	exploration_map_panel.toggle()
+
+func _refresh_exploration_map() -> void:
+	if exploration_map_panel == null:
+		return
+	var world_runtime := get_tree().get_first_node_in_group(
+		"world_runtime"
+	) as WorldRuntime
+	if world_runtime == null:
+		exploration_map_panel.hide_map()
+		return
+	exploration_map_panel.configure(
+		world_runtime.graph,
+		world_runtime.get_exploration_state()
+	)
 
 func _on_intermission_started(
 	next_wave_index: int,

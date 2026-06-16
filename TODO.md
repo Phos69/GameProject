@@ -9,6 +9,38 @@
   - Criterio di accettazione: ogni mini-evento resta evitabile, non blocca passaggi/casse, assegna reward proporzionata e resta leggibile in high contrast/reduced motion.
   - Test richiesto: QA manuale 10 wave con seed fisso e acquisizione screenshot/video dei quattro eventi.
 
+## Megamappa persistente isometrica - completato
+
+- Roadmap megamappa persistente isometrica completata come primo pass stabile.
+  - Obiettivo: trasformare la generazione a biomi/portali in una megamappa seed-based persistente con territori `200x200`, grafo connesso, passaggi fisici aperti, fall boundary, mappa esplorazione e dodge/roll.
+  - Milestone collegata: `roadmap_megamappa_persistente_isometrica.md` Milestone 1-10.
+  - File/sistemi coinvolti: `game/world/`, `BiomeMapGenerator`, `BiomeWorldGenerator`, `BiomeManager`, `BiomeTransitionSystem`, `BiomeEnvironmentLayout`, `MapValidationSystem`, `SaveManager`, `HUDManager`, `InputManager`, `PlayerController`, `PlayerDodgeComponent`.
+  - Criterio di accettazione: stesso seed produce la stessa megamappa, tutte le regioni sono raggiungibili, i passaggi sono fisici e non ostruiti, i lati esterni sono fall boundary, lo stato esplorazione salva/carica e dodge/gap traversal rispetta landing e ostacoli.
+  - Test richiesto: `tests/world_graph_connectivity_smoke_test.gd`, `tests/persistent_world_generation_smoke_test.gd`, `tests/open_passage_transition_smoke_test.gd`, `tests/isometric_biome_terrain_coverage_smoke_test.gd`, `tests/fall_boundary_visual_logic_smoke_test.gd`, `tests/player_dodge_gap_smoke_test.gd`, `tests/exploration_map_smoke_test.gd` e regressioni survival/dungeon/tower/RPG.
+
+## Megamappa persistente isometrica - follow-up
+
+- QA manuale di attraversamento continuo e leggibilita isometrica.
+  - Obiettivo: validare su schermo reale passaggi aperti, fall boundary, mappa esplorazione e dodge/gap con party da 1-4 player.
+  - Milestone collegata: polish post `roadmap_megamappa_persistente_isometrica.md`.
+  - File/sistemi coinvolti: `WorldRuntime`, `BiomeTransitionSystem`, `TerrainGenerator`, `ExplorationMapPanel`, `PlayerDodgeComponent`, `HazardSystem`.
+  - Criterio di accettazione: i player attraversano almeno otto regioni con seed fisso senza teletrasporti percepiti, senza passaggi ostruiti e con stato mappa leggibile in default/high contrast.
+  - Test richiesto: checklist manuale 20 minuti survival con seed fisso, screenshot mappa e verifica dodge su gap piccolo.
+
+- Streaming visuale delle regioni lontane.
+  - Obiettivo: rendere `WorldRuntime` proprietario dell'istanza corrente e delle regioni N/E/S/W precaricate, lasciando le regioni lontane solo come dati.
+  - Milestone collegata: performance post megamappa.
+  - File/sistemi coinvolti: `WorldRuntime`, `ZombieModeController`, `TerrainGenerator`, `ObstacleSystem`, `ResourceCrateSystem`, `HazardSystem`.
+  - Criterio di accettazione: le regioni lontane non restano istanziate, la regione corrente e i vicini vengono caricati/rilasciati senza ricreare casse gia aperte o encounter completati.
+  - Test richiesto: smoke headless di load/unload regioni e profiling manuale con griglia almeno `7x7`.
+
+- Pass asset isometrici ambiente.
+  - Obiettivo: sostituire progressivamente placeholder di case, muretti, auto, casse, barili, rocce, tubi, cisterne, ponti e scarpate usando il manifest isometrico.
+  - Milestone collegata: asset pipeline post megamappa.
+  - File/sistemi coinvolti: `assets/environment/isometric/`, `ObstacleLayoutGenerator`, `ObstacleSystem`, `TerrainGenerator`, `BiomeFallZone`.
+  - Criterio di accettazione: ogni oggetto convertito ha visual scene, collision shape, shadow, sort offset, footprint tiles e flag di blocco coerenti.
+  - Test richiesto: QA visuale a 1280x720 e smoke collisioni/footprint per ogni categoria convertita.
+
 ## Motore generazione mappe e biomi - completato
 
 - Roadmap motore generazione mappe e biomi completata come primo pass procedurale integrato.
@@ -336,7 +368,7 @@
 
 ## Asset definitivi personaggi RPG - futuro
 
-- Obiettivo: rifinire qualitativamente tutti i sette personaggi con VFX separati, pulizia animazioni, eventuale export finale PNG fuori dal flusso PR e pass di leggibilita; Mira Vento, Dante Ferraglia, Bruna Spaccaferro, Kael Guardia, Elio Braciastella, Nina Bullone e Rocco Lunastorta hanno un primo set base completo da validare in QA visuale.
+- Obiettivo: rifinire qualitativamente tutti i sette personaggi con VFX separati, pulizia animazioni, eventuale export finale PNG fuori dal flusso PR e pass di leggibilita; Mira Vento, Bruna Spaccaferro, Nina Bullone e Rocco Lunastorta hanno portrait PNG collegati al Character Select, mentre Dante Ferraglia, Kael Guardia ed Elio Braciastella restano su portrait SVG/procedurali in attesa del pass definitivo.
 - Milestone collegata: Pass 2-3 character art RPG zombie survival.
 - File/sistemi coinvolti: `game/rpg/characters/`, `game/visuals/player_visual.gd`, `game/ui/player_hud_card.gd`, `assets/characters/`.
 - Criterio di accettazione: ogni personaggio ha portrait HUD/full, idle/run/attack/reload/hurt/death/super, weapon layer e VFX separati configurati dai campi `RpgCharacterData`; Tutti i sette personaggi restano riferimenti minimi per struttura manifest, sprite sheet e icone arma/abilita; il prossimo ciclo deve migliorare qualita, VFX separati e coerenza animabile.

@@ -2,17 +2,21 @@ extends Area2D
 class_name BiomeTransitionGate
 
 var target_biome_id: StringName = &""
+var target_region_id: StringName = &""
 var direction_id: StringName = &"east"
 var gate_size: Vector2 = Vector2(76.0, 190.0)
 var gate_color: Color = Color(0.42, 0.90, 0.58, 1.0)
+var passage_kind: StringName = &"open_passage"
 
 func configure(
 	next_target_biome_id: StringName,
 	next_direction_id: StringName,
 	next_position: Vector2,
-	next_color: Color
+	next_color: Color,
+	next_target_region_id: StringName = &""
 ) -> void:
 	target_biome_id = next_target_biome_id
+	target_region_id = next_target_region_id
 	direction_id = next_direction_id
 	position = next_position
 	gate_color = next_color
@@ -26,6 +30,7 @@ func configure(
 
 func _ready() -> void:
 	add_to_group("biome_transition_gates")
+	add_to_group("open_region_passages")
 	if get_node_or_null("CollisionShape2D") == null:
 		_rebuild_collision()
 
@@ -52,7 +57,7 @@ func _draw() -> void:
 	var side := -1.0 if direction_id == &"west" else 1.0
 	draw_rect(
 		Rect2(-half_size, gate_size),
-		Color(gate_color.darkened(0.65), 0.18),
+		Color(gate_color.darkened(0.65), 0.10),
 		true
 	)
 	for index in range(4):
@@ -65,6 +70,20 @@ func _draw() -> void:
 			2.0,
 			true
 		)
+	draw_line(
+		Vector2(-half_size.x * 0.86, -half_size.y * 0.42),
+		Vector2(half_size.x * 0.86, -half_size.y * 0.18),
+		Color(gate_color.lightened(0.2), 0.72),
+		4.0,
+		true
+	)
+	draw_line(
+		Vector2(-half_size.x * 0.86, half_size.y * 0.38),
+		Vector2(half_size.x * 0.86, half_size.y * 0.16),
+		Color(gate_color.darkened(0.25), 0.70),
+		4.0,
+		true
+	)
 	var arrow_origin := Vector2(-side * 12.0, 0.0)
 	draw_line(
 		arrow_origin,

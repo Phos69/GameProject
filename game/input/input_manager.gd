@@ -17,7 +17,8 @@ const PLAYER_JOYSTICK_ACTIONS: Array[StringName] = [
 	&"fire",
 	&"reload",
 	&"super",
-	&"interact"
+	&"interact",
+	&"dodge"
 ]
 const ALL_JOYSTICK_ACTIONS: Array[StringName] = [
 	&"move_left",
@@ -32,6 +33,7 @@ const ALL_JOYSTICK_ACTIONS: Array[StringName] = [
 	&"reload",
 	&"super",
 	&"interact",
+	&"dodge",
 	&"pause"
 ]
 const ACTION_LABELS: Dictionary = {
@@ -47,6 +49,7 @@ const ACTION_LABELS: Dictionary = {
 	&"reload": "Reload",
 	&"super": "Super",
 	&"interact": "Interact",
+	&"dodge": "Dodge/Roll",
 	&"pause": "Pause"
 }
 const DEFAULT_JOYSTICK_BINDINGS: Dictionary = {
@@ -106,6 +109,10 @@ const DEFAULT_JOYSTICK_BINDINGS: Dictionary = {
 		"type": "button",
 		"button_index": JOY_BUTTON_A
 	},
+	&"dodge": {
+		"type": "button",
+		"button_index": JOY_BUTTON_B
+	},
 	&"pause": {
 		"type": "button",
 		"button_index": JOY_BUTTON_START
@@ -149,6 +156,12 @@ func is_player_interact_just_pressed(player_slot: int) -> bool:
 func is_player_interact_pressed(player_slot: int) -> bool:
 	return Input.is_action_pressed(_action(player_slot, "interact"))
 
+func is_player_dodge_just_pressed(player_slot: int) -> bool:
+	return Input.is_action_just_pressed(_action(player_slot, "dodge"))
+
+func is_world_map_just_pressed() -> bool:
+	return Input.is_action_just_pressed(&"world_map")
+
 func _register_default_actions() -> void:
 	_register_menu_actions()
 	for player_slot in range(1, MAX_PLAYERS + 1):
@@ -168,6 +181,16 @@ func _register_menu_actions() -> void:
 	var pause_key := _key(KEY_P)
 	if not InputMap.action_has_event(&"pause", pause_key):
 		InputMap.action_add_event(&"pause", pause_key)
+	if not InputMap.has_action(&"world_map"):
+		InputMap.add_action(&"world_map", 0.20)
+	var map_key := _key(KEY_M)
+	if not InputMap.action_has_event(&"world_map", map_key):
+		InputMap.action_add_event(&"world_map", map_key)
+	var map_button := InputEventJoypadButton.new()
+	map_button.device = -1
+	map_button.button_index = JOY_BUTTON_BACK
+	if not InputMap.action_has_event(&"world_map", map_button):
+		InputMap.action_add_event(&"world_map", map_button)
 
 func _register_player_actions(player_slot: int) -> void:
 	for action_id in PLAYER_JOYSTICK_ACTIONS:
@@ -191,6 +214,8 @@ func _add_keyboard_debug_actions() -> void:
 	InputMap.action_add_event(_action(1, "reload"), _key(KEY_R))
 	InputMap.action_add_event(_action(1, "super"), _key(KEY_Q))
 	InputMap.action_add_event(_action(1, "interact"), _key(KEY_E))
+	InputMap.action_add_event(_action(1, "dodge"), _key(KEY_SHIFT))
+	InputMap.action_add_event(_action(1, "dodge"), _key(KEY_CTRL))
 
 func _ensure_action(action: StringName, first_event: InputEvent) -> void:
 	if not InputMap.has_action(action):

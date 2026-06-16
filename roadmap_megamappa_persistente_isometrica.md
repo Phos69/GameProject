@@ -1,5 +1,20 @@
 # Roadmap — Megamappa Persistente Isometrica
 
+## Stato implementazione
+
+Prima versione completata nel repository:
+
+- `game/world/` contiene il modello dati e runtime per grafo, regioni, connessioni, esplorazione e stato persistente.
+- `BiomeMapGenerator` genera una megamappa `5x5` di territori `200x200` tramite seed, spanning tree ed edge extra, con grafo sempre connesso.
+- `BiomeTransitionSystem` usa passaggi fisici aperti tra regioni confinanti e non teletrasporta il party nel flusso standard.
+- I lati senza regione vicina restano fall boundary; i lati con regione non connessa sono bloccati fisicamente.
+- `BiomeEnvironmentLayout` classifica l'intera area `200x200` in walkable, obstacle, hazard, border, void e fall zone.
+- `SaveManager` usa save v6 e conserva lo stato mondo/esplorazione tramite `PersistentWorldState`.
+- `HUDManager` espone una mappa esplorazione consultabile con input `M` o joypad `Back/Select/View`.
+- `PlayerDodgeComponent` aggiunge dodge/roll con cooldown, invulnerabilita breve e validazione per piccoli gap.
+- `assets/environment/isometric/manifest.json` censisce il primo set di placeholder/asset ambientali da sostituire.
+- Gli smoke test dedicati della Milestone 10 sono stati aggiunti e verificati headless.
+
 ## Obiettivo
 
 Trasformare l’attuale generazione a biomi/stanze/portali in una **megamappa persistente isometrica** composta da territori `200x200`, collegati da una topologia a grafo completamente connesso. I giocatori devono attraversare fisicamente i passaggi tra biomi senza portali/teletrasporti, consultare la mappa dei territori esplorati, vedere chiaramente le zone di caduta e usare un nuovo comando di dodge/roll anche per saltare piccoli gap tra piattaforme.
@@ -75,7 +90,7 @@ La topologia deve essere un grafo completamente connesso in senso navigazionale:
 
 ```text
 tests/world_graph_connectivity_smoke_test.gd
-tests/persistent_world_seed_smoke_test.gd
+tests/persistent_world_generation_smoke_test.gd
 ```
 
 ---

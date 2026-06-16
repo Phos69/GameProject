@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "coordinate_system": "pseudo_isometric_2d",
+  "default_sorting": {
+    "mode": "y_sort",
+    "sort_offset": 0
+  },
+  "objects": [
+    {
+      "id": "ruined_house",
+      "category": "obstacle",
+      "status": "procedural_isometric_placeholder",
+      "visual_scene": "res://game/modes/zombie/biome_obstacle.gd",
+      "collision_shape": "rectangle",
+      "footprint_tiles": [18, 16],
+      "blocks_movement": true,
+      "blocks_projectiles": true,
+      "is_jumpable_gap_anchor": false
+    },
+    {
+      "id": "boundary_fence",
+      "category": "border",
+      "status": "procedural_isometric_placeholder",
+      "visual_scene": "res://game/modes/zombie/biome_obstacle.gd",
+      "collision_shape": "rectangle",
+      "footprint_tiles": [16, 4],
+      "blocks_movement": true,
+      "blocks_projectiles": true,
+      "is_jumpable_gap_anchor": false
+    },
+    {
+      "id": "fall_zone",
+      "category": "cliff",
+      "status": "procedural_isometric_placeholder",
+      "visual_scene": "res://game/modes/zombie/biome_fall_zone.gd",
+      "collision_shape": "rectangle_area",
+      "footprint_tiles": [200, 6],
+      "blocks_movement": false,
+      "blocks_projectiles": false,
+      "is_jumpable_gap_anchor": true
+    },
+    {
+      "id": "bridge_passage",
+      "category": "passage",
+      "status": "manifest_placeholder",
+      "visual_scene": "",
+      "collision_shape": "open",
+      "footprint_tiles": [12, 3],
+      "blocks_movement": false,
+      "blocks_projectiles": false,
+      "is_jumpable_gap_anchor": true
+    },
+    {
+      "id": "supply_crate",
+      "category": "crate",
+      "status": "existing_procedural_placeholder",
+      "visual_scene": "res://game/drops/supply_crate.gd",
+      "collision_shape": "circle_or_rectangle",
+      "footprint_tiles": [4, 4],
+      "blocks_movement": false,
+      "blocks_projectiles": false,
+      "is_jumpable_gap_anchor": false
+    }
+  ],
+  "conversion_backlog": [
+    "small_rock",
+    "broken_fence",
+    "wood_barrier",
+    "pipe_stack",
+    "toxic_barrel",
+    "burned_car",
+    "ice_block",
+    "dead_tree",
+    "deep_water",
+    "toxic_puddle",
+    "lava_crack"
+  ]
+}

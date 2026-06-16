@@ -6,7 +6,7 @@ signal load_completed(data: Dictionary)
 signal save_failed(path: String, reason: String)
 signal load_failed(path: String, reason: String)
 
-const SAVE_VERSION: int = 5
+const SAVE_VERSION: int = 6
 const DEFAULT_SAVE_PATH: String = "user://savegame.json"
 
 @export var save_path: String = DEFAULT_SAVE_PATH
@@ -21,6 +21,7 @@ var visual_settings_manager: VisualSettingsManager
 var video_settings_manager: VideoSettingsManager
 var input_manager: InputManager
 var local_multiplayer_manager: LocalMultiplayerManager
+var world_runtime: WorldRuntime
 var last_mode: StringName = GameConstants.MODE_SURVIVAL
 var save_pending: bool = false
 var is_loading: bool = false
@@ -55,7 +56,8 @@ func create_empty_save() -> Dictionary:
 					LocalMultiplayerManager.create_default_settings_data()
 				)
 			}
-		}
+		},
+		"world": PersistentWorldState.create_empty_save_data()
 	}
 
 func save_game() -> bool:
@@ -102,6 +104,12 @@ func save_game() -> bool:
 		"video": video_settings,
 		"controls": controls_settings
 	}
+	_resolve_world_runtime()
+	data["world"] = (
+		world_runtime.get_save_data()
+		if world_runtime != null
+		else PersistentWorldState.create_empty_save_data()
+	)
 
 	var temporary_path := save_path + ".tmp"
 	var file := FileAccess.open(temporary_path, FileAccess.WRITE)
@@ -197,6 +205,11 @@ func load_game() -> bool:
 		local_multiplayer_manager.restore_settings_data(
 			controls_settings.get("local_multiplayer", {}) as Dictionary
 		)
+	_resolve_world_runtime()
+	if world_runtime != null:
+		world_runtime.restore_save_data(
+			data.get("world", {}) as Dictionary
+		)
 	is_loading = false
 	load_completed.emit(data.duplicate(true))
 	return true
@@ -225,6 +238,7 @@ func _initialize() -> void:
 	_resolve_video_settings_manager()
 	_resolve_input_manager()
 	_resolve_local_multiplayer_manager()
+	_resolve_world_runtime()
 	if progression_manager != null:
 		var progression_callback := Callable(self, "_on_progression_changed")
 		if not progression_manager.experience_changed.is_connected(
@@ -276,6 +290,10 @@ func _initialize() -> void:
 			local_multiplayer_manager.multiplayer_controls_changed.connect(
 				multiplayer_callback
 			)
+	if world_runtime != null:
+		var world_callback := Callable(self, "_on_world_state_changed")
+		if not world_runtime.exploration_changed.is_connected(world_callback):
+			world_runtime.exploration_changed.connect(world_callback)
 
 	if auto_load and _auto_persistence_enabled():
 		load_game()
@@ -316,6 +334,12 @@ func _resolve_local_multiplayer_manager() -> void:
 			"local_multiplayer_manager"
 		) as LocalMultiplayerManager
 
+func _resolve_world_runtime() -> void:
+	if world_runtime == null:
+		world_runtime = get_tree().get_first_node_in_group(
+			"world_runtime"
+		) as WorldRuntime
+
 func _on_progression_changed(_value: int, _secondary_value: int = 0) -> void:
 	if autosave_progression and _auto_persistence_enabled():
 		request_save()
@@ -341,6 +365,10 @@ func _on_video_settings_changed(_settings: Dictionary) -> void:
 		request_save()
 
 func _on_controls_changed(_settings: Dictionary) -> void:
+	if _auto_persistence_enabled():
+		request_save()
+
+func _on_world_state_changed(_state: WorldExplorationState) -> void:
 	if _auto_persistence_enabled():
 		request_save()
 

@@ -4,8 +4,9 @@ class_name BiomeMapGenerator
 signal biome_map_generated(cells: Array[BiomeCell])
 
 @export_range(1, 12, 1) var map_width: int = 5
-@export_range(1, 12, 1) var map_height: int = 1
+@export_range(1, 12, 1) var map_height: int = 5
 @export var cell_size: Vector2i = Vector2i(200, 200)
+@export_range(0.0, 1.0, 0.05) var extra_edge_chance: float = 0.38
 @export var starting_biome_id: StringName = &"infected_plains"
 @export var default_biome_order: Array[StringName] = [
 	&"infected_plains",
@@ -18,6 +19,7 @@ signal biome_map_generated(cells: Array[BiomeCell])
 var border_generator := BorderGenerator.new()
 var passage_generator := BiomePassageGenerator.new()
 var last_cells: Array[BiomeCell] = []
+var last_graph: WorldGraph
 
 func _ready() -> void:
 	add_to_group("biome_map_generator")
@@ -43,9 +45,12 @@ func generate_map(
 	var index := 0
 	for y in range(height):
 		for x in range(width):
-			var biome_id := ordered_biomes[index % ordered_biomes.size()]
-			if index == 0 and available_biome_ids.has(starting_biome_id):
-				biome_id = starting_biome_id
+			var biome_id := _resolve_biome_for_grid(
+				Vector2i(x, y),
+				width,
+				height,
+				ordered_biomes
+			)
 			var cell := BiomeCell.new()
 			cell.configure(
 				StringName("biome_%d_%d" % [x, y]),
@@ -57,8 +62,10 @@ func generate_map(
 			cells.append(cell)
 			index += 1
 
-	border_generator.configure_borders(cells)
+	_configure_connected_topology(cells, seed_value, width, height, context)
 	passage_generator.generate_passages(cells, seed_value)
+	last_graph = WorldGraph.new()
+	last_graph.configure_from_biome_cells(cells, seed_value)
 	last_cells = cells
 	biome_map_generated.emit(cells)
 	return cells
@@ -78,6 +85,9 @@ func get_map_signature(cells: Array[BiomeCell] = []) -> String:
 	parts.sort()
 	return "\n".join(parts)
 
+func get_world_graph() -> WorldGraph:
+	return last_graph
+
 func _resolve_biome_order(
 	available_biome_ids: Array[StringName],
 	seed_value: int,
@@ -89,8 +99,9 @@ func _resolve_biome_order(
 		ordered.append(starting_biome_id)
 	if not preserve_sequence:
 		ordered = _shuffled_advanced_order(ordered, seed_value)
+	var base_order := ordered.duplicate()
 	while ordered.size() < required_count:
-		ordered.append(ordered[(ordered.size() - 1) % maxi(ordered.size(), 1)])
+		ordered.append(base_order[ordered.size() % maxi(base_order.size(), 1)])
 	return ordered
 
 func _default_order_from_available(
@@ -141,6 +152,149 @@ func _derive_cell_seed(
 		String(biome_id)
 	])
 	return maxi(absi(raw), 1)
+
+func _resolve_biome_for_grid(
+	grid_position: Vector2i,
+	width: int,
+	height: int,
+	ordered_biomes: Array[StringName]
+) -> StringName:
+	var cluster_order := _unique_biome_order(ordered_biomes)
+	if cluster_order.is_empty():
+		return starting_biome_id
+	if grid_position == Vector2i.ZERO and cluster_order.has(starting_biome_id):
+		return starting_biome_id
+	var max_distance := maxi(width + height - 2, 1)
+	var distance := grid_position.x + grid_position.y
+	var ratio := float(distance) / float(max_distance)
+	var index := clampi(
+		floori(ratio * float(cluster_order.size())),
+		0,
+		cluster_order.size() - 1
+	)
+	return cluster_order[index]
+
+func _unique_biome_order(source: Array[StringName]) -> Array[StringName]:
+	var result: Array[StringName] = []
+	for biome_id in source:
+		if not result.has(biome_id):
+			result.append(biome_id)
+	return result
+
+func _configure_connected_topology(
+	cells: Array[BiomeCell],
+	seed_value: int,
+	width: int,
+	height: int,
+	context: Dictionary
+) -> void:
+	var cells_by_grid := {}
+	for cell in cells:
+		cells_by_grid[cell.grid] = cell
+	var candidate_edges := _build_candidate_edges(cells_by_grid, width, height)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = maxi(absi(hash("%d:world-graph-topology" % seed_value)), 1)
+	var selected_edges := _build_spanning_tree_edges(cells, candidate_edges, rng)
+	var extra_chance := clampf(
+		float(context.get("extra_edge_chance", extra_edge_chance)),
+		0.0,
+		1.0
+	)
+	for edge in candidate_edges:
+		var key := _edge_key(edge)
+		if selected_edges.has(key):
+			continue
+		if rng.randf() <= extra_chance:
+			selected_edges[key] = edge
+	for edge in candidate_edges:
+		if selected_edges.has(_edge_key(edge)):
+			_connect_edge(edge)
+		else:
+			_block_edge(edge)
+
+func _build_candidate_edges(
+	cells_by_grid: Dictionary,
+	width: int,
+	height: int
+) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for y in range(height):
+		for x in range(width):
+			var cell := cells_by_grid.get(Vector2i(x, y), null) as BiomeCell
+			if cell == null:
+				continue
+			var east := cells_by_grid.get(Vector2i(x + 1, y), null) as BiomeCell
+			if east != null:
+				result.append({"from": cell, "to": east, "side": &"east"})
+			var south := cells_by_grid.get(Vector2i(x, y + 1), null) as BiomeCell
+			if south != null:
+				result.append({"from": cell, "to": south, "side": &"south"})
+	return result
+
+func _build_spanning_tree_edges(
+	cells: Array[BiomeCell],
+	candidate_edges: Array[Dictionary],
+	rng: RandomNumberGenerator
+) -> Dictionary:
+	var selected := {}
+	if cells.is_empty():
+		return selected
+	var visited := {}
+	var start := get_starting_cell(cells)
+	if start == null:
+		start = cells.front()
+	visited[start.id] = true
+	var frontier := _frontier_edges(candidate_edges, visited)
+	while visited.size() < cells.size() and not frontier.is_empty():
+		var index := rng.randi_range(0, frontier.size() - 1)
+		var edge := frontier[index]
+		frontier.remove_at(index)
+		var from_cell := edge["from"] as BiomeCell
+		var to_cell := edge["to"] as BiomeCell
+		var from_visited := visited.has(from_cell.id)
+		var to_visited := visited.has(to_cell.id)
+		if from_visited and to_visited:
+			continue
+		selected[_edge_key(edge)] = edge
+		visited[(to_cell.id if from_visited else from_cell.id)] = true
+		frontier = _frontier_edges(candidate_edges, visited)
+	return selected
+
+func _frontier_edges(
+	candidate_edges: Array[Dictionary],
+	visited: Dictionary
+) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for edge in candidate_edges:
+		var from_cell := edge["from"] as BiomeCell
+		var to_cell := edge["to"] as BiomeCell
+		if visited.has(from_cell.id) != visited.has(to_cell.id):
+			result.append(edge)
+	return result
+
+func _connect_edge(edge: Dictionary) -> void:
+	var from_cell := edge["from"] as BiomeCell
+	var to_cell := edge["to"] as BiomeCell
+	var side := StringName(edge["side"])
+	from_cell.set_neighbor(side, to_cell)
+	to_cell.set_neighbor(BorderGenerator.get_opposite_side(side), from_cell)
+
+func _block_edge(edge: Dictionary) -> void:
+	var from_cell := edge["from"] as BiomeCell
+	var to_cell := edge["to"] as BiomeCell
+	var side := StringName(edge["side"])
+	from_cell.set_border(side, BiomeCell.BorderType.BLOCKED)
+	to_cell.set_border(
+		BorderGenerator.get_opposite_side(side),
+		BiomeCell.BorderType.BLOCKED
+	)
+
+func _edge_key(edge: Dictionary) -> String:
+	var from_cell := edge["from"] as BiomeCell
+	var to_cell := edge["to"] as BiomeCell
+	var ids := [String(from_cell.id), String(to_cell.id)]
+	ids.sort()
+	return "%s:%s" % [ids[0], ids[1]]
 
 func _context_has_explicit_seed(context: Dictionary) -> bool:
 	return (

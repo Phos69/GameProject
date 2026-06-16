@@ -18,7 +18,7 @@ Un action sandbox locale dove 1-4 giocatori affrontano arene, dungeon e difese a
 - 1-4 player locali implementati come prototipo minimo.
 - Player 1 e sempre presente.
 - Player 2-4 possono entrare/uscire durante la scena.
-- La zombie survival ora passa da una selezione personaggio prima della run.
+- La zombie survival ora passa da una selezione personaggio per slot player prima della run.
 - Ogni player avra vita, arma e munizioni proprie.
 - XP e denaro sono per default condivisi dal party per semplificare il multiplayer locale.
 - Ogni player usa un colore diverso per restare leggibile nella camera condivisa.
@@ -31,6 +31,8 @@ variazioni visuali senza modificare il controller.
 
 - Movimento fluido con tastiera o joypad.
 - Movimento pseudo-isometrico: input di movimento convertito su assi diagonali del playground.
+- Ogni player puo eseguire un dodge/roll: `Shift`/`Ctrl` su tastiera player 1 o `B` sul joypad dello slot.
+- Il roll concede una breve invulnerabilita, mette in cooldown l'azione, sospende il fuoco durante la schivata e puo attraversare piccoli gap solo se traiettoria e landing sono valide.
 - Camera condivisa che segue il gruppo player e allarga leggermente lo zoom quando i player si separano.
 - Il mapping prototipo dei controller e deterministico: controller 1/player 1, controller 2/player 2, controller 3/player 3, controller 4/player 4.
 
@@ -292,7 +294,7 @@ dal tab Audio della pagina Settings e persistiti.
 
 L'HUD aggiunge `LOW`, `RELOAD` e `FALLBACK` allo stato ammo e mostra per 1,75 secondi la quantita di ammo condivisa raccolta.
 
-D-pad/stick cambiano focus e joypad `A` conferma da qualunque controller. Il tab Video contiene fullscreen, borderless, risoluzione, VSync, limite framerate e opzioni visual/accessibilita. Il tab Controls permette di riassegnare movimento, mira, fire, reload, super, interact, pausa, join e leave per joypad. Mix avanzato e asset audio definitivi restano futuri.
+D-pad/stick cambiano focus e joypad `A` conferma da qualunque controller. `M` o joypad `Back/Select/View` apre la mappa dei territori esplorati durante la survival. Il tab Video contiene fullscreen, borderless, risoluzione, VSync, limite framerate e opzioni visual/accessibilita. Il tab Controls permette di riassegnare movimento, mira, fire, reload, super, interact, dodge, world map, pausa, join e leave per joypad. Mix avanzato e asset audio definitivi restano futuri.
 
 ## RPG Mode
 
@@ -308,13 +310,18 @@ centralizzato:
 - `Domatrice` / `Nina Bullone`: fionda magnetica e companion Briciola persistente.
 - `Licantropo` / `Rocco Lunastorta`: artigli melee, finisher su bersagli feriti e trasformazione Notte Bestiale.
 
-Il menu mostra una card per ogni profilo con nome proprio, classe, arma base,
-statistiche iniziali, passiva, super e difficolta. La scelta e passata alla
-survival come `character_id` e applicata ai player attivi tramite
-`RpgPlayerComponent`. I profili sono risorse `RpgCharacterData` in
-`game/rpg/characters/`, lette da `RpgCharacterRegistry`. Il roster esteso include tre classi avanzate aggiunte come risorse data-driven senza sostituire i quattro starter. Il `display_name` resta la classe per compatibilita, mentre `hero_name` alimenta Character Select e HUD nella forma `Mira Vento / Ranger · Arco`.
+Il menu mostra una griglia di icone per i profili selezionabili e quattro slot
+player con portrait, nome proprio, classe, arma base, statistiche iniziali,
+passiva, super e difficolta del personaggio scelto. Le scelte sono passate alla
+survival come `character_ids_by_slot`, con `character_id` come fallback legacy,
+e applicate ai player attivi tramite `RpgPlayerComponent`. I profili sono
+risorse `RpgCharacterData` in `game/rpg/characters/`, lette da
+`RpgCharacterRegistry`. Il roster esteso include tre classi avanzate aggiunte
+come risorse data-driven senza sostituire i quattro starter. Il `display_name`
+resta la classe per compatibilita, mentre `hero_name` alimenta Character Select
+e HUD nella forma `Mira Vento / Ranger · Arco`.
 
-I campi artistici opzionali dei profili (`portrait_full_path`, `portrait_hud_path`, `gameplay_palette_id`, `sprite_sheet_path`, `weapon_sprite_path`, `passive_icon_path`, `super_icon_path`, `animation_profile_id` e palette primaria/secondaria/accent) rendono data-driven la sostituzione degli asset definitivi. Il prototipo usa placeholder procedurali: cappuccio e arco verde/oro per Mira, giacca corta e pistol flash giallo/arancio per Dante, corpo largo e ascia rossa per Bruna, mantello e lama azzurro/bianca per Kael. La checklist manuale e in `docs/rpg_character_visual_checklist.md`.
+I campi artistici opzionali dei profili (`portrait_full_path`, `portrait_hud_path`, `gameplay_palette_id`, `sprite_sheet_path`, `weapon_sprite_path`, `passive_icon_path`, `super_icon_path`, `animation_profile_id` e palette primaria/secondaria/accent) rendono data-driven la sostituzione degli asset definitivi. Mira, Bruna, Nina e Rocco usano portrait PNG nel Character Select; Dante, Kael ed Elio restano su placeholder SVG/procedurali finche non arriveranno i PNG definitivi. La checklist manuale e in `docs/rpg_character_visual_checklist.md`.
 
 Statistiche attive:
 
@@ -437,14 +444,16 @@ selezione dal menu. I profili attuali sono:
 
 Il revamp zombie e completo come prima versione giocabile:
 
-- a inizio run viene generata una mappa globale seed-based con celle bioma
+- a inizio run viene generata una megamappa globale seed-based con territori
   `200x200`;
 - lo stesso seed ricrea biomi, confini, passaggi, strade, ostacoli, casse e
   fall zone;
 - ogni run parte dalla `Pianura Infetta`, il bioma iniziale semplice;
-- il party puo attraversare in sequenza Pianura, Tossico, Infuocato, Neve e Palude;
-- ogni area ha almeno un confine attraversabile o di ritorno e un confine fisicamente bloccato;
-- il cambio area aggiorna palette, terreno, ostacoli, casse, hazard, HUD e wave successive;
+- la topologia e un grafo connesso generato con spanning tree ed edge extra, quindi tutte le regioni sono raggiungibili e possono esistere loop;
+- il party attraversa passaggi fisici aperti tra territori confinanti, senza teletrasporto nel flusso standard;
+- ogni area ha passaggi fisici solo sui lati collegati; i lati esterni senza vicino sono fall boundary leggibili;
+- il cambio regione aggiorna palette, terreno, ostacoli, casse, hazard, HUD, mappa esplorazione e wave successive;
+- la mappa consultabile mostra solo territori unknown/discovered/visited/cleared e la posizione corrente del party;
 - le ondate leggono il bioma corrente tramite `WaveDirector`;
 - lo spawn reale degli zombie viene richiesto a `ZombieSpawner` sui bordi della camera;
 - i vecchi punti arena restano fallback e supporto visuale per i gate.
@@ -461,6 +470,7 @@ Identita dei biomi:
   influenzano movimento e combattimento invece di restare solo decorazione;
 - i lati collegati tra biomi hanno muri o barriere con almeno un passaggio
   raggiungibile; i lati senza vicino diventano fall zone;
+- tutto il `200x200` viene classificato come walkable, obstacle, hazard, border, void o fall zone;
 - casse e spawn vengono validati contro ostacoli e hazard.
 
 Zombie tematici:
@@ -570,7 +580,7 @@ Feedback visuali implementati:
 - P1-P4 usano circle, triangle, square e diamond oltre al colore;
 - pickup e crate usano icone e silhouette diverse;
 - high contrast rende bianchi bordi HUD, marker e countdown principali;
-- le opzioni sono persistite nel save v5 insieme a video e controlli joypad.
+- le opzioni sono persistite nel save v6 insieme a video, controlli joypad e stato mondo.
 
 ## Tower defense
 

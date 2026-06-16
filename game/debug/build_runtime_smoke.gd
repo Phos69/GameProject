@@ -76,8 +76,18 @@ func _run() -> void:
 	await _press_joypad_button(JOY_BUTTON_A)
 	await get_tree().process_frame
 	_expect(
+		not main_menu.character_start_button.disabled,
+		"joypad A assigns the focused character"
+	)
+	_expect(
+		get_viewport().gui_get_focus_owner() == main_menu.character_start_button,
+		"Start Survival receives focus after character assignment"
+	)
+	await _press_joypad_button(JOY_BUTTON_A)
+	await get_tree().process_frame
+	_expect(
 		game_mode_manager.active_mode_id == GameConstants.MODE_SURVIVAL,
-		"joypad A confirms the focused character"
+		"joypad A confirms the selected roster"
 	)
 	_expect(survival_mode.is_running, "survival starts in the release build")
 	_expect(not main_menu.is_open(), "menu hides after joypad confirmation")

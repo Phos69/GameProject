@@ -116,6 +116,6 @@
     }
   ],
   "next_recommended_iteration": "ranger_quality_pass",
-  "asset_format": "svg_text",
-  "binary_free": true
+  "asset_format": "svg_text+png_portrait",
+  "binary_free": false
 }

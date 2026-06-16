@@ -14,6 +14,7 @@ signal active_biome_applied(biome_id: StringName)
 @export var hazard_system_path: NodePath = NodePath("HazardSystem")
 @export var transition_system_path: NodePath = NodePath("TransitionSystem")
 @export var random_encounter_system_path: NodePath = NodePath("RandomEncounterSystem")
+@export var world_runtime_path: NodePath = NodePath("WorldRuntime")
 
 var biome_manager
 var wave_director
@@ -24,7 +25,9 @@ var obstacle_system
 var hazard_system
 var transition_system
 var random_encounter_system
+var world_runtime: WorldRuntime
 var is_active: bool = false
+var last_applied_region_id: StringName = &""
 
 func _ready() -> void:
 	add_to_group("zombie_mode_controller")
@@ -35,6 +38,8 @@ func start_run(context: Dictionary = {}) -> void:
 	_resolve_components()
 	if biome_manager != null:
 		biome_manager.start_run(context)
+	if world_runtime != null and biome_manager != null:
+		world_runtime.start_run(biome_manager.active_world_data, biome_manager)
 	var biome = get_current_biome()
 	is_active = true
 	if wave_director != null and wave_director.has_method("start_run"):
@@ -61,9 +66,12 @@ func stop_run() -> void:
 		transition_system.stop_run()
 	if random_encounter_system != null and random_encounter_system.has_method("cleanup_encounter"):
 		random_encounter_system.cleanup_encounter()
+	if world_runtime != null:
+		world_runtime.stop_run()
 	if wave_director != null and wave_director.has_method("stop_run"):
 		wave_director.stop_run()
 	is_active = false
+	last_applied_region_id = &""
 	zombie_run_stopped.emit()
 
 func get_current_biome():
@@ -99,6 +107,10 @@ func _resolve_components() -> void:
 		random_encounter_system_path,
 		&"random_encounter_system"
 	)
+	world_runtime = _resolve_node(
+		world_runtime_path,
+		&"world_runtime"
+	) as WorldRuntime
 	_connect_biome_manager()
 	_connect_wave_manager()
 
@@ -116,6 +128,9 @@ func _connect_biome_manager() -> void:
 	var callback := Callable(self, "_on_current_biome_changed")
 	if not biome_manager.current_biome_changed.is_connected(callback):
 		biome_manager.current_biome_changed.connect(callback)
+	var region_callback := Callable(self, "_on_current_region_changed")
+	if not biome_manager.current_region_changed.is_connected(region_callback):
+		biome_manager.current_region_changed.connect(region_callback)
 
 func _on_wave_started(wave_index: int) -> void:
 	if not is_active or random_encounter_system == null:
@@ -132,9 +147,26 @@ func _on_current_biome_changed(
 	if is_active:
 		_apply_active_biome(get_current_biome())
 
+func _on_current_region_changed(
+	region_id: StringName,
+	_biome_id: StringName
+) -> void:
+	if world_runtime != null:
+		world_runtime.set_current_region(region_id)
+	if is_active:
+		_apply_active_biome(get_current_biome())
+
 func _apply_active_biome(biome: BiomeDefinition) -> void:
 	if biome == null:
 		return
+	var region_id: StringName = (
+		biome_manager.get_current_region_id()
+		if biome_manager != null
+		else &""
+	)
+	if not region_id.is_empty() and region_id == last_applied_region_id:
+		return
+	last_applied_region_id = region_id
 	if terrain_generator != null:
 		terrain_generator.start_run(biome)
 	if obstacle_system != null:

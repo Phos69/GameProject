@@ -22,23 +22,44 @@ func validate_layout(
 		layout,
 		visited
 	)
+	var obstructed_passages := _find_obstructed_passages(cell, layout)
 	var crate_failures := _find_unreachable_crates(layout, visited)
 	var placement_failures := _find_invalid_placements(layout)
 	var fall_failures := _find_invalid_fall_boundaries(cell, layout)
+	var classification_report := layout.get_classification_report()
 	var is_valid := (
 		not visited.is_empty()
 		and passage_failures.is_empty()
+		and obstructed_passages.is_empty()
 		and crate_failures.is_empty()
 		and placement_failures.is_empty()
 		and fall_failures.is_empty()
+		and bool(classification_report.get("is_complete", false))
 	)
 	return {
 		"is_valid": is_valid,
 		"reachable_cells": visited.size(),
 		"unreachable_passages": passage_failures,
+		"obstructed_passages": obstructed_passages,
 		"unreachable_crates": crate_failures,
 		"placement_errors": placement_failures,
-		"fall_boundary_errors": fall_failures
+		"fall_boundary_errors": fall_failures,
+		"terrain_classification": classification_report
+	}
+
+func validate_world_graph(graph: WorldGraph) -> Dictionary:
+	if graph == null:
+		return {"is_valid": false, "reason": "missing graph"}
+	var passage_report := graph.validate_physical_passages()
+	var is_valid := (
+		graph.is_graph_connected()
+		and bool(passage_report.get("is_valid", false))
+	)
+	return {
+		"is_valid": is_valid,
+		"is_connected": graph.is_graph_connected(),
+		"unreachable_regions": graph.get_unreachable_region_ids(),
+		"passages": passage_report
 	}
 
 func _build_blocked_lookup(
@@ -110,6 +131,21 @@ func _find_unreachable_crates(
 	for crate_cell in layout.crate_cells:
 		if not visited.has(_clamp_cell(crate_cell, layout.zone_size)):
 			failures.append(crate_cell)
+	return failures
+
+func _find_obstructed_passages(
+	cell: BiomeCell,
+	layout: BiomeEnvironmentLayout
+) -> Array[StringName]:
+	var failures: Array[StringName] = []
+	for passage in cell.passages:
+		var passage_rect := passage.get_local_rect(layout.zone_size)
+		if (
+			_rect_intersects_any(passage_rect, layout.obstacle_rects)
+			or _rect_intersects_any(passage_rect, layout.fall_zone_rects)
+			or _rect_intersects_blocking_hazard(passage_rect, layout)
+		):
+			failures.append(passage.side)
 	return failures
 
 func _find_invalid_placements(layout: BiomeEnvironmentLayout) -> PackedStringArray:
@@ -193,6 +229,28 @@ func _clip_rect(rect: Rect2i, zone_size: Vector2i) -> Rect2i:
 func _cell_inside_any_rect(cell: Vector2i, rects: Array[Rect2i]) -> bool:
 	for rect in rects:
 		if rect.has_point(cell):
+			return true
+	return false
+
+func _rect_intersects_any(rect: Rect2i, rects: Array[Rect2i]) -> bool:
+	for other in rects:
+		if rect.intersects(other):
+			return true
+	return false
+
+func _rect_intersects_blocking_hazard(
+	rect: Rect2i,
+	layout: BiomeEnvironmentLayout
+) -> bool:
+	for index in range(layout.hazard_rects.size()):
+		if not rect.intersects(layout.hazard_rects[index]):
+			continue
+		var hazard_id := (
+			layout.hazard_ids[index]
+			if index < layout.hazard_ids.size()
+			else &""
+		)
+		if hazard_id == &"fall_zone" or hazard_id == &"deep_water":
 			return true
 	return false
 

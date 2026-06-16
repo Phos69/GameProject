@@ -33,6 +33,16 @@ var hazard_rects: Array[Rect2i] = []
 var crate_cells: Array[Vector2i] = []
 var player_spawn_cell: Vector2i = Vector2i(100, 100)
 var validation_report: Dictionary = {}
+var terrain_classification_counts: Dictionary = {}
+var terrain_classification_total: int = 0
+var terrain_classification_complete: bool = false
+
+const TERRAIN_WALKABLE: StringName = &"walkable"
+const TERRAIN_OBSTACLE: StringName = &"obstacle"
+const TERRAIN_HAZARD: StringName = &"hazard"
+const TERRAIN_BORDER: StringName = &"border"
+const TERRAIN_VOID: StringName = &"void"
+const TERRAIN_FALL_ZONE: StringName = &"fall_zone"
 
 func has_generated_map_data() -> bool:
 	return (
@@ -77,3 +87,80 @@ func get_generation_signature() -> String:
 		fall_zone_rects.size(),
 		hazard_rects.size()
 	]
+
+func rebuild_terrain_classification(cell: BiomeCell = null) -> void:
+	terrain_classification_counts = {
+		TERRAIN_WALKABLE: 0,
+		TERRAIN_OBSTACLE: 0,
+		TERRAIN_HAZARD: 0,
+		TERRAIN_BORDER: 0,
+		TERRAIN_VOID: 0,
+		TERRAIN_FALL_ZONE: 0
+	}
+	terrain_classification_total = 0
+	for y in range(zone_size.y):
+		for x in range(zone_size.x):
+			var terrain_class := get_terrain_class_at_cell(Vector2i(x, y), cell)
+			terrain_classification_counts[terrain_class] = (
+				int(terrain_classification_counts.get(terrain_class, 0)) + 1
+			)
+			terrain_classification_total += 1
+	terrain_classification_complete = (
+		terrain_classification_total == zone_size.x * zone_size.y
+	)
+
+func get_terrain_class_at_cell(
+	cell: Vector2i,
+	biome_cell: BiomeCell = null
+) -> StringName:
+	if (
+		cell.x < 0
+		or cell.y < 0
+		or cell.x >= zone_size.x
+		or cell.y >= zone_size.y
+	):
+		return TERRAIN_VOID
+	if _cell_inside_any_rect(cell, fall_zone_rects):
+		return TERRAIN_FALL_ZONE
+	if _cell_inside_any_rect(cell, obstacle_rects):
+		return TERRAIN_OBSTACLE
+	if _cell_inside_any_rect(cell, hazard_rects):
+		return TERRAIN_HAZARD
+	if _cell_inside_any_rect(cell, passage_rects):
+		return TERRAIN_WALKABLE
+	if _is_border_cell(cell, biome_cell):
+		return TERRAIN_BORDER
+	return TERRAIN_WALKABLE
+
+func get_classification_report() -> Dictionary:
+	return {
+		"is_complete": terrain_classification_complete,
+		"total": terrain_classification_total,
+		"expected_total": zone_size.x * zone_size.y,
+		"counts": terrain_classification_counts.duplicate(true)
+	}
+
+func _is_border_cell(cell: Vector2i, biome_cell: BiomeCell = null) -> bool:
+	if cell.y == 0:
+		return _side_is_non_fall_border(&"north", biome_cell)
+	if cell.y == zone_size.y - 1:
+		return _side_is_non_fall_border(&"south", biome_cell)
+	if cell.x == 0:
+		return _side_is_non_fall_border(&"west", biome_cell)
+	if cell.x == zone_size.x - 1:
+		return _side_is_non_fall_border(&"east", biome_cell)
+	return false
+
+func _side_is_non_fall_border(
+	side: StringName,
+	biome_cell: BiomeCell = null
+) -> bool:
+	if biome_cell == null:
+		return true
+	return biome_cell.get_border(side) != BiomeCell.BorderType.FALL
+
+func _cell_inside_any_rect(cell: Vector2i, rects: Array[Rect2i]) -> bool:
+	for rect in rects:
+		if rect.has_point(cell):
+			return true
+	return false

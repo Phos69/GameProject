@@ -251,7 +251,11 @@ func _add_connected_border_walls(
 	cell: BiomeCell
 ) -> void:
 	for side in BiomeCell.SIDES:
-		if cell.get_border(side) != BiomeCell.BorderType.CONNECTED:
+		var border_type := cell.get_border(side)
+		if border_type == BiomeCell.BorderType.FALL:
+			continue
+		if border_type != BiomeCell.BorderType.CONNECTED:
+			_add_border_segment(layout, side, 0, layout.zone_size.y)
 			continue
 		var passages := cell.get_passages_for_side(side)
 		if passages.is_empty():

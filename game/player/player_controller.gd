@@ -20,6 +20,7 @@ const STARTER_WEAPON: WeaponData = preload("res://game/weapons/starter_pistol.tr
 @onready var aim_line := $AimLine as Line2D
 @onready var weapon_system = $WeaponSystem
 @onready var rpg_component := $RpgPlayerComponent as RpgPlayerComponent
+@onready var dodge_component := $PlayerDodgeComponent as PlayerDodgeComponent
 @onready var health_component := $HealthComponent as HealthComponent
 @onready var revive_indicator := $ReviveIndicator as ReviveIndicatorVisual
 
@@ -75,6 +76,17 @@ func _physics_process(delta: float) -> void:
 			return
 
 	var move_input: Vector2 = input_manager.get_player_move_vector(player_slot)
+	if dodge_component != null:
+		dodge_component.process_cooldown(delta)
+	if dodge_component != null and dodge_component.is_dodging:
+		dodge_component.physics_process_dodge(delta)
+		visual.set_motion(velocity, move_speed)
+		return
+	if _handle_dodge_input(move_input):
+		if dodge_component != null:
+			dodge_component.physics_process_dodge(delta)
+		visual.set_motion(velocity, move_speed)
+		return
 	var desired_velocity: Vector2 = _movement_to_isometric(move_input) * move_speed
 
 	if desired_velocity.length_squared() > 0.01:
@@ -86,6 +98,18 @@ func _physics_process(delta: float) -> void:
 	_update_facing(move_input)
 	visual.set_motion(velocity, move_speed)
 	_handle_weapon_input()
+
+func _handle_dodge_input(move_input: Vector2) -> bool:
+	if dodge_component == null or input_manager == null:
+		return false
+	if not input_manager.is_player_dodge_just_pressed(player_slot):
+		return false
+	var dodge_direction := facing_direction
+	if move_input.length() > 0.20:
+		var move_direction := _movement_to_isometric(move_input)
+		if move_direction.length_squared() > 0.01:
+			dodge_direction = move_direction.normalized()
+	return dodge_component.try_start(dodge_direction)
 
 func _movement_to_isometric(input_vector: Vector2) -> Vector2:
 	if input_vector.length_squared() <= 0.01:
@@ -136,6 +160,8 @@ func prepare_for_run(max_health_bonus: int = 0) -> void:
 	current_run_health_bonus = maxi(max_health_bonus, 0)
 	_apply_rpg_runtime_stats(true)
 	velocity = Vector2.ZERO
+	if dodge_component != null:
+		dodge_component.reset_runtime()
 	visual.reset_visual()
 	revive_indicator.set_downed(false)
 	aim_line.show()

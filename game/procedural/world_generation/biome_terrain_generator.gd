@@ -33,9 +33,11 @@ func generate_layout_for_cell(
 
 	obstacle_layout_generator.populate_layout(layout, cell, biome)
 	fall_boundary_generator.apply_fall_boundaries(cell, layout)
+	layout.rebuild_terrain_classification(cell)
 	var report := validation_system.validate_layout(cell, layout)
 	if not bool(report.get("is_valid", false)):
 		obstacle_layout_generator.repair_layout(layout)
+		layout.rebuild_terrain_classification(cell)
 		report = validation_system.validate_layout(cell, layout)
 
 	layout.validation_report = report

@@ -10,7 +10,8 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 2. `GameModeManager` entra nello stato `menu` senza avviare gameplay.
 3. `SaveManager` carica progressione party, unlock e ultima modalita da JSON.
 4. `MainMenu` seleziona una modalita registrata; per survival apre prima
-   `Character Select` e passa `character_id` nel context.
+   `Character Select` e passa `character_ids_by_slot` nel context, con
+   `character_id` come fallback legacy.
 5. `SettingsPanel` e condiviso da main menu e pausa, con tab Audio, Video e
    Controls.
 6. `InputManager` registra azioni tastiera/joypad e applica i binding joypad
@@ -28,53 +29,55 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 16. `DropPickup` delega l'applicazione della ricompensa a `DropSystem`.
 17. `GameModeManager` avvia `SurvivalMode`, che applica il profilo RPG scelto e seleziona un profilo arena tramite `SurvivalArenaManager`.
 18. `ZombieModeController` avvia i componenti revamp zombie e forza il bioma iniziale tramite `BiomeManager`.
-19. `BiomeManager` genera una mappa seed-based tramite `BiomeWorldGenerator`, con celle bioma `200x200`, passaggi condivisi, fall boundary e layout validati.
-20. `BiomeTransitionSystem` crea i confini attraversabili e richiede al controller di applicare il nuovo bioma al party.
-21. `SurvivalArenaManager` configura playground, player, crate, gate e fallback spawn per lo spawner.
-22. `HazardSystem` genera fall zone e hazard ambientali, aggiorna posizioni sicure, status e modificatori movimento.
-23. `WaveManager` interroga `WaveDirector` per roster/scaling bioma e `ZombieSpawner` per spawn dai bordi camera, poi crea zombie tramite `EnemySystem`.
-24. `SurvivalMode` usa `GameModeManager` e `BossSystem` per creare il boss della quinta ondata.
-25. `WaveManager` conta scorte e boss prima di assegnare la ricompensa.
-26. `DungeonMode` genera un layout da seed, istanzia una `DungeonRoom` alla volta e usa nemici, drop e boss condivisi.
-27. `DungeonRoom` controlla pareti, portale e stato locked/unlocked della stanza corrente.
-28. `TowerDefenseMode` gestisce lifecycle, arena, player e richieste costruzione.
-29. `TowerDefenseWaveController` governa ondate e usa `EnemySystem` per i nemici da percorso.
-30. `TowerDefenseManager` mantiene vita core e crediti, mentre gli slot delegano lo spawn delle torri.
-31. `DefenseTower` seleziona target e inoltra direzione e fuoco a `DefenseTowerVisual`.
-32. `ProgressionManager` prepara i player a ogni nuova run applicando gli unlock persistenti.
-33. `ReviveSystem` coordina prossimita, interact tenuto e progresso per i player downed.
-34. `SurvivalAmmoDirector` osserva l'ammo speciale dei player vivi e genera supply crate configurabili.
-35. `AudioEventRouter` traduce eventi gameplay in cue richiesti ad `AudioManager`.
-36. `AudioManager` gestisce bus, fallback, stream opzionali, priorita e volumi.
-37. `VideoSettingsManager` applica fullscreen, borderless, risoluzione, VSync
+19. `BiomeManager` genera una megamappa seed-based tramite `BiomeWorldGenerator`, con territori `200x200`, grafo connesso, passaggi condivisi, fall boundary, layout validati e regione corrente.
+20. `WorldRuntime` mantiene grafo, stato esplorazione, regione corrente e stato persistente sovrapposto al layout rigenerato dal seed.
+21. `BiomeTransitionSystem` crea passaggi fisici aperti tra regioni confinanti e aggiorna la regione corrente senza teletrasporto nel flusso standard.
+22. `SurvivalArenaManager` configura playground, player, crate, gate e fallback spawn per lo spawner.
+23. `HazardSystem` genera fall zone e hazard ambientali, aggiorna posizioni sicure, status e modificatori movimento.
+24. `WaveManager` interroga `WaveDirector` per roster/scaling bioma e `ZombieSpawner` per spawn dai bordi camera, poi crea zombie tramite `EnemySystem`.
+25. `SurvivalMode` usa `GameModeManager` e `BossSystem` per creare il boss della quinta ondata.
+26. `WaveManager` conta scorte e boss prima di assegnare la ricompensa.
+27. `DungeonMode` genera un layout da seed, istanzia una `DungeonRoom` alla volta e usa nemici, drop e boss condivisi.
+28. `DungeonRoom` controlla pareti, portale e stato locked/unlocked della stanza corrente.
+29. `TowerDefenseMode` gestisce lifecycle, arena, player e richieste costruzione.
+30. `TowerDefenseWaveController` governa ondate e usa `EnemySystem` per i nemici da percorso.
+31. `TowerDefenseManager` mantiene vita core e crediti, mentre gli slot delegano lo spawn delle torri.
+32. `DefenseTower` seleziona target e inoltra direzione e fuoco a `DefenseTowerVisual`.
+33. `ProgressionManager` prepara i player a ogni nuova run applicando gli unlock persistenti.
+34. `ReviveSystem` coordina prossimita, interact tenuto e progresso per i player downed.
+35. `SurvivalAmmoDirector` osserva l'ammo speciale dei player vivi e genera supply crate configurabili.
+36. `AudioEventRouter` traduce eventi gameplay in cue richiesti ad `AudioManager`.
+37. `AudioManager` gestisce bus, fallback, stream opzionali, priorita e volumi.
+38. `VideoSettingsManager` applica fullscreen, borderless, risoluzione, VSync
    e limite framerate.
-38. `VisualSettingsManager` distribuisce solo impostazioni presentazionali e le persiste nel save.
-39. `IsometricCameraController` segue il gruppo e applica shake solo tramite offset.
-40. `HUDManager` mostra slot, progressione, vita, munizioni, stato modalita e boss.
-41. I componenti visuali ricevono stato e profilo senza possedere logica gameplay.
-42. `BossTelegraphVisual` riceve pattern, direzione e durata senza possedere danno.
-43. `WaveWardenVisual` e `RiftArchitectVisual` ricevono solo stato presentazionale.
-44. `CombatAnnouncement` presenta segnali wave e boss tradotti da `HUDManager`.
-45. `GameplayEffects` ascolta segnali pubblici e genera effetti temporanei.
-46. `RunSessionTracker` misura durata e delta progressione tra start e fine run.
-47. `RunResultsScreen` presenta il risultato e delega retry/menu/cambio.
+39. `VisualSettingsManager` distribuisce solo impostazioni presentazionali e le persiste nel save.
+40. `IsometricCameraController` segue il gruppo e applica shake solo tramite offset.
+41. `HUDManager` mostra slot, progressione, vita, munizioni, stato modalita, boss e mappa esplorazione.
+42. I componenti visuali ricevono stato e profilo senza possedere logica gameplay.
+43. `BossTelegraphVisual` riceve pattern, direzione e durata senza possedere danno.
+44. `WaveWardenVisual` e `RiftArchitectVisual` ricevono solo stato presentazionale.
+45. `CombatAnnouncement` presenta segnali wave e boss tradotti da `HUDManager`.
+46. `GameplayEffects` ascolta segnali pubblici e genera effetti temporanei.
+47. `RunSessionTracker` misura durata e delta progressione tra start e fine run.
+48. `RunResultsScreen` presenta il risultato e delega retry/menu/cambio.
 
 ## Sistemi principali
 
-- `InputManager`: crea e legge azioni per slot player. Ogni slot usa azioni `p{slot}_{azione}`.
+- `InputManager`: crea e legge azioni per slot player e globali. Ogni slot usa azioni `p{slot}_{azione}`, incluso `dodge`; `world_map` e una azione globale.
 - `LocalMultiplayerManager`: mantiene gli slot locali attivi, gestisce join/leave e usa mapping deterministico `device joypad + 1 = player_slot`.
 - `PlayerManager`: spawna/despawna player in base agli slot attivi e tiene il registro degli slot.
-- `PlayerController`: movimento, mira, fire action e colore visuale per slot.
+- `PlayerController`: movimento, mira, fire action, dodge/roll e colore visuale per slot.
+- `PlayerDodgeComponent`: roll con cooldown, invulnerabilita breve, blocco del fuoco durante la schivata e validazione di landing/gap/ostacoli.
 - `ReviveSystem`: progresso cooperativo centralizzato per target downed e reviver vicino.
 - `GameModeManager`: registra, arresta e avvia le modalita.
 - `RunSessionTracker`: traduce i segnali terminali in dati risultato runtime.
 - `RunResultsScreen`: overlay condiviso con focus e azioni di fine run.
-- `MainMenu`: UI iniziale, selezione modalita, `Character Select` survival, continue e ritorno con `Esc`.
+- `MainMenu`: UI iniziale, selezione modalita, `Character Select` survival per slot player, continue e ritorno con `Esc`.
 - `RpgCharacterRegistry`: catalogo centralizzato dei personaggi RPG iniziali.
 - `RpgCharacterData`: risorsa dati per un profilo classe RPG selezionabile, inclusi nome proprio, palette e riferimenti asset opzionali per portrait, sprite, arma e icone.
 - `RpgPlayerComponent`: profilo RPG runtime, statistiche, XP per-run, adrenalina, passive automatiche, companion RPG, super e formule danno del player survival.
 - `RpgSuperResolver`: esecuzione delle super RPG usando `ProjectileSystem`, `HealthSystem` e bersagli damageable condivisi, incluse meteora arcana e trasformazione licantropo.
-- `SaveManager`: persistenza JSON versionata e autosave della progressione.
+- `SaveManager`: persistenza JSON versionata e autosave di progressione, impostazioni e stato mondo/esplorazione.
 - `VisualSettingsManager`: preset, valori visuali, notifica consumer e persistenza.
 - `VideoSettingsManager`: stato finestra, fullscreen, borderless, risoluzione,
   VSync e limite framerate persistenti.
@@ -97,24 +100,31 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `RiftArchitect`: secondo boss con lane sweep, cross burst e visual dedicato.
 - `SurvivalMode`: ciclo survival, condizione di sconfitta e inoltro richieste boss.
 - `ZombieModeController`: coordinatore interno del revamp survival per bioma, terrain, casse, ostacoli e hazard.
-- `BiomeManager`: registro biomi, bioma corrente e selezione iniziale della `Pianura Infetta`.
+- `BiomeManager`: registro biomi, regione/bioma corrente, layout procedurale corrente e selezione iniziale della `Pianura Infetta`.
+- `WorldGraph`: grafo seed-based dei territori, connesso tramite spanning tree ed edge extra, con API per raggiungibilita e connessioni fisiche.
+- `WorldRegion`: dati stabili di un territorio `200x200`, inclusi biome ID, coordinate, origine mondo, vicini, connessioni e layout generato.
+- `WorldRegionConnection`: edge navigazionale tra due regioni confinanti, con lato, direzione opposta, centro/larghezza del passaggio e coordinate globali.
+- `WorldExplorationState`: stato unknown/discovered/visited/cleared per regione e marker della regione corrente.
+- `PersistentWorldState`: payload serializzabile del mondo, seed, regione corrente, posizione party e stato esplorazione.
+- `WorldRuntime`: runtime del grafo persistente; sincronizza `BiomeManager`, exploration state e save/load, con spazio per streaming regioni.
 - `WorldGenerationSeed`: seed globale di run e derivazione deterministica degli stream RNG per mappa, terreno, ostacoli, bordi, loot e spawn.
 - `BiomeWorldGenerator`: orchestratore della pipeline procedurale globale per mappa biomi, layout per cella e debug seed.
-- `BiomeMapGenerator`: costruisce la griglia di `BiomeCell` `200x200`, assegna tipi bioma, coordinate globali, vicini e seed locali.
+- `BiomeMapGenerator`: costruisce la griglia di `BiomeCell` `200x200`, assegna tipi bioma, coordinate globali, vicini, seed locali e grafo connesso con loop.
 - `BorderGenerator`: calcola lati connessi e lati esterni di caduta per ogni cella bioma.
 - `BiomePassageGenerator`: crea passaggi condivisi e allineati tra celle confinanti.
 - `BiomeTerrainGenerator`: genera il layout interno del bioma attivo e collega ostacoli, casse, hazard e report di validazione.
 - `ObstacleLayoutGenerator`: produce strade, corridoi, case grandi, ostacoli secondari e muri sui lati connessi.
 - `FallBoundaryGenerator`: trasforma i lati senza vicino in `fall_zone` data-driven con il contratto di danno ambientale esistente.
-- `MapValidationSystem`: valida con flood-fill spawn, corridoi, passaggi e casse raggiungibili prima dell'uso runtime.
+- `MapValidationSystem`: valida con flood-fill spawn, corridoi, passaggi, casse raggiungibili, grafo connesso, passaggi non ostruiti e classificazione completa del `200x200`.
 - `BiomeMapDebugOverlay`: espone seed corrente, riepilogo celle/passaggi e richieste di rigenerazione per debug.
 - `BiomeDefinition`: risorsa dati con terreno, ostacoli, casse, zombie ammessi, pesi, palette e moltiplicatori.
-- `BiomeTransitionSystem`: gate est/ovest, spostamento party e transizione tra definizioni adiacenti.
-- `BiomeTransitionGate`: area non bloccante e leggibile che richiede il cambio bioma.
-- `BiomeEnvironmentLayout`: placement deterministico di patch terreno, ostacoli fisici, casse e hazard per un bioma.
+- `BiomeTransitionSystem`: passaggi fisici aperti tra regioni confinanti, cambio regione/bioma e fallback legacy di spostamento party solo se esplicitamente abilitato.
+- `BiomeTransitionGate`: area non bloccante e leggibile che rappresenta un'apertura fisica e richiede il cambio regione.
+- `BiomeEnvironmentLayout`: placement deterministico di patch terreno, ostacoli fisici, casse e hazard per un bioma, con classificazione completa del `200x200`.
 - `WaveDirector`: composizione wave e scaling basati sul bioma corrente.
 - `ZombieSpawner`: spawn dai bordi della camera con distanza minima dai player, validazione hazard/ostacoli e fallback arena.
-- `TerrainGenerator`: applica la palette del bioma e genera decorazioni non collidenti dal layout.
+- `TerrainGenerator`: applica la palette del bioma, genera il piano visuale `200x200` e decorazioni non collidenti dal layout.
+- `BiomeRegionGround`: base visuale estesa dell'intero territorio, separata dalle patch decorative puntuali.
 - `ObstacleSystem`: genera e registra `BiomeObstacle` fisici usati anche come spawn blocker.
 - `ResourceCrateSystem`: genera casse ambientali raggiungibili riusando `SupplyCrate` e `DropSystem`.
 - `BiomeFallZone`: `Area2D` fisica e leggibile generata dai dati del bioma.
@@ -149,13 +159,14 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `SettingsPanel`: pannello UI condiviso con tab Audio, Video e Controls.
 - `PauseMenu`: overlay durante le run; usa `SceneTree.paused` e resta attivo
   insieme alla propria UI.
-- `HUDManager`: UI prototipo.
+- `HUDManager`: UI prototipo per HUD gameplay, boss, annunci e mappa esplorazione.
+- `ExplorationMapPanel`: pannello consultabile che disegna grafo, fog/unknown, regioni discovered/visited/cleared, connessioni note e regione corrente.
 - `PlayerVisual`: presentazione procedurale data-driven del player, con silhouette e palette derivate dal profilo RPG.
 - `ZombieVisual`: presentazione animata procedurale degli zombie.
 - `DropPickupVisual` e `SupplyCrateVisual`: icone world-space sostituibili.
 - `BossTelegraphVisual`: warning world-space per pattern aimed, radial e cambio fase.
 - `WaveWardenVisual`: silhouette, animazione e stato visuale delle due fasi del boss.
-- `PlayerHudCard`: scheda HUD riusabile per ogni slot locale.
+- `PlayerHudCard`: scheda HUD riusabile per ogni slot locale, inclusa indicazione minimale del cooldown roll.
 - `RpgHudIcon`: icona procedurale leggera per ritratto classe, passive e super RPG.
 - `BriciolaCompanion`: companion alleato leggero della Domatrice con follow, target acquire, dash attack, recover e frenzy super.
 - `ReviveIndicatorVisual`: anello world-space con colore slot e progresso.
@@ -178,7 +189,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `AudioCueData.optional_stream` e facoltativo; il fallback resta sempre valido.
 - `AudioVoicePool` non supera il limite configurato e preserva cue prioritari.
 - `AudioEventRouter` puo cambiare senza modificare i sistemi gameplay.
-- Master, Music e SFX sono persistiti nel save v5.
+- Master, Music e SFX sono persistiti nel save v6.
 
 ## Contratto impostazioni visuali
 
@@ -200,6 +211,9 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `InputManager` mantiene binding joypad device-agnostic e li applica alle
   azioni `p{slot}_{action}` con il device corretto dello slot.
 - La rimappatura joypad non rimuove i fallback tastiera di player 1.
+- `dodge` e una azione per-slot: tastiera `Shift`/`Ctrl` per player 1 e
+  joypad `B` per lo slot associato.
+- `world_map` e una azione globale: tastiera `M` e joypad `Back/Select/View`.
 - `pause` e una azione globale mappata di default su joypad `Start` e tastiera
   `P`.
 - `LocalMultiplayerManager` serializza separatamente i pulsanti joypad di
@@ -298,9 +312,11 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `F2`, `F3` e `F4` sono fallback debug per attivare/disattivare gli slot 2, 3 e 4 senza controller fisici.
 - Ogni slot possiede anche l'azione `interact`: joypad `A`, con fallback tastiera `E` per player 1.
 - Ogni slot possiede l'azione `super`: joypad `Y`, con fallback tastiera `Q` per player 1.
+- Ogni slot possiede l'azione `dodge`: joypad `B`, con fallback tastiera `Shift`/`Ctrl` per player 1.
+- La mappa esplorazione usa l'azione globale `world_map`: `M` e joypad `Back/Select/View`.
 - `InputManager` garantisce che `ui_accept` includa joypad `A` con device globale, cosi ogni controller puo navigare e confermare il menu.
 - `InputManager` espone la rimappatura joypad di movimento, mira, fire,
-  reload, super, interact e pause.
+  reload, super, interact, dodge, pause e world map.
 - `active_slots_changed` e il segnale autoritativo: i sistemi interessati devono ascoltare questo segnale invece di duplicare lo stato multiplayer.
 
 ## Contratti per modalita
@@ -318,14 +334,30 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 ## Contratto salvataggi
 
 - Il file predefinito e `user://savegame.json`.
-- Il formato v5 contiene progressione, ultima modalita, audio, impostazioni
-  visuali, video e controlli joypad.
+- Il formato v6 contiene progressione, ultima modalita, audio, impostazioni
+  visuali, video, controlli joypad e stato mondo/esplorazione.
 - I save v1-v3 restano caricabili; i campi assenti ricevono default validati.
+- I save v4-v5 restano caricabili e ricevono uno stato mondo vuoto inizializzato dal seed della run successiva.
 - `ProgressionManager` espone dati serializzabili e applica valori validati.
 - XP, denaro e unlock attivano autosave; il cambio modalita aggiorna `last_mode`.
 - Cambi audio e visuali attivano lo stesso autosave differito.
+- Cambi della regione corrente o dello stato esplorazione possono attivare autosave quando l'auto-persistenza e abilitata.
+- `PersistentWorldState` serializza seed, firma mondo, regione corrente, posizione party e snapshot esplorazione senza salvare il layout completo rigenerabile.
 - File assente, root non valida o versione non supportata non modificano lo stato runtime.
 - L'auto-persistenza e disabilitata nei test headless, ma save/load espliciti restano disponibili.
+
+## Contratto megamappa persistente
+
+- `WorldGenerationSeed` resta la sorgente deterministica; il layout fisico viene rigenerato dal seed, non salvato integralmente.
+- `BiomeMapGenerator` produce una griglia di territori `200x200` con grafo connesso: uno spanning tree garantisce raggiungibilita e edge extra aggiungono loop.
+- Ogni `WorldRegionConnection` deve corrispondere a un passaggio fisico aperto su entrambi i lati confinanti.
+- Due regioni adiacenti senza edge navigazionale hanno bordo bloccato; un lato senza regione vicina diventa fall boundary.
+- `BiomeEnvironmentLayout` deve classificare tutto il `200x200` come walkable, obstacle, hazard, border, void o fall zone.
+- `MapValidationSystem` rifiuta grafi non connessi, passaggi ostruiti, passaggi non fisici e classificazione incompleta.
+- `WorldRuntime` mantiene `current_region_id` e marca visited/discovered senza possedere regole combat.
+- `ExplorationMapPanel` mostra solo regioni note; unknown/fog non rivela la topologia completa.
+- `SaveManager` sovrappone `PersistentWorldState` alla prossima generazione con lo stesso seed.
+- Streaming/istanza selettiva delle regioni lontane e un follow-up: il primo pass mantiene il contratto runtime e i dati persistenti pronti.
 
 ## Contratto progressione e run
 
@@ -349,23 +381,25 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 ## Contratto survival e wave
 
 - `GameModeManager.register_mode()` avvia la modalita registrata se coincide con `default_mode`.
-- La survival avviata dal menu riceve `context.character_id` dalla schermata `Character Select`.
+- La survival avviata dal menu riceve `context.character_ids_by_slot` dalla schermata `Character Select`; `context.character_id` resta fallback per debug, hotkey e test.
 - In assenza di context, hotkey/debug e test mantengono il profilo sandbox generico precedente.
-- Il profilo selezionato e applicato ai player attivi e ai player che entrano durante la run.
+- Il profilo selezionato per lo slot viene applicato al player locale corrispondente; i player senza selezione dedicata usano il fallback `character_id`.
 - I profili classe sono risorse `RpgCharacterData`; il registry mantiene solo path e funzioni di accesso.
 - Il profilo survival modifica HP massimi, velocita, attacco, difesa, passive, super, adrenalina e progressione per-run del player.
 - `SurvivalMode` avvia e arresta `WaveManager` e controlla la sconfitta del party.
 - `SurvivalMode` avvia e arresta `ZombieModeController` prima del ciclo wave.
 - `BiomeManager` e il punto unico per leggere il bioma corrente della survival.
-- Ogni run survival genera o rigenera una mappa globale seed-based; in assenza di seed manuale usa un seed default stabile, mentre un context `world_seed` permette riproduzione e debug.
-- La mappa globale contiene celle `200x200`, seed locali, vicini, bordi, passaggi, fall boundary e layout ambientali validati prima di essere assegnati alle `BiomeDefinition`.
+- Ogni run survival genera o rigenera una megamappa persistente seed-based; in assenza di seed manuale usa un seed default stabile, mentre un context `world_seed` permette riproduzione e debug.
+- La megamappa contiene territori `200x200`, seed locali, vicini, bordi, grafo connesso, passaggi fisici, fall boundary e layout ambientali validati prima di essere assegnati alle `BiomeDefinition`.
 - Ogni nuova run survival riparte dalla `Pianura Infetta`.
-- `BiomeTransitionSystem` collega Pianura, Tossico, Infuocato, Neve e Palude; il party condivide un solo bioma corrente.
-- Quando e disponibile una cella procedurale corrente, `BiomeTransitionSystem` genera i gate dai `BiomePassage`; il fallback `previous_biome_id`/`next_biome_id` resta per compatibilita.
-- Il cambio bioma rigenera terreno, ostacoli, casse, hazard e gate senza riavviare `WaveManager`.
+- `WorldRuntime` marca la regione iniziale come visited, scopre i vicini collegati e conserva lo stato esplorazione.
+- `BiomeTransitionSystem` collega territori confinanti tramite passaggi aperti; il party condivide una sola regione corrente.
+- Quando e disponibile una cella procedurale corrente, `BiomeTransitionSystem` genera aperture dai `BiomePassage`; il fallback `previous_biome_id`/`next_biome_id` resta per compatibilita.
+- Il cambio regione applica terreno, ostacoli, casse, hazard e passaggi della nuova regione senza riavviare `WaveManager`.
 - `WaveDirector` legge il bioma corrente per risolvere roster, moltiplicatori, ritmo spawn e drop.
 - Lo scaling contestuale considera wave, player vivi, tempo sopravvissuto e profondita del bioma.
 - Ogni bioma legge `BiomeEnvironmentLayout` per terreno, ostacoli, casse e hazard senza placement hardcoded nei controller.
+- Ogni `BiomeEnvironmentLayout` espone una classificazione completa del `200x200` usata da validazione, dodge/gap e debug.
 - `TerrainGenerator` modifica solo palette e decorazioni; non possiede collisioni o regole combat.
 - `BiomeObstacle` usa `StaticBody2D` sul layer `1`, quindi player e zombie lo trattano come impedimento fisico.
 - Gli ostacoli appartengono anche ai gruppi `environment_obstacles` e `spawn_blockers`.

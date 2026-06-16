@@ -7,6 +7,9 @@ signal terrain_patch_spawned(patch: Node2D, terrain_tag: StringName)
 const TERRAIN_PATCH_SCRIPT = preload(
 	"res://game/modes/zombie/biome_terrain_patch.gd"
 )
+const REGION_GROUND_SCRIPT = preload(
+	"res://game/modes/zombie/biome_region_ground.gd"
+)
 
 @export var playground_path: NodePath = NodePath("../../../../World/Playground")
 @export var environment_container_path: NodePath = NodePath(
@@ -16,6 +19,7 @@ const TERRAIN_PATCH_SCRIPT = preload(
 var active_biome: BiomeDefinition
 var is_active: bool = false
 var generated_patches: Array[Node2D] = []
+var active_ground: BiomeRegionGround
 
 func _ready() -> void:
 	add_to_group("terrain_generator")
@@ -25,6 +29,7 @@ func start_run(biome: BiomeDefinition) -> void:
 	active_biome = biome
 	is_active = true
 	_apply_biome_palette()
+	_generate_region_ground()
 	_generate_terrain_patches()
 	terrain_configured.emit(
 		active_biome.biome_id if active_biome != null else &""
@@ -82,6 +87,21 @@ func _generate_terrain_patches() -> void:
 		generated_patches.append(patch)
 		terrain_patch_spawned.emit(patch, layout.terrain_patch_tags[index])
 
+func _generate_region_ground() -> void:
+	if active_biome == null:
+		return
+	var layout := active_biome.environment_layout
+	var palette := active_biome.palette
+	var container := _get_environment_container()
+	if layout == null or palette == null or container == null:
+		return
+	active_ground = REGION_GROUND_SCRIPT.new() as BiomeRegionGround
+	if active_ground == null:
+		return
+	active_ground.name = "BiomeRegionGround"
+	active_ground.configure(layout, palette)
+	container.add_child(active_ground)
+
 func _get_environment_container() -> Node:
 	var container := get_node_or_null(environment_container_path)
 	return container if container != null else get_tree().current_scene
@@ -91,6 +111,9 @@ func _clear_runtime() -> void:
 		if is_instance_valid(patch):
 			patch.queue_free()
 	generated_patches.clear()
+	if active_ground != null and is_instance_valid(active_ground):
+		active_ground.queue_free()
+	active_ground = null
 
 func _prune_runtime() -> void:
 	for patch in generated_patches.duplicate():

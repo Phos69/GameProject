@@ -21,11 +21,11 @@
     "forma super piu grande con slash rossi e luna per Notte Bestiale"
   ],
   "file": {
-    "portrait_rendered": "rendered/licantropo_portrait_full.svg",
-    "portrait_hud": "rendered/licantropo_portrait_hud.svg",
+    "portrait_rendered": "rendered/licantropo_portrait_full.png",
+    "portrait_hud": "rendered/licantropo_portrait_full.png",
     "gameplay_sprite": "sprites/licantropo_gameplay_iso.svg",
     "sprite_sheet": "sprites/licantropo_sprite_sheet.svg",
-    "hud_icon": "rendered/licantropo_portrait_hud.svg",
+    "hud_icon": "rendered/licantropo_portrait_full.png",
     "weapon_icon": "weapons/licantropo_weapon.svg",
     "ability_icon": "ui/licantropo_ability_icon.svg",
     "passive_icon": "ui/licantropo_passive_icon.svg",
@@ -72,8 +72,9 @@
   "iteration_changelog": [
     "Creato primo set base completo per Licantropo/Rocco Lunastorta con portrait rendered, sprite isometrico, sprite sheet animabile, icone HUD e artigli.",
     "La riga super usa una forma bestiale piu grande con slash rossi per anticipare Notte Bestiale.",
-    "Convertiti gli asset bitmap PNG in SVG testuali per rendere la pull request compatibile con ambienti che non accettano file binari."
+    "Convertiti gli asset bitmap PNG in SVG testuali per rendere la pull request compatibile con ambienti che non accettano file binari.",
+    "Ripristinato un portrait PNG definitivo per Character Select e slot di selezione player."
   ],
-  "source_format": "svg_text",
-  "binary_free": true
+  "source_format": "svg_text+png_portrait",
+  "binary_free": false
 }

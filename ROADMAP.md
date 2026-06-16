@@ -304,6 +304,7 @@ Stato: completata come primo pass configurabile e misurabile.
 Attivita post-roadmap:
 
 - roadmap motore generazione mappe e biomi completata come primo pass: seed globale, mappa biomi `200x200`, confini, passaggi, fall zone, layout interni, validazione flood-fill e integrazione zombie;
+- roadmap megamappa persistente isometrica completata come primo pass: grafo seed-based connesso, territori `200x200`, passaggi fisici aperti, fall boundary sui lati esterni, terreno classificato su tutta la regione, mappa esplorazione persistente, dodge/roll e manifest asset isometrici;
 - roadmap revamp modalita zombie completata fino alla Milestone Z12: cinque biomi attraversabili, spawn camera-edge, wave contestuali, layout, loot, hazard, zombie tematici, HUD e test di durata;
 - sistema ammo survival robusto con fallback infinita, pickup condivisi, supply crate e director anti-frustrazione completato;
 - visual gameplay pass della zombie survival completato;
@@ -328,5 +329,20 @@ Stato: completata come prototipo data-driven.
 - `Mago` / Elio Braciastella con Bastone arcano, Risonanza Arcana e Stella Cadente.
 - `Domatrice` / Nina Bullone con Fionda magnetica, companion Briciola e Branco di Rottami.
 - `Licantropo` / Rocco Lunastorta con Artigli, Odore del Sangue e Notte Bestiale.
+- Character Select esteso con icone personaggio e slot player per selezioni RPG distinte nella stessa run survival.
 - Placeholder procedurali, palette HUD e path asset definitivi restano data-driven nei profili.
 - Smoke test dedicato previsto in `tests/milestone_rpg_13_new_classes_smoke_test.gd`.
+
+## Milestone Megamappa Persistente Isometrica - primo pass
+
+Stato: completata come prototipo integrato.
+
+- Aggiunto `game/world/` con `WorldGraph`, `WorldRegion`, `WorldRegionConnection`, `WorldExplorationState`, `PersistentWorldState` e `WorldRuntime`.
+- La survival genera una griglia `5x5` di territori `200x200` tramite seed, spanning tree e edge extra per avere connessione garantita e loop.
+- I passaggi tra regioni confinanti sono aperture fisiche aperte e non teletrasporti; i lati senza regione vicina restano fall boundary validati.
+- Il layout di ogni territorio produce classificazione completa del `200x200` per walkable, obstacle, hazard, border, void e fall zone.
+- Il save v6 conserva stato mondo/esplorazione e posizione di riferimento del party.
+- L'HUD espone una mappa consultabile con unknown/fog, discovered, visited, cleared e marker della regione corrente.
+- Aggiunto `PlayerDodgeComponent` con input tastiera/joypad, cooldown, invulnerabilita breve e validazione gap/landing.
+- Aggiunto manifest iniziale per censire asset ambientali isometrici e sostituzioni future.
+- Smoke test dedicati coprono connettivita grafo, persistenza, passaggi aperti, classificazione terreno, fall boundary, mappa esplorazione e dodge/gap.

@@ -79,27 +79,23 @@ func _run() -> void:
 	await process_frame
 	await physics_frame
 
-	var biome_path: Array[StringName] = [
-		&"infected_plains",
-		&"toxic_wastes",
-		&"burning_fields",
-		&"frozen_outskirts",
-		&"drowned_marsh"
-	]
-	for index in range(biome_path.size()):
-		var biome_id := biome_path[index]
-		if index > 0:
-			transition_system.cooldown_timer = 0.0
-			_expect(
-				transition_system.transition_to(biome_id, &"east"),
-				"transition reaches %s" % String(biome_id)
-			)
-			await process_frame
-			await physics_frame
+	var graph := biome_manager.get_world_graph()
+	_expect(graph != null and graph.is_graph_connected(), "persistent biome graph is connected")
+	var seen_biomes: Dictionary = {}
+	for step in range(5):
+		var cell := biome_manager.get_current_biome_cell()
+		_expect(cell != null, "current region exists at step %d" % step)
+		if cell == null:
+			break
+		var biome_id := cell.biome_id
+		seen_biomes[biome_id] = true
 		var biome := biome_manager.get_current_biome() as BiomeDefinition
 		_expect(
 			biome != null and biome.biome_id == biome_id,
-			"biome manager selects %s" % String(biome_id)
+			"biome manager selects region %s biome %s" % [
+				String(cell.id),
+				String(biome_id)
+			]
 		)
 		if biome == null or biome.environment_layout == null:
 			continue
@@ -138,13 +134,10 @@ func _run() -> void:
 			_has_blocked_boundary(obstacle_system),
 			"%s retains a physical blocked boundary" % String(biome_id)
 		)
-		var expected_gate_count := (
-			1 if index == 0 or index == biome_path.size() - 1 else 2
-		)
 		_expect(
 			transition_system.get_active_gates().size()
-			== expected_gate_count,
-			"%s exposes the expected traversable borders" % String(biome_id)
+			== cell.passages.size(),
+			"%s exposes generated open passages" % String(biome_id)
 		)
 		_expect(
 			_has_thematic_loot(crate_system, biome_id),
@@ -155,14 +148,41 @@ func _run() -> void:
 			biome.display_name in hud.status_label.text,
 			"HUD displays %s" % biome.display_name
 		)
+		if step < 4 and not cell.passages.is_empty():
+			var passage: BiomePassage = cell.passages.front()
+			transition_system.cooldown_timer = 0.0
+			_expect(
+				transition_system.transition_to(
+					passage.to_biome_id,
+					passage.side,
+					passage.to_cell_id
+				),
+				"transition follows physical passage to %s" % String(passage.to_cell_id)
+			)
+			await process_frame
+			await physics_frame
 
-	var marsh := biome_manager.get_current_biome() as BiomeDefinition
+	if graph != null:
+		var graph_biomes: Dictionary = {}
+		for region in graph.get_regions_sorted():
+			graph_biomes[region.biome_id] = true
+		for required_biome in [
+			&"infected_plains",
+			&"toxic_wastes",
+			&"burning_fields",
+			&"frozen_outskirts",
+			&"drowned_marsh"
+		]:
+			_expect(graph_biomes.has(required_biome), "graph contains %s" % String(required_biome))
+
+	var marsh := biome_manager.get_biome_definition(&"drowned_marsh") as BiomeDefinition
 	var themed_enemy_found := false
-	for spawn_index in range(40):
-		var enemy_id := marsh.resolve_enemy_id(5, spawn_index, 40)
-		if String(enemy_id).contains("drowned") or String(enemy_id).contains("marsh") or String(enemy_id).contains("water"):
-			themed_enemy_found = true
-			break
+	if marsh != null:
+		for spawn_index in range(40):
+			var enemy_id := marsh.resolve_enemy_id(5, spawn_index, 40)
+			if String(enemy_id).contains("drowned") or String(enemy_id).contains("marsh") or String(enemy_id).contains("water"):
+				themed_enemy_found = true
+				break
 	_expect(themed_enemy_found, "advanced biome wave resolves thematic enemies")
 
 	var survival_mode := get_first_node_in_group(

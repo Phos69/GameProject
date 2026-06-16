@@ -1,8 +1,11 @@
 # Checklist visuale RPG Zombie Survival
 
-Usare questa checklist per verificare il pass 1 dei quattro personaggi RPG a 1280x720, senza leggere il testo della UI.
+Usare questa checklist per verificare il pass 1 dei personaggi RPG a 1280x720, senza leggere il testo della UI.
 
 ## Character Select
+
+- [ ] Ogni slot player attivo mostra portrait, nome, classe/arma, statistiche, passiva e super dopo la scelta.
+- [ ] Gli slot inattivi restano distinguibili dagli slot attivi senza occupare il focus della selezione.
 
 - [ ] `ranger`: la card mostra `Mira Vento` sopra `Ranger · Arco` e usa la palette `ranger_forest`.
 - [ ] `pistoliere`: la card mostra `Dante Ferraglia` sopra `Pistoliere · Pistola` e usa la palette `gunslinger_dust`.

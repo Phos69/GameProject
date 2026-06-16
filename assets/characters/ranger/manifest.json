@@ -21,11 +21,11 @@
     "freccia luminosa lime per attack/super"
   ],
   "file": {
-    "portrait_rendered": "rendered/ranger_portrait_full.svg",
-    "portrait_hud": "rendered/ranger_portrait_hud.svg",
+    "portrait_rendered": "rendered/ranger_portrait_full.png",
+    "portrait_hud": "rendered/ranger_portrait_full.png",
     "gameplay_sprite": "sprites/ranger_gameplay_iso.svg",
     "sprite_sheet": "sprites/ranger_sprite_sheet.svg",
-    "hud_icon": "rendered/ranger_portrait_hud.svg",
+    "hud_icon": "rendered/ranger_portrait_full.png",
     "weapon_icon": "weapons/ranger_weapon.svg",
     "ability_icon": "ui/ranger_ability_icon.svg",
     "passive_icon": "ui/ranger_passive_icon.svg",
@@ -72,8 +72,9 @@
   "iteration_changelog": [
     "Creato primo set base completo per Ranger/Mira Vento con portrait rendered, sprite isometrico, sprite sheet animabile, icone HUD e arma.",
     "Aggiornato il profilo dati Ranger per puntare alla sprite sheet definitiva di questa iterazione.",
-    "Convertiti gli asset bitmap PNG in SVG testuali per rendere la pull request compatibile con ambienti che non accettano file binari."
+    "Convertiti gli asset bitmap PNG in SVG testuali per rendere la pull request compatibile con ambienti che non accettano file binari.",
+    "Ripristinato un portrait PNG definitivo per Character Select e slot di selezione player."
   ],
-  "source_format": "svg_text",
-  "binary_free": true
+  "source_format": "svg_text+png_portrait",
+  "binary_free": false
 }

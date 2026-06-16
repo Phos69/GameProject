@@ -9,6 +9,7 @@ var terrain_generator: BiomeTerrainGenerator
 var debug_overlay: BiomeMapDebugOverlay
 var active_seed: int = 0
 var active_cells: Array[BiomeCell] = []
+var active_graph: WorldGraph
 var active_context: Dictionary = {}
 
 func _ready() -> void:
@@ -24,7 +25,10 @@ func generate_world(
 	active_seed = seed_service.start_run(context)
 	var biome_ids := _get_biome_ids(biome_definitions)
 	active_cells = map_generator.generate_map(active_seed, biome_ids, context)
+	active_graph = map_generator.get_world_graph()
 	terrain_generator.generate_layouts_for_cells(active_cells, biome_definitions)
+	if active_graph != null:
+		active_graph.configure_from_biome_cells(active_cells, active_seed)
 	if debug_overlay != null:
 		debug_overlay.configure(active_seed, active_cells)
 	world_generated.emit(active_seed, active_cells)
@@ -49,6 +53,7 @@ func get_world_data() -> Dictionary:
 	return {
 		"seed": active_seed,
 		"cells": active_cells,
+		"world_graph": active_graph,
 		"start_cell": map_generator.get_starting_cell(active_cells),
 		"signature": map_generator.get_map_signature(active_cells),
 		"seed_record": seed_service.get_seed_record()

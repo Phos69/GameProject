@@ -1,4 +1,4 @@
-[gd_scene load_steps=45 format=3]
+[gd_scene load_steps=46 format=3]
 
 [ext_resource type="Script" path="res://game/main/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://game/input/input_manager.gd" id="2_input_manager"]
@@ -44,6 +44,7 @@
 [ext_resource type="Script" path="res://game/modes/zombie/random_encounter_system.gd" id="42_random_encounter"]
 [ext_resource type="Script" path="res://game/settings/video_settings_manager.gd" id="43_video_settings"]
 [ext_resource type="Script" path="res://game/ui/pause_menu.gd" id="44_pause_menu"]
+[ext_resource type="Script" path="res://game/world/world_runtime.gd" id="45_world_runtime"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -94,6 +95,9 @@ script = ExtResource("41_transition_system")
 
 [node name="RandomEncounterSystem" type="Node" parent="Modes/SurvivalMode/ZombieModeController"]
 script = ExtResource("42_random_encounter")
+
+[node name="WorldRuntime" type="Node" parent="Modes/SurvivalMode/ZombieModeController"]
+script = ExtResource("45_world_runtime")
 
 [node name="DungeonMode" type="Node" parent="Modes"]
 script = ExtResource("20_dungeon_mode")
