@@ -23,11 +23,13 @@ func validate_layout(
 		visited
 	)
 	var crate_failures := _find_unreachable_crates(layout, visited)
+	var placement_failures := _find_invalid_placements(layout)
 	var fall_failures := _find_invalid_fall_boundaries(cell, layout)
 	var is_valid := (
 		not visited.is_empty()
 		and passage_failures.is_empty()
 		and crate_failures.is_empty()
+		and placement_failures.is_empty()
 		and fall_failures.is_empty()
 	)
 	return {
@@ -35,6 +37,7 @@ func validate_layout(
 		"reachable_cells": visited.size(),
 		"unreachable_passages": passage_failures,
 		"unreachable_crates": crate_failures,
+		"placement_errors": placement_failures,
 		"fall_boundary_errors": fall_failures
 	}
 
@@ -109,6 +112,25 @@ func _find_unreachable_crates(
 			failures.append(crate_cell)
 	return failures
 
+func _find_invalid_placements(layout: BiomeEnvironmentLayout) -> PackedStringArray:
+	var failures := PackedStringArray()
+	var spawn := _clamp_cell(layout.player_spawn_cell, layout.zone_size)
+	if _cell_inside_any_rect(spawn, layout.obstacle_rects):
+		failures.append("player_spawn_inside_obstacle")
+	if _cell_inside_any_rect(spawn, layout.fall_zone_rects):
+		failures.append("player_spawn_inside_fall_zone")
+	if _cell_inside_any_rect(spawn, layout.hazard_rects):
+		failures.append("player_spawn_inside_hazard")
+	for crate_cell in layout.crate_cells:
+		var clamped_crate := _clamp_cell(crate_cell, layout.zone_size)
+		if _cell_inside_any_rect(clamped_crate, layout.obstacle_rects):
+			failures.append("crate_inside_obstacle:%s" % str(crate_cell))
+		if _cell_inside_any_rect(clamped_crate, layout.fall_zone_rects):
+			failures.append("crate_inside_fall_zone:%s" % str(crate_cell))
+		if _cell_inside_any_rect(clamped_crate, layout.hazard_rects):
+			failures.append("crate_inside_hazard:%s" % str(crate_cell))
+	return failures
+
 func _find_invalid_fall_boundaries(
 	cell: BiomeCell,
 	layout: BiomeEnvironmentLayout
@@ -167,6 +189,12 @@ func _clip_rect(rect: Rect2i, zone_size: Vector2i) -> Rect2i:
 	var end_x := clampi(rect.position.x + rect.size.x, 0, zone_size.x)
 	var end_y := clampi(rect.position.y + rect.size.y, 0, zone_size.y)
 	return Rect2i(Vector2i(x, y), Vector2i(maxi(end_x - x, 0), maxi(end_y - y, 0)))
+
+func _cell_inside_any_rect(cell: Vector2i, rects: Array[Rect2i]) -> bool:
+	for rect in rects:
+		if rect.has_point(cell):
+			return true
+	return false
 
 func _clamp_cell(cell: Vector2i, zone_size: Vector2i) -> Vector2i:
 	return Vector2i(

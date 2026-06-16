@@ -12,6 +12,14 @@
 
 ### Added
 
+- Iterazione sulla generazione biomi zombie survival: aggiunti corridoi secondari, cover, strettoie e ostacoli grandi specifici per Pianura Infetta, Tossico, Infuocato, Neve e Palude nella pipeline seed-based.
+- La validazione layout ora segnala anche spawn player e casse sovrapposti a ostacoli, hazard o fall zone; lo smoke test dei biomi verifica identita navigazionale e placement validi.
+- Iterazione sugli encounter zombie survival: gli encounter casuali ora rispettano seed mondo, cooldown per ondata, stato critico/boss, posizioni validate e reward crate reali per survivor cache/cursed crate.
+- Esteso `BiomeMapDebugOverlay` con riepilogo runtime di bioma corrente, validazione, conteggi ostacoli/hazard/casse e ultimo encounter; aggiunto smoke test dedicato.
+- Aggiunti telegraph world-space per `cursed_crate` e `hazard_burst`, con warning accessibile prima di status/hazard e snapshot debug del numero di telegraph pendenti.
+- Aggiunto tuning threat/reward agli encounter: party size, conteggi nemici/hazard, durata/raggio hazard, moltiplicatori elite e crate reward ora derivano da bioma, wave e threat score.
+- Aggiunti mini-eventi encounter specifici per bioma avanzato: `toxic_leak`, `fire_breakout`, `whiteout` e `marsh_emergence`, riusando telegraph, hazard, status e spawn nemici esistenti.
+- Aggiunto smoke test `biome_mini_events_smoke_test.gd` per verificare mini-eventi, telegraph, threat score e tuning dei quattro biomi avanzati.
 - Completata la Roadmap Motore di Generazione Mappe e Biomi come primo motore procedurale integrato.
 - Aggiunti `WorldGenerationSeed`, `BiomeWorldGenerator`, `BiomeMapGenerator`, `BorderGenerator`, `BiomePassageGenerator`, `BiomeTerrainGenerator`, `ObstacleLayoutGenerator`, `FallBoundaryGenerator` e `MapValidationSystem`.
 - La zombie survival genera a inizio run una mappa globale seed-based con celle bioma `200x200`, bordi con passaggi condivisi, fall boundary sui lati esterni e layout interni validati.

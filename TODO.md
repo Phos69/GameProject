@@ -1,5 +1,14 @@
 # TODO
 
+## Prossima iterazione biomi zombie survival
+
+- QA manuale mini-eventi bioma.
+  - Obiettivo: verificare ritmo, reward e leggibilita di `toxic_leak`, `fire_breakout`, `whiteout` e `marsh_emergence` con gameplay reale.
+  - Milestone collegata: evoluzione post-roadmap del motore biomi zombie survival.
+  - File/sistemi coinvolti: `RandomEncounterSystem`, `HazardSystem`, `ResourceCrateSystem`, HUD annunci e debug overlay.
+  - Criterio di accettazione: ogni mini-evento resta evitabile, non blocca passaggi/casse, assegna reward proporzionata e resta leggibile in high contrast/reduced motion.
+  - Test richiesto: QA manuale 10 wave con seed fisso e acquisizione screenshot/video dei quattro eventi.
+
 ## Motore generazione mappe e biomi - completato
 
 - Roadmap motore generazione mappe e biomi completata come primo pass procedurale integrato.

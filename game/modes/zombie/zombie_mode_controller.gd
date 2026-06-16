@@ -40,7 +40,9 @@ func start_run(context: Dictionary = {}) -> void:
 	if wave_director != null and wave_director.has_method("start_run"):
 		wave_director.start_run()
 	if random_encounter_system != null and random_encounter_system.has_method("configure_seed"):
-		random_encounter_system.configure_seed(int(context.get("run_seed", 0)))
+		random_encounter_system.configure_seed(
+			int(context.get("world_seed", context.get("run_seed", 0)))
+		)
 	_apply_active_biome(biome)
 	zombie_run_started.emit(
 		StringName(biome.get("biome_id")) if biome != null else &""

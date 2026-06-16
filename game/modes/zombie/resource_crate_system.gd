@@ -66,6 +66,37 @@ func get_active_crates() -> Array[SupplyCrate]:
 	_prune_crates()
 	return active_crates.duplicate()
 
+func spawn_encounter_crate(
+	crate_id: StringName,
+	position: Vector2,
+	source_id: StringName = &"random_encounter"
+) -> SupplyCrate:
+	if supply_crate_scene == null or crate_id.is_empty():
+		return null
+	if not _is_crate_position_valid(position):
+		return null
+	var container := _get_crate_container()
+	if container == null:
+		return null
+	var crate := supply_crate_scene.instantiate() as SupplyCrate
+	if crate == null:
+		return null
+	crate.name = "%sEncounterCrate" % String(crate_id).capitalize()
+	crate.loot_table = _get_loot_table(crate_id)
+	crate.set_meta("biome_crate_id", crate_id)
+	crate.set_meta("encounter_source_id", source_id)
+	crate.add_to_group("biome_resource_crates")
+	crate.add_to_group("encounter_rewards")
+	var visual := crate.get_node_or_null("Visual") as SupplyCrateVisual
+	if visual != null:
+		visual.configure_crate_type(crate_id)
+	container.add_child(crate)
+	crate.global_position = position
+	active_crates.append(crate)
+	crate.tree_exited.connect(_on_crate_tree_exited.bind(crate))
+	resource_crate_spawned.emit(crate, crate_id)
+	return crate
+
 func _generate_resource_crates() -> void:
 	if active_biome == null or supply_crate_scene == null:
 		return

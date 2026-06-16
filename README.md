@@ -93,6 +93,8 @@ godot --headless --path . --script res://tests/zombie_biome_enemy_smoke_test.gd
 godot --headless --path . --script res://tests/zombie_revamp_ten_wave_smoke_test.gd
 godot --headless --path . --script res://tests/zombie_revamp_ten_minute_soak_test.gd
 godot --headless --path . --script res://tests/biome_world_generation_smoke_test.gd
+godot --headless --path . --script res://tests/biome_debug_overlay_smoke_test.gd
+godot --headless --path . --script res://tests/biome_mini_events_smoke_test.gd
 godot --headless --path . --script res://tests/boss_smoke_test.gd
 godot --headless --path . --script res://tests/dungeon_smoke_test.gd
 godot --headless --path . --script res://tests/tower_defense_smoke_test.gd
@@ -311,4 +313,6 @@ godot --headless --path . --script res://tests/biome_status_effects_smoke_test.g
 godot --headless --path . --script res://tests/biome_roster_smoke_test.gd
 godot --headless --path . --script res://tests/biome_obstacle_generation_smoke_test.gd
 godot --headless --path . --script res://tests/random_encounter_smoke_test.gd
+godot --headless --path . --script res://tests/biome_debug_overlay_smoke_test.gd
+godot --headless --path . --script res://tests/biome_mini_events_smoke_test.gd
 ```
