@@ -300,16 +300,21 @@ La roadmap RPG Mode introduce personaggi selezionabili prima della zombie
 survival. Il primo pass include quattro profili iniziali nel catalogo
 centralizzato:
 
-- `Ranger`: arco, precisione, critici e posizionamento a distanza.
-- `Pistoliere`: pistola, cadenza alta e mobilita accessibile.
-- `Berserker`: ascia, danno alto e rischio da corto raggio.
-- `Spadaccino`: spada, difesa e fendenti rapidi.
+- `Ranger` / `Mira Vento`: arco, precisione, critici e posizionamento a distanza.
+- `Pistoliere` / `Dante Ferraglia`: pistola, cadenza alta e mobilita accessibile.
+- `Berserker` / `Bruna Spaccaferro`: ascia, danno alto e rischio da corto raggio.
+- `Spadaccino` / `Kael Guardia`: spada, difesa e fendenti rapidi.
+- `Mago` / `Elio Braciastella`: bastone arcano, Dardo Arcano lento e Risonanza Arcana ogni tre hit.
+- `Domatrice` / `Nina Bullone`: fionda magnetica e companion Briciola persistente.
+- `Licantropo` / `Rocco Lunastorta`: artigli melee, finisher su bersagli feriti e trasformazione Notte Bestiale.
 
-Il menu mostra una card per ogni profilo con nome, classe, arma base,
+Il menu mostra una card per ogni profilo con nome proprio, classe, arma base,
 statistiche iniziali, passiva, super e difficolta. La scelta e passata alla
 survival come `character_id` e applicata ai player attivi tramite
 `RpgPlayerComponent`. I profili sono risorse `RpgCharacterData` in
-`game/rpg/characters/`, lette da `RpgCharacterRegistry`.
+`game/rpg/characters/`, lette da `RpgCharacterRegistry`. Il roster esteso include tre classi avanzate aggiunte come risorse data-driven senza sostituire i quattro starter. Il `display_name` resta la classe per compatibilita, mentre `hero_name` alimenta Character Select e HUD nella forma `Mira Vento / Ranger · Arco`.
+
+I campi artistici opzionali dei profili (`portrait_full_path`, `portrait_hud_path`, `gameplay_palette_id`, `sprite_sheet_path`, `weapon_sprite_path`, `passive_icon_path`, `super_icon_path`, `animation_profile_id` e palette primaria/secondaria/accent) rendono data-driven la sostituzione degli asset definitivi. Il prototipo usa placeholder procedurali: cappuccio e arco verde/oro per Mira, giacca corta e pistol flash giallo/arancio per Dante, corpo largo e ascia rossa per Bruna, mantello e lama azzurro/bianca per Kael. La checklist manuale e in `docs/rpg_character_visual_checklist.md`.
 
 Statistiche attive:
 
@@ -329,6 +334,9 @@ Armi base RPG attive:
 - `Pistola`: 9 danni, range 520, scatter 8 gradi, 8 colpi e reload 1,2s.
 - `Ascia`: 28 danni, range 95, 3 swing e reload 1,6s.
 - `Spada`: 14 danni, range 135, 4 fendenti e reload 0,85s.
+- `Bastone arcano`: 18 danni, range 690, 5 cariche e reload 1,25s.
+- `Fionda magnetica`: 11 danni, range 460, 8 rottami e reload 0,95s.
+- `Artigli`: 13 danni, range 82, 5 colpi furia e recover 0,75s.
 
 Le armi base hanno riserva infinita ma conservano caricatore e reload. Le
 hitbox sono configurate separatamente dal visual: pistola circle, arco capsule,
@@ -349,6 +357,9 @@ Passive RPG attive:
 - `Pistoliere`: completare un reload concede +20% fire rate per 3 secondi;
 - `Berserker`: sotto il 40% HP infligge +25% danno;
 - `Spadaccino`: dopo un colpo valido riceve -20% danno subito per 1,5 secondi.
+- `Mago`: ogni terzo hit reale crea una mini AoE di Risonanza Arcana attorno al bersaglio.
+- `Domatrice`: Briciola segue Nina e attacca automaticamente zombie vicini senza bloccare il player.
+- `Licantropo`: Odore del Sangue aumenta il danno contro bersagli sotto il 50% HP.
 
 Adrenalina e super:
 
@@ -362,6 +373,9 @@ Adrenalina e super:
 - `Pistoliere`: `Scarica Finale`, auto-fire per 4 secondi verso bersagli vicini;
 - `Berserker`: `Terremoto di Sangue`, danno ad area attorno al player;
 - `Spadaccino`: `Lama Fantasma`, dash offensivo con breve invulnerabilita.
+- `Mago`: `Stella Cadente`, meteora AoE sul cluster di zombie piu denso vicino.
+- `Domatrice`: `Branco di Rottami`, frenzy temporaneo di Briciola con attacchi piu rapidi.
+- `Licantropo`: `Notte Bestiale`, trasformazione temporanea con onda d’urto iniziale e danni melee potenziati.
 
 Il primo pass di bilanciamento rende il Ranger fragile ma premiato a distanza,
 il Pistoliere rapido e accessibile senza superare 85 DPS teorici grezzi, il

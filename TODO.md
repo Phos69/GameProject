@@ -317,3 +317,19 @@
   - Criterio di accettazione: status temporanei visibili, roster tematico per bioma, ostacoli validati e encounter riproducibili.
   - Test richiesto: smoke headless biome status, roster, ostacoli, random encounter e regressioni survival/RPG.
 - Follow-up: sostituire placeholder procedurali status/encounter con asset definitivi, playtestare frequenze encounter e tarare durata/danno dei malus con sessioni multiplayer reali.
+
+## Asset definitivi personaggi RPG - futuro
+
+- Obiettivo: sostituire i placeholder procedurali di Mira Vento, Dante Ferraglia, Bruna Spaccaferro e Kael Guardia con ritratti rendered e sprite animati definitivi.
+- Milestone collegata: Pass 2-3 character art RPG zombie survival.
+- File/sistemi coinvolti: `game/rpg/characters/`, `game/visuals/player_visual.gd`, `game/ui/player_hud_card.gd`, `assets/characters/`.
+- Criterio di accettazione: ogni personaggio ha portrait HUD/full, idle/run/attack/reload/hurt/death/super, weapon layer e VFX separati configurati dai campi `RpgCharacterData`.
+- Test richiesto: smoke RPG headless, QA visuale a 1280x720 e checklist `docs/rpg_character_visual_checklist.md` completata.
+
+## Polish classi RPG avanzate - futuro
+
+- Obiettivo: rifinire Mago, Domatrice e Licantropo con VFX telegraph definitivi, droni super di Nina e animazioni trasformazione complete.
+- Milestone collegata: nuove classi RPG zombie survival Milestone 5-6.
+- File/sistemi coinvolti: `RpgPlayerComponent`, `RpgSuperResolver`, `BriciolaCompanion`, `PlayerVisual`, `WeaponData`, `assets/characters/`.
+- Criterio di accettazione: le tre classi sono bilanciate contro i quattro starter, Briciola aiuta senza giocare da solo e Notte Bestiale termina sempre con recovery leggibile.
+- Test richiesto: `tests/milestone_rpg_13_new_classes_smoke_test.gd`, smoke RPG esistenti e checklist `docs/rpg_character_visual_checklist.md`.

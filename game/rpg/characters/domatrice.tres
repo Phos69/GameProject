@@ -1,0 +1,38 @@
+[gd_resource type="Resource" script_class="RpgCharacterData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/rpg/rpg_character_data.gd" id="1_character_data"]
+
+[resource]
+script = ExtResource("1_character_data")
+character_id = &"domatrice"
+display_name = "Domatrice"
+hero_name = "Nina Bullone"
+class_label = "Domatrice"
+base_weapon_id = &"slingshot"
+base_weapon_name = "Fionda magnetica"
+max_hp = 98
+attack = 6
+defense = 3
+speed = 1.08
+reload_speed = 1.12
+adrenaline_gain = 1.0
+crit_chance = 0.08
+crit_multiplier = 1.45
+passive_id = &"briciola_attack"
+passive_name = "Briciola Attacca!"
+passive_description = "Companion meccanico persistente che colpisce zombie vicini."
+super_id = &"scrap_pack"
+super_name = "Branco di Rottami"
+super_description = "Briciola e mini-droni entrano in frenzy temporaneo."
+difficulty = "Facile/Media"
+portrait_full_path = "res://assets/characters/domatrice/rendered/domatrice_portrait_full.png"
+portrait_hud_path = "res://assets/characters/domatrice/rendered/domatrice_portrait_hud.png"
+gameplay_palette_id = "teal_copper"
+sprite_sheet_path = "res://assets/characters/domatrice/sprites/domatrice_body_idle.png"
+weapon_sprite_path = "res://assets/characters/domatrice/weapons/domatrice_weapon.png"
+passive_icon_path = "res://assets/characters/domatrice/ui/domatrice_passive_icon.png"
+super_icon_path = "res://assets/characters/domatrice/ui/domatrice_super_icon.png"
+animation_profile_id = "domatrice_prototype"
+palette_primary = Color(0.04, 0.58, 0.55, 1)
+palette_secondary = Color(0.62, 0.32, 0.12, 1)
+palette_accent = Color(0.36, 1.0, 0.92, 1)

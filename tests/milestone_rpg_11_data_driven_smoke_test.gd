@@ -7,11 +7,14 @@ func _initialize() -> void:
 
 func _run() -> void:
 	var ids := RpgCharacterRegistry.get_character_ids()
-	_expect(ids.size() == 4, "registry exposes four starter characters")
+	_expect(ids.size() == 7, "registry exposes four starters plus three advanced characters")
 	_expect(ids.has(&"ranger"), "registry exposes ranger")
 	_expect(ids.has(&"pistoliere"), "registry exposes pistoliere")
 	_expect(ids.has(&"berserker"), "registry exposes berserker")
 	_expect(ids.has(&"spadaccino"), "registry exposes spadaccino")
+	_expect(ids.has(&"mago"), "registry exposes mago")
+	_expect(ids.has(&"domatrice"), "registry exposes domatrice")
+	_expect(ids.has(&"licantropo"), "registry exposes licantropo")
 
 	for character_id in ids:
 		var path := str(

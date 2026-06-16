@@ -317,3 +317,14 @@ Attivita post-roadmap:
 - roadmap RPG Mode M1-M12 completata fino al polish feedback RPG;
 - asset definitivi e ulteriori pass di bilanciamento;
 - firma digitale della build pubblica.
+
+## Milestone RPG Advanced Classes - primo pass
+
+Stato: completata come prototipo data-driven.
+
+- Aggiunte tre classi giocabili al roster RPG/Zombie Survival senza sostituire i quattro starter.
+- `Mago` / Elio Braciastella con Bastone arcano, Risonanza Arcana e Stella Cadente.
+- `Domatrice` / Nina Bullone con Fionda magnetica, companion Briciola e Branco di Rottami.
+- `Licantropo` / Rocco Lunastorta con Artigli, Odore del Sangue e Notte Bestiale.
+- Placeholder procedurali, palette HUD e path asset definitivi restano data-driven nei profili.
+- Smoke test dedicato previsto in `tests/milestone_rpg_13_new_classes_smoke_test.gd`.

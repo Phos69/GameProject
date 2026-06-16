@@ -6,6 +6,7 @@
 script = ExtResource("1_character_data")
 character_id = &"spadaccino"
 display_name = "Spadaccino"
+hero_name = "Kael Guardia"
 class_label = "Spadaccino"
 base_weapon_id = &"sword"
 base_weapon_name = "Spada"
@@ -24,3 +25,15 @@ super_id = &"phantom_blade"
 super_name = "Lama Fantasma"
 super_description = "Dash offensivo che attraversa i nemici."
 difficulty = "Media"
+portrait_full_path = "res://assets/characters/spadaccino/rendered/spadaccino_portrait_full.png"
+portrait_hud_path = "res://assets/characters/spadaccino/rendered/spadaccino_portrait_hud.png"
+gameplay_palette_id = "blade_night"
+sprite_sheet_path = "res://assets/characters/spadaccino/sprites/spadaccino_body_idle.png"
+weapon_sprite_path = "res://assets/characters/spadaccino/weapons/spadaccino_weapon.png"
+passive_icon_path = "res://assets/characters/spadaccino/ui/spadaccino_passive_icon.png"
+super_icon_path = "res://assets/characters/spadaccino/ui/spadaccino_super_icon.png"
+animation_profile_id = "spadaccino_prototype"
+palette_primary = Color(0.08, 0.13, 0.32, 1)
+palette_secondary = Color(0.84, 0.91, 0.96, 1)
+palette_accent = Color(0.42, 0.78, 1.0, 1)
+

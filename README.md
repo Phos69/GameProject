@@ -62,6 +62,21 @@ Controlli debug:
 
 La suite e stata verificata con Godot `4.6.3`. Se `godot` non e nel PATH, usare l'eseguibile Godot installato localmente o avviare i test dall'editor. In un checkout pulito, eseguire prima il comando di import indicato sopra, poi avviare il runtime con `godot --path .`.
 
+
+## Character art RPG
+
+I profili RPG zombie survival mantengono gli ID tecnici `ranger`, `pistoliere`, `berserker` e `spadaccino`, ma ora espongono anche un nome proprio per menu e HUD:
+
+- `Mira Vento` — Ranger · Arco, palette verde/oro.
+- `Dante Ferraglia` — Pistoliere · Pistola, palette giallo/arancio.
+- `Bruna Spaccaferro` — Berserker · Ascia, palette rosso/ferro.
+- `Kael Guardia` — Spadaccino · Spada, palette blu/bianco.
+- `Elio Braciastella` — Mago · Bastone arcano, palette viola/blu.
+- `Nina Bullone` — Domatrice · Fionda magnetica, palette turchese/rame e companion Briciola.
+- `Rocco Lunastorta` — Licantropo · Artigli, palette grigio/luna/rosso e trasformazione super.
+
+I campi artistici in `RpgCharacterData` collegano palette, ritratti, sprite, weapon visual e icone passive/super senza rendere obbligatori asset esterni. Finche i PNG definitivi non esistono, `PlayerVisual` e `RpgHudIcon` disegnano placeholder procedurali coerenti con silhouette e colori. Per sostituire gli asset, popolare i path `assets/characters/<id>/...` nei `.tres` e validare la checklist `docs/rpg_character_visual_checklist.md`.
+
 Smoke test headless:
 
 ```text
@@ -99,6 +114,7 @@ godot --headless --path . --script res://tests/milestone_rpg_9_hud_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_rpg_10_balance_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_rpg_11_data_driven_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_rpg_12_feedback_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_rpg_13_new_classes_smoke_test.gd
 ```
 
 Export Windows:

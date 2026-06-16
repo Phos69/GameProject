@@ -7,14 +7,20 @@ const BASE_WEAPON_PATHS: Dictionary = {
 	&"bow": "res://game/weapons/rpg_bow.tres",
 	&"pistol": "res://game/weapons/rpg_pistol.tres",
 	&"axe": "res://game/weapons/rpg_axe.tres",
-	&"sword": "res://game/weapons/rpg_sword.tres"
+	&"sword": "res://game/weapons/rpg_sword.tres",
+	&"staff": "res://game/weapons/rpg_staff.tres",
+	&"slingshot": "res://game/weapons/rpg_slingshot.tres",
+	&"claws": "res://game/weapons/rpg_claws.tres"
 }
 
 const CHARACTER_RESOURCE_PATHS: Dictionary = {
 	&"ranger": "res://game/rpg/characters/ranger.tres",
 	&"pistoliere": "res://game/rpg/characters/pistoliere.tres",
 	&"berserker": "res://game/rpg/characters/berserker.tres",
-	&"spadaccino": "res://game/rpg/characters/spadaccino.tres"
+	&"spadaccino": "res://game/rpg/characters/spadaccino.tres",
+	&"mago": "res://game/rpg/characters/mago.tres",
+	&"domatrice": "res://game/rpg/characters/domatrice.tres",
+	&"licantropo": "res://game/rpg/characters/licantropo.tres"
 }
 
 static func get_character_ids() -> Array[StringName]:

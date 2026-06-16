@@ -64,9 +64,9 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `RunResultsScreen`: overlay condiviso con focus e azioni di fine run.
 - `MainMenu`: UI iniziale, selezione modalita, `Character Select` survival, continue e ritorno con `Esc`.
 - `RpgCharacterRegistry`: catalogo centralizzato dei personaggi RPG iniziali.
-- `RpgCharacterData`: risorsa dati per un profilo classe RPG selezionabile.
-- `RpgPlayerComponent`: profilo RPG runtime, statistiche, XP per-run, adrenalina, passive automatiche, super e formule danno del player survival.
-- `RpgSuperResolver`: esecuzione delle super RPG usando `ProjectileSystem`, `HealthSystem` e bersagli damageable condivisi.
+- `RpgCharacterData`: risorsa dati per un profilo classe RPG selezionabile, inclusi nome proprio, palette e riferimenti asset opzionali per portrait, sprite, arma e icone.
+- `RpgPlayerComponent`: profilo RPG runtime, statistiche, XP per-run, adrenalina, passive automatiche, companion RPG, super e formule danno del player survival.
+- `RpgSuperResolver`: esecuzione delle super RPG usando `ProjectileSystem`, `HealthSystem` e bersagli damageable condivisi, incluse meteora arcana e trasformazione licantropo.
 - `SaveManager`: persistenza JSON versionata e autosave della progressione.
 - `VisualSettingsManager`: preset, valori visuali, notifica consumer e persistenza.
 - `AudioManager`: bus, cue, fallback procedurali, stream opzionali e volumi.
@@ -138,12 +138,14 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `SupplyCrate`: contenitore fisico configurato da `LootTable` per ammo e cura.
 - `ProgressionManager`: XP, livello, denaro, unlock party e bonus di inizio run.
 - `HUDManager`: UI prototipo.
-- `PlayerVisual` e `ZombieVisual`: presentazione animata procedurale degli attori.
+- `PlayerVisual`: presentazione procedurale data-driven del player, con silhouette e palette derivate dal profilo RPG.
+- `ZombieVisual`: presentazione animata procedurale degli zombie.
 - `DropPickupVisual` e `SupplyCrateVisual`: icone world-space sostituibili.
 - `BossTelegraphVisual`: warning world-space per pattern aimed, radial e cambio fase.
 - `WaveWardenVisual`: silhouette, animazione e stato visuale delle due fasi del boss.
 - `PlayerHudCard`: scheda HUD riusabile per ogni slot locale.
-- `RpgHudIcon`: icona procedurale leggera per ritratto classe e super RPG.
+- `RpgHudIcon`: icona procedurale leggera per ritratto classe, passive e super RPG.
+- `BriciolaCompanion`: companion alleato leggero della Domatrice con follow, target acquire, dash attack, recover e frenzy super.
 - `ReviveIndicatorVisual`: anello world-space con colore slot e progresso.
 - `WeaponIcon`: icona HUD generata dal profilo dell'arma attiva.
 - `CombatAnnouncement`: banner temporaneo e riusabile per transizioni gameplay.

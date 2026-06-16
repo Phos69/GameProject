@@ -6,6 +6,7 @@
 script = ExtResource("1_character_data")
 character_id = &"ranger"
 display_name = "Ranger"
+hero_name = "Mira Vento"
 class_label = "Ranger"
 base_weapon_id = &"bow"
 base_weapon_name = "Arco"
@@ -24,3 +25,15 @@ super_id = &"arrow_rain"
 super_name = "Pioggia di Frecce"
 super_description = "Raffica conica a lungo raggio."
 difficulty = "Media"
+portrait_full_path = "res://assets/characters/ranger/rendered/ranger_portrait_full.png"
+portrait_hud_path = "res://assets/characters/ranger/rendered/ranger_portrait_hud.png"
+gameplay_palette_id = "ranger_forest"
+sprite_sheet_path = "res://assets/characters/ranger/sprites/ranger_body_idle.png"
+weapon_sprite_path = "res://assets/characters/ranger/weapons/ranger_weapon.png"
+passive_icon_path = "res://assets/characters/ranger/ui/ranger_passive_icon.png"
+super_icon_path = "res://assets/characters/ranger/ui/ranger_super_icon.png"
+animation_profile_id = "ranger_prototype"
+palette_primary = Color(0.12, 0.34, 0.20, 1)
+palette_secondary = Color(0.74, 0.65, 0.46, 1)
+palette_accent = Color(0.62, 0.92, 0.36, 1)
+

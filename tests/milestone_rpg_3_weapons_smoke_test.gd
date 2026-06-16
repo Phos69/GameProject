@@ -27,7 +27,10 @@ func _run() -> void:
 		&"ranger": &"rpg_bow",
 		&"pistoliere": &"rpg_pistol",
 		&"berserker": &"rpg_axe",
-		&"spadaccino": &"rpg_sword"
+		&"spadaccino": &"rpg_sword",
+		&"mago": &"rpg_staff",
+		&"domatrice": &"rpg_slingshot",
+		&"licantropo": &"rpg_claws"
 	}
 	for character_id in expected_weapons.keys():
 		_expect(
@@ -51,6 +54,9 @@ func _run() -> void:
 	_expect(pistol.magazine_size == 8 and pistol.scatter_degrees == 8.0, "pistol has eight shots and scatter")
 	_expect(axe.damage == 28 and axe.max_range == 95.0, "axe is high damage and short range")
 	_expect(sword.magazine_size == 4 and sword.reload_duration == 0.85, "sword has fast four-swing reload")
+	_expect(staff.magazine_size == 5 and staff.hitbox_size.x >= 18.0, "staff uses five visible arcane charges")
+	_expect(slingshot.magazine_size == 8 and slingshot.fire_rate >= 4.0, "slingshot uses eight fast scrap shots")
+	_expect(claws.hitbox_type == &"arc" and claws.max_range <= 90.0, "claws use short melee arc")
 
 	player.queue_free()
 	_finish()

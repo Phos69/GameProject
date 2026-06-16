@@ -1,0 +1,38 @@
+[gd_resource type="Resource" script_class="RpgCharacterData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/rpg/rpg_character_data.gd" id="1_character_data"]
+
+[resource]
+script = ExtResource("1_character_data")
+character_id = &"mago"
+display_name = "Mago"
+hero_name = "Elio Braciastella"
+class_label = "Mago"
+base_weapon_id = &"staff"
+base_weapon_name = "Bastone arcano"
+max_hp = 86
+attack = 10
+defense = 1
+speed = 0.96
+reload_speed = 0.94
+adrenaline_gain = 1.08
+crit_chance = 0.06
+crit_multiplier = 1.55
+passive_id = &"arcane_resonance"
+passive_name = "Risonanza Arcana"
+passive_description = "Ogni terzo hit reale crea una mini esplosione AoE."
+super_id = &"falling_star"
+super_name = "Stella Cadente"
+super_description = "Meteora arcana sul cluster di zombie piu denso."
+difficulty = "Medio/Alta"
+portrait_full_path = "res://assets/characters/mago/rendered/mago_portrait_full.png"
+portrait_hud_path = "res://assets/characters/mago/rendered/mago_portrait_hud.png"
+gameplay_palette_id = "arcane_violet"
+sprite_sheet_path = "res://assets/characters/mago/sprites/mago_body_idle.png"
+weapon_sprite_path = "res://assets/characters/mago/weapons/mago_weapon.png"
+passive_icon_path = "res://assets/characters/mago/ui/mago_passive_icon.png"
+super_icon_path = "res://assets/characters/mago/ui/mago_super_icon.png"
+animation_profile_id = "mago_prototype"
+palette_primary = Color(0.20, 0.08, 0.36, 1)
+palette_secondary = Color(0.06, 0.12, 0.30, 1)
+palette_accent = Color(0.44, 0.76, 1.0, 1)

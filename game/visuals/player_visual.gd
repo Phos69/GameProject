@@ -20,6 +20,7 @@ var high_contrast: bool = false
 var reduced_motion: bool = false
 var status_feedback_id: StringName = &""
 var status_feedback_timer: float = 0.0
+var character_profile: Dictionary = {}
 
 func _ready() -> void:
 	add_to_group("visual_settings_consumers")
@@ -58,6 +59,12 @@ func set_player_slot(slot: int) -> void:
 
 func set_slot_color(color: Color) -> void:
 	accent_color = color
+	queue_redraw()
+
+func set_character_profile(profile: Dictionary) -> void:
+	character_profile = profile.duplicate(true)
+	if not character_profile.is_empty():
+		accent_color = Color(character_profile.get("palette_primary", accent_color))
 	queue_redraw()
 
 func set_weapon_data(weapon_data: WeaponData) -> void:
@@ -139,10 +146,19 @@ func _draw() -> void:
 	var bob := absf(sin(animation_time * 11.0)) * movement_ratio * 2.0
 	var side := 1.0 if facing_direction.x >= 0.0 else -1.0
 	var weapon_direction := facing_direction.normalized()
-	var torso_color := display_color.darkened(0.18)
+	var torso_color := Color(character_profile.get("palette_primary", display_color)).darkened(0.10)
+	var outfit_secondary := Color(character_profile.get("palette_secondary", display_color.lightened(0.25)))
+	var visual_accent := Color(character_profile.get("palette_accent", display_color.lightened(0.20)))
+	var character_id := StringName(character_profile.get("id", &""))
+	var rpg_component: RpgPlayerComponent = null
+	if get_parent() != null:
+		rpg_component = get_parent().get_node_or_null("RpgPlayerComponent") as RpgPlayerComponent
+	var beast_scale := 1.0
+	if rpg_component != null and rpg_component.is_beast_transformed():
+		beast_scale = 1.28
 	var outline_color := Color(0.035, 0.045, 0.055, 1.0)
 
-	draw_set_transform(Vector2(0.0, -bob), 0.0, Vector2.ONE)
+	draw_set_transform(Vector2(0.0, -bob), 0.0, Vector2.ONE * beast_scale)
 	draw_colored_polygon(
 		_ellipse_points(Vector2(0.0, 17.0 + bob), Vector2(22.0, 8.0), 18),
 		Color(0.01, 0.015, 0.02, 0.48)
@@ -166,10 +182,11 @@ func _draw() -> void:
 		Vector2(-12.0, 8.0)
 	])
 	draw_colored_polygon(jacket, torso_color)
-	draw_line(Vector2(0.0, -9.0), Vector2(0.0, 11.0), display_color.lightened(0.2), 2.0)
+	draw_line(Vector2(0.0, -9.0), Vector2(0.0, 11.0), visual_accent, 2.0)
+	_draw_character_silhouette_details(character_id, torso_color, outfit_secondary, visual_accent, outline_color)
 
 	draw_circle(Vector2(0.0, -19.0), 9.0, outline_color)
-	draw_circle(Vector2(0.0, -20.0), 7.0, Color(0.86, 0.67, 0.49, 1.0))
+	draw_circle(Vector2(0.0, -20.0), 7.0, outfit_secondary.lightened(0.18))
 	draw_colored_polygon(
 		PackedVector2Array([
 			Vector2(-8.0, -23.0),
@@ -324,6 +341,20 @@ func _draw_weapon(
 				]),
 				secondary
 			)
+		&"rpg_staff":
+			draw_line(hand - direction * 4.0, muzzle + direction * 6.0, primary, width * 0.55, true)
+			draw_circle(muzzle + direction * 5.0, width * 1.1, glow)
+			draw_arc(muzzle + direction * 5.0, width * 1.5, 0.0, TAU, 18, secondary, 2.0, true)
+		&"rpg_slingshot":
+			var fork := hand + direction * length * 0.55
+			draw_line(hand, fork, primary, width * 0.7, true)
+			draw_line(fork, muzzle + perpendicular * width, primary, width * 0.45, true)
+			draw_line(fork, muzzle - perpendicular * width, primary, width * 0.45, true)
+			draw_line(muzzle + perpendicular * width, muzzle - perpendicular * width, secondary, 1.8, true)
+		&"rpg_claws":
+			for claw_index in range(3):
+				var offset := (float(claw_index) - 1.0) * width * 0.45
+				draw_line(hand + perpendicular * offset, muzzle + perpendicular * offset + direction * 3.0, secondary, 2.4, true)
 		&"rpg_sword":
 			draw_line(
 				hand - direction * 3.0,
@@ -470,3 +501,42 @@ func _ellipse_points(center: Vector2, radius: Vector2, segments: int) -> PackedV
 		var angle := TAU * float(index) / float(segments)
 		points.append(center + Vector2(cos(angle) * radius.x, sin(angle) * radius.y))
 	return points
+
+func _draw_character_silhouette_details(
+	character_id: StringName,
+	_primary: Color,
+	secondary: Color,
+	accent: Color,
+	outline: Color
+) -> void:
+	match character_id:
+		&"mago":
+			draw_colored_polygon(PackedVector2Array([Vector2(-13.0, -12.0), Vector2(13.0, -12.0), Vector2(18.0, 14.0), Vector2(0.0, 22.0), Vector2(-18.0, 14.0)]), secondary.darkened(0.20))
+			draw_line(Vector2(14.0, -30.0), Vector2(14.0, 16.0), outline, 5.0, true)
+			draw_circle(Vector2(14.0, -31.0), 5.0, accent)
+		&"domatrice":
+			draw_rect(Rect2(Vector2(-14.0, -13.0), Vector2(9.0, 22.0)), secondary, true)
+			draw_line(Vector2(10.0, -7.0), Vector2(19.0, -16.0), outline, 3.0, true)
+			draw_line(Vector2(10.0, -7.0), Vector2(20.0, 2.0), outline, 3.0, true)
+			draw_circle(Vector2(-8.0, -26.0), 2.0, accent)
+		&"licantropo":
+			draw_line(Vector2(-16.0, -4.0), Vector2(-25.0, 9.0), accent, 4.0, true)
+			draw_line(Vector2(16.0, -4.0), Vector2(25.0, 9.0), accent, 4.0, true)
+			draw_arc(Vector2(0.0, -21.0), 10.0, PI * 0.1, PI * 0.9, 12, secondary.lightened(0.35), 2.0, true)
+			draw_circle(Vector2(3.0, -21.0), 2.0, accent)
+		&"ranger":
+			draw_colored_polygon(PackedVector2Array([Vector2(-9.0, -23.0), Vector2(0.0, -34.0), Vector2(10.0, -23.0), Vector2(0.0, -18.0)]), outline)
+			draw_line(Vector2(-12.0, -7.0), Vector2(12.0, 12.0), secondary, 3.0, true)
+			draw_circle(Vector2(4.0, -21.0), 2.0, accent)
+		&"pistoliere":
+			draw_rect(Rect2(Vector2(-11.0, -13.0), Vector2(22.0, 9.0)), secondary.darkened(0.15), true)
+			draw_line(Vector2(-7.0, -29.0), Vector2(9.0, -27.0), accent, 3.0, true)
+			draw_circle(Vector2(12.0, -6.0), 3.0, accent)
+		&"berserker":
+			draw_line(Vector2(-18.0, -8.0), Vector2(18.0, -8.0), outline, 9.0, true)
+			draw_line(Vector2(-15.0, 0.0), Vector2(15.0, 0.0), accent, 3.0, true)
+			draw_rect(Rect2(Vector2(-19.0, -14.0), Vector2(10.0, 11.0)), secondary, true)
+		&"spadaccino":
+			draw_colored_polygon(PackedVector2Array([Vector2(-11.0, -11.0), Vector2(12.0, -8.0), Vector2(9.0, 15.0), Vector2(-3.0, 19.0)]), secondary.darkened(0.08))
+			draw_line(Vector2(-13.0, -3.0), Vector2(-18.0, 8.0), accent, 4.0, true)
+			draw_line(Vector2(8.0, -25.0), Vector2(19.0, -20.0), accent, 2.5, true)

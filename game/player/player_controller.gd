@@ -46,6 +46,7 @@ func _ready() -> void:
 	weapon_system.reload_started.connect(_on_reload_started)
 	weapon_system.reload_finished.connect(_on_reload_finished)
 	weapon_system.weapon_changed.connect(_on_weapon_changed)
+	rpg_component.character_changed.connect(_on_rpg_character_changed)
 	rpg_component.stats_changed.connect(_on_rpg_stats_changed)
 	rpg_component.leveled_up.connect(_on_rpg_leveled_up)
 	base_max_health = health_component.max_health
@@ -205,6 +206,9 @@ func _on_reload_finished() -> void:
 
 func _on_weapon_changed(weapon_data: WeaponData) -> void:
 	visual.set_weapon_data(weapon_data)
+
+func _on_rpg_character_changed(_character_id: StringName, profile: Dictionary) -> void:
+	visual.set_character_profile(profile)
 
 func _apply_rpg_runtime_stats(refill_health: bool) -> void:
 	var resolved_max_health := base_max_health + current_run_health_bonus
