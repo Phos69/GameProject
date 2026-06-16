@@ -21,10 +21,12 @@ class_name RpgCharacterData
 @export var super_id: StringName = &""
 @export var super_name: String = ""
 @export_multiline var super_description: String = ""
+@export_multiline var style_description: String = ""
 @export var difficulty: String = "Media"
 @export var portrait_full_path: String = ""
 @export var portrait_hud_path: String = ""
 @export var gameplay_palette_id: String = ""
+@export var gameplay_sprite_path: String = ""
 @export var sprite_sheet_path: String = ""
 @export var weapon_sprite_path: String = ""
 @export var passive_icon_path: String = ""
@@ -56,10 +58,12 @@ func to_profile() -> Dictionary:
 		"super_id": super_id,
 		"super_name": super_name,
 		"super_description": super_description,
+		"style_description": style_description,
 		"difficulty": difficulty,
 		"portrait_full_path": portrait_full_path,
 		"portrait_hud_path": portrait_hud_path,
 		"gameplay_palette_id": gameplay_palette_id,
+		"gameplay_sprite_path": gameplay_sprite_path,
 		"sprite_sheet_path": sprite_sheet_path,
 		"weapon_sprite_path": weapon_sprite_path,
 		"passive_icon_path": passive_icon_path,

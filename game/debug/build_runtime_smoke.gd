@@ -80,8 +80,14 @@ func _run() -> void:
 		"joypad A assigns the focused character"
 	)
 	_expect(
+		get_viewport().gui_get_focus_owner() == main_menu.character_card_buttons[0],
+		"character grid keeps focus after assignment"
+	)
+	main_menu.character_start_button.grab_focus()
+	await get_tree().process_frame
+	_expect(
 		get_viewport().gui_get_focus_owner() == main_menu.character_start_button,
-		"Start Survival receives focus after character assignment"
+		"Start Survival can receive explicit focus for confirmation"
 	)
 	await _press_joypad_button(JOY_BUTTON_A)
 	await get_tree().process_frame

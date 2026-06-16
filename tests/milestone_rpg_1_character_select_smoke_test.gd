@@ -58,6 +58,19 @@ func _run() -> void:
 		main_menu.character_start_button.disabled,
 		"survival start remains disabled until active slots choose characters"
 	)
+	_expect(
+		main_menu.character_card_buttons.size() >= 4,
+		"character select exposes at least four selectable cards"
+	)
+	if not main_menu.character_card_buttons.is_empty():
+		_expect(
+			main_menu.character_card_buttons[0].has_method("set_selection_state"),
+			"character cards use the RPG visual card control"
+		)
+	_expect(
+		main_menu.character_detail_panel != null,
+		"character select exposes the gameplay preview detail panel"
+	)
 
 	main_menu._assign_character_to_slot(1, &"ranger")
 	main_menu._assign_character_to_slot(2, &"berserker")

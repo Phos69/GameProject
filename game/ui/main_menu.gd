@@ -9,6 +9,12 @@ const CHARACTER_SLOT_COLORS: Array[Color] = [
 	Color(0.52, 0.86, 0.32, 1.0),
 	Color(0.94, 0.78, 0.28, 1.0)
 ]
+const CHARACTER_SELECT_CARD_SCRIPT := preload(
+	"res://game/ui/character_select_card.gd"
+)
+const CHARACTER_DETAIL_PANEL_SCRIPT := preload(
+	"res://game/ui/character_detail_panel.gd"
+)
 
 var backdrop: ColorRect
 var title_label: Label
@@ -23,13 +29,17 @@ var visual_controls: Dictionary = {}
 var primary_panel: PanelContainer
 var character_select_panel: PanelContainer
 var character_card_buttons: Array[Button] = []
+var character_card_by_id: Dictionary = {}
+var character_detail_panel: PanelContainer
 var character_start_button: Button
 var character_profiles: Array[Dictionary] = []
 var character_profile_by_id: Dictionary = {}
 var character_texture_cache: Dictionary = {}
+var character_weapon_cache: Dictionary = {}
 var character_slot_views: Dictionary = {}
 var character_selection_by_slot: Dictionary = {}
 var current_character_slot: int = 1
+var focused_character_id: StringName = &""
 
 var game_mode_manager: GameModeManager
 var save_manager: SaveManager
@@ -52,6 +62,24 @@ func _input(event: InputEvent) -> void:
 	_set_current_character_slot(player_slot)
 
 func _unhandled_input(event: InputEvent) -> void:
+	if (
+		is_open()
+		and event.is_action_pressed(&"ui_cancel")
+		and character_select_panel != null
+		and character_select_panel.visible
+	):
+		_close_character_select()
+		get_viewport().set_input_as_handled()
+		return
+	if (
+		is_open()
+		and event.is_action_pressed(&"ui_cancel")
+		and visual_settings_panel != null
+		and visual_settings_panel.visible
+	):
+		_close_visual_settings()
+		get_viewport().set_input_as_handled()
+		return
 	if not event is InputEventKey:
 		return
 	var key_event := event as InputEventKey
@@ -225,23 +253,34 @@ func _create_settings_panel(parent: Control) -> void:
 func _create_character_select_panel(parent: Control) -> void:
 	character_select_panel = PanelContainer.new()
 	character_select_panel.name = "CharacterSelectPanel"
-	character_select_panel.custom_minimum_size = Vector2(1080.0, 680.0)
+	character_select_panel.custom_minimum_size = Vector2(1180.0, 690.0)
+	character_select_panel.add_theme_stylebox_override(
+		"panel",
+		_make_character_select_panel_style()
+	)
 	parent.add_child(character_select_panel)
 
 	var content := VBoxContainer.new()
-	content.add_theme_constant_override("separation", 8)
-	character_select_panel.add_child(content)
+	content.add_theme_constant_override("separation", 7)
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 14)
+	margin.add_theme_constant_override("margin_top", 10)
+	margin.add_theme_constant_override("margin_right", 14)
+	margin.add_theme_constant_override("margin_bottom", 10)
+	margin.add_child(content)
+	character_select_panel.add_child(margin)
 
 	var title := Label.new()
 	title.text = "CHARACTER SELECT"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 26)
-	title.modulate = Color(0.55, 0.88, 1.0, 1.0)
+	title.add_theme_font_size_override("font_size", 31)
+	title.modulate = Color(0.78, 0.94, 1.0, 1.0)
 	content.add_child(title)
 
 	var subtitle := Label.new()
-	subtitle.text = "Choose the survivor profile for the zombie run"
+	subtitle.text = "Pick a survivor for each active slot, then start the zombie run"
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.add_theme_font_size_override("font_size", 14)
 	subtitle.modulate = Color(0.72, 0.80, 0.88, 1.0)
 	content.add_child(subtitle)
 
@@ -254,51 +293,60 @@ func _create_character_select_panel(parent: Control) -> void:
 
 	var slots_grid := GridContainer.new()
 	slots_grid.columns = 4
-	slots_grid.add_theme_constant_override("h_separation", 8)
+	slots_grid.add_theme_constant_override("h_separation", 10)
 	slots_grid.add_theme_constant_override("v_separation", 8)
 	content.add_child(slots_grid)
 	for player_slot in range(1, 5):
 		slots_grid.add_child(_create_character_slot_panel(player_slot))
 
+	var body := HBoxContainer.new()
+	body.add_theme_constant_override("separation", 12)
+	content.add_child(body)
+
 	var roster_grid := GridContainer.new()
 	roster_grid.columns = 4
-	roster_grid.add_theme_constant_override("h_separation", 8)
-	roster_grid.add_theme_constant_override("v_separation", 8)
-	content.add_child(roster_grid)
+	roster_grid.add_theme_constant_override("h_separation", 9)
+	roster_grid.add_theme_constant_override("v_separation", 9)
+	body.add_child(roster_grid)
 
 	for profile in character_profiles:
 		var character_id := StringName(profile.get("id", &""))
-		var button := Button.new()
+		var button := CHARACTER_SELECT_CARD_SCRIPT.new() as Button
 		button.name = "Character%sButton" % str(character_id).capitalize()
-		button.text = _format_character_icon_label(profile)
-		button.alignment = HORIZONTAL_ALIGNMENT_CENTER
-		button.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
-		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		button.custom_minimum_size = Vector2(258.0, 112.0)
-		button.add_theme_font_size_override("font_size", 12)
-		button.icon = _load_character_texture(profile)
-		button.expand_icon = true
+		button.call(
+			"set_profile",
+			profile,
+			_load_character_texture(profile),
+			_load_character_weapon_data(profile)
+		)
 		button.pressed.connect(_assign_character_to_current_slot.bind(character_id))
-		button.focus_entered.connect(_play_focus)
+		button.focus_entered.connect(_on_character_card_focused.bind(character_id))
+		button.mouse_entered.connect(_preview_character.bind(character_id))
 		roster_grid.add_child(button)
 		character_card_buttons.append(button)
+		character_card_by_id[character_id] = button
+
+	character_detail_panel = CHARACTER_DETAIL_PANEL_SCRIPT.new() as PanelContainer
+	body.add_child(character_detail_panel)
 
 	var action_row := HBoxContainer.new()
 	action_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	action_row.add_theme_constant_override("separation", 12)
+	action_row.add_theme_constant_override("separation", 14)
 	content.add_child(action_row)
 
 	character_start_button = Button.new()
-	character_start_button.text = "Start Survival"
-	character_start_button.custom_minimum_size = Vector2(260.0, 44.0)
+	character_start_button.text = "Start Zombie Survival"
+	character_start_button.custom_minimum_size = Vector2(300.0, 46.0)
+	character_start_button.add_theme_font_size_override("font_size", 17)
 	character_start_button.disabled = true
 	character_start_button.pressed.connect(_start_survival_with_selected_characters)
 	character_start_button.focus_entered.connect(_play_focus)
 	action_row.add_child(character_start_button)
 
 	var back_button := Button.new()
-	back_button.text = "Back"
-	back_button.custom_minimum_size = Vector2(260.0, 44.0)
+	back_button.text = "Back / Esc / B"
+	back_button.custom_minimum_size = Vector2(260.0, 46.0)
+	back_button.add_theme_font_size_override("font_size", 17)
 	back_button.pressed.connect(_close_character_select)
 	back_button.focus_entered.connect(_play_focus)
 	action_row.add_child(back_button)
@@ -307,12 +355,12 @@ func _create_character_select_panel(parent: Control) -> void:
 func _create_character_slot_panel(player_slot: int) -> Control:
 	var panel := PanelContainer.new()
 	panel.name = "Player%dSelectionSlot" % player_slot
-	panel.custom_minimum_size = Vector2(258.0, 204.0)
+	panel.custom_minimum_size = Vector2(274.0, 126.0)
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	panel.gui_input.connect(_on_character_slot_gui_input.bind(player_slot))
 
 	var content := VBoxContainer.new()
-	content.add_theme_constant_override("separation", 3)
+	content.add_theme_constant_override("separation", 2)
 	panel.add_child(content)
 
 	var top_row := HBoxContainer.new()
@@ -320,7 +368,7 @@ func _create_character_slot_panel(player_slot: int) -> Control:
 	content.add_child(top_row)
 
 	var portrait := TextureRect.new()
-	portrait.custom_minimum_size = Vector2(70.0, 70.0)
+	portrait.custom_minimum_size = Vector2(58.0, 58.0)
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	top_row.add_child(portrait)
 
@@ -330,28 +378,30 @@ func _create_character_slot_panel(player_slot: int) -> Control:
 	top_row.add_child(title_box)
 
 	var player_label := Label.new()
-	player_label.add_theme_font_size_override("font_size", 13)
+	player_label.add_theme_font_size_override("font_size", 12)
 	title_box.add_child(player_label)
 
 	var name_label := Label.new()
-	name_label.add_theme_font_size_override("font_size", 14)
+	name_label.add_theme_font_size_override("font_size", 13)
 	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	name_label.max_lines_visible = 2
+	name_label.max_lines_visible = 1
+	name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	title_box.add_child(name_label)
 
 	var class_label := Label.new()
 	class_label.add_theme_font_size_override("font_size", 11)
 	class_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	class_label.max_lines_visible = 2
+	class_label.max_lines_visible = 1
+	class_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	title_box.add_child(class_label)
 
 	var stats_label := _create_character_detail_label(10, 1)
 	content.add_child(stats_label)
 
-	var passive_label := _create_character_detail_label(9, 2)
+	var passive_label := _create_character_detail_label(9, 1)
 	content.add_child(passive_label)
 
-	var super_label := _create_character_detail_label(9, 2)
+	var super_label := _create_character_detail_label(9, 1)
 	content.add_child(super_label)
 
 	character_slot_views[player_slot] = {
@@ -538,6 +588,8 @@ func _open_character_select() -> void:
 	if settings_panel != null:
 		settings_panel.close(false)
 	_ensure_current_character_slot()
+	if focused_character_id.is_empty() and not character_profiles.is_empty():
+		focused_character_id = StringName(character_profiles[0].get("id", &""))
 	_refresh_character_selection_ui()
 	character_select_panel.show()
 	if not character_card_buttons.is_empty():
@@ -569,13 +621,9 @@ func _assign_character_to_slot(
 		return
 	current_character_slot = player_slot
 	character_selection_by_slot[player_slot] = character_id
+	focused_character_id = character_id
 	_play_confirm()
 	_refresh_character_selection_ui()
-	if (
-		character_start_button != null
-		and not character_start_button.disabled
-	):
-		character_start_button.grab_focus()
 
 func _start_survival_with_selected_characters() -> void:
 	_resolve_managers()
@@ -631,6 +679,11 @@ func _set_current_character_slot(player_slot: int) -> void:
 	if current_character_slot == player_slot:
 		return
 	current_character_slot = player_slot
+	var selected_id := StringName(
+		character_selection_by_slot.get(current_character_slot, &"")
+	)
+	if RpgCharacterRegistry.is_character_available(selected_id):
+		focused_character_id = selected_id
 	_refresh_character_selection_ui()
 
 func _all_active_character_slots_selected() -> bool:
@@ -652,6 +705,8 @@ func _refresh_character_selection_ui() -> void:
 		)
 		var profile := _get_character_profile(selected_id)
 		_refresh_character_slot_view(player_slot, active, profile)
+	_refresh_character_card_states()
+	_refresh_character_preview()
 	if character_start_button != null:
 		character_start_button.disabled = not _all_active_character_slots_selected()
 
@@ -748,6 +803,59 @@ func _refresh_character_slot_view(
 		]
 	)
 
+func _refresh_character_card_states() -> void:
+	for profile in character_profiles:
+		var character_id := StringName(profile.get("id", &""))
+		var card := character_card_by_id.get(character_id) as Button
+		if card == null:
+			continue
+		var assigned_slots_for_card: Array[int] = []
+		for player_slot in _get_active_character_slots():
+			var selected_id := StringName(
+				character_selection_by_slot.get(player_slot, &"")
+			)
+			if selected_id == character_id:
+				assigned_slots_for_card.append(player_slot)
+		var current_selected_id := StringName(
+			character_selection_by_slot.get(current_character_slot, &"")
+		)
+		card.call(
+			"set_selection_state",
+			current_selected_id == character_id,
+			assigned_slots_for_card,
+			current_character_slot
+		)
+
+func _on_character_card_focused(character_id: StringName) -> void:
+	_play_focus()
+	_preview_character(character_id)
+
+func _preview_character(character_id: StringName) -> void:
+	if not RpgCharacterRegistry.is_character_available(character_id):
+		return
+	focused_character_id = character_id
+	_refresh_character_preview()
+
+func _refresh_character_preview() -> void:
+	if character_detail_panel == null:
+		return
+	var preview_id := focused_character_id
+	if not RpgCharacterRegistry.is_character_available(preview_id):
+		preview_id = StringName(
+			character_selection_by_slot.get(current_character_slot, &"")
+		)
+	if not RpgCharacterRegistry.is_character_available(preview_id):
+		if character_profiles.is_empty():
+			character_detail_panel.call("set_profile", {}, null)
+			return
+		preview_id = StringName(character_profiles[0].get("id", &""))
+	var profile := _get_character_profile(preview_id)
+	character_detail_panel.call(
+		"set_profile",
+		profile,
+		_load_character_weapon_data(profile)
+	)
+
 func _set_character_slot_text(
 	name_label: Label,
 	class_label: Label,
@@ -801,6 +909,18 @@ func _load_character_texture(profile: Dictionary) -> Texture2D:
 	character_texture_cache[cache_key] = texture
 	return texture
 
+func _load_character_weapon_data(profile: Dictionary) -> WeaponData:
+	if profile.is_empty():
+		return null
+	var weapon_id := StringName(profile.get("base_weapon_id", &""))
+	if weapon_id.is_empty():
+		return null
+	if character_weapon_cache.has(weapon_id):
+		return character_weapon_cache[weapon_id] as WeaponData
+	var weapon_data := RpgCharacterRegistry.load_base_weapon(weapon_id)
+	character_weapon_cache[weapon_id] = weapon_data
+	return weapon_data
+
 func _load_bitmap_texture(path: String) -> Texture2D:
 	var image := Image.new()
 	if image.load(path) != OK:
@@ -808,29 +928,133 @@ func _load_bitmap_texture(path: String) -> Texture2D:
 	return ImageTexture.create_from_image(image)
 
 func _create_character_placeholder_texture(profile: Dictionary) -> Texture2D:
-	var size := 96
+	var size := 128
 	var image := Image.create(size, size, false, Image.FORMAT_RGBA8)
 	var primary := Color(profile.get("palette_primary", Color(0.18, 0.74, 0.95, 1.0)))
 	var secondary := Color(profile.get("palette_secondary", Color(0.08, 0.10, 0.14, 1.0)))
 	var accent := Color(profile.get("palette_accent", Color(1.0, 0.80, 0.34, 1.0)))
-	image.fill(secondary.darkened(0.28))
-	var center := Vector2(size * 0.5, size * 0.48)
+	var character_id := StringName(profile.get("id", &""))
+	var weapon_id := StringName(profile.get("base_weapon_id", &""))
+	image.fill(secondary.darkened(0.35))
+	var center := Vector2(size * 0.5, size * 0.52)
 	for y in range(size):
 		for x in range(size):
 			var point := Vector2(float(x), float(y))
-			var distance := point.distance_to(center)
-			if distance <= 34.0:
-				image.set_pixel(x, y, primary)
-			if distance <= 22.0 and y < 50:
-				image.set_pixel(x, y, primary.lightened(0.16))
-			if absf(point.x - center.x) + absf(point.y - 68.0) <= 24.0:
-				image.set_pixel(x, y, primary.darkened(0.16))
-			if distance >= 32.0 and distance <= 35.0:
-				image.set_pixel(x, y, Color(0.04, 0.05, 0.06, 1.0))
-	for x in range(18, 78):
-		for y in range(78, 84):
-			image.set_pixel(x, y, accent)
+			var distance := point.distance_to(Vector2(size * 0.5, size * 0.5))
+			var vignette := clampf(distance / 82.0, 0.0, 1.0)
+			if (int(x / 12) + int(y / 12)) % 2 == 0:
+				image.set_pixel(x, y, image.get_pixel(x, y).lightened(0.025))
+			if vignette > 0.45:
+				image.set_pixel(x, y, image.get_pixel(x, y).darkened((vignette - 0.45) * 0.55))
+	_paint_ellipse(image, center + Vector2(0.0, 35.0), Vector2(38.0, 12.0), Color(0.0, 0.0, 0.0, 0.42))
+	_paint_ellipse(image, center + Vector2(0.0, -4.0), Vector2(24.0, 34.0), Color(0.015, 0.018, 0.022, 1.0))
+	_paint_ellipse(image, center + Vector2(0.0, -2.0), Vector2(18.0, 29.0), primary.darkened(0.05))
+	_paint_disc(image, center + Vector2(0.0, -34.0), 14.0, Color(0.018, 0.020, 0.025, 1.0))
+	_paint_disc(image, center + Vector2(0.0, -35.0), 10.0, secondary.lightened(0.16))
+	_paint_line(image, center + Vector2(-15.0, -12.0), center + Vector2(19.0, 22.0), 5.0, accent.darkened(0.18))
+	_paint_line(image, center + Vector2(15.0, -12.0), center + Vector2(-18.0, 22.0), 4.0, accent.darkened(0.30))
+	match character_id:
+		&"ranger":
+			_paint_line(image, center + Vector2(-17.0, -37.0), center + Vector2(0.0, -55.0), 5.0, Color(0.012, 0.014, 0.018, 1.0))
+			_paint_line(image, center + Vector2(17.0, -37.0), center + Vector2(0.0, -55.0), 5.0, Color(0.012, 0.014, 0.018, 1.0))
+		&"pistoliere":
+			_paint_rect(image, Rect2i(43, 31, 42, 8), accent)
+		&"berserker":
+			_paint_rect(image, Rect2i(35, 49, 58, 13), Color(0.015, 0.018, 0.022, 1.0))
+			_paint_rect(image, Rect2i(38, 51, 52, 5), accent)
+		&"spadaccino":
+			_paint_line(image, center + Vector2(13.0, -50.0), center + Vector2(36.0, -40.0), 4.0, accent.lightened(0.1))
+		&"mago":
+			_paint_line(image, center + Vector2(26.0, -48.0), center + Vector2(27.0, 34.0), 5.0, Color(0.012, 0.014, 0.018, 1.0))
+			_paint_disc(image, center + Vector2(26.0, -51.0), 7.0, accent)
+		&"domatrice":
+			_paint_rect(image, Rect2i(36, 50, 17, 42), secondary.lightened(0.12))
+			_paint_disc(image, center + Vector2(-14.0, -47.0), 4.0, accent)
+		&"licantropo":
+			_paint_line(image, center + Vector2(-22.0, -7.0), center + Vector2(-39.0, 22.0), 6.0, accent)
+			_paint_line(image, center + Vector2(22.0, -7.0), center + Vector2(39.0, 22.0), 6.0, accent)
+	_paint_placeholder_weapon(image, center, weapon_id, primary, accent)
 	return ImageTexture.create_from_image(image)
+
+func _paint_placeholder_weapon(
+	image: Image,
+	center: Vector2,
+	weapon_id: StringName,
+	primary: Color,
+	accent: Color
+) -> void:
+	match weapon_id:
+		&"bow":
+			_paint_line(image, center + Vector2(23.0, -18.0), center + Vector2(42.0, 18.0), 4.0, primary.darkened(0.32))
+			_paint_line(image, center + Vector2(21.0, 0.0), center + Vector2(50.0, 0.0), 2.0, accent)
+		&"axe":
+			_paint_line(image, center + Vector2(20.0, -7.0), center + Vector2(53.0, 25.0), 7.0, primary.darkened(0.35))
+			_paint_ellipse(image, center + Vector2(52.0, 22.0), Vector2(12.0, 17.0), accent)
+		&"sword":
+			_paint_line(image, center + Vector2(16.0, 2.0), center + Vector2(58.0, -24.0), 5.0, accent.lightened(0.1))
+			_paint_line(image, center + Vector2(17.0, 3.0), center + Vector2(7.0, 14.0), 7.0, primary.darkened(0.36))
+		&"staff":
+			_paint_line(image, center + Vector2(26.0, -45.0), center + Vector2(34.0, 35.0), 5.0, primary.darkened(0.35))
+			_paint_disc(image, center + Vector2(25.0, -47.0), 8.0, Color(accent, 0.72))
+		&"slingshot":
+			_paint_line(image, center + Vector2(20.0, 0.0), center + Vector2(45.0, -17.0), 5.0, primary.darkened(0.35))
+			_paint_line(image, center + Vector2(45.0, -17.0), center + Vector2(56.0, -31.0), 4.0, primary.darkened(0.35))
+			_paint_line(image, center + Vector2(45.0, -17.0), center + Vector2(61.0, -7.0), 4.0, primary.darkened(0.35))
+			_paint_line(image, center + Vector2(56.0, -31.0), center + Vector2(61.0, -7.0), 2.0, accent)
+		&"claws":
+			for index in range(3):
+				_paint_line(image, center + Vector2(24.0 + index * 6.0, -3.0), center + Vector2(42.0 + index * 6.0, 21.0), 3.0, accent)
+		_:
+			_paint_line(image, center + Vector2(20.0, -3.0), center + Vector2(55.0, -3.0), 7.0, primary.darkened(0.35))
+			_paint_line(image, center + Vector2(27.0, -3.0), center + Vector2(52.0, -3.0), 3.0, accent)
+
+func _paint_disc(image: Image, center: Vector2, radius: float, color: Color) -> void:
+	var min_x := clampi(floori(center.x - radius), 0, image.get_width() - 1)
+	var max_x := clampi(ceili(center.x + radius), 0, image.get_width() - 1)
+	var min_y := clampi(floori(center.y - radius), 0, image.get_height() - 1)
+	var max_y := clampi(ceili(center.y + radius), 0, image.get_height() - 1)
+	for y in range(min_y, max_y + 1):
+		for x in range(min_x, max_x + 1):
+			if Vector2(float(x), float(y)).distance_to(center) <= radius:
+				image.set_pixel(x, y, color)
+
+func _paint_ellipse(image: Image, center: Vector2, radius: Vector2, color: Color) -> void:
+	var min_x := clampi(floori(center.x - radius.x), 0, image.get_width() - 1)
+	var max_x := clampi(ceili(center.x + radius.x), 0, image.get_width() - 1)
+	var min_y := clampi(floori(center.y - radius.y), 0, image.get_height() - 1)
+	var max_y := clampi(ceili(center.y + radius.y), 0, image.get_height() - 1)
+	for y in range(min_y, max_y + 1):
+		for x in range(min_x, max_x + 1):
+			var offset := Vector2(float(x), float(y)) - center
+			var normalized := (
+				(offset.x * offset.x) / maxf(radius.x * radius.x, 1.0)
+				+ (offset.y * offset.y) / maxf(radius.y * radius.y, 1.0)
+			)
+			if normalized <= 1.0:
+				image.set_pixel(x, y, color)
+
+func _paint_rect(image: Image, rect: Rect2i, color: Color) -> void:
+	var min_x := clampi(rect.position.x, 0, image.get_width() - 1)
+	var max_x := clampi(rect.position.x + rect.size.x, 0, image.get_width() - 1)
+	var min_y := clampi(rect.position.y, 0, image.get_height() - 1)
+	var max_y := clampi(rect.position.y + rect.size.y, 0, image.get_height() - 1)
+	for y in range(min_y, max_y):
+		for x in range(min_x, max_x):
+			image.set_pixel(x, y, color)
+
+func _paint_line(
+	image: Image,
+	start: Vector2,
+	end: Vector2,
+	width: float,
+	color: Color
+) -> void:
+	var direction := end - start
+	var length := maxf(direction.length(), 1.0)
+	var steps := ceili(length * 1.35)
+	for step in range(steps + 1):
+		var point := start.lerp(end, float(step) / float(steps))
+		_paint_disc(image, point, width * 0.5, color)
 
 func _make_character_slot_style(
 	player_slot: int,
@@ -864,6 +1088,24 @@ func _make_character_slot_style(
 	style.content_margin_top = 6
 	style.content_margin_right = 8
 	style.content_margin_bottom = 6
+	return style
+
+func _make_character_select_panel_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.018, 0.026, 0.036, 0.98)
+	style.border_color = Color(0.22, 0.32, 0.38, 1.0)
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	style.corner_radius_top_left = 8
+	style.corner_radius_top_right = 8
+	style.corner_radius_bottom_left = 8
+	style.corner_radius_bottom_right = 8
+	style.content_margin_left = 0
+	style.content_margin_top = 0
+	style.content_margin_right = 0
+	style.content_margin_bottom = 0
 	return style
 
 func _get_character_slot_color(player_slot: int) -> Color:

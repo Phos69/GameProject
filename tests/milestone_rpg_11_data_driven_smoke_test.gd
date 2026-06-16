@@ -34,6 +34,23 @@ func _run() -> void:
 			profile.get("super_id", &"") == data.super_id,
 			"%s profile comes from resource super id" % str(character_id)
 		)
+		_expect(
+			not str(profile.get("style_description", "")).is_empty(),
+			"%s profile exposes a style description" % str(character_id)
+		)
+		_expect(
+			not str(profile.get("gameplay_sprite_path", "")).is_empty(),
+			"%s profile exposes a future gameplay sprite path" % str(character_id)
+		)
+		var weapon := RpgCharacterRegistry.load_base_weapon(
+			StringName(profile.get("base_weapon_id", &""))
+		)
+		_expect(weapon != null, "%s base weapon loads" % str(character_id))
+		if weapon != null:
+			_expect(
+				weapon.max_range > 0.0,
+				"%s base weapon exposes a readable range stat" % str(character_id)
+			)
 
 	var fallback := RpgCharacterRegistry.get_character_profile(&"missing_class")
 	_expect(

@@ -176,6 +176,16 @@ func _register_menu_actions() -> void:
 	accept_event.button_index = JOY_BUTTON_A
 	if not InputMap.action_has_event(&"ui_accept", accept_event):
 		InputMap.action_add_event(&"ui_accept", accept_event)
+	if not InputMap.has_action(&"ui_cancel"):
+		InputMap.add_action(&"ui_cancel")
+	var cancel_button := InputEventJoypadButton.new()
+	cancel_button.device = -1
+	cancel_button.button_index = JOY_BUTTON_B
+	if not InputMap.action_has_event(&"ui_cancel", cancel_button):
+		InputMap.action_add_event(&"ui_cancel", cancel_button)
+	var cancel_key := _key(KEY_ESCAPE)
+	if not InputMap.action_has_event(&"ui_cancel", cancel_key):
+		InputMap.action_add_event(&"ui_cancel", cancel_key)
 	if not InputMap.has_action(&"pause"):
 		InputMap.add_action(&"pause", 0.20)
 	var pause_key := _key(KEY_P)

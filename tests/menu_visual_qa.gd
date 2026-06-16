@@ -54,8 +54,25 @@ func _run() -> void:
 	await _press_joypad_button(JOY_BUTTON_A)
 	await process_frame
 	_expect(
+		main_menu.character_select_panel.visible,
+		"simulated joypad A opens character select before survival"
+	)
+	_expect(
+		await _capture("character_select_opened.png"),
+		"character select screenshot is captured"
+	)
+	await _press_joypad_button(JOY_BUTTON_A)
+	_expect(
+		not main_menu.character_start_button.disabled,
+		"simulated joypad A assigns the focused character"
+	)
+	main_menu.character_start_button.grab_focus()
+	await process_frame
+	await _press_joypad_button(JOY_BUTTON_A)
+	await process_frame
+	_expect(
 		game_mode_manager.active_mode_id == GameConstants.MODE_SURVIVAL,
-		"simulated joypad A starts survival"
+		"simulated joypad A confirms selected character and starts survival"
 	)
 	_expect(
 		await _capture("survival_started.png"),
