@@ -4,6 +4,12 @@ Usare questa checklist per verificare il pass 1 dei personaggi RPG a 1280x720, s
 
 ## Character Select
 
+- [ ] La schermata mostra titolo, quattro slot player, card RPG per il roster e
+  pulsante `Start Zombie Survival` leggibile da divano/joypad.
+- [ ] La card in focus mostra highlight/hover, stat bar HP/ATK/DEF/SPD/RNG,
+  icona classe/arma e indicatori degli slot player assegnati.
+- [ ] Il dossier laterale mostra descrizione di stile, range arma e preview
+  gameplay isometrica con arma/stance idle coerenti con il profilo.
 - [ ] Ogni slot player attivo mostra portrait, nome, classe/arma, statistiche, passiva e super dopo la scelta.
 - [ ] Gli slot inattivi restano distinguibili dagli slot attivi senza occupare il focus della selezione.
 
@@ -41,6 +47,7 @@ Usare questa checklist per verificare il pass 1 dei personaggi RPG a 1280x720, s
 I placeholder procedurali possono essere sostituiti popolando i path data-driven nei profili `RpgCharacterData`:
 
 - `portrait_full_path` e `portrait_hud_path` per menu/HUD.
+- `style_description` e `gameplay_sprite_path` per dossier e preview future.
 - `sprite_sheet_path` e `animation_profile_id` per il corpo animato.
 - `weapon_sprite_path` per il visual arma separato.
 - `passive_icon_path` e `super_icon_path` per le icone UI.

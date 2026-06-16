@@ -61,6 +61,22 @@
 
 ## Completati recenti
 
+- Polish Character Select RPG.
+  - Obiettivo: trasformare la selezione personaggio in una schermata leggibile
+    da joypad con card RPG, stat visuali, dossier e preview gameplay.
+  - Milestone collegata: polish post roadmap RPG Mode.
+  - File/sistemi coinvolti: `MainMenu`, `CharacterSelectCard`,
+    `CharacterDetailPanel`, `CharacterGameplayPreview`, `RpgCharacterData`,
+    profili `game/rpg/characters/`, `InputManager`.
+  - Criterio di accettazione: almeno quattro personaggi selezionabili mostrano
+    nome, classe, arma, passiva, super, descrizione stile e stat
+    HP/ATK/DEF/SPD/RNG; il personaggio scelto viene passato alla survival senza
+    rompere il flusso esistente.
+  - Test richiesto: `tests/character_select_ui_smoke_test.gd`,
+    `tests/milestone_rpg_1_character_select_smoke_test.gd`,
+    `tests/milestone_rpg_11_data_driven_smoke_test.gd`, build smoke e QA
+    manuale a 1280x720 con tastiera/joypad.
+
 - Menu pausa e Settings condivisi.
   - Obiettivo: aprire una pausa con `Start` durante una run e centralizzare audio, video e controlli in una pagina Settings disponibile anche dal main menu.
   - Milestone collegata: UI/polish post-roadmap M21.

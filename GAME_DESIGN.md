@@ -323,6 +323,15 @@ e HUD nella forma `Mira Vento / Ranger · Arco`.
 
 I campi artistici opzionali dei profili (`portrait_full_path`, `portrait_hud_path`, `gameplay_palette_id`, `sprite_sheet_path`, `weapon_sprite_path`, `passive_icon_path`, `super_icon_path`, `animation_profile_id` e palette primaria/secondaria/accent) rendono data-driven la sostituzione degli asset definitivi. Mira, Bruna, Nina e Rocco usano portrait PNG nel Character Select; Dante, Kael ed Elio restano su placeholder SVG/procedurali finche non arriveranno i PNG definitivi. La checklist manuale e in `docs/rpg_character_visual_checklist.md`.
 
+Nel pass corrente la Character Select e stata rifinita come schermata RPG
+completa: ogni profilo compare in una card con portrait/fallback procedurale,
+nome, classe, arma, passiva, super, barre HP/ATK/DEF/SPD/RNG e indicatori slot.
+Il pannello dossier laterale mostra descrizione di stile, range derivato da
+`WeaponData` e una preview gameplay isometrica procedurale con arma/stance idle.
+`style_description` e `gameplay_sprite_path` completano il profilo dati per
+supportare testo di stile e future preview/sprite definitivi senza cambiare il
+menu o il contratto survival.
+
 Statistiche attive:
 
 - HP massimi dal profilo classe;

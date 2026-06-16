@@ -19,6 +19,18 @@
 
 ### Added
 
+- Character Select RPG rifatta come schermata completa con card grafiche,
+  quattro slot player, pannello dossier, preview gameplay procedurale,
+  barre stat HP/ATK/DEF/SPD/RNG, highlight focus/hover e conferma esplicita
+  `Start Zombie Survival`.
+- Aggiunti i controlli UI `CharacterSelectCard`,
+  `CharacterDetailPanel` e `CharacterGameplayPreview`, piu il campo
+  `style_description` e il path `gameplay_sprite_path` nei profili
+  `RpgCharacterData` per sostituire in futuro preview e sprite con asset
+  definitivi senza cambiare menu o gameplay.
+- Aggiunto `tests/character_select_ui_smoke_test.gd` per validare struttura,
+  preview e selezione della nuova Character Select anche senza avviare la
+  scena principale.
 - Character Select ora mostra una griglia di icone personaggio e quattro slot
   player: ogni slot attivo conserva il proprio personaggio, portrait,
   statistiche, passiva e super prima di avviare la survival.

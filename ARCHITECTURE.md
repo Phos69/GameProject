@@ -63,7 +63,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 
 ## Sistemi principali
 
-- `InputManager`: crea e legge azioni per slot player e globali. Ogni slot usa azioni `p{slot}_{azione}`, incluso `dodge`; `world_map` e una azione globale.
+- `InputManager`: crea e legge azioni per slot player e globali. Ogni slot usa azioni `p{slot}_{azione}`, incluso `dodge`; `world_map` e una azione globale; `ui_cancel` mappa `Esc` e joypad `B` per tornare dai pannelli menu.
 - `LocalMultiplayerManager`: mantiene gli slot locali attivi, gestisce join/leave e usa mapping deterministico `device joypad + 1 = player_slot`.
 - `PlayerManager`: spawna/despawna player in base agli slot attivi e tiene il registro degli slot.
 - `PlayerController`: movimento, mira, fire action, dodge/roll e colore visuale per slot.
@@ -72,9 +72,12 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `GameModeManager`: registra, arresta e avvia le modalita.
 - `RunSessionTracker`: traduce i segnali terminali in dati risultato runtime.
 - `RunResultsScreen`: overlay condiviso con focus e azioni di fine run.
-- `MainMenu`: UI iniziale, selezione modalita, `Character Select` survival per slot player, continue e ritorno con `Esc`.
+- `MainMenu`: UI iniziale, selezione modalita, `Character Select` survival per slot player, continue e ritorno con `Esc`/joypad `B`.
+- `CharacterSelectCard`: card RPG selezionabile con portrait/fallback, icone classe/arma, stat bar compatte e indicatori slot.
+- `CharacterDetailPanel`: dossier laterale della Character Select con descrizione stile, stat leggibili, range arma e preview.
+- `CharacterGameplayPreview`: preview procedurale isometrica del personaggio selezionato, con silhouette, palette e arma derivate dal profilo.
 - `RpgCharacterRegistry`: catalogo centralizzato dei personaggi RPG iniziali.
-- `RpgCharacterData`: risorsa dati per un profilo classe RPG selezionabile, inclusi nome proprio, palette e riferimenti asset opzionali per portrait, sprite, arma e icone.
+- `RpgCharacterData`: risorsa dati per un profilo classe RPG selezionabile, inclusi nome proprio, descrizione stile, palette e riferimenti asset opzionali per portrait, preview gameplay, sprite, arma e icone.
 - `RpgPlayerComponent`: profilo RPG runtime, statistiche, XP per-run, adrenalina, passive automatiche, companion RPG, super e formule danno del player survival.
 - `RpgSuperResolver`: esecuzione delle super RPG usando `ProjectileSystem`, `HealthSystem` e bersagli damageable condivisi, incluse meteora arcana e trasformazione licantropo.
 - `SaveManager`: persistenza JSON versionata e autosave di progressione, impostazioni e stato mondo/esplorazione.
@@ -167,6 +170,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `BossTelegraphVisual`: warning world-space per pattern aimed, radial e cambio fase.
 - `WaveWardenVisual`: silhouette, animazione e stato visuale delle due fasi del boss.
 - `PlayerHudCard`: scheda HUD riusabile per ogni slot locale, inclusa indicazione minimale del cooldown roll.
+- `CharacterSelectCard`, `CharacterDetailPanel` e `CharacterGameplayPreview`: controlli presentazionali della selezione RPG, senza autorita su context survival o applicazione profili.
 - `RpgHudIcon`: icona procedurale leggera per ritratto classe, passive e super RPG.
 - `BriciolaCompanion`: companion alleato leggero della Domatrice con follow, target acquire, dash attack, recover e frenzy super.
 - `ReviveIndicatorVisual`: anello world-space con colore slot e progresso.

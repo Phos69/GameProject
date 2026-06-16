@@ -52,6 +52,9 @@ tipo `Could not find type "RpgPlayerComponent" in the current scope`.
 Controlli debug:
 
 - Menu: frecce/D-pad o stick per navigare, `Invio`/joypad `A` per confermare.
+- Character Select: frecce/D-pad cambiano card, `Invio`/joypad `A` assegna
+  il personaggio allo slot attivo, il pulsante `Start Zombie Survival`
+  conferma la run, `Esc`/joypad `B` torna al menu.
 - Partita: joypad `Start` o `P` apre/chiude la pausa; `Esc` torna al menu principale arrestando la run.
 - Tastiera: `WASD` per movimento, frecce per mira, `Spazio` per sparare, `R` per ricaricare e `Q` per la super RPG.
 - Tastiera: `Shift`/`Ctrl` esegue dodge/roll, `M` apre o chiude la mappa dei territori esplorati.
@@ -78,7 +81,16 @@ I profili RPG zombie survival mantengono gli ID tecnici `ranger`, `pistoliere`, 
 - `Nina Bullone` — Domatrice · Fionda magnetica, palette turchese/rame e companion Briciola.
 - `Rocco Lunastorta` — Licantropo · Artigli, palette grigio/luna/rosso e trasformazione super.
 
-I campi artistici in `RpgCharacterData` collegano palette, ritratti, sprite, weapon visual e icone passive/super senza rendere obbligatori asset esterni. Mira Vento, Bruna Spaccaferro, Nina Bullone e Rocco Lunastorta hanno portrait PNG definitivi collegati al Character Select; gli altri profili continuano a usare i placeholder SVG/procedurali. Per sostituire gli asset, popolare i path `assets/characters/<id>/...` nei `.tres` e validare la checklist `docs/rpg_character_visual_checklist.md`.
+I campi artistici in `RpgCharacterData` collegano palette, ritratti, sprite,
+preview gameplay, weapon visual e icone passive/super senza rendere
+obbligatori asset esterni. La Character Select usa card RPG grafiche,
+stat visuali e una preview gameplay procedurale che legge `style_description`,
+`gameplay_sprite_path`, palette e arma base dai profili. Mira Vento, Bruna
+Spaccaferro, Nina Bullone e Rocco Lunastorta hanno portrait PNG definitivi
+collegati al Character Select; gli altri profili continuano a usare i
+placeholder SVG/procedurali. Per sostituire gli asset, popolare i path
+`assets/characters/<id>/...` nei `.tres` e validare la checklist
+`docs/rpg_character_visual_checklist.md`.
 
 Smoke test headless:
 
@@ -114,6 +126,7 @@ godot --headless --path . --script res://tests/milestone_11_boss_telegraph_smoke
 godot --headless --path . --script res://tests/milestone_12_enemy_variants_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_13_weapon_tower_visual_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_14_final_polish_smoke_test.gd
+godot --headless --path . --script res://tests/character_select_ui_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_rpg_1_character_select_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_rpg_2_stats_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_rpg_3_weapons_smoke_test.gd
