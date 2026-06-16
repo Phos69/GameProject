@@ -51,12 +51,13 @@ tipo `Could not find type "RpgPlayerComponent" in the current scope`.
 
 Controlli debug:
 
-- Menu: frecce/D-pad o stick per navigare, `Invio`/joypad `A` per confermare e `Esc` per tornare al menu durante una run.
+- Menu: frecce/D-pad o stick per navigare, `Invio`/joypad `A` per confermare.
+- Partita: joypad `Start` o `P` apre/chiude la pausa; `Esc` torna al menu principale arrestando la run.
 - Tastiera: `WASD` per movimento, frecce per mira, `Spazio` per sparare, `R` per ricaricare e `Q` per la super RPG.
 - Tastiera debug multiplayer: `F2`, `F3`, `F4` attivano/disattivano gli slot player 2, 3 e 4.
 - Modalita debug: `F1` avvia survival, `F5` avvia una run dungeon e `F6` avvia tower defense.
 - Joypad: stick sinistro per movimento, stick destro per mira, trigger/spalla destra per sparare, pulsante `X` per ricaricare e pulsante `Y` per la super RPG.
-- Joypad multiplayer: `Start` attiva lo slot del controller, `Back/Select` lascia lo slot se non e player 1.
+- Joypad multiplayer: nel menu `Start` attiva lo slot del controller, `Back/Select` lascia lo slot se non e player 1.
 - Dungeon: attraversare il portale verde a destra; nelle stanze combat e boss diventa verde solo dopo aver eliminato tutti i bersagli.
 - Tower defense: entrare in uno slot azzurro e premere `E` o pulsante joypad `A` per costruire una torre se ci sono crediti sufficienti.
 
@@ -152,6 +153,7 @@ game/
   procedural/        generatori procedurali
   ui/                HUD e interfaccia
   audio/             audio manager
+  settings/          impostazioni video e stato configurabile condiviso
   saves/             salvataggi JSON versionati
   visuals/           visual modulari ed effetti gameplay sostituibili
   environment/       profili arena, palette, gate e props interattivi
@@ -271,7 +273,11 @@ Completato:
 - shooter ranged con distanza preferita, windup, corsia telegrafata e colpo schivabile;
 - stato downed e revive locale con input tenuto, anello world-space e HUD;
 - schermate risultati condivise con durata, progressione, retry e cambio modalita;
+- menu pausa durante la partita con resume, settings, ritorno al menu e quit;
 - bus audio separati, cue sostituibili, fallback e volumi persistenti;
+- pagina settings condivisa tra main menu e pausa, con tab Audio, Video e Controls;
+- impostazioni video per fullscreen, borderless, risoluzione, VSync e limite framerate;
+- rimappatura persistente dei controlli joypad gameplay, pausa, join e leave;
 - registro boss per ID con compatibilita esplicita per modalita;
 - boss dungeon `Rift Architect` con due pattern, fase e drop dedicati;
 - due arena survival data-driven con palette, spawn e player start distinti;

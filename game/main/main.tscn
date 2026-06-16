@@ -1,4 +1,4 @@
-[gd_scene load_steps=43 format=3]
+[gd_scene load_steps=45 format=3]
 
 [ext_resource type="Script" path="res://game/main/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://game/input/input_manager.gd" id="2_input_manager"]
@@ -42,6 +42,8 @@
 [ext_resource type="Script" path="res://game/modes/zombie/hazard_system.gd" id="40_hazard_system"]
 [ext_resource type="Script" path="res://game/modes/zombie/biome_transition_system.gd" id="41_transition_system"]
 [ext_resource type="Script" path="res://game/modes/zombie/random_encounter_system.gd" id="42_random_encounter"]
+[ext_resource type="Script" path="res://game/settings/video_settings_manager.gd" id="43_video_settings"]
+[ext_resource type="Script" path="res://game/ui/pause_menu.gd" id="44_pause_menu"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -138,6 +140,9 @@ script = ExtResource("29_run_tracker")
 [node name="VisualSettingsManager" type="Node" parent="Systems"]
 script = ExtResource("32_visual_settings")
 
+[node name="VideoSettingsManager" type="Node" parent="Systems"]
+script = ExtResource("43_video_settings")
+
 [node name="SaveManager" type="Node" parent="Systems"]
 script = ExtResource("23_save_manager")
 
@@ -206,6 +211,9 @@ script = ExtResource("15_hud_manager")
 
 [node name="MainMenu" type="CanvasLayer" parent="."]
 script = ExtResource("25_main_menu")
+
+[node name="PauseMenu" type="CanvasLayer" parent="."]
+script = ExtResource("44_pause_menu")
 
 [node name="RunResultsScreen" type="CanvasLayer" parent="."]
 script = ExtResource("30_run_results")

@@ -11,6 +11,7 @@ var first_mode_button: Button
 var menu_buttons: Array[Button] = []
 var volume_sliders: Dictionary = {}
 var visual_settings_panel: PanelContainer
+var settings_panel: SettingsPanel
 var visual_controls: Dictionary = {}
 var primary_panel: PanelContainer
 var character_select_panel: PanelContainer
@@ -102,8 +103,7 @@ func _initialize() -> void:
 		if not progression_manager.unlocks_changed.is_connected(unlock_callback):
 			progression_manager.unlocks_changed.connect(unlock_callback)
 	_refresh_save_status()
-	_refresh_audio_controls()
-	_refresh_visual_controls()
+	_refresh_settings_controls()
 	if (
 		game_mode_manager == null
 		or game_mode_manager.active_mode_id == GameConstants.MODE_MENU
@@ -170,23 +170,9 @@ func _create_ui() -> void:
 		"Tower Defense",
 		Callable(self, "_select_mode").bind(GameConstants.MODE_TOWER_DEFENSE)
 	))
+	var settings_button := _create_button("Settings", Callable(self, "_open_settings"))
+	content.add_child(settings_button)
 	content.add_child(_create_button("Quit", Callable(self, "_quit_game")))
-
-	var audio_title := Label.new()
-	audio_title.text = "AUDIO MIX"
-	audio_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	audio_title.add_theme_font_size_override("font_size", 17)
-	audio_title.modulate = Color(0.55, 0.88, 1.0, 1.0)
-	content.add_child(audio_title)
-	content.add_child(_create_volume_row("Master", &"Master"))
-	content.add_child(_create_volume_row("Music", &"Music"))
-	content.add_child(_create_volume_row("SFX", &"SFX"))
-	var visual_button := _create_button(
-		"Visual & Accessibility",
-		Callable(self, "_open_visual_settings")
-	)
-	visual_button.custom_minimum_size.y = 38.0
-	content.add_child(visual_button)
 
 	var controls := Label.new()
 	controls.text = (
@@ -195,8 +181,17 @@ func _create_ui() -> void:
 	controls.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	controls.modulate = Color(0.68, 0.74, 0.82, 1.0)
 	content.add_child(controls)
-	_create_visual_settings_panel(center)
+	_create_settings_panel(center)
 	_create_character_select_panel(center)
+
+func _create_settings_panel(parent: Control) -> void:
+	settings_panel = SettingsPanel.new()
+	settings_panel.name = "SettingsPanel"
+	parent.add_child(settings_panel)
+	visual_settings_panel = settings_panel
+	volume_sliders = settings_panel.volume_sliders
+	visual_controls = settings_panel.visual_controls
+	settings_panel.settings_closed.connect(_on_settings_panel_closed)
 
 func _create_character_select_panel(parent: Control) -> void:
 	character_select_panel = PanelContainer.new()
@@ -250,133 +245,6 @@ func _create_character_select_panel(parent: Control) -> void:
 	back_button.focus_entered.connect(_play_focus)
 	content.add_child(back_button)
 	character_select_panel.hide()
-
-func _create_visual_settings_panel(parent: Control) -> void:
-	visual_settings_panel = PanelContainer.new()
-	visual_settings_panel.name = "VisualSettingsPanel"
-	visual_settings_panel.custom_minimum_size = Vector2(540.0, 640.0)
-	parent.add_child(visual_settings_panel)
-	var content := VBoxContainer.new()
-	content.add_theme_constant_override("separation", 10)
-	visual_settings_panel.add_child(content)
-	var title := Label.new()
-	title.text = "VISUAL & ACCESSIBILITY"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 25)
-	title.modulate = Color(0.55, 0.88, 1.0, 1.0)
-	content.add_child(title)
-	var subtitle := Label.new()
-	subtitle.text = "Presentation only: gameplay values never change"
-	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	subtitle.modulate = Color(0.72, 0.80, 0.88, 1.0)
-	content.add_child(subtitle)
-	content.add_child(_create_visual_slider(
-		"Flash",
-		&"flash_intensity",
-		0.0,
-		1.0,
-		0.05
-	))
-	content.add_child(_create_visual_slider(
-		"Glow",
-		&"glow_intensity",
-		0.0,
-		1.0,
-		0.05
-	))
-	content.add_child(_create_visual_slider(
-		"Trails",
-		&"trail_intensity",
-		0.0,
-		1.0,
-		0.05
-	))
-	content.add_child(_create_visual_slider(
-		"Camera shake",
-		&"camera_shake_intensity",
-		0.0,
-		1.0,
-		0.05
-	))
-	content.add_child(_create_visual_slider(
-		"HUD text",
-		&"hud_text_scale",
-		0.8,
-		1.2,
-		0.05
-	))
-	content.add_child(_create_visual_toggle(
-		"High contrast",
-		&"high_contrast"
-	))
-	content.add_child(_create_visual_toggle(
-		"Reduced motion",
-		&"reduced_motion"
-	))
-	var presets := HBoxContainer.new()
-	presets.add_theme_constant_override("separation", 8)
-	for spec in [
-		["Default", &"default"],
-		["Comfort", &"reduced_motion"],
-		["Contrast", &"high_contrast"]
-	]:
-		var button := Button.new()
-		button.text = spec[0]
-		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.custom_minimum_size.y = 42.0
-		button.pressed.connect(_apply_visual_profile.bind(spec[1]))
-		button.focus_entered.connect(_play_focus)
-		presets.add_child(button)
-	content.add_child(presets)
-	var back_button := Button.new()
-	back_button.text = "Back"
-	back_button.custom_minimum_size = Vector2(440.0, 46.0)
-	back_button.pressed.connect(_close_visual_settings)
-	back_button.focus_entered.connect(_play_focus)
-	content.add_child(back_button)
-	visual_controls[&"back_button"] = back_button
-	visual_settings_panel.hide()
-
-func _create_visual_slider(
-	label_text: String,
-	setting_id: StringName,
-	minimum: float,
-	maximum: float,
-	step_value: float
-) -> Control:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 12)
-	var label := Label.new()
-	label.text = label_text
-	label.custom_minimum_size = Vector2(145.0, 34.0)
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	row.add_child(label)
-	var slider := HSlider.new()
-	slider.custom_minimum_size = Vector2(275.0, 34.0)
-	slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	slider.min_value = minimum
-	slider.max_value = maximum
-	slider.step = step_value
-	slider.value_changed.connect(
-		_on_visual_slider_changed.bind(setting_id)
-	)
-	slider.focus_entered.connect(_play_focus)
-	row.add_child(slider)
-	visual_controls[setting_id] = slider
-	return row
-
-func _create_visual_toggle(
-	label_text: String,
-	setting_id: StringName
-) -> Control:
-	var toggle := CheckButton.new()
-	toggle.text = label_text
-	toggle.custom_minimum_size = Vector2(440.0, 42.0)
-	toggle.button_pressed = false
-	toggle.toggled.connect(_on_visual_toggle_changed.bind(setting_id))
-	toggle.focus_entered.connect(_play_focus)
-	visual_controls[setting_id] = toggle
-	return toggle
 
 func _create_button(label_text: String, callback: Callable) -> Button:
 	var button := Button.new()
@@ -459,8 +327,7 @@ func _show_menu() -> void:
 	_close_visual_settings(false)
 	_close_character_select(false)
 	_refresh_save_status()
-	_refresh_audio_controls()
-	_refresh_visual_controls()
+	_refresh_settings_controls()
 	if continue_button != null:
 		continue_button.grab_focus()
 
@@ -526,8 +393,8 @@ func _format_character_card(profile: Dictionary) -> String:
 func _open_character_select() -> void:
 	_resolve_managers()
 	primary_panel.hide()
-	if visual_settings_panel != null:
-		visual_settings_panel.hide()
+	if settings_panel != null:
+		settings_panel.close(false)
 	character_select_panel.show()
 	if not character_card_buttons.is_empty():
 		character_card_buttons[0].grab_focus()
@@ -568,32 +435,32 @@ func _on_volume_changed(value: float, bus_name: StringName) -> void:
 		audio_manager.set_bus_volume_linear(bus_name, value)
 
 func _refresh_audio_controls() -> void:
-	var audio_manager := get_tree().get_first_node_in_group(
-		"audio_manager"
-	) as AudioManager
-	if audio_manager == null:
-		return
-	for bus_name in volume_sliders:
-		var slider := volume_sliders[bus_name] as HSlider
-		slider.set_value_no_signal(
-			audio_manager.get_bus_volume_linear(bus_name)
-		)
+	if settings_panel != null:
+		settings_panel.refresh_all_controls()
+
+func _refresh_settings_controls() -> void:
+	if settings_panel != null:
+		volume_sliders = settings_panel.volume_sliders
+		visual_controls = settings_panel.visual_controls
+		settings_panel.refresh_all_controls()
+
+func _open_settings(initial_tab: StringName = &"audio") -> void:
+	_resolve_managers()
+	_refresh_settings_controls()
+	if primary_panel != null:
+		primary_panel.hide()
+	if character_select_panel != null:
+		character_select_panel.hide()
+	if settings_panel != null:
+		settings_panel.open(initial_tab)
 
 func _open_visual_settings() -> void:
-	_resolve_managers()
-	_refresh_visual_controls()
-	primary_panel.hide()
-	visual_settings_panel.show()
-	var first_control := visual_controls.get(
-		&"flash_intensity"
-	) as HSlider
-	if first_control != null:
-		first_control.grab_focus()
+	_open_settings(&"video")
 
 func _close_visual_settings(grab_focus: bool = true) -> void:
-	if visual_settings_panel == null or primary_panel == null:
+	if settings_panel == null or primary_panel == null:
 		return
-	visual_settings_panel.hide()
+	settings_panel.close(false)
 	primary_panel.show()
 	if grab_focus and continue_button != null:
 		continue_button.grab_focus()
@@ -623,27 +490,15 @@ func _apply_visual_profile(profile_id: StringName) -> void:
 		_refresh_visual_controls()
 
 func _refresh_visual_controls() -> void:
-	_resolve_managers()
-	if visual_settings_manager == null:
+	if settings_panel != null:
+		settings_panel.refresh_all_controls()
+
+func _on_settings_panel_closed() -> void:
+	if primary_panel == null:
 		return
-	for setting_id in [
-		&"flash_intensity",
-		&"glow_intensity",
-		&"trail_intensity",
-		&"camera_shake_intensity",
-		&"hud_text_scale"
-	]:
-		var slider := visual_controls.get(setting_id) as HSlider
-		if slider != null:
-			slider.set_value_no_signal(float(
-				visual_settings_manager.get_setting(setting_id, 1.0)
-			))
-	for setting_id in [&"high_contrast", &"reduced_motion"]:
-		var toggle := visual_controls.get(setting_id) as CheckButton
-		if toggle != null:
-			toggle.set_pressed_no_signal(bool(
-				visual_settings_manager.get_setting(setting_id, false)
-			))
+	primary_panel.show()
+	if visible and continue_button != null:
+		continue_button.grab_focus()
 
 func _play_focus() -> void:
 	var audio_manager := get_tree().get_first_node_in_group(

@@ -257,7 +257,7 @@ Stato: completata come infrastruttura audio modulare.
 - Cue con stream opzionale e fallback procedurale.
 - Limite voci, priorita e variazione leggera di pitch.
 - Hook per armi, archetipi nemico, wave, downed, revive e risultati.
-- Slider Master, Music e SFX nel menu.
+- Slider Master, Music e SFX nel tab Audio della pagina Settings.
 - Save v3 con round-trip delle impostazioni audio.
 - Smoke test hook/bus e QA menu a 1280x720.
 
@@ -315,6 +315,8 @@ Attivita post-roadmap:
 - arena survival, biomi e props interattivi completati;
 - accessibilita, profiling e pipeline asset completati;
 - roadmap RPG Mode M1-M12 completata fino al polish feedback RPG;
+- menu pausa e pagina Settings condivisa completati come feature post-roadmap:
+  tab Audio, Video e Controls, save v5 e rimappatura joypad persistente;
 - asset definitivi e ulteriori pass di bilanciamento;
 - firma digitale della build pubblica.
 

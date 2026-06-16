@@ -29,6 +29,13 @@
 
 ## Completati recenti
 
+- Menu pausa e Settings condivisi.
+  - Obiettivo: aprire una pausa con `Start` durante una run e centralizzare audio, video e controlli in una pagina Settings disponibile anche dal main menu.
+  - Milestone collegata: UI/polish post-roadmap M21.
+  - File/sistemi coinvolti: `PauseMenu`, `SettingsPanel`, `MainMenu`, `InputManager`, `LocalMultiplayerManager`, `VideoSettingsManager`, `SaveManager`.
+  - Criterio di accettazione: `Start` pausa/riprende senza join involontario, Audio contiene il mix, Video contiene fullscreen/borderless/risoluzione/VSync/framerate e Controls rimappa i controlli joypad persistenti.
+  - Test richiesto: `tests/pause_settings_smoke_test.gd`, regressioni `milestone_9_smoke_test.gd`, `milestone_18_audio_mix_smoke_test.gd` e `milestone_21_visual_settings_performance_smoke_test.gd`; QA manuale a 1280x720 con joypad reale.
+
 - Roadmap Revamp Modalita Zombie, Milestone Z6-Z12: espansione completa.
   - Obiettivo: completare transizioni, quattro biomi avanzati, loot, hazard, zombie specifici, HUD e bilanciamento.
   - Milestone collegata: `roadmap_revamp_modalita_zombie.md` Milestone 6-12.

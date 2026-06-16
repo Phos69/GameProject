@@ -18,9 +18,9 @@ controllo del mix e priorita per gli eventi critici.
 - SFX fallback distinti per Starter Pistol, Blaster e Wave Cannon;
 - cue per archetipi nemico, shooter telegraph, boss, wave, downed, revive e risultati;
 - variazione leggera di pitch;
-- slider Master, Music e SFX nel menu;
+- slider Master, Music e SFX nel tab Audio della pagina Settings;
 - introduzione della persistenza audio in save v3, ora inclusa nello schema
-  corrente v4 e compatibile con v1/v2.
+  corrente v5 e compatibile con v1/v2.
 
 ## Contratto
 

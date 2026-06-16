@@ -11,46 +11,53 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 3. `SaveManager` carica progressione party, unlock e ultima modalita da JSON.
 4. `MainMenu` seleziona una modalita registrata; per survival apre prima
    `Character Select` e passa `character_id` nel context.
-5. `InputManager` registra azioni tastiera/joypad.
-6. `LocalMultiplayerManager` mantiene gli slot locali attivi.
-7. `PlayerManager` ascolta gli slot attivi e spawna/despawna i player.
-8. `PlayerController` legge input solo quando una modalita gameplay e attiva.
-9. `WeaponSystem` gestisce fallback permanente, speciale, cooldown, caricatori, riserve e ricarica per il singolo player.
-10. `WeaponData` inoltra l'eventuale `WeaponVisualData` a player, HUD e proiettile.
-11. `ProjectileSystem` spawna proiettili che applicano danno tramite `HealthSystem`.
-12. `EnemySystem` spawna basic, runner, tank e shooter; gli archetipi riusano targeting, health, scaling, morte e drop condivisi.
-13. Alla morte, il nemico chiede a `DropSystem` di generare pickup dalla propria `LootTable`.
-14. `DropPickup` delega l'applicazione della ricompensa a `DropSystem`.
-15. `GameModeManager` avvia `SurvivalMode`, che applica il profilo RPG scelto e seleziona un profilo arena tramite `SurvivalArenaManager`.
-16. `ZombieModeController` avvia i componenti revamp zombie e forza il bioma iniziale tramite `BiomeManager`.
-17. `BiomeManager` genera una mappa seed-based tramite `BiomeWorldGenerator`, con celle bioma `200x200`, passaggi condivisi, fall boundary e layout validati.
-17. `BiomeTransitionSystem` crea i confini attraversabili e richiede al controller di applicare il nuovo bioma al party.
-18. `SurvivalArenaManager` configura playground, player, crate, gate e fallback spawn per lo spawner.
-19. `HazardSystem` genera fall zone e hazard ambientali, aggiorna posizioni sicure, status e modificatori movimento.
-20. `WaveManager` interroga `WaveDirector` per roster/scaling bioma e `ZombieSpawner` per spawn dai bordi camera, poi crea zombie tramite `EnemySystem`.
-21. `SurvivalMode` usa `GameModeManager` e `BossSystem` per creare il boss della quinta ondata.
-22. `WaveManager` conta scorte e boss prima di assegnare la ricompensa.
-23. `DungeonMode` genera un layout da seed, istanzia una `DungeonRoom` alla volta e usa nemici, drop e boss condivisi.
-24. `DungeonRoom` controlla pareti, portale e stato locked/unlocked della stanza corrente.
-25. `TowerDefenseMode` gestisce lifecycle, arena, player e richieste costruzione.
-26. `TowerDefenseWaveController` governa ondate e usa `EnemySystem` per i nemici da percorso.
-27. `TowerDefenseManager` mantiene vita core e crediti, mentre gli slot delegano lo spawn delle torri.
-28. `DefenseTower` seleziona target e inoltra direzione e fuoco a `DefenseTowerVisual`.
-29. `ProgressionManager` prepara i player a ogni nuova run applicando gli unlock persistenti.
-30. `ReviveSystem` coordina prossimita, interact tenuto e progresso per i player downed.
-31. `SurvivalAmmoDirector` osserva l'ammo speciale dei player vivi e genera supply crate configurabili.
-32. `AudioEventRouter` traduce eventi gameplay in cue richiesti ad `AudioManager`.
-33. `AudioManager` gestisce bus, fallback, stream opzionali, priorita e volumi.
-34. `VisualSettingsManager` distribuisce solo impostazioni presentazionali e le persiste nel save.
-35. `IsometricCameraController` segue il gruppo e applica shake solo tramite offset.
-36. `HUDManager` mostra slot, progressione, vita, munizioni, stato modalita e boss.
-37. I componenti visuali ricevono stato e profilo senza possedere logica gameplay.
-38. `BossTelegraphVisual` riceve pattern, direzione e durata senza possedere danno.
-39. `WaveWardenVisual` e `RiftArchitectVisual` ricevono solo stato presentazionale.
-40. `CombatAnnouncement` presenta segnali wave e boss tradotti da `HUDManager`.
-41. `GameplayEffects` ascolta segnali pubblici e genera effetti temporanei.
-42. `RunSessionTracker` misura durata e delta progressione tra start e fine run.
-43. `RunResultsScreen` presenta il risultato e delega retry/menu/cambio.
+5. `SettingsPanel` e condiviso da main menu e pausa, con tab Audio, Video e
+   Controls.
+6. `InputManager` registra azioni tastiera/joypad e applica i binding joypad
+   persistenti a tutti gli slot.
+7. `LocalMultiplayerManager` mantiene gli slot locali attivi.
+8. `PlayerManager` ascolta gli slot attivi e spawna/despawna i player.
+9. `PlayerController` legge input solo quando una modalita gameplay e attiva.
+10. `PauseMenu` intercetta l'azione `pause`, mette in pausa il tree e consente
+   resume, settings, ritorno al menu o quit.
+11. `WeaponSystem` gestisce fallback permanente, speciale, cooldown, caricatori, riserve e ricarica per il singolo player.
+12. `WeaponData` inoltra l'eventuale `WeaponVisualData` a player, HUD e proiettile.
+13. `ProjectileSystem` spawna proiettili che applicano danno tramite `HealthSystem`.
+14. `EnemySystem` spawna basic, runner, tank e shooter; gli archetipi riusano targeting, health, scaling, morte e drop condivisi.
+15. Alla morte, il nemico chiede a `DropSystem` di generare pickup dalla propria `LootTable`.
+16. `DropPickup` delega l'applicazione della ricompensa a `DropSystem`.
+17. `GameModeManager` avvia `SurvivalMode`, che applica il profilo RPG scelto e seleziona un profilo arena tramite `SurvivalArenaManager`.
+18. `ZombieModeController` avvia i componenti revamp zombie e forza il bioma iniziale tramite `BiomeManager`.
+19. `BiomeManager` genera una mappa seed-based tramite `BiomeWorldGenerator`, con celle bioma `200x200`, passaggi condivisi, fall boundary e layout validati.
+20. `BiomeTransitionSystem` crea i confini attraversabili e richiede al controller di applicare il nuovo bioma al party.
+21. `SurvivalArenaManager` configura playground, player, crate, gate e fallback spawn per lo spawner.
+22. `HazardSystem` genera fall zone e hazard ambientali, aggiorna posizioni sicure, status e modificatori movimento.
+23. `WaveManager` interroga `WaveDirector` per roster/scaling bioma e `ZombieSpawner` per spawn dai bordi camera, poi crea zombie tramite `EnemySystem`.
+24. `SurvivalMode` usa `GameModeManager` e `BossSystem` per creare il boss della quinta ondata.
+25. `WaveManager` conta scorte e boss prima di assegnare la ricompensa.
+26. `DungeonMode` genera un layout da seed, istanzia una `DungeonRoom` alla volta e usa nemici, drop e boss condivisi.
+27. `DungeonRoom` controlla pareti, portale e stato locked/unlocked della stanza corrente.
+28. `TowerDefenseMode` gestisce lifecycle, arena, player e richieste costruzione.
+29. `TowerDefenseWaveController` governa ondate e usa `EnemySystem` per i nemici da percorso.
+30. `TowerDefenseManager` mantiene vita core e crediti, mentre gli slot delegano lo spawn delle torri.
+31. `DefenseTower` seleziona target e inoltra direzione e fuoco a `DefenseTowerVisual`.
+32. `ProgressionManager` prepara i player a ogni nuova run applicando gli unlock persistenti.
+33. `ReviveSystem` coordina prossimita, interact tenuto e progresso per i player downed.
+34. `SurvivalAmmoDirector` osserva l'ammo speciale dei player vivi e genera supply crate configurabili.
+35. `AudioEventRouter` traduce eventi gameplay in cue richiesti ad `AudioManager`.
+36. `AudioManager` gestisce bus, fallback, stream opzionali, priorita e volumi.
+37. `VideoSettingsManager` applica fullscreen, borderless, risoluzione, VSync
+   e limite framerate.
+38. `VisualSettingsManager` distribuisce solo impostazioni presentazionali e le persiste nel save.
+39. `IsometricCameraController` segue il gruppo e applica shake solo tramite offset.
+40. `HUDManager` mostra slot, progressione, vita, munizioni, stato modalita e boss.
+41. I componenti visuali ricevono stato e profilo senza possedere logica gameplay.
+42. `BossTelegraphVisual` riceve pattern, direzione e durata senza possedere danno.
+43. `WaveWardenVisual` e `RiftArchitectVisual` ricevono solo stato presentazionale.
+44. `CombatAnnouncement` presenta segnali wave e boss tradotti da `HUDManager`.
+45. `GameplayEffects` ascolta segnali pubblici e genera effetti temporanei.
+46. `RunSessionTracker` misura durata e delta progressione tra start e fine run.
+47. `RunResultsScreen` presenta il risultato e delega retry/menu/cambio.
 
 ## Sistemi principali
 
@@ -69,6 +76,8 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `RpgSuperResolver`: esecuzione delle super RPG usando `ProjectileSystem`, `HealthSystem` e bersagli damageable condivisi, incluse meteora arcana e trasformazione licantropo.
 - `SaveManager`: persistenza JSON versionata e autosave della progressione.
 - `VisualSettingsManager`: preset, valori visuali, notifica consumer e persistenza.
+- `VideoSettingsManager`: stato finestra, fullscreen, borderless, risoluzione,
+  VSync e limite framerate persistenti.
 - `AudioManager`: bus, cue, fallback procedurali, stream opzionali e volumi.
 - `AudioCueData`: contratto sostituibile per asset e fallback.
 - `AudioVoicePool`: limite voci e sostituzione guidata dalla priorita.
@@ -137,6 +146,9 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `DropPickup`: rappresentazione fisica e raccolta da parte dei player.
 - `SupplyCrate`: contenitore fisico configurato da `LootTable` per ammo e cura.
 - `ProgressionManager`: XP, livello, denaro, unlock party e bonus di inizio run.
+- `SettingsPanel`: pannello UI condiviso con tab Audio, Video e Controls.
+- `PauseMenu`: overlay durante le run; usa `SceneTree.paused` e resta attivo
+  insieme alla propria UI.
 - `HUDManager`: UI prototipo.
 - `PlayerVisual`: presentazione procedurale data-driven del player, con silhouette e palette derivate dal profilo RPG.
 - `ZombieVisual`: presentazione animata procedurale degli zombie.
@@ -166,7 +178,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `AudioCueData.optional_stream` e facoltativo; il fallback resta sempre valido.
 - `AudioVoicePool` non supera il limite configurato e preserva cue prioritari.
 - `AudioEventRouter` puo cambiare senza modificare i sistemi gameplay.
-- Master, Music e SFX sono persistiti nel save v4.
+- Master, Music e SFX sono persistiti nel save v5.
 
 ## Contratto impostazioni visuali
 
@@ -178,6 +190,22 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - Circle, triangle, square e diamond identificano P1-P4 oltre al colore.
 - Pickup e crate conservano icone e silhouette indipendenti dalla palette.
 - Il cambio profilo non modifica damage, velocity, cooldown o hitbox.
+
+## Contratto impostazioni video e controlli
+
+- `VideoSettingsManager` applica solo stato finestra e frame pacing:
+  display mode, borderless, risoluzione, VSync e `Engine.max_fps`.
+- In headless le impostazioni video restano serializzabili senza chiamate
+  finestra non disponibili.
+- `InputManager` mantiene binding joypad device-agnostic e li applica alle
+  azioni `p{slot}_{action}` con il device corretto dello slot.
+- La rimappatura joypad non rimuove i fallback tastiera di player 1.
+- `pause` e una azione globale mappata di default su joypad `Start` e tastiera
+  `P`.
+- `LocalMultiplayerManager` serializza separatamente i pulsanti joypad di
+  join e leave.
+- `SettingsPanel` e l'unico punto UI per modificare audio, video e controlli,
+  sia dal main menu sia dal pause menu.
 
 ## Contratto presentazione visuale
 
@@ -264,11 +292,15 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - Player 1 e sempre attivo e non puo lasciare la sessione dal prototipo.
 - Gli slot 2-4 possono entrare/uscire durante la scena.
 - Un joypad con `device = 0` controlla lo slot 1, `device = 1` controlla lo slot 2, e cosi via.
-- `Start` attiva lo slot del controller, `Back/Select` disattiva lo slot se non e player 1.
+- Nel menu `Start` attiva lo slot del controller; durante una run la stessa
+  azione apre il menu pausa prima del join.
+- `Back/Select` disattiva lo slot se non e player 1.
 - `F2`, `F3` e `F4` sono fallback debug per attivare/disattivare gli slot 2, 3 e 4 senza controller fisici.
 - Ogni slot possiede anche l'azione `interact`: joypad `A`, con fallback tastiera `E` per player 1.
 - Ogni slot possiede l'azione `super`: joypad `Y`, con fallback tastiera `Q` per player 1.
 - `InputManager` garantisce che `ui_accept` includa joypad `A` con device globale, cosi ogni controller puo navigare e confermare il menu.
+- `InputManager` espone la rimappatura joypad di movimento, mira, fire,
+  reload, super, interact e pause.
 - `active_slots_changed` e il segnale autoritativo: i sistemi interessati devono ascoltare questo segnale invece di duplicare lo stato multiplayer.
 
 ## Contratti per modalita
@@ -286,7 +318,8 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 ## Contratto salvataggi
 
 - Il file predefinito e `user://savegame.json`.
-- Il formato v4 contiene progressione, ultima modalita, audio e impostazioni visuali.
+- Il formato v5 contiene progressione, ultima modalita, audio, impostazioni
+  visuali, video e controlli joypad.
 - I save v1-v3 restano caricabili; i campi assenti ricevono default validati.
 - `ProgressionManager` espone dati serializzabili e applica valori validati.
 - XP, denaro e unlock attivano autosave; il cambio modalita aggiorna `last_mode`.

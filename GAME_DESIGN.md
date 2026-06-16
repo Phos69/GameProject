@@ -268,7 +268,7 @@ Ogni nuova run ripristina la vita dei player attivi. Un player che entra durante
 - Survival e dungeon terminano quando tutti gli slot sono downed o morti.
 - Tower defense termina anche per party all-downed, oltre alla distruzione del core.
 
-Il gioco parte dal menu principale. La selezione avvia survival, dungeon o tower defense; `Esc` interrompe la run corrente e torna al menu. Il menu mostra livello, XP, denaro e ultima modalita salvata.
+Il gioco parte dal menu principale. La selezione avvia survival, dungeon o tower defense; `Esc` interrompe la run corrente e torna al menu. Durante una partita `Start` su joypad o `P` apre il menu pausa con resume, settings, ritorno al menu e quit. Il menu mostra livello, XP, denaro, ultima modalita salvata e un pulsante Settings.
 
 Ogni fine run mostra un riepilogo condiviso con tempo, XP, denaro e nuovi
 unlock. Survival usa `RUN OVER`, il completamento dungeon usa
@@ -288,11 +288,11 @@ Il mix usa bus separati per UI, armi, nemici, boss, ambiente e musica.
 Ogni cue puo ricevere uno stream licenziato opzionale mantenendo il tono
 procedurale come fallback. Gli eventi downed, revive, wave e fine run hanno
 priorita maggiore degli spari ripetuti. Master, Music e SFX sono regolabili
-dal menu e persistiti.
+dal tab Audio della pagina Settings e persistiti.
 
 L'HUD aggiunge `LOW`, `RELOAD` e `FALLBACK` allo stato ammo e mostra per 1,75 secondi la quantita di ammo condivisa raccolta.
 
-D-pad/stick cambiano focus e joypad `A` conferma da qualunque controller. Mix avanzato e asset audio definitivi restano futuri.
+D-pad/stick cambiano focus e joypad `A` conferma da qualunque controller. Il tab Video contiene fullscreen, borderless, risoluzione, VSync, limite framerate e opzioni visual/accessibilita. Il tab Controls permette di riassegnare movimento, mira, fire, reload, super, interact, pausa, join e leave per joypad. Mix avanzato e asset audio definitivi restano futuri.
 
 ## RPG Mode
 
@@ -570,7 +570,7 @@ Feedback visuali implementati:
 - P1-P4 usano circle, triangle, square e diamond oltre al colore;
 - pickup e crate usano icone e silhouette diverse;
 - high contrast rende bianchi bordi HUD, marker e countdown principali;
-- le opzioni sono persistite nel save v4.
+- le opzioni sono persistite nel save v5 insieme a video e controlli joypad.
 
 ## Tower defense
 

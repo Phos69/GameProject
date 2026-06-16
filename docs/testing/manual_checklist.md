@@ -15,8 +15,10 @@
 
 - `WASD` produce movimento.
 - Le frecce aggiornano la mira.
+- `P` apre e chiude il menu pausa durante una run.
 - Lo stick sinistro produce movimento.
 - Lo stick destro aggiorna la mira.
+- `Start` apre e chiude il menu pausa durante una run.
 - Il fire action non genera errori.
 - Il fire action genera proiettili visibili.
 - `R` ricarica l'arma del player 1.
@@ -29,8 +31,25 @@
 - Premere di nuovo `F2`, `F3` o `F4` rimuove lo slot corrispondente senza rimuovere player 1.
 - Con piu player attivi, l'HUD mostra conteggio e slot corretti.
 - Con piu player attivi, la camera segue il centro del gruppo e modifica lo zoom.
-- Con joypad multipli, `Start` attiva lo slot associato al controller e `Back/Select` lo disattiva se non e player 1.
+- Con joypad multipli, `Start` attiva lo slot associato al controller dal menu e `Back/Select` lo disattiva se non e player 1.
 - Ogni player mantiene input, mira e fire action del proprio slot.
+
+## Regressione pausa e settings
+
+- Il main menu mostra un pulsante Settings.
+- Settings contiene i tab Audio, Video e Controls.
+- Master, Music e SFX sono nel tab Audio e non nella pagina principale.
+- Il tab Video permette di selezionare finestra/fullscreen, borderless, risoluzione, VSync e limite framerate.
+- Il tab Video conserva anche preset e slider visual/accessibilita.
+- Il tab Controls permette di riassegnare movimento, mira, fire, reload, super, interact, pause, join e leave joypad.
+- Un binding gameplay joypad modificato viene applicato a tutti gli slot locali.
+- Salvare e riavviare ripristina audio, video e controlli joypad.
+- Durante una run, `Start` apre la pausa senza attivare nuovi slot.
+- Dal menu pausa Resume torna alla partita congelata, Settings apre gli stessi tab del main menu e Main Menu arresta la run.
+
+```text
+godot --headless --path . --script res://tests/pause_settings_smoke_test.gd
+```
 
 ## Regressione combat
 

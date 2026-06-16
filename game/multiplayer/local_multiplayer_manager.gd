@@ -4,12 +4,24 @@ class_name LocalMultiplayerManager
 signal active_slots_changed(active_slots: Array[int])
 signal slot_activated(player_slot: int)
 signal slot_deactivated(player_slot: int)
+signal multiplayer_controls_changed(settings: Dictionary)
 
 @export var max_players: int = 4
 @export var join_button: int = JOY_BUTTON_START
 @export var leave_button: int = JOY_BUTTON_BACK
 
 var active_slots: Array[int] = [1]
+
+const DEFAULT_JOIN_BUTTON: int = JOY_BUTTON_START
+const DEFAULT_LEAVE_BUTTON: int = JOY_BUTTON_BACK
+const JOYSTICK_CONTROL_ORDER: Array[StringName] = [
+	&"join",
+	&"leave"
+]
+const JOYSTICK_CONTROL_LABELS: Dictionary = {
+	&"join": "Join slot",
+	&"leave": "Leave slot"
+}
 
 const DEBUG_SLOT_KEYS := {
 	KEY_F2: 2,
@@ -52,6 +64,76 @@ func deactivate_slot(player_slot: int) -> void:
 		active_slots.erase(player_slot)
 		slot_deactivated.emit(player_slot)
 		active_slots_changed.emit(active_slots)
+
+func get_joystick_control_specs() -> Array[Dictionary]:
+	var specs: Array[Dictionary] = []
+	for control_id in JOYSTICK_CONTROL_ORDER:
+		specs.append({
+			"id": control_id,
+			"label": String(JOYSTICK_CONTROL_LABELS.get(
+				control_id,
+				String(control_id)
+			))
+		})
+	return specs
+
+func get_joystick_button_label(control_id: StringName) -> String:
+	match control_id:
+		&"join":
+			return InputManager.joy_button_name(join_button)
+		&"leave":
+			return InputManager.joy_button_name(leave_button)
+		_:
+			return "Unassigned"
+
+func rebind_joystick_button(
+	control_id: StringName,
+	event: InputEvent
+) -> bool:
+	if not event is InputEventJoypadButton:
+		return false
+	var button_event := event as InputEventJoypadButton
+	if not button_event.pressed:
+		return false
+	match control_id:
+		&"join":
+			join_button = button_event.button_index
+		&"leave":
+			leave_button = button_event.button_index
+		_:
+			return false
+	multiplayer_controls_changed.emit(get_settings_data())
+	return true
+
+func reset_joystick_buttons() -> void:
+	join_button = DEFAULT_JOIN_BUTTON
+	leave_button = DEFAULT_LEAVE_BUTTON
+	multiplayer_controls_changed.emit(get_settings_data())
+
+func get_settings_data() -> Dictionary:
+	return {
+		"join_button": join_button,
+		"leave_button": leave_button
+	}
+
+func restore_settings_data(data: Dictionary) -> void:
+	join_button = clampi(
+		int(data.get("join_button", DEFAULT_JOIN_BUTTON)),
+		0,
+		127
+	)
+	leave_button = clampi(
+		int(data.get("leave_button", DEFAULT_LEAVE_BUTTON)),
+		0,
+		127
+	)
+	multiplayer_controls_changed.emit(get_settings_data())
+
+static func create_default_settings_data() -> Dictionary:
+	return {
+		"join_button": DEFAULT_JOIN_BUTTON,
+		"leave_button": DEFAULT_LEAVE_BUTTON
+	}
 
 func _handle_joypad_button(event: InputEventJoypadButton) -> void:
 	if not event.pressed:

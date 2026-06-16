@@ -16,8 +16,8 @@ asset tracciabili.
 - preset `default`, `reduced_motion` e `high_contrast`;
 - intensita regolabile per flash, glow, trail e camera shake;
 - scala testo HUD da 0,80 a 1,20;
-- pagina menu dedicata con slider, toggle e preset;
-- save v4 con sezione `settings.visual`;
+- pagina Settings condivisa con il tab Video per slider, toggle e preset;
+- save v5 con sezione `settings.visual`;
 - marker geometrici circle/triangle/square/diamond per gli slot player;
 - pickup distinti da icone e silhouette, non solo dal colore;
 - bordi, warning e HUD rinforzati in high contrast;
@@ -69,7 +69,7 @@ build/qa/milestone_21_profile_high_contrast.png
 ## Checklist manuale
 
 - Cambiare ogni slider e verificare l'aggiornamento immediato.
-- Riavviare e verificare il ripristino dal save v4.
+- Riavviare e verificare il ripristino dal save v5.
 - Con glow/trail a zero, confermare collisioni e danno invariati.
 - Controllare i quattro marker geometrici senza usare il colore.
 - Identificare tutti i pickup dalla forma in high contrast.
@@ -77,4 +77,3 @@ build/qa/milestone_21_profile_high_contrast.png
 - Verificare assenza di shake e pulsazioni nel preset Comfort.
 - Ripetere il profilo affollato e registrare frame time e hardware.
 - Registrare origine e licenza prima di importare asset esterni.
-

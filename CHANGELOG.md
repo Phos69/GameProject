@@ -12,6 +12,8 @@
 
 ### Added
 
+- Aggiunti `PauseMenu`, `SettingsPanel` e `VideoSettingsManager`: `Start`/`P` apre la pausa durante una run, il main menu espone Settings con tab Audio/Video/Controls, video supporta fullscreen/borderless/risoluzione/VSync/FPS e i controlli joypad sono rimappabili e persistiti in save v5.
+- Aggiunto smoke test `tests/pause_settings_smoke_test.gd` per pausa, settings condivisi, persistenza video e binding joypad.
 - Convertiti gli asset personaggio RPG da PNG binari a SVG testuali, aggiornando manifest e profili `.tres` per rendere la PR compatibile con ambienti che non accettano file binari.
 - Aggiunto primo set asset completo per `Licantropo` / `Rocco Lunastorta`: portrait rendered, portrait HUD, sprite isometrico, sprite sheet animabile, icone artigli/passiva/super e manifest in `assets/characters/licantropo/`.
 - Aggiornato l'indice personaggi per marcare tutti i personaggi RPG come `base_complete` e proporre `ranger_quality_pass` come primo miglioramento qualitativo.

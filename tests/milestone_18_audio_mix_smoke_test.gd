@@ -176,7 +176,7 @@ func _run() -> void:
 			audio_manager.get_bus_volume_linear(&"SFX"),
 			0.65
 		),
-		"master, music and SFX volumes round-trip through save v4"
+		"master, music and SFX volumes round-trip through the current save schema"
 	)
 	_expect(
 		main_menu.volume_sliders.has(&"Master")

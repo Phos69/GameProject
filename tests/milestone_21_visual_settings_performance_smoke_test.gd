@@ -117,11 +117,11 @@ func _run() -> void:
 	visual_settings.set_setting(&"reduced_motion", true)
 	save_manager.save_path = TEMP_SAVE_PATH
 	_remove_temp_save()
-	_expect(save_manager.save_game(), "save v4 writes visual settings")
+	_expect(save_manager.save_game(), "save v5 writes visual settings")
 	var parsed_save := _read_temp_save()
 	_expect(
-		int(parsed_save.get("version", 0)) == 4,
-		"visual settings bump the save schema to version 4"
+		int(parsed_save.get("version", 0)) == SaveManager.SAVE_VERSION,
+		"visual settings use the current save schema"
 	)
 	var saved_settings := parsed_save.get("settings", {}) as Dictionary
 	_expect(
@@ -129,7 +129,7 @@ func _run() -> void:
 		"save contains a dedicated visual settings section"
 	)
 	visual_settings.apply_profile(&"default")
-	_expect(save_manager.load_game(), "save v4 reload succeeds")
+	_expect(save_manager.load_game(), "save v5 reload succeeds")
 	_expect(
 		is_equal_approx(
 			float(visual_settings.get_setting(&"flash_intensity")),

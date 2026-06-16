@@ -6,7 +6,7 @@ signal load_completed(data: Dictionary)
 signal save_failed(path: String, reason: String)
 signal load_failed(path: String, reason: String)
 
-const SAVE_VERSION: int = 4
+const SAVE_VERSION: int = 5
 const DEFAULT_SAVE_PATH: String = "user://savegame.json"
 
 @export var save_path: String = DEFAULT_SAVE_PATH
@@ -18,6 +18,9 @@ const DEFAULT_SAVE_PATH: String = "user://savegame.json"
 var progression_manager: ProgressionManager
 var audio_manager: AudioManager
 var visual_settings_manager: VisualSettingsManager
+var video_settings_manager: VideoSettingsManager
+var input_manager: InputManager
+var local_multiplayer_manager: LocalMultiplayerManager
 var last_mode: StringName = GameConstants.MODE_SURVIVAL
 var save_pending: bool = false
 var is_loading: bool = false
@@ -44,7 +47,14 @@ func create_empty_save() -> Dictionary:
 				"music": 0.8,
 				"sfx": 0.9
 			},
-			"visual": VisualSettingsManager.DEFAULT_SETTINGS.duplicate(true)
+			"visual": VisualSettingsManager.DEFAULT_SETTINGS.duplicate(true),
+			"video": VideoSettingsManager.DEFAULT_SETTINGS.duplicate(true),
+			"controls": {
+				"input": InputManager.create_default_settings_data(),
+				"local_multiplayer": (
+					LocalMultiplayerManager.create_default_settings_data()
+				)
+			}
 		}
 	}
 
@@ -65,10 +75,32 @@ func save_game() -> bool:
 		if visual_settings_manager != null
 		else create_empty_save()["settings"]["visual"] as Dictionary
 	)
+	_resolve_video_settings_manager()
+	var video_settings: Dictionary = (
+		video_settings_manager.get_settings_data()
+		if video_settings_manager != null
+		else create_empty_save()["settings"]["video"] as Dictionary
+	)
+	_resolve_input_manager()
+	_resolve_local_multiplayer_manager()
+	var controls_settings := {
+		"input": (
+			input_manager.get_settings_data()
+			if input_manager != null
+			else InputManager.create_default_settings_data()
+		),
+		"local_multiplayer": (
+			local_multiplayer_manager.get_settings_data()
+			if local_multiplayer_manager != null
+			else LocalMultiplayerManager.create_default_settings_data()
+		)
+	}
 	data["settings"] = {
 		"last_mode": String(last_mode),
 		"audio": audio_settings,
-		"visual": visual_settings
+		"visual": visual_settings,
+		"video": video_settings,
+		"controls": controls_settings
 	}
 
 	var temporary_path := save_path + ".tmp"
@@ -149,6 +181,22 @@ func load_game() -> bool:
 		visual_settings_manager.restore_settings_data(
 			settings.get("visual", {}) as Dictionary
 		)
+	_resolve_video_settings_manager()
+	if video_settings_manager != null:
+		video_settings_manager.restore_settings_data(
+			settings.get("video", {}) as Dictionary
+		)
+	var controls_settings := settings.get("controls", {}) as Dictionary
+	_resolve_input_manager()
+	if input_manager != null:
+		input_manager.restore_settings_data(
+			controls_settings.get("input", {}) as Dictionary
+		)
+	_resolve_local_multiplayer_manager()
+	if local_multiplayer_manager != null:
+		local_multiplayer_manager.restore_settings_data(
+			controls_settings.get("local_multiplayer", {}) as Dictionary
+		)
 	is_loading = false
 	load_completed.emit(data.duplicate(true))
 	return true
@@ -174,6 +222,9 @@ func _initialize() -> void:
 	_resolve_progression_manager()
 	_resolve_audio_manager()
 	_resolve_visual_settings_manager()
+	_resolve_video_settings_manager()
+	_resolve_input_manager()
+	_resolve_local_multiplayer_manager()
 	if progression_manager != null:
 		var progression_callback := Callable(self, "_on_progression_changed")
 		if not progression_manager.experience_changed.is_connected(
@@ -205,6 +256,26 @@ func _initialize() -> void:
 			visual_settings_manager.visual_settings_changed.connect(
 				visual_callback
 			)
+	if video_settings_manager != null:
+		var video_callback := Callable(self, "_on_video_settings_changed")
+		if not video_settings_manager.video_settings_changed.is_connected(
+			video_callback
+		):
+			video_settings_manager.video_settings_changed.connect(
+				video_callback
+			)
+	if input_manager != null:
+		var input_callback := Callable(self, "_on_controls_changed")
+		if not input_manager.controls_changed.is_connected(input_callback):
+			input_manager.controls_changed.connect(input_callback)
+	if local_multiplayer_manager != null:
+		var multiplayer_callback := Callable(self, "_on_controls_changed")
+		if not local_multiplayer_manager.multiplayer_controls_changed.is_connected(
+			multiplayer_callback
+		):
+			local_multiplayer_manager.multiplayer_controls_changed.connect(
+				multiplayer_callback
+			)
 
 	if auto_load and _auto_persistence_enabled():
 		load_game()
@@ -227,6 +298,24 @@ func _resolve_visual_settings_manager() -> void:
 			"visual_settings_manager"
 		) as VisualSettingsManager
 
+func _resolve_video_settings_manager() -> void:
+	if video_settings_manager == null:
+		video_settings_manager = get_tree().get_first_node_in_group(
+			"video_settings_manager"
+		) as VideoSettingsManager
+
+func _resolve_input_manager() -> void:
+	if input_manager == null:
+		input_manager = get_tree().get_first_node_in_group(
+			"input_manager"
+		) as InputManager
+
+func _resolve_local_multiplayer_manager() -> void:
+	if local_multiplayer_manager == null:
+		local_multiplayer_manager = get_tree().get_first_node_in_group(
+			"local_multiplayer_manager"
+		) as LocalMultiplayerManager
+
 func _on_progression_changed(_value: int, _secondary_value: int = 0) -> void:
 	if autosave_progression and _auto_persistence_enabled():
 		request_save()
@@ -244,6 +333,14 @@ func _on_audio_settings_changed(_settings: Dictionary) -> void:
 		request_save()
 
 func _on_visual_settings_changed(_settings: Dictionary) -> void:
+	if _auto_persistence_enabled():
+		request_save()
+
+func _on_video_settings_changed(_settings: Dictionary) -> void:
+	if _auto_persistence_enabled():
+		request_save()
+
+func _on_controls_changed(_settings: Dictionary) -> void:
 	if _auto_persistence_enabled():
 		request_save()
 
