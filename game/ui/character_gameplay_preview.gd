@@ -3,6 +3,9 @@ class_name CharacterGameplayPreview
 
 var character_profile: Dictionary = {}
 var weapon_data: WeaponData
+var gameplay_texture: Texture2D
+var gameplay_texture_path: String = ""
+var gameplay_texture_cache: Dictionary = {}
 var animation_time: float = 0.0
 
 func _ready() -> void:
@@ -18,7 +21,12 @@ func _process(delta: float) -> void:
 func set_profile(profile: Dictionary, next_weapon_data: WeaponData = null) -> void:
 	character_profile = profile.duplicate(true)
 	weapon_data = next_weapon_data
+	gameplay_texture_path = str(character_profile.get("gameplay_sprite_path", ""))
+	gameplay_texture = _load_gameplay_texture(gameplay_texture_path)
 	queue_redraw()
+
+func has_asset_preview() -> bool:
+	return gameplay_texture != null
 
 func _draw() -> void:
 	var rect := Rect2(Vector2.ZERO, size)
@@ -28,12 +36,74 @@ func _draw() -> void:
 	_draw_background(rect, primary, accent)
 	if character_profile.is_empty():
 		return
+	if gameplay_texture != null:
+		_draw_asset_preview(
+			Vector2(size.x * 0.50, size.y * 0.62),
+			minf(size.x / 290.0, size.y / 178.0),
+			primary,
+			accent
+		)
+		return
 	_draw_player_preview(
 		Vector2(size.x * 0.50, size.y * 0.62),
 		minf(size.x / 290.0, size.y / 178.0),
 		primary,
 		secondary,
 		accent
+	)
+
+func _draw_asset_preview(
+	origin: Vector2,
+	scale: float,
+	primary: Color,
+	accent: Color
+) -> void:
+	var bob := sin(animation_time * 2.4) * 2.0
+	var pulse := 1.0 + sin(animation_time * 3.0) * 0.018
+	var target_size := Vector2(118.0, 118.0) * scale * pulse
+	var texture_size := gameplay_texture.get_size()
+	if texture_size.x <= 0.0 or texture_size.y <= 0.0:
+		_draw_player_preview(
+			origin,
+			scale,
+			primary,
+			Color(character_profile.get("palette_secondary", primary.lightened(0.3))),
+			accent
+		)
+		return
+	var aspect := texture_size.x / texture_size.y
+	if aspect >= 1.0:
+		target_size.y = target_size.x / aspect
+	else:
+		target_size.x = target_size.y * aspect
+	var rect := Rect2(
+		origin - Vector2(target_size.x * 0.5, target_size.y * 0.58) + Vector2(0.0, bob),
+		target_size
+	)
+	draw_colored_polygon(
+		_ellipse_points(origin + Vector2(0.0, 33.0), Vector2(48.0, 12.0) * scale, 24),
+		Color(0.0, 0.0, 0.0, 0.42)
+	)
+	draw_arc(
+		origin + Vector2(0.0, -10.0),
+		64.0 * scale,
+		0.0,
+		TAU,
+		40,
+		Color(accent, 0.20),
+		5.0,
+		true
+	)
+	draw_texture_rect(gameplay_texture, rect, false)
+	draw_arc(
+		origin + Vector2(0.0, -10.0),
+		68.0 * scale,
+		0.0,
+		TAU,
+		40,
+		Color(primary.lightened(0.20), 0.22),
+		2.0,
+		true
 	)
 
 func _draw_background(rect: Rect2, primary: Color, accent: Color) -> void:
@@ -220,3 +290,15 @@ func _ellipse_points(center: Vector2, radius: Vector2, segments: int) -> PackedV
 		var angle := TAU * float(index) / float(segments)
 		points.append(center + Vector2(cos(angle) * radius.x, sin(angle) * radius.y))
 	return points
+
+func _load_gameplay_texture(path: String) -> Texture2D:
+	if path.is_empty() or not FileAccess.file_exists(path):
+		return null
+	if gameplay_texture_cache.has(path):
+		return gameplay_texture_cache[path] as Texture2D
+	var image := Image.new()
+	if image.load(path) != OK:
+		return null
+	var texture := ImageTexture.create_from_image(image)
+	gameplay_texture_cache[path] = texture
+	return texture

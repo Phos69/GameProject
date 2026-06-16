@@ -56,6 +56,11 @@ func set_profile(profile: Dictionary, weapon_data: WeaponData = null) -> void:
 	preview.call("set_profile", current_profile, current_weapon_data)
 	_update_stats()
 
+func has_asset_preview() -> bool:
+	if preview == null or not preview.has_method("has_asset_preview"):
+		return false
+	return bool(preview.call("has_asset_preview"))
+
 func _build_ui() -> void:
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 12)

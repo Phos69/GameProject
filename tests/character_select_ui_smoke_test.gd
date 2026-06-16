@@ -46,6 +46,11 @@ func _run() -> void:
 		main_menu.focused_character_id == &"ranger",
 		"focusing a card updates the preview profile"
 	)
+	_expect(
+		main_menu.character_detail_panel.has_method("has_asset_preview")
+			and main_menu.character_detail_panel.call("has_asset_preview"),
+		"focused character preview uses gameplay_sprite_path when available"
+	)
 	main_menu._assign_character_to_slot(1, &"ranger")
 	await process_frame
 	_expect(

@@ -9,7 +9,8 @@ Usare questa checklist per verificare il pass 1 dei personaggi RPG a 1280x720, s
 - [ ] La card in focus mostra highlight/hover, stat bar HP/ATK/DEF/SPD/RNG,
   icona classe/arma e indicatori degli slot player assegnati.
 - [ ] Il dossier laterale mostra descrizione di stile, range arma e preview
-  gameplay isometrica con arma/stance idle coerenti con il profilo.
+  gameplay isometrica caricata da `gameplay_sprite_path`, con fallback
+  procedurale coerente se l'asset non e disponibile.
 - [ ] Ogni slot player attivo mostra portrait, nome, classe/arma, statistiche, passiva e super dopo la scelta.
 - [ ] Gli slot inattivi restano distinguibili dagli slot attivi senza occupare il focus della selezione.
 

@@ -19,6 +19,9 @@
 
 ### Added
 
+- La preview gameplay della Character Select carica ora l'asset indicato da
+  `gameplay_sprite_path` quando disponibile, mantenendo il fallback
+  procedurale se il file non e leggibile.
 - Character Select RPG rifatta come schermata completa con card grafiche,
   quattro slot player, pannello dossier, preview gameplay procedurale,
   barre stat HP/ATK/DEF/SPD/RNG, highlight focus/hover e conferma esplicita
