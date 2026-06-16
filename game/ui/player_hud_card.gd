@@ -19,6 +19,7 @@ var adrenaline_bar: ProgressBar
 var super_icon: RpgHudIcon
 var super_label: Label
 var passive_label: Label
+var status_label: Label
 var ammo_pips: Array[ColorRect] = []
 var hud_text_scale: float = 1.0
 var high_contrast: bool = false
@@ -73,6 +74,8 @@ func apply_visual_settings(settings: Dictionary) -> void:
 			"font_size",
 			roundi(12.0 * hud_text_scale)
 		)
+	if status_label != null:
+		status_label.add_theme_font_size_override("font_size", roundi(12.0 * hud_text_scale))
 	_apply_style()
 
 func configure(slot: int, color: Color) -> void:
@@ -104,6 +107,7 @@ func refresh(player: Node) -> void:
 	adrenaline_bar.value = 0.0
 	passive_label.text = ""
 	passive_label.hide()
+	_refresh_status_widgets(player)
 	xp_bar.max_value = 1.0
 	xp_bar.value = 0.0
 	if rpg_component != null and rpg_component.has_character():
@@ -295,6 +299,54 @@ func _build_ui() -> void:
 	passive_label.modulate = Color(1.0, 0.76, 0.30, 1.0)
 	passive_label.hide()
 	content.add_child(passive_label)
+
+	status_label = Label.new()
+	status_label.custom_minimum_size = Vector2(250.0, 16.0)
+	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	status_label.add_theme_font_size_override("font_size", 12)
+	status_label.add_theme_constant_override("outline_size", 2)
+	status_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.95))
+	status_label.hide()
+	content.add_child(status_label)
+
+func _refresh_status_widgets(player: Node) -> void:
+	if status_label == null:
+		return
+	var hazard_system := get_tree().get_first_node_in_group("hazard_system") as HazardSystem
+	if hazard_system == null:
+		status_label.hide()
+		return
+	var snapshots := hazard_system.get_player_status_snapshots(player)
+	if snapshots.is_empty():
+		status_label.hide()
+		return
+	var parts := PackedStringArray()
+	var color := Color(0.9, 0.96, 1.0, 1.0)
+	for snapshot in snapshots:
+		var id := StringName(snapshot.get("id", &""))
+		parts.append("%s %.0fs" % [_status_short_label(id), ceilf(float(snapshot.get("time_left", 0.0)))])
+		color = _status_color(id)
+	status_label.text = " ".join(parts)
+	status_label.modulate = Color.WHITE if high_contrast else color
+	status_label.show()
+
+func _status_short_label(status_id: StringName) -> String:
+	match BiomeStatusRuntime.canonical_status_id(status_id):
+		&"poison": return "POI"
+		&"burn": return "BRN"
+		&"bleed": return "BLD"
+		&"freeze": return "FRZ"
+		&"shock": return "SHK"
+		_: return String(status_id).to_upper()
+
+func _status_color(status_id: StringName) -> Color:
+	match BiomeStatusRuntime.canonical_status_id(status_id):
+		&"poison": return Color(0.44, 1.0, 0.34, 1.0)
+		&"burn": return Color(1.0, 0.36, 0.12, 1.0)
+		&"bleed": return Color(0.85, 0.08, 0.10, 1.0)
+		&"freeze": return Color(0.58, 0.90, 1.0, 1.0)
+		&"shock": return Color(1.0, 0.94, 0.18, 1.0)
+		_: return Color(0.9, 0.96, 1.0, 1.0)
 
 func _apply_style() -> void:
 	var panel_style := StyleBoxFlat.new()

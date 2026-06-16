@@ -287,3 +287,12 @@ Non ancora completato:
 2. Sostituire gradualmente i placeholder con asset licenziati.
 3. Affinare bilanciamento e performance del revamp zombie dopo playtest reali.
 4. Firmare digitalmente la build pubblica.
+
+Smoke test aggiunti per l'iterazione biome survival:
+
+```text
+godot --headless --path . --script res://tests/biome_status_effects_smoke_test.gd
+godot --headless --path . --script res://tests/biome_roster_smoke_test.gd
+godot --headless --path . --script res://tests/biome_obstacle_generation_smoke_test.gd
+godot --headless --path . --script res://tests/random_encounter_smoke_test.gd
+```

@@ -604,3 +604,17 @@ Regole ondate:
 - boss arrivato al core: 55 danni.
 
 I player possono continuare a muoversi e sparare direttamente ai nemici. Crediti, torri e core appartengono alla run tower defense; denaro e XP party restano separati. Percorsi multipli, tipi torre, upgrade, vendita e riparazione non sono ancora implementati.
+
+## Iterazione survival biome-based: status, ostacoli, encounter
+
+Gli status temporanei ora usano cinque ID canonici: `poison`, `burn`, `bleed`, `freeze` e `shock`. Poison fa danno basso e persistente, burn colpisce piu forte ma per meno tempo, bleed mantiene pressione fisica, freeze riduce controllo e cadenza tramite il moltiplicatore ambiente, shock e un micro-stun breve. Gli status sono refreshati con durata massima e intensita conservativa, non modificano statistiche permanenti e vengono puliti allo stop run.
+
+| Bioma | Ostacoli leggibili | Hazard/status | Nemici tematici |
+| --- | --- | --- | --- |
+| Pianura Infetta | case diroccate, muretti, auto, casse, corridoi larghi | pericolo basso | roster base onboarding |
+| Tossico | cisterne, tubi, pozze, barili chimici | `poison` da pozze/gas | Toxic Zombie, Toxic Exploder |
+| Infuocato | lava, fiamme, auto bruciate, crateri | `burn` da fuoco/lava | Burned Zombie, Fire Runner, Fire Exploder |
+| Neve | ghiaccio, neve alta, rocce ghiacciate | `freeze`/slow | Frozen Zombie, Ice Armored Zombie, Heavy Slow Zombie |
+| Palude | alberi morti, fango, acqua stagnante, radici | `poison`/`bleed`/slow | Drowned Zombie, Marsh Zombie, Water Emerging Zombie |
+
+Gli encounter casuali supportano `ambush`, `elite_pack`, `cursed_crate`, `hazard_burst` e `survivor_cache`. Sono selezionati per bioma con RNG seed-based, frequenza bassa e reward proporzionata; `survivor_cache` varia il ritmo senza trappola, mentre `cursed_crate` scambia loot migliore con status o pressione extra.

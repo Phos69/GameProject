@@ -92,6 +92,20 @@ func get_last_safe_position(player: Node) -> Vector2:
 func get_player_status_ids(player: Node) -> Array[StringName]:
 	return status_runtime.get_status_ids(player, active_hazards)
 
+func get_player_status_snapshots(player: Node) -> Array[Dictionary]:
+	return status_runtime.get_status_snapshots(player)
+
+func has_status(player: Node, status_id: StringName) -> bool:
+	return status_runtime.has_status(player, status_id)
+
+func clear_status(player: Node, status_id: StringName) -> void:
+	status_runtime.clear_status(player, status_id, active_hazards)
+
+func apply_status(player: Node, status_id: StringName, duration: float = 0.0, intensity: float = 1.0, source: Variant = null) -> bool:
+	if not is_active or player == null or not player.is_in_group("players"):
+		return false
+	return status_runtime.apply_status(player, status_id, duration, intensity, source, active_hazards)
+
 func apply_status_to_player(
 	player: Node,
 	status_id: StringName,
