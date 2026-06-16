@@ -1,0 +1,79 @@
+{
+  "id": "ranger",
+  "nome": "Mira Vento",
+  "classe": "Ranger",
+  "arma": "Arco",
+  "passiva": "Occhio del Predatore",
+  "super": "Pioggia di Frecce",
+  "stile": "cartoon dark arcade, zombie survival isometrico",
+  "palette": {
+    "id": "ranger_forest",
+    "primary": "#1f5733",
+    "secondary": "#bda675",
+    "accent": "#9eeb5c",
+    "outline": "#080c0a",
+    "shadow": "#060a08"
+  },
+  "silhouette_notes": [
+    "cappuccio triangolare alto",
+    "arco lungo diagonale sempre visibile",
+    "mantello verde compatto con gambe snelle",
+    "freccia luminosa lime per attack/super"
+  ],
+  "file": {
+    "portrait_rendered": "rendered/ranger_portrait_full.svg",
+    "portrait_hud": "rendered/ranger_portrait_hud.svg",
+    "gameplay_sprite": "sprites/ranger_gameplay_iso.svg",
+    "sprite_sheet": "sprites/ranger_sprite_sheet.svg",
+    "hud_icon": "rendered/ranger_portrait_hud.svg",
+    "weapon_icon": "weapons/ranger_weapon.svg",
+    "ability_icon": "ui/ranger_ability_icon.svg",
+    "passive_icon": "ui/ranger_passive_icon.svg",
+    "super_icon": "ui/ranger_super_icon.svg"
+  },
+  "sprite_sheet": {
+    "frame_size": [
+      96,
+      96
+    ],
+    "columns": 4,
+    "rows": 7,
+    "animations": {
+      "idle": {
+        "row": 0,
+        "frames": 4
+      },
+      "walk": {
+        "row": 1,
+        "frames": 4
+      },
+      "attack": {
+        "row": 2,
+        "frames": 4
+      },
+      "hit": {
+        "row": 3,
+        "frames": 4
+      },
+      "death": {
+        "row": 4,
+        "frames": 4
+      },
+      "super": {
+        "row": 5,
+        "frames": 4
+      },
+      "reload": {
+        "row": 6,
+        "frames": 4
+      }
+    }
+  },
+  "iteration_changelog": [
+    "Creato primo set base completo per Ranger/Mira Vento con portrait rendered, sprite isometrico, sprite sheet animabile, icone HUD e arma.",
+    "Aggiornato il profilo dati Ranger per puntare alla sprite sheet definitiva di questa iterazione.",
+    "Convertiti gli asset bitmap PNG in SVG testuali per rendere la pull request compatibile con ambienti che non accettano file binari."
+  ],
+  "source_format": "svg_text",
+  "binary_free": true
+}

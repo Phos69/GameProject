@@ -1,0 +1,79 @@
+{
+  "id": "berserker",
+  "nome": "Bruna Spaccaferro",
+  "classe": "Berserker",
+  "arma": "Ascia",
+  "passiva": "Furia di Sangue",
+  "super": "Terremoto di Sangue",
+  "stile": "cartoon dark arcade, zombie survival isometrico",
+  "palette": {
+    "id": "berserker_rust",
+    "primary": "#8f1f14",
+    "secondary": "#1c1e20",
+    "accent": "#ff1f14",
+    "metal": "#a6aaa8",
+    "outline": "#090a0a"
+  },
+  "silhouette_notes": [
+    "corpo largo e basso con spalle massicce",
+    "ascia bipenne enorme visibile anche in idle e walk",
+    "cresta rossa verticale e cicatrice diagonale per lettura a piccola scala",
+    "onde rosse concentriche per super Terremoto di Sangue"
+  ],
+  "file": {
+    "portrait_rendered": "rendered/berserker_portrait_full.svg",
+    "portrait_hud": "rendered/berserker_portrait_hud.svg",
+    "gameplay_sprite": "sprites/berserker_gameplay_iso.svg",
+    "sprite_sheet": "sprites/berserker_sprite_sheet.svg",
+    "hud_icon": "rendered/berserker_portrait_hud.svg",
+    "weapon_icon": "weapons/berserker_weapon.svg",
+    "ability_icon": "ui/berserker_ability_icon.svg",
+    "passive_icon": "ui/berserker_passive_icon.svg",
+    "super_icon": "ui/berserker_super_icon.svg"
+  },
+  "sprite_sheet": {
+    "frame_size": [
+      96,
+      96
+    ],
+    "columns": 4,
+    "rows": 7,
+    "animations": {
+      "idle": {
+        "row": 0,
+        "frames": 4
+      },
+      "walk": {
+        "row": 1,
+        "frames": 4
+      },
+      "attack": {
+        "row": 2,
+        "frames": 4
+      },
+      "hit": {
+        "row": 3,
+        "frames": 4
+      },
+      "death": {
+        "row": 4,
+        "frames": 4
+      },
+      "super": {
+        "row": 5,
+        "frames": 4
+      },
+      "reload": {
+        "row": 6,
+        "frames": 4
+      }
+    }
+  },
+  "iteration_changelog": [
+    "Creato primo set base completo per Berserker/Bruna Spaccaferro con portrait rendered, sprite isometrico, sprite sheet animabile, icone HUD e ascia.",
+    "Aggiornato il profilo dati Berserker per puntare alla sprite sheet definitiva di questa iterazione.",
+    "Convertiti gli asset bitmap PNG in SVG testuali per rendere la pull request compatibile con ambienti che non accettano file binari."
+  ],
+  "source_format": "svg_text",
+  "binary_free": true
+}

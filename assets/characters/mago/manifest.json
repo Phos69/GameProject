@@ -1,0 +1,83 @@
+{
+  "id": "mago",
+  "nome": "Elio Braciastella",
+  "classe": "Mago",
+  "arma": "Bastone arcano",
+  "passiva": "Risonanza Arcana",
+  "super": "Stella Cadente",
+  "stile": "cartoon dark arcade, zombie survival isometrico",
+  "palette": {
+    "id": "arcane_violet",
+    "primary": "#33145c",
+    "secondary": "#0f1f4d",
+    "accent": "#70c2ff",
+    "star": "#f3de74",
+    "outline": "#07050d"
+  },
+  "silhouette_notes": [
+    "cappello alto appuntito e tunica triangolare viola",
+    "bastone diagonale con globo azzurro sempre leggibile",
+    "orbita arcana e raggi stella per attack/cast e super",
+    "profilo stretto e verticale per differenziarlo dai melee larghi"
+  ],
+  "file": {
+    "portrait_rendered": "rendered/mago_portrait_full.svg",
+    "portrait_hud": "rendered/mago_portrait_hud.svg",
+    "gameplay_sprite": "sprites/mago_gameplay_iso.svg",
+    "sprite_sheet": "sprites/mago_sprite_sheet.svg",
+    "hud_icon": "rendered/mago_portrait_hud.svg",
+    "weapon_icon": "weapons/mago_weapon.svg",
+    "ability_icon": "ui/mago_ability_icon.svg",
+    "passive_icon": "ui/mago_passive_icon.svg",
+    "super_icon": "ui/mago_super_icon.svg"
+  },
+  "sprite_sheet": {
+    "frame_size": [
+      96,
+      96
+    ],
+    "columns": 4,
+    "rows": 7,
+    "animations": {
+      "idle": {
+        "row": 0,
+        "frames": 4
+      },
+      "walk": {
+        "row": 1,
+        "frames": 4
+      },
+      "attack": {
+        "row": 2,
+        "frames": 4
+      },
+      "hit": {
+        "row": 3,
+        "frames": 4
+      },
+      "death": {
+        "row": 4,
+        "frames": 4
+      },
+      "super": {
+        "row": 5,
+        "frames": 4
+      },
+      "reload": {
+        "row": 6,
+        "frames": 4
+      },
+      "cast": {
+        "row": 2,
+        "frames": 4
+      }
+    }
+  },
+  "iteration_changelog": [
+    "Creato primo set base completo per Mago/Elio Braciastella con portrait rendered, sprite isometrico, sprite sheet animabile, icone HUD e bastone arcano.",
+    "La riga attack funge anche da cast per soddisfare il profilo magico senza duplicare frame identici.",
+    "Convertiti gli asset bitmap PNG in SVG testuali per rendere la pull request compatibile con ambienti che non accettano file binari."
+  ],
+  "source_format": "svg_text",
+  "binary_free": true
+}

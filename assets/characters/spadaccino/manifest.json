@@ -1,0 +1,79 @@
+{
+  "id": "spadaccino",
+  "nome": "Kael Guardia",
+  "classe": "Spadaccino",
+  "arma": "Spada",
+  "passiva": "Guardia Perfetta",
+  "super": "Lama Fantasma",
+  "stile": "cartoon dark arcade, zombie survival isometrico",
+  "palette": {
+    "id": "blade_night",
+    "primary": "#142152",
+    "secondary": "#d6e8f5",
+    "accent": "#6bc7ff",
+    "steel": "#c6ddeb",
+    "outline": "#070912"
+  },
+  "silhouette_notes": [
+    "mantello a diamante blu notte con corazza chiara centrale",
+    "spada lunga diagonale sempre leggibile in idle e walk",
+    "elmo/mantello bianco appuntito per profilo difensivo distinto",
+    "scie ciano orizzontali per attack e dash super Lama Fantasma"
+  ],
+  "file": {
+    "portrait_rendered": "rendered/spadaccino_portrait_full.svg",
+    "portrait_hud": "rendered/spadaccino_portrait_hud.svg",
+    "gameplay_sprite": "sprites/spadaccino_gameplay_iso.svg",
+    "sprite_sheet": "sprites/spadaccino_sprite_sheet.svg",
+    "hud_icon": "rendered/spadaccino_portrait_hud.svg",
+    "weapon_icon": "weapons/spadaccino_weapon.svg",
+    "ability_icon": "ui/spadaccino_ability_icon.svg",
+    "passive_icon": "ui/spadaccino_passive_icon.svg",
+    "super_icon": "ui/spadaccino_super_icon.svg"
+  },
+  "sprite_sheet": {
+    "frame_size": [
+      96,
+      96
+    ],
+    "columns": 4,
+    "rows": 7,
+    "animations": {
+      "idle": {
+        "row": 0,
+        "frames": 4
+      },
+      "walk": {
+        "row": 1,
+        "frames": 4
+      },
+      "attack": {
+        "row": 2,
+        "frames": 4
+      },
+      "hit": {
+        "row": 3,
+        "frames": 4
+      },
+      "death": {
+        "row": 4,
+        "frames": 4
+      },
+      "super": {
+        "row": 5,
+        "frames": 4
+      },
+      "reload": {
+        "row": 6,
+        "frames": 4
+      }
+    }
+  },
+  "iteration_changelog": [
+    "Creato primo set base completo per Spadaccino/Kael Guardia con portrait rendered, sprite isometrico, sprite sheet animabile, icone HUD e spada.",
+    "Aggiornato il profilo dati Spadaccino per puntare alla sprite sheet definitiva di questa iterazione.",
+    "Convertiti gli asset bitmap PNG in SVG testuali per rendere la pull request compatibile con ambienti che non accettano file binari."
+  ],
+  "source_format": "svg_text",
+  "binary_free": true
+}

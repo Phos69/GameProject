@@ -1,0 +1,79 @@
+{
+  "id": "licantropo",
+  "nome": "Rocco Lunastorta",
+  "classe": "Licantropo",
+  "arma": "Artigli",
+  "passiva": "Odore del Sangue",
+  "super": "Notte Bestiale",
+  "stile": "cartoon dark arcade, zombie survival isometrico",
+  "palette": {
+    "id": "moon_fury",
+    "primary": "#292b33",
+    "secondary": "#384d7a",
+    "accent": "#f01a14",
+    "claw": "#dae0d3",
+    "outline": "#08080a"
+  },
+  "silhouette_notes": [
+    "postura curva con coda bassa e muso allungato",
+    "orecchie appuntite e occhi rossi leggibili a piccola scala",
+    "artigli doppi sempre visibili come arma principale",
+    "forma super piu grande con slash rossi e luna per Notte Bestiale"
+  ],
+  "file": {
+    "portrait_rendered": "rendered/licantropo_portrait_full.svg",
+    "portrait_hud": "rendered/licantropo_portrait_hud.svg",
+    "gameplay_sprite": "sprites/licantropo_gameplay_iso.svg",
+    "sprite_sheet": "sprites/licantropo_sprite_sheet.svg",
+    "hud_icon": "rendered/licantropo_portrait_hud.svg",
+    "weapon_icon": "weapons/licantropo_weapon.svg",
+    "ability_icon": "ui/licantropo_ability_icon.svg",
+    "passive_icon": "ui/licantropo_passive_icon.svg",
+    "super_icon": "ui/licantropo_super_icon.svg"
+  },
+  "sprite_sheet": {
+    "frame_size": [
+      96,
+      96
+    ],
+    "columns": 4,
+    "rows": 7,
+    "animations": {
+      "idle": {
+        "row": 0,
+        "frames": 4
+      },
+      "walk": {
+        "row": 1,
+        "frames": 4
+      },
+      "attack": {
+        "row": 2,
+        "frames": 4
+      },
+      "hit": {
+        "row": 3,
+        "frames": 4
+      },
+      "death": {
+        "row": 4,
+        "frames": 4
+      },
+      "super": {
+        "row": 5,
+        "frames": 4
+      },
+      "reload": {
+        "row": 6,
+        "frames": 4
+      }
+    }
+  },
+  "iteration_changelog": [
+    "Creato primo set base completo per Licantropo/Rocco Lunastorta con portrait rendered, sprite isometrico, sprite sheet animabile, icone HUD e artigli.",
+    "La riga super usa una forma bestiale piu grande con slash rossi per anticipare Notte Bestiale.",
+    "Convertiti gli asset bitmap PNG in SVG testuali per rendere la pull request compatibile con ambienti che non accettano file binari."
+  ],
+  "source_format": "svg_text",
+  "binary_free": true
+}

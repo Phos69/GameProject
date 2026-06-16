@@ -12,6 +12,21 @@
 
 ### Added
 
+- Convertiti gli asset personaggio RPG da PNG binari a SVG testuali, aggiornando manifest e profili `.tres` per rendere la PR compatibile con ambienti che non accettano file binari.
+- Aggiunto primo set asset completo per `Licantropo` / `Rocco Lunastorta`: portrait rendered, portrait HUD, sprite isometrico, sprite sheet animabile, icone artigli/passiva/super e manifest in `assets/characters/licantropo/`.
+- Aggiornato l'indice personaggi per marcare tutti i personaggi RPG come `base_complete` e proporre `ranger_quality_pass` come primo miglioramento qualitativo.
+- Aggiunto primo set asset completo per `Domatrice` / `Nina Bullone`: portrait rendered, portrait HUD, sprite isometrico, sprite sheet animabile, icone fionda/passiva/super, Briciola visuale e manifest in `assets/characters/domatrice/`.
+- Aggiornato l'indice personaggi per marcare `domatrice` come `base_complete` e proporre `licantropo` come prossimo pass asset.
+- Aggiunto primo set asset completo per `Mago` / `Elio Braciastella`: portrait rendered, portrait HUD, sprite isometrico, sprite sheet animabile con cast, icone bastone/passiva/super e manifest in `assets/characters/mago/`.
+- Aggiornato l'indice personaggi per marcare `mago` come `base_complete` e proporre `domatrice` come prossimo pass asset.
+- Aggiunto primo set asset completo per `Spadaccino` / `Kael Guardia`: portrait rendered, portrait HUD, sprite isometrico, sprite sheet animabile, icone spada/passiva/super e manifest in `assets/characters/spadaccino/`.
+- Aggiornato l'indice personaggi per marcare `spadaccino` come `base_complete` e proporre `mago` come prossimo pass asset.
+- Aggiunto primo set asset completo per `Berserker` / `Bruna Spaccaferro`: portrait rendered, portrait HUD, sprite isometrico, sprite sheet animabile, icone ascia/passiva/super e manifest in `assets/characters/berserker/`.
+- Aggiornato l'indice personaggi per marcare `berserker` come `base_complete` e proporre `spadaccino` come prossimo pass asset.
+- Aggiunto primo set asset completo per `Pistoliere` / `Dante Ferraglia`: portrait rendered, portrait HUD, sprite isometrico, sprite sheet animabile, icone pistola/passiva/super e manifest in `assets/characters/pistoliere/`.
+- Aggiornato l'indice personaggi per marcare `pistoliere` come `base_complete` e proporre `berserker` come prossimo pass asset.
+- Aggiunto primo set asset completo per `Ranger` / `Mira Vento`: portrait rendered, portrait HUD, sprite isometrico, sprite sheet animabile, icone arma/abilita e manifest in `assets/characters/ranger/`.
+- Creato indice generale `assets/characters/index.json` per tracciare copertura asset e prossimo personaggio consigliato.
 - Iterazione sulla generazione biomi zombie survival: aggiunti corridoi secondari, cover, strettoie e ostacoli grandi specifici per Pianura Infetta, Tossico, Infuocato, Neve e Palude nella pipeline seed-based.
 - La validazione layout ora segnala anche spawn player e casse sovrapposti a ostacoli, hazard o fall zone; lo smoke test dei biomi verifica identita navigazionale e placement validi.
 - Iterazione sugli encounter zombie survival: gli encounter casuali ora rispettano seed mondo, cooldown per ondata, stato critico/boss, posizioni validate e reward crate reali per survivor cache/cursed crate.
