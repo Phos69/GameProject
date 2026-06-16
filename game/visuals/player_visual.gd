@@ -18,6 +18,8 @@ var flash_intensity: float = 1.0
 var glow_intensity: float = 1.0
 var high_contrast: bool = false
 var reduced_motion: bool = false
+var status_feedback_id: StringName = &""
+var status_feedback_timer: float = 0.0
 
 func _ready() -> void:
 	add_to_group("visual_settings_consumers")
@@ -30,6 +32,7 @@ func _process(delta: float) -> void:
 	fire_flash_timer = maxf(fire_flash_timer - delta, 0.0)
 	reload_timer = maxf(reload_timer - delta, 0.0)
 	hurt_flash_timer = maxf(hurt_flash_timer - delta, 0.0)
+	status_feedback_timer = maxf(status_feedback_timer - delta, 0.0)
 	queue_redraw()
 
 func apply_visual_settings(settings: Dictionary) -> void:
@@ -93,6 +96,11 @@ func play_reload(duration: float) -> void:
 func play_hurt() -> void:
 	hurt_flash_timer = 0.12
 
+func play_status_feedback(status_id: StringName) -> void:
+	status_feedback_id = BiomeStatusRuntime.canonical_status_id(status_id)
+	status_feedback_timer = 0.75 if not reduced_motion else 0.32
+	queue_redraw()
+
 func play_dead() -> void:
 	is_dead = true
 	is_downed = false
@@ -109,9 +117,12 @@ func reset_visual() -> void:
 	fire_flash_timer = 0.0
 	reload_timer = 0.0
 	hurt_flash_timer = 0.0
+	status_feedback_timer = 0.0
+	status_feedback_id = &""
 	queue_redraw()
 
 func _draw() -> void:
+	_draw_status_feedback()
 	var display_color := accent_color
 	if hurt_flash_timer > 0.0:
 		display_color = display_color.lerp(
@@ -419,6 +430,25 @@ func _draw_weapon(
 				true
 			)
 	return muzzle
+
+func _draw_status_feedback() -> void:
+	if status_feedback_timer <= 0.0 or status_feedback_id.is_empty():
+		return
+	var alpha := clampf(status_feedback_timer / 0.75, 0.0, 1.0)
+	var color := Color(0.30, 1.0, 0.42, alpha)
+	match status_feedback_id:
+		&"burn": color = Color(1.0, 0.30, 0.08, alpha)
+		&"bleed": color = Color(0.72, 0.02, 0.04, alpha)
+		&"freeze": color = Color(0.54, 0.90, 1.0, alpha)
+		&"shock": color = Color(1.0, 0.92, 0.14, alpha)
+	if high_contrast:
+		color = Color.WHITE
+	draw_arc(Vector2(0.0, -6.0), 28.0 + 7.0 * alpha, 0.0, TAU, 24, Color(color, 0.66), 3.0, true)
+	for index in range(5):
+		var angle := TAU * float(index) / 5.0 + animation_time * (0.0 if reduced_motion else 2.0)
+		var start := Vector2(cos(angle), sin(angle)) * 18.0
+		var end := start + Vector2(cos(angle), sin(angle)) * (8.0 + 5.0 * alpha)
+		draw_line(start, end, color, 2.5, true)
 
 func _draw_leg(origin: Vector2, stride: float, color: Color) -> void:
 	var foot := origin + Vector2(stride, 12.0)

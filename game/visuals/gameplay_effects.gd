@@ -207,13 +207,13 @@ func spawn_environment_damage(
 ) -> GameplayEffect:
 	var color := Color(0.82, 0.28, 0.16, 1.0)
 	match hazard_id:
-		&"poisoned", &"toxic_puddle", &"gas_cloud", &"toxic_cloud":
+		&"poison", &"poisoned", &"toxic_puddle", &"gas_cloud", &"toxic_cloud":
 			color = Color(0.30, 1.0, 0.42, 1.0)
-		&"burning", &"fire_zone", &"lava_crack", &"fire_patch":
+		&"burn", &"burning", &"fire_zone", &"lava_crack", &"fire_patch", &"explosion":
 			color = Color(1.0, 0.30, 0.08, 1.0)
-		&"chilled", &"slippery_ice", &"deep_snow_slow":
+		&"freeze", &"chilled", &"slippery_ice", &"deep_snow_slow":
 			color = Color(0.54, 0.90, 1.0, 1.0)
-		&"mudded", &"soaked", &"mud_slow", &"deep_water":
+		&"bleed", &"mudded", &"soaked", &"mud_slow", &"deep_water":
 			color = Color(0.18, 0.68, 0.64, 1.0)
 	return _spawn_effect(
 		&"environment_damage",

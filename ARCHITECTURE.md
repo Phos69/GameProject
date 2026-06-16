@@ -454,3 +454,11 @@ Per mantenere il progetto gestibile:
 - lasciare esempi minimi giocabili;
 - mantenere milestone e TODO aggiornati;
 - preferire scene/test manuali ripetibili.
+
+## Contratto iterazione status biome survival
+
+`BiomeStatusRuntime` e il runtime unico dei malus ambientali e tematici: espone `apply_status(status_id, duration, intensity, source)`, `clear_status(status_id)`, `has_status(status_id)` e snapshot per HUD. `HazardSystem` lo possiede e resta la facciata usata da hazard, nemici, encounter e HUD; alla chiusura run resetta moltiplicatori movimento e status temporanei.
+
+Il flusso nemici e `WaveDirector -> EnemySystem -> BasicEnemy`: il director risolve un ID pesato dal `BiomeDefinition`, `EnemySystem` inietta il `BiomeEnemyProfile`, `BasicEnemy` applica statistiche, visual profile e status on-hit/on-death. `ZombieVisual` riceve solo archetipo e tema, mantenendo silhouette procedurali distinte senza autorita gameplay.
+
+`RandomEncounterSystem` e un sistema leggero seed-based per survival biome: produce ambush, elite pack, cursed crate, hazard burst e survivor cache, annunciando l'evento via segnale e delegando spawn nemici/status/hazard ai sistemi esistenti.

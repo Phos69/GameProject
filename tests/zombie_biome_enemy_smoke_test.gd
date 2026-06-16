@@ -133,7 +133,7 @@ func _run() -> void:
 	toxic_enemy._attack_target()
 	await process_frame
 	_expect(
-		hazard_system.get_player_status_ids(player).has(&"poisoned"),
+		hazard_system.get_player_status_ids(player).has(&"poison"),
 		"toxic zombie applies poison on hit"
 	)
 	_expect(

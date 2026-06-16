@@ -362,13 +362,13 @@ func _biome_icon_label(icon_id: StringName) -> String:
 
 func _status_icon_label(status_id: StringName) -> String:
 	match status_id:
-		&"poisoned", &"toxic_puddle", &"gas_cloud", &"toxic_cloud":
+		&"poison", &"poisoned", &"toxic_puddle", &"gas_cloud", &"toxic_cloud":
 			return "TOX"
-		&"burning", &"fire_zone", &"lava_crack", &"fire_patch":
+		&"burn", &"burning", &"fire_zone", &"lava_crack", &"fire_patch", &"explosion":
 			return "FIRE"
-		&"chilled", &"slippery_ice", &"deep_snow_slow":
+		&"freeze", &"chilled", &"slippery_ice", &"deep_snow_slow":
 			return "ICE"
-		&"mudded", &"soaked", &"mud_slow", &"deep_water":
+		&"bleed", &"mudded", &"soaked", &"mud_slow", &"deep_water":
 			return "MUD"
 		&"fall_zone":
 			return "FALL"

@@ -309,3 +309,11 @@
   - File/sistemi coinvolti: `tests/` e lifecycle dei nodi runtime.
   - Criterio di accettazione: la suite termina senza `ObjectDB instances leaked at exit`.
   - Test richiesto: suite headless completa con output privo di warning ObjectDB.
+
+- Completato: iterazione survival biome-based status/ostacoli/roster/encounter.
+  - Obiettivo: rendere i cinque biomi piu riconoscibili con malus temporanei, ostacoli, nemici tematici e encounter seed-based.
+  - Milestone collegata: evoluzione zombie revamp Z12.
+  - File/sistemi coinvolti: `BiomeStatusRuntime`, `HazardSystem`, `BiomeEnemyProfile`, `WaveDirector`, `RandomEncounterSystem`, HUD player e smoke test dedicati.
+  - Criterio di accettazione: status temporanei visibili, roster tematico per bioma, ostacoli validati e encounter riproducibili.
+  - Test richiesto: smoke headless biome status, roster, ostacoli, random encounter e regressioni survival/RPG.
+- Follow-up: sostituire placeholder procedurali status/encounter con asset definitivi, playtestare frequenze encounter e tarare durata/danno dei malus con sessioni multiplayer reali.

@@ -13,6 +13,7 @@ signal active_biome_applied(biome_id: StringName)
 @export var obstacle_system_path: NodePath = NodePath("ObstacleSystem")
 @export var hazard_system_path: NodePath = NodePath("HazardSystem")
 @export var transition_system_path: NodePath = NodePath("TransitionSystem")
+@export var random_encounter_system_path: NodePath = NodePath("RandomEncounterSystem")
 
 var biome_manager
 var wave_director
@@ -22,6 +23,7 @@ var resource_crate_system
 var obstacle_system
 var hazard_system
 var transition_system
+var random_encounter_system
 var is_active: bool = false
 
 func _ready() -> void:
@@ -37,6 +39,8 @@ func start_run(context: Dictionary = {}) -> void:
 	is_active = true
 	if wave_director != null and wave_director.has_method("start_run"):
 		wave_director.start_run()
+	if random_encounter_system != null and random_encounter_system.has_method("configure_seed"):
+		random_encounter_system.configure_seed(int(context.get("run_seed", 0)))
 	_apply_active_biome(biome)
 	zombie_run_started.emit(
 		StringName(biome.get("biome_id")) if biome != null else &""
@@ -53,6 +57,8 @@ func stop_run() -> void:
 		hazard_system.stop_run()
 	if transition_system != null:
 		transition_system.stop_run()
+	if random_encounter_system != null and random_encounter_system.has_method("cleanup_encounter"):
+		random_encounter_system.cleanup_encounter()
 	if wave_director != null and wave_director.has_method("stop_run"):
 		wave_director.stop_run()
 	is_active = false
@@ -87,7 +93,20 @@ func _resolve_components() -> void:
 		transition_system_path,
 		&"biome_transition_system"
 	)
+	random_encounter_system = _resolve_node(
+		random_encounter_system_path,
+		&"random_encounter_system"
+	)
 	_connect_biome_manager()
+	_connect_wave_manager()
+
+func _connect_wave_manager() -> void:
+	var wave_manager := get_tree().get_first_node_in_group("wave_manager") as WaveManager
+	if wave_manager == null:
+		return
+	var callback := Callable(self, "_on_wave_started")
+	if not wave_manager.wave_started.is_connected(callback):
+		wave_manager.wave_started.connect(callback)
 
 func _connect_biome_manager() -> void:
 	if biome_manager == null:
@@ -95,6 +114,14 @@ func _connect_biome_manager() -> void:
 	var callback := Callable(self, "_on_current_biome_changed")
 	if not biome_manager.current_biome_changed.is_connected(callback):
 		biome_manager.current_biome_changed.connect(callback)
+
+func _on_wave_started(wave_index: int) -> void:
+	if not is_active or random_encounter_system == null:
+		return
+	var wave_manager := get_tree().get_first_node_in_group("wave_manager") as WaveManager
+	var critical := wave_manager != null and wave_manager.current_wave_is_boss
+	if random_encounter_system.has_method("try_start_encounter"):
+		random_encounter_system.try_start_encounter(get_current_biome(), wave_index, critical)
 
 func _on_current_biome_changed(
 	_biome_id: StringName,
