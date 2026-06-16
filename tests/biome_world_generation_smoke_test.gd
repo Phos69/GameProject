@@ -202,6 +202,20 @@ func _validate_cell(cell: BiomeCell) -> void:
 			bool(cell.generated_layout.validation_report.get("is_valid", false)),
 			"%s passes pathfinding validation" % cell.id
 		)
+		var placement_errors := (
+			cell.generated_layout.validation_report.get(
+				"placement_errors",
+				PackedStringArray()
+			) as PackedStringArray
+		)
+		_expect(
+			placement_errors.is_empty(),
+			"%s has valid spawn, crate and hazard placements" % cell.id
+		)
+		_expect(
+			_has_biome_navigation_identity(cell.generated_layout, cell.biome_id),
+			"%s has biome-specific navigation identity" % cell.id
+		)
 	for side in BiomeCell.SIDES:
 		if cell.has_neighbor(side):
 			_expect(
@@ -229,6 +243,33 @@ func _has_large_house(layout: BiomeEnvironmentLayout) -> bool:
 		):
 			return true
 	return false
+
+func _has_biome_navigation_identity(
+	layout: BiomeEnvironmentLayout,
+	biome_id: StringName
+) -> bool:
+	var expected_tag := &"broken_street"
+	var expected_obstacle := &"ruined_house"
+	match biome_id:
+		&"toxic_wastes":
+			expected_tag = &"service_lane"
+			expected_obstacle = &"pipe_stack"
+		&"burning_fields":
+			expected_tag = &"ash_lane"
+			expected_obstacle = &"burned_car"
+		&"frozen_outskirts":
+			expected_tag = &"packed_snow_path"
+			expected_obstacle = &"ice_block"
+		&"drowned_marsh":
+			expected_tag = &"wooden_walkway"
+			expected_obstacle = &"dead_tree"
+		_:
+			expected_tag = &"broken_street"
+			expected_obstacle = &"ruined_house"
+	return (
+		layout.terrain_patch_tags.has(expected_tag)
+		and layout.obstacle_ids.has(expected_obstacle)
+	)
 
 func _expect(condition: bool, message: String) -> void:
 	if condition:

@@ -4,6 +4,7 @@ class_name ObstacleLayoutGenerator
 const ROAD_WIDTH := 10
 const SECONDARY_ROAD_WIDTH := 5
 const BORDER_THICKNESS := 4
+const MIN_RECT_GAP := 2
 
 func populate_layout(
 	layout: BiomeEnvironmentLayout,
@@ -13,6 +14,7 @@ func populate_layout(
 	var rng := RandomNumberGenerator.new()
 	rng.seed = maxi(cell.seed, 1)
 	_add_roads(layout, cell)
+	_add_biome_navigation_features(layout, biome, rng)
 	_add_large_obstacles(layout, biome, rng)
 	_add_secondary_obstacles(layout, biome, rng)
 	_add_connected_border_walls(layout, cell)
@@ -53,6 +55,114 @@ func _add_roads(layout: BiomeEnvironmentLayout, cell: BiomeCell) -> void:
 			_connector_rect_for_passage(passage, zone_size),
 			passage.passage_type
 		)
+
+func _add_biome_navigation_features(
+	layout: BiomeEnvironmentLayout,
+	biome: BiomeDefinition,
+	rng: RandomNumberGenerator
+) -> void:
+	match biome.biome_id:
+		&"infected_plains":
+			_add_road_rect(
+				layout,
+				Rect2i(Vector2i(24, 48), Vector2i(152, SECONDARY_ROAD_WIDTH)),
+				&"broken_street"
+			)
+			_add_road_rect(
+				layout,
+				Rect2i(Vector2i(24, 147), Vector2i(152, SECONDARY_ROAD_WIDTH)),
+				&"broken_street"
+			)
+		&"toxic_wastes":
+			_add_road_rect(
+				layout,
+				Rect2i(Vector2i(44, 44), Vector2i(SECONDARY_ROAD_WIDTH, 112)),
+				&"service_lane"
+			)
+			_add_road_rect(
+				layout,
+				Rect2i(Vector2i(151, 44), Vector2i(SECONDARY_ROAD_WIDTH, 112)),
+				&"service_lane"
+			)
+			_add_cover_cluster(layout, &"pipe_stack", Vector2i(54, 78), true)
+			_add_cover_cluster(layout, &"pipe_stack", Vector2i(130, 118), true)
+		&"burning_fields":
+			_add_road_rect(
+				layout,
+				Rect2i(Vector2i(48, 48), Vector2i(104, SECONDARY_ROAD_WIDTH)),
+				&"ash_lane"
+			)
+			_add_road_rect(
+				layout,
+				Rect2i(Vector2i(48, 147), Vector2i(104, SECONDARY_ROAD_WIDTH)),
+				&"ash_lane"
+			)
+			_add_choke_pair(layout, &"burned_car", Vector2i(82, 84), 0.25)
+			_add_choke_pair(layout, &"burned_car", Vector2i(110, 112), -0.25)
+		&"frozen_outskirts":
+			_add_road_rect(
+				layout,
+				Rect2i(Vector2i(36, 58), Vector2i(128, SECONDARY_ROAD_WIDTH)),
+				&"packed_snow_path"
+			)
+			_add_road_rect(
+				layout,
+				Rect2i(Vector2i(36, 137), Vector2i(128, SECONDARY_ROAD_WIDTH)),
+				&"packed_snow_path"
+			)
+			_add_cover_cluster(layout, &"ice_block", Vector2i(58, 118), false)
+			_add_cover_cluster(layout, &"ice_block", Vector2i(130, 66), false)
+		&"drowned_marsh":
+			var offset := rng.randi_range(-6, 6)
+			_add_road_rect(
+				layout,
+				Rect2i(Vector2i(58, 30), Vector2i(SECONDARY_ROAD_WIDTH, 140)),
+				&"wooden_walkway"
+			)
+			_add_road_rect(
+				layout,
+				Rect2i(Vector2i(136 + offset, 30), Vector2i(SECONDARY_ROAD_WIDTH, 140)),
+				&"wooden_walkway"
+			)
+			_add_choke_pair(layout, &"dead_tree", Vector2i(76, 122), 0.6)
+			_add_choke_pair(layout, &"dead_tree", Vector2i(118, 70), -0.6)
+		_:
+			pass
+
+func _add_cover_cluster(
+	layout: BiomeEnvironmentLayout,
+	obstacle_id: StringName,
+	anchor: Vector2i,
+	horizontal: bool
+) -> void:
+	var first := Rect2i(anchor, Vector2i(13, 6) if horizontal else Vector2i(6, 13))
+	var second := Rect2i(
+		anchor + (Vector2i(18, 8) if horizontal else Vector2i(8, 18)),
+		Vector2i(10, 5) if horizontal else Vector2i(5, 10)
+	)
+	_add_obstacle_if_clear(layout, obstacle_id, first, &"rectangle", 0.0)
+	_add_obstacle_if_clear(layout, obstacle_id, second, &"rectangle", 0.0)
+
+func _add_choke_pair(
+	layout: BiomeEnvironmentLayout,
+	obstacle_id: StringName,
+	anchor: Vector2i,
+	rotation_radians: float
+) -> void:
+	_add_obstacle_if_clear(
+		layout,
+		obstacle_id,
+		Rect2i(anchor, Vector2i(8, 18)),
+		&"rectangle",
+		rotation_radians
+	)
+	_add_obstacle_if_clear(
+		layout,
+		obstacle_id,
+		Rect2i(anchor + Vector2i(28, -6), Vector2i(8, 18)),
+		&"rectangle",
+		-rotation_radians
+	)
 
 func _add_road_rect(
 	layout: BiomeEnvironmentLayout,
@@ -112,9 +222,7 @@ func _add_large_obstacles(
 			rng.randi_range(12, 24)
 		)
 		var rect := Rect2i(candidate, size)
-		if _intersects_any(rect, layout.road_rects):
-			continue
-		_add_obstacle(layout, obstacle_id, rect, &"rectangle", 0.0)
+		_add_obstacle_if_clear(layout, obstacle_id, rect, &"rectangle", 0.0)
 
 func _add_secondary_obstacles(
 	layout: BiomeEnvironmentLayout,
@@ -130,9 +238,13 @@ func _add_secondary_obstacles(
 	]
 	for index in range(rects.size()):
 		var rect := rects[index]
-		if _intersects_any(rect, layout.road_rects):
-			continue
-		_add_obstacle(layout, ids[index % ids.size()], rect, &"rectangle", 0.0)
+		_add_obstacle_if_clear(
+			layout,
+			ids[index % ids.size()],
+			rect,
+			&"rectangle",
+			0.0
+		)
 
 func _add_connected_border_walls(
 	layout: BiomeEnvironmentLayout,
@@ -177,6 +289,19 @@ func _add_border_segment(
 				Vector2i(BORDER_THICKNESS, finish - start)
 			)
 	_add_obstacle(layout, &"boundary_fence", rect, &"rectangle", 0.0)
+
+func _add_obstacle_if_clear(
+	layout: BiomeEnvironmentLayout,
+	obstacle_id: StringName,
+	rect: Rect2i,
+	shape_id: StringName,
+	rotation_radians: float
+) -> void:
+	if _intersects_any(_inflate_rect(rect, MIN_RECT_GAP), layout.road_rects):
+		return
+	if _intersects_any(_inflate_rect(rect, MIN_RECT_GAP), layout.obstacle_rects):
+		return
+	_add_obstacle(layout, obstacle_id, rect, shape_id, rotation_radians)
 
 func _add_crates(
 	layout: BiomeEnvironmentLayout,
@@ -298,3 +423,9 @@ func _cell_inside_any_rect(cell: Vector2i, rects: Array[Rect2i]) -> bool:
 		if rect.has_point(cell):
 			return true
 	return false
+
+func _inflate_rect(rect: Rect2i, amount: int) -> Rect2i:
+	return Rect2i(
+		rect.position - Vector2i(amount, amount),
+		rect.size + Vector2i(amount * 2, amount * 2)
+	)
