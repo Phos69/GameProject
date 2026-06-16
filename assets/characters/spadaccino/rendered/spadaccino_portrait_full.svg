@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" shape-rendering="geometricPrecision">
+  <rect width="512" height="512" fill="#070912"/>
+  <ellipse cx="256" cy="286" rx="230" ry="176" fill="#142152" opacity="0.55"/>
+  <ellipse cx="256" cy="280" rx="160" ry="125" fill="#d6e8f5" opacity="0.5"/>
+  <path d="M256 82 L364 216 L320 480 L192 480 L148 216 Z" fill="#142152" stroke="#070912" stroke-width="14"/>
+  <circle cx="256" cy="210" r="72" fill="#d6e8f5" stroke="#070912" stroke-width="10"/>
+  <path d="M146 352 L366 246" stroke="#6bc7ff" stroke-width="18" stroke-linecap="round"/>
+  <text x="256" y="474" text-anchor="middle" font-family="monospace" font-size="28" fill="#6bc7ff">Kael Guardia</text>
+</svg>

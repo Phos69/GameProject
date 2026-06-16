@@ -329,10 +329,10 @@
 
 ## Asset definitivi personaggi RPG - futuro
 
-- Obiettivo: sostituire i placeholder procedurali di Mira Vento, Dante Ferraglia, Bruna Spaccaferro e Kael Guardia con ritratti rendered e sprite animati definitivi.
+- Obiettivo: rifinire qualitativamente tutti i sette personaggi con VFX separati, pulizia animazioni, eventuale export finale PNG fuori dal flusso PR e pass di leggibilita; Mira Vento, Dante Ferraglia, Bruna Spaccaferro, Kael Guardia, Elio Braciastella, Nina Bullone e Rocco Lunastorta hanno un primo set base completo da validare in QA visuale.
 - Milestone collegata: Pass 2-3 character art RPG zombie survival.
 - File/sistemi coinvolti: `game/rpg/characters/`, `game/visuals/player_visual.gd`, `game/ui/player_hud_card.gd`, `assets/characters/`.
-- Criterio di accettazione: ogni personaggio ha portrait HUD/full, idle/run/attack/reload/hurt/death/super, weapon layer e VFX separati configurati dai campi `RpgCharacterData`.
+- Criterio di accettazione: ogni personaggio ha portrait HUD/full, idle/run/attack/reload/hurt/death/super, weapon layer e VFX separati configurati dai campi `RpgCharacterData`; Tutti i sette personaggi restano riferimenti minimi per struttura manifest, sprite sheet e icone arma/abilita; il prossimo ciclo deve migliorare qualita, VFX separati e coerenza animabile.
 - Test richiesto: smoke RPG headless, QA visuale a 1280x720 e checklist `docs/rpg_character_visual_checklist.md` completata.
 
 ## Polish classi RPG avanzate - futuro

@@ -1,0 +1,79 @@
+{
+  "id": "domatrice",
+  "nome": "Nina Bullone",
+  "classe": "Domatrice",
+  "arma": "Fionda magnetica",
+  "passiva": "Briciola Attacca!",
+  "super": "Branco di Rottami",
+  "stile": "cartoon dark arcade, zombie survival isometrico",
+  "palette": {
+    "id": "teal_copper",
+    "primary": "#0a948c",
+    "secondary": "#9e521f",
+    "accent": "#5cffeb",
+    "metal": "#9baca7",
+    "outline": "#060d0e"
+  },
+  "silhouette_notes": [
+    "zaino tecnico in rame e occhiali luminosi turchesi",
+    "fionda magnetica a Y sempre visibile nelle pose offensive",
+    "Briciola companion meccanico vicino alla silhouette anche a piccola scala",
+    "mini-droni turchesi aggiunti nella super Branco di Rottami"
+  ],
+  "file": {
+    "portrait_rendered": "rendered/domatrice_portrait_full.svg",
+    "portrait_hud": "rendered/domatrice_portrait_hud.svg",
+    "gameplay_sprite": "sprites/domatrice_gameplay_iso.svg",
+    "sprite_sheet": "sprites/domatrice_sprite_sheet.svg",
+    "hud_icon": "rendered/domatrice_portrait_hud.svg",
+    "weapon_icon": "weapons/domatrice_weapon.svg",
+    "ability_icon": "ui/domatrice_ability_icon.svg",
+    "passive_icon": "ui/domatrice_passive_icon.svg",
+    "super_icon": "ui/domatrice_super_icon.svg"
+  },
+  "sprite_sheet": {
+    "frame_size": [
+      96,
+      96
+    ],
+    "columns": 4,
+    "rows": 7,
+    "animations": {
+      "idle": {
+        "row": 0,
+        "frames": 4
+      },
+      "walk": {
+        "row": 1,
+        "frames": 4
+      },
+      "attack": {
+        "row": 2,
+        "frames": 4
+      },
+      "hit": {
+        "row": 3,
+        "frames": 4
+      },
+      "death": {
+        "row": 4,
+        "frames": 4
+      },
+      "super": {
+        "row": 5,
+        "frames": 4
+      },
+      "reload": {
+        "row": 6,
+        "frames": 4
+      }
+    }
+  },
+  "iteration_changelog": [
+    "Creato primo set base completo per Domatrice/Nina Bullone con portrait rendered, sprite isometrico, sprite sheet animabile, icone HUD, fionda magnetica e Briciola.",
+    "Aggiornato il profilo dati Domatrice per puntare alla sprite sheet definitiva di questa iterazione.",
+    "Convertiti gli asset bitmap PNG in SVG testuali per rendere la pull request compatibile con ambienti che non accettano file binari."
+  ],
+  "source_format": "svg_text",
+  "binary_free": true
+}

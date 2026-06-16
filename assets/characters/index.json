@@ -1,0 +1,121 @@
+{
+  "schema_version": 1,
+  "style_target": "zombie survival isometrico, cartoon dark arcade, leggibile in gameplay",
+  "characters": [
+    {
+      "id": "ranger",
+      "nome": "Mira Vento",
+      "classe": "Ranger",
+      "manifest": "assets/characters/ranger/manifest.json",
+      "status": "base_complete",
+      "available_assets": [
+        "portrait_rendered",
+        "portrait_hud",
+        "gameplay_sprite",
+        "sprite_sheet",
+        "hud_icon",
+        "weapon_icon",
+        "ability_icon"
+      ]
+    },
+    {
+      "id": "pistoliere",
+      "nome": "Dante Ferraglia",
+      "classe": "Pistoliere",
+      "manifest": "assets/characters/pistoliere/manifest.json",
+      "status": "base_complete",
+      "available_assets": [
+        "portrait_rendered",
+        "portrait_hud",
+        "gameplay_sprite",
+        "sprite_sheet",
+        "hud_icon",
+        "weapon_icon",
+        "ability_icon"
+      ]
+    },
+    {
+      "id": "berserker",
+      "nome": "Bruna Spaccaferro",
+      "classe": "Berserker",
+      "status": "base_complete",
+      "manifest": "assets/characters/berserker/manifest.json",
+      "available_assets": [
+        "portrait_rendered",
+        "portrait_hud",
+        "gameplay_sprite",
+        "sprite_sheet",
+        "hud_icon",
+        "weapon_icon",
+        "ability_icon"
+      ]
+    },
+    {
+      "id": "spadaccino",
+      "nome": "Kael Guardia",
+      "classe": "Spadaccino",
+      "status": "base_complete",
+      "manifest": "assets/characters/spadaccino/manifest.json",
+      "available_assets": [
+        "portrait_rendered",
+        "portrait_hud",
+        "gameplay_sprite",
+        "sprite_sheet",
+        "hud_icon",
+        "weapon_icon",
+        "ability_icon"
+      ]
+    },
+    {
+      "id": "mago",
+      "nome": "Elio Braciastella",
+      "classe": "Mago",
+      "status": "base_complete",
+      "manifest": "assets/characters/mago/manifest.json",
+      "available_assets": [
+        "portrait_rendered",
+        "portrait_hud",
+        "gameplay_sprite",
+        "sprite_sheet",
+        "hud_icon",
+        "weapon_icon",
+        "ability_icon"
+      ]
+    },
+    {
+      "id": "domatrice",
+      "nome": "Nina Bullone",
+      "classe": "Domatrice",
+      "status": "base_complete",
+      "manifest": "assets/characters/domatrice/manifest.json",
+      "available_assets": [
+        "portrait_rendered",
+        "portrait_hud",
+        "gameplay_sprite",
+        "sprite_sheet",
+        "hud_icon",
+        "weapon_icon",
+        "ability_icon"
+      ]
+    },
+    {
+      "id": "licantropo",
+      "nome": "Rocco Lunastorta",
+      "classe": "Licantropo",
+      "status": "base_complete",
+      "manifest": "assets/characters/licantropo/manifest.json",
+      "available_assets": [
+        "portrait_rendered",
+        "portrait_hud",
+        "gameplay_sprite",
+        "sprite_sheet",
+        "hud_icon",
+        "weapon_icon",
+        "ability_icon"
+      ]
+    }
+  ],
+  "next_recommended_iteration": "ranger_quality_pass",
+  "asset_format": "svg_text",
+  "binary_free": true
+}
