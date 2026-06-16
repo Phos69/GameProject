@@ -81,7 +81,7 @@ func _run() -> void:
 	await physics_frame
 
 	var hazards := hazard_system.get_active_hazards()
-	_expect(hazards.size() == 1, "starting biome creates one fall zone")
+	_expect(hazards.size() >= 1, "starting biome creates fall zone coverage")
 	if hazards.is_empty():
 		_finish()
 		return

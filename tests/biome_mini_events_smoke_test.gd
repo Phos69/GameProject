@@ -3,13 +3,18 @@ extends SceneTree
 var failures: PackedStringArray = []
 
 func _initialize() -> void:
-	var root := Node2D.new()
-	current_scene = root
+	call_deferred("_run")
+
+func _run() -> void:
+	var scene_root := Node2D.new()
+	root.add_child(scene_root)
+	current_scene = scene_root
 	var player := Node2D.new()
 	player.add_to_group("players")
-	root.add_child(player)
+	scene_root.add_child(player)
 	var encounter := RandomEncounterSystem.new()
-	root.add_child(encounter)
+	scene_root.add_child(encounter)
+	await process_frame
 	encounter.configure_seed(2026)
 	var cases := {
 		&"toxic_wastes": &"toxic_leak",

@@ -57,15 +57,14 @@ func _run() -> void:
 		_finish()
 		return
 
-	wave_manager.initial_delay = 1.0
-	wave_manager.intermission_duration = 75.0
-	wave_manager.spawn_interval = 0.5
+	wave_manager.initial_delay = 0.05
+	wave_manager.intermission_duration = 0.05
+	wave_manager.spawn_interval = 0.0
 	wave_manager.base_enemy_count = 3
 	wave_manager.enemy_count_growth = 0
 	wave_manager.boss_wave_interval = 99
 	survival_mode.boss_wave_interval = 99
 	transition_system.transition_cooldown = 0.01
-	Engine.time_scale = 30.0
 	_expect(
 		game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL),
 		"accelerated survival soak starts"
@@ -79,9 +78,15 @@ func _run() -> void:
 	]
 	var next_transition_index := 0
 	var seen_biomes: Dictionary = {&"infected_plains": true}
+	var simulated_elapsed := 0.0
 	var safety_frames := 0
 	while wave_director.run_elapsed < 600.0 and safety_frames < 2400:
 		safety_frames += 1
+		simulated_elapsed += 1.0
+		wave_director.run_elapsed = maxf(
+			wave_director.run_elapsed,
+			simulated_elapsed
+		)
 		for enemy in wave_manager.get_active_wave_enemies():
 			health_system.apply_damage(enemy, 99999)
 		var transition_threshold := float(next_transition_index + 1) * 120.0

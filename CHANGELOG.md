@@ -4,6 +4,13 @@
 
 ### Fixed
 
+- Corretto `SupplyCrate` rinviando l'apertura automatica da `body_entered`,
+  evitando errori Godot di modifica dello stato physics durante il flush delle
+  query.
+- Allineati gli smoke test al flusso corrente: Character Select prima della
+  survival, profili RPG avanzati, fall boundary procedurali multipli, runner
+  `SceneTree` differiti e proiettili torre che possono essere liberati prima
+  delle asserzioni finali.
 - Documentata la rigenerazione della cache locale `.godot/` richiesta dopo
   clone o pull su una nuova macchina prima dell'avvio runtime headless.
 - Corretto il parse di `RpgCharacterData` rinominando il campo export interno

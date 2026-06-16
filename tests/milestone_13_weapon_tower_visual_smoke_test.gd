@@ -3,6 +3,7 @@ extends SceneTree
 var failures: PackedStringArray = []
 var spawned_projectiles: Array[Projectile] = []
 var tower_shots: Array[Projectile] = []
+var tower_shot_profiles: Array[StringName] = []
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -229,10 +230,9 @@ func _run() -> void:
 	)
 	_expect(not tower_shots.is_empty(), "tower still fires through ProjectileSystem")
 	if not tower_shots.is_empty():
-		var tower_projectile := tower_shots[0]
 		_expect(
-			tower_projectile.visual_data != null
-			and tower_projectile.visual_data.profile_id == &"defense_tower",
+			not tower_shot_profiles.is_empty()
+			and tower_shot_profiles[0] == &"defense_tower",
 			"tower projectile uses the cyan defense profile"
 		)
 		_expect(
@@ -269,7 +269,11 @@ func _on_projectile_spawned(projectile: Node) -> void:
 
 func _on_tower_fired(_target: Node, projectile: Node) -> void:
 	if projectile is Projectile:
-		tower_shots.append(projectile as Projectile)
+		var shot := projectile as Projectile
+		tower_shots.append(shot)
+		tower_shot_profiles.append(
+			shot.visual_data.profile_id if shot.visual_data != null else &""
+		)
 
 func _expect(condition: bool, message: String) -> void:
 	if condition:

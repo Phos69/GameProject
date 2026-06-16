@@ -1,8 +1,8 @@
 extends SceneTree
 
 func _initialize() -> void:
-	var root := Node2D.new(); root.name = "StatusSmokeRoot"; root.add_to_group("players"); current_scene = root; root.add_child(HealthSystem.new())
-	var player := Node2D.new(); player.name = "Player"; player.add_to_group("players"); root.add_child(player)
+	var scene_root := Node2D.new(); scene_root.name = "StatusSmokeRoot"; scene_root.add_to_group("players"); root.add_child(scene_root); current_scene = scene_root; scene_root.add_child(HealthSystem.new())
+	var player := Node2D.new(); player.name = "Player"; player.add_to_group("players"); scene_root.add_child(player)
 	var health := HealthComponent.new(); health.name = "HealthComponent"; health.max_health = 100; health.current_health = 100; player.add_child(health)
 	var runtime := BiomeStatusRuntime.new()
 	for id in [&"poison", &"burn", &"bleed", &"freeze", &"shock"]:

@@ -31,4 +31,4 @@ func try_open(opener: Node) -> bool:
 	return true
 
 func _on_body_entered(body: Node2D) -> void:
-	try_open(body)
+	call_deferred("try_open", body)

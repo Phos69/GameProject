@@ -50,6 +50,9 @@ func _run() -> void:
 	var pistol := load("res://game/weapons/rpg_pistol.tres") as WeaponData
 	var axe := load("res://game/weapons/rpg_axe.tres") as WeaponData
 	var sword := load("res://game/weapons/rpg_sword.tres") as WeaponData
+	var staff := load("res://game/weapons/rpg_staff.tres") as WeaponData
+	var slingshot := load("res://game/weapons/rpg_slingshot.tres") as WeaponData
+	var claws := load("res://game/weapons/rpg_claws.tres") as WeaponData
 	_expect(bow.damage == 20 and bow.max_range == 750.0, "bow has long precise profile")
 	_expect(pistol.magazine_size == 8 and pistol.scatter_degrees == 8.0, "pistol has eight shots and scatter")
 	_expect(axe.damage == 28 and axe.max_range == 95.0, "axe is high damage and short range")

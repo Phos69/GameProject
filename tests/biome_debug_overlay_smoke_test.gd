@@ -1,12 +1,17 @@
 extends SceneTree
 
 func _initialize() -> void:
-	var root := Node.new()
-	current_scene = root
+	call_deferred("_run")
+
+func _run() -> void:
+	var scene_root := Node.new()
+	root.add_child(scene_root)
+	current_scene = scene_root
 	var overlay := BiomeMapDebugOverlay.new()
-	root.add_child(overlay)
+	scene_root.add_child(overlay)
 	var encounter := RandomEncounterSystem.new()
-	root.add_child(encounter)
+	scene_root.add_child(encounter)
+	await process_frame
 	encounter.configure_seed(99)
 	var biome := load("res://game/modes/zombie/biomes/toxic_wastes.tres") as BiomeDefinition
 	var cell := BiomeCell.new()
