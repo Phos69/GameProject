@@ -24,8 +24,8 @@ func _run() -> void:
 		"character select has at least four cards"
 	)
 	_expect(
-		main_menu.character_detail_panel != null,
-		"character select has a detail and gameplay preview panel"
+		main_menu.character_slot_views.get(1, {}).get("preview") != null,
+		"player slots embed a gameplay preview control"
 	)
 	var viewport_rect := Rect2(Vector2.ZERO, root.get_visible_rect().size)
 	var panel_rect := main_menu.character_select_panel.get_global_rect()
@@ -52,10 +52,19 @@ func _run() -> void:
 			]
 		)
 		_expect(
-			main_menu.character_select_panel.get_node_or_null(
-				"CharacterSelectScroll"
-			) != null,
-			"character select keeps a scroll container at %dx%d" % [
+			main_menu.character_roster_scroll != null,
+			"character select keeps the roster scroll container at %dx%d" % [
+				resolution.x,
+				resolution.y
+			]
+		)
+		_expect(
+			resized_viewport.encloses(
+				main_menu.character_back_button.get_global_rect()
+			) and resized_viewport.encloses(
+				main_menu.character_start_button.get_global_rect()
+			),
+			"character select action buttons stay visible at %dx%d" % [
 				resolution.x,
 				resolution.y
 			]
@@ -96,10 +105,12 @@ func _run() -> void:
 		main_menu.focused_character_id == &"ranger",
 		"focusing a card updates the preview profile"
 	)
+	var slot_preview: Control = main_menu.character_slot_views.get(1, {}).get("preview")
 	_expect(
-		main_menu.character_detail_panel.has_method("has_asset_preview")
-			and main_menu.character_detail_panel.call("has_asset_preview"),
-		"focused character preview uses gameplay_sprite_path when available"
+		slot_preview != null
+			and slot_preview.has_method("has_asset_preview")
+			and slot_preview.call("has_asset_preview"),
+		"current slot preview uses gameplay_sprite_path when available"
 	)
 	main_menu._assign_character_to_slot(1, &"ranger")
 	await process_frame
