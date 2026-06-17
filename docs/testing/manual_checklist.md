@@ -627,7 +627,7 @@ e `high_contrast`.
 - Attraversare almeno tre biomi e confermare che ogni categoria di ostacolo
   converta mantenendo collisione e footprint coerenti con il visual.
 - Verificare che nessun asset esterno sia richiesto: il bootstrap parte e gli
-  ostacoli si disegnano in fallback procedurale.
+  ostacoli si disegnano con draw procedurali.
 - In `high_contrast` confermare che ombre e props non riducano la leggibilita di
   HUD, telegraph e pickup.
 - Salvare screenshot per bioma (default e high contrast) durante il prossimo
@@ -640,6 +640,59 @@ godot --headless --path . --script res://tests/zombie_environment_milestone_smok
 godot --headless --path . --script res://tests/survival_wave_smoke_test.gd
 godot --headless --path . --script res://tests/dungeon_smoke_test.gd
 godot --headless --path . --script res://tests/tower_defense_smoke_test.gd
+```
+
+## Regressione ISO-001 Milestone 2 - terrain isometrico 200x200
+
+QA visuale da eseguire con seed fisso a `1280x720` e `960x540`, in `default`
+e `high_contrast`.
+
+- Avviare survival con una megamappa `5x5` e attraversare almeno una regione
+  per ciascuno dei cinque biomi.
+- Confermare che `main_road`, `road`, `broken_street`, `service_lane`,
+  `ash_lane`, `packed_snow_path`, `wooden_walkway`, `bridge`, `snow_pass`,
+  `broken_gate` e `burned_road` siano leggibili come strade, passaggi, ponti o
+  cancelli, non come dirt generico.
+- Verificare che la base `200x200` resti continua e che passaggi e fall zone
+  non si sovrappongano visivamente in modo confuso.
+- Attivare l'overlay debug e controllare che i conteggi terrain mostrino
+  `walkable`, `obstacle`, `hazard`, `border`, `void` e `fall_zone`.
+- Salvare screenshot per terreno/passaggi dei cinque biomi durante il prossimo
+  playtest end-to-end (Milestone 11); gli smoke headless non sostituiscono
+  questa verifica visuale.
+
+```text
+godot --headless --path . --script res://tests/isometric_biome_terrain_coverage_smoke_test.gd
+godot --headless --path . --script res://tests/biome_debug_overlay_smoke_test.gd
+godot --headless --path . --script res://tests/biome_world_generation_smoke_test.gd
+godot --headless --path . --script res://tests/open_passage_transition_smoke_test.gd
+```
+
+## Regressione ISO-001 Milestone 3 - oggetti e ostacoli isometrici
+
+QA visuale da eseguire con seed fisso a `1280x720` e `960x540`, in `default`
+e `high_contrast`.
+
+- Attraversare almeno una regione per ciascuno dei cinque biomi e verificare
+  che ogni bioma abbia almeno due categorie di ostacolo distinguibili.
+- Confermare che `pipe_stack`, `burned_car`, `ice_block`, `dead_tree`,
+  `lab_block`, `snow_cabin`, `sunken_house` e `toxic_barrel` non sembrino
+  barriere generiche.
+- Verificare che muri/barriere tematiche (`lab_wall`, `charred_wall`,
+  `ash_barrier`, `snow_wall`, `reed_wall`, `broken_walkway`) restino leggibili
+  senza coprire pickup, telegraph o zombie in modo ambiguo.
+- Controllare ombra/base per ostacoli grandi e sorting con player/zombie
+  davanti e dietro; i player restano sopra per leggibilita co-op.
+- Confermare che collisioni e spawn blocker siano invariati: niente spawn dentro
+  ostacoli, corridoi centrali attraversabili, casse raggiungibili.
+- Salvare screenshot per bioma durante il prossimo playtest end-to-end
+  (Milestone 11).
+
+```text
+godot --headless --path . --script res://tests/isometric_environment_manifest_smoke_test.gd
+godot --headless --path . --script res://tests/biome_obstacle_generation_smoke_test.gd
+godot --headless --path . --script res://tests/biome_world_generation_smoke_test.gd
+godot --headless --path . --script res://tests/zombie_environment_milestone_smoke_test.gd
 ```
 
 ## Regressione todo_roadmap Milestone 5 - dungeon ramificato, shop e biomi

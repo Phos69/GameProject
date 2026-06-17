@@ -6,6 +6,47 @@ const SECONDARY_ROAD_WIDTH := 5
 const BORDER_THICKNESS := 4
 const MIN_RECT_GAP := 2
 
+const GENERATED_OBSTACLE_CATEGORIES: Dictionary = {
+	&"ash_barrier": &"barrier",
+	&"boundary_fence": &"border",
+	&"broken_fence": &"barrier",
+	&"broken_walkway": &"bridge",
+	&"burned_car": &"wreck",
+	&"burned_house": &"building",
+	&"charred_wall": &"barrier",
+	&"dead_tree": &"tree",
+	&"fallen_log": &"log",
+	&"ice_block": &"rock",
+	&"ice_rock": &"rock",
+	&"industrial_fence": &"barrier",
+	&"lab_block": &"building",
+	&"lab_wall": &"barrier",
+	&"marsh_log": &"log",
+	&"pipe_stack": &"barrier",
+	&"reed_wall": &"barrier",
+	&"ruined_house": &"building",
+	&"small_rock": &"rock",
+	&"snow_cabin": &"building",
+	&"snow_wall": &"barrier",
+	&"sunken_house": &"building",
+	&"toxic_barrel": &"barrel",
+	&"wood_barrier": &"barrier"
+}
+const GENERATED_TERRAIN_TAG_CATEGORIES: Dictionary = {
+	&"ash_lane": &"road",
+	&"broken_street": &"road",
+	&"main_road": &"road",
+	&"packed_snow_path": &"road",
+	&"service_lane": &"road",
+	&"wooden_walkway": &"road"
+}
+
+static func get_generated_obstacle_categories() -> Dictionary:
+	return GENERATED_OBSTACLE_CATEGORIES.duplicate()
+
+static func get_generated_terrain_tag_categories() -> Dictionary:
+	return GENERATED_TERRAIN_TAG_CATEGORIES.duplicate()
+
 func populate_layout(
 	layout: BiomeEnvironmentLayout,
 	cell: BiomeCell,

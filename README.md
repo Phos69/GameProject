@@ -121,6 +121,7 @@ godot --headless --path . --script res://tests/biome_world_generation_smoke_test
 godot --headless --path . --script res://tests/world_graph_connectivity_smoke_test.gd
 godot --headless --path . --script res://tests/persistent_world_generation_smoke_test.gd
 godot --headless --path . --script res://tests/open_passage_transition_smoke_test.gd
+godot --headless --path . --script res://tests/isometric_environment_manifest_smoke_test.gd
 godot --headless --path . --script res://tests/isometric_biome_terrain_coverage_smoke_test.gd
 godot --headless --path . --script res://tests/fall_boundary_visual_logic_smoke_test.gd
 godot --headless --path . --script res://tests/player_dodge_gap_smoke_test.gd
@@ -248,7 +249,11 @@ Completato:
 - megamappa persistente seed-based con grafo connesso, regioni `200x200`, passaggi fisici aperti, stato esplorazione salvabile e mappa consultabile;
 - classificazione completa del terreno `200x200` come walkable, obstacle, hazard, border, void o fall zone;
 - dodge/roll per player con cooldown, invulnerabilita breve e validazione per piccoli gap attraversabili;
-- manifest iniziale `assets/environment/isometric/manifest.json` per censire ostacoli e props da sostituire con versioni isometriche coerenti;
+- manifest `assets/environment/isometric/manifest.json` per censire ostacoli,
+  props, draw mode oggetti e tag terrain/passaggi da sostituire con versioni
+  isometriche coerenti;
+- draw procedurali dedicati per gli ostacoli generati dei cinque biomi, senza
+  asset esterni obbligatori e senza fallback barriera generico implicito;
 - cinque biomi giocabili nella stessa run, con partenza forzata dalla `Pianura Infetta`;
 - spawn zombie delegato a `ZombieSpawner` dai bordi della camera, con fallback ai punti arena esistenti;
 - layout ambientali data-driven per Pianura, Tossico, Infuocato, Neve e Palude;

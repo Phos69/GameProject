@@ -2,6 +2,16 @@ extends RefCounted
 class_name BiomePassageGenerator
 
 const SIDES_TO_OPEN: Array[StringName] = [&"east", &"south"]
+const GENERATED_PASSAGE_TERRAIN_TAG_CATEGORIES: Dictionary = {
+	&"bridge": &"passage",
+	&"broken_gate": &"passage",
+	&"burned_road": &"passage",
+	&"road": &"passage",
+	&"snow_pass": &"passage"
+}
+
+static func get_generated_passage_terrain_tag_categories() -> Dictionary:
+	return GENERATED_PASSAGE_TERRAIN_TAG_CATEGORIES.duplicate()
 
 func generate_passages(cells: Array[BiomeCell], seed_value: int) -> void:
 	for cell in cells:

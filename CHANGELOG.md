@@ -16,6 +16,19 @@
 - Aggiornati TODO, roadmap operativa, design, architettura, checklist manuali e
   report di validazione con la chiusura della Milestone 7 di `todo_roadmap.md`
   su tuning melee, super starter e classi RPG avanzate.
+- Aggiunto `docs/isometric_generation_audit_roadmap.md` con audit mirato della
+  migrazione isometrica, gap analysis su terrain/biomi/asset/connessioni e
+  roadmap dedicata tracciata in `TODO.md` come `ISO-001`.
+- Chiusa la Milestone 1 della roadmap isometrica con stato aggiornato in
+  `docs/isometric_generation_audit_roadmap.md`, `TODO.md` e `ROADMAP.md`.
+- Chiusa la Milestone 2 della roadmap isometrica con stato aggiornato in
+  `docs/isometric_generation_audit_roadmap.md`, `TODO.md`, `ROADMAP.md` e
+  `ARCHITECTURE.md`; aggiunta checklist manuale dedicata e prossimo passo
+  `ISO-001` spostato alla Milestone 3 sugli ostacoli/props isometrici.
+- Chiusa la Milestone 3 della roadmap isometrica con stato aggiornato in
+  `docs/isometric_generation_audit_roadmap.md`, `TODO.md`, `ROADMAP.md`,
+  `README.md`, `ARCHITECTURE.md` e checklist manuale; prossimo passo
+  `ISO-001` spostato alla Milestone 4 sulle collisioni coerenti.
 
 ### Fixed
 
@@ -71,6 +84,31 @@
 - I mini-eventi bioma avanzati generano reward crate tematiche reali quando
   `ResourceCrateSystem` e disponibile: tossico, fuoco, gelo e palude usano
   loot coerente con il bioma.
+- Esteso il manifest ambiente isometrico a v3 con copertura degli
+  `obstacle_id` generati proceduralmente e mapping categoria esposto dal
+  generatore.
+- Esteso `tests/isometric_environment_manifest_smoke_test.gd` con generazione
+  `5x5` reale e verifica manifest/categorie per ogni `layout.obstacle_id`.
+- Esteso il manifest ambiente isometrico a v4 con sezione `terrain`, tag
+  strada/passaggio generati, draw mode procedurali e preset `sample_step` del
+  ground.
+- `BiomeTerrainPatch` ora usa draw mode dedicati per strade, passaggi,
+  ponti, neve, cancelli rotti e strade bruciate, evitando il fallback dirt per
+  i tag generati.
+- `BiomeRegionGround` supporta `sample_step` configurabile e
+  `BiomeMapDebugOverlay` espone conteggi aggregati delle classi terrain.
+- Esteso `tests/isometric_biome_terrain_coverage_smoke_test.gd` per validare
+  manifest terrain, draw mode, preset, tag generati e classificazione `200x200`.
+- Esteso il manifest ambiente isometrico a v5 con `object_visuals`, draw mode
+  procedurali dedicati per gli ostacoli generati e validazione del fallback
+  generico esplicito.
+- `BiomeObstacle` ora legge il draw mode dal manifest e disegna varianti
+  dedicate per pipe stack, auto bruciate, blocchi di ghiaccio, alberi morti,
+  edifici/baite/case sommerse, barili tossici, muri/barriere tematiche, log e
+  walkway senza cambiare collisioni o spawn blocker.
+- Estesi `tests/isometric_environment_manifest_smoke_test.gd` e
+  `tests/biome_obstacle_generation_smoke_test.gd` per vietare fallback generici
+  impliciti sugli ID generati e verificare categorie distinguibili per bioma.
 - Estesa la copertura smoke di `random_encounter` e `biome_mini_events` con
   cooldown/frequenza, reward crate, high contrast, reduced motion e status
   evitabile.

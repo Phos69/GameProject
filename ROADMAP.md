@@ -337,6 +337,15 @@ Attivita post-roadmap:
 - Milestone 7 di `todo_roadmap.md` completata: hitstop melee applicato,
   rischio/beneficio starter coperto da smoke, Briciola bounded, recovery di
   Notte Bestiale leggibile e super RPG tipizzate nei VFX.
+- Milestone 1 di `docs/isometric_generation_audit_roadmap.md` completata:
+  manifest ambiente v3, mapping `obstacle_id -> categoria` nel generatore e
+  smoke manifest esteso alla generazione `5x5`.
+- Milestone 2 di `docs/isometric_generation_audit_roadmap.md` completata:
+  manifest ambiente v4 con tag terrain, draw mode dedicati per strade/passaggi,
+  preset `sample_step` del ground e smoke terrain esteso.
+- Milestone 3 di `docs/isometric_generation_audit_roadmap.md` completata:
+  manifest ambiente v5 con `object_visuals`, draw mode dedicati per ostacoli
+  generati e smoke manifest/biome obstacle estesi.
 - asset definitivi e ulteriori pass di bilanciamento;
 - firma digitale della build pubblica.
 

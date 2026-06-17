@@ -130,19 +130,31 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `BorderGenerator`: calcola lati connessi e lati esterni di caduta per ogni cella bioma.
 - `BiomePassageGenerator`: crea passaggi condivisi e allineati tra celle confinanti.
 - `BiomeTerrainGenerator`: genera il layout interno del bioma attivo e collega ostacoli, casse, hazard e report di validazione.
+- `IsometricEnvironmentManifest`: legge `assets/environment/isometric/manifest.json`
+  come inventario di ostacoli, draw mode oggetto e tag terrain isometrici
+  generati.
 - `ObstacleLayoutGenerator`: produce strade, corridoi, case grandi, ostacoli secondari e muri sui lati connessi.
 - `FallBoundaryGenerator`: trasforma i lati senza vicino in `fall_zone` data-driven con il contratto di danno ambientale esistente.
 - `MapValidationSystem`: valida con flood-fill spawn, corridoi, passaggi, casse raggiungibili, grafo connesso, passaggi non ostruiti e classificazione completa del `200x200`.
-- `BiomeMapDebugOverlay`: espone seed corrente, riepilogo celle/passaggi e richieste di rigenerazione per debug.
+- `BiomeMapDebugOverlay`: espone seed corrente, riepilogo celle/passaggi,
+  classi terrain aggregate e richieste di rigenerazione per debug.
 - `BiomeDefinition`: risorsa dati con terreno, ostacoli, casse, zombie ammessi, pesi, palette e moltiplicatori.
 - `BiomeTransitionSystem`: passaggi fisici aperti tra regioni confinanti, cambio regione/bioma e fallback legacy di spostamento party solo se esplicitamente abilitato.
 - `BiomeTransitionGate`: area non bloccante e leggibile che rappresenta un'apertura fisica e richiede il cambio regione.
 - `BiomeEnvironmentLayout`: placement deterministico di patch terreno, ostacoli fisici, casse e hazard per un bioma, con classificazione completa del `200x200`.
 - `WaveDirector`: composizione wave e scaling basati sul bioma corrente.
 - `ZombieSpawner`: spawn dai bordi della camera con distanza minima dai player, validazione hazard/ostacoli e fallback arena.
-- `TerrainGenerator`: applica la palette del bioma, genera il piano visuale `200x200` e decorazioni non collidenti dal layout.
-- `BiomeRegionGround`: base visuale estesa dell'intero territorio, separata dalle patch decorative puntuali.
+- `TerrainGenerator`: applica la palette del bioma, genera il piano visuale
+  `200x200`, legge gli stili terrain dal manifest e crea decorazioni non
+  collidenti dal layout.
+- `BiomeRegionGround`: base visuale estesa dell'intero territorio, separata
+  dalle patch decorative puntuali, con `sample_step` guidato dai preset del
+  manifest.
+- `BiomeTerrainPatch`: patch decorativa procedurale che usa draw mode
+  data-driven per strade, passaggi e dettagli bioma senza possedere collisioni.
 - `ObstacleSystem`: genera e registra `BiomeObstacle` fisici usati anche come spawn blocker.
+- `BiomeObstacle`: usa draw mode procedurali data-driven dal manifest per
+  distinguere gli ostacoli dei biomi senza cambiare collisioni o placement.
 - `ResourceCrateSystem`: genera casse ambientali raggiungibili riusando `SupplyCrate` e `DropSystem`.
 - `BiomeFallZone`: `Area2D` fisica e leggibile generata dai dati del bioma.
 - `BiomeHazardZone`: area dati per danno periodico, slowdown e hazard runtime.
@@ -445,7 +457,21 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - `TerrainGenerator` modifica solo palette e decorazioni; non possiede collisioni o regole combat.
 - `BiomeObstacle` usa `StaticBody2D` sul layer `1`, quindi player e zombie lo trattano come impedimento fisico.
 - Gli ostacoli appartengono anche ai gruppi `environment_obstacles` e `spawn_blockers`.
+- `BiomeObstacle` legge `draw_mode` e `dedicated_draw` da
+  `IsometricEnvironmentManifest`; se un ID ricade su `generic_barrier`, deve
+  essere una scelta esplicita del manifest e non un fallback implicito.
 - Ogni layout conserva un corridoio centrale libero per l'AI diretta esistente.
+- `assets/environment/isometric/manifest.json` v5 contiene i draw mode oggetto
+  in `object_visuals` e i tag terrain generati per strade e passaggi, il
+  relativo `draw_mode` procedurale e i preset
+  `performance`/`balanced`/`quality` per il campionamento del ground.
+- I tag terrain generati da `ObstacleLayoutGenerator` e
+  `BiomePassageGenerator` devono essere presenti nel manifest o avere fallback
+  documentato; gli smoke falliscono se un nuovo tag strada/passaggio ricade su
+  `dirt` generico.
+- Cambiare draw mode oggetto/terrain o `sample_step` e un cambio
+  presentazionale: non modifica classificazione, collisioni, pathfinding,
+  hazard o regole di movimento.
 - `ResourceCrateSystem` valida le posizioni contro `ObstacleSystem`, `HazardSystem` e la distanza minima tra casse.
 - Casse comuni, mediche, militari e tematiche usano loot table dedicate ma continuano a generare pickup tramite `DropSystem`.
 - I loot tematici aggiungono `resource_tag` presentazionali senza creare un secondo inventario.

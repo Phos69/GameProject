@@ -23,7 +23,8 @@ Regole per nuove voci:
 | Shutdown headless | Risolto nella Milestone 1 | Loop 100 avvii main scene e smoke prioritari senza cleanup warning noti | Monitorare solo come regressione futura |
 | Mini-eventi bioma | PASS nella validazione Milestone 2 | `tests/biome_mini_events_smoke_test.gd`, `tests/random_encounter_smoke_test.gd`, `docs/latest_commit_validation_report.md` | Riprendere solo dentro playtest/bilanciamento Milestone 11 |
 | Megamappa e streaming regioni | PASS nella validazione Milestone 3 | `tests/region_streaming_smoke_test.gd`, world graph, persistent world, open passage, exploration map, `docs/latest_commit_validation_report.md` | Riprendere in Milestone 4 (asset isometrici) o nel bilanciamento Milestone 11 |
-| Asset isometrici ambiente | PASS nella validazione Milestone 4 | `tests/isometric_environment_manifest_smoke_test.gd`, manifest v2, biome obstacle generation, `docs/latest_commit_validation_report.md` | Conversione ad arte esterna definitiva opzionale; QA visuale screenshot nel playtest Milestone 11 |
+| Asset isometrici ambiente | PASS nella validazione Milestone 4 | `tests/isometric_environment_manifest_smoke_test.gd`, manifest v2 poi v5, biome obstacle generation, `docs/latest_commit_validation_report.md` | Conversione ad arte esterna definitiva opzionale; QA visuale screenshot nel playtest Milestone 11 |
+| Audit migrazione isometrica | Milestone 3 PASS | `docs/isometric_generation_audit_roadmap.md`, manifest ambiente v5, `tests/isometric_environment_manifest_smoke_test.gd`, `tests/biome_obstacle_generation_smoke_test.gd` | Eseguire `ISO-001` Milestone 4 su collisioni coerenti con props e strutture |
 | Dungeon ramificato/shop | PASS nella validazione Milestone 5 | `tests/dungeon_graph_smoke_test.gd`, `tests/dungeon_smoke_test.gd`, `docs/latest_commit_validation_report.md` | UI shop dedicata e arte bioma dungeon restano follow-up; screenshot tre seed nel playtest Milestone 11 |
 | Asset/pipeline personaggi RPG | PASS nella validazione Milestone 6 | `tests/rpg_character_asset_manifest_smoke_test.gd`, `assets/characters/index.json` v2, `docs/latest_commit_validation_report.md` | Arte definitiva per-personaggio (`final_quality`) resta follow-up manuale; screenshot QA nel playtest Milestone 11 |
 | Tuning melee, super e classi RPG avanzate | PASS nella validazione Milestone 7 | `tests/rpg_melee_attack_resolution_smoke_test.gd`, `tests/milestone_rpg_8_adrenaline_super_smoke_test.gd`, `tests/milestone_rpg_12_feedback_smoke_test.gd`, `tests/milestone_rpg_13_new_classes_smoke_test.gd` | QA manuale multi-risoluzione/five-wave/due-player resta follow-up nel playtest Milestone 11 |
@@ -33,6 +34,30 @@ Test eseguiti per questo audit: nessun test gameplay. La Milestone 0 richiede
 revisione manuale, baseline e consolidamento TODO.
 
 ## Backlog aperto prioritizzato
+
+### ISO-001 - Coerenza isometrica di terrain, biomi e asset ambiente
+
+- Obiettivo: completare in modo iterativo la migrazione isometrica emersa
+  dall'audit, partendo da nomenclatura/manifest e arrivando a terrain, props,
+  bordi, connessioni, mappa esplorata, debug e regressioni.
+- Milestone collegata: `docs/isometric_generation_audit_roadmap.md` Milestone
+  1-11.
+- Stato: Milestone 1, 2 e 3 completate il 2026-06-17; prossima azione
+  Milestone 4 su collisioni coerenti con props e strutture.
+- File/sistemi coinvolti: `game/procedural/world_generation/`,
+  `game/modes/zombie/`, `game/world/`, `game/ui/exploration_map_panel.gd`,
+  `assets/environment/isometric/manifest.json`, `tests/`,
+  `docs/testing/manual_checklist.md`.
+- Criterio di accettazione: ogni milestone della roadmap isometrica ha
+  criteri verificabili rispettati, gli ID generati sono coperti dal manifest,
+  terrain/passaggi/bordi/fall zone sono leggibili in isometrico e i contratti
+  di megamappa/mappa esplorata non promettono piu di quanto il runtime istanzia.
+- Test richiesto: smoke mirati indicati nella roadmap isometrica, regressione
+  `biome_world_generation`, `isometric_environment_manifest`,
+  `isometric_biome_terrain_coverage`, `biome_obstacle_generation`,
+  `open_passage_transition`,
+  `fall_boundary_visual_logic`, `player_dodge_gap`,
+  `exploration_map` e QA visuale cinque biomi quando disponibile.
 
 ### UIUX-001 - UI, HUD, audio e polish UX trasversale
 
@@ -177,10 +202,12 @@ evitare reimplementazioni e per indirizzare le regressioni.
   rinviata al playtest Milestone 11. Ledger pronto per ostacoli distruttibili ed
   encounter region-bound futuri (oggi senza trigger di gioco).
 - ASSET-001 pass asset isometrici ambiente: completato nella Milestone 4 di
-  `todo_roadmap.md`; il manifest `assets/environment/isometric/manifest.json` (v2)
-  e ora letto da `IsometricEnvironmentManifest` e copre i 21 obstacle_id reali con
-  collisione/footprint/sort coerenti; `BiomeObstacle` ha ombra a terra e
-  `sort_offset` data-driven; Y-sort abilitato in scena. Rendering procedurale
+  `todo_roadmap.md`; il manifest `assets/environment/isometric/manifest.json` (v2,
+  poi esteso a v3/v4/v5 in `ISO-001` Milestone 1-3)
+  e ora letto da `IsometricEnvironmentManifest` e copre gli obstacle_id reali con
+  collisione/footprint/sort coerenti, categorie e draw mode oggetto/terrain;
+  `BiomeObstacle` ha ombra a terra, `sort_offset` data-driven e draw procedurali
+  dedicati per gli ID generati; Y-sort abilitato in scena. Rendering procedurale
   (nessun asset esterno obbligatorio); conversione ad arte esterna definitiva e
   screenshot per bioma restano follow-up opzionali (playtest Milestone 11).
   Coperto da `tests/isometric_environment_manifest_smoke_test.gd`.

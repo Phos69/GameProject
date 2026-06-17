@@ -15,6 +15,8 @@ const REGION_GROUND_SCRIPT = preload(
 @export var environment_container_path: NodePath = NodePath(
 	"../../../../World/EnvironmentProps"
 )
+@export_enum("performance", "balanced", "quality") var region_ground_quality_preset: String = "balanced"
+@export_range(0, 32, 1) var region_ground_sample_step_override: int = 0
 
 var active_biome: BiomeDefinition
 var is_active: bool = false
@@ -47,6 +49,9 @@ func get_generated_patches() -> Array[Node2D]:
 	_prune_runtime()
 	return generated_patches.duplicate()
 
+func get_active_ground() -> BiomeRegionGround:
+	return active_ground
+
 func _apply_biome_palette() -> void:
 	if active_biome == null:
 		return
@@ -63,12 +68,14 @@ func _generate_terrain_patches() -> void:
 	var container := _get_environment_container()
 	if layout == null or palette == null or container == null:
 		return
+	var manifest := IsometricEnvironmentManifest.get_shared()
 	for index in range(layout.terrain_patch_positions.size()):
 		if index >= layout.terrain_patch_tags.size():
 			break
 		var patch := TERRAIN_PATCH_SCRIPT.new() as BiomeTerrainPatch
 		if patch == null:
 			continue
+		var terrain_tag := layout.terrain_patch_tags[index]
 		var radius := (
 			layout.terrain_patch_radii[index]
 			if index < layout.terrain_patch_radii.size()
@@ -76,16 +83,17 @@ func _generate_terrain_patches() -> void:
 		)
 		patch.name = "TerrainPatch%d" % (index + 1)
 		patch.configure(
-			layout.terrain_patch_tags[index],
+			terrain_tag,
 			radius,
 			palette.floor_color,
 			palette.major_grid_color,
-			index + 1
+			index + 1,
+			manifest.get_terrain_style(terrain_tag)
 		)
 		container.add_child(patch)
 		patch.global_position = layout.terrain_patch_positions[index]
 		generated_patches.append(patch)
-		terrain_patch_spawned.emit(patch, layout.terrain_patch_tags[index])
+		terrain_patch_spawned.emit(patch, terrain_tag)
 
 func _generate_region_ground() -> void:
 	if active_biome == null:
@@ -99,12 +107,19 @@ func _generate_region_ground() -> void:
 	if active_ground == null:
 		return
 	active_ground.name = "BiomeRegionGround"
-	active_ground.configure(layout, palette)
+	active_ground.configure(layout, palette, _resolve_region_ground_sample_step())
 	container.add_child(active_ground)
 
 func _get_environment_container() -> Node:
 	var container := get_node_or_null(environment_container_path)
 	return container if container != null else get_tree().current_scene
+
+func _resolve_region_ground_sample_step() -> int:
+	if region_ground_sample_step_override > 0:
+		return region_ground_sample_step_override
+	return IsometricEnvironmentManifest.get_shared().get_terrain_sample_step(
+		StringName(region_ground_quality_preset)
+	)
 
 func _clear_runtime() -> void:
 	for patch in generated_patches:

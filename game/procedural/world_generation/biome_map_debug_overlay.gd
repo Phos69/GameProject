@@ -14,6 +14,7 @@ var label: Label
 var show_borders: bool = true
 var show_pathfinding: bool = false
 var show_collision: bool = false
+var show_terrain_classes: bool = true
 var refresh_timer: float = 0.0
 
 func _ready() -> void:
@@ -54,6 +55,9 @@ func get_debug_summary() -> Dictionary:
 	var obstacle_count := 0
 	var hazard_count := 0
 	var crate_count := 0
+	var terrain_class_counts := _empty_terrain_class_counts()
+	var terrain_classification_total := 0
+	var terrain_classification_complete := 0
 	var current_biome_id := &""
 	var current_validation := {}
 	for cell in cells:
@@ -63,6 +67,17 @@ func get_debug_summary() -> Dictionary:
 			hazard_count += cell.generated_layout.hazard_rects.size()
 			hazard_count += cell.generated_layout.fall_zone_rects.size()
 			crate_count += cell.generated_layout.crate_cells.size()
+			var report := cell.generated_layout.get_classification_report()
+			terrain_classification_total += int(report.get("total", 0))
+			if bool(report.get("is_complete", false)):
+				terrain_classification_complete += 1
+			var counts := report.get("counts", {}) as Dictionary
+			for terrain_class in counts.keys():
+				var class_id := StringName(terrain_class)
+				terrain_class_counts[class_id] = (
+					int(terrain_class_counts.get(class_id, 0))
+					+ int(counts[terrain_class])
+				)
 		for side in BiomeCell.SIDES:
 			if cell.get_border(side) == BiomeCell.BorderType.FALL:
 				fall_side_count += 1
@@ -86,12 +101,16 @@ func get_debug_summary() -> Dictionary:
 		"obstacle_count": obstacle_count,
 		"hazard_count": hazard_count,
 		"crate_count": crate_count,
+		"terrain_class_counts": terrain_class_counts,
+		"terrain_classification_total": terrain_classification_total,
+		"terrain_classification_complete": terrain_classification_complete,
 		"current_biome_id": current_biome_id,
 		"current_validation": current_validation,
 		"encounter": encounter_snapshot,
 		"show_borders": show_borders,
 		"show_pathfinding": show_pathfinding,
-		"show_collision": show_collision
+		"show_collision": show_collision,
+		"show_terrain_classes": show_terrain_classes
 	}
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -119,6 +138,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		KEY_F4:
 			if visible:
 				show_borders = not show_borders
+				_refresh_label()
+				get_viewport().set_input_as_handled()
+		KEY_F7:
+			if visible:
+				show_terrain_classes = not show_terrain_classes
 				_refresh_label()
 				get_viewport().set_input_as_handled()
 		KEY_F5:
@@ -155,6 +179,21 @@ func _refresh_label() -> void:
 		int(summary.get("crate_count", 0)),
 		str(current_validation.get("is_valid", false))
 	])
+	if bool(summary.get("show_terrain_classes", false)):
+		var terrain_counts := summary.get("terrain_class_counts", {}) as Dictionary
+		lines.append("Terrain complete:%d/%d total:%d" % [
+			int(summary.get("terrain_classification_complete", 0)),
+			int(summary.get("cell_count", 0)),
+			int(summary.get("terrain_classification_total", 0))
+		])
+		lines.append("Walk:%d Obs:%d Haz:%d Border:%d Void:%d Fall:%d" % [
+			int(terrain_counts.get(BiomeEnvironmentLayout.TERRAIN_WALKABLE, 0)),
+			int(terrain_counts.get(BiomeEnvironmentLayout.TERRAIN_OBSTACLE, 0)),
+			int(terrain_counts.get(BiomeEnvironmentLayout.TERRAIN_HAZARD, 0)),
+			int(terrain_counts.get(BiomeEnvironmentLayout.TERRAIN_BORDER, 0)),
+			int(terrain_counts.get(BiomeEnvironmentLayout.TERRAIN_VOID, 0)),
+			int(terrain_counts.get(BiomeEnvironmentLayout.TERRAIN_FALL_ZONE, 0))
+		])
 	lines.append("Encounter:%s Wave:%d Party:%d Threat:%d Ent:%d Tel:%d Skip:%s" % [
 		String(encounter.get("last_encounter_id", &"")),
 		int(encounter.get("last_wave", -1)),
@@ -187,3 +226,13 @@ func _get_encounter_snapshot() -> Dictionary:
 	):
 		return {}
 	return encounter_system.get_debug_snapshot()
+
+func _empty_terrain_class_counts() -> Dictionary:
+	return {
+		BiomeEnvironmentLayout.TERRAIN_WALKABLE: 0,
+		BiomeEnvironmentLayout.TERRAIN_OBSTACLE: 0,
+		BiomeEnvironmentLayout.TERRAIN_HAZARD: 0,
+		BiomeEnvironmentLayout.TERRAIN_BORDER: 0,
+		BiomeEnvironmentLayout.TERRAIN_VOID: 0,
+		BiomeEnvironmentLayout.TERRAIN_FALL_ZONE: 0
+	}

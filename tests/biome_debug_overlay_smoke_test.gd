@@ -23,6 +23,7 @@ func _run() -> void:
 	layout.obstacle_rects.append(Rect2i(Vector2i(10, 10), Vector2i(4, 4)))
 	layout.hazard_rects.append(Rect2i(Vector2i(30, 30), Vector2i(5, 5)))
 	layout.crate_cells.append(Vector2i(50, 50))
+	layout.rebuild_terrain_classification(cell)
 	cell.generated_layout = layout
 	var cells: Array[BiomeCell] = [cell]
 	overlay.configure(99, cells)
@@ -33,6 +34,23 @@ func _run() -> void:
 	_assert(summary.get("obstacle_count") == 1, "overlay counts obstacles")
 	_assert(summary.get("hazard_count") == 1, "overlay counts hazards")
 	_assert(summary.get("crate_count") == 1, "overlay counts crates")
+	_assert(
+		int(summary.get("terrain_classification_total", 0)) == 40000,
+		"overlay reports terrain classification total"
+	)
+	_assert(
+		int(summary.get("terrain_classification_complete", 0)) == 1,
+		"overlay reports complete terrain classification"
+	)
+	var terrain_counts := summary.get("terrain_class_counts") as Dictionary
+	_assert(
+		int(terrain_counts.get(BiomeEnvironmentLayout.TERRAIN_OBSTACLE, 0)) > 0,
+		"overlay reports obstacle terrain class"
+	)
+	_assert(
+		int(terrain_counts.get(BiomeEnvironmentLayout.TERRAIN_HAZARD, 0)) > 0,
+		"overlay reports hazard terrain class"
+	)
 	var encounter_summary := summary.get("encounter") as Dictionary
 	_assert(
 		encounter_summary.get("last_encounter_id") == &"survivor_cache",

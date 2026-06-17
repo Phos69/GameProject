@@ -8,13 +8,18 @@ var base_seed: int = 0
 
 func configure(
 	next_layout: BiomeEnvironmentLayout,
-	next_palette: BiomePalette
+	next_palette: BiomePalette,
+	next_sample_step: int = 8
 ) -> void:
 	layout = next_layout
 	palette = next_palette
+	sample_step = clampi(next_sample_step, 2, 32)
 	base_seed = layout.generation_seed if layout != null else 0
 	z_index = -9
 	queue_redraw()
+
+func get_sample_step() -> int:
+	return sample_step
 
 func _draw() -> void:
 	if layout == null or palette == null:
