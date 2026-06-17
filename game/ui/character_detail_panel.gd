@@ -17,7 +17,7 @@ var current_profile: Dictionary = {}
 var current_weapon_data: WeaponData
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(318.0, 398.0)
+	custom_minimum_size = Vector2(292.0, 388.0)
 	add_theme_stylebox_override("panel", _make_panel_style())
 	_build_ui()
 
@@ -87,10 +87,10 @@ func _build_ui() -> void:
 	content.add_child(class_label)
 
 	preview = CHARACTER_GAMEPLAY_PREVIEW_SCRIPT.new() as Control
-	preview.custom_minimum_size = Vector2(292.0, 154.0)
+	preview.custom_minimum_size = Vector2(268.0, 140.0)
 	content.add_child(preview)
 
-	style_label = _make_wrapped_label(12, 3, Color(0.86, 0.90, 0.94, 1.0))
+	style_label = _make_wrapped_label(11, 2, Color(0.86, 0.90, 0.94, 1.0))
 	content.add_child(style_label)
 
 	var stats := VBoxContainer.new()

@@ -1,6 +1,10 @@
 extends CanvasLayer
 class_name PauseMenu
 
+const MENU_NAVIGATION_SCRIPT := preload(
+	"res://game/ui/menu_navigation_controller.gd"
+)
+
 var backdrop: ColorRect
 var pause_panel: PanelContainer
 var resume_button: Button
@@ -8,6 +12,7 @@ var settings_button: Button
 var main_menu_button: Button
 var quit_button: Button
 var settings_panel: SettingsPanel
+var navigation_controller
 var game_mode_manager: GameModeManager
 
 func _ready() -> void:
@@ -92,6 +97,7 @@ func _create_ui() -> void:
 	content.add_child(main_menu_button)
 	quit_button = _create_button("Quit", Callable(self, "_quit_game"))
 	content.add_child(quit_button)
+	_create_navigation_controller()
 
 	settings_panel = SettingsPanel.new()
 	settings_panel.name = "SettingsPanel"
@@ -107,6 +113,19 @@ func _create_button(label_text: String, callback: Callable) -> Button:
 	button.focus_entered.connect(_play_focus)
 	return button
 
+func _create_navigation_controller() -> void:
+	navigation_controller = MENU_NAVIGATION_SCRIPT.new()
+	navigation_controller.name = "PauseNavigation"
+	navigation_controller.owner_control = pause_panel
+	navigation_controller.back_callback = Callable(self, "_handle_back_navigation")
+	navigation_controller.set_focus_controls([
+		resume_button,
+		settings_button,
+		main_menu_button,
+		quit_button
+	])
+	add_child(navigation_controller)
+
 func _open_pause() -> void:
 	_resolve_game_mode_manager()
 	if not _can_open_pause():
@@ -116,7 +135,8 @@ func _open_pause() -> void:
 	pause_panel.show()
 	if settings_panel != null:
 		settings_panel.close(false)
-	resume_button.grab_focus()
+	if navigation_controller != null:
+		navigation_controller.ensure_focus(resume_button)
 	_play_confirm()
 
 func _resume_game() -> void:
@@ -158,6 +178,10 @@ func _on_settings_closed() -> void:
 		return
 	pause_panel.show()
 	settings_button.grab_focus()
+
+func _handle_back_navigation() -> bool:
+	_resume_game()
+	return true
 
 func _on_game_mode_changed(mode_id: StringName) -> void:
 	if mode_id == GameConstants.MODE_MENU and visible:

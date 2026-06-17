@@ -294,7 +294,16 @@ dal tab Audio della pagina Settings e persistiti.
 
 L'HUD aggiunge `LOW`, `RELOAD` e `FALLBACK` allo stato ammo e mostra per 1,75 secondi la quantita di ammo condivisa raccolta.
 
-D-pad/stick cambiano focus e joypad `A` conferma da qualunque controller. `M` o joypad `Back/Select/View` apre la mappa dei territori esplorati durante la survival. Il tab Video contiene fullscreen, borderless, risoluzione, VSync, limite framerate e opzioni visual/accessibilita. Il tab Controls permette di riassegnare movimento, mira, fire, reload, super, interact, dodge, world map, pausa, join e leave per joypad. Mix avanzato e asset audio definitivi restano futuri.
+D-pad/stick cambiano focus in modo circolare e joypad `A` conferma da
+qualunque controller. `Esc`, joypad `B` o `Back` tornano al menu precedente
+quando esiste; nel menu principale non devono rompere lo stato corrente.
+Nei Settings, `LB` e `RB` cambiano tab in modo circolare e portano il focus al
+contenuto valido della tab attiva. `M` o joypad `Back/Select/View` apre la
+mappa dei territori esplorati durante la survival. Il tab Video contiene
+fullscreen, borderless, risoluzione, VSync, limite framerate e opzioni
+visual/accessibilita. Il tab Controls permette di riassegnare movimento, mira,
+fire, reload, super, interact, dodge, world map, pausa, join e leave per
+joypad. Mix avanzato e asset audio definitivi restano futuri.
 
 ## RPG Mode
 
@@ -324,8 +333,11 @@ e HUD nella forma `Mira Vento / Ranger · Arco`.
 I campi artistici opzionali dei profili (`portrait_full_path`, `portrait_hud_path`, `gameplay_palette_id`, `sprite_sheet_path`, `weapon_sprite_path`, `passive_icon_path`, `super_icon_path`, `animation_profile_id` e palette primaria/secondaria/accent) rendono data-driven la sostituzione degli asset definitivi. Mira, Bruna, Nina e Rocco usano portrait PNG nel Character Select; Dante, Kael ed Elio restano su placeholder SVG/procedurali finche non arriveranno i PNG definitivi. La checklist manuale e in `docs/rpg_character_visual_checklist.md`.
 
 Nel pass corrente la Character Select e stata rifinita come schermata RPG
-completa: ogni profilo compare in una card con portrait/fallback procedurale,
-nome, classe, arma, passiva, super, barre HP/ATK/DEF/SPD/RNG e indicatori slot.
+completa: ogni profilo compare in una card con preview coerente, nome, classe,
+arma, passiva, super, barre HP/ATK/DEF/SPD/RNG e indicatori slot. La card usa
+`portrait_hud_path`/`portrait_full_path` se disponibili, poi
+`gameplay_sprite_path` e infine un fallback procedurale controllato da palette
+e arma.
 Il pannello dossier laterale mostra descrizione di stile, range derivato da
 `WeaponData` e una preview gameplay isometrica procedurale con arma/stance idle.
 `style_description` e `gameplay_sprite_path` completano il profilo dati per

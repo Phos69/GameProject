@@ -8,9 +8,14 @@ Usare questa checklist per verificare il pass 1 dei personaggi RPG a 1280x720, s
   pulsante `Start Zombie Survival` leggibile da divano/joypad.
 - [ ] La card in focus mostra highlight/hover, stat bar HP/ATK/DEF/SPD/RNG,
   icona classe/arma e indicatori degli slot player assegnati.
+- [ ] Ogni card usa `portrait_hud_path` o `portrait_full_path` quando il
+  portrait dedicato esiste; se manca, usa `gameplay_sprite_path`; se anche
+  quello manca, usa il fallback procedurale coerente con palette e arma.
 - [ ] Il dossier laterale mostra descrizione di stile, range arma e preview
   gameplay isometrica caricata da `gameplay_sprite_path`, con fallback
   procedurale coerente se l'asset non e disponibile.
+- [ ] A 1280x720, 1024x768 e 960x540 il pannello resta dentro la safe-area; se
+  lo spazio non basta, lo scroll mostra il contenuto senza tagli.
 - [ ] Ogni slot player attivo mostra portrait, nome, classe/arma, statistiche, passiva e super dopo la scelta.
 - [ ] Gli slot inattivi restano distinguibili dagli slot attivi senza occupare il focus della selezione.
 

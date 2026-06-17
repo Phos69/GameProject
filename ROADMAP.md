@@ -321,6 +321,9 @@ Attivita post-roadmap:
   `Esc`/joypad `B`;
 - menu pausa e pagina Settings condivisa completati come feature post-roadmap:
   tab Audio, Video e Controls, save v5 e rimappatura joypad persistente;
+- navigazione menu gamepad completata come polish post-roadmap: focus
+  circolare, Back coerente, D-pad/stick con cooldown, LB/RB nei Settings e
+  Character Select responsive con fallback asset coerente;
 - asset definitivi e ulteriori pass di bilanciamento;
 - firma digitale della build pubblica.
 

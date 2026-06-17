@@ -16,9 +16,16 @@ Joypad:
 - spalla/trigger destro: fire action;
 - `A`: conferma menu e interazione gameplay;
 - `Start`: pausa durante una run;
-- D-pad/stick: navigazione menu.
+- D-pad/stick: navigazione menu circolare con cooldown anti-repeat rapido.
+- `B`/`Back`: ritorno al menu precedente quando il pannello corrente lo
+  supporta.
+- `LB`/`RB`: tab Settings precedente/successiva con wrapping.
 
 `InputManager` aggiunge joypad `A` all'azione globale `ui_accept` con device wildcard. Questo rende la conferma menu indipendente dallo slot locale assegnato.
+Le azioni globali `ui_up`, `ui_down`, `ui_left` e `ui_right` includono frecce,
+D-pad e stick sinistro, mentre i menu principali usano
+`MenuNavigationController` per applicare wrapping, Back e debounce in modo
+coerente.
 
 Join/leave multiplayer locale:
 

@@ -51,7 +51,11 @@ tipo `Could not find type "RpgPlayerComponent" in the current scope`.
 
 Controlli debug:
 
-- Menu: frecce/D-pad o stick per navigare, `Invio`/joypad `A` per confermare.
+- Menu: frecce/D-pad o stick per navigare in modo circolare,
+  `Invio`/joypad `A` per confermare e `Esc`/joypad `B`/`Back` per tornare al
+  menu precedente quando presente.
+- Settings: `LB` e `RB` cambiano tab in modo circolare e spostano il focus su
+  un controllo valido della tab corrente.
 - Character Select: frecce/D-pad cambiano card, `Invio`/joypad `A` assegna
   il personaggio allo slot attivo, il pulsante `Start Zombie Survival`
   conferma la run, `Esc`/joypad `B` torna al menu.
@@ -84,13 +88,13 @@ I profili RPG zombie survival mantengono gli ID tecnici `ranger`, `pistoliere`, 
 I campi artistici in `RpgCharacterData` collegano palette, ritratti, sprite,
 preview gameplay, weapon visual e icone passive/super senza rendere
 obbligatori asset esterni. La Character Select usa card RPG grafiche,
-stat visuali e una preview gameplay procedurale che legge `style_description`,
-`gameplay_sprite_path`, palette e arma base dai profili. Mira Vento, Bruna
-Spaccaferro, Nina Bullone e Rocco Lunastorta hanno portrait PNG definitivi
-collegati al Character Select; gli altri profili continuano a usare i
-placeholder SVG/procedurali. Per sostituire gli asset, popolare i path
-`assets/characters/<id>/...` nei `.tres` e validare la checklist
-`docs/rpg_character_visual_checklist.md`.
+stat visuali e un dossier gameplay: le card leggono prima
+`portrait_hud_path`/`portrait_full_path`, poi `gameplay_sprite_path` come
+fallback controllato e infine una preview procedurale generata da palette e
+arma base. Il dossier laterale usa `style_description` e
+`gameplay_sprite_path` per mostrare la preview gameplay. Per sostituire gli
+asset, popolare i path `assets/characters/<id>/...` nei `.tres` e validare la
+checklist `docs/rpg_character_visual_checklist.md`.
 
 Smoke test headless:
 

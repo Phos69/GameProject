@@ -61,6 +61,22 @@
 
 ## Completati recenti
 
+- Navigazione menu e Character Select responsive.
+  - Obiettivo: rendere Character Select leggibile a piu risoluzioni e
+    uniformare focus, Back, wrapping e tab Settings con gamepad.
+  - Milestone collegata: polish post-roadmap UI/RPG.
+  - File/sistemi coinvolti: `MainMenu`, `SettingsPanel`, `PauseMenu`,
+    `RunResultsScreen`, `MenuNavigationController`, `InputManager`,
+    `CharacterSelectCard`, `CharacterDetailPanel`,
+    `CharacterGameplayPreview`, profili `RpgCharacterData`.
+  - Criterio di accettazione: la Character Select resta dentro la safe-area o
+    usa scroll, le card usano portrait/menu image con fallback controllato,
+    D-pad/stick navigano in modo circolare, Back torna al menu precedente e
+    LB/RB cambiano tab Settings con focus valido.
+  - Test richiesto: `tests/character_select_ui_smoke_test.gd`,
+    `tests/pause_settings_smoke_test.gd`, regressione RPG Character Select e
+    QA manuale con joypad a 1280x720, 1024x768 e 960x540.
+
 - Polish Character Select RPG.
   - Obiettivo: trasformare la selezione personaggio in una schermata leggibile
     da joypad con card RPG, stat visuali, dossier e preview gameplay.

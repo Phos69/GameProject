@@ -38,6 +38,11 @@
 
 - Il main menu mostra un pulsante Settings.
 - Settings contiene i tab Audio, Video e Controls.
+- D-pad, frecce e stick sinistro navigano le voci menu in modo circolare.
+- `Esc`, joypad `B` o `Back` tornano al menu precedente da Character Select,
+  Settings e pausa; nel menu principale non rompono lo stato.
+- In Settings, `LB` seleziona la tab precedente e `RB` quella successiva,
+  entrambe con wrapping e focus su un controllo valido della tab corrente.
 - Master, Music e SFX sono nel tab Audio e non nella pagina principale.
 - Il tab Video permette di selezionare finestra/fullscreen, borderless, risoluzione, VSync e limite framerate.
 - Il tab Video conserva anche preset e slider visual/accessibilita.

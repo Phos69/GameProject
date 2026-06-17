@@ -15,6 +15,9 @@ const CHARACTER_SELECT_CARD_SCRIPT := preload(
 const CHARACTER_DETAIL_PANEL_SCRIPT := preload(
 	"res://game/ui/character_detail_panel.gd"
 )
+const MENU_NAVIGATION_SCRIPT := preload(
+	"res://game/ui/menu_navigation_controller.gd"
+)
 
 var backdrop: ColorRect
 var title_label: Label
@@ -32,6 +35,9 @@ var character_card_buttons: Array[Button] = []
 var character_card_by_id: Dictionary = {}
 var character_detail_panel: PanelContainer
 var character_start_button: Button
+var character_back_button: Button
+var main_menu_navigation
+var character_navigation
 var character_profiles: Array[Dictionary] = []
 var character_profile_by_id: Dictionary = {}
 var character_texture_cache: Dictionary = {}
@@ -238,8 +244,17 @@ func _create_ui() -> void:
 	controls.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	controls.modulate = Color(0.68, 0.74, 0.82, 1.0)
 	content.add_child(controls)
+	_create_main_menu_navigation()
 	_create_settings_panel(center)
-	_create_character_select_panel(center)
+	_create_character_select_panel(backdrop)
+
+func _create_main_menu_navigation() -> void:
+	main_menu_navigation = MENU_NAVIGATION_SCRIPT.new()
+	main_menu_navigation.name = "MainMenuNavigation"
+	main_menu_navigation.owner_control = primary_panel
+	main_menu_navigation.back_callback = Callable(self, "_handle_main_menu_back")
+	main_menu_navigation.set_focus_controls(menu_buttons)
+	add_child(main_menu_navigation)
 
 func _create_settings_panel(parent: Control) -> void:
 	settings_panel = SettingsPanel.new()
@@ -253,34 +268,48 @@ func _create_settings_panel(parent: Control) -> void:
 func _create_character_select_panel(parent: Control) -> void:
 	character_select_panel = PanelContainer.new()
 	character_select_panel.name = "CharacterSelectPanel"
-	character_select_panel.custom_minimum_size = Vector2(1180.0, 690.0)
+	character_select_panel.custom_minimum_size = Vector2.ZERO
+	character_select_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	character_select_panel.offset_left = 20.0
+	character_select_panel.offset_top = 16.0
+	character_select_panel.offset_right = -20.0
+	character_select_panel.offset_bottom = -16.0
 	character_select_panel.add_theme_stylebox_override(
 		"panel",
 		_make_character_select_panel_style()
 	)
 	parent.add_child(character_select_panel)
 
+	var scroll := ScrollContainer.new()
+	scroll.name = "CharacterSelectScroll"
+	scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	character_select_panel.add_child(scroll)
+
 	var content := VBoxContainer.new()
-	content.add_theme_constant_override("separation", 7)
+	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content.add_theme_constant_override("separation", 6)
 	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 14)
-	margin.add_theme_constant_override("margin_top", 10)
-	margin.add_theme_constant_override("margin_right", 14)
-	margin.add_theme_constant_override("margin_bottom", 10)
+	margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	margin.add_theme_constant_override("margin_left", 10)
+	margin.add_theme_constant_override("margin_top", 8)
+	margin.add_theme_constant_override("margin_right", 10)
+	margin.add_theme_constant_override("margin_bottom", 8)
 	margin.add_child(content)
-	character_select_panel.add_child(margin)
+	scroll.add_child(margin)
 
 	var title := Label.new()
 	title.text = "CHARACTER SELECT"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 31)
+	title.add_theme_font_size_override("font_size", 28)
 	title.modulate = Color(0.78, 0.94, 1.0, 1.0)
 	content.add_child(title)
 
 	var subtitle := Label.new()
 	subtitle.text = "Pick a survivor for each active slot, then start the zombie run"
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	subtitle.add_theme_font_size_override("font_size", 14)
+	subtitle.add_theme_font_size_override("font_size", 13)
 	subtitle.modulate = Color(0.72, 0.80, 0.88, 1.0)
 	content.add_child(subtitle)
 
@@ -293,20 +322,20 @@ func _create_character_select_panel(parent: Control) -> void:
 
 	var slots_grid := GridContainer.new()
 	slots_grid.columns = 4
-	slots_grid.add_theme_constant_override("h_separation", 10)
-	slots_grid.add_theme_constant_override("v_separation", 8)
+	slots_grid.add_theme_constant_override("h_separation", 8)
+	slots_grid.add_theme_constant_override("v_separation", 6)
 	content.add_child(slots_grid)
 	for player_slot in range(1, 5):
 		slots_grid.add_child(_create_character_slot_panel(player_slot))
 
 	var body := HBoxContainer.new()
-	body.add_theme_constant_override("separation", 12)
+	body.add_theme_constant_override("separation", 10)
 	content.add_child(body)
 
 	var roster_grid := GridContainer.new()
 	roster_grid.columns = 4
-	roster_grid.add_theme_constant_override("h_separation", 9)
-	roster_grid.add_theme_constant_override("v_separation", 9)
+	roster_grid.add_theme_constant_override("h_separation", 8)
+	roster_grid.add_theme_constant_override("v_separation", 8)
 	body.add_child(roster_grid)
 
 	for profile in character_profiles:
@@ -343,32 +372,51 @@ func _create_character_select_panel(parent: Control) -> void:
 	character_start_button.focus_entered.connect(_play_focus)
 	action_row.add_child(character_start_button)
 
-	var back_button := Button.new()
-	back_button.text = "Back / Esc / B"
-	back_button.custom_minimum_size = Vector2(260.0, 46.0)
-	back_button.add_theme_font_size_override("font_size", 17)
-	back_button.pressed.connect(_close_character_select)
-	back_button.focus_entered.connect(_play_focus)
-	action_row.add_child(back_button)
+	character_back_button = Button.new()
+	character_back_button.text = "Back / Esc / B"
+	character_back_button.custom_minimum_size = Vector2(240.0, 46.0)
+	character_back_button.add_theme_font_size_override("font_size", 17)
+	character_back_button.pressed.connect(_close_character_select)
+	character_back_button.focus_entered.connect(_play_focus)
+	action_row.add_child(character_back_button)
+	_create_character_navigation()
 	character_select_panel.hide()
+
+func _create_character_navigation() -> void:
+	character_navigation = MENU_NAVIGATION_SCRIPT.new()
+	character_navigation.name = "CharacterSelectNavigation"
+	character_navigation.owner_control = character_select_panel
+	character_navigation.back_callback = Callable(
+		self,
+		"_handle_character_select_back"
+	)
+	var controls: Array[Control] = []
+	for button in character_card_buttons:
+		controls.append(button)
+	if character_start_button != null:
+		controls.append(character_start_button)
+	if character_back_button != null:
+		controls.append(character_back_button)
+	character_navigation.set_focus_controls(controls)
+	add_child(character_navigation)
 
 func _create_character_slot_panel(player_slot: int) -> Control:
 	var panel := PanelContainer.new()
 	panel.name = "Player%dSelectionSlot" % player_slot
-	panel.custom_minimum_size = Vector2(274.0, 126.0)
+	panel.custom_minimum_size = Vector2(260.0, 112.0)
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	panel.gui_input.connect(_on_character_slot_gui_input.bind(player_slot))
 
 	var content := VBoxContainer.new()
-	content.add_theme_constant_override("separation", 2)
+	content.add_theme_constant_override("separation", 1)
 	panel.add_child(content)
 
 	var top_row := HBoxContainer.new()
-	top_row.add_theme_constant_override("separation", 6)
+	top_row.add_theme_constant_override("separation", 5)
 	content.add_child(top_row)
 
 	var portrait := TextureRect.new()
-	portrait.custom_minimum_size = Vector2(58.0, 58.0)
+	portrait.custom_minimum_size = Vector2(50.0, 50.0)
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	top_row.add_child(portrait)
 
@@ -378,30 +426,30 @@ func _create_character_slot_panel(player_slot: int) -> Control:
 	top_row.add_child(title_box)
 
 	var player_label := Label.new()
-	player_label.add_theme_font_size_override("font_size", 12)
+	player_label.add_theme_font_size_override("font_size", 11)
 	title_box.add_child(player_label)
 
 	var name_label := Label.new()
-	name_label.add_theme_font_size_override("font_size", 13)
+	name_label.add_theme_font_size_override("font_size", 12)
 	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	name_label.max_lines_visible = 1
 	name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	title_box.add_child(name_label)
 
 	var class_label := Label.new()
-	class_label.add_theme_font_size_override("font_size", 11)
+	class_label.add_theme_font_size_override("font_size", 10)
 	class_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	class_label.max_lines_visible = 1
 	class_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	title_box.add_child(class_label)
 
-	var stats_label := _create_character_detail_label(10, 1)
+	var stats_label := _create_character_detail_label(9, 1)
 	content.add_child(stats_label)
 
-	var passive_label := _create_character_detail_label(9, 1)
+	var passive_label := _create_character_detail_label(8, 1)
 	content.add_child(passive_label)
 
-	var super_label := _create_character_detail_label(9, 1)
+	var super_label := _create_character_detail_label(8, 1)
 	content.add_child(super_label)
 
 	character_slot_views[player_slot] = {
@@ -592,8 +640,11 @@ func _open_character_select() -> void:
 		focused_character_id = StringName(character_profiles[0].get("id", &""))
 	_refresh_character_selection_ui()
 	character_select_panel.show()
-	if not character_card_buttons.is_empty():
-		character_card_buttons[0].grab_focus()
+	if character_navigation != null:
+		var preferred_focus: Control = null
+		if not character_card_buttons.is_empty():
+			preferred_focus = character_card_buttons[0]
+		character_navigation.ensure_focus(preferred_focus)
 
 func _close_character_select(grab_focus: bool = true) -> void:
 	if character_select_panel == null or primary_panel == null:
@@ -709,6 +760,26 @@ func _refresh_character_selection_ui() -> void:
 	_refresh_character_preview()
 	if character_start_button != null:
 		character_start_button.disabled = not _all_active_character_slots_selected()
+	_refresh_character_navigation_controls()
+
+func _refresh_character_navigation_controls() -> void:
+	if character_navigation == null:
+		return
+	var controls: Array[Control] = []
+	for button in character_card_buttons:
+		controls.append(button)
+	if character_start_button != null:
+		controls.append(character_start_button)
+	if character_back_button != null:
+		controls.append(character_back_button)
+	character_navigation.set_focus_controls(controls)
+
+func _handle_main_menu_back() -> bool:
+	return false
+
+func _handle_character_select_back() -> bool:
+	_close_character_select()
+	return true
 
 func _refresh_character_slot_view(
 	player_slot: int,
@@ -892,22 +963,27 @@ func _load_character_texture(profile: Dictionary) -> Texture2D:
 	if profile.is_empty():
 		return null
 	var character_id := StringName(profile.get("id", &""))
-	var path := str(profile.get("portrait_hud_path", ""))
-	if path.is_empty():
-		path = str(profile.get("portrait_full_path", ""))
-	if path.is_empty():
-		return _create_character_placeholder_texture(profile)
-	var cache_key := "%s:%s" % [str(character_id), path]
-	if character_texture_cache.has(cache_key):
-		return character_texture_cache[cache_key] as Texture2D
-	var extension := path.get_extension().to_lower()
-	var texture: Texture2D = null
-	if ["png", "jpg", "jpeg", "webp"].has(extension):
-		texture = _load_bitmap_texture(path)
-	if texture == null:
-		texture = _create_character_placeholder_texture(profile)
-	character_texture_cache[cache_key] = texture
-	return texture
+	for path_key in [
+		"portrait_hud_path",
+		"portrait_full_path",
+		"gameplay_sprite_path"
+	]:
+		var path := str(profile.get(path_key, ""))
+		if path.is_empty():
+			continue
+		var cache_key := "%s:%s" % [str(character_id), path]
+		if character_texture_cache.has(cache_key):
+			return character_texture_cache[cache_key] as Texture2D
+		var texture := _load_texture_resource(path)
+		if texture != null:
+			character_texture_cache[cache_key] = texture
+			return texture
+	var fallback_key := "%s:generated_menu_preview" % str(character_id)
+	if character_texture_cache.has(fallback_key):
+		return character_texture_cache[fallback_key] as Texture2D
+	var fallback := _create_character_placeholder_texture(profile)
+	character_texture_cache[fallback_key] = fallback
+	return fallback
 
 func _load_character_weapon_data(profile: Dictionary) -> WeaponData:
 	if profile.is_empty():
@@ -926,6 +1002,18 @@ func _load_bitmap_texture(path: String) -> Texture2D:
 	if image.load(path) != OK:
 		return null
 	return ImageTexture.create_from_image(image)
+
+func _load_texture_resource(path: String) -> Texture2D:
+	if path.is_empty() or not FileAccess.file_exists(path):
+		return null
+	if ResourceLoader.exists(path):
+		var resource := ResourceLoader.load(path)
+		if resource is Texture2D:
+			return resource as Texture2D
+	var extension := path.get_extension().to_lower()
+	if ["png", "jpg", "jpeg", "webp"].has(extension):
+		return _load_bitmap_texture(path)
+	return null
 
 func _create_character_placeholder_texture(profile: Dictionary) -> Texture2D:
 	var size := 128

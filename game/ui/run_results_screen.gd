@@ -1,6 +1,10 @@
 extends CanvasLayer
 class_name RunResultsScreen
 
+const MENU_NAVIGATION_SCRIPT := preload(
+	"res://game/ui/menu_navigation_controller.gd"
+)
+
 var backdrop: ColorRect
 var title_label: Label
 var outcome_label: Label
@@ -8,6 +12,7 @@ var stats_label: Label
 var retry_button: Button
 var change_mode_button: Button
 var menu_button: Button
+var navigation_controller
 var game_mode_manager: GameModeManager
 var current_result: Dictionary = {}
 var hud_text_scale: float = 1.0
@@ -124,6 +129,19 @@ func _create_ui() -> void:
 		Callable(self, "_on_menu_pressed")
 	)
 	content.add_child(menu_button)
+	_create_navigation_controller()
+
+func _create_navigation_controller() -> void:
+	navigation_controller = MENU_NAVIGATION_SCRIPT.new()
+	navigation_controller.name = "RunResultsNavigation"
+	navigation_controller.owner_control = backdrop
+	navigation_controller.back_callback = Callable(self, "_handle_back_navigation")
+	navigation_controller.set_focus_controls([
+		retry_button,
+		change_mode_button,
+		menu_button
+	])
+	add_child(navigation_controller)
 
 func _create_button(text_value: String, callback: Callable) -> Button:
 	var button := Button.new()
@@ -159,7 +177,8 @@ func show_result(result: Dictionary) -> void:
 	)
 	change_mode_button.text = "CHANGE MODE: %s" % _mode_label(next_mode)
 	show()
-	retry_button.grab_focus()
+	if navigation_controller != null:
+		navigation_controller.ensure_focus(retry_button)
 
 func is_open() -> bool:
 	return visible
@@ -181,6 +200,10 @@ func _on_menu_pressed() -> void:
 	_play_confirm()
 	if game_mode_manager != null and game_mode_manager.return_to_menu():
 		hide()
+
+func _handle_back_navigation() -> bool:
+	_on_menu_pressed()
+	return true
 
 func _on_game_mode_started(_mode_id: StringName) -> void:
 	hide()

@@ -3,15 +3,23 @@ class_name SettingsPanel
 
 signal settings_closed
 
+const MENU_NAVIGATION_SCRIPT := preload(
+	"res://game/ui/menu_navigation_controller.gd"
+)
+
 var tab_container: TabContainer
 var back_button: Button
 var rebind_status_label: Label
+var navigation_controller
 var volume_sliders: Dictionary = {}
 var visual_controls: Dictionary = {}
 var video_controls: Dictionary = {}
 var control_rebind_buttons: Dictionary = {}
 var control_rebind_sources: Dictionary = {}
 var tab_indices: Dictionary = {}
+var audio_focus_controls: Array[Control] = []
+var video_focus_controls: Array[Control] = []
+var controls_focus_controls: Array[Control] = []
 
 var audio_manager: AudioManager
 var visual_settings_manager: VisualSettingsManager
@@ -40,6 +48,7 @@ func open(initial_tab: StringName = &"audio") -> void:
 	show()
 	if tab_indices.has(initial_tab):
 		tab_container.current_tab = int(tab_indices[initial_tab])
+	_refresh_navigation_controls()
 	call_deferred("_focus_current_tab")
 
 func close(emit_signal_value: bool = true) -> void:
@@ -95,6 +104,18 @@ func _create_ui() -> void:
 	back_button.pressed.connect(close)
 	back_button.focus_entered.connect(_play_focus)
 	content.add_child(back_button)
+	_create_navigation_controller()
+
+func _create_navigation_controller() -> void:
+	navigation_controller = MENU_NAVIGATION_SCRIPT.new()
+	navigation_controller.name = "SettingsNavigation"
+	navigation_controller.owner_control = self
+	navigation_controller.back_callback = Callable(self, "_handle_back_navigation")
+	navigation_controller.previous_tab_callback = Callable(self, "_select_previous_tab")
+	navigation_controller.next_tab_callback = Callable(self, "_select_next_tab")
+	navigation_controller.input_blocked_callback = Callable(self, "is_rebinding")
+	add_child(navigation_controller)
+	_refresh_navigation_controls()
 
 func _create_audio_tab() -> void:
 	var tab := VBoxContainer.new()
@@ -173,6 +194,7 @@ func _create_video_tab() -> void:
 		button.pressed.connect(_apply_visual_profile.bind(spec[1]))
 		button.focus_entered.connect(_play_focus)
 		presets.add_child(button)
+		video_focus_controls.append(button)
 	tab.add_child(presets)
 
 func _create_controls_tab() -> void:
@@ -197,6 +219,7 @@ func _create_controls_tab() -> void:
 	reset_button.pressed.connect(_reset_control_bindings)
 	reset_button.focus_entered.connect(_play_focus)
 	list.add_child(reset_button)
+	controls_focus_controls.append(reset_button)
 
 	rebind_status_label = Label.new()
 	rebind_status_label.text = ""
@@ -239,6 +262,7 @@ func _create_volume_row(label_text: String, bus_name: StringName) -> Control:
 	slider.focus_entered.connect(_play_focus)
 	row.add_child(slider)
 	volume_sliders[bus_name] = slider
+	audio_focus_controls.append(slider)
 	return row
 
 func _create_option_row(label_text: String, control_id: StringName) -> OptionButton:
@@ -255,6 +279,7 @@ func _create_option_row(label_text: String, control_id: StringName) -> OptionBut
 	option.focus_entered.connect(_play_focus)
 	row.add_child(option)
 	video_controls[control_id] = option
+	video_focus_controls.append(option)
 	return option
 
 func _create_video_toggle(label_text: String, setting_id: StringName) -> Control:
@@ -264,6 +289,7 @@ func _create_video_toggle(label_text: String, setting_id: StringName) -> Control
 	toggle.toggled.connect(_on_video_toggle_changed.bind(setting_id))
 	toggle.focus_entered.connect(_play_focus)
 	video_controls[setting_id] = toggle
+	video_focus_controls.append(toggle)
 	return toggle
 
 func _create_visual_slider(
@@ -290,6 +316,7 @@ func _create_visual_slider(
 	slider.focus_entered.connect(_play_focus)
 	row.add_child(slider)
 	visual_controls[setting_id] = slider
+	video_focus_controls.append(slider)
 	return row
 
 func _create_visual_toggle(label_text: String, setting_id: StringName) -> Control:
@@ -299,6 +326,7 @@ func _create_visual_toggle(label_text: String, setting_id: StringName) -> Contro
 	toggle.toggled.connect(_on_visual_toggle_changed.bind(setting_id))
 	toggle.focus_entered.connect(_play_focus)
 	visual_controls[setting_id] = toggle
+	video_focus_controls.append(toggle)
 	return toggle
 
 func _create_rebind_row(
@@ -324,6 +352,7 @@ func _create_rebind_row(
 	var key := _control_key(source, action_id)
 	control_rebind_buttons[key] = button
 	control_rebind_sources[key] = source
+	controls_focus_controls.append(button)
 	return row
 
 func _resolve_managers() -> void:
@@ -550,6 +579,7 @@ func _clear_pending_rebind() -> void:
 func _on_tab_changed(_tab: int) -> void:
 	_clear_pending_rebind()
 	_refresh_all_controls()
+	_refresh_navigation_controls()
 	call_deferred("_focus_current_tab")
 
 func _focus_current_tab() -> void:
@@ -566,6 +596,44 @@ func _focus_current_tab() -> void:
 			focus_control = volume_sliders.get(&"Master") as Control
 	if focus_control != null:
 		focus_control.grab_focus()
+	if navigation_controller != null:
+		navigation_controller.ensure_focus(focus_control)
+
+func _refresh_navigation_controls() -> void:
+	if navigation_controller == null:
+		return
+	var controls: Array[Control] = []
+	match _current_tab_id():
+		&"video":
+			controls.append_array(video_focus_controls)
+		&"controls":
+			controls.append_array(controls_focus_controls)
+		_:
+			controls.append_array(audio_focus_controls)
+	if back_button != null:
+		controls.append(back_button)
+	navigation_controller.set_focus_controls(controls)
+
+func _handle_back_navigation() -> bool:
+	close()
+	return true
+
+func _select_previous_tab() -> bool:
+	return _select_relative_tab(-1)
+
+func _select_next_tab() -> bool:
+	return _select_relative_tab(1)
+
+func _select_relative_tab(offset: int) -> bool:
+	if tab_container == null or tab_container.get_child_count() <= 0:
+		return false
+	var tab_count := tab_container.get_child_count()
+	tab_container.current_tab = posmod(tab_container.current_tab + offset, tab_count)
+	_clear_pending_rebind()
+	_refresh_all_controls()
+	_refresh_navigation_controls()
+	call_deferred("_focus_current_tab")
+	return true
 
 func _current_tab_id() -> StringName:
 	for key in tab_indices:

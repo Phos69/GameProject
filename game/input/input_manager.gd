@@ -186,6 +186,34 @@ func _register_menu_actions() -> void:
 	var cancel_key := _key(KEY_ESCAPE)
 	if not InputMap.action_has_event(&"ui_cancel", cancel_key):
 		InputMap.action_add_event(&"ui_cancel", cancel_key)
+	_register_ui_direction_action(
+		&"ui_up",
+		KEY_UP,
+		JOY_BUTTON_DPAD_UP,
+		JOY_AXIS_LEFT_Y,
+		-1.0
+	)
+	_register_ui_direction_action(
+		&"ui_down",
+		KEY_DOWN,
+		JOY_BUTTON_DPAD_DOWN,
+		JOY_AXIS_LEFT_Y,
+		1.0
+	)
+	_register_ui_direction_action(
+		&"ui_left",
+		KEY_LEFT,
+		JOY_BUTTON_DPAD_LEFT,
+		JOY_AXIS_LEFT_X,
+		-1.0
+	)
+	_register_ui_direction_action(
+		&"ui_right",
+		KEY_RIGHT,
+		JOY_BUTTON_DPAD_RIGHT,
+		JOY_AXIS_LEFT_X,
+		1.0
+	)
 	if not InputMap.has_action(&"pause"):
 		InputMap.add_action(&"pause", 0.20)
 	var pause_key := _key(KEY_P)
@@ -201,6 +229,30 @@ func _register_menu_actions() -> void:
 	map_button.button_index = JOY_BUTTON_BACK
 	if not InputMap.action_has_event(&"world_map", map_button):
 		InputMap.action_add_event(&"world_map", map_button)
+
+func _register_ui_direction_action(
+	action_name: StringName,
+	keycode: int,
+	button_index: int,
+	axis: int,
+	axis_value: float
+) -> void:
+	if not InputMap.has_action(action_name):
+		InputMap.add_action(action_name, 0.20)
+	var key_event := _key(keycode)
+	if not InputMap.action_has_event(action_name, key_event):
+		InputMap.action_add_event(action_name, key_event)
+	var button_event := InputEventJoypadButton.new()
+	button_event.device = -1
+	button_event.button_index = button_index
+	if not InputMap.action_has_event(action_name, button_event):
+		InputMap.action_add_event(action_name, button_event)
+	var motion_event := InputEventJoypadMotion.new()
+	motion_event.device = -1
+	motion_event.axis = axis
+	motion_event.axis_value = axis_value
+	if not InputMap.action_has_event(action_name, motion_event):
+		InputMap.action_add_event(action_name, motion_event)
 
 func _register_player_actions(player_slot: int) -> void:
 	for action_id in PLAYER_JOYSTICK_ACTIONS:

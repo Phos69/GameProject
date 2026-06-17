@@ -68,6 +68,40 @@ func _run() -> void:
 		and main_menu.volume_sliders.has(&"SFX"),
 		"audio controls live in the settings page"
 	)
+	await _press_joypad_button(JOY_BUTTON_RIGHT_SHOULDER)
+	await _wait_navigation_cooldown()
+	_expect(
+		main_menu.settings_panel.tab_container.current_tab
+		== int(main_menu.settings_panel.tab_indices[&"video"]),
+		"RB moves settings from Audio to Video"
+	)
+	_expect(
+		root.gui_get_focus_owner()
+		== main_menu.settings_panel.video_controls.get(&"display_mode"),
+		"settings focuses a valid video control after RB"
+	)
+	await _press_joypad_button(JOY_BUTTON_LEFT_SHOULDER)
+	await _wait_navigation_cooldown()
+	_expect(
+		main_menu.settings_panel.tab_container.current_tab
+		== int(main_menu.settings_panel.tab_indices[&"audio"]),
+		"LB moves settings from Video to Audio"
+	)
+	await _press_joypad_button(JOY_BUTTON_LEFT_SHOULDER)
+	await _wait_navigation_cooldown()
+	_expect(
+		main_menu.settings_panel.tab_container.current_tab
+		== int(main_menu.settings_panel.tab_indices[&"controls"]),
+		"LB wraps settings from first tab to last tab"
+	)
+	await _press_joypad_button(JOY_BUTTON_BACK)
+	await _wait_navigation_cooldown()
+	_expect(
+		not main_menu.settings_panel.visible and main_menu.primary_panel.visible,
+		"Back closes Settings and restores the previous menu"
+	)
+	main_menu._open_settings(&"audio")
+	await process_frame
 	main_menu._open_visual_settings()
 	await process_frame
 	_expect(
@@ -181,10 +215,10 @@ func _run() -> void:
 	_remove_temp_save()
 	_finish()
 
-func _press_pause_button() -> void:
+func _press_joypad_button(button_index: JoyButton) -> void:
 	var pressed := InputEventJoypadButton.new()
 	pressed.device = 0
-	pressed.button_index = JOY_BUTTON_START
+	pressed.button_index = button_index
 	pressed.pressed = true
 	Input.parse_input_event(pressed)
 	await process_frame
@@ -192,6 +226,13 @@ func _press_pause_button() -> void:
 	released.pressed = false
 	Input.parse_input_event(released)
 	await process_frame
+
+func _wait_navigation_cooldown() -> void:
+	await create_timer(0.22).timeout
+	await process_frame
+
+func _press_pause_button() -> void:
+	await _press_joypad_button(JOY_BUTTON_START)
 
 func _action_has_button(
 	action_name: StringName,

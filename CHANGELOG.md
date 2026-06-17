@@ -4,6 +4,12 @@
 
 ### Fixed
 
+- Resa la Character Select clampata al viewport con safe-area e scroll,
+  evitando tagli di card, slot player, dossier e azioni a risoluzioni o aspect
+  ratio stretti.
+- Uniformato il caricamento preview dei personaggi nel menu: le card usano
+  prima portrait HUD/full dedicati, poi `gameplay_sprite_path` e infine un
+  fallback procedurale coerente con palette e arma.
 - Corretto `SupplyCrate` rinviando l'apertura automatica da `body_entered`,
   evitando errori Godot di modifica dello stato physics durante il flush delle
   query.
@@ -19,6 +25,10 @@
 
 ### Added
 
+- Aggiunto `MenuNavigationController` riusabile per focus circolare,
+  input D-pad/stick con cooldown, Back/B e cambio tab LB/RB nei menu.
+- Settings ora supporta LB/RB per cambiare tab in modo circolare e rifocalizza
+  un controllo valido della tab attiva.
 - La preview gameplay della Character Select carica ora l'asset indicato da
   `gameplay_sprite_path` quando disponibile, mantenendo il fallback
   procedurale se il file non e leggibile.

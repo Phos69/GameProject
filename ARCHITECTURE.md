@@ -13,7 +13,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
    `Character Select` e passa `character_ids_by_slot` nel context, con
    `character_id` come fallback legacy.
 5. `SettingsPanel` e condiviso da main menu e pausa, con tab Audio, Video e
-   Controls.
+   Controls; LB/RB cambiano tab in modo circolare e rifocalizzano il contenuto.
 6. `InputManager` registra azioni tastiera/joypad e applica i binding joypad
    persistenti a tutti gli slot.
 7. `LocalMultiplayerManager` mantiene gli slot locali attivi.
@@ -63,7 +63,9 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 
 ## Sistemi principali
 
-- `InputManager`: crea e legge azioni per slot player e globali. Ogni slot usa azioni `p{slot}_{azione}`, incluso `dodge`; `world_map` e una azione globale; `ui_cancel` mappa `Esc` e joypad `B` per tornare dai pannelli menu.
+- `InputManager`: crea e legge azioni per slot player e globali. Ogni slot usa azioni `p{slot}_{azione}`, incluso `dodge`; `world_map` e una azione globale; `ui_cancel` mappa `Esc` e joypad `B` per tornare dai pannelli menu; `ui_up/down/left/right` includono frecce, D-pad e stick sinistro per la navigazione UI.
+- `MenuNavigationController`: helper UI riusabile per liste focus circolari,
+  Back/B, input D-pad/stick con cooldown e cambio tab LB/RB.
 - `LocalMultiplayerManager`: mantiene gli slot locali attivi, gestisce join/leave e usa mapping deterministico `device joypad + 1 = player_slot`.
 - `PlayerManager`: spawna/despawna player in base agli slot attivi e tiene il registro degli slot.
 - `PlayerController`: movimento, mira, fire action, dodge/roll e colore visuale per slot.
@@ -72,8 +74,10 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `GameModeManager`: registra, arresta e avvia le modalita.
 - `RunSessionTracker`: traduce i segnali terminali in dati risultato runtime.
 - `RunResultsScreen`: overlay condiviso con focus e azioni di fine run.
-- `MainMenu`: UI iniziale, selezione modalita, `Character Select` survival per slot player, continue e ritorno con `Esc`/joypad `B`.
-- `CharacterSelectCard`: card RPG selezionabile con portrait/fallback, icone classe/arma, stat bar compatte e indicatori slot.
+- `MainMenu`: UI iniziale, selezione modalita, `Character Select` survival per slot player, continue e ritorno con `Esc`/joypad `B`; usa `MenuNavigationController` per focus circolare e back coerente.
+- `CharacterSelectCard`: card RPG selezionabile con portrait menu dedicato,
+  fallback gameplay/procedurale, icone classe/arma, stat bar compatte e
+  indicatori slot.
 - `CharacterDetailPanel`: dossier laterale della Character Select con descrizione stile, stat leggibili, range arma e preview.
 - `CharacterGameplayPreview`: preview procedurale isometrica del personaggio selezionato, con silhouette, palette e arma derivate dal profilo.
 - `RpgCharacterRegistry`: catalogo centralizzato dei personaggi RPG iniziali.
@@ -159,7 +163,8 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `DropPickup`: rappresentazione fisica e raccolta da parte dei player.
 - `SupplyCrate`: contenitore fisico configurato da `LootTable` per ammo e cura.
 - `ProgressionManager`: XP, livello, denaro, unlock party e bonus di inizio run.
-- `SettingsPanel`: pannello UI condiviso con tab Audio, Video e Controls.
+- `SettingsPanel`: pannello UI condiviso con tab Audio, Video e Controls;
+  usa `MenuNavigationController` per focus circolare, Back e tab LB/RB.
 - `PauseMenu`: overlay durante le run; usa `SceneTree.paused` e resta attivo
   insieme alla propria UI.
 - `HUDManager`: UI prototipo per HUD gameplay, boss, annunci e mappa esplorazione.

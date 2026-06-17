@@ -27,6 +27,41 @@ func _run() -> void:
 		main_menu.character_detail_panel != null,
 		"character select has a detail and gameplay preview panel"
 	)
+	var viewport_rect := Rect2(Vector2.ZERO, root.get_visible_rect().size)
+	var panel_rect := main_menu.character_select_panel.get_global_rect()
+	_expect(
+		viewport_rect.encloses(panel_rect),
+		"character select panel stays inside the viewport safe area"
+	)
+	for resolution in [
+		Vector2i(1280, 720),
+		Vector2i(1024, 768),
+		Vector2i(960, 540)
+	]:
+		root.size = resolution
+		await process_frame
+		main_menu._open_character_select()
+		await process_frame
+		var resized_viewport := Rect2(Vector2.ZERO, root.get_visible_rect().size)
+		var resized_panel := main_menu.character_select_panel.get_global_rect()
+		_expect(
+			resized_viewport.encloses(resized_panel),
+			"character select safe-area fits %dx%d" % [
+				resolution.x,
+				resolution.y
+			]
+		)
+		_expect(
+			main_menu.character_select_panel.get_node_or_null(
+				"CharacterSelectScroll"
+			) != null,
+			"character select keeps a scroll container at %dx%d" % [
+				resolution.x,
+				resolution.y
+			]
+		)
+	root.size = Vector2i(1280, 720)
+	await process_frame
 	DirAccess.make_dir_recursive_absolute(
 		ProjectSettings.globalize_path(OUTPUT_DIRECTORY)
 	)
@@ -38,6 +73,14 @@ func _run() -> void:
 		_expect(
 			main_menu.character_card_buttons[0].has_method("set_profile"),
 			"roster cards use the custom visual card script"
+		)
+	for profile in main_menu.character_profiles:
+		var character_id := StringName(profile.get("id", &""))
+		_expect(
+			main_menu._load_character_texture(profile) != null,
+			"character %s resolves a menu preview texture or fallback" % [
+				str(character_id)
+			]
 		)
 
 	main_menu._preview_character(&"ranger")
@@ -62,9 +105,44 @@ func _run() -> void:
 		not main_menu.character_start_button.disabled,
 		"start becomes available once active slots have a character"
 	)
-
+	main_menu.character_card_buttons[0].grab_focus()
+	await _press_joypad_button(JOY_BUTTON_DPAD_LEFT)
+	await _wait_navigation_cooldown()
+	_expect(
+		root.gui_get_focus_owner() == main_menu.character_back_button,
+		"character select wraps from first card to the last focusable control"
+	)
+	await _press_joypad_button(JOY_BUTTON_DPAD_RIGHT)
+	await _wait_navigation_cooldown()
+	_expect(
+		root.gui_get_focus_owner() == main_menu.character_card_buttons[0],
+		"character select wraps forward to the first card"
+	)
+	await _press_joypad_button(JOY_BUTTON_BACK)
+	await process_frame
+	_expect(
+		not main_menu.character_select_panel.visible
+		and main_menu.primary_panel.visible,
+		"Back closes character select and restores the main menu"
+	)
 	main_menu.queue_free()
 	_finish()
+
+func _press_joypad_button(button_index: JoyButton) -> void:
+	var pressed := InputEventJoypadButton.new()
+	pressed.device = 0
+	pressed.button_index = button_index
+	pressed.pressed = true
+	Input.parse_input_event(pressed)
+	await process_frame
+	var released := pressed.duplicate() as InputEventJoypadButton
+	released.pressed = false
+	Input.parse_input_event(released)
+	await process_frame
+
+func _wait_navigation_cooldown() -> void:
+	await create_timer(0.22).timeout
+	await process_frame
 
 func _capture(file_name: String) -> bool:
 	if DisplayServer.get_name().to_lower() == "headless":

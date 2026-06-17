@@ -9,7 +9,7 @@ var gameplay_texture_cache: Dictionary = {}
 var animation_time: float = 0.0
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(292.0, 178.0)
+	custom_minimum_size = Vector2(268.0, 140.0)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_process(true)
 	queue_redraw()
@@ -296,6 +296,11 @@ func _load_gameplay_texture(path: String) -> Texture2D:
 		return null
 	if gameplay_texture_cache.has(path):
 		return gameplay_texture_cache[path] as Texture2D
+	if ResourceLoader.exists(path):
+		var resource := ResourceLoader.load(path)
+		if resource is Texture2D:
+			gameplay_texture_cache[path] = resource
+			return resource as Texture2D
 	var image := Image.new()
 	if image.load(path) != OK:
 		return null

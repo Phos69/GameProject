@@ -19,7 +19,7 @@ var animation_time: float = 0.0
 var ui_built: bool = false
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(254.0, 184.0)
+	custom_minimum_size = Vector2(210.0, 162.0)
 	focus_mode = Control.FOCUS_ALL
 	clip_contents = true
 	flat = true
@@ -59,15 +59,15 @@ func _build_ui() -> void:
 	var margin := MarginContainer.new()
 	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	margin.add_theme_constant_override("margin_left", 12)
-	margin.add_theme_constant_override("margin_top", 10)
-	margin.add_theme_constant_override("margin_right", 12)
-	margin.add_theme_constant_override("margin_bottom", 50)
+	margin.add_theme_constant_override("margin_left", 10)
+	margin.add_theme_constant_override("margin_top", 8)
+	margin.add_theme_constant_override("margin_right", 10)
+	margin.add_theme_constant_override("margin_bottom", 40)
 	add_child(margin)
 
 	var content := VBoxContainer.new()
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	content.add_theme_constant_override("separation", 5)
+	content.add_theme_constant_override("separation", 4)
 	margin.add_child(content)
 
 	var header := HBoxContainer.new()
@@ -76,7 +76,7 @@ func _build_ui() -> void:
 	content.add_child(header)
 
 	class_icon = RpgHudIcon.new()
-	class_icon.custom_minimum_size = Vector2(34.0, 32.0)
+	class_icon.custom_minimum_size = Vector2(30.0, 28.0)
 	header.add_child(class_icon)
 
 	var title_box := VBoxContainer.new()
@@ -86,14 +86,14 @@ func _build_ui() -> void:
 	header.add_child(title_box)
 
 	hero_label = Label.new()
-	hero_label.add_theme_font_size_override("font_size", 15)
+	hero_label.add_theme_font_size_override("font_size", 14)
 	hero_label.max_lines_visible = 1
 	hero_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	hero_label.modulate = Color(0.95, 0.98, 1.0, 1.0)
 	title_box.add_child(hero_label)
 
 	class_label = Label.new()
-	class_label.add_theme_font_size_override("font_size", 11)
+	class_label.add_theme_font_size_override("font_size", 10)
 	class_label.max_lines_visible = 1
 	class_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	class_label.modulate = Color(0.68, 0.78, 0.86, 1.0)
@@ -101,11 +101,11 @@ func _build_ui() -> void:
 
 	var body := HBoxContainer.new()
 	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	body.add_theme_constant_override("separation", 8)
+	body.add_theme_constant_override("separation", 7)
 	content.add_child(body)
 
 	portrait = TextureRect.new()
-	portrait.custom_minimum_size = Vector2(76.0, 74.0)
+	portrait.custom_minimum_size = Vector2(62.0, 60.0)
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	body.add_child(portrait)
@@ -122,11 +122,11 @@ func _build_ui() -> void:
 	info.add_child(weapon_row)
 
 	weapon_icon = WeaponIcon.new()
-	weapon_icon.custom_minimum_size = Vector2(34.0, 22.0)
+	weapon_icon.custom_minimum_size = Vector2(30.0, 20.0)
 	weapon_row.add_child(weapon_icon)
 
 	weapon_label = Label.new()
-	weapon_label.add_theme_font_size_override("font_size", 11)
+	weapon_label.add_theme_font_size_override("font_size", 10)
 	weapon_label.max_lines_visible = 1
 	weapon_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	weapon_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -145,7 +145,7 @@ func _ensure_ui() -> void:
 
 func _make_small_line() -> Label:
 	var label := Label.new()
-	label.add_theme_font_size_override("font_size", 10)
+	label.add_theme_font_size_override("font_size", 9)
 	label.max_lines_visible = 1
 	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	label.modulate = Color(0.80, 0.86, 0.91, 1.0)
@@ -190,7 +190,7 @@ func _draw() -> void:
 	if selected_for_current_slot:
 		bg = bg.lerp(primary.darkened(0.18), 0.34)
 	draw_rect(rect, bg, true)
-	draw_rect(Rect2(Vector2(8.0, 48.0), Vector2(size.x - 16.0, 72.0)), Color(0.0, 0.0, 0.0, 0.18), true)
+	draw_rect(Rect2(Vector2(8.0, 42.0), Vector2(size.x - 16.0, 62.0)), Color(0.0, 0.0, 0.0, 0.18), true)
 	var border := Color(0.18, 0.24, 0.30, 1.0).lerp(accent, maxf(focus_ratio, selected_ratio))
 	if selected_for_current_slot:
 		var pulse := 0.55 + 0.45 * sin(animation_time * 4.0)
@@ -230,12 +230,12 @@ func _draw_stats(accent: Color) -> void:
 		_weapon_range() / 800.0
 	]
 	var font := get_theme_font("font", "Label")
-	var start_y := size.y - 40.0
+	var start_y := size.y - 34.0
 	for index in range(labels.size()):
 		var x := 12.0 + float(index) * ((size.x - 24.0) / 5.0)
 		var width := ((size.x - 34.0) / 5.0)
-		var bar_rect := Rect2(Vector2(x, start_y + 15.0), Vector2(width, 7.0))
-		draw_string(font, Vector2(x, start_y + 10.0), labels[index], HORIZONTAL_ALIGNMENT_LEFT, width, 8, Color(0.72, 0.80, 0.86, 1.0))
+		var bar_rect := Rect2(Vector2(x, start_y + 13.0), Vector2(width, 6.0))
+		draw_string(font, Vector2(x, start_y + 9.0), labels[index], HORIZONTAL_ALIGNMENT_LEFT, width, 8, Color(0.72, 0.80, 0.86, 1.0))
 		draw_rect(bar_rect, Color(0.08, 0.10, 0.12, 1.0), true)
 		draw_rect(Rect2(bar_rect.position, Vector2(bar_rect.size.x * clampf(ratios[index], 0.0, 1.0), bar_rect.size.y)), accent, true)
 
