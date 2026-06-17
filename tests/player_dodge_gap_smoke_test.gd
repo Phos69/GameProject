@@ -31,6 +31,27 @@ func _run() -> void:
 	_expect(not bool(wall_report.get("is_valid", true)), "dodge cannot cross walls")
 	_expect(bool(wall_report.get("blocked", false)), "wall obstruction is reported")
 
+	var hazard_report := component.validate_gap_trajectory(
+		Vector2.ZERO,
+		Vector2(120.0, 0.0),
+		[],
+		[],
+		landing,
+		[Rect2(Vector2(48.0, -18.0), Vector2(36.0, 36.0))]
+	)
+	_expect(
+		not bool(hazard_report.get("is_valid", true)),
+		"dodge cannot cross environmental hazards as gaps"
+	)
+	_expect(
+		bool(hazard_report.get("hazard_blocked", false)),
+		"environmental hazard obstruction is reported"
+	)
+	_expect(
+		not bool(hazard_report.get("crosses_gap", true)),
+		"environmental hazards do not count as crossed gaps"
+	)
+
 	var long_gap_report := component.validate_gap_trajectory(
 		Vector2.ZERO,
 		Vector2(220.0, 0.0),

@@ -15,12 +15,15 @@ const GENERATED_OBSTACLE_CATEGORIES: Dictionary = {
 	&"burned_house": &"building",
 	&"charred_wall": &"barrier",
 	&"dead_tree": &"tree",
+	&"deep_water_boundary": &"border",
 	&"fallen_log": &"log",
+	&"ice_boundary": &"border",
 	&"ice_block": &"rock",
 	&"ice_rock": &"rock",
 	&"industrial_fence": &"barrier",
 	&"lab_block": &"building",
 	&"lab_wall": &"barrier",
+	&"lava_boundary": &"border",
 	&"marsh_log": &"log",
 	&"pipe_stack": &"barrier",
 	&"reed_wall": &"barrier",
@@ -30,6 +33,7 @@ const GENERATED_OBSTACLE_CATEGORIES: Dictionary = {
 	&"snow_wall": &"barrier",
 	&"sunken_house": &"building",
 	&"toxic_barrel": &"barrel",
+	&"toxic_boundary_wall": &"border",
 	&"wood_barrier": &"barrier"
 }
 const GENERATED_TERRAIN_TAG_CATEGORIES: Dictionary = {
@@ -58,7 +62,7 @@ func populate_layout(
 	_add_biome_navigation_features(layout, biome, rng)
 	_add_large_obstacles(layout, biome, rng)
 	_add_secondary_obstacles(layout, biome, rng)
-	_add_connected_border_walls(layout, cell)
+	_add_connected_border_walls(layout, cell, biome)
 	_add_crates(layout, biome)
 	_add_theme_hazards(layout, biome)
 
@@ -289,30 +293,33 @@ func _add_secondary_obstacles(
 
 func _add_connected_border_walls(
 	layout: BiomeEnvironmentLayout,
-	cell: BiomeCell
+	cell: BiomeCell,
+	biome: BiomeDefinition
 ) -> void:
+	var border_obstacle_id := _border_obstacle_id(biome.biome_id if biome != null else &"")
 	for side in BiomeCell.SIDES:
 		var border_type := cell.get_border(side)
 		if border_type == BiomeCell.BorderType.FALL:
 			continue
 		if border_type != BiomeCell.BorderType.CONNECTED:
-			_add_border_segment(layout, side, 0, layout.zone_size.y)
+			_add_border_segment(layout, side, 0, layout.zone_size.y, border_obstacle_id)
 			continue
 		var passages := cell.get_passages_for_side(side)
 		if passages.is_empty():
-			_add_border_segment(layout, side, 0, layout.zone_size.y)
+			_add_border_segment(layout, side, 0, layout.zone_size.y, border_obstacle_id)
 			continue
 		var passage: BiomePassage = passages.front()
 		var start := clampi(passage.position - passage.width / 2 - 2, 0, layout.zone_size.y)
 		var finish := clampi(passage.position + passage.width / 2 + 2, 0, layout.zone_size.y)
-		_add_border_segment(layout, side, 0, start)
-		_add_border_segment(layout, side, finish, layout.zone_size.y)
+		_add_border_segment(layout, side, 0, start, border_obstacle_id)
+		_add_border_segment(layout, side, finish, layout.zone_size.y, border_obstacle_id)
 
 func _add_border_segment(
 	layout: BiomeEnvironmentLayout,
 	side: StringName,
 	start: int,
-	finish: int
+	finish: int,
+	obstacle_id: StringName
 ) -> void:
 	if finish - start < 10:
 		return
@@ -333,7 +340,7 @@ func _add_border_segment(
 				Vector2i(zone_size.x - BORDER_THICKNESS, start),
 				Vector2i(BORDER_THICKNESS, finish - start)
 			)
-	_add_obstacle(layout, &"boundary_fence", rect, &"rectangle", 0.0)
+	_add_obstacle(layout, obstacle_id, rect, &"rectangle", 0.0)
 
 func _add_obstacle_if_clear(
 	layout: BiomeEnvironmentLayout,
@@ -443,6 +450,19 @@ func _secondary_obstacle_ids(biome_id: StringName) -> Array[StringName]:
 			return [&"reed_wall", &"marsh_log", &"broken_walkway"]
 		_:
 			return [&"small_rock", &"broken_fence", &"wood_barrier"]
+
+func _border_obstacle_id(biome_id: StringName) -> StringName:
+	match biome_id:
+		&"toxic_wastes":
+			return &"toxic_boundary_wall"
+		&"burning_fields":
+			return &"lava_boundary"
+		&"frozen_outskirts":
+			return &"ice_boundary"
+		&"drowned_marsh":
+			return &"deep_water_boundary"
+		_:
+			return &"boundary_fence"
 
 func _crate_ids(biome_id: StringName) -> Array[StringName]:
 	match biome_id:

@@ -1,127 +1,141 @@
+Analizza lo stato attuale della repository GameProject con focus esclusivo sulla migrazione verso un’ambientazione completamente isometrica.
+
 Obiettivo:
-Analizza la TODO attuale della repository e crea un piano organico per completare tutti i punti aperti, trasformandoli in una roadmap ordinata, realistica e divisa per aree tematiche e milestones eseguibili successivamente in modalità Goal.
+capire cosa ci siamo persi per strada nella migrazione grafica e strutturale verso biomi/mappe totalmente isometrici, soprattutto per quanto riguarda:
+- generazione dei biomi;
+- terrain isometrico;
+- oggetti ambientali;
+- ostacoli;
+- props;
+- bordi del bioma;
+- zone di caduta;
+- connessioni tra biomi;
+- coerenza visiva tra gameplay, mappa e navigazione;
+- sostituzione di asset non isometrici con equivalenti isometrici;
+- eventuali sistemi chiamati nel codice “genomi”, “biomi”, “biome generation”, “terrain generation”, “map generation” o simili.
 
-Repo:
-Usa la repository corrente. Prima di modificare qualsiasi cosa, ispeziona:
-- TODO.md
-- README.md
-- AGENTS.md
-- eventuali roadmap già presenti
-- documenti nella cartella docs/
-- changelog, note agenti, issue locali o file markdown rilevanti
-- struttura del codice sorgente, per capire quali aree sono già implementate e quali sono incomplete
+Prima fase: audit completo
+1. Esplora la repo e individua tutti i file coinvolti in:
+   - generazione mappa/bioma;
+   - spawn oggetti/ostacoli/props;
+   - rendering isometrico;
+   - tilemap/terrain;
+   - collisioni;
+   - pathfinding o navigazione;
+   - transizioni tra biomi;
+   - minimappa/mappa territori esplorati;
+   - asset loading;
+   - menu o debug relativi ai biomi.
 
-Vincolo importante:
-NON implementare feature di gameplay in questo task.
-Questo goal deve produrre principalmente un documento di pianificazione chiaro, completo e utilizzabile per far partire goal successivi.
+2. Ricostruisci lo stato attuale:
+   - cosa è già realmente isometrico;
+   - cosa è ancora top-down, placeholder, flat, non coerente o non convertito;
+   - quali oggetti sono ancora fuori stile;
+   - quali biomi sono incompleti;
+   - quali funzioni sembrano duplicate, abbandonate o parziali;
+   - quali TODO/commenti/roadmap esistenti sono rimasti non implementati.
 
-Output richiesto:
-Crea un nuovo file nella root della repo chiamato:
+3. Cerca esplicitamente regressioni o feature lasciate a metà rispetto agli obiettivi precedenti:
+   - bioma 200x200 completamente riempito da terreno calpestabile;
+   - sfondo non limitato solo al centro;
+   - ostacoli isometrici coerenti;
+   - case/strutture grandi che creano corridoi;
+   - muri sui lati confinanti;
+   - vuoto/caduta sui lati non confinanti;
+   - passaggi aperti tra biomi connessi;
+   - grafo dei biomi completamente connesso;
+   - megamappa persistente;
+   - mappa dei territori esplorati;
+   - zone dove si cade leggibili visivamente in isometrico;
+   - dodge/roll utile anche per saltare piccoli vuoti;
+   - coerenza fra collisioni e rappresentazione visiva.
 
-todo_roadmap.md
+Seconda fase: output richiesto
+Crea o aggiorna un file:
 
-Il file deve essere scritto in italiano e deve contenere una roadmap organica divisa in milestones.
+docs/isometric_generation_audit_roadmap.md
 
-Struttura obbligatoria del file todo_roadmap.md:
+Il file deve contenere:
 
-1. Titolo e obiettivo generale
-   - Spiega che il documento converte la TODO esistente in una roadmap operativa.
-   - Specifica che le milestones sono pensate per essere eseguite una alla volta in modalità Goal.
+1. Stato attuale sintetico
+   - elenco dei sistemi già presenti;
+   - file principali coinvolti;
+   - cosa funziona;
+   - cosa è incompleto.
 
-2. Stato attuale sintetico
-   - Riassumi cosa sembra già presente nella repo.
-   - Riassumi cosa manca o è incompleto.
-   - Evidenzia eventuali aree confuse, duplicate o parzialmente implementate nella TODO.
+2. Gap analysis
+   Dividi i problemi in aree:
+   - Terrain e tile isometrici;
+   - Oggetti ambientali e props;
+   - Ostacoli e collisioni;
+   - Biomi e generazione procedurale;
+   - Bordi, muri, vuoto e caduta;
+   - Connessioni tra biomi;
+   - Megamappa persistente;
+   - Mappa esplorata/UI;
+   - Asset e art direction;
+   - Debug tooling;
+   - Performance e compatibilità.
 
-3. Aree tematiche
-   Raggruppa tutti i punti della TODO in aree coerenti, ad esempio:
-   - Architettura core e pulizia tecnica
-   - Menu, navigazione e UX
-   - Selezione personaggi
-   - Character design, sprite, animazioni e coerenza grafica
-   - Classi RPG, armi base, passive e super
-   - Combattimento, hitbox, danni, status effect e bilanciamento
-   - Zombie mode, spawn, ondate, casse e progressione partita
-   - Biomi, ostacoli, generazione isometrica e mega-mappa persistente
-   - Esplorazione, grafo dei biomi, mappa territori e transizioni aperte
-   - Nemici specifici per bioma e incontri casuali
-   - UI/HUD grafica: vita, ammo, bombe, adrenalina, risorse
-   - Save/load, persistenza, seed e riproducibilità
-   - Test, debug, CI, QA e verifica commit
-   - Documentazione e workflow agenti
+3. Lista dei punti persi per strada
+   Per ogni punto indica:
+   - descrizione;
+   - file coinvolti;
+   - stato: mancante / parziale / rotto / placeholder;
+   - impatto sul gameplay;
+   - dipendenze tecniche;
+   - priorità: P0, P1, P2.
 
-   Usa le aree effettivamente rilevate nella TODO, non limitarti a questa lista se trovi altro.
+4. Roadmap organica in milestone
+   La roadmap deve essere realistica, iterativa e adatta a essere eseguita in modalità goal.
+   Usa questa struttura:
 
-4. Milestones ordinate
-   Crea milestones numerate, ad esempio:
-   - Milestone 0: Audit, consolidamento TODO e baseline tecnica
-   - Milestone 1: Stabilizzazione menu e navigazione
-   - Milestone 2: Refactor selezione personaggi
-   - Milestone 3: Classi RPG e identità gameplay dei personaggi
-   - Milestone 4: Armi, hitbox, passive e super
-   - Milestone 5: HUD grafica e feedback di gioco
-   - Milestone 6: Zombie mode revamp
-   - Milestone 7: Biomi isometrici e ostacoli coerenti
-   - Milestone 8: Mega-mappa persistente e grafo dei territori
-   - Milestone 9: Nemici, incontri casuali e status effect
-   - Milestone 10: Bilanciamento, polish e test end-to-end
-   - Milestone 11: Documentazione finale e workflow di iterazione
+   Milestone 1 — Audit tecnico e pulizia nomenclatura
+   Milestone 2 — Base terrain isometrico 200x200
+   Milestone 3 — Oggetti e ostacoli isometrici
+   Milestone 4 — Collisioni coerenti con props e strutture
+   Milestone 5 — Bordi del bioma, muri, vuoto e caduta
+   Milestone 6 — Connessioni aperte tra biomi
+   Milestone 7 — Grafo biomi completamente connesso
+   Milestone 8 — Megamappa persistente
+   Milestone 9 — Mappa territori esplorati
+   Milestone 10 — Polish grafico e sostituzione placeholder
+   Milestone 11 — Test, debug overlay e regressioni
 
-   Adatta nomi, ordine e numero delle milestones in base alla TODO reale.
+5. Per ogni milestone includi:
+   - obiettivo;
+   - modifiche tecniche;
+   - file probabili da modificare;
+   - criteri di accettazione verificabili;
+   - test manuali;
+   - rischi;
+   - sotto-task ordinati.
 
-5. Per ogni milestone inserisci:
-   - Obiettivo
-   - Perché va fatta in questo ordine
-   - Punti TODO coperti
-   - File/cartelle probabilmente coinvolti
-   - Task concreti
-   - Dipendenze da milestones precedenti
-   - Criteri di accettazione verificabili
-   - Test manuali da eseguire
-   - Eventuali test automatici o script da aggiungere
-   - Rischi tecnici
-   - Prompt breve consigliato per lanciare quella milestone in modalità Goal
+6. Crea anche una sezione finale:
+   “Prompt iterativo per continuare la roadmap”
+   con un prompt breve che posso copiare più volte per farti implementare la milestone successiva senza perdere il contesto.
 
-6. Sezione “Prompt Goal riutilizzabili”
-   Alla fine del file, aggiungi una sezione con prompt brevi già pronti per lanciare ogni milestone una alla volta.
-   Ogni prompt deve essere autonomo, copia-incollabile e deve dire a Codex:
-   - quale milestone eseguire
-   - di leggere todo_roadmap.md
-   - di rispettare i criteri di accettazione
-   - di aggiornare TODO.md solo a fine lavoro
-   - di non iniziare milestone successive
+Terza fase: implementazione minima
+Dopo aver creato la roadmap:
+- non implementare ancora grossi refactor;
+- fai solo eventuali modifiche leggere se servono a rendere la roadmap tracciabile, per esempio:
+  - aggiungere TODO tecnici nei file corretti;
+  - aggiungere riferimenti nel README o nel TODO principale;
+  - creare cartelle docs se mancanti;
+  - collegare la nuova roadmap ai documenti esistenti.
 
-7. Sezione “Ordine consigliato di esecuzione”
-   Crea una lista numerata con l’ordine in cui conviene far partire i goal.
-   Evidenzia eventuali milestones che possono essere parallelizzate e quelle che invece devono essere sequenziali.
+Vincoli:
+- Non cancellare sistemi esistenti senza motivo.
+- Non rompere le modalità già funzionanti.
+- Non introdurre asset pesanti o generati casualmente se non necessari.
+- Non limitarti a una roadmap generica: deve essere basata sui file reali della repo.
+- Ogni affermazione sulla roadmap deve derivare da codice o asset effettivamente trovati.
+- Se trovi termini ambigui come “genomi” verifica se nel codice esistono davvero o se probabilmente indicano “biomi/generazione”.
+- Alla fine esegui i test disponibili o almeno indica chiaramente quali non sono eseguibili e perché.
 
-8. Sezione “Definizione di completato”
-   Definisci quando la TODO può essere considerata completata:
-   - nessun punto TODO critico aperto
-   - gameplay base funzionante
-   - selezione personaggi stabile
-   - personaggi distinguibili per grafica e gameplay
-   - biomi isometrici navigabili
-   - zombie mode giocabile
-   - HUD leggibile e grafico
-   - test manuali documentati
-   - README aggiornato
-
-Regole operative:
-- Prima fai un audit completo della TODO e dei markdown esistenti.
-- Non cancellare punti della TODO senza motivazione.
-- Se trovi duplicati, accorpali nella roadmap.
-- Se trovi punti troppo grandi, spezzali in task più piccoli.
-- Se trovi feature parzialmente implementate, segnala cosa manca per completarle.
-- Non fare refactor massivi non richiesti.
-- Non implementare gameplay in questo goal.
-- Limita le modifiche al nuovo file todo_roadmap.md, salvo piccolissimi aggiornamenti a TODO.md solo se strettamente necessari per linkare la roadmap.
-- Mantieni il documento leggibile, concreto e utile per agenti successivi.
-- Ogni milestone deve poter diventare un goal indipendente.
-
-Dopo aver creato il file:
-- Mostra un riepilogo breve delle aree tematiche trovate.
-- Mostra l’elenco delle milestones create.
-- Indica il path del file creato.
-- Indica eventuali punti TODO ambigui che richiedono decisione umana.
-- Non avviare implementazioni successive.
+Output finale nella risposta:
+1. riepilogo breve dell’audit;
+2. file creato/modificato;
+3. prime 3 priorità consigliate;
+4. comando/test eseguiti;
+5. prossimo prompt da lanciare in modalità goal.

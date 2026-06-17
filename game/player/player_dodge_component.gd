@@ -94,10 +94,12 @@ func validate_gap_trajectory(
 	finish: Vector2,
 	obstacle_rects: Array,
 	fall_rects: Array,
-	landing_rects: Array = []
+	landing_rects: Array = [],
+	hazard_rects: Array = []
 ) -> Dictionary:
 	var crossed_gap := false
 	var blocked := false
+	var hazard_blocked := false
 	var sample_count := maxi(trajectory_samples, 2)
 	for index in range(1, sample_count + 1):
 		var ratio := float(index) / float(sample_count)
@@ -105,15 +107,19 @@ func validate_gap_trajectory(
 		if _point_inside_rects(point, obstacle_rects):
 			blocked = true
 			break
+		if _point_inside_rects(point, hazard_rects):
+			hazard_blocked = true
+			break
 		if _point_inside_rects(point, fall_rects):
 			crossed_gap = true
 	var landing_valid := (
-		landing_rects.is_empty()
-		or _point_inside_rects(finish, landing_rects)
+		(landing_rects.is_empty() or _point_inside_rects(finish, landing_rects))
+		and not _point_inside_rects(finish, hazard_rects)
 	)
 	var distance := start.distance_to(finish)
 	var valid := (
 		not blocked
+		and not hazard_blocked
 		and landing_valid
 		and (
 			not crossed_gap
@@ -124,6 +130,7 @@ func validate_gap_trajectory(
 		"is_valid": valid,
 		"crosses_gap": crossed_gap,
 		"blocked": blocked,
+		"hazard_blocked": hazard_blocked,
 		"landing_valid": landing_valid,
 		"distance": distance
 	}
@@ -157,10 +164,21 @@ func _validate_world_trajectory(start: Vector2, finish: Vector2) -> Dictionary:
 			return {"is_valid": false, "blocked": true, "crosses_gap": crossed_gap}
 		if (
 			hazard_system != null
+			and hazard_system.has_method("is_position_fall_zone")
+			and hazard_system.is_position_fall_zone(point)
+		):
+			crossed_gap = true
+		elif (
+			hazard_system != null
 			and hazard_system.has_method("is_position_hazardous")
 			and hazard_system.is_position_hazardous(point)
 		):
-			crossed_gap = true
+			return {
+				"is_valid": false,
+				"blocked": false,
+				"hazard_blocked": true,
+				"crosses_gap": crossed_gap
+			}
 	var landing_valid := _is_landing_valid(finish)
 	var distance := start.distance_to(finish)
 	return {

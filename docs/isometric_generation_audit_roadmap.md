@@ -73,8 +73,8 @@ eseguibili.
   ledger per casse aperte/ostacoli distrutti/encounter completati e save v6.
 - L'HUD puo mostrare la mappa territori con unknown, discovered, visited,
   cleared e current.
-- Il dodge/roll ha validazione traiettoria e puo attraversare piccoli gap se la
-  landing e valida.
+- Il dodge/roll ha validazione traiettoria e puo attraversare piccoli gap/fall
+  zone se la landing e valida; gli hazard ambientali restano bloccanti.
 
 ### Cosa e incompleto o ambiguo
 
@@ -84,9 +84,10 @@ eseguibili.
 - Gli asset ambiente sono ancora procedurali. Il manifest dichiara
   `converted_procedural_isometric`, `procedural_isometric_placeholder`,
   `manifest_placeholder` o `existing_procedural_placeholder`, non asset finali.
-- Gli ID generati da `ObstacleLayoutGenerator` sono censiti nel manifest v5
+- Gli ID generati da `ObstacleLayoutGenerator` sono censiti nel manifest v6
   con categoria esplicita (copertura introdotta in v3) e `object_visuals`
-  dedicati (introdotti in v5). I mismatch rilevati nell'audit erano:
+  dedicati (introdotti in v5, estesi in v6 per i border tematici). I mismatch
+  rilevati nell'audit erano:
   `ash_barrier`, `broken_walkway`, `burned_car`, `charred_wall`, `dead_tree`,
   `ice_block`, `industrial_fence`, `lab_block`, `lab_wall`, `marsh_log`,
   `pipe_stack`, `snow_cabin`, `snow_wall`, `sunken_house`, `toxic_barrel`.
@@ -103,9 +104,10 @@ eseguibili.
 - `WorldRegion.world_origin` e `WorldRegionConnection.world_rect` esistono nei
   dati, ma il rendering della regione corrente resta centrato nello spazio
   locale del gameplay.
-- `PlayerDodgeComponent` usa `HazardSystem.is_position_hazardous()` per
-  rilevare un gap attraversabile: fall zone e hazard ambientali non sono
-  distinti nel contratto di traiettoria runtime.
+- `PlayerDodgeComponent` distingue le fall zone dagli hazard ambientali:
+  `HazardSystem.is_position_fall_zone()` identifica i gap/cadute
+  attraversabili solo se piccoli, mentre lava, gas, acqua profonda e altri
+  hazard ambientali bloccano la traiettoria.
 - I ledger `destroyed_obstacles` e `completed_encounters` sono persistiti ma non
   hanno ancora trigger gameplay reali.
 - Il debug overlay non risulta integrato come UI operativa visibile nella scena;
@@ -142,15 +144,16 @@ Stato: parziale.
 `ObstacleSystem` genera oggetti fisici, `ResourceCrateSystem` genera crate, e
 `SpawnGateVisual`/`ExplosiveBarrel` coprono vecchi props arena. Gli oggetti
 ambiente dei biomi sono ancora procedurali, ma gli ostacoli generati dalla
-pipeline bioma hanno `draw_mode` dedicati nel manifest v5 e non ricadono piu
-nel fallback barriera generico.
+pipeline bioma hanno `draw_mode` dedicati nel manifest v6, inclusi i bordi
+tematici, e non ricadono piu nel fallback barriera generico.
 
 Gap principali:
 
 - manifest, generatore e draw mode sono allineati sugli ID reali generati in
   Milestone 1 e 3;
 - l'arte resta procedurale e non final asset-driven;
-- crate e fall zone sono censiti come placeholder procedurali;
+- crate resta un placeholder procedurale; `fall_zone` usa una visuale
+  procedurale dedicata cliff/depth ma non ancora asset finale;
 - props arena storici restano separati dalla pipeline bioma.
 
 ### Ostacoli e collisioni
@@ -190,16 +193,19 @@ Gap principali:
 Stato: funzionale, visualmente parziale.
 
 `FallBoundaryGenerator` crea rettangoli di fall zone sui lati esterni, mentre
-`ObstacleLayoutGenerator` crea segmenti `boundary_fence` per bordi collegati o
-bloccati. `BiomeFallZone` ha visuale scura e bordo jagged.
+`ObstacleLayoutGenerator` crea segmenti fisici sui bordi collegati o bloccati
+usando l'ID border tematico del bioma (`boundary_fence`,
+`toxic_boundary_wall`, `lava_boundary`, `ice_boundary`,
+`deep_water_boundary`). `BiomeFallZone` ha visuale procedurale dedicata
+cliff/depth con stile per bioma.
 
 Gap principali:
 
-- `fall_zone` e ancora `procedural_isometric_placeholder`;
-- i muri dei lati collegati usano spesso `boundary_fence` generico, non muri
-  tematici per bioma;
+- i bordi e il vuoto sono leggibili e tematici, ma restano procedurali;
 - il vuoto non e ancora un sistema di cliff/depth asset-driven con layering
-  coerente.
+  definitivo;
+- gli asset finali per muri, cliff e depth restano nello scope della Milestone
+  10.
 
 ### Connessioni tra biomi
 
@@ -256,8 +262,8 @@ sono obbligatori e l'attribution lo conferma.
 Gap principali:
 
 - nessuna libreria sprite/tileset ambiente definitiva;
-- gli ID generati sono coperti dal manifest v5 e hanno visuale procedurale
-  dedicata;
+- gli ID generati sono coperti dal manifest v6 e hanno visuale procedurale
+  dedicata, inclusi i border tematici;
 - l'identita dei biomi e ancora soprattutto palette + hazard, non asset.
 
 ### Debug tooling
@@ -301,9 +307,9 @@ Gap principali:
 | Nessun tileset/tilemap isometrico asset-driven | `terrain_generator.gd`, `biome_region_ground.gd`, `assets/environment/isometric/manifest.json` | mancante | il mondo resta procedurale e non final art | budget performance, pipeline tile/asset | P1 |
 | Megamappa fisica non renderizzata in continuita globale | `world_runtime.gd`, `biome_manager.gd`, `terrain_generator.gd`, `biome_transition_system.gd` | parziale | attraversamento percepito come cambio regione locale, non mondo continuo | coordinate globali regioni, streaming visuale | P1 |
 | `WorldRegion.world_origin` e `WorldRegionConnection.world_rect` non guidano il rendering runtime | `world_region.gd`, `world_region_connection.gd`, `terrain_generator.gd` | parziale | dati globali presenti ma non visibili nel mondo | renderer multi-regione o offset regione | P1 |
-| Fall zone ancora placeholder procedurale | `biome_fall_zone.gd`, `manifest.json`, `fall_boundary_generator.gd` | placeholder | vuoto/caduta leggibile ma non final e non tematico | asset cliff/depth per bioma | P1 |
-| Muri/bordi collegati usano `boundary_fence` generico | `obstacle_layout_generator.gd`, `biome_obstacle.gd`, `manifest.json` | placeholder | confini non abbastanza tematici | border asset per bioma | P1 |
-| Contratto dodge/gap usa hazard generico, non fall zone esplicita | `game/player/player_dodge_component.gd`, `hazard_system.gd` | parziale | il roll puo trattare hazard diversi come gap attraversabile | API hazard type/query fall_zone | P1 |
+| Fall zone ancora placeholder procedurale | `biome_fall_zone.gd`, `manifest.json`, `fall_boundary_generator.gd` | risolto in Milestone 5 come visuale procedurale cliff/depth | resta il pass asset/tile finale | Milestone 10 per asset cliff/depth definitivi | chiuso |
+| Muri/bordi collegati usano `boundary_fence` generico | `obstacle_layout_generator.gd`, `biome_obstacle.gd`, `manifest.json` | risolto in Milestone 5 | border tematici procedurali per bioma; resta asset finale | manifest v6 `object_visuals`, Milestone 10 | chiuso |
+| Contratto dodge/gap usa hazard generico, non fall zone esplicita | `game/player/player_dodge_component.gd`, `hazard_system.gd` | risolto in Milestone 5 | fall zone separata dagli hazard ambientali | `is_position_fall_zone()` e smoke dodge/fall | chiuso |
 | `blocks_projectiles` nel manifest non e applicato come contratto runtime evidente | `manifest.json`, `biome_obstacle.gd`, `projectile.gd`, `projectile_system.gd` | parziale | proiettili potrebbero non rispettare ostacoli come atteso dal manifest | collision layer/mask projectile, test | P1 |
 | Ledger ostacoli distrutti ed encounter completati senza trigger gameplay | `persistent_world_state.gd`, `world_runtime.gd`, `obstacle_system.gd`, `random_encounter_system.gd` | parziale | persistenza pronta ma non percepita dal giocatore | ostacoli distruttibili/encounter region-bound | P2 |
 | Mappa esplorata non mostra contenuto interno regione | `exploration_map_panel.gd`, `world_exploration_state.gd` | parziale | navigazione strategica limitata | dati POI/hazard/connection detail | P2 |
@@ -570,6 +576,29 @@ Sotto-task:
 
 ### Milestone 5 - Bordi del bioma, muri, vuoto e caduta
 
+Stato: completata il 2026-06-17.
+
+Esito:
+
+- `ObstacleLayoutGenerator` usa border ID tematici per i lati collegati o
+  bloccati: `boundary_fence`, `toxic_boundary_wall`, `lava_boundary`,
+  `ice_boundary` e `deep_water_boundary`.
+- `assets/environment/isometric/manifest.json` e stato portato a v6 con
+  `object_visuals` e draw mode dedicati per i border tematici; `fall_zone` e
+  marcata come visuale procedurale cliff/depth.
+- `BiomeObstacle` disegna muri/bordi tematici per tossico, lava, ghiaccio e
+  acqua profonda senza cambiare collisioni o spawn blocker.
+- `BiomeFallZone` espone `fall_style` e disegna profondita/cliff procedurali
+  con stile per bioma.
+- `HazardSystem` separa `is_position_fall_zone()` e
+  `is_position_environment_hazard()`, mantenendo `is_position_hazardous()` come
+  query aggregata per spawn/sicurezza.
+- `PlayerDodgeComponent` tratta solo le fall zone come gap attraversabili; gli
+  hazard ambientali come lava, gas e acqua profonda bloccano traiettoria e
+  landing.
+- Smoke aggiornati: manifest v6, fall boundary visual logic, fall/hazard
+  runtime e dodge/gap.
+
 Obiettivo:
 rendere i bordi del territorio leggibili e tematici, distinguendo bordo
 bloccato, passaggio aperto e vuoto/caduta.
@@ -609,13 +638,14 @@ Rischi:
 - Separare hazard/fall puo introdurre regressioni nello spawner.
 - Confini troppo decorati possono nascondere passaggi.
 
-Sotto-task:
+Sotto-task completati:
 
-1. Aggiungere API hazard per fall zone.
-2. Aggiornare `PlayerDodgeComponent`.
-3. Aggiungere border draw per bioma.
-4. Estendere smoke fall/dodge.
-5. QA visuale default/high contrast.
+1. [x] Aggiungere API hazard per fall zone.
+2. [x] Aggiornare `PlayerDodgeComponent`.
+3. [x] Aggiungere border draw per bioma.
+4. [x] Estendere smoke fall/dodge.
+5. [x] QA automatico headless su default; QA screenshot/high contrast resta nel
+   playtest Milestone 11.
 
 ### Milestone 6 - Connessioni aperte tra biomi
 

@@ -29,6 +29,10 @@
   `docs/isometric_generation_audit_roadmap.md`, `TODO.md`, `ROADMAP.md`,
   `README.md`, `ARCHITECTURE.md` e checklist manuale; prossimo passo
   `ISO-001` spostato alla Milestone 4 sulle collisioni coerenti.
+- Chiusa la Milestone 5 della roadmap isometrica con stato aggiornato in
+  `docs/isometric_generation_audit_roadmap.md`, `TODO.md`, `ROADMAP.md`,
+  `README.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md` e checklist manuale;
+  Milestone 4 resta aperta come recupero sulle collisioni coerenti.
 
 ### Fixed
 
@@ -109,6 +113,18 @@
 - Estesi `tests/isometric_environment_manifest_smoke_test.gd` e
   `tests/biome_obstacle_generation_smoke_test.gd` per vietare fallback generici
   impliciti sugli ID generati e verificare categorie distinguibili per bioma.
+- Esteso il manifest ambiente isometrico a v6 con border tematici generati,
+  `fall_zone` procedurale cliff/depth e draw mode dedicati per
+  `toxic_boundary_wall`, `lava_boundary`, `ice_boundary` e
+  `deep_water_boundary`.
+- `BiomeObstacle` disegna border tematici per tossico, lava, ghiaccio e acqua
+  profonda, mentre `BiomeFallZone` espone stili cliff/depth per bioma.
+- `HazardSystem` espone query separate `is_position_fall_zone()` e
+  `is_position_environment_hazard()` mantenendo `is_position_hazardous()` come
+  query aggregata.
+- Estesi gli smoke `isometric_environment_manifest`, `fall_boundary_visual_logic`,
+  `player_dodge_gap` e `zombie_fall_hazard` per coprire manifest v6, border
+  tematici, fall query e hazard ambientali non attraversabili.
 - Estesa la copertura smoke di `random_encounter` e `biome_mini_events` con
   cooldown/frequenza, reward crate, high contrast, reduced motion e status
   evitabile.
@@ -498,6 +514,8 @@
 
 ### Changed
 
+- Il roll/dodge considera attraversabili solo piccoli gap/fall zone; hazard
+  ambientali come lava, gas e acqua profonda bloccano traiettoria e landing.
 - Le transizioni bioma della survival usano ora passaggi aperti e aggiornamento regione; il teletrasporto resta solo come fallback esplicito.
 - `BiomeMapGenerator` mantiene celle `200x200` ma produce topologia a grafo connesso invece della progressione percepita come sequenza di portali.
 - Allineati i runner boss e stress a un teardown esplicito delle scene.

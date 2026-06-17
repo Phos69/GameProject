@@ -223,7 +223,8 @@ godot --path . --rendering-method gl_compatibility --script res://tests/arena_va
 
 ## Regressione Revamp Zombie Z5
 
-- La Pianura Infetta mostra una fall zone scura con bordo caldo fuori dalle corsie centrali.
+- La Pianura Infetta mostra una fall zone leggibile come vuoto/caduta con
+  bordo cliff/depth fuori dalle corsie centrali.
 - Entrare nella zona sottrae esattamente 20 HP.
 - Il player riappare all'ultima posizione sicura e non conserva velocita.
 - La breve invulnerabilita evita una seconda caduta immediata.
@@ -693,6 +694,35 @@ godot --headless --path . --script res://tests/isometric_environment_manifest_sm
 godot --headless --path . --script res://tests/biome_obstacle_generation_smoke_test.gd
 godot --headless --path . --script res://tests/biome_world_generation_smoke_test.gd
 godot --headless --path . --script res://tests/zombie_environment_milestone_smoke_test.gd
+```
+
+## Regressione ISO-001 Milestone 5 - bordi, muri, vuoto e caduta
+
+QA visuale da eseguire con seed fisso a `1280x720` e `960x540`, in `default`
+e `high_contrast`.
+
+- In ogni bioma, verificare che i lati con regione adiacente ma senza edge siano
+  bloccati da muri/barriere tematiche, non da fall zone.
+- Verificare che i lati collegati mostrino un'apertura percorribile e che i
+  segmenti chiusi attorno al passaggio restino fisici.
+- Verificare che i lati senza regione adiacente siano fall zone visive e
+  dannose, con profondita/cliff leggibile.
+- Provare il roll su un piccolo gap/fall zone e confermare che riesca solo con
+  landing valida.
+- Provare il roll attraverso lava, gas/acqua profonda o altri hazard ambientali
+  e confermare che venga bloccato.
+- Confermare che zombie, casse e spawn non usino fall zone o hazard come
+  posizioni valide.
+- Salvare screenshot per border/fall zone dei cinque biomi durante il prossimo
+  playtest end-to-end (Milestone 11).
+
+```text
+godot --headless --path . --script res://tests/isometric_environment_manifest_smoke_test.gd
+godot --headless --path . --script res://tests/fall_boundary_visual_logic_smoke_test.gd
+godot --headless --path . --script res://tests/player_dodge_gap_smoke_test.gd
+godot --headless --path . --script res://tests/zombie_fall_hazard_smoke_test.gd
+godot --headless --path . --script res://tests/biome_world_generation_smoke_test.gd
+godot --headless --path . --script res://tests/open_passage_transition_smoke_test.gd
 ```
 
 ## Regressione todo_roadmap Milestone 5 - dungeon ramificato, shop e biomi

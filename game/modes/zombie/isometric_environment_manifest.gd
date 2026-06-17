@@ -45,11 +45,14 @@ const OBJECT_DRAW_MODES: Array[String] = [
 	"burned_house",
 	"charred_wall",
 	"dead_tree",
+	"deep_water_boundary",
 	"fence",
 	"generic_barrier",
+	"ice_boundary",
 	"ice_block",
 	"lab_block",
 	"lab_wall",
+	"lava_boundary",
 	"log",
 	"marsh_log",
 	"pipe_stack",
@@ -61,6 +64,7 @@ const OBJECT_DRAW_MODES: Array[String] = [
 	"snow_wall",
 	"sunken_house",
 	"toxic_barrel",
+	"toxic_boundary_wall",
 	"wood_barrier",
 	"wreck"
 ]

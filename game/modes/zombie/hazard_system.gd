@@ -165,10 +165,18 @@ func spawn_runtime_hazard(
 	return zone
 
 func is_position_hazardous(position: Vector2) -> bool:
+	return is_position_fall_zone(position) or is_position_environment_hazard(position)
+
+func is_position_fall_zone(position: Vector2) -> bool:
 	for hazard in get_tree().get_nodes_in_group("fall_zones"):
 		if _node_contains_position(hazard, position):
 			return true
+	return false
+
+func is_position_environment_hazard(position: Vector2) -> bool:
 	for hazard in get_tree().get_nodes_in_group("environment_hazards"):
+		if hazard.is_in_group("fall_zones"):
+			continue
 		if _node_contains_position(hazard, position):
 			return true
 	return false
@@ -270,7 +278,8 @@ func _generate_hazards() -> void:
 				hazard_id,
 				size,
 				rotation_radians,
-				palette.hazard_color
+				palette.hazard_color,
+				_fall_style_for_biome(active_biome.biome_id)
 			)
 			fall_zone.body_entered.connect(
 				_on_hazard_body_entered.bind(fall_zone)
@@ -396,6 +405,19 @@ func _resolve_fallback_position(player: Node) -> Vector2:
 		if is_position_safe(candidate):
 			return candidate
 	return Vector2.ZERO
+
+func _fall_style_for_biome(biome_id: StringName) -> StringName:
+	match biome_id:
+		&"toxic_wastes":
+			return &"toxic_cliff"
+		&"burning_fields":
+			return &"lava_cliff"
+		&"frozen_outskirts":
+			return &"ice_cliff"
+		&"drowned_marsh":
+			return &"marsh_cliff"
+		_:
+			return &"cliff"
 
 func _on_hazard_body_entered(
 	body: Node2D,

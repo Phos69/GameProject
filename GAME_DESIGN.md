@@ -32,7 +32,10 @@ variazioni visuali senza modificare il controller.
 - Movimento fluido con tastiera o joypad.
 - Movimento pseudo-isometrico: input di movimento convertito su assi diagonali del playground.
 - Ogni player puo eseguire un dodge/roll: `Shift`/`Ctrl` su tastiera player 1 o `B` sul joypad dello slot.
-- Il roll concede una breve invulnerabilita, mette in cooldown l'azione, sospende il fuoco durante la schivata e puo attraversare piccoli gap solo se traiettoria e landing sono valide.
+- Il roll concede una breve invulnerabilita, mette in cooldown l'azione,
+  sospende il fuoco durante la schivata e puo attraversare piccoli gap/fall
+  zone solo se traiettoria e landing sono valide; lava, gas, acqua profonda e
+  altri hazard ambientali non vengono trattati come gap.
 - Camera condivisa che segue il gruppo player e allarga leggermente lo zoom quando i player si separano.
 - Il mapping prototipo dei controller e deterministico: controller 1/player 1, controller 2/player 2, controller 3/player 3, controller 4/player 4.
 
@@ -504,8 +507,9 @@ Identita dei biomi:
 - tutti i layout sono deterministici e mantengono una corsia centrale;
 - ogni layout generato contiene strade, corridoi e ostacoli grandi che
   influenzano movimento e combattimento invece di restare solo decorazione;
-- i lati collegati tra biomi hanno muri o barriere con almeno un passaggio
-  raggiungibile; i lati senza vicino diventano fall zone;
+- i lati collegati tra biomi hanno muri o barriere tematiche con almeno un
+  passaggio raggiungibile; i lati senza vicino diventano fall zone con visuale
+  cliff/depth;
 - tutto il `200x200` viene classificato come walkable, obstacle, hazard, border, void o fall zone;
 - casse e spawn vengono validati contro ostacoli e hazard.
 
@@ -521,6 +525,9 @@ Zombie tematici:
 Regole hazard:
 
 - la `Pianura Infetta` contiene una fall zone visibile fuori dalle corsie centrali;
+- le fall zone rappresentano vuoto/caduta, restano distinte dagli hazard
+  ambientali e sono gli unici gap attraversabili dal roll entro distanza
+  valida;
 - entrando nella zona il player perde 20 HP, anche se ha un'altra invulnerabilita attiva;
 - il player torna all'ultima posizione sicura registrata e la velocita viene azzerata;
 - dopo il recupero riceve 1,25 secondi di invulnerabilita dedicata;

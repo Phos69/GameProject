@@ -33,6 +33,20 @@ func _run() -> void:
 			else:
 				_expect(border_type == BiomeCell.BorderType.BLOCKED, "%s adjacent non-edge %s is blocked" % [String(cell.id), String(side)])
 				_expect(not _has_fall_rect_for_side(layout, side), "%s blocked %s is not fall" % [String(cell.id), String(side)])
+				_expect(
+					_has_border_obstacle_for_side(
+						layout,
+						side,
+						_expected_border_obstacle_id(cell.biome_id)
+					),
+					"%s blocked %s uses biome border visual"
+					% [String(cell.id), String(side)]
+				)
+			_expect(
+				_only_expected_border_ids(layout, cell.biome_id),
+				"%s generated borders use canonical biome ids"
+				% String(cell.id)
+			)
 	var graph := biome_manager.get_world_graph()
 	_expect(graph != null and graph.validate_physical_passages().get("is_valid", false), "fall boundary logic keeps physical passages coherent")
 
@@ -63,6 +77,74 @@ func _has_fall_rect_for_side(layout: BiomeEnvironmentLayout, side: StringName) -
 				):
 					return true
 	return false
+
+func _has_border_obstacle_for_side(
+	layout: BiomeEnvironmentLayout,
+	side: StringName,
+	obstacle_id: StringName
+) -> bool:
+	if layout == null:
+		return false
+	for index in range(layout.obstacle_rects.size()):
+		if index >= layout.obstacle_ids.size():
+			continue
+		if layout.obstacle_ids[index] != obstacle_id:
+			continue
+		var rect := layout.obstacle_rects[index]
+		match side:
+			&"north":
+				if rect.position.y <= 0 and rect.size.y <= 8:
+					return true
+			&"south":
+				if (
+					rect.position.y + rect.size.y >= layout.zone_size.y
+					and rect.size.y <= 8
+				):
+					return true
+			&"west":
+				if rect.position.x <= 0 and rect.size.x <= 8:
+					return true
+			_:
+				if (
+					rect.position.x + rect.size.x >= layout.zone_size.x
+					and rect.size.x <= 8
+				):
+					return true
+	return false
+
+func _only_expected_border_ids(
+	layout: BiomeEnvironmentLayout,
+	biome_id: StringName
+) -> bool:
+	if layout == null:
+		return false
+	var expected_id := _expected_border_obstacle_id(biome_id)
+	for obstacle_id in layout.obstacle_ids:
+		if _is_border_obstacle_id(obstacle_id) and obstacle_id != expected_id:
+			return false
+	return true
+
+func _is_border_obstacle_id(obstacle_id: StringName) -> bool:
+	return [
+		&"boundary_fence",
+		&"toxic_boundary_wall",
+		&"lava_boundary",
+		&"ice_boundary",
+		&"deep_water_boundary"
+	].has(obstacle_id)
+
+func _expected_border_obstacle_id(biome_id: StringName) -> StringName:
+	match biome_id:
+		&"toxic_wastes":
+			return &"toxic_boundary_wall"
+		&"burning_fields":
+			return &"lava_boundary"
+		&"frozen_outskirts":
+			return &"ice_boundary"
+		&"drowned_marsh":
+			return &"deep_water_boundary"
+		_:
+			return &"boundary_fence"
 
 func _expect(condition: bool, message: String) -> void:
 	if condition:

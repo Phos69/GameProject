@@ -101,6 +101,42 @@ func _run() -> void:
 		"fall zone center is reported as hazardous"
 	)
 	_expect(
+		hazard_system.is_position_fall_zone(fall_zone.global_position),
+		"fall zone center is reported by the dedicated fall query"
+	)
+	_expect(
+		not hazard_system.is_position_environment_hazard(
+			fall_zone.global_position
+		),
+		"fall zone is not reported as a generic environment hazard"
+	)
+	_expect(
+		fall_zone.get_fall_style() == &"cliff",
+		"starting biome fall zone uses the default cliff visual style"
+	)
+	var runtime_environment_hazard := hazard_system.spawn_runtime_hazard(
+		&"fire_zone",
+		Vector2(520.0, 0.0)
+	)
+	_expect(
+		runtime_environment_hazard != null,
+		"runtime environmental hazard can be spawned for query checks"
+	)
+	if runtime_environment_hazard != null:
+		await process_frame
+		_expect(
+			hazard_system.is_position_environment_hazard(
+				runtime_environment_hazard.global_position
+			),
+			"environmental hazard is reported by the environment query"
+		)
+		_expect(
+			not hazard_system.is_position_fall_zone(
+				runtime_environment_hazard.global_position
+			),
+			"environmental hazard is not reported as a fall zone"
+		)
+	_expect(
 		not zombie_spawner.is_spawn_position_valid(
 			fall_zone.global_position
 		),

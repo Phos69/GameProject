@@ -2,6 +2,7 @@ extends Area2D
 class_name BiomeFallZone
 
 var hazard_id: StringName = &"fall_zone"
+var fall_style: StringName = &"cliff"
 var zone_size: Vector2 = Vector2(150.0, 72.0)
 var edge_color: Color = Color(0.82, 0.58, 0.16, 0.92)
 var depth_color: Color = Color(0.025, 0.028, 0.022, 1.0)
@@ -10,9 +11,11 @@ func configure(
 	next_hazard_id: StringName,
 	next_size: Vector2,
 	rotation_radians: float,
-	warning_color: Color
+	warning_color: Color,
+	next_fall_style: StringName = &"cliff"
 ) -> void:
 	hazard_id = next_hazard_id
+	fall_style = next_fall_style
 	zone_size = Vector2(
 		maxf(next_size.x, 32.0),
 		maxf(next_size.y, 24.0)
@@ -51,6 +54,9 @@ func distance_to_zone(world_position: Vector2) -> float:
 	)
 	return outside.length()
 
+func get_fall_style() -> StringName:
+	return fall_style
+
 func _rebuild_collision() -> void:
 	var collision_shape := get_node_or_null("CollisionShape2D") as CollisionShape2D
 	if collision_shape == null:
@@ -64,23 +70,47 @@ func _rebuild_collision() -> void:
 func _draw() -> void:
 	var half_size := zone_size * 0.5
 	var outline := _jagged_outline(half_size)
-	draw_colored_polygon(outline, depth_color)
+	var resolved_depth_color := _depth_color_for_style()
+	var resolved_edge_color := _edge_color_for_style()
+	draw_colored_polygon(outline, resolved_depth_color)
+	for band_index in range(4):
+		var inset := float(band_index + 1) * 0.10
+		draw_colored_polygon(
+			_scaled_points(outline, 1.0 - inset, 1.0 - inset * 0.55),
+			Color(resolved_depth_color.lightened(0.035 * float(band_index + 1)), 0.22)
+		)
 	var closed_outline := outline.duplicate()
 	closed_outline.append(outline[0])
-	draw_polyline(closed_outline, edge_color, 4.0, true)
+	draw_polyline(closed_outline, resolved_edge_color, 4.0, true)
 	draw_polyline(
 		closed_outline,
-		Color(0.96, 0.28, 0.18, 0.48),
+		Color(resolved_edge_color.lightened(0.22), 0.52),
 		1.5,
 		true
 	)
+	_draw_cliff_lip(half_size, resolved_edge_color)
+	_draw_depth_streaks(half_size, resolved_edge_color)
+
+func _draw_cliff_lip(half_size: Vector2, color: Color) -> void:
+	var lip_points := PackedVector2Array([
+		Vector2(-half_size.x, -half_size.y * 0.62),
+		Vector2(-half_size.x * 0.70, -half_size.y),
+		Vector2(-half_size.x * 0.28, -half_size.y * 0.78),
+		Vector2(half_size.x * 0.14, -half_size.y),
+		Vector2(half_size.x * 0.62, -half_size.y * 0.72),
+		Vector2(half_size.x, -half_size.y * 0.34)
+	])
+	draw_polyline(lip_points, color.lightened(0.16), 6.0, true)
+	draw_polyline(lip_points, Color(0.02, 0.025, 0.028, 0.58), 2.0, true)
+
+func _draw_depth_streaks(half_size: Vector2, color: Color) -> void:
 	for index in range(5):
 		var ratio := float(index + 1) / 6.0
 		var x_position := lerpf(-half_size.x * 0.72, half_size.x * 0.72, ratio)
 		draw_line(
 			Vector2(x_position - 12.0, -half_size.y * 0.36),
 			Vector2(x_position + 7.0, half_size.y * 0.34),
-			Color(0.38, 0.10, 0.08, 0.72),
+			Color(color.darkened(0.38), 0.64),
 			2.0,
 			true
 		)
@@ -99,3 +129,39 @@ func _jagged_outline(half_size: Vector2) -> PackedVector2Array:
 		Vector2(-half_size.x * 0.58, half_size.y),
 		Vector2(-half_size.x, half_size.y * 0.42)
 	])
+
+func _scaled_points(
+	points: PackedVector2Array,
+	scale_x: float,
+	scale_y: float
+) -> PackedVector2Array:
+	var scaled := PackedVector2Array()
+	for point in points:
+		scaled.append(Vector2(point.x * scale_x, point.y * scale_y))
+	return scaled
+
+func _depth_color_for_style() -> Color:
+	match fall_style:
+		&"toxic_cliff":
+			return Color(0.018, 0.035, 0.024, 1.0)
+		&"lava_cliff":
+			return Color(0.055, 0.018, 0.012, 1.0)
+		&"ice_cliff":
+			return Color(0.018, 0.030, 0.042, 1.0)
+		&"marsh_cliff":
+			return Color(0.014, 0.026, 0.030, 1.0)
+		_:
+			return depth_color
+
+func _edge_color_for_style() -> Color:
+	match fall_style:
+		&"toxic_cliff":
+			return Color(edge_color.lightened(0.10), 0.92)
+		&"lava_cliff":
+			return Color(0.98, 0.30, 0.10, 0.92)
+		&"ice_cliff":
+			return Color(0.54, 0.82, 0.96, 0.92)
+		&"marsh_cliff":
+			return Color(0.22, 0.56, 0.50, 0.92)
+		_:
+			return edge_color

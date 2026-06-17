@@ -148,6 +148,14 @@ func _draw() -> void:
 			_draw_broken_walkway()
 		&"boundary":
 			_draw_boundary()
+		&"toxic_boundary_wall":
+			_draw_toxic_boundary_wall()
+		&"lava_boundary":
+			_draw_lava_boundary()
+		&"ice_boundary":
+			_draw_ice_boundary()
+		&"deep_water_boundary":
+			_draw_deep_water_boundary()
 		_:
 			_draw_barrier()
 
@@ -803,3 +811,102 @@ func _draw_boundary() -> void:
 		5.0,
 		true
 	)
+
+func _draw_toxic_boundary_wall() -> void:
+	var half_size := obstacle_size * 0.5
+	draw_rect(Rect2(-half_size, obstacle_size), primary_color.darkened(0.42), true)
+	for index in range(8):
+		var ratio := float(index) / 7.0
+		var x_position := lerpf(-half_size.x, half_size.x, ratio)
+		var stripe_color := accent_color if index % 2 == 0 else primary_color.lightened(0.18)
+		draw_line(
+			Vector2(x_position - 10.0, half_size.y),
+			Vector2(x_position + 10.0, -half_size.y),
+			Color(stripe_color, 0.62),
+			4.0,
+			true
+		)
+	draw_line(
+		Vector2(-half_size.x, -half_size.y * 0.42),
+		Vector2(half_size.x, -half_size.y * 0.18),
+		accent_color.lightened(0.12),
+		4.0,
+		true
+	)
+	for index in range(4):
+		var x_position := lerpf(-half_size.x * 0.68, half_size.x * 0.68, float(index) / 3.0)
+		draw_circle(
+			Vector2(x_position, half_size.y * 0.18),
+			maxf(half_size.y * 0.18, 3.0),
+			Color(accent_color.lightened(0.20), 0.58)
+		)
+
+func _draw_lava_boundary() -> void:
+	var half_size := obstacle_size * 0.5
+	draw_rect(Rect2(-half_size, obstacle_size), primary_color.darkened(0.50), true)
+	var crack_points := PackedVector2Array()
+	for index in range(7):
+		var ratio := float(index) / 6.0
+		crack_points.append(Vector2(
+			lerpf(-half_size.x + 4.0, half_size.x - 4.0, ratio),
+			sin(float(index) * 1.7) * half_size.y * 0.34
+		))
+	draw_polyline(crack_points, accent_color.lightened(0.20), 5.0, true)
+	draw_polyline(crack_points, Color(1.0, 0.18, 0.04, 0.78), 2.0, true)
+	for index in range(5):
+		var x_position := lerpf(-half_size.x * 0.78, half_size.x * 0.78, float(index) / 4.0)
+		draw_colored_polygon(
+			PackedVector2Array([
+				Vector2(x_position - 5.0, half_size.y * 0.36),
+				Vector2(x_position + 5.0, half_size.y * 0.36),
+				Vector2(x_position, -half_size.y * 0.52)
+			]),
+			primary_color.darkened(0.18)
+		)
+
+func _draw_ice_boundary() -> void:
+	var half_size := obstacle_size * 0.5
+	draw_rect(Rect2(-half_size, obstacle_size), primary_color.darkened(0.16), true)
+	for index in range(6):
+		var ratio := float(index) / 5.0
+		var x_position := lerpf(-half_size.x, half_size.x, ratio)
+		draw_colored_polygon(
+			PackedVector2Array([
+				Vector2(x_position - 8.0, half_size.y * 0.44),
+				Vector2(x_position + 8.0, half_size.y * 0.38),
+				Vector2(x_position + 3.0, -half_size.y),
+				Vector2(x_position - 5.0, -half_size.y * 0.54)
+			]),
+			primary_color.lightened(0.24)
+		)
+	draw_line(
+		Vector2(-half_size.x + 6.0, -half_size.y * 0.36),
+		Vector2(half_size.x - 6.0, half_size.y * 0.10),
+		accent_color.lightened(0.16),
+		3.0,
+		true
+	)
+
+func _draw_deep_water_boundary() -> void:
+	var half_size := obstacle_size * 0.5
+	draw_rect(Rect2(-half_size, obstacle_size), primary_color.darkened(0.34), true)
+	for index in range(4):
+		var y_position := lerpf(-half_size.y * 0.42, half_size.y * 0.42, float(index) / 3.0)
+		var wave_points := PackedVector2Array()
+		for point_index in range(9):
+			var ratio := float(point_index) / 8.0
+			var x_position := lerpf(-half_size.x + 4.0, half_size.x - 4.0, ratio)
+			wave_points.append(Vector2(
+				x_position,
+				y_position + sin(ratio * TAU * 2.0 + float(index)) * 3.0
+			))
+		draw_polyline(wave_points, Color(accent_color.lightened(0.10), 0.72), 2.0, true)
+	for index in range(5):
+		var x_position := lerpf(-half_size.x * 0.78, half_size.x * 0.78, float(index) / 4.0)
+		draw_line(
+			Vector2(x_position, half_size.y * 0.48),
+			Vector2(x_position + sin(float(index)) * 3.0, -half_size.y * 0.65),
+			primary_color.lightened(0.16),
+			3.0,
+			true
+		)

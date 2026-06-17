@@ -73,7 +73,10 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `LocalMultiplayerManager`: mantiene gli slot locali attivi, gestisce join/leave e usa mapping deterministico `device joypad + 1 = player_slot`.
 - `PlayerManager`: spawna/despawna player in base agli slot attivi e tiene il registro degli slot.
 - `PlayerController`: movimento, mira, fire action, dodge/roll e colore visuale per slot.
-- `PlayerDodgeComponent`: roll con cooldown, invulnerabilita breve, blocco del fuoco durante la schivata e validazione di landing/gap/ostacoli.
+- `PlayerDodgeComponent`: roll con cooldown, invulnerabilita breve, blocco
+  del fuoco durante la schivata e validazione di landing/gap/ostacoli; solo le
+  fall zone sono trattate come gap attraversabili, mentre gli hazard
+  ambientali bloccano traiettoria e landing.
 - `ReviveSystem`: progresso cooperativo centralizzato per target downed e reviver vicino.
 - `GameModeManager`: registra, arresta e avvia le modalita.
 - `RunSessionTracker`: traduce i segnali terminali in dati risultato runtime.
@@ -131,9 +134,10 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `BiomePassageGenerator`: crea passaggi condivisi e allineati tra celle confinanti.
 - `BiomeTerrainGenerator`: genera il layout interno del bioma attivo e collega ostacoli, casse, hazard e report di validazione.
 - `IsometricEnvironmentManifest`: legge `assets/environment/isometric/manifest.json`
-  come inventario di ostacoli, draw mode oggetto e tag terrain isometrici
-  generati.
-- `ObstacleLayoutGenerator`: produce strade, corridoi, case grandi, ostacoli secondari e muri sui lati connessi.
+  come inventario di ostacoli, draw mode oggetto, border tematici, fall zone
+  procedurali e tag terrain isometrici generati.
+- `ObstacleLayoutGenerator`: produce strade, corridoi, case grandi, ostacoli
+  secondari e muri/bordi tematici sui lati connessi o bloccati.
 - `FallBoundaryGenerator`: trasforma i lati senza vicino in `fall_zone` data-driven con il contratto di danno ambientale esistente.
 - `MapValidationSystem`: valida con flood-fill spawn, corridoi, passaggi, casse raggiungibili, grafo connesso, passaggi non ostruiti e classificazione completa del `200x200`.
 - `BiomeMapDebugOverlay`: espone seed corrente, riepilogo celle/passaggi,
@@ -156,9 +160,12 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `BiomeObstacle`: usa draw mode procedurali data-driven dal manifest per
   distinguere gli ostacoli dei biomi senza cambiare collisioni o placement.
 - `ResourceCrateSystem`: genera casse ambientali raggiungibili riusando `SupplyCrate` e `DropSystem`.
-- `BiomeFallZone`: `Area2D` fisica e leggibile generata dai dati del bioma.
+- `BiomeFallZone`: `Area2D` fisica e leggibile generata dai dati del bioma,
+  con stile cliff/depth procedurale.
 - `BiomeHazardZone`: area dati per danno periodico, slowdown e hazard runtime.
-- `HazardSystem`: coordina fall zone e hazard, valida posizioni sicure/spawn e gestisce il recupero da caduta.
+- `HazardSystem`: coordina fall zone e hazard, valida posizioni sicure/spawn,
+  espone query separate per fall zone e hazard ambientali, e gestisce il
+  recupero da caduta.
 - `BiomeHazardCatalog`: mantiene configurazione e resa cromatica degli hazard ambientali.
 - `BiomeStatusRuntime`: applica danno periodico, status temporanei e modificatori movimento ai player.
 - `BiomeEnemyProfile`: statistiche e tratti tematici riusabili da `BasicEnemy`.
@@ -460,10 +467,14 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - `BiomeObstacle` legge `draw_mode` e `dedicated_draw` da
   `IsometricEnvironmentManifest`; se un ID ricade su `generic_barrier`, deve
   essere una scelta esplicita del manifest e non un fallback implicito.
+- I lati con regione adiacente ma senza edge e i segmenti chiusi dei lati
+  collegati usano border ID tematici per bioma; il lato senza regione resta
+  fall zone e non ostacolo.
 - Ogni layout conserva un corridoio centrale libero per l'AI diretta esistente.
-- `assets/environment/isometric/manifest.json` v5 contiene i draw mode oggetto
-  in `object_visuals` e i tag terrain generati per strade e passaggi, il
-  relativo `draw_mode` procedurale e i preset
+- `assets/environment/isometric/manifest.json` v6 contiene i draw mode oggetto
+  in `object_visuals`, i border tematici generati, lo stato procedurale
+  dedicato della `fall_zone` e i tag terrain generati per strade e passaggi,
+  il relativo `draw_mode` procedurale e i preset
   `performance`/`balanced`/`quality` per il campionamento del ground.
 - I tag terrain generati da `ObstacleLayoutGenerator` e
   `BiomePassageGenerator` devono essere presenti nel manifest o avere fallback
@@ -478,6 +489,12 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - `HazardSystem` delega tossico, fuoco, gelo, acqua e fango a `BiomeStatusRuntime`, tramite danno periodico o `environment_speed_multiplier`.
 - `BiomeHazardCatalog` centralizza valori runtime e colori, evitando tuning nascosto nel controller.
 - La fall zone conserva il contratto speciale: 20 HP, respawn sicuro e invulnerabilita dedicata.
+- `HazardSystem.is_position_hazardous()` resta la query aggregata per spawn e
+  sicurezza; `is_position_fall_zone()` identifica il vuoto/caduta, mentre
+  `is_position_environment_hazard()` identifica lava, gas, acqua profonda e
+  altri hazard ambientali.
+- Il dodge usa la query fall zone per attraversare piccoli gap e rifiuta gli
+  hazard ambientali come ostacoli di traiettoria/landing.
 - `EnemySystem` registra i profili tematici sullo stesso `basic_enemy.tscn`.
 - `BasicEnemy` applica status al contatto, resistenza, emersione o hazard alla morte solo se definiti dal profilo.
 - Terreno, ostacoli e casse ambientali vengono rimossi da `ZombieModeController.stop_run()`.

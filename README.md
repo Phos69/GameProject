@@ -248,17 +248,21 @@ Completato:
 - motore procedurale seed-based per mappa globale biomi, celle `200x200`, passaggi, fall boundary, layout interno e validazione pathfinding;
 - megamappa persistente seed-based con grafo connesso, regioni `200x200`, passaggi fisici aperti, stato esplorazione salvabile e mappa consultabile;
 - classificazione completa del terreno `200x200` come walkable, obstacle, hazard, border, void o fall zone;
-- dodge/roll per player con cooldown, invulnerabilita breve e validazione per piccoli gap attraversabili;
+- dodge/roll per player con cooldown, invulnerabilita breve e validazione per
+  piccoli gap/fall zone attraversabili, lasciando gli hazard ambientali
+  bloccanti;
 - manifest `assets/environment/isometric/manifest.json` per censire ostacoli,
-  props, draw mode oggetti e tag terrain/passaggi da sostituire con versioni
-  isometriche coerenti;
-- draw procedurali dedicati per gli ostacoli generati dei cinque biomi, senza
-  asset esterni obbligatori e senza fallback barriera generico implicito;
+  props, border tematici, fall zone, draw mode oggetti e tag terrain/passaggi
+  da sostituire con versioni isometriche coerenti;
+- draw procedurali dedicati per gli ostacoli generati e i border tematici dei
+  cinque biomi, senza asset esterni obbligatori e senza fallback barriera
+  generico implicito;
 - cinque biomi giocabili nella stessa run, con partenza forzata dalla `Pianura Infetta`;
 - spawn zombie delegato a `ZombieSpawner` dai bordi della camera, con fallback ai punti arena esistenti;
 - layout ambientali data-driven per Pianura, Tossico, Infuocato, Neve e Palude;
 - casse comuni, mediche, militari e tematiche con loot dedicato tramite `SupplyCrate` e `DropSystem`;
-- zona di caduta data-driven con 20 HP di danno, respawn all'ultima posizione sicura e invulnerabilita temporanea componibile;
+- zona di caduta data-driven con visuale cliff/depth, 20 HP di danno, respawn
+  all'ultima posizione sicura e invulnerabilita temporanea componibile;
 - feedback visuale/audio della caduta e rifiuto della zona da parte dello spawner zombie;
 - pozze tossiche, gas, fuoco, lava, ghiaccio, neve alta, acqua profonda e fango con danno o modifica movimento;
 - undici varianti zombie tematiche configurate tramite `BiomeEnemyProfile`;

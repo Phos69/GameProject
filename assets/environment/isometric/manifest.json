@@ -1,7 +1,7 @@
 {
-  "version": 5,
+  "version": 6,
   "coordinate_system": "pseudo_isometric_2d",
-  "notes": "Environment objects are rendered procedurally (game/modes/zombie/biome_obstacle.gd) so no external art is mandatory for bootstrap. This manifest is the source of truth for collision shape, footprint, blocking flags, object visual draw modes and the ground sort offset used for Y-sorting and the drop shadow. visual_scene pointing to a .gd script means procedural fallback. IDs emitted by ObstacleLayoutGenerator are direct canonical manifest entries; no alias layer is used in manifest v3. Manifest v4 adds generated terrain tag metadata for road and passage rendering. Manifest v5 adds explicit object_visuals so generated obstacle IDs no longer silently use the generic barrier fallback.",
+  "notes": "Environment objects are rendered procedurally (game/modes/zombie/biome_obstacle.gd) so no external art is mandatory for bootstrap. This manifest is the source of truth for collision shape, footprint, blocking flags, object visual draw modes and the ground sort offset used for Y-sorting and the drop shadow. visual_scene pointing to a .gd script means procedural fallback. IDs emitted by ObstacleLayoutGenerator are direct canonical manifest entries; no alias layer is used in manifest v3. Manifest v4 adds generated terrain tag metadata for road and passage rendering. Manifest v5 adds explicit object_visuals so generated obstacle IDs no longer silently use the generic barrier fallback. Manifest v6 adds thematic generated border draw modes and marks fall_zone as a dedicated procedural cliff/depth visual.",
   "default_sorting": {
     "mode": "y_sort",
     "sort_offset": 6
@@ -125,10 +125,10 @@
     "snow_wall": { "draw_mode": "snow_wall", "dedicated_draw": true, "fallback": "" },
     "marsh_log": { "draw_mode": "marsh_log", "dedicated_draw": true, "fallback": "" },
     "broken_walkway": { "draw_mode": "broken_walkway", "dedicated_draw": true, "fallback": "" },
-    "toxic_boundary_wall": { "draw_mode": "boundary", "dedicated_draw": true, "fallback": "" },
-    "lava_boundary": { "draw_mode": "boundary", "dedicated_draw": true, "fallback": "" },
-    "ice_boundary": { "draw_mode": "boundary", "dedicated_draw": true, "fallback": "" },
-    "deep_water_boundary": { "draw_mode": "boundary", "dedicated_draw": true, "fallback": "" }
+    "toxic_boundary_wall": { "draw_mode": "toxic_boundary_wall", "dedicated_draw": true, "fallback": "" },
+    "lava_boundary": { "draw_mode": "lava_boundary", "dedicated_draw": true, "fallback": "" },
+    "ice_boundary": { "draw_mode": "ice_boundary", "dedicated_draw": true, "fallback": "" },
+    "deep_water_boundary": { "draw_mode": "deep_water_boundary", "dedicated_draw": true, "fallback": "" }
   },
   "objects": [
     {
@@ -566,7 +566,7 @@
     {
       "id": "fall_zone",
       "category": "cliff",
-      "status": "procedural_isometric_placeholder",
+      "status": "converted_procedural_isometric",
       "visual_scene": "res://game/modes/zombie/biome_fall_zone.gd",
       "collision_shape": "rectangle_area",
       "footprint_tiles": [200, 6],

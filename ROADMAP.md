@@ -346,6 +346,9 @@ Attivita post-roadmap:
 - Milestone 3 di `docs/isometric_generation_audit_roadmap.md` completata:
   manifest ambiente v5 con `object_visuals`, draw mode dedicati per ostacoli
   generati e smoke manifest/biome obstacle estesi.
+- Milestone 5 di `docs/isometric_generation_audit_roadmap.md` completata:
+  manifest ambiente v6 con border tematici, fall zone cliff/depth procedurale,
+  query fall/hazard separate e dodge che attraversa solo piccoli gap/fall zone.
 - asset definitivi e ulteriori pass di bilanciamento;
 - firma digitale della build pubblica.
 

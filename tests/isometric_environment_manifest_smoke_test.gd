@@ -28,7 +28,7 @@ func _initialize() -> void:
 func _run() -> void:
 	var manifest := IsometricEnvironmentManifest.reload_shared()
 	_expect(manifest.load_error.is_empty(), "manifest loads without error")
-	_expect(manifest.version >= 5, "manifest version is current")
+	_expect(manifest.version >= 6, "manifest version is current")
 
 	var report := manifest.validate()
 	_expect(bool(report.get("is_valid", false)), "manifest passes validation")
