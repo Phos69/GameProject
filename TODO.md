@@ -1,444 +1,315 @@
 # TODO
 
-## Prossima iterazione biomi zombie survival
+Questo file contiene solo backlog operativo, follow-up tracciati e reference
+storiche consolidate. I dettagli completi delle milestone gia chiuse restano in
+`ROADMAP.md`, `CHANGELOG.md`, `docs/milestones/`, nelle roadmap dedicate e nel
+report `docs/latest_commit_validation_report.md`.
 
-- QA manuale mini-eventi bioma.
-  - Obiettivo: verificare ritmo, reward e leggibilita di `toxic_leak`, `fire_breakout`, `whiteout` e `marsh_emergence` con gameplay reale.
-  - Milestone collegata: evoluzione post-roadmap del motore biomi zombie survival.
-  - File/sistemi coinvolti: `RandomEncounterSystem`, `HazardSystem`, `ResourceCrateSystem`, HUD annunci e debug overlay.
-  - Criterio di accettazione: ogni mini-evento resta evitabile, non blocca passaggi/casse, assegna reward proporzionata e resta leggibile in high contrast/reduced motion.
-  - Test richiesto: QA manuale 10 wave con seed fisso e acquisizione screenshot/video dei quattro eventi.
+Regole per nuove voci:
 
-## Megamappa persistente isometrica - completato
+- ogni item aperto deve indicare obiettivo, milestone collegata, file/sistemi,
+  criterio di accettazione e test richiesto;
+- non riaprire milestone completate senza un nuovo goal esplicito;
+- aggiornare questa TODO solo a fine lavoro quando una milestone cambia stato.
 
-- Roadmap megamappa persistente isometrica completata come primo pass stabile.
-  - Obiettivo: trasformare la generazione a biomi/portali in una megamappa seed-based persistente con territori `200x200`, grafo connesso, passaggi fisici aperti, fall boundary, mappa esplorazione e dodge/roll.
-  - Milestone collegata: `roadmap_megamappa_persistente_isometrica.md` Milestone 1-10.
-  - File/sistemi coinvolti: `game/world/`, `BiomeMapGenerator`, `BiomeWorldGenerator`, `BiomeManager`, `BiomeTransitionSystem`, `BiomeEnvironmentLayout`, `MapValidationSystem`, `SaveManager`, `HUDManager`, `InputManager`, `PlayerController`, `PlayerDodgeComponent`.
-  - Criterio di accettazione: stesso seed produce la stessa megamappa, tutte le regioni sono raggiungibili, i passaggi sono fisici e non ostruiti, i lati esterni sono fall boundary, lo stato esplorazione salva/carica e dodge/gap traversal rispetta landing e ostacoli.
-  - Test richiesto: `tests/world_graph_connectivity_smoke_test.gd`, `tests/persistent_world_generation_smoke_test.gd`, `tests/open_passage_transition_smoke_test.gd`, `tests/isometric_biome_terrain_coverage_smoke_test.gd`, `tests/fall_boundary_visual_logic_smoke_test.gd`, `tests/player_dodge_gap_smoke_test.gd`, `tests/exploration_map_smoke_test.gd` e regressioni survival/dungeon/tower/RPG.
+## Baseline tecnica - audit Milestone 0 del 2026-06-17
 
-## Megamappa persistente isometrica - follow-up
+| Area | Stato noto | Evidenza | Prossima azione |
+| --- | --- | --- | --- |
+| Documentazione principale | Rivista | `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`, `TODO.md`, report test e checklist manuale | Mantenere allineata durante le milestone successive |
+| Test discovery | 73 runner trovati | `rg --files tests` | Usare come inventario per Milestone 1 e regressioni future |
+| Suite smoke | PASS nell'ultima validazione completa disponibile | `docs/latest_commit_validation_report.md` | Rieseguire dopo modifiche runtime o teardown |
+| Build/export Windows | PASS nell'ultima validazione completa disponibile | `docs/latest_commit_validation_report.md` | Rieseguire in Milestone 12 o se cambia packaging |
+| Shutdown headless | Aperto e consolidato in `TECH-001` | Warning `ObjectDB/resources still in use` in 34 test nel report precedente | Affrontare in Milestone 1 |
+| Roadmap storiche | Completate come primo pass o reference | `ROADMAP.md`, `roadmap_*.md`, `docs/milestones/` | Non usarle come backlog attivo se una voce e gia chiusa qui sotto |
 
-- QA manuale di attraversamento continuo e leggibilita isometrica.
-  - Obiettivo: validare su schermo reale passaggi aperti, fall boundary, mappa esplorazione e dodge/gap con party da 1-4 player.
-  - Milestone collegata: polish post `roadmap_megamappa_persistente_isometrica.md`.
-  - File/sistemi coinvolti: `WorldRuntime`, `BiomeTransitionSystem`, `TerrainGenerator`, `ExplorationMapPanel`, `PlayerDodgeComponent`, `HazardSystem`.
-  - Criterio di accettazione: i player attraversano almeno otto regioni con seed fisso senza teletrasporti percepiti, senza passaggi ostruiti e con stato mappa leggibile in default/high contrast.
-  - Test richiesto: checklist manuale 20 minuti survival con seed fisso, screenshot mappa e verifica dodge su gap piccolo.
+Test eseguiti per questo audit: nessun test gameplay. La Milestone 0 richiede
+revisione manuale, baseline e consolidamento TODO.
 
-- Streaming visuale delle regioni lontane.
-  - Obiettivo: rendere `WorldRuntime` proprietario dell'istanza corrente e delle regioni N/E/S/W precaricate, lasciando le regioni lontane solo come dati.
-  - Milestone collegata: performance post megamappa.
-  - File/sistemi coinvolti: `WorldRuntime`, `ZombieModeController`, `TerrainGenerator`, `ObstacleSystem`, `ResourceCrateSystem`, `HazardSystem`.
-  - Criterio di accettazione: le regioni lontane non restano istanziate, la regione corrente e i vicini vengono caricati/rilasciati senza ricreare casse gia aperte o encounter completati.
-  - Test richiesto: smoke headless di load/unload regioni e profiling manuale con griglia almeno `7x7`.
+## Backlog aperto prioritizzato
 
-- Pass asset isometrici ambiente.
-  - Obiettivo: sostituire progressivamente placeholder di case, muretti, auto, casse, barili, rocce, tubi, cisterne, ponti e scarpate usando il manifest isometrico.
-  - Milestone collegata: asset pipeline post megamappa.
-  - File/sistemi coinvolti: `assets/environment/isometric/`, `ObstacleLayoutGenerator`, `ObstacleSystem`, `TerrainGenerator`, `BiomeFallZone`.
-  - Criterio di accettazione: ogni oggetto convertito ha visual scene, collision shape, shadow, sort offset, footprint tiles e flag di blocco coerenti.
-  - Test richiesto: QA visuale a 1280x720 e smoke collisioni/footprint per ogni categoria convertita.
+### TECH-001 - Debito shutdown headless e lifecycle test
 
-## Motore generazione mappe e biomi - completato
+- Obiettivo: terminare la suite senza leak report `ObjectDB`, risorse ancora in
+  uso o access violation intermittenti in shutdown.
+- Milestone collegata: `todo_roadmap.md` Milestone 1.
+- File/sistemi coinvolti: runner in `tests/`, lifecycle di `game/main/`,
+  `game/modes/`, `game/audio/`, `game/projectiles/`, `game/drops/` e
+  `game/debug/build_runtime_smoke.gd`.
+- Criterio di accettazione: 100 avvii e shutdown consecutivi della scena
+  principale passano con exit code `0`; gli smoke prioritari terminano senza
+  warning noti oppure ogni residuo e isolato, riproducibile e documentato come
+  limite engine-level.
+- Test richiesto: loop dedicato di shutdown, suite headless completa e
+  regressioni combat, survival, dungeon, tower defense, pause/settings,
+  Character Select RPG e mini-eventi bioma.
 
-- Roadmap motore generazione mappe e biomi completata come primo pass procedurale integrato.
-  - Obiettivo: generare una mappa globale seed-based con celle bioma `200x200`, passaggi, fall zone, layout interni e validazione giocabilita.
-  - Milestone collegata: `roadmap_motore_generazione_mappe_biomi.md` Milestone 1-12.
-  - File/sistemi coinvolti: `game/procedural/world_generation/`, `BiomeManager`, `BiomeTransitionSystem`, `ZombieSpawner`, `BiomeDefinition`, `BiomeEnvironmentLayout`.
-  - Criterio di accettazione: stesso seed produce la stessa mappa, seed diverso cambia la firma, ogni cella ha bordi coerenti, passaggi raggiungibili, fall boundary sui lati esterni e layout validato.
-  - Test richiesto: `tests/biome_world_generation_smoke_test.gd`, regressioni `zombie_revamp_foundation_smoke_test.gd`, `zombie_environment_milestone_smoke_test.gd`, `zombie_biome_transition_smoke_test.gd`, `zombie_spawner_edge_smoke_test.gd` e `survival_wave_smoke_test.gd`.
+### BIO-001 - QA mini-eventi bioma, status e encounter
 
-## Revamp modalita zombie - completato
+- Obiettivo: validare con gameplay reale ritmo, reward, frequenza e leggibilita
+  di `toxic_leak`, `fire_breakout`, `whiteout`, `marsh_emergence` e degli
+  encounter survival biome-based.
+- Milestone collegata: `todo_roadmap.md` Milestone 2.
+- File/sistemi coinvolti: `RandomEncounterSystem`, `HazardSystem`,
+  `BiomeStatusRuntime`, `ResourceCrateSystem`, `WaveDirector`, HUD annunci,
+  debug overlay e checklist manuale.
+- Criterio di accettazione: ogni evento resta evitabile, non blocca passaggi,
+  casse o spawn validi, assegna reward proporzionata e resta leggibile in
+  default, high contrast e reduced motion.
+- Test richiesto: QA manuale 10 wave con seed fisso, screenshot o video dei
+  quattro mini-eventi, `tests/biome_mini_events_smoke_test.gd`,
+  `tests/random_encounter_smoke_test.gd` e regressione survival/RPG.
 
-- Roadmap Z1-Z12 completata.
-  - Obiettivo: trasformare la survival statica in una run a cinque biomi con spawn camera-edge, wave contestuali, loot, hazard, varianti nemiche e HUD.
-  - Milestone collegata: intera `roadmap_revamp_modalita_zombie.md`.
-  - File/sistemi coinvolti: `game/modes/zombie/`, `WaveManager`, `EnemySystem`, `HUDManager`, audio, effetti e risorse bioma.
-  - Criterio di accettazione: Definition of Done della roadmap coperta dai sistemi e dai test dedicati.
-  - Test richiesto: smoke Z1-Z5, transizioni, nemici tematici, dieci wave, soak dieci minuti e QA visuale cinque biomi.
+### MAP-001 - QA attraversamento continuo della megamappa
 
-## Completati recenti
+- Obiettivo: validare su schermo reale passaggi fisici aperti, fall boundary,
+  mappa esplorazione e dodge/gap attraversando territori multipli.
+- Milestone collegata: `todo_roadmap.md` Milestone 3, parte QA.
+- File/sistemi coinvolti: `WorldRuntime`, `BiomeTransitionSystem`,
+  `TerrainGenerator`, `ExplorationMapPanel`, `PlayerDodgeComponent`,
+  `HazardSystem`.
+- Criterio di accettazione: il party attraversa almeno otto regioni con seed
+  fisso senza teletrasporti percepiti, senza passaggi ostruiti e con mappa
+  leggibile in default e high contrast.
+- Test richiesto: checklist manuale 20 minuti survival con seed fisso,
+  screenshot mappa, verifica dodge su gap piccolo e smoke world graph,
+  persistent world, open passage, terrain coverage, fall boundary, dodge e
+  exploration map.
 
-- Pass personaggi RPG distinguibili e melee reali.
-  - Obiettivo: separare il comportamento delle armi RPG starter, rendendo
-    spada/ascia/artigli veri melee con hitbox temporanee e mantenendo
-    arco/pistola/staff/fionda come projectile.
-  - Milestone collegata: polish post-roadmap RPG Mode.
-  - File/sistemi coinvolti: `WeaponData`, `WeaponSystem`, `MeleeAttack`,
-    risorse `game/weapons/rpg_*`, `PlayerVisual`, `GameplayEffects`,
-    `AudioEventRouter`, Character Select e smoke test RPG.
-  - Criterio di accettazione: Ranger e Pistoliere continuano a generare
-    projectile, Berserker e Spadaccino non generano projectile runtime, i
-    colpi melee applicano danno via `HealthSystem` e la Character Select indica
-    projectile/melee senza tagliare le card.
-  - Test richiesto: `tests/rpg_melee_attack_resolution_smoke_test.gd`, smoke
-    RPG M1-M13, `tests/character_select_ui_smoke_test.gd`, combat e survival
-    smoke.
+### MAP-002 - Streaming visuale delle regioni lontane
 
-- Navigazione menu e Character Select responsive.
-  - Obiettivo: rendere Character Select leggibile a piu risoluzioni e
-    uniformare focus, Back, wrapping e tab Settings con gamepad.
-  - Milestone collegata: polish post-roadmap UI/RPG.
-  - File/sistemi coinvolti: `MainMenu`, `SettingsPanel`, `PauseMenu`,
-    `RunResultsScreen`, `MenuNavigationController`, `InputManager`,
-    `CharacterSelectCard`, `CharacterDetailPanel`,
-    `CharacterGameplayPreview`, profili `RpgCharacterData`.
-  - Criterio di accettazione: la Character Select resta dentro la safe-area o
-    usa scroll, le card usano portrait/menu image con fallback controllato,
-    D-pad/stick navigano in modo circolare, Back torna al menu precedente e
-    LB/RB cambiano tab Settings con focus valido.
-  - Test richiesto: `tests/character_select_ui_smoke_test.gd`,
-    `tests/pause_settings_smoke_test.gd`, regressione RPG Character Select e
-    QA manuale con joypad a 1280x720, 1024x768 e 960x540.
+- Obiettivo: rendere `WorldRuntime` proprietario della regione corrente e dei
+  vicini N/E/S/W precaricati, lasciando le regioni lontane solo come dati.
+- Milestone collegata: `todo_roadmap.md` Milestone 3, parte implementativa.
+- File/sistemi coinvolti: `WorldRuntime`, `ZombieModeController`,
+  `TerrainGenerator`, `ObstacleSystem`, `ResourceCrateSystem`, `HazardSystem`,
+  `SaveManager`.
+- Criterio di accettazione: le regioni lontane non restano istanziate; rientrare
+  in una regione non ricrea casse gia aperte, encounter completati o ostacoli
+  distrutti; mappa e save v6 restano coerenti.
+- Test richiesto: smoke headless load/unload regioni, profiling manuale con
+  griglia almeno `7x7` e regressioni world/survival.
 
-- Polish Character Select RPG.
-  - Obiettivo: trasformare la selezione personaggio in una schermata leggibile
-    da joypad con card RPG, stat visuali, dossier e preview gameplay.
-  - Milestone collegata: polish post roadmap RPG Mode.
-  - File/sistemi coinvolti: `MainMenu`, `CharacterSelectCard`,
-    `CharacterDetailPanel`, `CharacterGameplayPreview`, `RpgCharacterData`,
-    profili `game/rpg/characters/`, `InputManager`.
-  - Criterio di accettazione: almeno quattro personaggi selezionabili mostrano
-    nome, classe, arma, passiva, super, descrizione stile e stat
-    HP/ATK/DEF/SPD/RNG; il personaggio scelto viene passato alla survival senza
-    rompere il flusso esistente.
-  - Test richiesto: `tests/character_select_ui_smoke_test.gd`,
-    `tests/milestone_rpg_1_character_select_smoke_test.gd`,
-    `tests/milestone_rpg_11_data_driven_smoke_test.gd`, build smoke e QA
-    manuale a 1280x720 con tastiera/joypad.
+### ASSET-001 - Pass asset isometrici ambiente
 
-- Menu pausa e Settings condivisi.
-  - Obiettivo: aprire una pausa con `Start` durante una run e centralizzare audio, video e controlli in una pagina Settings disponibile anche dal main menu.
-  - Milestone collegata: UI/polish post-roadmap M21.
-  - File/sistemi coinvolti: `PauseMenu`, `SettingsPanel`, `MainMenu`, `InputManager`, `LocalMultiplayerManager`, `VideoSettingsManager`, `SaveManager`.
-  - Criterio di accettazione: `Start` pausa/riprende senza join involontario, Audio contiene il mix, Video contiene fullscreen/borderless/risoluzione/VSync/framerate e Controls rimappa i controlli joypad persistenti.
-  - Test richiesto: `tests/pause_settings_smoke_test.gd`, regressioni `milestone_9_smoke_test.gd`, `milestone_18_audio_mix_smoke_test.gd` e `milestone_21_visual_settings_performance_smoke_test.gd`; QA manuale a 1280x720 con joypad reale.
+- Obiettivo: sostituire progressivamente placeholder ambientali con oggetti
+  isometrici coerenti senza rendere obbligatori asset esterni.
+- Milestone collegata: `todo_roadmap.md` Milestone 4.
+- File/sistemi coinvolti: `assets/environment/isometric/manifest.json`,
+  `assets/README.md`, `assets/ATTRIBUTION.md`, `BiomeObstacle`,
+  `TerrainGenerator`, `ObstacleSystem`, `BiomeFallZone`, `game/visuals/`.
+- Criterio di accettazione: ogni categoria convertita ha visual scene,
+  collision shape, shadow, sort offset, footprint tiles e flag di blocco
+  coerenti; sorting Y e silhouette non coprono player, zombie o pickup in modo
+  errato.
+- Test richiesto: QA visuale a 1280x720 e 960x540, verifica default/reduced
+  motion/high contrast, smoke collisioni/footprint e test manifest.
 
-- Roadmap Revamp Modalita Zombie, Milestone Z6-Z12: espansione completa.
-  - Obiettivo: completare transizioni, quattro biomi avanzati, loot, hazard, zombie specifici, HUD e bilanciamento.
-  - Milestone collegata: `roadmap_revamp_modalita_zombie.md` Milestone 6-12.
-  - File/sistemi coinvolti: `BiomeTransitionSystem`, layout bioma, `HazardSystem`, `BiomeEnemyProfile`, `ResourceCrateSystem`, `WaveDirector`, HUD/audio/effetti.
-  - Criterio di accettazione: cinque biomi attraversabili e distinguibili, almeno due zombie tematici per bioma avanzato, wave contestuali e run stabile.
-  - Test richiesto: `zombie_biome_transition_smoke_test.gd`, `zombie_biome_enemy_smoke_test.gd`, `zombie_revamp_ten_wave_smoke_test.gd`, `zombie_revamp_ten_minute_soak_test.gd` e `zombie_biome_visual_qa.gd`.
+### DUN-001 - Dungeon ramificato, shop e biomi dedicati
 
-- Roadmap Revamp Modalita Zombie, Milestone Z5: zone di caduta e danno ambientale.
-  - Obiettivo: introdurre una `fall_zone` fisica con danno certo, recupero sicuro e feedback leggibile.
-  - Milestone collegata: `roadmap_revamp_modalita_zombie.md` Milestone 5.
-  - File/sistemi coinvolti: `BiomeFallZone`, `HazardSystem`, `HealthSystem`, `HealthComponent`, `ZombieSpawner`, `GameplayEffects`, `AudioManager`.
-  - Criterio di accettazione: la caduta sottrae 20 HP, riporta il player all'ultima posizione sicura, preserva altre invulnerabilita e non accetta spawn zombie.
-  - Test richiesto: `tests/zombie_fall_hazard_smoke_test.gd`, regressioni foundation/survival/RPG e QA `arena_variants_visual_qa.gd`.
-- Roadmap Revamp Modalita Zombie, Milestone Z4: terreno, casse e ostacoli.
-  - Obiettivo: popolare la Pianura Infetta con terreno leggibile, risorse esplorabili e impedimenti fisici senza chiudere le corsie principali.
-  - Milestone collegata: `roadmap_revamp_modalita_zombie.md` Milestone 4, 6 e 7.
-  - File/sistemi coinvolti: `BiomeEnvironmentLayout`, `TerrainGenerator`, `BiomeTerrainPatch`, `ObstacleSystem`, `BiomeObstacle`, `ResourceCrateSystem`, `SupplyCrate`, `DropSystem`.
-  - Criterio di accettazione: layout deterministico, casse comuni/mediche raggiungibili, rocce/recinti/barriere/rudere/confine fisici e corridoio centrale attraversabile.
-  - Test richiesto: `tests/zombie_environment_milestone_smoke_test.gd`, regressione spawn/survival/arena e QA `arena_variants_visual_qa.gd`.
-- Roadmap Revamp Modalita Zombie, Milestone Z3: biomi dati e ondate contestuali.
-  - Obiettivo: verificare definizioni bioma complete e wave modificate dal bioma corrente.
-  - Milestone collegata: `roadmap_revamp_modalita_zombie.md` Milestone 3 e 8.
-  - File/sistemi coinvolti: `BiomeDefinition`, `BiomeManager`, `WaveDirector`, `WaveManager`, test smoke dedicato.
-  - Criterio di accettazione: i cinque biomi espongono terreno, ostacoli, casse, zombie, palette, difficolta e risorse; il bioma tossico modifica size, ritmo, scaling e roster.
-  - Test richiesto: `tests/zombie_biome_wave_director_smoke_test.gd`.
-- Roadmap Revamp Modalita Zombie, Milestone Z2: spawn dinamico dai bordi camera.
-  - Obiettivo: generare zombie fuori o appena oltre il rettangolo visibile invece che da punti fissi arena.
-  - Milestone collegata: `roadmap_revamp_modalita_zombie.md` Milestone 2.
-  - File/sistemi coinvolti: `ZombieSpawner`, `ObstacleSystem`, `HazardSystem`, test smoke dedicato.
-  - Criterio di accettazione: lo spawner supporta bordi nord/sud/est/ovest, distanza minima dal player, rifiuto fall zone/spawn blocker e fallback configurato.
-  - Test richiesto: `tests/zombie_spawner_edge_smoke_test.gd`, regressione `tests/zombie_revamp_foundation_smoke_test.gd` e `tests/survival_wave_smoke_test.gd`.
-- Roadmap Revamp Modalita Zombie, Milestone Z1: fondamenta modulari.
-  - Obiettivo: separare la logica zombie in componenti dedicati mantenendo avviabile la survival esistente.
-  - Milestone collegata: `roadmap_revamp_modalita_zombie.md` Milestone 1.
-  - File/sistemi coinvolti: `ZombieModeController`, `BiomeManager`, `BiomeDefinition`, `WaveDirector`, `ZombieSpawner`, `TerrainGenerator`, `ResourceCrateSystem`, `ObstacleSystem`, `HazardSystem`, `SurvivalMode`, `WaveManager`, `SurvivalArenaManager`.
-  - Criterio di accettazione: la run parte dalla `Pianura Infetta`, `WaveManager` delega roster/spawn ai nuovi componenti e conserva fallback verso i profili arena.
-  - Test richiesto: `tests/zombie_revamp_foundation_smoke_test.gd`, `tests/survival_wave_smoke_test.gd`, `tests/milestone_20_arena_environment_smoke_test.gd`.
-- Roadmap RPG Mode, Milestone 12: polish grafico e feedback.
-  - Obiettivo: dare feedback visivo/audio dedicato agli eventi RPG importanti senza cambiare gameplay.
-  - Milestone collegata: `roadmap_rpg_mode.md` Milestone 12.
-  - File/sistemi coinvolti: `GameplayEffects`, `GameplayEffect`, `AudioEventRouter`, `AudioManager`.
-  - Criterio di accettazione: level-up e super generano effetti world-space e cue procedurali dedicati.
-  - Test richiesto: `tests/milestone_rpg_12_feedback_smoke_test.gd`; verifica manuale level-up/super in survival.
-- Roadmap RPG Mode, Milestone 11: configurazione data-driven.
-  - Obiettivo: spostare i profili classe fuori dal dizionario hardcoded mantenendo un registry unico.
-  - Milestone collegata: `roadmap_rpg_mode.md` Milestone 11.
-  - File/sistemi coinvolti: `RpgCharacterData`, `RpgCharacterRegistry`, risorse `game/rpg/characters/*.tres`.
-  - Criterio di accettazione: aggiungere una classe richiede una nuova risorsa e una voce path nel registry, senza modificare menu/player/HUD.
-  - Test richiesto: `tests/milestone_rpg_11_data_driven_smoke_test.gd`; verifica manuale Character Select.
-- Roadmap RPG Mode, Milestone 10: bilanciamento prima versione.
-  - Obiettivo: rendere le quattro classi iniziali chiaramente diverse senza cercare ancora la perfezione.
-  - Milestone collegata: `roadmap_rpg_mode.md` Milestone 10.
-  - File/sistemi coinvolti: `RpgCharacterRegistry`, risorse `game/weapons/rpg_*`, smoke test RPG esistenti.
-  - Criterio di accettazione: Ranger ha payoff a distanza, Pistoliere resta accessibile ma non fuori scala, Berserker e piu rischioso/pesante e Spadaccino piu difensivo.
-  - Test richiesto: `tests/milestone_rpg_10_balance_smoke_test.gd`; playtest survival manuale con tutte le classi.
-- Roadmap RPG Mode, Milestone 9: HUD grafica RPG.
-  - Obiettivo: rendere leggibili graficamente classe, arma, HP, ammo, XP, adrenalina, super e passive.
-  - Milestone collegata: `roadmap_rpg_mode.md` Milestone 9.
-  - File/sistemi coinvolti: `PlayerHudCard`, `RpgHudIcon`, `HUDManager`.
-  - Criterio di accettazione: la scheda mostra ritratto classe, icona arma, pips ammo, barre XP/adrenalina e icona super ready senza dipendere solo da testo piccolo.
-  - Test richiesto: `tests/milestone_rpg_9_hud_smoke_test.gd`; verifica manuale survival a quattro slot.
-- Roadmap RPG Mode, Milestone 8: adrenalina e super.
-  - Obiettivo: caricare una risorsa super da combat e spenderla in abilita diverse per classe.
-  - Milestone collegata: `roadmap_rpg_mode.md` Milestone 8.
-  - File/sistemi coinvolti: `RpgPlayerComponent`, `RpgSuperResolver`, `HealthSystem`, `WaveManager`, `InputManager`, `PlayerHudCard`.
-  - Criterio di accettazione: adrenalina arriva da hit, danno subito, kill e fine ondata; a 100 la super parte con input dedicato e torna a 0.
-  - Test richiesto: `tests/milestone_rpg_8_adrenaline_super_smoke_test.gd`; verifica manuale super con `Q`/joypad `Y`.
-- Roadmap RPG Mode, Milestone 7: passive skill per personaggio.
-  - Obiettivo: rendere automatica e visibile una passiva distinta per ogni classe iniziale.
-  - Milestone collegata: `roadmap_rpg_mode.md` Milestone 7.
-  - File/sistemi coinvolti: `RpgPlayerComponent`, `WeaponSystem`, `PlayerController`, `PlayerHudCard`.
-  - Criterio di accettazione: Ranger scala il danno a distanza, Pistoliere ottiene fire rate dopo reload, Berserker aumenta danno a bassa vita e Spadaccino riduce il danno dopo un colpo.
-  - Test richiesto: `tests/milestone_rpg_7_passives_smoke_test.gd`; verifica manuale HUD passive in survival.
-- Roadmap RPG Mode, Milestone 6: esperienza e level up.
-  - Obiettivo: assegnare XP al killer e bonus XP a fine ondata senza drop XP dagli zombie.
-  - Milestone collegata: `roadmap_rpg_mode.md` Milestone 6.
-  - File/sistemi coinvolti: `HealthSystem`, `BasicEnemy`, `BasicBoss`, `WaveManager`, loot table zombie, HUD reward.
-  - Criterio di accettazione: il last-hit riceve XP, la wave assegna XP uguale ai player RPG vivi e gli zombie non generano pickup XP.
-  - Test richiesto: `tests/milestone_rpg_6_xp_level_smoke_test.gd`; regressione varianti enemy M12/M15.
-- Roadmap RPG Mode, Milestone 5: sistema ammo e reload per arma.
-  - Obiettivo: mostrare munizioni e ricarica in modo leggibile per ciascuna arma base.
-  - Milestone collegata: `roadmap_rpg_mode.md` Milestone 5.
-  - File/sistemi coinvolti: `WeaponSystem`, `PlayerHudCard`, `HUDManager`, profili RPG.
-  - Criterio di accettazione: il caricatore usa pips grafici, il reload ha una barra di progresso e `reload_speed` modifica la durata.
-  - Test richiesto: `tests/milestone_rpg_5_ammo_reload_smoke_test.gd`; verifica manuale con arco e pistola.
-- Roadmap RPG Mode, Milestone 4: hitbox proiettili e colpi melee.
-  - Obiettivo: separare collisione e sprite per armi ranged/melee.
-  - Milestone collegata: `roadmap_rpg_mode.md` Milestone 4.
-  - File/sistemi coinvolti: `WeaponData`, `WeaponSystem`, `ProjectileSystem`, `Projectile`, risorse `rpg_*`.
-  - Criterio di accettazione: pistola circle, arco capsule, ascia arc multi-hit e spada rectangle multi-hit configurati da dati.
-  - Test richiesto: `tests/milestone_rpg_4_hitbox_smoke_test.gd`; QA manuale in survival con Berserker e Spadaccino.
-- Roadmap RPG Mode, Milestone 3: armi base differenziate.
-  - Obiettivo: dare a Ranger, Pistoliere, Berserker e Spadaccino armi base con profili gameplay diversi.
-  - Milestone collegata: `roadmap_rpg_mode.md` Milestone 3.
-  - File/sistemi coinvolti: `WeaponData`, `WeaponSystem`, `Projectile`, `RpgCharacterRegistry`, profili `game/weapons/rpg_*`, `PlayerVisual`, `WeaponIcon`.
-  - Criterio di accettazione: ogni profilo equipaggia la propria arma e le armi differiscono per danno, range, scatter, caricatore e reload.
-  - Test richiesto: `tests/milestone_rpg_3_weapons_smoke_test.gd`; regressione combat e survival con character select.
-- Roadmap RPG Mode, Milestone 2: sistema classi e statistiche RPG.
-  - Obiettivo: rendere HP, attacco, difesa, velocita e level-up propri del personaggio scelto.
-  - Milestone collegata: `roadmap_rpg_mode.md` Milestone 2.
-  - File/sistemi coinvolti: `RpgPlayerComponent`, `PlayerController`, `HealthSystem`, `Projectile`, `BasicEnemy`, `PlayerHudCard`.
-  - Criterio di accettazione: il profilo modifica HP/velocita, il level-up aumenta HP/ATK/DEF e le formule danno usano attacco/difesa.
-  - Test richiesto: `tests/milestone_rpg_2_stats_smoke_test.gd`; regressione combat/survival.
-- Roadmap RPG Mode, Milestone 1: selezione personaggio pre-partita.
-  - Obiettivo: obbligare la zombie survival a passare da una scelta classe prima della run.
-  - Milestone collegata: `roadmap_rpg_mode.md` Milestone 1.
-  - File/sistemi coinvolti: `MainMenu`, `SurvivalMode`, `RpgCharacterRegistry`, `RpgPlayerComponent`, player scene e HUD futuro.
-  - Criterio di accettazione: il menu apre `Character Select`, la survival non parte prima della scelta e il `character_id` scelto viene applicato al player.
-  - Test richiesto: `tests/milestone_rpg_1_character_select_smoke_test.gd`; verifica manuale menu con tastiera/joypad.
-- Milestone 21: accessibilita, performance e asset pipeline.
-  - Obiettivo: configurare la presentazione senza alterare il gameplay.
-  - Milestone collegata: chiusura di `ROADMAP_VISUAL_GAMEPLAY.md`.
-  - File/sistemi coinvolti: `VisualSettingsManager`, save, menu, HUD, visual, camera e `assets/`.
-  - Criterio di accettazione: preset persistenti, identificatori non solo cromatici e profiling stabile.
-  - Test richiesto: smoke M21 e `tests/visual_accessibility_qa.gd`.
-- Milestone 20: arena, biomi e props interattivi.
-  - Obiettivo: variare la survival senza duplicare controller o bloccare l'AI.
-  - Milestone collegata: evoluzione ambientale delle Milestone 5 e 10.
-  - File/sistemi coinvolti: `SurvivalArenaManager`, profili, palette, `WaveManager`, projectile, health ed effetti.
-  - Criterio di accettazione: due layout, gate leggibili e barile con warning obbligatorio.
-  - Test richiesto: smoke M20, stress roster e `tests/arena_variants_visual_qa.gd`.
-- Milestone 19: secondo boss e registro boss.
-  - Obiettivo: richiedere boss diversi per ID senza cambiare i chiamanti.
-  - Milestone collegata: evoluzione boss delle Milestone 6-8 e 11.
-  - File/sistemi coinvolti: `BossSystem`, `RiftArchitect`, telegraph, loot, HUD e modalita.
-  - Criterio di accettazione: due boss configurabili con pattern, compatibilita e drop distinti.
-  - Test richiesto: `tests/milestone_19_boss_registry_smoke_test.gd` e QA Rift.
-- Milestone 18: audio mix e SFX sostituibili.
-  - Obiettivo: preparare asset licenziati mantenendo fallback e controllo del mix.
-  - Milestone collegata: evoluzione audio delle Milestone 9, 11, 15-17.
-  - File/sistemi coinvolti: `AudioManager`, cue, voice pool, router, save e menu.
-  - Criterio di accettazione: bus, priorita, fallback e volumi persistenti.
-  - Test richiesto: `tests/milestone_18_audio_mix_smoke_test.gd` e `tests/audio_mix_visual_qa.gd`.
-- Milestone 17: fine run, risultati e menu.
-  - Obiettivo: presentare risultati reali e azioni esplicite dopo ogni run.
-  - Milestone collegata: evoluzione UI e lifecycle delle tre modalita.
-  - File/sistemi coinvolti: `RunSessionTracker`, `RunResultsScreen`, `GameModeManager`, save e modalita.
-  - Criterio di accettazione: retry senza duplicati, cambio modalita e save prima del menu.
-  - Test richiesto: `tests/milestone_17_run_results_smoke_test.gd` e `tests/run_results_visual_qa.gd`.
-- Milestone 16: downed e revive multiplayer.
-  - Obiettivo: mantenere coinvolti gli slot locali con recupero cooperativo leggibile.
-  - Milestone collegata: evoluzione health e modalita a ondate.
-  - File/sistemi coinvolti: `HealthComponent`, `ReviveSystem`, player, HUD e modalita.
-  - Criterio di accettazione: revive interrompibile, join/leave sicuri e Field Kit non cumulativo.
-  - Test richiesto: `tests/milestone_16_downed_revive_smoke_test.gd` e `tests/downed_revive_visual_qa.gd`.
-- Milestone 15: zombie ranged e pressione a distanza.
-  - Obiettivo: aggiungere pressione ranged con windup e colpo schivabile.
-  - Milestone collegata: evoluzione gameplay delle Milestone 4, 5 e 12.
-  - File/sistemi coinvolti: `RangedEnemy`, `EnemySystem`, `WaveManager`, `ZombieVisual`, projectile e loot.
-  - Criterio di accettazione: lo shooter e riconoscibile, non spara durante il warning e usa i sistemi condivisi.
-  - Test richiesto: `tests/milestone_15_ranged_enemy_smoke_test.gd` e `tests/ranged_enemy_visual_qa.gd`.
-- Milestone 14: polish finale e presentabilita.
-  - Obiettivo: completare identita del `Wave Warden` e coerenza della run survival.
-  - Milestone collegata: chiusura del visual gameplay pass delle Milestone 10-13.
-  - File/sistemi coinvolti: `WaveWardenVisual`, boss projectile, `CombatAnnouncement`, HUD ed effetti.
-  - Criterio di accettazione: una run a quattro player resta leggibile da wave start a boss defeat.
-  - Test richiesto: `tests/milestone_14_final_polish_smoke_test.gd` e `tests/final_survival_visual_qa.gd`.
-- Milestone 13: identita grafica di armi e torri.
-  - Obiettivo: differenziare armi speciali, proiettili e torre senza duplicare logica condivisa.
-  - Milestone collegata: evoluzione visuale delle Milestone 3, 8 e 10.
-  - File/sistemi coinvolti: `WeaponVisualData`, armi, `Projectile`, `PlayerVisual`, HUD e `DefenseTowerVisual`.
-  - Criterio di accettazione: arma attiva e torre sono riconoscibili dalla silhouette anche in multiplayer locale.
-  - Test richiesto: `tests/milestone_13_weapon_tower_visual_smoke_test.gd` e `tests/weapon_tower_visual_qa.gd`.
-- Milestone 12: varianti zombie runner e tank.
-  - Obiettivo: introdurre ruoli nemico leggibili senza duplicare AI condivisa.
-  - Milestone collegata: evoluzione visuale e gameplay delle Milestone 4, 5 e 10.
-  - File/sistemi coinvolti: `BasicEnemy`, `EnemySystem`, `WaveManager`, `ZombieVisual`, scene e loot.
-  - Criterio di accettazione: runner e tank hanno silhouette, ritmo, resistenza e ricompense distinguibili.
-  - Test richiesto: `tests/milestone_12_enemy_variants_smoke_test.gd` e `tests/enemy_variants_visual_qa.gd`.
-- Milestone 11: telegraph boss e feedback del pericolo.
-  - Obiettivo: rendere anticipabili i pattern del `Wave Warden` e il cambio fase.
-  - Milestone collegata: evoluzione visuale delle Milestone 6, 9 e 10.
-  - File/sistemi coinvolti: `BasicBoss`, `BossTelegraphVisual`, HUD, audio e QA.
-  - Criterio di accettazione: aimed e radial mostrano direzione, area e durata prima di generare proiettili.
-  - Test richiesto: `tests/milestone_11_boss_telegraph_smoke_test.gd` e `tests/boss_telegraph_visual_qa.gd`.
-- Milestone 10: visual readability foundation della zombie survival.
-  - Obiettivo: rendere arena, survivor, zombie, pickup e HUD leggibili come un gioco arcade isometrico.
-  - Milestone collegata: Milestone 10 post-roadmap.
-  - File/sistemi coinvolti: `game/visuals/`, player, nemici, drop, projectile, arena principale, HUD e QA.
-  - Criterio di accettazione: attori riconoscibili, sfondo desaturato, pickup senza label, schede HUD e feedback visuali senza cambiare gameplay.
-  - Test richiesto: `tests/milestone_10_visual_smoke_test.gd`, `tests/survival_visual_qa.gd` e regressione completa Milestone 3-9.
-- Evoluzione post-roadmap: ammo survival anti-frustrazione.
-  - Obiettivo: garantire sempre una risposta di fuoco mantenendo tensione sulle armi speciali.
-  - Milestone collegata: evoluzione post-roadmap delle Milestone 3, 4, 5 e 9.
-  - File/sistemi coinvolti: `WeaponSystem`, `DropSystem`, `SupplyCrate`, `SurvivalAmmoDirector`, HUD, audio, survival e smoke test.
-  - Criterio di accettazione: fallback infinita con reload, speciali finite, ammo condivisa, supporto low-ammo e fonte garantita boss.
-  - Test richiesto: smoke test combat, enemy/drop, survival e boss, piu regressione dungeon/tower defense.
-- Milestone 9, completamento prototipo minimo.
-  - Obiettivo: aggiungere un unlock persistente, feedback audio gameplay e primo bilanciamento.
-  - Milestone collegata: Milestone 9.
-  - File/sistemi coinvolti: `ProgressionManager`, `SaveManager`, player/health, `AudioManager`, proiettili, drop, armi e menu.
-  - Criterio di accettazione: `Field Kit` persistente applicato a ogni nuova run, save v1 migrati, audio sparo/impatto/pickup attivo e valori arma documentati.
-  - Test richiesto: `tests/milestone_9_smoke_test.gd`, regressione combat/drop e suite headless completa.
-- Milestone 9, packaging e QA Windows.
-  - Obiettivo: installare i template, produrre una release e verificare menu, joypad e audio.
-  - Milestone collegata: Milestone 9.
-  - File/sistemi coinvolti: `export_presets.cfg`, `InputManager`, `AudioManager`, `BuildRuntimeSmoke`, menu e checklist.
-  - Criterio di accettazione: EXE/PCK generati, build smoke exit `0`, controller XInput rilevato e audio WASAPI alimentato.
-  - Test richiesto: suite headless Milestone 3-9, `--build-smoke` e QA visuale.
-- Milestone 9, prima iterazione: menu e progressione persistente.
-  - Obiettivo: avviare il progetto da menu e conservare la progressione party.
-  - Milestone collegata: Milestone 9.
-  - File/sistemi coinvolti: `MainMenu`, `GameModeManager`, `SaveManager`, `ProgressionManager`, `AudioManager`, HUD, export preset.
-  - Criterio di accettazione: il menu seleziona tutte le modalita, il save round-trip ripristina dati validi e il preset Windows viene riconosciuto da Godot.
-  - Test richiesto: `tests/milestone_9_smoke_test.gd`, suite headless completa e checklist manuale Milestone 9.
-- Milestone 8: tower defense giocabile.
-  - Obiettivo: difendere un core con torri piazzabili, crediti e ondate su percorso.
-  - Milestone collegata: Milestone 8.
-  - File/sistemi coinvolti: `TowerDefenseMode`, `TowerDefenseWaveController`, `TowerDefenseManager`, `TowerDefenseArena`, `TowerDefenseEnemy`, `TowerBuildSlot`, `DefenseTower`, `EnemySystem`, `BossSystem`, `HUDManager`.
-  - Criterio di accettazione: i nemici seguono il path e danneggiano il core, una torre acquistata li attacca e le boss wave usano il sistema condiviso.
-  - Test richiesto: `tests/tower_defense_smoke_test.gd` e checklist manuale tower defense.
-- Milestone 7: dungeon procedurale giocabile.
-  - Obiettivo: generare e attraversare start room, combat room, loot room e boss room.
-  - Milestone collegata: Milestone 7.
-  - File/sistemi coinvolti: `DungeonGenerator`, `DungeonMode`, `DungeonRoom`, `EnemySystem`, `BossSystem`, `DropSystem`, `HUDManager`.
-  - Criterio di accettazione: una run da seed attraversa tutte le stanze, blocca le uscite durante il combat, genera loot e termina dopo il boss.
-  - Test richiesto: `tests/dungeon_smoke_test.gd` e checklist manuale dungeon.
-- Milestone 6: boss system modulare.
-  - Obiettivo: integrare un boss reale nella quinta ondata survival.
-  - Milestone collegata: Milestone 6.
-  - File/sistemi coinvolti: `BasicBoss`, `BossSystem`, `WaveManager`, `SurvivalMode`, `ProjectileSystem`, `HUDManager`, `DropSystem`.
-  - Criterio di accettazione: il boss usa due pattern, cambia fase, blocca il completamento della wave, muore, genera drop speciale e permette la prosecuzione.
-  - Test richiesto: `tests/boss_smoke_test.gd` e checklist manuale boss.
-- Milestone 5: zombie survival a ondate.
-  - Obiettivo: creare un loop survival con spawn progressivo, scaling e ricompense.
-  - Milestone collegata: Milestone 5.
-  - File/sistemi coinvolti: `SurvivalMode`, `WaveManager`, `GameModeManager`, `EnemySystem`, `BasicEnemy`, `HUDManager`, `ProgressionManager`.
-  - Criterio di accettazione: almeno tre ondate consecutive aumentano conteggio e statistiche, terminano alla morte dei nemici e premiano tutti i player attivi.
-  - Test richiesto: `tests/survival_wave_smoke_test.gd` e checklist manuale survival.
-- Milestone 4: nemico base e drop system.
-  - Obiettivo: introdurre AI chase/attack, morte, spawn e pickup raccoglibili.
-  - Milestone collegata: Milestone 4.
-  - File/sistemi coinvolti: `BasicEnemy`, `EnemySystem`, `DropEntry`, `LootTable`, `DropSystem`, `DropPickup`, `HealthSystem`, `ProgressionManager`, `WeaponSystem`.
-  - Criterio di accettazione: il nemico seleziona un player vivo, attacca, muore per danno e genera ricompense applicate correttamente in multiplayer locale.
-  - Test richiesto: `tests/enemy_drop_smoke_test.gd` e checklist manuale enemy/drop.
-- Milestone 3: combat system base.
-  - Obiettivo: collegare sparo, proiettili, danni, vita e munizioni base.
-  - Milestone collegata: Milestone 3.
-  - File/sistemi coinvolti: `WeaponData`, `WeaponSystem`, `ProjectileSystem`, `Projectile`, `HealthSystem`, `HealthComponent`, HUD e scena principale.
-  - Criterio di accettazione: un proiettile colpisce un bersaglio con vita, applica danno e consuma munizioni senza condividere lo stato tra player.
-  - Test richiesto: `tests/combat_smoke_test.gd` e checklist manuale combat.
-- Milestone 2: multiplayer locale 1-4 player.
-  - Obiettivo: attivare/disattivare slot locali e spawnare player multipli.
-  - Milestone collegata: Milestone 2.
-  - File/sistemi coinvolti: `LocalMultiplayerManager`, `PlayerManager`, `PlayerController`, `HUDManager`.
-  - Criterio di accettazione: player 1 sempre attivo, player 2-4 attivabili con joypad o tastiera debug, camera condivisa sul gruppo.
-  - Test richiesto: checklist manuale multiplayer locale in `docs/testing/manual_checklist.md`.
+- Obiettivo: espandere il dungeon oltre il percorso lineare con diramazioni,
+  scelta stanza, shop minimo, biomi dedicati e mappa percorso essenziale.
+- Milestone collegata: `todo_roadmap.md` Milestone 5.
+- File/sistemi coinvolti: `DungeonGenerator`, `DungeonMode`, `DungeonRoom`,
+  scene dungeon, `HUDManager`, UI mappa/scelta stanza, `DropSystem`,
+  `BossSystem`.
+- Criterio di accettazione: almeno un seed produce una scelta reale tra due
+  stanze, il percorso al boss resta sempre raggiungibile, shop e loot non
+  duplicano progressione/drop e la run termina correttamente nei risultati.
+- Test richiesto: estensione `tests/dungeon_smoke_test.gd` su seed multipli,
+  smoke grafo dungeon con branch/shop e checklist manuale con tastiera/joypad.
 
-## Priorita alta
+### ASSET-002 - Asset definitivi e animazioni personaggi RPG
 
-- Eliminare i warning di cleanup dei test headless.
-  - Obiettivo: terminare la suite senza leak report di `ObjectDB` o access
-    violation intermittenti di Godot 4.6.3.
-  - Milestone collegata: manutenzione trasversale post M21.
-  - File/sistemi coinvolti: runner in `tests/` e lifecycle runtime.
-  - Criterio di accettazione: 100 avvii e shutdown consecutivi della scena
-    principale con exit code `0`; il commit di partenza riproduce il difetto
-    circa 1 volta su 40 sulla macchina di sviluppo.
-  - Test richiesto: suite headless completa e loop dedicato di shutdown.
+- Obiettivo: rifinire qualitativamente i sette personaggi con VFX separati,
+  pulizia animazioni, weapon layer e coerenza animabile; `base_complete`
+  indica asset base presente, non qualita finale.
+- Milestone collegata: `todo_roadmap.md` Milestone 6.
+- File/sistemi coinvolti: `assets/characters/`, manifest personaggio,
+  `game/rpg/characters/`, `PlayerVisual`, `PlayerHudCard`,
+  `docs/rpg_character_visual_checklist.md`.
+- Criterio di accettazione: ogni personaggio ha portrait HUD/full,
+  idle/run/attack/reload/hurt/death/super, weapon layer e VFX separati
+  configurati dai campi `RpgCharacterData`, con fallback funzionante.
+- Test richiesto: smoke RPG headless, QA visuale a 1280x720 e 960x540,
+  checklist RPG character art completata.
 
-## Priorita media
+### RPG-001 - Tuning melee RPG e super starter
 
-- Espandere il dungeon oltre il percorso lineare.
-  - Obiettivo: aggiungere diramazioni, scelta stanza, shop e predisposizione biomi.
-  - Milestone collegata: evoluzione Milestone 7.
-  - File/sistemi coinvolti: `DungeonGenerator`, `DungeonMode`, scene stanza e UI mappa.
-  - Criterio di accettazione: almeno un seed produce una scelta reale tra due stanze senza rompere il percorso al boss.
-  - Test richiesto: smoke test su piu seed e checklist manuale delle diramazioni.
-
-## Priorita bassa
-
-- Asset definitivi.
-  - Obiettivo: sostituire progressivamente i placeholder senza introdurre dipendenze obbligatorie.
-  - Milestone collegata: Milestone 9.
-  - File/sistemi coinvolti: `assets/` e scene visuali.
-  - Criterio di accettazione: leggibilita gameplay invariata e licenze documentate.
-  - Test richiesto: revisione visuale delle scene principali.
-- Ampliare i test automatici.
-  - Obiettivo: coprire health, multiplayer, wave e generazione oltre al combat smoke test.
-  - Milestone collegata: trasversale.
-  - File/sistemi coinvolti: `tests/` e sistemi gameplay.
-  - Criterio di accettazione: ogni sistema condiviso critico ha almeno uno smoke test headless.
-  - Test richiesto: esecuzione completa della suite headless.
-- Eliminare i warning di cleanup dei test headless.
-  - Obiettivo: chiudere esplicitamente nodi e risorse prima dell'uscita dei runner.
-  - Milestone collegata: manutenzione post-roadmap.
-  - File/sistemi coinvolti: `tests/` e lifecycle dei nodi runtime.
-  - Criterio di accettazione: la suite termina senza `ObjectDB instances leaked at exit`.
-  - Test richiesto: suite headless completa con output privo di warning ObjectDB.
-
-- Completato: iterazione survival biome-based status/ostacoli/roster/encounter.
-  - Obiettivo: rendere i cinque biomi piu riconoscibili con malus temporanei, ostacoli, nemici tematici e encounter seed-based.
-  - Milestone collegata: evoluzione zombie revamp Z12.
-  - File/sistemi coinvolti: `BiomeStatusRuntime`, `HazardSystem`, `BiomeEnemyProfile`, `WaveDirector`, `RandomEncounterSystem`, HUD player e smoke test dedicati.
-  - Criterio di accettazione: status temporanei visibili, roster tematico per bioma, ostacoli validati e encounter riproducibili.
-  - Test richiesto: smoke headless biome status, roster, ostacoli, random encounter e regressioni survival/RPG.
-- Follow-up: sostituire placeholder procedurali status/encounter con asset definitivi, playtestare frequenze encounter e tarare durata/danno dei malus con sessioni multiplayer reali.
-
-## Asset definitivi personaggi RPG - futuro
-
-- Obiettivo: rifinire qualitativamente tutti i sette personaggi con VFX separati, pulizia animazioni, eventuale export finale PNG fuori dal flusso PR e pass di leggibilita; Mira Vento, Bruna Spaccaferro, Nina Bullone e Rocco Lunastorta hanno portrait PNG collegati al Character Select, mentre Dante Ferraglia, Kael Guardia ed Elio Braciastella restano su portrait SVG/procedurali in attesa del pass definitivo.
-- Milestone collegata: Pass 2-3 character art RPG zombie survival.
-- File/sistemi coinvolti: `game/rpg/characters/`, `game/visuals/player_visual.gd`, `game/ui/player_hud_card.gd`, `assets/characters/`.
-- Criterio di accettazione: ogni personaggio ha portrait HUD/full, idle/run/attack/reload/hurt/death/super, weapon layer e VFX separati configurati dai campi `RpgCharacterData`; Tutti i sette personaggi restano riferimenti minimi per struttura manifest, sprite sheet e icone arma/abilita; il prossimo ciclo deve migliorare qualita, VFX separati e coerenza animabile.
-- Test richiesto: smoke RPG headless, QA visuale a 1280x720 e checklist `docs/rpg_character_visual_checklist.md` completata.
-
-## Tuning melee RPG e super - futuro
-
-- Obiettivo: playtestare timing, knockback, hitstop percepito, leggibilita
-  delle super starter e bilanciamento delle hitbox melee dopo il pass tecnico.
-- Milestone collegata: polish post-roadmap RPG Mode.
+- Obiettivo: playtestare e tarare timing, knockback, hitstop percepito,
+  leggibilita delle super starter e bilanciamento delle hitbox melee.
+- Milestone collegata: `todo_roadmap.md` Milestone 7.
 - File/sistemi coinvolti: `WeaponData`, `MeleeAttack`, `RpgSuperResolver`,
   `GameplayEffects`, `PlayerVisual`, risorse `game/weapons/rpg_*`.
-- Criterio di accettazione: ascia resta potente ma rischiosa, spada resta
-  controllata e difensiva, Pioggia di Frecce/Scarica Finale/Terremoto di
-  Sangue/Lama Fantasma sono riconoscibili a colpo d'occhio in survival.
+- Criterio di accettazione: ascia resta potente ma rischiosa, spada controllata
+  e difensiva, arco/pistola restano leggibili a distanza, e le quattro super
+  starter sono riconoscibili in survival.
 - Test richiesto: QA manuale survival con i quattro starter a 1280x720 e
-  960x540, piu smoke RPG e `tests/rpg_melee_attack_resolution_smoke_test.gd`.
+  960x540, smoke RPG e `tests/rpg_melee_attack_resolution_smoke_test.gd`.
 
-## Polish classi RPG avanzate - futuro
+### RPG-002 - Polish classi RPG avanzate
 
-- Obiettivo: rifinire Mago, Domatrice e Licantropo con VFX telegraph definitivi, droni super di Nina e animazioni trasformazione complete.
-- Milestone collegata: nuove classi RPG zombie survival Milestone 5-6.
-- File/sistemi coinvolti: `RpgPlayerComponent`, `RpgSuperResolver`, `BriciolaCompanion`, `PlayerVisual`, `WeaponData`, `assets/characters/`.
-- Criterio di accettazione: le tre classi sono bilanciate contro i quattro starter, Briciola aiuta senza giocare da solo e Notte Bestiale termina sempre con recovery leggibile.
-- Test richiesto: `tests/milestone_rpg_13_new_classes_smoke_test.gd`, smoke RPG esistenti e checklist `docs/rpg_character_visual_checklist.md`.
+- Obiettivo: rifinire Mago, Domatrice e Licantropo con VFX telegraph definitivi,
+  droni/super di Nina, companion Briciola e trasformazione licantropo completa.
+- Milestone collegata: `todo_roadmap.md` Milestone 7.
+- File/sistemi coinvolti: `RpgPlayerComponent`, `RpgSuperResolver`,
+  `BriciolaCompanion`, `PlayerVisual`, `WeaponData`, `assets/characters/`.
+- Criterio di accettazione: le tre classi sono bilanciate contro i quattro
+  starter, Briciola aiuta senza giocare da solo e `Notte Bestiale` termina
+  sempre con recovery leggibile.
+- Test richiesto: `tests/milestone_rpg_13_new_classes_smoke_test.gd`, smoke RPG
+  esistenti e checklist RPG character art.
+
+### UIUX-001 - UI, HUD, audio e polish UX trasversale
+
+- Obiettivo: rifinire menu, HUD, Character Select, status, mappa, boss, feedback
+  audio e leggibilita senza cambiare regole di gioco.
+- Milestone collegata: `todo_roadmap.md` Milestone 8.
+- File/sistemi coinvolti: `game/ui/`, `game/audio/`, `assets/audio/`,
+  `game/visuals/`, `game/settings/`, `docs/testing/manual_checklist.md`.
+- Criterio di accettazione: focus joypad sempre visibile, informazioni critiche
+  leggibili senza testo piccolo, nessun SFX esterno obbligatorio e audio
+  critico udibile con quattro player e boss wave.
+- Test richiesto: QA menu/Character Select/Settings a 1280x720, 1024x768 e
+  960x540, QA survival con quattro player, `character_select_ui`,
+  `pause_settings` e regressione audio mix.
+
+### BOSS-001 - Boss aggiuntivi e pattern avanzati
+
+- Obiettivo: espandere il registro boss con un nuovo boss o pattern avanzati
+  mantenendo il contratto condiviso tra modalita.
+- Milestone collegata: `todo_roadmap.md` Milestone 9.
+- File/sistemi coinvolti: `game/bosses/`, `game/visuals/`,
+  `game/projectiles/`, `game/weapons/`, `game/drops/`, `HUDManager`,
+  `BossSystem`.
+- Criterio di accettazione: boss richiedibile per ID senza cambiare i chiamanti,
+  compatibilita per modalita tipizzata, telegraph leggibile senza danno durante
+  il warning e drop tramite `DropSystem`.
+- Test richiesto: nuovo smoke boss/pattern, regressione `boss_smoke` e
+  `milestone_19_boss_registry_smoke_test.gd`, QA survival/dungeon.
+
+### TD-001 - Tower defense avanzata a scope minimo
+
+- Obiettivo: valutare e implementare una sola espansione controllata tra
+  upgrade, vendita, riparazione, nuovi tipi torre o percorsi multipli.
+- Milestone collegata: `todo_roadmap.md` Milestone 10.
+- File/sistemi coinvolti: `game/modes/tower_defense/`,
+  `DefenseTowerVisual`, `game/weapons/`, `HUDManager`,
+  `tests/tower_defense_smoke_test.gd`.
+- Criterio di accettazione: la tower defense resta giocabile, non duplica
+  combat/projectile/boss, ogni nuova azione ha costo e feedback chiari, retry e
+  menu puliscono torri, crediti e nemici.
+- Test richiesto: estensione `tower_defense_smoke_test`, smoke feature scelta e
+  QA tower defense 5 wave con tastiera/joypad.
+
+### QA-001 - Ampliare i test automatici dei sistemi critici
+
+- Obiettivo: coprire meglio health, multiplayer, wave, save/load, world runtime
+  e lifecycle oltre agli smoke gia presenti.
+- Milestone collegata: `todo_roadmap.md` Milestone 11.
+- File/sistemi coinvolti: `tests/`, `HealthSystem`, `LocalMultiplayerManager`,
+  `WaveManager`, `SaveManager`, `WorldRuntime`, modalita gameplay.
+- Criterio di accettazione: ogni sistema condiviso critico ha almeno uno smoke
+  headless o una checklist automatizzabile, e la suite principale resta
+  eseguibile con exit code `0`.
+- Test richiesto: suite headless completa, nuovi smoke mirati e report test
+  aggiornato.
+
+### BAL-001 - Bilanciamento, performance e playtest end-to-end
+
+- Obiettivo: affinare valori data-driven e performance dopo playtest reali su
+  survival, dungeon, tower defense, RPG, biomi e boss.
+- Milestone collegata: `todo_roadmap.md` Milestone 11.
+- File/sistemi coinvolti: `game/modes/`, `game/rpg/`, `game/weapons/`,
+  `game/enemies/`, `game/bosses/`, `game/visuals/`, `tests/`,
+  `docs/testing/manual_checklist.md`.
+- Criterio di accettazione: survival 10 wave e soak 10 minuti restano stabili,
+  ogni classe RPG ha un motivo chiaro per essere scelta, i biomi avanzati sono
+  pericolosi ma non frustranti e il frame time resta nel target documentato o
+  viene tracciato come debito.
+- Test richiesto: playtest survival 20 minuti con 1-4 player, dungeon con tre
+  seed, tower defense 5 wave, profiling e regressione smoke principale.
+
+### REL-001 - Packaging, firma digitale e release readiness
+
+- Obiettivo: preparare una build Windows pubblicabile con export ripetibile,
+  build smoke, asset attribuiti e firma digitale se il certificato e
+  disponibile.
+- Milestone collegata: `todo_roadmap.md` Milestone 12.
+- File/sistemi coinvolti: `export_presets.cfg`, `build/`,
+  `assets/ATTRIBUTION.md`, `assets/README.md`, `README.md`,
+  `docs/latest_commit_validation_report.md`, `BuildRuntimeSmoke`.
+- Criterio di accettazione: EXE/PCK generati da checkout pulito, build smoke
+  exit code `0`, attribuzioni complete, EXE firmato oppure blocco esterno
+  documentato.
+- Test richiesto: export release, export pack, build smoke, avvio manuale
+  Windows con controller/audio e verifica firma se toolchain disponibile.
+
+### DOC-001 - Documentazione finale e workflow di iterazione
+
+- Obiettivo: chiudere la TODO critica, aggiornare documentazione e lasciare un
+  workflow chiaro per futuri goal.
+- Milestone collegata: `todo_roadmap.md` Milestone 13.
+- File/sistemi coinvolti: `README.md`, `ROADMAP.md`, `TODO.md`,
+  `CHANGELOG.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`, `docs/`, `prompts/`.
+- Criterio di accettazione: nessun punto TODO critico resta aperto senza owner
+  o decisione, README descrive avvio/test/build/stato reale e i documenti
+  tecnici non contraddicono il codice.
+- Test richiesto: revisione incrociata documenti, avvio principale e build
+  smoke solo se la release e nello scope.
+
+## Follow-up e decisioni aperte
+
+Queste decisioni non avviano lavoro da sole; vanno risolte dentro la milestone
+collegata prima di implementare.
+
+- Asset personaggi: decidere se il target finale usa PNG, SVG testuali o
+  pipeline mista. Collegata ad `ASSET-002`.
+- Dungeon shop: decidere valuta di run, denaro party persistente o modello
+  ibrido. Collegata a `DUN-001`.
+- Tower defense avanzata: confermare priorita prima di aprire un goal lungo.
+  Collegata a `TD-001`.
+- Nuovi boss: scegliere nuovo boss o espansione pattern esistenti. Collegata a
+  `BOSS-001`.
+- Firma digitale: verificare disponibilita certificato e toolchain. Collegata a
+  `REL-001`.
+
+## Reference storiche completate
+
+Queste voci sono chiuse come primo pass o prototipo stabile. Restano qui per
+evitare reimplementazioni e per indirizzare le regressioni.
+
+- Milestone 0-21 della roadmap principale: completate; riferimento in
+  `ROADMAP.md`, `docs/milestones/`, `README.md` e `CHANGELOG.md`.
+- Roadmap Revamp Modalita Zombie Z1-Z12: completata; sopravvivono follow-up in
+  `BIO-001`, `MAP-001`, `MAP-002` e `ASSET-001`.
+- Roadmap Motore Generazione Mappe e Biomi: completata come primo motore
+  procedurale integrato; usare come riferimento per regressioni world/biomi.
+- Roadmap Megamappa Persistente Isometrica: completata come primo pass stabile;
+  streaming e QA reale sono tracciati in `MAP-001` e `MAP-002`.
+- Roadmap RPG Mode M1-M13 e classi avanzate: completate come pass
+  data-driven; tuning e polish sono tracciati in `ASSET-002`, `RPG-001` e
+  `RPG-002`.
+- Menu pausa, Settings condivisi, navigazione gamepad e Character Select RPG:
+  completati come polish post-roadmap; regressioni in `UIUX-001`.
+- Pass personaggi RPG distinguibili e melee reali: completato; regressioni in
+  `RPG-001` e smoke RPG.
+- Iterazione survival biome-based status, ostacoli, roster ed encounter:
+  completata come primo pass; playtest e tuning restano in `BIO-001`.
+- Ammo survival anti-frustrazione, boss registry, audio mix, risultati run,
+  downed/revive, arena survival e accessibilita: completati; usare i test
+  elencati in README e nel report di validazione.
+
+## Mappatura dalle vecchie sezioni TODO
+
+- `Prossima iterazione biomi zombie survival` -> `BIO-001`.
+- `Megamappa persistente isometrica - follow-up` -> `MAP-001`, `MAP-002`,
+  `ASSET-001`.
+- Duplicato storico sulla manutenzione headless dei test -> `TECH-001`.
+- `Espandere il dungeon oltre il percorso lineare` -> `DUN-001`.
+- `Asset definitivi` generico -> `ASSET-001`, `ASSET-002`, `UIUX-001`.
+- `Ampliare i test automatici` -> `QA-001`.
+- `Asset definitivi personaggi RPG - futuro` -> `ASSET-002`.
+- `Tuning melee RPG e super - futuro` -> `RPG-001`.
+- `Polish classi RPG avanzate - futuro` -> `RPG-002`.
+- `Firma digitale dell'eseguibile Windows` -> `REL-001`.

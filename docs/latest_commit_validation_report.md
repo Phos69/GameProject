@@ -1,5 +1,27 @@
 # Latest Commit Validation Report
 
+## Milestone 0 document audit - 2026-06-17
+- Branch: `master`
+- HEAD corrente: `ce0fda5`
+- Scope validato: consolidamento TODO, baseline tecnica e revisione documentale.
+- Esito: PASS documentale.
+- Gameplay implementato: nessuno.
+- Test gameplay eseguiti in questo audit: nessuno; la Milestone 0 richiede
+  revisione manuale e baseline, non regressione runtime.
+- Discovery test corrente: 73 runner in `tests/`.
+- Documenti rivisti: `README.md`, `ROADMAP.md`, `TODO.md`,
+  `ARCHITECTURE.md`, `GAME_DESIGN.md`,
+  `docs/latest_commit_validation_report.md` e
+  `docs/testing/manual_checklist.md`.
+
+| Area baseline | Stato noto | Evidenza | Azione successiva |
+|---|---|---|---|
+| Suite smoke automatica | PASS nell'ultima validazione completa disponibile | Sezione "Test automatici eseguiti" sotto | Rieseguire da Milestone 1 dopo il lavoro sul teardown |
+| Build/export Windows | PASS nell'ultima validazione completa disponibile | Sezione "Build/export" sotto | Rieseguire solo in release readiness o regressione packaging |
+| Warning shutdown headless | Debito aperto consolidato | 34 test con cleanup warning nel report precedente | Milestone 1 di `todo_roadmap.md` |
+| Backlog aperto | Consolidato in un'unica lista strutturata | `TODO.md` aggiornato nella Milestone 0 | Usare una milestone alla volta |
+| Roadmap storiche | Completate come primo pass/reference | `ROADMAP.md`, roadmap dedicate e `CHANGELOG.md` | Non riaprire senza nuovo goal esplicito |
+
 ## Working tree validation - 2026-06-17
 - Branch: `master`
 - HEAD di partenza: `4439fbe`

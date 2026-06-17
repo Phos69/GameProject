@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Documentation
+
+- Consolidato il backlog operativo in `TODO.md`, separando backlog aperto,
+  follow-up e reference storiche completate senza riaprire milestone concluse.
+- Aggiornato `docs/latest_commit_validation_report.md` con audit documentale
+  Milestone 0, baseline test nota e stato del debito shutdown headless.
+
 ### Fixed
 
 - Berserker, Spadaccino e Licantropo non usano piu projectile runtime per
