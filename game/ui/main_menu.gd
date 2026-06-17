@@ -12,9 +12,6 @@ const CHARACTER_SLOT_COLORS: Array[Color] = [
 const CHARACTER_SELECT_CARD_SCRIPT := preload(
 	"res://game/ui/character_select_card.gd"
 )
-const CHARACTER_DETAIL_PANEL_SCRIPT := preload(
-	"res://game/ui/character_detail_panel.gd"
-)
 const MENU_NAVIGATION_SCRIPT := preload(
 	"res://game/ui/menu_navigation_controller.gd"
 )
@@ -33,12 +30,11 @@ var primary_panel: PanelContainer
 var character_select_panel: PanelContainer
 var character_card_buttons: Array[Button] = []
 var character_card_by_id: Dictionary = {}
-var character_detail_panel: PanelContainer
 var character_start_button: Button
 var character_back_button: Button
 var character_slots_grid: GridContainer
 var character_roster_grid: GridContainer
-var character_select_body: GridContainer
+var character_roster_scroll: ScrollContainer
 var main_menu_navigation
 var character_navigation
 var character_profiles: Array[Dictionary] = []
@@ -286,24 +282,21 @@ func _create_character_select_panel(parent: Control) -> void:
 	)
 	parent.add_child(character_select_panel)
 
-	var scroll := ScrollContainer.new()
-	scroll.name = "CharacterSelectScroll"
-	scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	character_select_panel.add_child(scroll)
-
-	var content := VBoxContainer.new()
-	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	content.add_theme_constant_override("separation", 6)
 	var margin := MarginContainer.new()
+	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	margin.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	margin.add_theme_constant_override("margin_left", 10)
 	margin.add_theme_constant_override("margin_top", 8)
 	margin.add_theme_constant_override("margin_right", 10)
 	margin.add_theme_constant_override("margin_bottom", 8)
+	character_select_panel.add_child(margin)
+
+	var content := VBoxContainer.new()
+	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content.add_theme_constant_override("separation", 6)
 	margin.add_child(content)
-	scroll.add_child(margin)
 
 	var title := Label.new()
 	title.text = "CHARACTER SELECT"
@@ -334,22 +327,29 @@ func _create_character_select_panel(parent: Control) -> void:
 	for player_slot in range(1, 5):
 		character_slots_grid.add_child(_create_character_slot_panel(player_slot))
 
-	character_select_body = GridContainer.new()
-	character_select_body.columns = 2
-	character_select_body.add_theme_constant_override("h_separation", 10)
-	character_select_body.add_theme_constant_override("v_separation", 10)
-	content.add_child(character_select_body)
+	# The roster row (cards + dossier) lives in its own scroll region so it can
+	# shrink at any resolution while the slot row above and the action buttons
+	# below stay pinned and always visible.
+	character_roster_scroll = ScrollContainer.new()
+	character_roster_scroll.name = "CharacterRosterScroll"
+	character_roster_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	character_roster_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	character_roster_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	character_roster_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	content.add_child(character_roster_scroll)
 
 	character_roster_grid = GridContainer.new()
 	character_roster_grid.columns = 4
+	character_roster_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	character_roster_grid.add_theme_constant_override("h_separation", 8)
 	character_roster_grid.add_theme_constant_override("v_separation", 8)
-	character_select_body.add_child(character_roster_grid)
+	character_roster_scroll.add_child(character_roster_grid)
 
 	for profile in character_profiles:
 		var character_id := StringName(profile.get("id", &""))
 		var button := CHARACTER_SELECT_CARD_SCRIPT.new() as Button
 		button.name = "Character%sButton" % str(character_id).capitalize()
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.call(
 			"set_profile",
 			profile,
@@ -362,9 +362,6 @@ func _create_character_select_panel(parent: Control) -> void:
 		character_roster_grid.add_child(button)
 		character_card_buttons.append(button)
 		character_card_by_id[character_id] = button
-
-	character_detail_panel = CHARACTER_DETAIL_PANEL_SCRIPT.new() as PanelContainer
-	character_select_body.add_child(character_detail_panel)
 
 	var action_row := HBoxContainer.new()
 	action_row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -412,64 +409,52 @@ func _create_character_navigation() -> void:
 func _create_character_slot_panel(player_slot: int) -> Control:
 	var panel := PanelContainer.new()
 	panel.name = "Player%dSelectionSlot" % player_slot
-	panel.custom_minimum_size = Vector2(260.0, 112.0)
+	panel.custom_minimum_size = Vector2(240.0, 200.0)
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	panel.gui_input.connect(_on_character_slot_gui_input.bind(player_slot))
 
 	var content := VBoxContainer.new()
-	content.add_theme_constant_override("separation", 1)
+	content.add_theme_constant_override("separation", 2)
 	panel.add_child(content)
-
-	var top_row := HBoxContainer.new()
-	top_row.add_theme_constant_override("separation", 5)
-	content.add_child(top_row)
-
-	var portrait := TextureRect.new()
-	portrait.custom_minimum_size = Vector2(50.0, 50.0)
-	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	top_row.add_child(portrait)
-
-	var title_box := VBoxContainer.new()
-	title_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title_box.add_theme_constant_override("separation", 1)
-	top_row.add_child(title_box)
 
 	var player_label := Label.new()
 	player_label.add_theme_font_size_override("font_size", 11)
-	title_box.add_child(player_label)
+	player_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	content.add_child(player_label)
+
+	# The animated gameplay preview is the slot's main visual: it shows the
+	# character the player is currently cycling through in the roster below.
+	var preview := CharacterGameplayPreview.new()
+	preview.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	preview.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content.add_child(preview)
+	preview.custom_minimum_size = Vector2(0.0, 124.0)
 
 	var name_label := Label.new()
-	name_label.add_theme_font_size_override("font_size", 12)
-	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	name_label.add_theme_font_size_override("font_size", 13)
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.max_lines_visible = 1
 	name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	title_box.add_child(name_label)
+	content.add_child(name_label)
 
 	var class_label := Label.new()
 	class_label.add_theme_font_size_override("font_size", 10)
-	class_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	class_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	class_label.max_lines_visible = 1
 	class_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	title_box.add_child(class_label)
+	content.add_child(class_label)
 
 	var stats_label := _create_character_detail_label(9, 1)
+	stats_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	content.add_child(stats_label)
-
-	var passive_label := _create_character_detail_label(8, 1)
-	content.add_child(passive_label)
-
-	var super_label := _create_character_detail_label(8, 1)
-	content.add_child(super_label)
 
 	character_slot_views[player_slot] = {
 		"panel": panel,
-		"portrait": portrait,
+		"preview": preview,
 		"player": player_label,
 		"name": name_label,
 		"class": class_label,
-		"stats": stats_label,
-		"passive": passive_label,
-		"super": super_label
+		"stats": stats_label
 	}
 	return panel
 
@@ -765,9 +750,13 @@ func _refresh_character_selection_ui() -> void:
 			character_selection_by_slot.get(player_slot, &"")
 		)
 		var profile := _get_character_profile(selected_id)
-		_refresh_character_slot_view(player_slot, active, profile)
+		_refresh_character_slot_view(
+			player_slot,
+			active,
+			profile,
+			_slot_preview_profile(player_slot, profile)
+		)
 	_refresh_character_card_states()
-	_refresh_character_preview()
 	if character_start_button != null:
 		character_start_button.disabled = not _all_active_character_slots_selected()
 	_refresh_character_navigation_controls()
@@ -790,23 +779,16 @@ func _refresh_character_select_layout() -> void:
 	var viewport_width := get_viewport().get_visible_rect().size.x
 	if character_slots_grid != null:
 		character_slots_grid.columns = 2 if viewport_width < 1120.0 else 4
-	if character_select_body != null:
-		character_select_body.columns = 1 if viewport_width < 1180.0 else 2
-	if character_roster_grid != null:
-		var roster_columns := 4
-		if viewport_width < 760.0:
-			roster_columns = 1
-		elif viewport_width < 1040.0:
-			roster_columns = 2
-		elif viewport_width < 1320.0:
-			roster_columns = 3
-		character_roster_grid.columns = roster_columns
 	var card_width := 190.0 if viewport_width < 760.0 else 210.0
 	for card in character_card_buttons:
 		card.custom_minimum_size = Vector2(card_width, 162.0)
-	if character_detail_panel != null:
-		var panel_width := 292.0 if viewport_width >= 760.0 else maxf(viewport_width - 88.0, 240.0)
-		character_detail_panel.custom_minimum_size = Vector2(panel_width, 388.0)
+	if character_roster_grid != null:
+		# The roster fills the whole row now that the dossier is gone: fit as many
+		# columns as the width allows and let the cards expand to share the space.
+		var available := maxf(viewport_width - 80.0, card_width)
+		var card_count := maxi(character_card_buttons.size(), 1)
+		var fit := int(available / (card_width + 8.0))
+		character_roster_grid.columns = clampi(fit, 1, card_count)
 
 func _handle_main_menu_back() -> bool:
 	return false
@@ -818,7 +800,8 @@ func _handle_character_select_back() -> bool:
 func _refresh_character_slot_view(
 	player_slot: int,
 	active: bool,
-	profile: Dictionary
+	profile: Dictionary,
+	preview_profile: Dictionary
 ) -> void:
 	var view := character_slot_views.get(player_slot, {}) as Dictionary
 	if view.is_empty():
@@ -843,68 +826,44 @@ func _refresh_character_slot_view(
 		]
 		player_label.modulate = _get_character_slot_color(player_slot)
 
-	var portrait := view.get("portrait") as TextureRect
-	if portrait != null:
-		portrait.texture = _load_character_texture(profile) if selected else null
+	# The slot being chosen shows the live roster hover; others show their
+	# committed pick. Inactive slots stay blank.
+	var shown := preview_profile if active else {}
+	var preview := view.get("preview") as Control
+	if preview != null:
+		if shown.is_empty():
+			preview.call("set_profile", {}, null)
+		else:
+			preview.call(
+				"set_profile",
+				shown,
+				_load_character_weapon_data(shown)
+			)
 
 	var name_label := view.get("name") as Label
 	var class_label := view.get("class") as Label
 	var stats_label := view.get("stats") as Label
-	var passive_label := view.get("passive") as Label
-	var super_label := view.get("super") as Label
 	if not active:
-		_set_character_slot_text(
-			name_label,
-			class_label,
-			stats_label,
-			passive_label,
-			super_label,
-			"Slot empty",
-			"",
-			"",
-			"",
-			""
-		)
+		_set_character_slot_text(name_label, class_label, stats_label, "Slot empty", "", "")
 		return
-	if not selected:
-		_set_character_slot_text(
-			name_label,
-			class_label,
-			stats_label,
-			passive_label,
-			super_label,
-			"Choose a character",
-			"",
-			"",
-			"",
-			""
-		)
+	if shown.is_empty():
+		_set_character_slot_text(name_label, class_label, stats_label, "Choose a character", "", "")
 		return
 	_set_character_slot_text(
 		name_label,
 		class_label,
 		stats_label,
-		passive_label,
-		super_label,
-		str(profile.get("hero_name", profile.get("display_name", "Survivor"))),
+		str(shown.get("hero_name", shown.get("display_name", "Survivor"))),
 		"%s · %s" % [
-			str(profile.get("class_name", "Survivor")),
-			str(profile.get("base_weapon_name", "Starter Pistol"))
+			str(shown.get("class_name", "Survivor")),
+			str(shown.get("base_weapon_name", "Starter Pistol"))
 		],
 		"HP %d  ATK %d  DEF %d  SPD %.2f  %s" % [
-			int(profile.get("max_hp", 100)),
-			int(profile.get("attack", 0)),
-			int(profile.get("defense", 0)),
-			float(profile.get("speed", 1.0)),
-			str(profile.get("difficulty", "Media"))
-		],
-		"Passive: %s - %s" % [
-			str(profile.get("passive_name", "")),
-			str(profile.get("passive_description", ""))
-		],
-		"Super: %s - %s" % [
-			str(profile.get("super_name", "")),
-			str(profile.get("super_description", ""))
+			int(shown.get("max_hp", 100)),
+			int(shown.get("attack", 0)),
+			int(shown.get("defense", 0)),
+			float(shown.get("speed", 1.0)),
+			str(shown.get("difficulty", "Media"))
 		]
 	)
 
@@ -942,36 +901,39 @@ func _preview_character(character_id: StringName) -> void:
 	_refresh_character_preview()
 
 func _refresh_character_preview() -> void:
-	if character_detail_panel == null:
-		return
-	var preview_id := focused_character_id
-	if not RpgCharacterRegistry.is_character_available(preview_id):
-		preview_id = StringName(
-			character_selection_by_slot.get(current_character_slot, &"")
-		)
-	if not RpgCharacterRegistry.is_character_available(preview_id):
-		if character_profiles.is_empty():
-			character_detail_panel.call("set_profile", {}, null)
-			return
-		preview_id = StringName(character_profiles[0].get("id", &""))
-	var profile := _get_character_profile(preview_id)
-	character_detail_panel.call(
-		"set_profile",
-		profile,
-		_load_character_weapon_data(profile)
+	# The live preview now lives in the player slot that is currently choosing,
+	# so refreshing the preview just updates that slot's view.
+	_ensure_current_character_slot()
+	var player_slot := current_character_slot
+	var active := _get_active_character_slots().has(player_slot)
+	var profile := _get_character_profile(
+		StringName(character_selection_by_slot.get(player_slot, &""))
 	)
+	_refresh_character_slot_view(
+		player_slot,
+		active,
+		profile,
+		_slot_preview_profile(player_slot, profile)
+	)
+
+func _slot_preview_profile(
+	player_slot: int,
+	committed_profile: Dictionary
+) -> Dictionary:
+	# The slot being chosen mirrors the roster hover; the others keep whatever
+	# character is already committed to them.
+	if player_slot == current_character_slot \
+			and RpgCharacterRegistry.is_character_available(focused_character_id):
+		return _get_character_profile(focused_character_id)
+	return committed_profile
 
 func _set_character_slot_text(
 	name_label: Label,
 	class_label: Label,
 	stats_label: Label,
-	passive_label: Label,
-	super_label: Label,
 	name_text: String,
 	class_text: String,
-	stats_text: String,
-	passive_text: String,
-	super_text: String
+	stats_text: String
 ) -> void:
 	if name_label != null:
 		name_label.text = name_text
@@ -979,10 +941,6 @@ func _set_character_slot_text(
 		class_label.text = class_text
 	if stats_label != null:
 		stats_label.text = stats_text
-	if passive_label != null:
-		passive_label.text = passive_text
-	if super_label != null:
-		super_label.text = super_text
 
 func _get_character_profile(character_id: StringName) -> Dictionary:
 	if character_id.is_empty():

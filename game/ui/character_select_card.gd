@@ -107,6 +107,7 @@ func _build_ui() -> void:
 	portrait = TextureRect.new()
 	portrait.custom_minimum_size = Vector2(62.0, 60.0)
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	body.add_child(portrait)
 
