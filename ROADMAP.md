@@ -316,6 +316,9 @@ Attivita post-roadmap:
 - arena survival, biomi e props interattivi completati;
 - accessibilita, profiling e pipeline asset completati;
 - roadmap RPG Mode M1-M12 completata fino al polish feedback RPG;
+- pass RPG leggibilita combat completato: `WeaponData.attack_type`,
+  hitbox melee temporanee per ascia/spada/artigli, feedback slash e Character
+  Select con indicazione projectile/melee;
 - polish Character Select RPG completato come pass post-roadmap: card grafiche,
   dossier laterale, preview gameplay procedurale, stat bar e supporto
   `Esc`/joypad `B`;

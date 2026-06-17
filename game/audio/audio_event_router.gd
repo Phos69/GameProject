@@ -262,6 +262,20 @@ func _connect_weapon_system(player: Node) -> void:
 	).bind(weapon_system)
 	if not weapon_system.fallback_activated.is_connected(fallback_callback):
 		weapon_system.fallback_activated.connect(fallback_callback)
+	var melee_started_callback := Callable(
+		self,
+		"_on_melee_attack_started"
+	).bind(weapon_system)
+	if not weapon_system.melee_attack_started.is_connected(
+		melee_started_callback
+	):
+		weapon_system.melee_attack_started.connect(melee_started_callback)
+	var melee_hit_callback := Callable(
+		self,
+		"_on_melee_attack_hit"
+	).bind(weapon_system)
+	if not weapon_system.melee_attack_hit.is_connected(melee_hit_callback):
+		weapon_system.melee_attack_hit.connect(melee_hit_callback)
 
 func _on_weapon_reload_started(
 	_duration: float,
@@ -292,6 +306,25 @@ func _on_fallback_activated(
 			&"fallback",
 			_get_weapon_source_id(weapon_system)
 		)
+
+func _on_melee_attack_started(
+	_attack: Node,
+	weapon_data: WeaponData,
+	weapon_system: WeaponSystem
+) -> void:
+	audio_manager.play_gameplay_shot(
+		_get_attack_source_id(weapon_data, weapon_system)
+	)
+
+func _on_melee_attack_hit(
+	_attack: Node,
+	_target: Node,
+	applied_damage: int,
+	_hit_position: Vector2,
+	weapon_system: WeaponSystem
+) -> void:
+	if applied_damage > 0:
+		audio_manager.play_gameplay_impact(_get_weapon_source_id(weapon_system))
 
 func _connect_rpg_feedback(player: Node) -> void:
 	var rpg_component := player.get_node_or_null(
@@ -324,3 +357,13 @@ func _get_weapon_source_id(weapon_system: WeaponSystem) -> StringName:
 	if weapon_system == null or weapon_system.weapon_data == null:
 		return &"weapon"
 	return weapon_system.weapon_data.weapon_id
+
+func _get_attack_source_id(
+	weapon_data: WeaponData,
+	weapon_system: WeaponSystem
+) -> StringName:
+	if weapon_data != null and not weapon_data.sound_key.is_empty():
+		return weapon_data.sound_key
+	if weapon_data != null:
+		return weapon_data.weapon_id
+	return _get_weapon_source_id(weapon_system)

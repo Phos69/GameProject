@@ -76,6 +76,20 @@ func _assert_weapon_hitbox(
 	_expect(weapon.hitbox_type == expected_type, "%s hitbox type matches" % weapon.display_name)
 	_expect(weapon.hitbox_size == expected_size, "%s hitbox size matches" % weapon.display_name)
 	_expect(weapon.max_hit_count == expected_hits, "%s hit count matches" % weapon.display_name)
+	if expected_type == &"arc" or expected_type == &"rectangle":
+		_expect(
+			weapon.uses_melee_attack(),
+			"%s resolves through melee attack runtime" % weapon.display_name
+		)
+		_expect(
+			weapon.projectile_scene == null,
+			"%s no longer carries a projectile scene" % weapon.display_name
+		)
+	else:
+		_expect(
+			weapon.uses_projectile_attack(),
+			"%s resolves through projectile runtime" % weapon.display_name
+		)
 
 func _expect(condition: bool, message: String) -> void:
 	if condition:

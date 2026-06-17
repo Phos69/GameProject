@@ -1,5 +1,34 @@
 # Latest Commit Validation Report
 
+## Working tree validation - 2026-06-17
+- Branch: `master`
+- HEAD di partenza: `4439fbe`
+- Scope validato: pass RPG combat/readability con `WeaponData.attack_type`,
+  `MeleeAttack`, risorse starter, Character Select e feedback melee/super.
+- Esito: PASS sui test eseguiti.
+- Nota: `tests/combat_smoke_test.gd` continua a mostrare warning cleanup
+  `ObjectDB/resources still in use` a exit code `0`, gia tracciati nel TODO.
+
+| Test | Esito | Note |
+|---|---|---|
+| tests/milestone_rpg_1_character_select_smoke_test.gd | PASS | exit code 0 |
+| tests/milestone_rpg_2_stats_smoke_test.gd | PASS | exit code 0 |
+| tests/milestone_rpg_3_weapons_smoke_test.gd | PASS | include `attack_type` |
+| tests/milestone_rpg_4_hitbox_smoke_test.gd | PASS | verifica melee senza `projectile_scene` |
+| tests/milestone_rpg_5_ammo_reload_smoke_test.gd | PASS | reload/ammo invariati |
+| tests/milestone_rpg_6_xp_level_smoke_test.gd | PASS | exit code 0 |
+| tests/milestone_rpg_7_passives_smoke_test.gd | PASS | passive invarianti |
+| tests/milestone_rpg_8_adrenaline_super_smoke_test.gd | PASS | super/adrenalina invarianti |
+| tests/milestone_rpg_9_hud_smoke_test.gd | PASS | HUD RPG invariato |
+| tests/milestone_rpg_10_balance_smoke_test.gd | PASS | identita starter coerente |
+| tests/milestone_rpg_11_data_driven_smoke_test.gd | PASS | profili data-driven |
+| tests/milestone_rpg_12_feedback_smoke_test.gd | PASS | exit code 0 |
+| tests/milestone_rpg_13_new_classes_smoke_test.gd | PASS | classi avanzate invarianti |
+| tests/rpg_melee_attack_resolution_smoke_test.gd | PASS | arco projectile, ascia/spada zero projectile |
+| tests/character_select_ui_smoke_test.gd | PASS | safe-area, scroll, wrap e Back |
+| tests/combat_smoke_test.gd | PASS | exit code 0, warning cleanup noto |
+| tests/survival_wave_smoke_test.gd | PASS | exit code 0 |
+
 ## Data e commit
 - Data: 2026-06-16
 - Branch: `master`

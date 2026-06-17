@@ -222,6 +222,31 @@ func _draw() -> void:
 					3.0,
 					true
 				)
+		&"melee_hit":
+			draw_line(
+				Vector2(-effect_size * 0.46, -effect_size * 0.18),
+				Vector2(effect_size * 0.52, effect_size * 0.22),
+				color,
+				4.5,
+				true
+			)
+			draw_line(
+				Vector2(-effect_size * 0.28, effect_size * 0.34),
+				Vector2(effect_size * 0.42, -effect_size * 0.30),
+				Color(color.lightened(0.18), alpha),
+				3.0,
+				true
+			)
+			draw_arc(
+				Vector2.ZERO,
+				effect_size * (0.22 + motion_ratio * 0.52),
+				-0.55,
+				0.68,
+				16,
+				Color(color, alpha * 0.72),
+				3.0,
+				true
+			)
 		&"pickup":
 			draw_arc(
 				Vector2.ZERO,
@@ -281,6 +306,80 @@ func _draw() -> void:
 					4.0,
 					true
 				)
+		&"rpg_super_cone":
+			var cone_angle := 0.78
+			draw_arc(
+				Vector2.ZERO,
+				effect_size * (0.28 + motion_ratio * 1.08),
+				-cone_angle,
+				cone_angle,
+				32,
+				color,
+				4.0,
+				true
+			)
+			for index in range(7):
+				var angle := lerpf(-cone_angle, cone_angle, float(index) / 6.0)
+				var direction := Vector2.RIGHT.rotated(angle)
+				draw_line(
+					direction * effect_size * 0.16,
+					direction * effect_size * (0.52 + motion_ratio * 0.72),
+					Color(color.lightened(0.16), alpha),
+					2.8,
+					true
+				)
+		&"rpg_super_burst":
+			for index in range(14):
+				var direction := Vector2.RIGHT.rotated(TAU * float(index) / 14.0 + ratio * 0.18)
+				var start := direction * effect_size * (0.12 + motion_ratio * 0.16)
+				var finish := direction * effect_size * (0.32 + motion_ratio * 0.72)
+				draw_line(start, finish, color, 3.0, true)
+			draw_circle(Vector2.ZERO, effect_size * 0.16 * alpha, Color(1.0, 0.92, 0.58, alpha))
+		&"rpg_super_radial":
+			for ring_index in range(3):
+				var ring_ratio := clampf(ratio - float(ring_index) * 0.12, 0.0, 1.0)
+				draw_arc(
+					Vector2.ZERO,
+					effect_size * (0.24 + ring_ratio * 1.10),
+					0.0,
+					TAU,
+					48,
+					Color(color, alpha * (1.0 - float(ring_index) * 0.22)),
+					5.0,
+					true
+				)
+			for index in range(8):
+				var direction := Vector2.RIGHT.rotated(TAU * float(index) / 8.0)
+				draw_line(
+					direction * effect_size * 0.20,
+					direction * effect_size * (0.42 + motion_ratio * 0.52),
+					Color(color.darkened(0.10), alpha),
+					3.0,
+					true
+				)
+		&"rpg_super_dash":
+			draw_line(
+				Vector2(-effect_size * (0.55 + motion_ratio * 0.45), 0.0),
+				Vector2(effect_size * (0.70 + motion_ratio * 0.60), 0.0),
+				color,
+				6.0,
+				true
+			)
+			draw_line(
+				Vector2(-effect_size * 0.28, -effect_size * 0.22),
+				Vector2(effect_size * (0.56 + motion_ratio * 0.72), effect_size * 0.18),
+				Color(color.lightened(0.22), alpha),
+				3.0,
+				true
+			)
+			draw_colored_polygon(
+				PackedVector2Array([
+					Vector2(effect_size * 0.86, 0.0),
+					Vector2(effect_size * 0.42, -effect_size * 0.18),
+					Vector2(effect_size * 0.50, effect_size * 0.18)
+				]),
+				Color(color, alpha * 0.55)
+			)
 		_:
 			for index in range(5):
 				var direction := Vector2.RIGHT.rotated(TAU * float(index) / 5.0)

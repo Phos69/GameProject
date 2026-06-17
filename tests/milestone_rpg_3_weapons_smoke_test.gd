@@ -60,6 +60,11 @@ func _run() -> void:
 	_expect(staff.magazine_size == 5 and staff.hitbox_size.x >= 18.0, "staff uses five visible arcane charges")
 	_expect(slingshot.magazine_size == 8 and slingshot.fire_rate >= 4.0, "slingshot uses eight fast scrap shots")
 	_expect(claws.hitbox_type == &"arc" and claws.max_range <= 90.0, "claws use short melee arc")
+	_expect(bow.attack_type == &"projectile", "bow keeps projectile attack type")
+	_expect(pistol.attack_type == &"projectile", "pistol keeps projectile attack type")
+	_expect(axe.attack_type == &"melee_arc", "axe uses melee arc attack type")
+	_expect(sword.attack_type == &"melee_sweep", "sword uses melee sweep attack type")
+	_expect(claws.attack_type == &"melee_arc", "claws use melee arc attack type")
 
 	player.queue_free()
 	_finish()

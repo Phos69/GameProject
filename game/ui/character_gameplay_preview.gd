@@ -197,6 +197,7 @@ func _draw_player_preview(
 	draw_line(Vector2(11.0, -8.0), hand, Color(0.78, 0.58, 0.40, 1.0), 6.0, true)
 	draw_line(Vector2(-11.0, -8.0), hand * 0.62, Color(0.78, 0.58, 0.40, 1.0), 5.0, true)
 	_draw_weapon(hand, direction, weapon_id, primary, accent)
+	_draw_weapon_action_preview(hand, direction, weapon_id, accent)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 func _draw_class_details(
@@ -283,6 +284,53 @@ func _draw_weapon(
 				hand - perpendicular * 5.0
 			]), primary.darkened(0.35))
 			draw_line(hand + direction * 4.0, muzzle - direction * 2.0, accent, 3.0, true)
+
+func _draw_weapon_action_preview(
+	hand: Vector2,
+	direction: Vector2,
+	weapon_id: StringName,
+	accent: Color
+) -> void:
+	var pulse := 0.45 + 0.35 * sin(animation_time * 4.0)
+	var perpendicular := direction.orthogonal()
+	match weapon_id:
+		&"rpg_bow":
+			draw_line(
+				hand + direction * 22.0,
+				hand + direction * (52.0 + pulse * 16.0),
+				Color(accent.lightened(0.20), 0.62),
+				2.0,
+				true
+			)
+		&"rpg_pistol":
+			var muzzle := hand + direction * 38.0
+			draw_colored_polygon(
+				PackedVector2Array([
+					muzzle + direction * (10.0 + pulse * 10.0),
+					muzzle + perpendicular * 4.0,
+					muzzle - perpendicular * 4.0
+				]),
+				Color(accent, 0.42 + pulse * 0.30)
+			)
+		&"rpg_axe":
+			draw_arc(
+				Vector2.ZERO,
+				58.0 + pulse * 8.0,
+				direction.angle() - 1.02,
+				direction.angle() + 1.02,
+				30,
+				Color(accent, 0.48),
+				5.0,
+				true
+			)
+		&"rpg_sword":
+			draw_line(
+				hand - perpendicular * 10.0,
+				hand + direction * (58.0 + pulse * 12.0) + perpendicular * 10.0,
+				Color(accent.lightened(0.20), 0.58),
+				4.0,
+				true
+			)
 
 func _ellipse_points(center: Vector2, radius: Vector2, segments: int) -> PackedVector2Array:
 	var points := PackedVector2Array()

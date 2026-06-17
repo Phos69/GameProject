@@ -36,6 +36,9 @@ var character_card_by_id: Dictionary = {}
 var character_detail_panel: PanelContainer
 var character_start_button: Button
 var character_back_button: Button
+var character_slots_grid: GridContainer
+var character_roster_grid: GridContainer
+var character_select_body: GridContainer
 var main_menu_navigation
 var character_navigation
 var character_profiles: Array[Dictionary] = []
@@ -57,6 +60,9 @@ func _ready() -> void:
 	add_to_group("main_menu")
 	layer = 20
 	_create_ui()
+	var size_callback := Callable(self, "_refresh_character_select_layout")
+	if not get_viewport().size_changed.is_connected(size_callback):
+		get_viewport().size_changed.connect(size_callback)
 	call_deferred("_initialize")
 
 func _input(event: InputEvent) -> void:
@@ -320,23 +326,25 @@ func _create_character_select_panel(parent: Control) -> void:
 		if not character_id.is_empty():
 			character_profile_by_id[character_id] = profile
 
-	var slots_grid := GridContainer.new()
-	slots_grid.columns = 4
-	slots_grid.add_theme_constant_override("h_separation", 8)
-	slots_grid.add_theme_constant_override("v_separation", 6)
-	content.add_child(slots_grid)
+	character_slots_grid = GridContainer.new()
+	character_slots_grid.columns = 4
+	character_slots_grid.add_theme_constant_override("h_separation", 8)
+	character_slots_grid.add_theme_constant_override("v_separation", 6)
+	content.add_child(character_slots_grid)
 	for player_slot in range(1, 5):
-		slots_grid.add_child(_create_character_slot_panel(player_slot))
+		character_slots_grid.add_child(_create_character_slot_panel(player_slot))
 
-	var body := HBoxContainer.new()
-	body.add_theme_constant_override("separation", 10)
-	content.add_child(body)
+	character_select_body = GridContainer.new()
+	character_select_body.columns = 2
+	character_select_body.add_theme_constant_override("h_separation", 10)
+	character_select_body.add_theme_constant_override("v_separation", 10)
+	content.add_child(character_select_body)
 
-	var roster_grid := GridContainer.new()
-	roster_grid.columns = 4
-	roster_grid.add_theme_constant_override("h_separation", 8)
-	roster_grid.add_theme_constant_override("v_separation", 8)
-	body.add_child(roster_grid)
+	character_roster_grid = GridContainer.new()
+	character_roster_grid.columns = 4
+	character_roster_grid.add_theme_constant_override("h_separation", 8)
+	character_roster_grid.add_theme_constant_override("v_separation", 8)
+	character_select_body.add_child(character_roster_grid)
 
 	for profile in character_profiles:
 		var character_id := StringName(profile.get("id", &""))
@@ -351,12 +359,12 @@ func _create_character_select_panel(parent: Control) -> void:
 		button.pressed.connect(_assign_character_to_current_slot.bind(character_id))
 		button.focus_entered.connect(_on_character_card_focused.bind(character_id))
 		button.mouse_entered.connect(_preview_character.bind(character_id))
-		roster_grid.add_child(button)
+		character_roster_grid.add_child(button)
 		character_card_buttons.append(button)
 		character_card_by_id[character_id] = button
 
 	character_detail_panel = CHARACTER_DETAIL_PANEL_SCRIPT.new() as PanelContainer
-	body.add_child(character_detail_panel)
+	character_select_body.add_child(character_detail_panel)
 
 	var action_row := HBoxContainer.new()
 	action_row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -380,6 +388,7 @@ func _create_character_select_panel(parent: Control) -> void:
 	character_back_button.focus_entered.connect(_play_focus)
 	action_row.add_child(character_back_button)
 	_create_character_navigation()
+	_refresh_character_select_layout()
 	character_select_panel.hide()
 
 func _create_character_navigation() -> void:
@@ -638,6 +647,7 @@ func _open_character_select() -> void:
 	_ensure_current_character_slot()
 	if focused_character_id.is_empty() and not character_profiles.is_empty():
 		focused_character_id = StringName(character_profiles[0].get("id", &""))
+	_refresh_character_select_layout()
 	_refresh_character_selection_ui()
 	character_select_panel.show()
 	if character_navigation != null:
@@ -773,6 +783,30 @@ func _refresh_character_navigation_controls() -> void:
 	if character_back_button != null:
 		controls.append(character_back_button)
 	character_navigation.set_focus_controls(controls)
+
+func _refresh_character_select_layout() -> void:
+	if character_select_panel == null:
+		return
+	var viewport_width := get_viewport().get_visible_rect().size.x
+	if character_slots_grid != null:
+		character_slots_grid.columns = 2 if viewport_width < 1120.0 else 4
+	if character_select_body != null:
+		character_select_body.columns = 1 if viewport_width < 1180.0 else 2
+	if character_roster_grid != null:
+		var roster_columns := 4
+		if viewport_width < 760.0:
+			roster_columns = 1
+		elif viewport_width < 1040.0:
+			roster_columns = 2
+		elif viewport_width < 1320.0:
+			roster_columns = 3
+		character_roster_grid.columns = roster_columns
+	var card_width := 190.0 if viewport_width < 760.0 else 210.0
+	for card in character_card_buttons:
+		card.custom_minimum_size = Vector2(card_width, 162.0)
+	if character_detail_panel != null:
+		var panel_width := 292.0 if viewport_width >= 760.0 else maxf(viewport_width - 88.0, 240.0)
+		character_detail_panel.custom_minimum_size = Vector2(panel_width, 388.0)
 
 func _handle_main_menu_back() -> bool:
 	return false

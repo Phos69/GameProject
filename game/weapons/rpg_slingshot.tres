@@ -13,6 +13,7 @@ fire_rate = 4.2
 projectile_speed = 640.0
 max_range = 460.0
 scatter_degrees = 4.0
+attack_type = &"projectile"
 hitbox_type = &"circle"
 hitbox_size = Vector2(10, 10)
 max_hit_count = 1

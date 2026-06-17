@@ -21,6 +21,8 @@ var reduced_motion: bool = false
 var status_feedback_id: StringName = &""
 var status_feedback_timer: float = 0.0
 var character_profile: Dictionary = {}
+var weapon_attack_type: StringName = &"projectile"
+var weapon_trail_style: StringName = &""
 
 func _ready() -> void:
 	add_to_group("visual_settings_consumers")
@@ -73,6 +75,8 @@ func set_weapon_data(weapon_data: WeaponData) -> void:
 		if weapon_data != null
 		else null
 	)
+	weapon_attack_type = weapon_data.attack_type if weapon_data != null else &"projectile"
+	weapon_trail_style = weapon_data.trail_style if weapon_data != null else &""
 	queue_redraw()
 
 func get_weapon_profile_id() -> StringName:
@@ -200,6 +204,8 @@ func _draw() -> void:
 
 	var shoulder := Vector2(side * 8.0, -7.0)
 	var hand := weapon_direction * 15.0 + Vector2(0.0, -4.0)
+	if _is_melee_weapon_attack() and fire_flash_timer > 0.0:
+		hand += weapon_direction * 5.0
 	draw_line(shoulder, hand, Color(0.82, 0.61, 0.44, 1.0), 5.0, true)
 	draw_line(-shoulder, hand * 0.72, Color(0.82, 0.61, 0.44, 1.0), 4.0, true)
 	var muzzle := _draw_weapon(hand, weapon_direction, display_color)
@@ -218,17 +224,26 @@ func _draw() -> void:
 		var flash_size := (
 			base_flash_size + fire_flash_timer * 45.0
 		) * maxf(flash_intensity, 0.1)
-		draw_colored_polygon(
-			PackedVector2Array([
-				muzzle + weapon_direction * flash_size,
-				muzzle + weapon_direction.orthogonal() * 4.0,
-				muzzle - weapon_direction.orthogonal() * 4.0
-			]),
-			Color(
+		if _is_melee_weapon_attack():
+			_draw_melee_fire_feedback(
+				hand,
+				muzzle,
+				weapon_direction,
 				muzzle_color,
-				0.95 * flash_intensity * glow_intensity
+				flash_size
 			)
-		)
+		else:
+			draw_colored_polygon(
+				PackedVector2Array([
+					muzzle + weapon_direction * flash_size,
+					muzzle + weapon_direction.orthogonal() * 4.0,
+					muzzle - weapon_direction.orthogonal() * 4.0
+				]),
+				Color(
+					muzzle_color,
+					0.95 * flash_intensity * glow_intensity
+				)
+			)
 
 	if reload_timer > 0.0:
 		var reload_ratio := 1.0 - reload_timer / reload_duration
@@ -461,6 +476,72 @@ func _draw_weapon(
 				true
 			)
 	return muzzle
+
+func _draw_melee_fire_feedback(
+	hand: Vector2,
+	muzzle: Vector2,
+	direction: Vector2,
+	color: Color,
+	flash_size: float
+) -> void:
+	var alpha := 0.82 * flash_intensity * glow_intensity
+	var perpendicular := direction.orthogonal()
+	match weapon_attack_type:
+		&"melee_arc":
+			var radius := 42.0 + flash_size * 0.42
+			var angle := direction.angle()
+			var half_angle := 1.02 if weapon_trail_style == &"heavy_arc" else 0.76
+			draw_arc(
+				Vector2.ZERO,
+				radius,
+				angle - half_angle,
+				angle + half_angle,
+				28,
+				Color(color, alpha),
+				6.0 if weapon_trail_style == &"heavy_arc" else 4.0,
+				true
+			)
+			draw_arc(
+				Vector2.ZERO,
+				radius * 0.72,
+				angle - half_angle * 0.82,
+				angle + half_angle * 0.82,
+				22,
+				Color(color, alpha * 0.32),
+				8.0,
+				true
+			)
+		&"melee_rect", &"melee_sweep", &"dash_slash":
+			draw_line(
+				hand - perpendicular * 8.0,
+				muzzle + direction * 14.0 + perpendicular * 11.0,
+				Color(color, alpha),
+				4.5,
+				true
+			)
+			draw_line(
+				hand + perpendicular * 7.0,
+				muzzle + direction * 7.0 - perpendicular * 8.0,
+				Color(color.lightened(0.18), alpha * 0.55),
+				2.5,
+				true
+			)
+		_:
+			draw_line(
+				hand,
+				muzzle + direction * 10.0,
+				Color(color, alpha),
+				4.0,
+				true
+			)
+
+func _is_melee_weapon_attack() -> bool:
+	return (
+		weapon_attack_type == &"melee_arc"
+		or weapon_attack_type == &"melee_rect"
+		or weapon_attack_type == &"melee_sweep"
+		or weapon_attack_type == &"dash_slash"
+	)
 
 func _draw_status_feedback() -> void:
 	if status_feedback_timer <= 0.0 or status_feedback_id.is_empty():

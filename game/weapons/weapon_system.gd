@@ -10,6 +10,15 @@ signal weapon_changed(weapon_data: WeaponData)
 signal low_ammo_changed(is_low: bool, total_ammo: int)
 signal fallback_activated(weapon_data: WeaponData)
 signal special_weapon_activated(weapon_data: WeaponData)
+signal melee_attack_started(attack: Node, weapon_data: WeaponData)
+signal melee_attack_hit(
+	attack: Node,
+	target: Node,
+	applied_damage: int,
+	hit_position: Vector2
+)
+
+const MELEE_ATTACK_SCRIPT := preload("res://game/weapons/melee_attack.gd")
 
 @export var weapon_data: WeaponData = preload("res://game/weapons/starter_pistol.tres")
 @export var fallback_weapon_data: WeaponData = preload(
@@ -66,10 +75,18 @@ func try_fire(origin: Vector2, direction: Vector2, owner_ref: Node = null) -> bo
 			fire_blocked.emit(&"empty")
 			return false
 
-	cooldown = 1.0 / maxf(
+	var base_cooldown := 1.0 / maxf(
 		weapon_data.fire_rate * _get_modified_fire_rate_multiplier(),
 		0.01
 	)
+	cooldown = base_cooldown
+	if weapon_data.uses_melee_attack():
+		cooldown = maxf(
+			base_cooldown,
+			weapon_data.windup_time
+			+ weapon_data.active_time
+			+ weapon_data.recovery_time
+		)
 	current_ammo -= weapon_data.ammo_per_shot
 	_store_active_ammo()
 	ammo_changed.emit(current_ammo, reserve_ammo)
@@ -77,7 +94,9 @@ func try_fire(origin: Vector2, direction: Vector2, owner_ref: Node = null) -> bo
 	var normalized_direction := _apply_weapon_scatter(direction.normalized())
 	fired.emit(origin, normalized_direction, weapon_data.damage)
 
-	if weapon_data.projectile_scene != null:
+	if weapon_data.uses_melee_attack():
+		_spawn_melee_attack(origin, normalized_direction, owner_ref)
+	elif weapon_data.projectile_scene != null:
 		var projectile_system = get_tree().get_first_node_in_group("projectile_system")
 		if projectile_system != null and projectile_system.has_method("spawn_projectile"):
 			projectile_system.spawn_projectile(
@@ -116,6 +135,51 @@ func try_fire(origin: Vector2, direction: Vector2, owner_ref: Node = null) -> bo
 				root.add_child(projectile)
 
 	return true
+
+func _spawn_melee_attack(
+	origin: Vector2,
+	direction: Vector2,
+	owner_ref: Node = null
+) -> Node:
+	if weapon_data == null:
+		return null
+	var attack_origin := origin
+	if owner_ref is Node2D:
+		attack_origin = (owner_ref as Node2D).global_position
+	var attack := MELEE_ATTACK_SCRIPT.new()
+	attack.configure(
+		attack_origin,
+		direction,
+		owner_ref,
+		weapon_data.damage,
+		weapon_data.weapon_id,
+		weapon_data.get_resolved_melee_shape(),
+		weapon_data.get_resolved_melee_range(),
+		weapon_data.get_resolved_melee_width(),
+		weapon_data.melee_arc_degrees,
+		weapon_data.windup_time,
+		weapon_data.active_time,
+		weapon_data.knockback,
+		weapon_data.max_hit_count,
+		weapon_data.visual_data,
+		weapon_data.trail_style,
+		weapon_data.effect_key
+	)
+	attack.hit_target.connect(_on_melee_attack_hit.bind(attack))
+	var root := get_tree().current_scene
+	if root == null:
+		root = get_tree().root
+	root.add_child(attack)
+	melee_attack_started.emit(attack, weapon_data)
+	return attack
+
+func _on_melee_attack_hit(
+	target: Node,
+	applied_damage: int,
+	hit_position: Vector2,
+	attack: Node
+) -> void:
+	melee_attack_hit.emit(attack, target, applied_damage, hit_position)
 
 func start_reload() -> bool:
 	if weapon_data == null or is_reloading:

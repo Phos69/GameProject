@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Berserker, Spadaccino e Licantropo non usano piu projectile runtime per
+  ascia, spada e artigli: i colpi base passano da hitbox melee temporanee
+  ruotate nella direzione di mira.
 - Resa la Character Select clampata al viewport con safe-area e scroll,
   evitando tagli di card, slot player, dossier e azioni a risoluzioni o aspect
   ratio stretti.
@@ -25,6 +28,22 @@
 
 ### Added
 
+- Esteso `WeaponData` con `attack_type`, campi melee (`melee_shape`,
+  `melee_range`, `melee_width`, `melee_arc_degrees`, `windup_time`,
+  `active_time`, `recovery_time`, `knockback`, `trail_style`, `effect_key` e
+  `sound_key`) e helper di risoluzione.
+- Aggiunto `MeleeAttack`, un runtime world-space per swing melee con wind-up,
+  finestra attiva, anti-multihit per bersaglio, knockback leggero e trail
+  procedurale.
+- Aggiunto `tests/rpg_melee_attack_resolution_smoke_test.gd` per verificare
+  che arco generi projectile mentre ascia e spada danneggiano senza emettere
+  `projectile_spawned`.
+- Character Select e dossier mostrano ora il tipo di attacco arma
+  projectile/melee e la preview gameplay disegna micro-feedback dedicati per
+  arco, pistola, ascia e spada.
+- `GameplayEffects`, `PlayerVisual` e `AudioEventRouter` consumano i segnali
+  melee per slash trail, impatti dedicati, shake leggero e cue procedurali
+  distinti.
 - Aggiunto `MenuNavigationController` riusabile per focus circolare,
   input D-pad/stick con cooldown, Back/B e cambio tab LB/RB nei menu.
 - Settings ora supporta LB/RB per cambiare tab in modo circolare e rifocalizza

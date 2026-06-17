@@ -41,8 +41,11 @@ func set_profile(profile: Dictionary, weapon_data: WeaponData = null) -> void:
 		str(current_profile.get("base_weapon_name", "Weapon"))
 	]
 	style_label.text = str(current_profile.get("style_description", ""))
-	weapon_label.text = "Weapon: %s  Range %dm" % [
+	weapon_label.text = "Weapon: %s  %s  Range %dm" % [
 		str(current_profile.get("base_weapon_name", "Weapon")),
+		_attack_type_label(
+			current_weapon_data.attack_type if current_weapon_data != null else &"projectile"
+		),
 		int(_weapon_range())
 	]
 	passive_label.text = "Passive: %s\n%s" % [
@@ -168,6 +171,23 @@ func _weapon_range() -> float:
 	if current_weapon_data == null:
 		return 0.0
 	return current_weapon_data.max_range
+
+func _attack_type_label(attack_type: StringName) -> String:
+	match attack_type:
+		&"melee_arc":
+			return "Arc melee"
+		&"melee_rect", &"melee_sweep":
+			return "Sweep melee"
+		&"dash_slash":
+			return "Dash slash"
+		&"radial_aoe":
+			return "Radial AOE"
+		&"cone_volley":
+			return "Cone volley"
+		&"auto_target_burst":
+			return "Target burst"
+		_:
+			return "Projectile"
 
 func _make_panel_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()

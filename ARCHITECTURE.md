@@ -21,9 +21,13 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 9. `PlayerController` legge input solo quando una modalita gameplay e attiva.
 10. `PauseMenu` intercetta l'azione `pause`, mette in pausa il tree e consente
    resume, settings, ritorno al menu o quit.
-11. `WeaponSystem` gestisce fallback permanente, speciale, cooldown, caricatori, riserve e ricarica per il singolo player.
-12. `WeaponData` inoltra l'eventuale `WeaponVisualData` a player, HUD e proiettile.
-13. `ProjectileSystem` spawna proiettili che applicano danno tramite `HealthSystem`.
+11. `WeaponSystem` gestisce fallback permanente, speciale, cooldown,
+    caricatori, riserve, ricarica e risoluzione `attack_type` per il singolo
+    player.
+12. `WeaponData` inoltra l'eventuale `WeaponVisualData` a player, HUD,
+    proiettile o hitbox melee temporanea.
+13. `ProjectileSystem` spawna proiettili ranged; `MeleeAttack` copre i colpi
+    melee temporanei. Entrambi applicano danno tramite `HealthSystem`.
 14. `EnemySystem` spawna basic, runner, tank e shooter; gli archetipi riusano targeting, health, scaling, morte e drop condivisi.
 15. Alla morte, il nemico chiede a `DropSystem` di generare pickup dalla propria `LootTable`.
 16. `DropPickup` delega l'applicazione della ricompensa a `DropSystem`.
@@ -92,9 +96,14 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `AudioCueData`: contratto sostituibile per asset e fallback.
 - `AudioVoicePool`: limite voci e sostituzione guidata dalla priorita.
 - `AudioEventRouter`: hook gameplay separati dalla riproduzione audio.
-- `WeaponData`: risorsa immutabile con statistiche gameplay e riferimento visuale opzionale.
+- `WeaponData`: risorsa immutabile con statistiche gameplay, `attack_type`,
+  timing melee opzionale e riferimento visuale opzionale.
 - `WeaponVisualData`: palette, dimensioni e profilo condivisi da arma, HUD, proiettile e flash.
-- `WeaponSystem`: stato runtime per-player di fallback, speciale, cooldown, munizioni e ricarica.
+- `WeaponSystem`: stato runtime per-player di fallback, speciale, cooldown,
+  munizioni, ricarica e dispatch tra projectile e melee.
+- `MeleeAttack`: hitbox temporanea world-space per swing melee con wind-up,
+  active time, recovery tramite cooldown, anti-multihit per bersaglio e
+  feedback trail.
 - `ProjectileSystem` e `Projectile`: spawn, movimento, collisione e consegna del danno.
 - `HealthSystem` e `HealthComponent`: richieste globali di danno/cura, stato vita locale e invulnerabilita componibile per sorgente; il danno ambientale puo ignorarla esplicitamente.
 - `EnemySystem`: registro di scene nemico per ID, spawn, contenitore, registro runtime e notifica morte.
@@ -257,9 +266,17 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - Un nuovo rifornimento della speciale la riattiva e avvia il reload.
 - Le statistiche di bilanciamento vivono in risorse `WeaponData`, non nel controller player.
 - Le armi RPG di base sono `WeaponData` dedicate e vengono equipaggiate dal profilo `RpgPlayerComponent`.
-- `WeaponData.max_range` limita la vita del proiettile senza cambiare la scena projectile.
+- `WeaponData.max_range` limita la vita del proiettile o definisce la portata
+  leggibile delle armi melee.
 - `WeaponData.scatter_degrees` viene applicato da `WeaponSystem` alla direzione di sparo.
-- `WeaponData.hitbox_type`, `hitbox_size` e `max_hit_count` configurano la collisione runtime del proiettile separatamente dal visual.
+- `WeaponData.attack_type` decide il runtime: `projectile` usa
+  `ProjectileSystem`, mentre `melee_arc`, `melee_rect`, `melee_sweep` e
+  `dash_slash` usano `MeleeAttack`.
+- `WeaponData.hitbox_type`, `hitbox_size` e `max_hit_count` configurano la
+  collisione runtime separatamente dal visual; i campi `melee_*`,
+  `windup_time`, `active_time`, `recovery_time`, `knockback`, `trail_style`,
+  `effect_key` e `sound_key` rifiniscono i colpi melee senza duplicare il
+  sistema danni.
 - `WeaponSystem.get_reload_ratio()` espone il progresso reload; il moltiplicatore `reload_speed` RPG riduce la durata.
 - `WeaponSystem` legge il moltiplicatore fire rate RPG solo dal componente del proprio player, usato dalla passiva `Mano Veloce`.
 - Le passive RPG modificano danno, cadenza o mitigazione attraverso `RpgPlayerComponent`, senza duplicare collisioni o logica proiettile.

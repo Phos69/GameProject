@@ -164,6 +164,12 @@ func _refresh_content() -> void:
 		str(character_profile.get("base_weapon_name", "Weapon")),
 		int(_weapon_range())
 	]
+	if weapon_data != null:
+		weapon_label.text = "%s / %s / %dm" % [
+			str(character_profile.get("base_weapon_name", "Weapon")),
+			_attack_type_label(weapon_data.attack_type),
+			int(_weapon_range())
+		]
 	passive_label.text = "P: %s" % str(character_profile.get("passive_name", ""))
 	super_label.text = "S: %s" % str(character_profile.get("super_name", ""))
 	portrait.texture = portrait_texture
@@ -243,6 +249,23 @@ func _weapon_range() -> float:
 	if weapon_data == null:
 		return 0.0
 	return weapon_data.max_range
+
+func _attack_type_label(attack_type: StringName) -> String:
+	match attack_type:
+		&"melee_arc":
+			return "Arc"
+		&"melee_rect", &"melee_sweep":
+			return "Sweep"
+		&"dash_slash":
+			return "Dash"
+		&"radial_aoe":
+			return "AoE"
+		&"cone_volley":
+			return "Cone"
+		&"auto_target_burst":
+			return "Burst"
+		_:
+			return "Projectile"
 
 func _add_transparent_button_styles() -> void:
 	var empty := StyleBoxEmpty.new()

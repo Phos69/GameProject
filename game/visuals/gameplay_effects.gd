@@ -77,6 +77,7 @@ func _connect_systems() -> void:
 		):
 			player_manager.player_spawned.connect(player_spawned_callback)
 	for player in get_tree().get_nodes_in_group("players"):
+		_connect_weapon_feedback(player)
 		_connect_rpg_feedback(player)
 
 func _on_projectile_spawned(projectile: Node) -> void:
@@ -117,6 +118,46 @@ func _on_projectile_impacted(
 		flash_intensity
 	)
 	_request_camera_shake(1.5, 0.08)
+
+func _on_melee_attack_hit(
+	attack: Node,
+	_target: Node,
+	applied_damage: int,
+	hit_position: Vector2
+) -> void:
+	if applied_damage <= 0:
+		return
+	var color := Color(1.0, 0.80, 0.34, 1.0)
+	var size := 24.0
+	var shake_strength := 2.0
+	var attack_visual_data := (
+		attack.get("visual_data") as WeaponVisualData
+		if attack != null
+		else null
+	)
+	var source_id := (
+		StringName(attack.get("source_id"))
+		if attack != null
+		else &""
+	)
+	if attack_visual_data != null:
+		color = attack_visual_data.projectile_glow_color
+	if source_id == &"rpg_axe":
+		size = 34.0
+		shake_strength = 3.8
+	elif source_id == &"rpg_sword":
+		size = 26.0
+		shake_strength = 2.4
+	_spawn_effect(
+		&"melee_hit",
+		hit_position,
+		color,
+		size,
+		0.20,
+		attack.rotation if attack != null else 0.0,
+		flash_intensity
+	)
+	_request_camera_shake(shake_strength, 0.10)
 
 func _on_enemy_died(enemy: Node) -> void:
 	if not enemy is Node2D:
@@ -239,15 +280,27 @@ func spawn_rpg_level_up(position: Vector2) -> GameplayEffect:
 	return effect
 
 func spawn_rpg_super(position: Vector2, super_id: StringName) -> GameplayEffect:
+	var super_color := _color_for_super(super_id)
+	var effect_kind := _effect_kind_for_super(super_id)
 	var effect := _spawn_effect(
-		&"rpg_super",
+		effect_kind,
 		position,
-		_color_for_super(super_id),
+		super_color,
 		62.0,
 		0.64,
 		0.0,
 		glow_intensity
 	)
+	if effect_kind != &"rpg_super":
+		_spawn_effect(
+			&"rpg_super",
+			position,
+			super_color,
+			40.0,
+			0.50,
+			0.0,
+			glow_intensity
+		)
 	_request_camera_shake(4.5, 0.20)
 	return effect
 
@@ -308,7 +361,16 @@ func _connect_rpg_feedback(player: Node) -> void:
 	if not rpg_component.super_activated.is_connected(super_callback):
 		rpg_component.super_activated.connect(super_callback)
 
+func _connect_weapon_feedback(player: Node) -> void:
+	var weapon_system := player.get_node_or_null("WeaponSystem") as WeaponSystem
+	if weapon_system == null:
+		return
+	var melee_hit_callback := Callable(self, "_on_melee_attack_hit")
+	if not weapon_system.melee_attack_hit.is_connected(melee_hit_callback):
+		weapon_system.melee_attack_hit.connect(melee_hit_callback)
+
 func _on_player_spawned(_player_slot: int, player: Node) -> void:
+	_connect_weapon_feedback(player)
 	_connect_rpg_feedback(player)
 
 func _on_player_fell(
@@ -354,3 +416,16 @@ func _color_for_super(super_id: StringName) -> Color:
 			return Color(0.62, 0.76, 1.0, 1.0)
 		_:
 			return Color(0.70, 1.0, 0.74, 1.0)
+
+func _effect_kind_for_super(super_id: StringName) -> StringName:
+	match super_id:
+		&"arrow_rain":
+			return &"rpg_super_cone"
+		&"final_barrage":
+			return &"rpg_super_burst"
+		&"blood_quake":
+			return &"rpg_super_radial"
+		&"phantom_blade":
+			return &"rpg_super_dash"
+		_:
+			return &"rpg_super"

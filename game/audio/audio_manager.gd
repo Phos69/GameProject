@@ -381,6 +381,16 @@ func _shot_frequency(source_id: StringName) -> float:
 			return 380.0
 		&"enemy_shooter":
 			return 290.0
+		&"rpg_bow":
+			return 610.0
+		&"rpg_pistol":
+			return 560.0
+		&"rpg_axe":
+			return 210.0
+		&"rpg_sword":
+			return 430.0
+		&"rpg_claws":
+			return 470.0
 		_:
 			return 260.0 if String(source_id).begins_with("boss_") else 500.0
 

@@ -61,6 +61,22 @@
 
 ## Completati recenti
 
+- Pass personaggi RPG distinguibili e melee reali.
+  - Obiettivo: separare il comportamento delle armi RPG starter, rendendo
+    spada/ascia/artigli veri melee con hitbox temporanee e mantenendo
+    arco/pistola/staff/fionda come projectile.
+  - Milestone collegata: polish post-roadmap RPG Mode.
+  - File/sistemi coinvolti: `WeaponData`, `WeaponSystem`, `MeleeAttack`,
+    risorse `game/weapons/rpg_*`, `PlayerVisual`, `GameplayEffects`,
+    `AudioEventRouter`, Character Select e smoke test RPG.
+  - Criterio di accettazione: Ranger e Pistoliere continuano a generare
+    projectile, Berserker e Spadaccino non generano projectile runtime, i
+    colpi melee applicano danno via `HealthSystem` e la Character Select indica
+    projectile/melee senza tagliare le card.
+  - Test richiesto: `tests/rpg_melee_attack_resolution_smoke_test.gd`, smoke
+    RPG M1-M13, `tests/character_select_ui_smoke_test.gd`, combat e survival
+    smoke.
+
 - Navigazione menu e Character Select responsive.
   - Obiettivo: rendere Character Select leggibile a piu risoluzioni e
     uniformare focus, Back, wrapping e tab Settings con gamepad.
@@ -405,6 +421,19 @@
 - File/sistemi coinvolti: `game/rpg/characters/`, `game/visuals/player_visual.gd`, `game/ui/player_hud_card.gd`, `assets/characters/`.
 - Criterio di accettazione: ogni personaggio ha portrait HUD/full, idle/run/attack/reload/hurt/death/super, weapon layer e VFX separati configurati dai campi `RpgCharacterData`; Tutti i sette personaggi restano riferimenti minimi per struttura manifest, sprite sheet e icone arma/abilita; il prossimo ciclo deve migliorare qualita, VFX separati e coerenza animabile.
 - Test richiesto: smoke RPG headless, QA visuale a 1280x720 e checklist `docs/rpg_character_visual_checklist.md` completata.
+
+## Tuning melee RPG e super - futuro
+
+- Obiettivo: playtestare timing, knockback, hitstop percepito, leggibilita
+  delle super starter e bilanciamento delle hitbox melee dopo il pass tecnico.
+- Milestone collegata: polish post-roadmap RPG Mode.
+- File/sistemi coinvolti: `WeaponData`, `MeleeAttack`, `RpgSuperResolver`,
+  `GameplayEffects`, `PlayerVisual`, risorse `game/weapons/rpg_*`.
+- Criterio di accettazione: ascia resta potente ma rischiosa, spada resta
+  controllata e difensiva, Pioggia di Frecce/Scarica Finale/Terremoto di
+  Sangue/Lama Fantasma sono riconoscibili a colpo d'occhio in survival.
+- Test richiesto: QA manuale survival con i quattro starter a 1280x720 e
+  960x540, piu smoke RPG e `tests/rpg_melee_attack_resolution_smoke_test.gd`.
 
 ## Polish classi RPG avanzate - futuro
 

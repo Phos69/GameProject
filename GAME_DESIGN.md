@@ -360,17 +360,20 @@ Armi base RPG attive:
 
 - `Arco`: 20 danni, range 750, scatter 2 gradi, 1 freccia e reload 0,55s.
 - `Pistola`: 9 danni, range 520, scatter 8 gradi, 8 colpi e reload 1,2s.
-- `Ascia`: 28 danni, range 95, 3 swing e reload 1,6s.
-- `Spada`: 14 danni, range 135, 4 fendenti e reload 0,85s.
+- `Ascia`: 28 danni, range 95, 3 swing, wind-up pesante, hitbox ad arco e reload 1,6s.
+- `Spada`: 14 danni, range 135, 4 fendenti, sweep frontale rapido e reload 0,85s.
 - `Bastone arcano`: 18 danni, range 690, 5 cariche e reload 1,25s.
 - `Fionda magnetica`: 11 danni, range 460, 8 rottami e reload 0,95s.
 - `Artigli`: 13 danni, range 82, 5 colpi furia e recover 0,75s.
 
 Le armi base hanno riserva infinita ma conservano caricatore e reload. Le
 hitbox sono configurate separatamente dal visual: pistola circle, arco capsule,
-ascia arc multi-hit e spada rectangle multi-hit. L'HUD mostra pips ammo per
-caricatore e una barra reload; il profilo RPG puo accelerare o rallentare la
-ricarica tramite `reload_speed`.
+ascia arc multi-hit e spada rectangle multi-hit. `WeaponData.attack_type`
+decide il runtime: le armi ranged creano projectile, mentre ascia, spada e
+artigli creano una hitbox melee temporanea ruotata nella direzione di mira, con
+wind-up, finestra attiva, recovery, trail e anti-multihit per singolo swing.
+L'HUD mostra pips ammo per caricatore e una barra reload; il profilo RPG puo
+accelerare o rallentare la ricarica tramite `reload_speed`.
 
 XP RPG:
 

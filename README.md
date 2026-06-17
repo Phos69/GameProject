@@ -96,6 +96,11 @@ arma base. Il dossier laterale usa `style_description` e
 asset, popolare i path `assets/characters/<id>/...` nei `.tres` e validare la
 checklist `docs/rpg_character_visual_checklist.md`.
 
+Il pass combat RPG distingue anche il runtime arma: arco, pistola, bastone e
+fionda restano `projectile`, mentre ascia, spada e artigli usano hitbox melee
+temporanee con wind-up, finestra attiva, recovery, trail e niente nodo
+projectile.
+
 Smoke test headless:
 
 ```text
@@ -144,6 +149,7 @@ godot --headless --path . --script res://tests/milestone_rpg_10_balance_smoke_te
 godot --headless --path . --script res://tests/milestone_rpg_11_data_driven_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_rpg_12_feedback_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_rpg_13_new_classes_smoke_test.gd
+godot --headless --path . --script res://tests/rpg_melee_attack_resolution_smoke_test.gd
 ```
 
 Export Windows:
@@ -224,8 +230,10 @@ Completato:
 - menu principale mostrato all'avvio;
 - selezione personaggio prima della zombie survival con quattro profili iniziali;
 - statistiche classe RPG con HP, attacco, difesa, velocita, XP bar e level-up per-run;
-- armi base RPG per arco, pistola, ascia e spada con range, scatter, ammo e reload distinti;
-- hitbox arma configurabili e separate dal visual, inclusi capsule, rettangolo e arco multi-hit;
+- armi base RPG per arco, pistola, ascia e spada con range, scatter, ammo,
+  reload e `attack_type` distinti;
+- hitbox arma configurabili e separate dal visual, con projectile per ranged e
+  hitbox temporanee melee per ascia/spada/artigli;
 - pips ammo e barra reload nel player HUD per le armi RPG;
 - XP RPG assegnata al killer e a fine ondata senza pickup XP dagli zombie;
 - passive automatiche RPG per Ranger, Pistoliere, Berserker e Spadaccino con stato visibile nell'HUD;
