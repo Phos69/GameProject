@@ -1,32 +1,263 @@
 {
-  "version": 1,
+  "version": 2,
   "coordinate_system": "pseudo_isometric_2d",
+  "notes": "Environment objects are rendered procedurally (game/modes/zombie/biome_obstacle.gd) so no external art is mandatory for bootstrap. This manifest is the source of truth for collision shape, footprint, blocking flags and the ground sort offset used for Y-sorting and the drop shadow. visual_scene pointing to a .gd script means procedural fallback.",
   "default_sorting": {
     "mode": "y_sort",
-    "sort_offset": 0
+    "sort_offset": 6
   },
   "objects": [
     {
-      "id": "ruined_house",
-      "category": "obstacle",
-      "status": "procedural_isometric_placeholder",
+      "id": "small_rock",
+      "category": "rock",
+      "status": "converted_procedural_isometric",
       "visual_scene": "res://game/modes/zombie/biome_obstacle.gd",
-      "collision_shape": "rectangle",
-      "footprint_tiles": [18, 16],
+      "collision_shape": "circle",
+      "footprint_tiles": [6, 6],
       "blocks_movement": true,
       "blocks_projectiles": true,
-      "is_jumpable_gap_anchor": false
+      "is_jumpable_gap_anchor": false,
+      "sort_offset": 5
+    },
+    {
+      "id": "ice_rock",
+      "category": "rock",
+      "status": "converted_procedural_isometric",
+      "visual_scene": "res://game/modes/zombie/biome_obstacle.gd",
+      "collision_shape": "circle",
+      "footprint_tiles": [7, 7],
+      "blocks_movement": true,
+      "blocks_projectiles": true,
+      "is_jumpable_gap_anchor": false,
+      "sort_offset": 5
+    },
+    {
+      "id": "broken_fence",
+      "category": "barrier",
+      "status": "converted_procedural_isometric",
+      "visual_scene": "res://game/modes/zombie/biome_obstacle.gd",
+      "collision_shape": "rectangle",
+      "footprint_tiles": [12, 3],
+      "blocks_movement": true,
+      "blocks_projectiles": true,
+      "is_jumpable_gap_anchor": false,
+      "sort_offset": 6
+    },
+    {
+      "id": "wood_barrier",
+      "category": "barrier",
+      "status": "converted_procedural_isometric",
+      "visual_scene": "res://game/modes/zombie/biome_obstacle.gd",
+      "collision_shape": "rectangle",
+      "footprint_tiles": [13, 3],
+      "blocks_movement": true,
+      "blocks_projectiles": true,
+      "is_jumpable_gap_anchor": false,
+      "sort_offset": 6
+    },
+    {
+      "id": "corroded_barrier",
+      "category": "barrier",
+      "status": "converted_procedural_isometric",
+      "visual_scene": "res://game/modes/zombie/biome_obstacle.gd",
+      "collision_shape": "rectangle",
+      "footprint_tiles": [13, 3],
+      "blocks_movement": true,
+      "blocks_projectiles": true,
+      "is_jumpable_gap_anchor": false,
+      "sort_offset": 6
+    },
+    {
+      "id": "scorched_barricade",
+      "category": "barrier",
+      "status": "converted_procedural_isometric",
+      "visual_scene": "res://game/modes/zombie/biome_obstacle.gd",
+      "collision_shape": "rectangle",
+      "footprint_tiles": [14, 3],
+      "blocks_movement": true,
+      "blocks_projectiles": true,
+      "is_jumpable_gap_anchor": false,
+      "sort_offset": 6
+    },
+    {
+      "id": "reed_wall",
+      "category": "barrier",
+      "status": "converted_procedural_isometric",
+      "visual_scene": "res://game/modes/zombie/biome_obstacle.gd",
+      "collision_shape": "rectangle",
+      "footprint_tiles": [12, 3],
+      "blocks_movement": true,
+      "blocks_projectiles": true,
+      "is_jumpable_gap_anchor": false,
+      "sort_offset": 6
     },
     {
       "id": "boundary_fence",
       "category": "border",
-      "status": "procedural_isometric_placeholder",
+      "status": "converted_procedural_isometric",
       "visual_scene": "res://game/modes/zombie/biome_obstacle.gd",
       "collision_shape": "rectangle",
       "footprint_tiles": [16, 4],
       "blocks_movement": true,
       "blocks_projectiles": true,
-      "is_jumpable_gap_anchor": false
+      "is_jumpable_gap_anchor": false,
+      "sort_offset": 5
+    },
+    {
+      "id": "ruined_house",
+      "category": "building",
+      "status": "converted_procedural_isometric",
+      "visual_scene": "res://game/modes/zombie/biome_obstacle.gd",
+      "collision_shape": "rectangle",
+      "footprint_tiles": [18, 16],
+      "blocks_movement": true,
+      "blocks_projectiles": true,
+      "is_jumpable_gap_anchor": false,
+      "sort_offset": 30
+    },
+    {
+      "id": "lab_ruin",
+      "category": "building",
+      "status": "converted_procedural_isometric",
+      "visual_scene": "res://game/modes/zombie/biome_obstacle.gd",
+      "collision_shape": "rectangle",
+      "footprint_tiles": [16, 10],
+      "blocks_movement": true,
+      "blocks_projectiles": true,
+      "is_jumpable_gap_anchor": false,
+      "sort_offset": 30
+    },
+    {
+      "id": "burned_house",
+      "category": "building",
+      "status": "converted_procedural_isometric",
+      "visual_scene": "res://game/modes/zombie/biome_obstacle.gd",
+      "collision_shape": "rectangle",
+      "footprint_tiles": [17, 10],
+      "blocks_movement": true,
+      "blocks_projectiles": true,
+      "is_jumpable_gap_anchor": false,
+      "sort_offset": 30
+    },
+    {
+      "id": "abandoned_house",
+      "category": "building",
+      "status": "converted_procedural_isometric",
+      "visual_scene": "res://game/modes/zombie/biome_obstacle.gd",
+      "collision_shape": "rectangle",
+      "footprint_tiles": [16, 10],
+      "blocks_movement": true,
+      "blocks_projectiles": true,
+      "is_jumpable_gap_anchor": false,
+      "sort_offset": 30
+    },
+    {
+      "id": "chemical_barrel",
+      "category": "barrel",
+      "status": "converted_procedural_isometric",
+      "visual_scene": "res://game/modes/zombie/biome_obstacle.gd",
+      "collision_shape": "circle",
+      "footprint_tiles": [5, 5],
+      "blocks_movement": true,
+      "blocks_projectiles": true,
+      "is_jumpable_gap_anchor": false,
+      "sort_offset": 8
+    },
+    {
+      "id": "metal_wreck",
+      "category": "wreck",
+      "status": "converted_procedural_isometric",
+      "visual_scene": "res://game/modes/zombie/biome_obstacle.gd",
+      "collision_shape": "rectangle",
+      "footprint_tiles": [9, 6],
+      "blocks_movement": true,
+      "blocks_projectiles": true,
+      "is_jumpable_gap_anchor": false,
+      "sort_offset": 10
+    },
+    {
+      "id": "sunken_wreck",
+      "category": "wreck",
+      "status": "converted_procedural_isometric",
+      "visual_scene": "res://game/modes/zombie/biome_obstacle.gd",
+      "collision_shape": "rectangle",
+      "footprint_tiles": [11, 7],
+      "blocks_movement": true,
+      "blocks_projectiles": true,
+      "is_jumpable_gap_anchor": false,
+      "sort_offset": 10
+    },
+    {
+      "id": "fallen_log",
+      "category": "log",
+      "status": "converted_procedural_isometric",
+      "visual_scene": "res://game/modes/zombie/biome_obstacle.gd",
+      "collision_shape": "rectangle",
+      "footprint_tiles": [14, 3],
+      "blocks_movement": true,
+      "blocks_projectiles": true,
+      "is_jumpable_gap_anchor": false,
+      "sort_offset": 4
+    },
+    {
+      "id": "wood_bridge",
+      "category": "bridge",
+      "status": "converted_procedural_isometric",
+      "visual_scene": "res://game/modes/zombie/biome_obstacle.gd",
+      "collision_shape": "rectangle",
+      "footprint_tiles": [14, 4],
+      "blocks_movement": true,
+      "blocks_projectiles": true,
+      "is_jumpable_gap_anchor": false,
+      "sort_offset": 3
+    },
+    {
+      "id": "toxic_boundary_wall",
+      "category": "border",
+      "status": "converted_procedural_isometric",
+      "visual_scene": "res://game/modes/zombie/biome_obstacle.gd",
+      "collision_shape": "rectangle",
+      "footprint_tiles": [35, 3],
+      "blocks_movement": true,
+      "blocks_projectiles": true,
+      "is_jumpable_gap_anchor": false,
+      "sort_offset": 4
+    },
+    {
+      "id": "lava_boundary",
+      "category": "border",
+      "status": "converted_procedural_isometric",
+      "visual_scene": "res://game/modes/zombie/biome_obstacle.gd",
+      "collision_shape": "rectangle",
+      "footprint_tiles": [38, 3],
+      "blocks_movement": true,
+      "blocks_projectiles": true,
+      "is_jumpable_gap_anchor": false,
+      "sort_offset": 4
+    },
+    {
+      "id": "ice_boundary",
+      "category": "border",
+      "status": "converted_procedural_isometric",
+      "visual_scene": "res://game/modes/zombie/biome_obstacle.gd",
+      "collision_shape": "rectangle",
+      "footprint_tiles": [36, 3],
+      "blocks_movement": true,
+      "blocks_projectiles": true,
+      "is_jumpable_gap_anchor": false,
+      "sort_offset": 4
+    },
+    {
+      "id": "deep_water_boundary",
+      "category": "border",
+      "status": "converted_procedural_isometric",
+      "visual_scene": "res://game/modes/zombie/biome_obstacle.gd",
+      "collision_shape": "rectangle",
+      "footprint_tiles": [39, 4],
+      "blocks_movement": true,
+      "blocks_projectiles": true,
+      "is_jumpable_gap_anchor": false,
+      "sort_offset": 3
     },
     {
       "id": "fall_zone",
@@ -37,7 +268,8 @@
       "footprint_tiles": [200, 6],
       "blocks_movement": false,
       "blocks_projectiles": false,
-      "is_jumpable_gap_anchor": true
+      "is_jumpable_gap_anchor": true,
+      "sort_offset": 0
     },
     {
       "id": "bridge_passage",
@@ -48,7 +280,8 @@
       "footprint_tiles": [12, 3],
       "blocks_movement": false,
       "blocks_projectiles": false,
-      "is_jumpable_gap_anchor": true
+      "is_jumpable_gap_anchor": true,
+      "sort_offset": 0
     },
     {
       "id": "supply_crate",
@@ -59,20 +292,9 @@
       "footprint_tiles": [4, 4],
       "blocks_movement": false,
       "blocks_projectiles": false,
-      "is_jumpable_gap_anchor": false
+      "is_jumpable_gap_anchor": false,
+      "sort_offset": 6
     }
   ],
-  "conversion_backlog": [
-    "small_rock",
-    "broken_fence",
-    "wood_barrier",
-    "pipe_stack",
-    "toxic_barrel",
-    "burned_car",
-    "ice_block",
-    "dead_tree",
-    "deep_water",
-    "toxic_puddle",
-    "lava_crack"
-  ]
+  "conversion_backlog": []
 }

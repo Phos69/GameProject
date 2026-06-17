@@ -163,6 +163,7 @@ script = ExtResource("12_tower_defense_manager")
 script = ExtResource("31_arena_manager")
 
 [node name="World" type="Node2D" parent="."]
+y_sort_enabled = true
 
 [node name="Playground" type="Node2D" parent="World" groups=["prototype_arena_content"]]
 z_index = -10
@@ -171,16 +172,19 @@ script = ExtResource("13_playground")
 [node name="Players" type="Node2D" parent="World"]
 
 [node name="Enemies" type="Node2D" parent="World"]
+y_sort_enabled = true
 
 [node name="Bosses" type="Node2D" parent="World"]
 
 [node name="Pickups" type="Node2D" parent="World"]
+y_sort_enabled = true
 
 [node name="GameplayEffects" type="Node2D" parent="World"]
 z_index = 20
 script = ExtResource("27_gameplay_effects")
 
 [node name="EnvironmentProps" type="Node2D" parent="World" groups=["prototype_arena_content"]]
+y_sort_enabled = true
 
 [node name="CombatTargets" type="Node2D" parent="World"]
 visible = false

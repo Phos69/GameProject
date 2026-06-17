@@ -22,71 +22,15 @@ Regole per nuove voci:
 | Build/export Windows | PASS nell'ultima validazione completa disponibile | `docs/latest_commit_validation_report.md` | Rieseguire in Milestone 12 o se cambia packaging |
 | Shutdown headless | Risolto nella Milestone 1 | Loop 100 avvii main scene e smoke prioritari senza cleanup warning noti | Monitorare solo come regressione futura |
 | Mini-eventi bioma | PASS nella validazione Milestone 2 | `tests/biome_mini_events_smoke_test.gd`, `tests/random_encounter_smoke_test.gd`, `docs/latest_commit_validation_report.md` | Riprendere solo dentro playtest/bilanciamento Milestone 11 |
+| Megamappa e streaming regioni | PASS nella validazione Milestone 3 | `tests/region_streaming_smoke_test.gd`, world graph, persistent world, open passage, exploration map, `docs/latest_commit_validation_report.md` | Riprendere in Milestone 4 (asset isometrici) o nel bilanciamento Milestone 11 |
+| Asset isometrici ambiente | PASS nella validazione Milestone 4 | `tests/isometric_environment_manifest_smoke_test.gd`, manifest v2, biome obstacle generation, `docs/latest_commit_validation_report.md` | Conversione ad arte esterna definitiva opzionale; QA visuale screenshot nel playtest Milestone 11 |
+| Dungeon ramificato/shop | PASS nella validazione Milestone 5 | `tests/dungeon_graph_smoke_test.gd`, `tests/dungeon_smoke_test.gd`, `docs/latest_commit_validation_report.md` | UI shop dedicata e arte bioma dungeon restano follow-up; screenshot tre seed nel playtest Milestone 11 |
 | Roadmap storiche | Completate come primo pass o reference | `ROADMAP.md`, `roadmap_*.md`, `docs/milestones/` | Non usarle come backlog attivo se una voce e gia chiusa qui sotto |
 
 Test eseguiti per questo audit: nessun test gameplay. La Milestone 0 richiede
 revisione manuale, baseline e consolidamento TODO.
 
 ## Backlog aperto prioritizzato
-
-### MAP-001 - QA attraversamento continuo della megamappa
-
-- Obiettivo: validare su schermo reale passaggi fisici aperti, fall boundary,
-  mappa esplorazione e dodge/gap attraversando territori multipli.
-- Milestone collegata: `todo_roadmap.md` Milestone 3, parte QA.
-- File/sistemi coinvolti: `WorldRuntime`, `BiomeTransitionSystem`,
-  `TerrainGenerator`, `ExplorationMapPanel`, `PlayerDodgeComponent`,
-  `HazardSystem`.
-- Criterio di accettazione: il party attraversa almeno otto regioni con seed
-  fisso senza teletrasporti percepiti, senza passaggi ostruiti e con mappa
-  leggibile in default e high contrast.
-- Test richiesto: checklist manuale 20 minuti survival con seed fisso,
-  screenshot mappa, verifica dodge su gap piccolo e smoke world graph,
-  persistent world, open passage, terrain coverage, fall boundary, dodge e
-  exploration map.
-
-### MAP-002 - Streaming visuale delle regioni lontane
-
-- Obiettivo: rendere `WorldRuntime` proprietario della regione corrente e dei
-  vicini N/E/S/W precaricati, lasciando le regioni lontane solo come dati.
-- Milestone collegata: `todo_roadmap.md` Milestone 3, parte implementativa.
-- File/sistemi coinvolti: `WorldRuntime`, `ZombieModeController`,
-  `TerrainGenerator`, `ObstacleSystem`, `ResourceCrateSystem`, `HazardSystem`,
-  `SaveManager`.
-- Criterio di accettazione: le regioni lontane non restano istanziate; rientrare
-  in una regione non ricrea casse gia aperte, encounter completati o ostacoli
-  distrutti; mappa e save v6 restano coerenti.
-- Test richiesto: smoke headless load/unload regioni, profiling manuale con
-  griglia almeno `7x7` e regressioni world/survival.
-
-### ASSET-001 - Pass asset isometrici ambiente
-
-- Obiettivo: sostituire progressivamente placeholder ambientali con oggetti
-  isometrici coerenti senza rendere obbligatori asset esterni.
-- Milestone collegata: `todo_roadmap.md` Milestone 4.
-- File/sistemi coinvolti: `assets/environment/isometric/manifest.json`,
-  `assets/README.md`, `assets/ATTRIBUTION.md`, `BiomeObstacle`,
-  `TerrainGenerator`, `ObstacleSystem`, `BiomeFallZone`, `game/visuals/`.
-- Criterio di accettazione: ogni categoria convertita ha visual scene,
-  collision shape, shadow, sort offset, footprint tiles e flag di blocco
-  coerenti; sorting Y e silhouette non coprono player, zombie o pickup in modo
-  errato.
-- Test richiesto: QA visuale a 1280x720 e 960x540, verifica default/reduced
-  motion/high contrast, smoke collisioni/footprint e test manifest.
-
-### DUN-001 - Dungeon ramificato, shop e biomi dedicati
-
-- Obiettivo: espandere il dungeon oltre il percorso lineare con diramazioni,
-  scelta stanza, shop minimo, biomi dedicati e mappa percorso essenziale.
-- Milestone collegata: `todo_roadmap.md` Milestone 5.
-- File/sistemi coinvolti: `DungeonGenerator`, `DungeonMode`, `DungeonRoom`,
-  scene dungeon, `HUDManager`, UI mappa/scelta stanza, `DropSystem`,
-  `BossSystem`.
-- Criterio di accettazione: almeno un seed produce una scelta reale tra due
-  stanze, il percorso al boss resta sempre raggiungibile, shop e loot non
-  duplicano progressione/drop e la run termina correttamente nei risultati.
-- Test richiesto: estensione `tests/dungeon_smoke_test.gd` su seed multipli,
-  smoke grafo dungeon con branch/shop e checklist manuale con tastiera/joypad.
 
 ### ASSET-002 - Asset definitivi e animazioni personaggi RPG
 
@@ -234,8 +178,9 @@ collegata prima di implementare.
 
 - Asset personaggi: decidere se il target finale usa PNG, SVG testuali o
   pipeline mista. Collegata ad `ASSET-002`.
-- Dungeon shop: decidere valuta di run, denaro party persistente o modello
-  ibrido. Collegata a `DUN-001`.
+- Dungeon shop: RISOLTA nella Milestone 5 -> usa run credit (valuta di run),
+  non denaro party persistente, per non toccare save/progressione. `DUN-001`
+  completata.
 - Tower defense avanzata: confermare priorita prima di aprire un goal lungo.
   Collegata a `TD-001`.
 - Nuovi boss: scegliere nuovo boss o espansione pattern esistenti. Collegata a
@@ -258,7 +203,31 @@ evitare reimplementazioni e per indirizzare le regressioni.
 - Roadmap Motore Generazione Mappe e Biomi: completata come primo motore
   procedurale integrato; usare come riferimento per regressioni world/biomi.
 - Roadmap Megamappa Persistente Isometrica: completata come primo pass stabile;
-  streaming e QA reale sono tracciati in `MAP-001` e `MAP-002`.
+  streaming e QA reale (`MAP-001`, `MAP-002`) chiusi nella Milestone 3 di
+  `todo_roadmap.md`. Follow-up residui: asset isometrici (`ASSET-001`) e
+  profiling/bilanciamento (`BAL-001`).
+- MAP-001 QA attraversamento megamappa e MAP-002 streaming regioni: completati
+  nella Milestone 3 di `todo_roadmap.md`; contratto `active_regions` formalizzato,
+  persistenza runtime per regione (casse aperte non ricompaiono) e round-trip save
+  v6 coperti da `tests/region_streaming_smoke_test.gd` e dalle regressioni world
+  graph/persistent world/open passage/exploration map. Cattura screenshot reale
+  rinviata al playtest Milestone 11. Ledger pronto per ostacoli distruttibili ed
+  encounter region-bound futuri (oggi senza trigger di gioco).
+- ASSET-001 pass asset isometrici ambiente: completato nella Milestone 4 di
+  `todo_roadmap.md`; il manifest `assets/environment/isometric/manifest.json` (v2)
+  e ora letto da `IsometricEnvironmentManifest` e copre i 21 obstacle_id reali con
+  collisione/footprint/sort coerenti; `BiomeObstacle` ha ombra a terra e
+  `sort_offset` data-driven; Y-sort abilitato in scena. Rendering procedurale
+  (nessun asset esterno obbligatorio); conversione ad arte esterna definitiva e
+  screenshot per bioma restano follow-up opzionali (playtest Milestone 11).
+  Coperto da `tests/isometric_environment_manifest_smoke_test.gd`.
+- DUN-001 dungeon ramificato, shop e biomi dedicati: completato nella Milestone 5
+  di `todo_roadmap.md`; `DungeonGenerator` produce un grafo con ramo reale e boss
+  sempre raggiungibile, `DungeonMode` gestisce scelta stanza, run credit, shop
+  (reward via `DropSystem`) e rest room, `DungeonRoom` ha doppia uscita e theming
+  per kind. Decisione: shop su run credit, non denaro party. UI shop dedicata e
+  arte bioma dungeon restano follow-up. Coperto da
+  `tests/dungeon_graph_smoke_test.gd` e `tests/dungeon_smoke_test.gd`.
 - Roadmap RPG Mode M1-M13 e classi avanzate: completate come pass
   data-driven; tuning e polish sono tracciati in `ASSET-002`, `RPG-001` e
   `RPG-002`.
@@ -283,12 +252,15 @@ evitare reimplementazioni e per indirizzare le regressioni.
 ## Mappatura dalle vecchie sezioni TODO
 
 - `Prossima iterazione biomi zombie survival` -> `BIO-001` completata,
-  follow-up residui in `MAP-001`, `MAP-002`, `ASSET-001` e `BAL-001`.
-- `Megamappa persistente isometrica - follow-up` -> `MAP-001`, `MAP-002`,
-  `ASSET-001`.
+  `MAP-001`/`MAP-002` completate nella Milestone 3, `ASSET-001` completata nella
+  Milestone 4, follow-up residuo in `BAL-001`.
+- `Megamappa persistente isometrica - follow-up` -> `MAP-001`, `MAP-002` e
+  `ASSET-001` completate (Milestone 3 e 4).
 - Duplicato storico sulla manutenzione headless dei test -> `TECH-001`.
-- `Espandere il dungeon oltre il percorso lineare` -> `DUN-001`.
-- `Asset definitivi` generico -> `ASSET-001`, `ASSET-002`, `UIUX-001`.
+- `Espandere il dungeon oltre il percorso lineare` -> `DUN-001` completata
+  (Milestone 5).
+- `Asset definitivi` generico -> `ASSET-001` completata (Milestone 4, ambiente),
+  restano `ASSET-002` e `UIUX-001`.
 - `Ampliare i test automatici` -> `QA-001`.
 - `Asset definitivi personaggi RPG - futuro` -> `ASSET-002`.
 - `Tuning melee RPG e super - futuro` -> `RPG-001`.

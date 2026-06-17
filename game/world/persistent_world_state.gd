@@ -1,6 +1,13 @@
 extends RefCounted
 class_name PersistentWorldState
 
+## Per-region runtime ledger categories. Each is stored as an array of stable
+## string keys under region_runtime_state[region_id][category], so re-entering a
+## streamed region can skip content that the party already consumed.
+const CATEGORY_OPENED_CRATES: StringName = &"opened_crates"
+const CATEGORY_DESTROYED_OBSTACLES: StringName = &"destroyed_obstacles"
+const CATEGORY_COMPLETED_ENCOUNTERS: StringName = &"completed_encounters"
+
 var seed_value: int = 0
 var graph_signature: String = ""
 var current_region_id: StringName = &""
@@ -42,6 +49,56 @@ func set_region_runtime_value(
 
 func get_region_runtime_state(region_id: StringName) -> Dictionary:
 	return (region_runtime_state.get(region_id, {}) as Dictionary).duplicate(true)
+
+func mark_region_item_consumed(
+	region_id: StringName,
+	category: StringName,
+	key: StringName
+) -> bool:
+	if region_id.is_empty() or category.is_empty() or key.is_empty():
+		return false
+	if not region_runtime_state.has(region_id):
+		region_runtime_state[region_id] = {}
+	var region_data := region_runtime_state[region_id] as Dictionary
+	if not region_data.has(category):
+		region_data[category] = []
+	var items := region_data[category] as Array
+	var key_text := String(key)
+	for existing in items:
+		if String(existing) == key_text:
+			return false
+	items.append(key_text)
+	return true
+
+func is_region_item_consumed(
+	region_id: StringName,
+	category: StringName,
+	key: StringName
+) -> bool:
+	if not region_runtime_state.has(region_id):
+		return false
+	var region_data := region_runtime_state[region_id] as Dictionary
+	if not region_data.has(category):
+		return false
+	var key_text := String(key)
+	for existing in (region_data[category] as Array):
+		if String(existing) == key_text:
+			return true
+	return false
+
+func get_region_consumed_items(
+	region_id: StringName,
+	category: StringName
+) -> Array[StringName]:
+	var result: Array[StringName] = []
+	if not region_runtime_state.has(region_id):
+		return result
+	var region_data := region_runtime_state[region_id] as Dictionary
+	if not region_data.has(category):
+		return result
+	for existing in (region_data[category] as Array):
+		result.append(StringName(String(existing)))
+	return result
 
 func to_save_data() -> Dictionary:
 	var runtime := {}

@@ -35,18 +35,15 @@ Completate in questa roadmap operativa:
 - Milestone 0: audit, consolidamento TODO e baseline tecnica.
 - Milestone 1: stabilizzazione shutdown headless e lifecycle test.
 - Milestone 2: QA/tuning mini-eventi bioma, status e encounter.
+- Milestone 3: QA attraversamento megamappa e streaming regioni.
+- Milestone 4: asset isometrici ambiente e ostacoli coerenti (pipeline manifest).
+- Milestone 5: dungeon ramificato, shop e biomi dedicati.
 
-Prossima milestone non completata secondo l'ordine consigliato: Milestone 3 -
-QA attraversamento megamappa e streaming regioni.
+Prossima milestone non completata secondo l'ordine consigliato: Milestone 6 -
+Asset definitivi e animazioni personaggi RPG.
 
 Restano aperti o incompleti:
 
-- QA di attraversamento continuo della megamappa e streaming selettivo delle
-  regioni lontane.
-- Sostituzione progressiva di placeholder ambientali isometrici tramite
-  `assets/environment/isometric/manifest.json`.
-- Espansione dungeon oltre il percorso lineare: diramazioni, shop, biomi,
-  scelta stanza, mappa e persistenza della run.
 - Asset definitivi, VFX separati, animazioni e pulizia qualitativa dei sette
   personaggi RPG.
 - Tuning melee e super starter dopo playtest.
@@ -334,6 +331,31 @@ Milestone 1 consigliata per ridurre rumore nei test.
 
 ### Milestone 3 - QA attraversamento megamappa e streaming regioni
 
+**Stato**
+
+Completata il 2026-06-17.
+
+**Completato**
+
+- Contratto `active_regions` formalizzato in `WorldRuntime`: regione corrente piu
+  vicini entro `loaded_region_radius` come dati caldi, regioni lontane lasciate
+  come puro save data; aggiunti `is_region_active` e documentazione del lifecycle.
+- Ledger runtime per regione in `PersistentWorldState` (`opened_crates`,
+  `destroyed_obstacles`, `completed_encounters`) con API di marcatura/lettura e
+  pass-through in `WorldRuntime` tramite il segnale `region_runtime_changed`.
+- `ResourceCrateSystem` assegna alle casse di layout una chiave stabile per
+  regione, salta quelle gia aperte alla rigenerazione e registra il consumo
+  all'apertura: rientrando in una regione le casse aperte non ricompaiono.
+- `SaveManager` autosalva su `region_runtime_changed`, portando lo stato runtime
+  per regione nel save v6 senza bump di versione.
+- Smoke `tests/region_streaming_smoke_test.gd`: traversata 8+ regioni connesse,
+  contratto active_regions/unload, persistenza casse al rientro e round-trip
+  save v6 dei tre ledger; regressioni world graph/persistent world/open
+  passage/exploration map/survival wave verdi.
+- Limite tracciato: `destroyed_obstacles` e `completed_encounters` sono persistiti
+  a livello dati ma senza trigger di gioco (ostacoli non distruttibili, encounter
+  casuali transitori per wave); il ledger e pronto per quelle feature future.
+
 **Obiettivo**
 
 Validare l'attraversamento continuo della megamappa e implementare il caricamento
@@ -408,6 +430,34 @@ Milestone 0 e 1 consigliate.
 
 ### Milestone 4 - Asset isometrici ambiente e ostacoli coerenti
 
+**Stato**
+
+Completata il 2026-06-17.
+
+**Completato**
+
+- `assets/environment/isometric/manifest.json` portato alla versione 2: copre i
+  21 `obstacle_id` reali dei cinque biomi piu cliff/passaggio/cassa, ognuno con
+  categoria, `collision_shape`, `footprint_tiles`, flag `blocks_*`, jumpable e
+  `sort_offset`.
+- Nuovo loader/validatore `game/modes/zombie/isometric_environment_manifest.gd`
+  (cache statica) che rende il manifest una fonte di verita viva, non solo un
+  documento di pianificazione.
+- `BiomeObstacle` aggiunge un'ombra a terra procedurale e un `sort_offset`
+  data-driven, con `z_index=0` per partecipare al Y-sort; il rendering resta
+  procedurale come fallback (nessun asset esterno obbligatorio).
+- `ObstacleSystem` legge il manifest per `sort_offset` e per i flag di blocco.
+- `game/main/main.tscn`: `y_sort_enabled` su `World`, `Enemies`, `Pickups` e
+  `EnvironmentProps`, cosi ostacoli, zombie e pickup si ordinano per Y; i player
+  restano sempre visibili (`z=4`) per leggibilita co-op.
+- Smoke `tests/isometric_environment_manifest_smoke_test.gd`: manifest validato,
+  copertura di tutti gli obstacle_id dei biomi, assenza di asset esterni
+  obbligatori, collisione/footprint coerenti e Y-sort di scena; regressioni
+  obstacle generation/survival/dungeon/tower/open passage verdi.
+- Limite tracciato: la conversione ad arte esterna definitiva e volutamente
+  rinviata; il Y-sort completo player-vs-ambiente resta una scelta di design
+  futura; screenshot per bioma da acquisire nel playtest Milestone 11.
+
 **Obiettivo**
 
 Sostituire progressivamente i placeholder ambientali con oggetti isometrici
@@ -477,6 +527,30 @@ Milestone 3 consigliata.
 `Esegui Milestone 4 di todo_roadmap.md: converti asset ambiente isometrici secondo manifest e pipeline, leggi todo_roadmap.md, rispetta i criteri, aggiorna TODO.md solo a fine lavoro e non iniziare milestone successive.`
 
 ### Milestone 5 - Dungeon ramificato, shop e biomi dedicati
+
+**Stato**
+
+Completata il 2026-06-17.
+
+**Completato**
+
+- `DungeonGenerator` genera un grafo (DAG) con spine che garantisce il boss
+  sempre raggiungibile e un ramo con scelta reale tra due stanze che rientra
+  sulla spine; kind `shop` e `rest` aggiunti; helper `get_boss_room_id` e
+  `boss_is_always_reachable`; determinismo per seed.
+- `DungeonRoom` supporta fino a due uscite mirate con etichetta destinazione e
+  theming del pavimento per kind con tint di profondita (bioma dungeon minimo).
+- `DungeonMode` traversa il grafo, espone `choose_next_room`/`get_forward_options`,
+  gestisce run credit (guadagnati al clear combat), shop con offerte acquistabili
+  riusando `DropSystem`, rest room curativa, mappa testuale e stato esteso; la run
+  termina dopo il boss e raggiunge i risultati.
+- `HUDManager` mostra credit, scelta e mappa percorso del dungeon.
+- Smoke `tests/dungeon_graph_smoke_test.gd` (grafo su 8 seed) e
+  `tests/dungeon_smoke_test.gd` (traversata, scelta, shop, boss, completamento)
+  verdi; regressioni boss/registry/survival/tower defense/shutdown verdi.
+- Decisione risolta: lo shop usa run credit, non denaro party persistente.
+- Limiti tracciati: UI shop dedicata e arte bioma dungeon restano follow-up;
+  acquisto attuale a contatto con i marker offerta.
 
 **Obiettivo**
 
@@ -1121,9 +1195,9 @@ Usare questi prompt uno alla volta.
 1. Milestone 0 - Audit, consolidamento TODO e baseline tecnica. Stato: completata.
 2. Milestone 1 - Stabilizzazione shutdown headless e lifecycle test. Stato: completata.
 3. Milestone 2 - QA mini-eventi bioma, status e encounter. Stato: completata.
-4. Milestone 3 - QA attraversamento megamappa e streaming regioni.
-5. Milestone 4 - Asset isometrici ambiente e ostacoli coerenti.
-6. Milestone 5 - Dungeon ramificato, shop e biomi dedicati.
+4. Milestone 3 - QA attraversamento megamappa e streaming regioni. Stato: completata.
+5. Milestone 4 - Asset isometrici ambiente e ostacoli coerenti. Stato: completata.
+6. Milestone 5 - Dungeon ramificato, shop e biomi dedicati. Stato: completata.
 7. Milestone 6 - Asset definitivi e animazioni personaggi RPG.
 8. Milestone 7 - Tuning melee, super starter e classi RPG avanzate.
 9. Milestone 8 - UI, HUD, audio e polish UX trasversale.
@@ -1157,8 +1231,8 @@ Milestones sequenziali:
 - Asset personaggi: `base_complete` significa asset base presente, non qualita
   finale. Serve decidere se il target finale richiede PNG, SVG testuali o una
   pipeline mista.
-- Dungeon shop: va deciso se usa denaro party persistente, valuta di run o
-  entrambi. La scelta impatta save/progressione.
+- Dungeon shop: RISOLTA nella Milestone 5 - usa valuta di run (run credit), non
+  denaro party persistente, cosi save e progressione restano intatti.
 - Tower defense avanzata: non e priorita nella TODO principale; va confermata
   prima di dedicarle un goal lungo.
 - Nuovi boss: serve scegliere se il prossimo goal aggiunge un boss nuovo o

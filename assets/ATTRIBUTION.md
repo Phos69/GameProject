@@ -7,6 +7,7 @@ repository o alla build.
 | --- | --- | --- | --- | --- |
 | Visual procedurali correnti | Progetto Iso Local Sandbox | Repository locale | Codice del progetto | Generati a runtime |
 | Cue audio procedurali correnti | Progetto Iso Local Sandbox | Repository locale | Codice del progetto | Sintesi a runtime |
+| Oggetti ambientali isometrici | Progetto Iso Local Sandbox | `assets/environment/isometric/manifest.json` + `game/modes/zombie/biome_obstacle.gd` | Codice del progetto | Render procedurale, nessun file esterno |
 
 ## Regole
 

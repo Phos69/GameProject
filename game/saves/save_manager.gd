@@ -294,6 +294,11 @@ func _initialize() -> void:
 		var world_callback := Callable(self, "_on_world_state_changed")
 		if not world_runtime.exploration_changed.is_connected(world_callback):
 			world_runtime.exploration_changed.connect(world_callback)
+		var region_runtime_callback := Callable(self, "_on_region_runtime_changed")
+		if not world_runtime.region_runtime_changed.is_connected(
+			region_runtime_callback
+		):
+			world_runtime.region_runtime_changed.connect(region_runtime_callback)
 
 	if auto_load and _auto_persistence_enabled():
 		load_game()
@@ -369,6 +374,10 @@ func _on_controls_changed(_settings: Dictionary) -> void:
 		request_save()
 
 func _on_world_state_changed(_state: WorldExplorationState) -> void:
+	if _auto_persistence_enabled():
+		request_save()
+
+func _on_region_runtime_changed(_region_id: StringName) -> void:
 	if _auto_persistence_enabled():
 		request_save()
 

@@ -15,9 +15,11 @@ const BIOME_OBSTACLE_SCRIPT = preload(
 var active_biome: BiomeDefinition
 var is_active: bool = false
 var active_obstacles: Array[Node2D] = []
+var manifest: IsometricEnvironmentManifest
 
 func _ready() -> void:
 	add_to_group("obstacle_system")
+	manifest = IsometricEnvironmentManifest.get_shared()
 
 func start_run(biome: BiomeDefinition) -> void:
 	_clear_runtime()
@@ -105,9 +107,13 @@ func _generate_obstacles() -> void:
 			shape_id,
 			rotation_radians,
 			palette.prop_color,
-			palette.hazard_color
+			palette.hazard_color,
+			_sort_offset_for(obstacle_id)
 		)
 		container.add_child(obstacle)
+		if manifest != null and not manifest.blocks_movement(obstacle_id):
+			obstacle.remove_from_group("spawn_blockers")
+			obstacle.remove_from_group("environment_obstacles")
 		obstacle.global_position = layout.obstacle_positions[index]
 		active_obstacles.append(obstacle)
 		obstacle_spawned.emit(obstacle, obstacle_id)
@@ -129,6 +135,11 @@ func _prune_runtime() -> void:
 			or obstacle.is_queued_for_deletion()
 		):
 			active_obstacles.erase(obstacle)
+
+func _sort_offset_for(obstacle_id: StringName) -> float:
+	if manifest == null:
+		return 0.0
+	return manifest.get_sort_offset(obstacle_id)
 
 func _pascal_case(value: String) -> String:
 	var result := ""
