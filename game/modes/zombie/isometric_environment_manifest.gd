@@ -210,6 +210,21 @@ func blocks_movement(object_id: StringName) -> bool:
 		return bool((objects[object_id] as Dictionary).get("blocks_movement", true))
 	return true
 
+func blocks_projectiles(object_id: StringName) -> bool:
+	if objects.has(object_id):
+		return bool((objects[object_id] as Dictionary).get("blocks_projectiles", true))
+	return true
+
+func get_collision_shape(object_id: StringName) -> StringName:
+	if objects.has(object_id):
+		return StringName((objects[object_id] as Dictionary).get("collision_shape", &"rectangle"))
+	return &"rectangle"
+
+func is_jumpable_gap_anchor(object_id: StringName) -> bool:
+	if objects.has(object_id):
+		return bool((objects[object_id] as Dictionary).get("is_jumpable_gap_anchor", false))
+	return false
+
 func requires_external_asset(object_id: StringName) -> bool:
 	if not objects.has(object_id):
 		return false

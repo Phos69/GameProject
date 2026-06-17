@@ -349,6 +349,18 @@ Attivita post-roadmap:
 - Milestone 5 di `docs/isometric_generation_audit_roadmap.md` completata:
   manifest ambiente v6 con border tematici, fall zone cliff/depth procedurale,
   query fall/hazard separate e dodge che attraversa solo piccoli gap/fall zone.
+- Milestone 4 di `docs/isometric_generation_audit_roadmap.md` completata:
+  collisione `BiomeObstacle` costruita dal manifest, `blocks_projectiles` su
+  collision layer `32` con muri che fermano i proiettili, query
+  jumpable/non-jumpable per il dodge e chiavi stabili per ostacoli.
+- Milestone 6 di `docs/isometric_generation_audit_roadmap.md` completata:
+  `BiomeTransitionGate` dimensionato/orientato dal passaggio e tematizzato per
+  `passage_type`, span propagato da `BiomeTransitionSystem` e smoke gate/passaggio
+  sui quattro lati.
+- Milestone 8 di `docs/isometric_generation_audit_roadmap.md` completata:
+  decisione per la continuita fisica multi-regione e prototipo
+  `MultiRegionRenderer` (corrente + vicini con offset `world_origin`, vicini solo
+  ground visuale, lontane non istanziate) integrato in `ZombieModeController`.
 - asset definitivi e ulteriori pass di bilanciamento;
 - firma digitale della build pubblica.
 

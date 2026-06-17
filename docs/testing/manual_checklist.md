@@ -725,6 +725,83 @@ godot --headless --path . --script res://tests/biome_world_generation_smoke_test
 godot --headless --path . --script res://tests/open_passage_transition_smoke_test.gd
 ```
 
+## Regressione ISO-001 Milestone 4 - collisioni coerenti con props e strutture
+
+QA da eseguire con una run survival e seed fisso, con tastiera e joypad.
+
+- Sparare con l'arma fallback contro muri, case/rovine e bordi tematici: i
+  proiettili devono fermarsi sul muro e non attraversarlo.
+- Sparare contro ostacoli piccoli (rocce, barili, tronchi): confermare che
+  bloccano i proiettili in modo coerente con la silhouette.
+- Posizionarsi dietro un edificio mentre uno zombie shooter o il boss sparano:
+  i proiettili ostili devono essere fermati dal muro.
+- Provare il kiting attorno a edifici grandi e nei corridoi centrali:
+  player e zombie devono collidere fisicamente con gli ostacoli senza incastri.
+- Confermare che spawn nemici e casse non compaiano dentro un ostacolo
+  (footprint coerente tra collisione, spawn blocker e validazione casse).
+- Provare il dodge verso un ostacolo solido e confermare che la traiettoria
+  resti bloccata e il roll si accorci o venga rifiutato.
+
+```text
+godot --headless --path . --script res://tests/milestone_4_obstacle_collision_smoke_test.gd
+godot --headless --path . --script res://tests/isometric_environment_manifest_smoke_test.gd
+godot --headless --path . --script res://tests/biome_obstacle_generation_smoke_test.gd
+godot --headless --path . --script res://tests/zombie_environment_milestone_smoke_test.gd
+godot --headless --path . --script res://tests/combat_smoke_test.gd
+godot --headless --path . --script res://tests/player_dodge_gap_smoke_test.gd
+```
+
+## Regressione ISO-001 Milestone 6 - connessioni aperte tra biomi
+
+QA visuale da eseguire con seed fisso a `1280x720` e `960x540`, attraversando
+almeno otto regioni con tastiera e joypad.
+
+- Verificare che ogni passaggio aperto mostri un gate allineato al varco lasciato
+  tra i muri di bordo, non sovrapposto ai muri ne alle fall zone.
+- Confermare che il gate sia largo quanto l'apertura del passaggio: passaggi piu
+  larghi hanno gate piu largo, quelli stretti restano comunque leggibili.
+- Verificare i passaggi nei quattro lati (nord, sud, est, ovest) e che la freccia
+  del gate punti nel verso di attraversamento corretto.
+- Confermare la differenza tematica del gate per `road`, `bridge`, `snow_pass`,
+  `broken_gate` e `burned_road` senza dipendere da testo.
+- Attraversare un gate e confermare che il party non venga teletrasportato a un
+  punto di ingresso remoto (la camera/party resta vicino al varco).
+- Confermare che entrare nel gate cambi regione una sola volta (nessuna doppia
+  transizione) e che il terreno del passaggio resti coerente con il gate.
+
+```text
+godot --headless --path . --script res://tests/milestone_6_open_passage_smoke_test.gd
+godot --headless --path . --script res://tests/open_passage_transition_smoke_test.gd
+godot --headless --path . --script res://tests/region_streaming_smoke_test.gd
+godot --headless --path . --script res://tests/biome_world_generation_smoke_test.gd
+```
+
+## Regressione ISO-001 Milestone 8 - megamappa multi-regione
+
+QA visuale da eseguire con seed fisso a `1280x720` e `960x540`, attraversando
+almeno otto regioni con ritorno alla regione precedente.
+
+- Confermare che, oltre alla regione corrente giocabile, i territori vicini
+  connessi siano visibili come ground attorno all'arena, posizionati nei lati
+  corretti (nord/sud/est/ovest) e affiancati senza sovrapposizioni ne buchi.
+- Verificare che i vicini siano solo sfondo: nessun nemico, cassa o hazard
+  appare nelle regioni vicine; gli spawn restano nella regione corrente.
+- Attraversare un passaggio e confermare che il set di regioni renderizzate si
+  aggiorni (la nuova regione diventa corrente, i suoi vicini compaiono, le
+  regioni fuori raggio spariscono).
+- Tornare alla regione precedente e confermare che le casse gia aperte restino
+  consumate (persistenza per regione invariata).
+- Monitorare il frame time con i vicini renderizzati e griglia almeno `7x7`;
+  annotare eventuale debito di performance (camera/spawn cross-regione restano
+  follow-up).
+
+```text
+godot --headless --path . --script res://tests/milestone_8_multi_region_smoke_test.gd
+godot --headless --path . --script res://tests/region_streaming_smoke_test.gd
+godot --headless --path . --script res://tests/open_passage_transition_smoke_test.gd
+godot --headless --path . --script res://tests/survival_wave_smoke_test.gd
+```
+
 ## Regressione todo_roadmap Milestone 5 - dungeon ramificato, shop e biomi
 
 QA da eseguire con almeno tre seed diversi, con tastiera e joypad.

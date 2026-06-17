@@ -158,20 +158,23 @@ Gap principali:
 
 ### Ostacoli e collisioni
 
-Stato: funzionale, da rifinire.
+Stato: integrato in Milestone 4; resta solo l'asset finale.
 
 Gli ostacoli sono `StaticBody2D`, bloccano movimento/spawn e hanno collisione
-rettangolare o circolare. Il manifest contiene footprint e flag, ma il runtime
-usa soprattutto `sort_offset` e `blocks_movement`; `collision_shape` e
-`footprint_tiles` non guidano ancora direttamente la costruzione dello shape.
+rettangolare o circolare. Dal Milestone 4 il runtime costruisce lo shape dal
+manifest (`collision_shape` `rectangle`/`circle`/`open`) e traduce
+`blocks_movement`/`blocks_projectiles` in bit di `collision_layer`
+(`1` movimento, `32` blocco proiettili).
 
 Gap principali:
 
 - collisione e visuale condividono posizione/size ma non una silhouette
-  isometrica asset-driven;
-- `blocks_projectiles` e parte del manifest, ma gli ostacoli stanno su layer
-  `1` e il contratto proiettili non risulta integrato al manifest;
-- manca persistenza gameplay per ostacoli distrutti, anche se il ledger esiste.
+  isometrica asset-driven (resta nello scope Milestone 10);
+- `blocks_projectiles` e ora integrato come layer `32`: i muri solidi fermano i
+  proiettili player e ostili;
+- il ledger ostacoli distrutti ha chiavi stabili
+  (`ObstacleSystem.make_obstacle_key`) ma il trigger gameplay resta in
+  Milestone 8.
 
 ### Biomi e generazione procedurale
 
@@ -211,31 +214,36 @@ Gap principali:
 
 Stato: implementato come passaggi/gate, non come streaming fisico continuo.
 
-`BiomePassageGenerator` produce passaggi condivisi e allineati. Il gate
-runtime usa `target_region_id` e non teletrasporta il party se
-`move_party_on_transition` resta `false`.
+`BiomePassageGenerator` produce passaggi condivisi e allineati. Dal Milestone 6
+il gate runtime e dimensionato dalla larghezza del passaggio, orientato per lato
+e tematizzato per `passage_type`; usa `target_region_id` e non teletrasporta il
+party se `move_party_on_transition` resta `false`.
 
 Gap principali:
 
-- il gate e ancora un `Area2D` visuale, non una continuita fisica tra due
-  regioni renderizzate nello stesso spazio;
-- i passaggi non hanno asset dedicati salvo il placeholder `bridge_passage`;
+- il gate resta un `Area2D` visuale allineato al varco, non una continuita
+  fisica tra due regioni renderizzate nello stesso spazio (scope Milestone 8);
+- la resa passaggio e procedurale tematica; l'asset dedicato resta nello scope
+  Milestone 10;
 - la posizione globale delle regioni non viene usata per renderizzare regioni
   adiacenti simultaneamente.
 
 ### Megamappa persistente
 
-Stato: dati presenti, rendering/lifecycle limitato alla regione corrente.
+Stato: prototipo multi-regione attivo (Milestone 8); gameplay sulla sola
+regione corrente.
 
 `WorldGraph`, `WorldRuntime` e `PersistentWorldState` sono solidi come
-contratto dati. `active_regions` tiene corrente e vicini come dati caldi, ma
-solo la regione corrente e istanziata da terrain/obstacle/hazard/crate.
+contratto dati. Dal Milestone 8 `MultiRegionRenderer` istanzia la regione
+corrente piu i vicini connessi (ground visuale) usando `world_origin`; solo la
+regione corrente e istanziata da terrain/obstacle/hazard/crate.
 
 Gap principali:
 
-- nessun renderer multi-regione;
-- `party_position` e salvata ma non guida ancora un ripristino spaziale globale
-  della run;
+- il prototipo multi-regione renderizza i vicini come ground visuale; camera,
+  spawn e collisioni cross-regione restano da rifinire;
+- `party_position` e salvata ma non guida ancora un ripristino spaziale della
+  run;
 - `destroyed_obstacles` e `completed_encounters` restano ledger senza trigger.
 
 ### Mappa esplorata/UI
@@ -305,12 +313,12 @@ Gap principali:
 | `BiomeObstacle._draw()` non ha draw dedicato per diversi obstacle_id generati | `game/modes/zombie/biome_obstacle.gd`, `obstacle_layout_generator.gd` | risolto in Milestone 3 | resta il pass asset/tile finale | manifest v5 `object_visuals` | chiuso |
 | Tag strada/passaggio generati finiscono nel fallback dirt | `game/modes/zombie/biome_terrain_patch.gd`, `obstacle_layout_generator.gd`, `biome_passage_generator.gd` | risolto in Milestone 2 | resta il pass asset/tile finale | Milestone 10 per sostituzione placeholder | chiuso |
 | Nessun tileset/tilemap isometrico asset-driven | `terrain_generator.gd`, `biome_region_ground.gd`, `assets/environment/isometric/manifest.json` | mancante | il mondo resta procedurale e non final art | budget performance, pipeline tile/asset | P1 |
-| Megamappa fisica non renderizzata in continuita globale | `world_runtime.gd`, `biome_manager.gd`, `terrain_generator.gd`, `biome_transition_system.gd` | parziale | attraversamento percepito come cambio regione locale, non mondo continuo | coordinate globali regioni, streaming visuale | P1 |
-| `WorldRegion.world_origin` e `WorldRegionConnection.world_rect` non guidano il rendering runtime | `world_region.gd`, `world_region_connection.gd`, `terrain_generator.gd` | parziale | dati globali presenti ma non visibili nel mondo | renderer multi-regione o offset regione | P1 |
+| Megamappa fisica non renderizzata in continuita globale | `world_runtime.gd`, `multi_region_renderer.gd`, `zombie_mode_controller.gd`, `biome_manager.gd` | prototipo in Milestone 8 | corrente + vicini renderizzati con offset `world_origin`; camera/spawn cross-regione da rifinire | smoke `milestone_8_multi_region` | P2 |
+| `WorldRegion.world_origin` e `WorldRegionConnection.world_rect` non guidano il rendering runtime | `world_region.gd`, `world_region_connection.gd`, `multi_region_renderer.gd` | risolto in Milestone 8 per `world_origin` | `MultiRegionRenderer` usa `world_origin` per gli offset dei vicini; `world_rect` resta dato connessione | smoke `milestone_8_multi_region` | chiuso |
 | Fall zone ancora placeholder procedurale | `biome_fall_zone.gd`, `manifest.json`, `fall_boundary_generator.gd` | risolto in Milestone 5 come visuale procedurale cliff/depth | resta il pass asset/tile finale | Milestone 10 per asset cliff/depth definitivi | chiuso |
 | Muri/bordi collegati usano `boundary_fence` generico | `obstacle_layout_generator.gd`, `biome_obstacle.gd`, `manifest.json` | risolto in Milestone 5 | border tematici procedurali per bioma; resta asset finale | manifest v6 `object_visuals`, Milestone 10 | chiuso |
 | Contratto dodge/gap usa hazard generico, non fall zone esplicita | `game/player/player_dodge_component.gd`, `hazard_system.gd` | risolto in Milestone 5 | fall zone separata dagli hazard ambientali | `is_position_fall_zone()` e smoke dodge/fall | chiuso |
-| `blocks_projectiles` nel manifest non e applicato come contratto runtime evidente | `manifest.json`, `biome_obstacle.gd`, `projectile.gd`, `projectile_system.gd` | parziale | proiettili potrebbero non rispettare ostacoli come atteso dal manifest | collision layer/mask projectile, test | P1 |
+| `blocks_projectiles` nel manifest non e applicato come contratto runtime evidente | `manifest.json`, `biome_obstacle.gd`, `projectile.gd`, `projectile_system.gd` | risolto in Milestone 4 | muri sul collision layer `32` fermano i proiettili player/ostili | smoke `milestone_4_obstacle_collision` | chiuso |
 | Ledger ostacoli distrutti ed encounter completati senza trigger gameplay | `persistent_world_state.gd`, `world_runtime.gd`, `obstacle_system.gd`, `random_encounter_system.gd` | parziale | persistenza pronta ma non percepita dal giocatore | ostacoli distruttibili/encounter region-bound | P2 |
 | Mappa esplorata non mostra contenuto interno regione | `exploration_map_panel.gd`, `world_exploration_state.gd` | parziale | navigazione strategica limitata | dati POI/hazard/connection detail | P2 |
 | Debug overlay non visualizza layer runtime completi in game | `biome_map_debug_overlay.gd`, `hud_manager.gd`, test debug | parziale | audit e QA visuale piu lenti | UI debug toggle, overlay classi terrain | P2 |
@@ -529,6 +537,29 @@ Sotto-task completati:
 
 ### Milestone 4 - Collisioni coerenti con props e strutture
 
+Stato: completata il 2026-06-17.
+
+Esito:
+
+- `IsometricEnvironmentManifest` espone `get_collision_shape()`,
+  `blocks_projectiles()` e `is_jumpable_gap_anchor()`; `BiomeObstacle` costruisce
+  collisione, footprint e bit di `collision_layer` direttamente da questi dati
+  (`rectangle`/`circle`/`open`), mantenendo coerenti collisione fisica,
+  `contains_global_position`, spawn blocker e validazione casse.
+- `blocks_projectiles` si traduce nel nuovo collision layer `32`: un
+  `BiomeObstacle` solido sta sul layer `1 | 32`, `projectile.tscn` e
+  `boss_projectile.tscn` leggono quel layer e il `Projectile` condiviso si ferma
+  sui muri solidi (assorbito prima del danno, pierce ignorato).
+- `ObstacleSystem` aggiunge `is_position_blocked_by_non_jumpable()` e
+  `is_position_jumpable_obstacle()`; `PlayerDodgeComponent` usa la query
+  non-jumpable per la traiettoria (gap anchor futuri scavalcabili) mentre il
+  landing resta bloccato dalla query completa.
+- `ObstacleSystem.make_obstacle_key(biome_id, index, obstacle_id)` assegna a ogni
+  ostacolo una chiave stabile rigenerabile dal seed, pronta per il ledger
+  `destroyed_obstacles` (trigger gameplay rinviato alla Milestone 8).
+- Nessun cambio a danno, AI, pathing o spawn esistenti: tutte le regressioni
+  combat/dodge/ambiente survival restano verdi.
+
 Obiettivo:
 far coincidere footprint visuale, collisione, spawn blocker e proiettili per
 ostacoli e strutture.
@@ -566,13 +597,15 @@ Rischi:
 - Cambiare collision mask puo rompere combat esistente.
 - Bloccare proiettili su troppi props puo alterare bilanciamento.
 
-Sotto-task:
+Sotto-task completati:
 
-1. Documentare layer/mask attuali.
-2. Applicare manifest alle collisioni.
-3. Estendere smoke projectile vs obstacle.
-4. Verificare player/zombie pathing.
-5. Aggiornare ARCHITECTURE se cambia il contratto collisioni.
+1. [x] Documentare layer/mask attuali e il nuovo layer `32` in `ARCHITECTURE.md`.
+2. [x] Applicare il manifest (`collision_shape`, flag) alle collisioni runtime.
+3. [x] Estendere lo smoke projectile vs obstacle
+   (`tests/milestone_4_obstacle_collision_smoke_test.gd`).
+4. [x] Verificare player/zombie pathing: regressioni combat, dodge/gap e
+   ambiente survival verdi; QA screenshot reale resta nel playtest Milestone 11.
+5. [x] Aggiornare `ARCHITECTURE.md` con il contratto collisioni/proiettili.
 
 ### Milestone 5 - Bordi del bioma, muri, vuoto e caduta
 
@@ -649,6 +682,28 @@ Sotto-task completati:
 
 ### Milestone 6 - Connessioni aperte tra biomi
 
+Stato: completata il 2026-06-17.
+
+Esito:
+
+- `BiomeTransitionGate` viene dimensionato dalla larghezza del passaggio:
+  `configure()` accetta `passage_type` e `span`, orienta il gate per lato
+  (nord/sud aprono lungo X, est/ovest lungo Y) e mantiene una profondita fissa
+  cosi il trigger non cresce dentro i muri di bordo che fiancheggiano il varco.
+- `BiomeTransitionGate._draw()` e ora direzione-aware (freccia lungo il verso di
+  attraversamento) e tematizzato per `passage_kind` (`road`, `bridge`,
+  `snow_pass`, `broken_gate`, `burned_road`) tramite colore superficie e segni
+  dedicati, senza testo obbligatorio.
+- `BiomeTransitionSystem._spawn_generated_map_gates()` passa `passage.passage_type`
+  e lo span derivato da `passage.width * logical_tile_scale`, sincronizzando il
+  trigger con il terreno/passaggio gia generato e con l'apertura nei bordi.
+- Il comportamento no-teleport resta invariato: `move_party_on_transition`
+  default `false`, la transizione cambia regione conservando la posizione del
+  party (verificato dallo smoke).
+- Nuovo `tests/milestone_6_open_passage_smoke_test.gd` per orientamento/span/tipo
+  sui quattro lati; `tests/open_passage_transition_smoke_test.gd` esteso con
+  l'allineamento gate/passaggio runtime.
+
 Obiettivo:
 rendere i passaggi tra regioni leggibili come aperture fisiche coerenti, non
 solo gate trigger.
@@ -686,13 +741,13 @@ Rischi:
 - Gate troppo grandi possono attivare transizioni involontarie.
 - Gate troppo piccoli possono sembrare bug di collisione.
 
-Sotto-task:
+Sotto-task completati:
 
-1. Legare gate size a passage width.
-2. Aggiungere draw per passage type.
-3. Testare lato nord/sud/est/ovest.
-4. Aggiornare smoke su allineamento gate/passage.
-5. Documentare il comportamento no-teleport.
+1. [x] Legare gate size a passage width (`_resolve_gate_size` + `_get_passage_span`).
+2. [x] Aggiungere draw per passage type (`_draw_passage_marks`/`_surface_color`).
+3. [x] Testare lato nord/sud/est/ovest (`milestone_6_open_passage_smoke_test`).
+4. [x] Aggiornare smoke su allineamento gate/passage (`open_passage_transition`).
+5. [x] Documentare il comportamento no-teleport in `ARCHITECTURE.md`/roadmap.
 
 ### Milestone 7 - Grafo biomi completamente connesso
 
@@ -739,6 +794,28 @@ Sotto-task:
 
 ### Milestone 8 - Megamappa persistente
 
+Stato: completata il 2026-06-17.
+
+Decisione: continuita fisica multi-regione (scelta esplicita del committente).
+
+Esito:
+
+- Nuovo `game/world/multi_region_renderer.gd` (`MultiRegionRenderer`): istanzia la
+  regione corrente piu i vicini connessi entro `neighbor_radius`, calcolando gli
+  offset da `(world_origin_vicino - world_origin_corrente) * logical_tile_scale`.
+- I vicini sono solo `BiomeRegionGround` visuale (campionamento `performance`),
+  quindi non duplicano casse/hazard e non generano nemici; le regioni oltre il
+  raggio restano dati persistenti non istanziati.
+- `ZombieModeController` crea il renderer (gated da `enable_multi_region_render`),
+  lo invoca a ogni cambio regione passando layout/palette dei vicini da
+  `BiomeManager` e lo pulisce a `stop_run()`.
+- Espone `get_region_offset()`, `get_content_level()` (`FULL`/`VISUAL`/`NONE`),
+  `get_rendered_region_ids()` e `get_neighbor_ground_nodes()` per debug/test.
+- Contratto documentato in `ARCHITECTURE.md`; lo smoke streaming/casse persistenti
+  resta verde (solo la regione corrente possiede gameplay).
+- `tests/milestone_8_multi_region_smoke_test.gd` verifica offset, set attivo,
+  livelli di contenuto, assenza di gameplay sui vicini e cleanup.
+
 Obiettivo:
 decidere e implementare il prossimo passo tra "dati persistenti a regione
 corrente" e "continuita fisica multi-regione".
@@ -779,13 +856,14 @@ Rischi:
 - Multi-regione aumenta complessita di camera, spawn, cleanup e performance.
 - Cambiare contratto puo invalidare smoke esistenti.
 
-Sotto-task:
+Sotto-task completati:
 
-1. Decisione architetturale esplicita.
-2. Aggiornamento documento contratti.
-3. Prototipo minimo o rinomina/documentazione.
-4. Smoke streaming aggiornato.
-5. QA performance.
+1. [x] Decisione architetturale esplicita: continuita fisica multi-regione.
+2. [x] Aggiornamento documento contratti (`ARCHITECTURE.md`).
+3. [x] Prototipo minimo: `MultiRegionRenderer` con integrazione gated.
+4. [x] Smoke multi-regione + streaming/casse persistenti verdi.
+5. [x] QA performance: vicini campionati `performance` e solo entro il raggio;
+   QA frame-time reale resta nel playtest Milestone 11.
 
 ### Milestone 9 - Mappa territori esplorati
 

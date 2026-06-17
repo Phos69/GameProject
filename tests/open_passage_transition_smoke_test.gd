@@ -62,6 +62,7 @@ func _run() -> void:
 	if start_cell == null or start_cell.passages.is_empty():
 		_finish()
 		return
+	_assert_gates_align_with_passages(transition_system, start_cell)
 	var player := player_manager.players.get(1) as PlayerController
 	_expect(player != null, "player one exists")
 	var original_position: Vector2 = player.global_position if player != null else Vector2.ZERO
@@ -88,6 +89,47 @@ func _run() -> void:
 	if survival_mode != null:
 		survival_mode.stop_mode()
 	_finish()
+
+func _assert_gates_align_with_passages(
+	transition_system: BiomeTransitionSystem,
+	cell: BiomeCell
+) -> void:
+	var layout := cell.generated_layout
+	var scale: float = layout.logical_tile_scale if layout != null else 8.0
+	var sides_covered := {}
+	for gate in transition_system.get_active_gates():
+		var passage := _find_passage(cell, gate.direction_id, gate.target_region_id)
+		if passage == null:
+			continue
+		sides_covered[gate.direction_id] = true
+		var expected_span: float = maxf(
+			float(passage.width) * scale,
+			BiomeTransitionGate.MIN_SPAN
+		)
+		var opening: float = (
+			gate.gate_size.x
+			if gate.direction_id == &"north" or gate.direction_id == &"south"
+			else gate.gate_size.y
+		)
+		_expect(
+			gate.passage_kind == passage.passage_type,
+			"gate to %s carries the passage type" % String(gate.target_region_id)
+		)
+		_expect(
+			is_equal_approx(opening, expected_span),
+			"gate opening matches the passage width on side %s" % String(gate.direction_id)
+		)
+	_expect(not sides_covered.is_empty(), "at least one gate is aligned to a passage")
+
+func _find_passage(
+	cell: BiomeCell,
+	side: StringName,
+	target_region_id: StringName
+) -> BiomePassage:
+	for passage in cell.passages:
+		if passage.side == side and passage.to_cell_id == target_region_id:
+			return passage
+	return null
 
 func _expect(condition: bool, message: String) -> void:
 	if condition:

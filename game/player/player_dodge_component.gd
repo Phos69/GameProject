@@ -158,8 +158,7 @@ func _validate_world_trajectory(start: Vector2, finish: Vector2) -> Dictionary:
 		var point := start.lerp(finish, ratio)
 		if (
 			obstacle_system != null
-			and obstacle_system.has_method("is_position_blocked")
-			and obstacle_system.is_position_blocked(point)
+			and _obstacle_blocks_trajectory(obstacle_system, point)
 		):
 			return {"is_valid": false, "blocked": true, "crosses_gap": crossed_gap}
 		if (
@@ -194,6 +193,16 @@ func _validate_world_trajectory(start: Vector2, finish: Vector2) -> Dictionary:
 		"landing_valid": landing_valid,
 		"distance": distance
 	}
+
+# Mid-trajectory blocking skips jumpable obstacles (gap anchors) when the
+# obstacle system supports the query; landing validation still uses the full
+# block so the roll cannot end on top of any obstacle.
+func _obstacle_blocks_trajectory(obstacle_system: Node, point: Vector2) -> bool:
+	if obstacle_system.has_method("is_position_blocked_by_non_jumpable"):
+		return bool(obstacle_system.is_position_blocked_by_non_jumpable(point))
+	if obstacle_system.has_method("is_position_blocked"):
+		return bool(obstacle_system.is_position_blocked(point))
+	return false
 
 func _is_landing_valid(position: Vector2) -> bool:
 	var obstacle_system := get_tree().get_first_node_in_group("obstacle_system")

@@ -40,13 +40,35 @@ func get_active_obstacles() -> Array[Node2D]:
 	return active_obstacles.duplicate()
 
 func is_position_blocked(position: Vector2) -> bool:
-	for blocker in get_tree().get_nodes_in_group("spawn_blockers"):
-		if _node_contains_position(blocker, position):
-			return true
+	return _is_position_blocked(position, false)
+
+# Solid-only query: jumpable obstacles (gap anchors) are skipped so a dodge can
+# cross over them while spawn/landing checks keep treating them as occupied.
+func is_position_blocked_by_non_jumpable(position: Vector2) -> bool:
+	return _is_position_blocked(position, true)
+
+func is_position_jumpable_obstacle(position: Vector2) -> bool:
 	for blocker in get_tree().get_nodes_in_group("environment_obstacles"):
-		if _node_contains_position(blocker, position):
+		if _is_jumpable(blocker) and _node_contains_position(blocker, position):
 			return true
 	return false
+
+func _is_position_blocked(position: Vector2, skip_jumpable: bool) -> bool:
+	for group in ["spawn_blockers", "environment_obstacles"]:
+		for blocker in get_tree().get_nodes_in_group(group):
+			if skip_jumpable and _is_jumpable(blocker):
+				continue
+			if _node_contains_position(blocker, position):
+				return true
+	return false
+
+func _is_jumpable(node: Node) -> bool:
+	return (
+		node != null
+		and is_instance_valid(node)
+		and node.has_method("is_jumpable_obstacle")
+		and bool(node.is_jumpable_obstacle())
+	)
 
 func _node_contains_position(node: Node, position: Vector2) -> bool:
 	if (
@@ -110,6 +132,11 @@ func _generate_obstacles() -> void:
 			palette.hazard_color,
 			_sort_offset_for(obstacle_id)
 		)
+		obstacle.obstacle_key = make_obstacle_key(
+			active_biome.biome_id,
+			index,
+			obstacle_id
+		)
 		container.add_child(obstacle)
 		if manifest != null and not manifest.blocks_movement(obstacle_id):
 			obstacle.remove_from_group("spawn_blockers")
@@ -135,6 +162,16 @@ func _prune_runtime() -> void:
 			or obstacle.is_queued_for_deletion()
 		):
 			active_obstacles.erase(obstacle)
+
+# Deterministic key: the layout regenerates in the same order for a given seed
+# and region, so {biome}:{index}:{id} is stable across revisits and safe to use
+# as a persistence key for future destructible-obstacle ledgers.
+static func make_obstacle_key(
+	biome_id: StringName,
+	index: int,
+	obstacle_id: StringName
+) -> StringName:
+	return StringName("%s:%d:%s" % [String(biome_id), index, String(obstacle_id)])
 
 func _sort_offset_for(obstacle_id: StringName) -> float:
 	if manifest == null:

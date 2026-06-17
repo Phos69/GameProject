@@ -108,6 +108,12 @@ func _on_area_entered(area: Area2D) -> void:
 func _try_hit_target(target: Node) -> void:
 	if target == owner_node:
 		return
+	# A solid environment obstacle (manifest blocks_projectiles) absorbs the
+	# shot regardless of remaining pierce: walls stop projectiles dead.
+	if _is_projectile_blocking_obstacle(target):
+		set_deferred("monitoring", false)
+		queue_free()
+		return
 	var target_id := target.get_instance_id()
 	if hit_targets.has(target_id):
 		return
@@ -131,6 +137,14 @@ func _try_hit_target(target: Node) -> void:
 	if hit_targets.size() >= max_hit_count:
 		set_deferred("monitoring", false)
 		queue_free()
+
+func _is_projectile_blocking_obstacle(target: Node) -> bool:
+	return (
+		target != null
+		and target.is_in_group("environment_obstacles")
+		and target.has_method("is_projectile_blocker")
+		and bool(target.is_projectile_blocker())
+	)
 
 func _apply_visual_data() -> void:
 	var base_glow_color := default_glow_color

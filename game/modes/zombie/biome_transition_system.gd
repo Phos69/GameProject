@@ -113,7 +113,9 @@ func _spawn_gate(
 	direction_id: StringName,
 	gate_position: Vector2,
 	color: Color,
-	target_region_id: StringName = &""
+	target_region_id: StringName = &"",
+	passage_type: StringName = &"open_passage",
+	span: float = 0.0
 ) -> void:
 	var container := _get_environment_container()
 	if container == null:
@@ -127,7 +129,9 @@ func _spawn_gate(
 		direction_id,
 		gate_position,
 		color,
-		target_region_id
+		target_region_id,
+		passage_type,
+		span
 	)
 	container.add_child(gate)
 	gate.body_entered.connect(_on_gate_body_entered.bind(gate))
@@ -191,9 +195,22 @@ func _spawn_generated_map_gates(color: Color) -> bool:
 			passage.side,
 			_get_gate_position_for_passage(passage, cell),
 			color,
-			passage.to_cell_id
+			passage.to_cell_id,
+			passage.passage_type,
+			_get_passage_span(passage, cell)
 		)
 	return true
+
+# Opening span in world units, derived from the logical passage width so the
+# trigger aligns with the physical gap left between the border walls.
+func _get_passage_span(passage: BiomePassage, cell: BiomeCell) -> float:
+	var layout := (
+		cell.generated_layout
+		if cell.generated_layout != null
+		else active_biome.environment_layout if active_biome != null else null
+	)
+	var scale := layout.logical_tile_scale if layout != null else 8.0
+	return float(passage.width) * scale
 
 func _get_gate_position_for_passage(
 	passage: BiomePassage,

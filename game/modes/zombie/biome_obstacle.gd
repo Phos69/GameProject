@@ -1,12 +1,26 @@
 extends StaticBody2D
 class_name BiomeObstacle
 
+# Collision layer bits, aligned with the combat contract in ARCHITECTURE.md.
+# Bit 1 keeps obstacles physical blockers for player/zombie movement; bit 6
+# (value 32) is the dedicated environment layer that projectiles read to stop
+# at solid walls without colliding with the player (layer 1) directly.
+const MOVEMENT_BLOCK_LAYER_BIT := 1
+const PROJECTILE_BLOCK_LAYER_BIT := 32
+
 var obstacle_id: StringName = &"small_rock"
 var obstacle_category: StringName = &"rock"
 var draw_mode: StringName = &"rock"
 var dedicated_draw: bool = true
 var obstacle_size: Vector2 = Vector2(48.0, 40.0)
 var shape_id: StringName = &"rectangle"
+var collision_shape_id: StringName = &"rectangle"
+var blocks_movement: bool = true
+var projectile_blocking: bool = true
+var jumpable: bool = false
+# Stable identity for the regeneration-deterministic layout; future destructible
+# ledgers (PersistentWorldState.destroyed_obstacles) can key persistence on it.
+var obstacle_key: StringName = &""
 var primary_color: Color = Color(0.38, 0.30, 0.16, 1.0)
 var accent_color: Color = Color(0.74, 0.58, 0.16, 0.82)
 var sort_offset: float = 0.0
@@ -25,16 +39,29 @@ func configure(
 	obstacle_category = manifest.get_category(obstacle_id)
 	draw_mode = manifest.get_object_draw_mode(obstacle_id)
 	dedicated_draw = manifest.object_has_dedicated_draw(obstacle_id)
+	blocks_movement = manifest.blocks_movement(obstacle_id)
+	projectile_blocking = manifest.blocks_projectiles(obstacle_id)
+	jumpable = manifest.is_jumpable_gap_anchor(obstacle_id)
 	obstacle_size = Vector2(
 		maxf(next_size.x, 12.0),
 		maxf(next_size.y, 12.0)
 	)
-	shape_id = next_shape_id
+	# The manifest collision_shape is authoritative; the layout shape only acts
+	# as a fallback for shapes the runtime does not build directly.
+	collision_shape_id = _resolve_collision_shape(
+		manifest.get_collision_shape(obstacle_id),
+		next_shape_id
+	)
+	shape_id = collision_shape_id
 	rotation = rotation_radians
 	primary_color = base_color
 	accent_color = detail_color
 	sort_offset = next_sort_offset
-	collision_layer = 1
+	collision_layer = 0
+	if blocks_movement:
+		collision_layer |= MOVEMENT_BLOCK_LAYER_BIT
+	if projectile_blocking:
+		collision_layer |= PROJECTILE_BLOCK_LAYER_BIT
 	collision_mask = 0
 	# z_index 0 so obstacles take part in the World Y-sort together with zombies
 	# and pickups instead of flatly covering them.
@@ -50,8 +77,10 @@ func _ready() -> void:
 		_rebuild_collision()
 
 func contains_global_position(world_position: Vector2) -> bool:
+	if collision_shape_id == &"open":
+		return false
 	var local_position := to_local(world_position)
-	if shape_id == &"circle":
+	if collision_shape_id == &"circle":
 		var radius := obstacle_size.x * 0.5
 		return local_position.length_squared() <= radius * radius
 	var half_size := obstacle_size * 0.5
@@ -78,13 +107,42 @@ func uses_generic_fallback() -> bool:
 func has_ground_shadow() -> bool:
 	return true
 
+func is_projectile_blocker() -> bool:
+	return projectile_blocking
+
+func is_jumpable_obstacle() -> bool:
+	return jumpable
+
+func get_obstacle_key() -> StringName:
+	return obstacle_key
+
+func _resolve_collision_shape(
+	manifest_shape: StringName,
+	layout_shape: StringName
+) -> StringName:
+	match manifest_shape:
+		&"circle":
+			return &"circle"
+		&"rectangle":
+			return &"rectangle"
+		&"open":
+			return &"open"
+		_:
+			# rectangle_area / circle_or_rectangle / unknown: keep the layout
+			# choice so existing area/crate-style entries stay unchanged.
+			return &"circle" if layout_shape == &"circle" else &"rectangle"
+
 func _rebuild_collision() -> void:
 	var collision_shape := get_node_or_null("CollisionShape2D") as CollisionShape2D
 	if collision_shape == null:
 		collision_shape = CollisionShape2D.new()
 		collision_shape.name = "CollisionShape2D"
 		add_child(collision_shape)
-	if shape_id == &"circle":
+	if collision_shape_id == &"open":
+		collision_shape.disabled = true
+		return
+	collision_shape.disabled = false
+	if collision_shape_id == &"circle":
 		var circle := CircleShape2D.new()
 		circle.radius = obstacle_size.x * 0.5
 		collision_shape.shape = circle

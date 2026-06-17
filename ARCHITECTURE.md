@@ -127,6 +127,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `WorldExplorationState`: stato unknown/discovered/visited/cleared per regione e marker della regione corrente.
 - `PersistentWorldState`: payload serializzabile del mondo, seed, regione corrente, posizione party e stato esplorazione.
 - `WorldRuntime`: runtime del grafo persistente; sincronizza `BiomeManager`, exploration state e save/load, con spazio per streaming regioni.
+- `MultiRegionRenderer`: prototipo del renderer multi-regione; istanzia la regione corrente piu i vicini connessi a offset derivati da `WorldRegion.world_origin`, con i vicini come solo ground visuale e le regioni lontane mai istanziate.
 - `WorldGenerationSeed`: seed globale di run e derivazione deterministica degli stream RNG per mappa, terreno, ostacoli, bordi, loot e spawn.
 - `BiomeWorldGenerator`: orchestratore della pipeline procedurale globale per mappa biomi, layout per cella e debug seed.
 - `BiomeMapGenerator`: costruisce la griglia di `BiomeCell` `200x200`, assegna tipi bioma, coordinate globali, vicini, seed locali e grafo connesso con loop.
@@ -144,7 +145,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
   classi terrain aggregate e richieste di rigenerazione per debug.
 - `BiomeDefinition`: risorsa dati con terreno, ostacoli, casse, zombie ammessi, pesi, palette e moltiplicatori.
 - `BiomeTransitionSystem`: passaggi fisici aperti tra regioni confinanti, cambio regione/bioma e fallback legacy di spostamento party solo se esplicitamente abilitato.
-- `BiomeTransitionGate`: area non bloccante e leggibile che rappresenta un'apertura fisica e richiede il cambio regione.
+- `BiomeTransitionGate`: area non bloccante e leggibile che rappresenta un'apertura fisica e richiede il cambio regione; e dimensionata e orientata dalla larghezza/lato del `BiomePassage`, tematizzata per `passage_type` e con freccia direzione-aware, senza teletrasportare il party quando `move_party_on_transition` resta `false`.
 - `BiomeEnvironmentLayout`: placement deterministico di patch terreno, ostacoli fisici, casse e hazard per un bioma, con classificazione completa del `200x200`.
 - `WaveDirector`: composizione wave e scaling basati sul bioma corrente.
 - `ZombieSpawner`: spawn dai bordi della camera con distanza minima dai player, validazione hazard/ostacoli e fallback arena.
@@ -319,11 +320,19 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `HealthSystem` cerca un figlio `HealthComponent` sul target; player, nemici, boss e bersagli debug possono condividere lo stesso contratto.
 - `HealthSystem.apply_damage()` accetta una sorgente opzionale per applicare attacco/difesa RPG senza cambiare collisioni o AI.
 - `HealthSystem` conserva la sorgente dell'ultimo danno valido per assegnare XP al killer.
-- Collision layer `1`: player e corpi generici.
+- Collision layer `1`: player e corpi generici; gli ostacoli ambientali che
+  bloccano il movimento restano su questo layer per fermare player e zombie.
 - Collision layer `2`: bersagli damageable.
-- Collision layer `4`: proiettili; la mask attuale colpisce il layer `2`.
+- Collision layer `4`: proiettili player; la mask colpisce il layer `2` e il
+  layer `32` per fermarsi sui muri solidi.
 - Collision layer `8`: pickup; la mask attuale rileva i player sul layer `1`.
-- Collision layer `16`: proiettili ostili; la mask colpisce i player sul layer `1`.
+- Collision layer `16`: proiettili ostili; la mask colpisce i player sul layer
+  `1` e il layer `32` per fermarsi sui muri solidi.
+- Collision layer `32`: ostacoli ambientali che bloccano i proiettili
+  (`blocks_projectiles` nel manifest); un `BiomeObstacle` solido sta sul layer
+  `1 | 32`. Il `Projectile` condiviso, su contatto con un nodo del gruppo
+  `environment_obstacles` che dichiara `is_projectile_blocker()`, viene
+  assorbito (queue_free) prima di applicare danno, ignorando il pierce residuo.
 - `CombatTarget` e una fixture statica della scena principale per verificare il combat e non sostituisce l'AI nemica della Milestone 4.
 
 ## Contratto nemici
@@ -414,7 +423,8 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
   generatori di supporto procedurale senza lifecycle di scena sono `RefCounted`.
 - `ExplorationMapPanel` mostra solo regioni note; unknown/fog non rivela la topologia completa.
 - `SaveManager` sovrappone `PersistentWorldState` alla prossima generazione con lo stesso seed.
-- Streaming/istanza selettiva delle regioni lontane e un follow-up: il primo pass mantiene il contratto runtime e i dati persistenti pronti.
+- Contratto megamappa scelto (Milestone 8): continuita fisica multi-regione come prototipo. `MultiRegionRenderer` istanzia la regione corrente piu i vicini connessi entro `neighbor_radius`, posizionandoli con offset `(world_origin_vicino - world_origin_corrente) * logical_tile_scale`. Solo la regione corrente possiede contenuto gameplay (ostacoli, hazard, casse, spawn) tramite i sistemi zombie esistenti; i vicini sono solo `BiomeRegionGround` visuale, quindi non duplicano casse/hazard ne generano nemici; le regioni oltre il raggio restano dati persistenti non istanziati.
+- `ZombieModeController` invoca `MultiRegionRenderer.render_world()` a ogni cambio regione e lo pulisce a `stop_run()`; l'integrazione e gated da `enable_multi_region_render`.
 
 ## Contratto progressione e run
 
@@ -455,7 +465,7 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - Ogni nuova run survival riparte dalla `Pianura Infetta`.
 - `WorldRuntime` marca la regione iniziale come visited, scopre i vicini collegati e conserva lo stato esplorazione.
 - `BiomeTransitionSystem` collega territori confinanti tramite passaggi aperti; il party condivide una sola regione corrente.
-- Quando e disponibile una cella procedurale corrente, `BiomeTransitionSystem` genera aperture dai `BiomePassage`; il fallback `previous_biome_id`/`next_biome_id` resta per compatibilita.
+- Quando e disponibile una cella procedurale corrente, `BiomeTransitionSystem` genera aperture dai `BiomePassage` e propaga al gate il `passage_type` e lo span (`width * logical_tile_scale`), cosi il trigger resta dentro il varco aperto tra i muri di bordo; il fallback `previous_biome_id`/`next_biome_id` resta per compatibilita.
 - Il cambio regione applica terreno, ostacoli, casse, hazard e passaggi della nuova regione senza riavviare `WaveManager`.
 - `WaveDirector` legge il bioma corrente per risolvere roster, moltiplicatori, ritmo spawn e drop.
 - Lo scaling contestuale considera wave, player vivi, tempo sopravvissuto e profondita del bioma.
@@ -467,6 +477,19 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - `BiomeObstacle` legge `draw_mode` e `dedicated_draw` da
   `IsometricEnvironmentManifest`; se un ID ricade su `generic_barrier`, deve
   essere una scelta esplicita del manifest e non un fallback implicito.
+- `BiomeObstacle` costruisce la collisione dal manifest: `collision_shape`
+  (`rectangle`/`circle`/`open`) guida lo shape runtime e `contains_global_position`,
+  `blocks_movement` e `blocks_projectiles` guidano i bit di `collision_layer`,
+  `is_jumpable_gap_anchor` espone `is_jumpable_obstacle()`. La stessa footprint
+  serve collisione fisica, spawn blocker e validazione casse.
+- `ObstacleSystem` espone `is_position_blocked` (tutti gli ostacoli, usato da
+  spawn/crate/landing) e `is_position_blocked_by_non_jumpable` /
+  `is_position_jumpable_obstacle`; il dodge usa la query non-jumpable per la
+  traiettoria cosi futuri gap anchor saranno scavalcabili senza permettere il
+  landing sopra un ostacolo.
+- `ObstacleSystem.make_obstacle_key(biome_id, index, obstacle_id)` assegna a ogni
+  `BiomeObstacle` una chiave stabile rigenerabile dal seed, pronta come chiave di
+  persistenza per il ledger `destroyed_obstacles` (trigger gameplay in Milestone 8).
 - I lati con regione adiacente ma senza edge e i segmenti chiusi dei lati
   collegati usano border ID tematici per bioma; il lato senza regione resta
   fall zone e non ostacolo.

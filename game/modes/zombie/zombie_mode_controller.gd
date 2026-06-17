@@ -15,6 +15,7 @@ signal active_biome_applied(biome_id: StringName)
 @export var transition_system_path: NodePath = NodePath("TransitionSystem")
 @export var random_encounter_system_path: NodePath = NodePath("RandomEncounterSystem")
 @export var world_runtime_path: NodePath = NodePath("WorldRuntime")
+@export var enable_multi_region_render: bool = true
 
 var biome_manager
 var wave_director
@@ -26,6 +27,7 @@ var hazard_system
 var transition_system
 var random_encounter_system
 var world_runtime: WorldRuntime
+var multi_region_renderer: MultiRegionRenderer
 var is_active: bool = false
 var last_applied_region_id: StringName = &""
 
@@ -64,6 +66,8 @@ func stop_run() -> void:
 		hazard_system.stop_run()
 	if transition_system != null:
 		transition_system.stop_run()
+	if multi_region_renderer != null:
+		multi_region_renderer.clear()
 	if random_encounter_system != null and random_encounter_system.has_method("cleanup_encounter"):
 		random_encounter_system.cleanup_encounter()
 	if world_runtime != null:
@@ -113,6 +117,14 @@ func _resolve_components() -> void:
 		world_runtime_path,
 		&"world_runtime"
 	) as WorldRuntime
+	if multi_region_renderer == null:
+		multi_region_renderer = get_tree().get_first_node_in_group(
+			"multi_region_renderer"
+		) as MultiRegionRenderer
+	if multi_region_renderer == null:
+		multi_region_renderer = MultiRegionRenderer.new()
+		multi_region_renderer.name = "MultiRegionRenderer"
+		add_child(multi_region_renderer)
 	_connect_biome_manager()
 	_connect_wave_manager()
 
@@ -182,7 +194,55 @@ func _apply_active_biome(biome: BiomeDefinition) -> void:
 			transition_system.configure_biome(biome)
 		else:
 			transition_system.start_run(biome, biome_manager)
+	_render_neighbor_regions(region_id)
 	active_biome_applied.emit(biome.biome_id)
+
+func _render_neighbor_regions(region_id: StringName) -> void:
+	if (
+		not enable_multi_region_render
+		or multi_region_renderer == null
+		or biome_manager == null
+		or region_id.is_empty()
+	):
+		return
+	var graph = biome_manager.get_world_graph()
+	if graph == null:
+		return
+	var container := _get_environment_container()
+	if container == null:
+		return
+	multi_region_renderer.render_world(
+		graph,
+		region_id,
+		container,
+		_layout_for_region,
+		_palette_for_biome,
+		_neighbor_ground_sample_step()
+	)
+
+func _layout_for_region(region_id: StringName) -> BiomeEnvironmentLayout:
+	if biome_manager == null:
+		return null
+	var cell := biome_manager.get_cell_by_region_id(region_id) as BiomeCell
+	return cell.generated_layout if cell != null else null
+
+func _palette_for_biome(biome_id: StringName) -> BiomePalette:
+	if biome_manager == null:
+		return null
+	var definition = biome_manager.get_biome_definition(biome_id)
+	return definition.palette if definition != null else null
+
+func _neighbor_ground_sample_step() -> int:
+	# Neighbors are background context: sample coarser than the current region.
+	return IsometricEnvironmentManifest.get_shared().get_terrain_sample_step(
+		&"performance"
+	)
+
+func _get_environment_container() -> Node:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return null
+	return scene.get_node_or_null("World/EnvironmentProps")
 
 func _resolve_node(path: NodePath, group_name: StringName) -> Node:
 	if not path.is_empty():

@@ -33,6 +33,50 @@
   `docs/isometric_generation_audit_roadmap.md`, `TODO.md`, `ROADMAP.md`,
   `README.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md` e checklist manuale;
   Milestone 4 resta aperta come recupero sulle collisioni coerenti.
+- Chiusa la Milestone 4 della roadmap isometrica con stato aggiornato in
+  `docs/isometric_generation_audit_roadmap.md`, `TODO.md`, `ROADMAP.md`,
+  `ARCHITECTURE.md` e checklist manuale; prossimo passo `ISO-001` spostato
+  alla Milestone 6 sulle connessioni aperte tra biomi.
+- Chiusa la Milestone 6 della roadmap isometrica con stato aggiornato in
+  `docs/isometric_generation_audit_roadmap.md`, `TODO.md`, `ROADMAP.md`,
+  `ARCHITECTURE.md` e checklist manuale; prossimo passo `ISO-001` spostato
+  alla Milestone 7 sul grafo biomi completamente connesso.
+- Chiusa la Milestone 8 della roadmap isometrica (megamappa persistente) con
+  decisione esplicita per la continuita fisica multi-regione; stato aggiornato
+  in `docs/isometric_generation_audit_roadmap.md`, `TODO.md`, `ROADMAP.md`,
+  `ARCHITECTURE.md` e checklist manuale.
+
+### Changed
+
+- `BiomeObstacle` costruisce ora la collisione dal manifest: `collision_shape`
+  (`rectangle`/`circle`/`open`) guida shape runtime e `contains_global_position`,
+  `blocks_movement`/`blocks_projectiles` guidano i bit di `collision_layer` e
+  `is_jumpable_gap_anchor` espone `is_jumpable_obstacle()`. Gli ostacoli che
+  bloccano i proiettili stanno sul nuovo collision layer `32`; `projectile.tscn`
+  e `boss_projectile.tscn` leggono quel layer e il `Projectile` condiviso si
+  ferma sui muri solidi prima di applicare danno.
+- `ObstacleSystem` espone le query `is_position_blocked_by_non_jumpable` e
+  `is_position_jumpable_obstacle` (il dodge usa la prima per la traiettoria) e
+  assegna a ogni ostacolo una chiave stabile via
+  `ObstacleSystem.make_obstacle_key()`, pronta per il ledger ostacoli distrutti.
+- Aggiunto `tests/milestone_4_obstacle_collision_smoke_test.gd` e aggiornata
+  l'assertion layer in `tests/zombie_environment_milestone_smoke_test.gd` al
+  controllo bitwise del bit movimento.
+- `BiomeTransitionGate` e ora dimensionato e orientato dalla larghezza/lato del
+  passaggio e tematizzato per `passage_type` (`road`/`bridge`/`snow_pass`/
+  `broken_gate`/`burned_road`) con freccia direzione-aware;
+  `BiomeTransitionSystem` propaga tipo e span del passaggio al gate. Aggiunto
+  `tests/milestone_6_open_passage_smoke_test.gd` ed esteso
+  `tests/open_passage_transition_smoke_test.gd` con l'allineamento gate/passaggio.
+
+### Added
+
+- `MultiRegionRenderer` (`game/world/multi_region_renderer.gd`): prototipo del
+  renderer multi-regione che istanzia la regione corrente piu i vicini connessi
+  a offset da `WorldRegion.world_origin`, con i vicini come ground visuale e le
+  regioni lontane non istanziate. `ZombieModeController` lo invoca a ogni cambio
+  regione (gated da `enable_multi_region_render`) e lo pulisce a `stop_run()`.
+  Aggiunto `tests/milestone_8_multi_region_smoke_test.gd`.
 
 ### Fixed
 

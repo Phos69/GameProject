@@ -120,8 +120,8 @@ func _run() -> void:
 		)
 		_expect(
 			obstacle is StaticBody2D
-			and int(obstacle.get("collision_layer")) == 1,
-			"environment obstacle is a physical body on the shared layer"
+			and int(obstacle.get("collision_layer")) & BiomeObstacle.MOVEMENT_BLOCK_LAYER_BIT != 0,
+			"environment obstacle is a physical body on the shared movement layer"
 		)
 		_expect(
 			obstacle.is_in_group("environment_obstacles")
