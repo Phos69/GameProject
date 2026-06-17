@@ -27,6 +27,8 @@ const BIOME_WORLD_GENERATOR_SCRIPT = preload(
 @export var biome_definitions: Array[Resource] = []
 
 var biomes: Dictionary = {}
+var base_environment_layouts: Dictionary = {}
+var base_biome_sizes: Dictionary = {}
 var current_biome
 var world_generator: BiomeWorldGenerator
 var active_world_data: Dictionary = {}
@@ -42,10 +44,17 @@ func _ready() -> void:
 
 func start_run(context: Dictionary = {}) -> void:
 	_ensure_world_generator()
+	_clear_generated_world()
 	current_biome_cell = null
 	active_world_data = world_generator.generate_world(context, biomes)
 	_apply_generated_layouts()
 	select_starting_biome()
+
+func stop_run() -> void:
+	_clear_generated_world()
+
+func _exit_tree() -> void:
+	_clear_generated_world()
 
 func register_biome(definition) -> void:
 	if definition == null:
@@ -54,6 +63,9 @@ func register_biome(definition) -> void:
 	if biome_id.is_empty():
 		return
 	biomes[biome_id] = definition
+	if not base_environment_layouts.has(biome_id):
+		base_environment_layouts[biome_id] = definition.environment_layout
+		base_biome_sizes[biome_id] = definition.biome_size
 
 func select_starting_biome() -> bool:
 	var start_cell := _get_start_cell()
@@ -263,12 +275,35 @@ func _merge_string_name_arrays(
 
 func _on_regenerate_same_seed_requested() -> void:
 	_ensure_world_generator()
+	_restore_biome_layouts()
 	active_world_data = world_generator.regenerate_same_seed(biomes)
 	_apply_generated_layouts()
 	select_starting_biome()
 
 func _on_regenerate_new_seed_requested() -> void:
 	_ensure_world_generator()
+	_restore_biome_layouts()
 	active_world_data = world_generator.regenerate_new_seed(biomes)
 	_apply_generated_layouts()
 	select_starting_biome()
+
+func _clear_generated_world() -> void:
+	_restore_biome_layouts()
+	if world_generator != null:
+		world_generator.clear_world()
+	active_world_data.clear()
+	current_biome_cell = null
+	current_biome = biomes.get(default_biome_id, null)
+
+func _restore_biome_layouts() -> void:
+	for biome_id in biomes.keys():
+		var definition := biomes.get(biome_id, null) as BiomeDefinition
+		if definition == null:
+			continue
+		if base_environment_layouts.has(biome_id):
+			definition.environment_layout = (
+				base_environment_layouts[biome_id]
+				as BiomeEnvironmentLayout
+			)
+		if base_biome_sizes.has(biome_id):
+			definition.biome_size = base_biome_sizes[biome_id]

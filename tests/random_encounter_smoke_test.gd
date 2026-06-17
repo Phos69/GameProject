@@ -14,6 +14,7 @@ func _run() -> void:
 	scene_root.add_child(encounter)
 	await process_frame
 	encounter.base_chance = 1.0
+	encounter.danger_telegraph_duration = 0.01
 	encounter.configure_seed(1234)
 	var biome := load("res://game/modes/zombie/biomes/toxic_wastes.tres") as BiomeDefinition
 
@@ -74,7 +75,13 @@ func _run() -> void:
 		result.get("reward") == "toxic_salvage",
 		"toxic mini-event exposes biome reward"
 	)
+	await create_timer(0.05).timeout
 	encounter.cleanup_encounter()
+	await process_frame
+	if current_scene != null:
+		current_scene.queue_free()
+		current_scene = null
+	await process_frame
 	print("random_encounter_smoke_test passed")
 	quit(0)
 

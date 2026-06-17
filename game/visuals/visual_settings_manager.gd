@@ -19,6 +19,13 @@ var settings: Dictionary = DEFAULT_SETTINGS.duplicate(true)
 func _enter_tree() -> void:
 	add_to_group("visual_settings_manager")
 
+func _exit_tree() -> void:
+	for connection in visual_settings_changed.get_connections():
+		var callback := connection.get("callable", Callable()) as Callable
+		if callback.is_valid() and visual_settings_changed.is_connected(callback):
+			visual_settings_changed.disconnect(callback)
+	settings.clear()
+
 func _ready() -> void:
 	call_deferred("_apply_to_registered_consumers")
 

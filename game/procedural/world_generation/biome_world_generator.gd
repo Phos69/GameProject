@@ -21,6 +21,7 @@ func generate_world(
 	biome_definitions: Dictionary
 ) -> Dictionary:
 	_ensure_components()
+	clear_world()
 	active_context = context.duplicate(true)
 	active_seed = seed_service.start_run(context)
 	var biome_ids := _get_biome_ids(biome_definitions)
@@ -84,6 +85,20 @@ func get_map_signature() -> String:
 func get_seed_record() -> Dictionary:
 	_ensure_components()
 	return seed_service.get_seed_record()
+
+func clear_world() -> void:
+	if debug_overlay != null:
+		debug_overlay.configure(0, [])
+	if map_generator != null:
+		map_generator.clear_generated_data()
+	else:
+		for cell in active_cells:
+			if cell != null:
+				cell.clear_runtime_links()
+	active_cells.clear()
+	active_graph = null
+	active_context.clear()
+	active_seed = 0
 
 func _ensure_components() -> void:
 	if seed_service == null:

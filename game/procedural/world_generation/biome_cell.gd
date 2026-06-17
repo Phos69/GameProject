@@ -87,3 +87,10 @@ func get_signature() -> String:
 		"|".join(border_signature),
 		"|".join(passage_signature)
 	]
+
+func clear_runtime_links() -> void:
+	neighbors.clear()
+	borders.clear()
+	passages.clear()
+	generated_layout = null
+	validation_report.clear()

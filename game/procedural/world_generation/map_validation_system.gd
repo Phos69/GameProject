@@ -1,10 +1,7 @@
-extends Node
+extends RefCounted
 class_name MapValidationSystem
 
 const SIDES: Array[StringName] = [&"north", &"south", &"east", &"west"]
-
-func _ready() -> void:
-	add_to_group("map_validation_system")
 
 func validate_layout(
 	cell: BiomeCell,

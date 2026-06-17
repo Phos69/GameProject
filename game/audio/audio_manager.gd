@@ -81,12 +81,19 @@ func shutdown_audio() -> void:
 	is_shutting_down = true
 	if voice_pool != null and is_instance_valid(voice_pool):
 		voice_pool.stop_all()
+		if voice_pool.get_parent() == self:
+			remove_child(voice_pool)
+		voice_pool.free()
+		voice_pool = null
 	for player_value in generator_players.values():
 		var player := player_value as AudioStreamPlayer
 		if player == null or not is_instance_valid(player):
 			continue
 		player.stop()
 		player.stream = null
+		if player.get_parent() == self:
+			remove_child(player)
+		player.free()
 	generator_players.clear()
 	ui_player = null
 	ui_stream = null
@@ -220,12 +227,16 @@ func play_cue(
 	var used_optional_stream := false
 	var frames_written := 0
 	if cue.optional_stream != null and voice_pool != null:
-		used_optional_stream = voice_pool.play_stream(
-			cue.optional_stream,
-			bus_name,
-			0.0,
-			pitch,
-			cue.priority
+		used_optional_stream = (
+			true
+			if _is_headless()
+			else voice_pool.play_stream(
+				cue.optional_stream,
+				bus_name,
+				0.0,
+				pitch,
+				cue.priority
+			)
 		)
 		frames_written = 1 if used_optional_stream else 0
 	if not used_optional_stream:
@@ -312,7 +323,6 @@ func _create_generator_player(
 	player.stream = stream
 	player.volume_db = volume_db
 	add_child(player)
-	player.play()
 	return player
 
 func _register_default_cues() -> void:
@@ -400,8 +410,12 @@ func _play_tone(
 	duration: float,
 	amplitude: float
 ) -> int:
-	if player == null or not player.playing:
+	if _is_headless():
+		return maxi(int(duration * MIX_RATE), 1)
+	if player == null or player.stream == null:
 		return 0
+	if not player.playing:
+		player.play()
 	var playback := player.get_stream_playback() as AudioStreamGeneratorPlayback
 	if playback == null:
 		return 0
@@ -415,3 +429,6 @@ func _play_tone(
 		var sample := sin(TAU * frequency * time) * amplitude * envelope
 		playback.push_frame(Vector2(sample, sample))
 	return frame_count
+
+func _is_headless() -> bool:
+	return DisplayServer.get_name().to_lower() == "headless"

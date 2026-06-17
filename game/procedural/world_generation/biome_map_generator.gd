@@ -88,6 +88,13 @@ func get_map_signature(cells: Array[BiomeCell] = []) -> String:
 func get_world_graph() -> WorldGraph:
 	return last_graph
 
+func clear_generated_data() -> void:
+	for cell in last_cells:
+		if cell != null:
+			cell.clear_runtime_links()
+	last_cells.clear()
+	last_graph = null
+
 func _resolve_biome_order(
 	available_biome_ids: Array[StringName],
 	seed_value: int,

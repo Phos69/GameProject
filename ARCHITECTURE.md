@@ -207,12 +207,18 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `AudioCueData.optional_stream` e facoltativo; il fallback resta sempre valido.
 - `AudioVoicePool` non supera il limite configurato e preserva cue prioritari.
 - `AudioEventRouter` puo cambiare senza modificare i sistemi gameplay.
+- In headless `AudioManager` simula fallback e stream opzionali senza creare
+  player audio o `AudioStreamGeneratorPlayback` runtime.
+- `shutdown_audio()` ferma e libera voice pool e generatori procedurali prima
+  dello shutdown del tree.
 - Master, Music e SFX sono persistiti nel save v6.
 
 ## Contratto impostazioni visuali
 
 - `VisualSettingsManager` non dipende da health, collisioni o controller.
 - I consumer implementano `apply_visual_settings(settings)`.
+- I consumer visuali isolati possono sincronizzarsi dal gruppo
+  `visual_settings_manager` senza una dipendenza statica obbligatoria.
 - Flash, glow, trail, shake e scala testo sono clampati.
 - Reduced motion agisce solo su clock, pulse, bob, scale UI e camera offset.
 - High contrast rafforza bordi, warning e marker geometrici.
@@ -381,6 +387,8 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - `BiomeEnvironmentLayout` deve classificare tutto il `200x200` come walkable, obstacle, hazard, border, void o fall zone.
 - `MapValidationSystem` rifiuta grafi non connessi, passaggi ostruiti, passaggi non fisici e classificazione incompleta.
 - `WorldRuntime` mantiene `current_region_id` e marca visited/discovered senza possedere regole combat.
+- `WorldRuntime.stop_run()` rilascia riferimenti a grafo e `BiomeManager`; i
+  generatori di supporto procedurale senza lifecycle di scena sono `RefCounted`.
 - `ExplorationMapPanel` mostra solo regioni note; unknown/fog non rivela la topologia completa.
 - `SaveManager` sovrappone `PersistentWorldState` alla prossima generazione con lo stesso seed.
 - Streaming/istanza selettiva delle regioni lontane e un follow-up: il primo pass mantiene il contratto runtime e i dati persistenti pronti.
@@ -397,6 +405,8 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 ## Contratto audio
 
 - `AudioManager` mantiene player separati per UI e gameplay.
+- In headless i cue mantengono semantica e conteggio frame senza istanziare
+  player audio temporanei.
 - `ProjectileSystem.projectile_spawned` genera il feedback di sparo.
 - Solo un impatto con danno applicato genera il feedback di colpo.
 - `DropSystem.drop_collected` genera il feedback pickup in base al tipo raccolto.
@@ -415,6 +425,8 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - `SurvivalMode` avvia e arresta `WaveManager` e controlla la sconfitta del party.
 - `SurvivalMode` avvia e arresta `ZombieModeController` prima del ciclo wave.
 - `BiomeManager` e il punto unico per leggere il bioma corrente della survival.
+- `BiomeManager.stop_run()` ripristina i layout base dei biomi e libera i dati
+  world generati, evitando che celle, grafi e report restino vivi tra test.
 - Ogni run survival genera o rigenera una megamappa persistente seed-based; in assenza di seed manuale usa un seed default stabile, mentre un context `world_seed` permette riproduzione e debug.
 - La megamappa contiene territori `200x200`, seed locali, vicini, bordi, grafo connesso, passaggi fisici, fall boundary e layout ambientali validati prima di essere assegnati alle `BiomeDefinition`.
 - Ogni nuova run survival riparte dalla `Pianura Infetta`.
@@ -556,4 +568,4 @@ Per mantenere il progetto gestibile:
 
 Il flusso nemici e `WaveDirector -> EnemySystem -> BasicEnemy`: il director risolve un ID pesato dal `BiomeDefinition`, `EnemySystem` inietta il `BiomeEnemyProfile`, `BasicEnemy` applica statistiche, visual profile e status on-hit/on-death. `ZombieVisual` riceve solo archetipo e tema, mantenendo silhouette procedurali distinte senza autorita gameplay.
 
-`RandomEncounterSystem` e un sistema leggero seed-based per survival biome: produce ambush, elite pack, cursed crate, hazard burst e survivor cache, annunciando l'evento via segnale e delegando spawn nemici/status/hazard ai sistemi esistenti.
+`RandomEncounterSystem` e un sistema leggero seed-based per survival biome: produce ambush, elite pack, cursed crate, hazard burst e survivor cache, annunciando l'evento via segnale e delegando spawn nemici/status/hazard ai sistemi esistenti. I telegraph temporizzati usano `Timer` figli tracciati e cancellabili, cosi il cleanup della run non lascia callback pendenti nello shutdown headless.

@@ -2,6 +2,7 @@ extends SceneTree
 
 var failures: PackedStringArray = []
 var cue_ids: Array[StringName] = []
+var finish_requested: bool = false
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -189,8 +190,12 @@ func _run() -> void:
 		not health.is_invulnerable(),
 		"player becomes vulnerable when all sources are removed"
 	)
+	for _frame in range(12):
+		await process_frame
 
-	survival_mode.stop_mode()
+	if audio_manager.cue_played.is_connected(_on_cue_played):
+		audio_manager.cue_played.disconnect(_on_cue_played)
+	game_mode_manager.set_mode(GameConstants.MODE_MENU)
 	await process_frame
 	await process_frame
 	_expect(
@@ -229,6 +234,19 @@ func _expect(condition: bool, message: String) -> void:
 	push_error("FAIL: " + message)
 
 func _finish() -> void:
+	if finish_requested:
+		return
+	finish_requested = true
+	call_deferred("_finish_after_teardown")
+
+func _finish_after_teardown() -> void:
+	for _frame in range(5):
+		await process_frame
+	if current_scene != null:
+		current_scene.queue_free()
+		current_scene = null
+	for _frame in range(5):
+		await process_frame
 	if failures.is_empty():
 		print("ZOMBIE_FALL_HAZARD_SMOKE_TEST: PASS")
 		quit(0)

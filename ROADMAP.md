@@ -327,6 +327,10 @@ Attivita post-roadmap:
 - navigazione menu gamepad completata come polish post-roadmap: focus
   circolare, Back coerente, D-pad/stick con cooldown, LB/RB nei Settings e
   Character Select responsive con fallback asset coerente;
+- Milestone 1 di `todo_roadmap.md` completata: shutdown headless stabilizzato,
+  loop da 100 avvii della scena principale e smoke prioritari senza cleanup
+  warning noti; i QA visuali screenshot restano fuori scope per limite del
+  renderer dummy headless.
 - asset definitivi e ulteriori pass di bilanciamento;
 - firma digitale della build pubblica.
 

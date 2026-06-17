@@ -8,9 +8,25 @@
   follow-up e reference storiche completate senza riaprire milestone concluse.
 - Aggiornato `docs/latest_commit_validation_report.md` con audit documentale
   Milestone 0, baseline test nota e stato del debito shutdown headless.
+- Aggiornato il report di validazione con la Milestone 1 di
+  `todo_roadmap.md`, inclusi loop shutdown headless, smoke prioritari e residui
+  QA visuali fuori scope.
 
 ### Fixed
 
+- Stabilizzato lo shutdown headless: `AudioManager` in headless simula fallback
+  e stream opzionali senza istanziare player audio runtime, mentre
+  `shutdown_audio()` libera voice pool e generatori procedurali.
+- Ripulito il lifecycle della generazione biomi: helper procedurali senza scena
+  convertiti a `RefCounted`, dati world/celle azzerati tra run e
+  `BiomeManager` ripristina i layout base al cleanup.
+- Resi cancellabili i telegraph degli encounter casuali tramite `Timer`
+  figli tracciati e liberati in cleanup, evitando timer pendenti durante lo
+  shutdown dei test.
+- Allineati i runner headless piu fragili a teardown esplicito delle scene e a
+  un helper condiviso di lifecycle per evitare risorse trattenute a fine test.
+- Rimossa la dipendenza statica da `VisualSettingsManager` nei consumer visuali
+  isolati, usando sincronizzazione locale dal gruppo quando disponibile.
 - Berserker, Spadaccino e Licantropo non usano piu projectile runtime per
   ascia, spada e artigli: i colpi base passano da hitbox melee temporanee
   ruotate nella direzione di mira.
@@ -35,6 +51,10 @@
 
 ### Added
 
+- Aggiunto `tests/headless_shutdown_loop_test.gd` per verificare 100 cicli di
+  istanza/free della scena principale in headless.
+- Aggiunto `tests/test_scene_lifecycle.gd` come helper di teardown differito
+  riusabile dai runner headless.
 - Esteso `WeaponData` con `attack_type`, campi melee (`melee_shape`,
   `melee_range`, `melee_width`, `melee_arc_degrees`, `windup_time`,
   `active_time`, `recovery_time`, `knockback`, `trail_style`, `effect_key` e

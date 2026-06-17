@@ -1,5 +1,62 @@
 # Latest Commit Validation Report
 
+## Milestone 1 shutdown headless - 2026-06-17
+- Branch: `master`
+- HEAD corrente: `6522e4e`
+- Scope validato: Milestone 1 di `todo_roadmap.md`, stabilizzazione shutdown
+  headless e cleanup test.
+- Esito: PASS sui criteri richiesti.
+- Gameplay implementato: nessuna nuova regola di gioco.
+- Nota residui: i runner QA visuali basati su screenshot (`audio_mix`,
+  `visual_accessibility`, `menu_visual`, `survival_visual`) continuano a fallire
+  nel renderer dummy headless per texture viewport nulla. Sono stati lasciati
+  fuori scope perche non sono warning di shutdown o leak lifecycle.
+
+| Criterio | Esito | Evidenza |
+|---|---|---|
+| Inventario cleanup warning | PASS | warning riprodotti e ricondotti ad audio headless, helper procedurali, dati world ciclici, timer encounter e teardown test |
+| Loop 100 startup/shutdown main scene | PASS | `tests/headless_shutdown_loop_test.gd`, 100 cicli, exit code `0` |
+| Bootstrap headless | PASS | `godot --headless --path . --quit`, exit code `0`, nessun cleanup warning |
+| Smoke prioritari | PASS | combat, survival, dungeon, tower defense, pause/settings, Character Select RPG e mini-eventi bioma senza cleanup warning noti |
+| Residui documentati | PASS | limite screenshot QA headless annotato sopra, non correlato a shutdown |
+
+### Test Milestone 1 eseguiti
+
+| Test | Esito | Note |
+|---|---|---|
+| `godot --headless --path . --quit` | PASS | exit code `0`, shutdown pulito |
+| `tests/headless_shutdown_loop_test.gd` | PASS | 100 cicli main scene |
+| `tests/combat_smoke_test.gd` | PASS | shutdown pulito |
+| `tests/survival_wave_smoke_test.gd` | PASS | shutdown pulito |
+| `tests/dungeon_smoke_test.gd` | PASS | shutdown pulito |
+| `tests/tower_defense_smoke_test.gd` | PASS | shutdown pulito |
+| `tests/pause_settings_smoke_test.gd` | PASS | shutdown pulito |
+| `tests/character_select_ui_smoke_test.gd` | PASS | shutdown pulito |
+| `tests/milestone_rpg_1_character_select_smoke_test.gd` | PASS | shutdown pulito |
+| `tests/biome_mini_events_smoke_test.gd` | PASS | shutdown pulito |
+
+### Sweep aggiuntivo cleanup-sensitive
+
+Verificati senza cleanup warning noti anche boss, drop, visual smoke M10-M21,
+RPG smoke M2-M13, melee resolution, zombie revamp/fall/transition/enemy/soak,
+world graph, persistent world, open passage, terrain coverage, fall boundary,
+dodge, exploration map, biome overlay, obstacle/status/roster e random
+encounter.
+
+### Fix applicati nella Milestone 1
+
+- `game/audio/audio_manager.gd`: headless senza player audio temporanei e
+  shutdown esplicito di voice pool/generatori.
+- `game/procedural/world_generation/`: helper senza lifecycle di scena convertiti
+  a `RefCounted`; world/celle/report ripuliti tra generazioni.
+- `game/modes/zombie/`: cleanup di `BiomeManager`, `ZombieModeController`,
+  `RandomEncounterSystem` e restore dei layout bioma base.
+- `game/world/world_runtime.gd`: stop run con rilascio grafo e manager bioma.
+- `game/visuals/` e `game/player/revive_indicator_visual.gd`: sync impostazioni
+  visuali senza dipendenza statica obbligatoria da `VisualSettingsManager`.
+- `tests/`: aggiunti loop shutdown e helper lifecycle; runner fragili aggiornati
+  a teardown differito e cleanup esplicito delle risorse create.
+
 ## Milestone 0 document audit - 2026-06-17
 - Branch: `master`
 - HEAD corrente: `ce0fda5`

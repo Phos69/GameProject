@@ -70,6 +70,8 @@ func stop_run() -> void:
 		world_runtime.stop_run()
 	if wave_director != null and wave_director.has_method("stop_run"):
 		wave_director.stop_run()
+	if biome_manager != null and biome_manager.has_method("stop_run"):
+		biome_manager.stop_run()
 	is_active = false
 	last_applied_region_id = &""
 	zombie_run_stopped.emit()

@@ -1,4 +1,4 @@
-extends Node
+extends RefCounted
 class_name BiomePassageGenerator
 
 const SIDES_TO_OPEN: Array[StringName] = [&"east", &"south"]

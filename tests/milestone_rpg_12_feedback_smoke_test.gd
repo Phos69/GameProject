@@ -1,28 +1,27 @@
 extends SceneTree
 
 var failures: PackedStringArray = []
+var finish_requested: bool = false
+var player: PlayerController
+var effects: GameplayEffects
 
 func _initialize() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
-	var scene_root := Node2D.new()
-	root.add_child(scene_root)
-	current_scene = scene_root
-
 	var player_scene := load("res://game/player/player.tscn") as PackedScene
 	_expect(player_scene != null, "player scene can be loaded")
 	if player_scene == null:
-		_finish()
+		await _finish()
 		return
 
-	var player := player_scene.instantiate() as PlayerController
-	scene_root.add_child(player)
+	player = player_scene.instantiate() as PlayerController
+	root.add_child(player)
 	await process_frame
 	await process_frame
 
-	var effects := GameplayEffects.new()
-	scene_root.add_child(effects)
+	effects = GameplayEffects.new()
+	root.add_child(effects)
 	await process_frame
 	await process_frame
 
@@ -32,7 +31,7 @@ func _run() -> void:
 	_expect(rpg_component != null, "rpg component is available")
 	_expect(effects.effect_spawn_count == 0, "feedback starts without effects")
 	if rpg_component == null:
-		_finish()
+		await _finish()
 		return
 
 	player.apply_rpg_character(&"ranger")
@@ -60,8 +59,7 @@ func _run() -> void:
 		"super feedback uses dedicated effect kind"
 	)
 
-	scene_root.queue_free()
-	_finish()
+	await _finish()
 
 func _has_effect_kind(effects: GameplayEffects, effect_kind: StringName) -> bool:
 	for child in effects.get_children():
@@ -77,6 +75,19 @@ func _expect(condition: bool, message: String) -> void:
 	push_error("FAIL: " + message)
 
 func _finish() -> void:
+	if finish_requested:
+		return
+	finish_requested = true
+	for _frame in range(5):
+		await process_frame
+	if effects != null and is_instance_valid(effects):
+		effects.queue_free()
+		effects = null
+	if player != null and is_instance_valid(player):
+		player.queue_free()
+		player = null
+	for _frame in range(5):
+		await process_frame
 	if failures.is_empty():
 		print("MILESTONE_RPG_12_FEEDBACK_SMOKE_TEST: PASS")
 		quit(0)

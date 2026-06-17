@@ -41,7 +41,8 @@ func configure(
 ) -> void:
 	seed_value = new_seed
 	cells = new_cells.duplicate()
-	_refresh_label()
+	if is_inside_tree():
+		_refresh_label()
 
 func copy_seed_to_clipboard() -> void:
 	DisplayServer.clipboard_set(str(seed_value))
@@ -132,7 +133,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			pass
 
 func _refresh_label() -> void:
-	if label == null:
+	if label == null or not is_inside_tree():
 		return
 	var summary := get_debug_summary()
 	var encounter := summary.get("encounter", {}) as Dictionary

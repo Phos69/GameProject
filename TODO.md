@@ -17,32 +17,16 @@ Regole per nuove voci:
 | Area | Stato noto | Evidenza | Prossima azione |
 | --- | --- | --- | --- |
 | Documentazione principale | Rivista | `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`, `TODO.md`, report test e checklist manuale | Mantenere allineata durante le milestone successive |
-| Test discovery | 73 runner trovati | `rg --files tests` | Usare come inventario per Milestone 1 e regressioni future |
-| Suite smoke | PASS nell'ultima validazione completa disponibile | `docs/latest_commit_validation_report.md` | Rieseguire dopo modifiche runtime o teardown |
+| Test discovery | 75 runner trovati | `rg --files tests` | Usare come inventario per regressioni future |
+| Suite smoke | PASS nella validazione Milestone 1 | `docs/latest_commit_validation_report.md` | Rieseguire dopo modifiche runtime o teardown |
 | Build/export Windows | PASS nell'ultima validazione completa disponibile | `docs/latest_commit_validation_report.md` | Rieseguire in Milestone 12 o se cambia packaging |
-| Shutdown headless | Aperto e consolidato in `TECH-001` | Warning `ObjectDB/resources still in use` in 34 test nel report precedente | Affrontare in Milestone 1 |
+| Shutdown headless | Risolto nella Milestone 1 | Loop 100 avvii main scene e smoke prioritari senza cleanup warning noti | Monitorare solo come regressione futura |
 | Roadmap storiche | Completate come primo pass o reference | `ROADMAP.md`, `roadmap_*.md`, `docs/milestones/` | Non usarle come backlog attivo se una voce e gia chiusa qui sotto |
 
 Test eseguiti per questo audit: nessun test gameplay. La Milestone 0 richiede
 revisione manuale, baseline e consolidamento TODO.
 
 ## Backlog aperto prioritizzato
-
-### TECH-001 - Debito shutdown headless e lifecycle test
-
-- Obiettivo: terminare la suite senza leak report `ObjectDB`, risorse ancora in
-  uso o access violation intermittenti in shutdown.
-- Milestone collegata: `todo_roadmap.md` Milestone 1.
-- File/sistemi coinvolti: runner in `tests/`, lifecycle di `game/main/`,
-  `game/modes/`, `game/audio/`, `game/projectiles/`, `game/drops/` e
-  `game/debug/build_runtime_smoke.gd`.
-- Criterio di accettazione: 100 avvii e shutdown consecutivi della scena
-  principale passano con exit code `0`; gli smoke prioritari terminano senza
-  warning noti oppure ogni residuo e isolato, riproducibile e documentato come
-  limite engine-level.
-- Test richiesto: loop dedicato di shutdown, suite headless completa e
-  regressioni combat, survival, dungeon, tower defense, pause/settings,
-  Character Select RPG e mini-eventi bioma.
 
 ### BIO-001 - QA mini-eventi bioma, status e encounter
 
@@ -299,6 +283,9 @@ evitare reimplementazioni e per indirizzare le regressioni.
 - Ammo survival anti-frustrazione, boss registry, audio mix, risultati run,
   downed/revive, arena survival e accessibilita: completati; usare i test
   elencati in README e nel report di validazione.
+- TECH-001 shutdown headless e lifecycle test: completato nella Milestone 1 di
+  `todo_roadmap.md`; regressioni future da verificare con
+  `tests/headless_shutdown_loop_test.gd` e smoke prioritari.
 
 ## Mappatura dalle vecchie sezioni TODO
 

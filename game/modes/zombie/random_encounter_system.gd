@@ -48,9 +48,14 @@ var last_skip_reason: StringName = &"not_checked"
 var last_party_size: int = 1
 var pending_telegraph_count: int = 0
 var run_seed: int = 0
+var telegraph_generation: int = 0
+var active_telegraph_timers: Array[Timer] = []
 
 func _ready() -> void:
 	add_to_group("random_encounter_system")
+
+func _exit_tree() -> void:
+	_cleanup_entities()
 
 func configure_seed(run_seed: int, salt: int = 7717) -> void:
 	self.run_seed = run_seed
@@ -321,7 +326,12 @@ func _begin_cursed_crate_telegraph(
 	)
 	if marker != null:
 		(result["entities"] as Array).append(marker)
-	_apply_cursed_status_after_telegraph(biome)
+	var generation := telegraph_generation
+	_schedule_telegraph_action(func() -> void:
+		if not _is_telegraph_generation_active(generation):
+			return
+		_apply_status_to_near_players(_biome_status(biome), 2.5)
+	)
 
 func _begin_hazard_burst_telegraph(
 	biome: BiomeDefinition,
@@ -337,7 +347,12 @@ func _begin_hazard_burst_telegraph(
 	)
 	if marker != null:
 		(result["entities"] as Array).append(marker)
-	_spawn_hazard_burst_after_telegraph(biome, position, tuning, result)
+	var generation := telegraph_generation
+	_schedule_telegraph_action(func() -> void:
+		if not _is_telegraph_generation_active(generation):
+			return
+		_spawn_hazard_burst(biome, position, tuning, result)
+	)
 
 func _begin_emergence_telegraph(
 	biome: BiomeDefinition,
@@ -353,7 +368,20 @@ func _begin_emergence_telegraph(
 	)
 	if marker != null:
 		(result["entities"] as Array).append(marker)
-	_spawn_emergence_after_telegraph(biome, position, tuning, result)
+	var generation := telegraph_generation
+	_schedule_telegraph_action(func() -> void:
+		if not _is_telegraph_generation_active(generation):
+			return
+		_spawn_enemy_pack(
+			biome,
+			position,
+			int(tuning.get("enemy_count", 3)),
+			false,
+			maxi(last_encounter_wave, 2),
+			tuning,
+			result
+		)
+	)
 
 func _spawn_telegraph_marker(
 	encounter_id: StringName,
@@ -379,41 +407,39 @@ func _spawn_telegraph_marker(
 	)
 	return marker
 
-func _apply_cursed_status_after_telegraph(biome: BiomeDefinition) -> void:
-	await get_tree().create_timer(danger_telegraph_duration).timeout
-	if not is_inside_tree():
-		return
-	_apply_status_to_near_players(_biome_status(biome), 2.5)
-
-func _spawn_hazard_burst_after_telegraph(
-	biome: BiomeDefinition,
-	position: Vector2,
-	tuning: Dictionary,
-	result: Dictionary
-) -> void:
-	await get_tree().create_timer(danger_telegraph_duration).timeout
-	if not is_inside_tree():
-		return
-	_spawn_hazard_burst(biome, position, tuning, result)
-
-func _spawn_emergence_after_telegraph(
-	biome: BiomeDefinition,
-	position: Vector2,
-	tuning: Dictionary,
-	result: Dictionary
-) -> void:
-	await get_tree().create_timer(danger_telegraph_duration).timeout
-	if not is_inside_tree():
-		return
-	_spawn_enemy_pack(
-		biome,
-		position,
-		int(tuning.get("enemy_count", 3)),
-		false,
-		maxi(last_encounter_wave, 2),
-		tuning,
-		result
+func _schedule_telegraph_action(callback: Callable) -> void:
+	var timer := Timer.new()
+	timer.one_shot = true
+	timer.wait_time = maxf(danger_telegraph_duration, 0.01)
+	add_child(timer)
+	active_telegraph_timers.append(timer)
+	timer.timeout.connect(
+		_on_telegraph_timer_timeout.bind(timer, callback)
 	)
+	timer.start()
+
+func _on_telegraph_timer_timeout(
+	timer: Timer,
+	callback: Callable
+) -> void:
+	active_telegraph_timers.erase(timer)
+	if callback.is_valid():
+		callback.call()
+	if is_instance_valid(timer):
+		timer.queue_free()
+
+func _clear_telegraph_timers() -> void:
+	for timer in active_telegraph_timers:
+		if not is_instance_valid(timer):
+			continue
+		timer.stop()
+		if timer.get_parent() != null:
+			timer.get_parent().remove_child(timer)
+		timer.free()
+	active_telegraph_timers.clear()
+
+func _is_telegraph_generation_active(generation: int) -> bool:
+	return is_inside_tree() and generation == telegraph_generation
 
 func _on_telegraph_marker_exited() -> void:
 	pending_telegraph_count = maxi(pending_telegraph_count - 1, 0)
@@ -664,6 +690,8 @@ func _announce(message: String, encounter_id: StringName) -> void:
 	encounter_announced.emit(message, encounter_id)
 
 func _cleanup_entities() -> void:
+	telegraph_generation += 1
+	_clear_telegraph_timers()
 	for entity in active_entities:
 		if is_instance_valid(entity):
 			entity.queue_free()

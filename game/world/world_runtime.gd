@@ -45,6 +45,8 @@ func start_run(world_data: Dictionary, manager: BiomeManager = null) -> void:
 func stop_run() -> void:
 	is_active = false
 	active_regions.clear()
+	graph = null
+	biome_manager = null
 	active_regions_changed.emit([])
 
 func set_current_region(region_id: StringName) -> bool:

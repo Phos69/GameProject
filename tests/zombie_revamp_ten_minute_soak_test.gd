@@ -1,6 +1,9 @@
 extends SceneTree
 
+const TEST_SCENE_LIFECYCLE := preload("res://tests/test_scene_lifecycle.gd")
+
 var failures: PackedStringArray = []
+var finish_requested: bool = false
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -132,7 +135,14 @@ func _expect(condition: bool, message: String) -> void:
 	push_error("FAIL: " + message)
 
 func _finish() -> void:
+	if finish_requested:
+		return
+	finish_requested = true
+	call_deferred("_finish_after_teardown")
+
+func _finish_after_teardown() -> void:
 	Engine.time_scale = 1.0
+	await TEST_SCENE_LIFECYCLE.teardown_current_scene(self, 3)
 	if failures.is_empty():
 		print("ZOMBIE_REVAMP_TEN_MINUTE_SOAK_TEST: PASS")
 		quit(0)

@@ -1,6 +1,9 @@
 extends SceneTree
 
+const TEST_SCENE_LIFECYCLE := preload("res://tests/test_scene_lifecycle.gd")
+
 var failures: PackedStringArray = []
+var finish_requested: bool = false
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -83,6 +86,7 @@ func _run() -> void:
 		&"test"
 	)
 	_expect(applied_damage == 6, "incoming formula subtracts player defense")
+	enemy.free()
 
 	_finish()
 
@@ -94,6 +98,13 @@ func _expect(condition: bool, message: String) -> void:
 	push_error("FAIL: " + message)
 
 func _finish() -> void:
+	if finish_requested:
+		return
+	finish_requested = true
+	call_deferred("_finish_after_teardown")
+
+func _finish_after_teardown() -> void:
+	await TEST_SCENE_LIFECYCLE.teardown_current_scene(self, 5)
 	if failures.is_empty():
 		print("MILESTONE_RPG_2_STATS_SMOKE_TEST: PASS")
 		quit(0)

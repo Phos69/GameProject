@@ -15,6 +15,7 @@ func _run() -> void:
 	var encounter := RandomEncounterSystem.new()
 	scene_root.add_child(encounter)
 	await process_frame
+	encounter.danger_telegraph_duration = 0.01
 	encounter.configure_seed(2026)
 	var cases := {
 		&"toxic_wastes": &"toxic_leak",
@@ -24,7 +25,13 @@ func _run() -> void:
 	}
 	for biome_id in cases.keys():
 		_validate_biome_event(encounter, StringName(biome_id), StringName(cases[biome_id]))
+	await create_timer(0.05).timeout
 	encounter.cleanup_encounter()
+	await process_frame
+	if current_scene != null:
+		current_scene.queue_free()
+		current_scene = null
+	await process_frame
 	_finish()
 
 func _validate_biome_event(
@@ -85,5 +92,6 @@ func _finish() -> void:
 	if failures.is_empty():
 		print("biome_mini_events_smoke_test passed")
 		quit(0)
+		return
 	print("biome_mini_events_smoke_test failed: %d" % failures.size())
 	quit(1)

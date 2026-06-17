@@ -104,6 +104,7 @@ projectile.
 Smoke test headless:
 
 ```text
+godot --headless --path . --script res://tests/headless_shutdown_loop_test.gd
 godot --headless --path . --script res://tests/combat_smoke_test.gd
 godot --headless --path . --script res://tests/enemy_drop_smoke_test.gd
 godot --headless --path . --script res://tests/survival_wave_smoke_test.gd

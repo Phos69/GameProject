@@ -1,4 +1,4 @@
-extends Node
+extends RefCounted
 class_name ObstacleLayoutGenerator
 
 const ROAD_WIDTH := 10
