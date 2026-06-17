@@ -1,5 +1,59 @@
 # Latest Commit Validation Report
 
+## Milestone 6 asset definitivi e animazioni personaggi RPG - 2026-06-17
+- Branch: `master`
+- HEAD corrente: non committato al momento della validazione locale.
+- Scope validato: Milestone 6 di `todo_roadmap.md`, pipeline asset dei sette
+  personaggi RPG (coerenza dati, non qualita artistica).
+- Esito: PASS sui criteri automatizzabili; checklist visuale aggiornata per la QA
+  artistica manuale (multi-risoluzione/profili).
+- Decisione aperta risolta: formato asset = **pipeline mista in-repo** (sorgenti
+  SVG testuali + portrait PNG opzionali), nessun asset esterno obbligatorio,
+  gameplay procedurale di fallback.
+
+| Criterio | Esito | Evidenza |
+|---|---|---|
+| Ogni personaggio ha asset configurati dai campi RpgCharacterData | PASS | `rpg_character_asset_manifest_smoke_test` valida 7 personaggi: tutti i path popolati e i file presenti in-repo |
+| Weapon layer e VFX separati dal corpo | PASS | weapon via `WeaponData.visual_data` (layer separato in `PlayerVisual._draw_weapon`); VFX via GameplayEffects; verificato per i 7 |
+| Character Select, HUD e gameplay usano gli stessi dati senza fallback incoerenti | PASS | `portrait_hud_path` ora punta sempre al portrait HUD dedicato (fix 4 .tres); Character Select carica via catena coerente; HUD usa icona procedurale dalla stessa palette |
+| Nessun asset esterno privo di licenza nel repo | PASS | ogni path sotto `res://assets/characters/`; ATTRIBUTION aggiornata (asset originali del progetto) |
+
+### Test Milestone 6 eseguiti
+
+| Test | Esito | Note |
+|---|---|---|
+| `tests/rpg_character_asset_manifest_smoke_test.gd` | PASS | 7 personaggi: path, file in-repo, weapon layer, HUD coerente, index allineato (199 assert) |
+| `tests/character_select_ui_smoke_test.gd` | PASS | esteso: ogni HUD portrait carica dal path dati; safe-area, scroll, joypad |
+| `tests/milestone_rpg_1_character_select_smoke_test.gd` | PASS | regressione character select |
+| `tests/milestone_rpg_13_new_classes_smoke_test.gd` | PASS | regressione roster/classi avanzate |
+| `tests/milestone_rpg_9_hud_smoke_test.gd` | PASS | regressione HUD RPG |
+| `tests/survival_wave_smoke_test.gd` | PASS | regressione survival |
+| `tests/combat_smoke_test.gd` | PASS | regressione combat/player visual |
+| `tests/headless_shutdown_loop_test.gd` | PASS | 100 cicli main scene |
+
+### Fix applicati nella Milestone 6
+
+- `game/rpg/characters/{ranger,berserker,domatrice,licantropo}.tres`:
+  `portrait_hud_path` ora punta al portrait HUD dedicato (`*_portrait_hud.svg`)
+  invece del PNG full, uniformando la pipeline sui 7 personaggi.
+- `assets/characters/index.json`: schema v2 con `status_definitions`
+  (base_complete vs final_quality), `available_assets` completi (passive/super
+  icon), `runtime_source_of_truth` e note pipeline.
+- `assets/ATTRIBUTION.md`, `docs/rpg_character_visual_checklist.md`: documentati
+  pipeline mista, statuses e separazione weapon/VFX.
+- `tests/rpg_character_asset_manifest_smoke_test.gd`: nuovo smoke validazione asset.
+- `tests/character_select_ui_smoke_test.gd`: esteso su path asset HUD.
+
+### Limiti e follow-up Milestone 6
+
+- L'arte definitiva per-personaggio (`final_quality`) resta un follow-up manuale
+  artistico (uno alla volta, da `ranger_final_quality_pass`); il gameplay usa
+  rendering procedurale data-driven come oggi.
+- Le sprite sheet SVG sono cablate come dato/preview ma il corpo gameplay resta
+  procedurale; l'eventuale switch a sprite animate e follow-up.
+- Screenshot QA personaggi (1280x720/1024x768/960x540, default/reduced/high
+  contrast) da acquisire nel playtest end-to-end Milestone 11.
+
 ## Milestone 5 dungeon ramificato, shop e biomi dedicati - 2026-06-17
 - Branch: `master`
 - HEAD corrente: non committato al momento della validazione locale.

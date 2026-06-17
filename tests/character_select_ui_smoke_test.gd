@@ -82,6 +82,13 @@ func _run() -> void:
 				str(character_id)
 			]
 		)
+		var hud_path := str(profile.get("portrait_hud_path", ""))
+		_expect(
+			main_menu._load_texture_resource(hud_path) != null,
+			"character %s HUD portrait asset loads from its data path" % [
+				str(character_id)
+			]
+		)
 
 	main_menu._preview_character(&"ranger")
 	await process_frame

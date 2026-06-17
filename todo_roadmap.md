@@ -38,14 +38,14 @@ Completate in questa roadmap operativa:
 - Milestone 3: QA attraversamento megamappa e streaming regioni.
 - Milestone 4: asset isometrici ambiente e ostacoli coerenti (pipeline manifest).
 - Milestone 5: dungeon ramificato, shop e biomi dedicati.
+- Milestone 6: asset/pipeline personaggi RPG (coerenza dati data-driven).
 
-Prossima milestone non completata secondo l'ordine consigliato: Milestone 6 -
-Asset definitivi e animazioni personaggi RPG.
+Prossima milestone non completata secondo l'ordine consigliato: Milestone 7 -
+Tuning melee, super starter e classi RPG avanzate.
 
 Restano aperti o incompleti:
 
-- Asset definitivi, VFX separati, animazioni e pulizia qualitativa dei sette
-  personaggi RPG.
+- Arte definitiva per-personaggio (`final_quality`) come follow-up manuale.
 - Tuning melee e super starter dopo playtest.
 - Polish di Mago, Domatrice e Licantropo, incluso Briciola e trasformazione.
 - Ulteriori boss, pattern avanzati, eventuale contenuto tower defense avanzato.
@@ -623,6 +623,31 @@ Milestone 1 consigliata. Milestone 4 utile se si usano asset isometrici.
 
 ### Milestone 6 - Asset definitivi e animazioni personaggi RPG
 
+**Stato**
+
+Completata il 2026-06-17 (pass di coerenza dati/pipeline; arte definitiva
+per-personaggio rinviata come follow-up manuale).
+
+**Completato**
+
+- I sette `RpgCharacterData` hanno tutti i campi asset popolati e i file presenti
+  in-repo (portrait full/hud, gameplay sprite, sprite sheet, weapon, icone
+  passive/super); validato da `tests/rpg_character_asset_manifest_smoke_test.gd`.
+- `portrait_hud_path` uniformato al portrait HUD dedicato sui 7 personaggi (fix
+  di ranger/berserker/domatrice/licantropo che puntavano al PNG full): Character
+  Select e HUD leggono dati coerenti senza fallback incoerenti.
+- Weapon layer separato dal corpo via `WeaponData.visual_data`
+  (`PlayerVisual._draw_weapon`), VFX via GameplayEffects; verificato per i 7.
+- `assets/characters/index.json` portato a schema v2 con `status_definitions`
+  (base_complete vs final_quality), `available_assets` completi, note pipeline e
+  sorgente di verita runtime.
+- Decisione risolta: formato asset = pipeline mista SVG testuale + PNG in-repo,
+  nessun asset esterno obbligatorio, gameplay procedurale di fallback.
+- `tests/character_select_ui_smoke_test.gd` esteso per verificare che ogni HUD
+  portrait carichi dal path dati; regressioni RPG/HUD/survival/shutdown verdi.
+- Limite tracciato: l'arte `final_quality` per-personaggio (portrait/sprite sheet
+  animata/VFX dedicati) resta follow-up manuale, uno alla volta.
+
 **Obiettivo**
 
 Portare i sette personaggi RPG da `base_complete` a un pass qualitativo
@@ -1198,7 +1223,7 @@ Usare questi prompt uno alla volta.
 4. Milestone 3 - QA attraversamento megamappa e streaming regioni. Stato: completata.
 5. Milestone 4 - Asset isometrici ambiente e ostacoli coerenti. Stato: completata.
 6. Milestone 5 - Dungeon ramificato, shop e biomi dedicati. Stato: completata.
-7. Milestone 6 - Asset definitivi e animazioni personaggi RPG.
+7. Milestone 6 - Asset definitivi e animazioni personaggi RPG. Stato: completata.
 8. Milestone 7 - Tuning melee, super starter e classi RPG avanzate.
 9. Milestone 8 - UI, HUD, audio e polish UX trasversale.
 10. Milestone 9 - Boss aggiuntivi e pattern avanzati.
@@ -1228,9 +1253,10 @@ Milestones sequenziali:
 
 ## Punti ambigui e decisioni aperte
 
-- Asset personaggi: `base_complete` significa asset base presente, non qualita
-  finale. Serve decidere se il target finale richiede PNG, SVG testuali o una
-  pipeline mista.
+- Asset personaggi: RISOLTA nella Milestone 6 - pipeline mista SVG testuale + PNG
+  in-repo, gameplay procedurale di fallback, nessun asset esterno obbligatorio.
+  `base_complete` = set asset coerente e validato; `final_quality` = arte
+  definitiva per-personaggio, follow-up manuale.
 - Dungeon shop: RISOLTA nella Milestone 5 - usa valuta di run (run credit), non
   denaro party persistente, cosi save e progressione restano intatti.
 - Tower defense avanzata: non e priorita nella TODO principale; va confermata

@@ -2,6 +2,21 @@
 
 Usare questa checklist per verificare il pass 1 dei personaggi RPG a 1280x720, senza leggere il testo della UI.
 
+## Stato asset (Milestone 6)
+
+- `base_complete`: set asset completo e coerente, cablato nei campi
+  `RpgCharacterData` e validato da
+  `tests/rpg_character_asset_manifest_smoke_test.gd` (portrait full/hud, gameplay
+  sprite, sprite sheet, weapon, icone passive/super). Tutti i 7 personaggi sono a
+  questo livello; il gameplay resta render procedurale (`PlayerVisual`).
+- `final_quality`: arte definitiva rifinita a mano per personaggio (follow-up
+  artistico, uno alla volta, partendo da `ranger_final_quality_pass`).
+- `portrait_hud_path` punta sempre al portrait HUD dedicato; `portrait_full_path`
+  al portrait grande (PNG dove esiste, altrimenti SVG). Nessun asset esterno
+  obbligatorio (pipeline mista SVG testuale + PNG in-repo).
+- QA visuale a 1280x720, 1024x768 e 960x540 in default/reduced motion/high
+  contrast resta manuale (screenshot nel playtest end-to-end Milestone 11).
+
 ## Character Select
 
 - [ ] La schermata mostra titolo, quattro slot player, card RPG per il roster e

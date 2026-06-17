@@ -25,27 +25,13 @@ Regole per nuove voci:
 | Megamappa e streaming regioni | PASS nella validazione Milestone 3 | `tests/region_streaming_smoke_test.gd`, world graph, persistent world, open passage, exploration map, `docs/latest_commit_validation_report.md` | Riprendere in Milestone 4 (asset isometrici) o nel bilanciamento Milestone 11 |
 | Asset isometrici ambiente | PASS nella validazione Milestone 4 | `tests/isometric_environment_manifest_smoke_test.gd`, manifest v2, biome obstacle generation, `docs/latest_commit_validation_report.md` | Conversione ad arte esterna definitiva opzionale; QA visuale screenshot nel playtest Milestone 11 |
 | Dungeon ramificato/shop | PASS nella validazione Milestone 5 | `tests/dungeon_graph_smoke_test.gd`, `tests/dungeon_smoke_test.gd`, `docs/latest_commit_validation_report.md` | UI shop dedicata e arte bioma dungeon restano follow-up; screenshot tre seed nel playtest Milestone 11 |
+| Asset/pipeline personaggi RPG | PASS nella validazione Milestone 6 | `tests/rpg_character_asset_manifest_smoke_test.gd`, `assets/characters/index.json` v2, `docs/latest_commit_validation_report.md` | Arte definitiva per-personaggio (`final_quality`) resta follow-up manuale; screenshot QA nel playtest Milestone 11 |
 | Roadmap storiche | Completate come primo pass o reference | `ROADMAP.md`, `roadmap_*.md`, `docs/milestones/` | Non usarle come backlog attivo se una voce e gia chiusa qui sotto |
 
 Test eseguiti per questo audit: nessun test gameplay. La Milestone 0 richiede
 revisione manuale, baseline e consolidamento TODO.
 
 ## Backlog aperto prioritizzato
-
-### ASSET-002 - Asset definitivi e animazioni personaggi RPG
-
-- Obiettivo: rifinire qualitativamente i sette personaggi con VFX separati,
-  pulizia animazioni, weapon layer e coerenza animabile; `base_complete`
-  indica asset base presente, non qualita finale.
-- Milestone collegata: `todo_roadmap.md` Milestone 6.
-- File/sistemi coinvolti: `assets/characters/`, manifest personaggio,
-  `game/rpg/characters/`, `PlayerVisual`, `PlayerHudCard`,
-  `docs/rpg_character_visual_checklist.md`.
-- Criterio di accettazione: ogni personaggio ha portrait HUD/full,
-  idle/run/attack/reload/hurt/death/super, weapon layer e VFX separati
-  configurati dai campi `RpgCharacterData`, con fallback funzionante.
-- Test richiesto: smoke RPG headless, QA visuale a 1280x720 e 960x540,
-  checklist RPG character art completata.
 
 ### RPG-001 - Tuning melee RPG e super starter
 
@@ -176,8 +162,10 @@ revisione manuale, baseline e consolidamento TODO.
 Queste decisioni non avviano lavoro da sole; vanno risolte dentro la milestone
 collegata prima di implementare.
 
-- Asset personaggi: decidere se il target finale usa PNG, SVG testuali o
-  pipeline mista. Collegata ad `ASSET-002`.
+- Asset personaggi: RISOLTA nella Milestone 6 -> pipeline mista SVG testuale +
+  PNG in-repo, gameplay procedurale di fallback, nessun asset esterno
+  obbligatorio. `ASSET-002` completata; resta solo l'arte `final_quality` come
+  follow-up manuale per-personaggio.
 - Dungeon shop: RISOLTA nella Milestone 5 -> usa run credit (valuta di run),
   non denaro party persistente, per non toccare save/progressione. `DUN-001`
   completata.
@@ -228,6 +216,15 @@ evitare reimplementazioni e per indirizzare le regressioni.
   per kind. Decisione: shop su run credit, non denaro party. UI shop dedicata e
   arte bioma dungeon restano follow-up. Coperto da
   `tests/dungeon_graph_smoke_test.gd` e `tests/dungeon_smoke_test.gd`.
+- ASSET-002 asset e pipeline personaggi RPG: completato nella Milestone 6 di
+  `todo_roadmap.md` come pass di coerenza dati. I 7 `RpgCharacterData` hanno tutti
+  i path asset popolati e i file presenti in-repo; `portrait_hud_path` uniformato
+  al portrait HUD dedicato (fix 4 .tres); weapon layer separato via
+  `WeaponData.visual_data`; index.json v2 con status_definitions. Decisione
+  formato: pipeline mista SVG testuale + PNG in-repo, gameplay procedurale.
+  L'arte definitiva per-personaggio (`final_quality`) resta follow-up manuale.
+  Coperto da `tests/rpg_character_asset_manifest_smoke_test.gd` e
+  `tests/character_select_ui_smoke_test.gd`.
 - Roadmap RPG Mode M1-M13 e classi avanzate: completate come pass
   data-driven; tuning e polish sono tracciati in `ASSET-002`, `RPG-001` e
   `RPG-002`.
@@ -259,10 +256,11 @@ evitare reimplementazioni e per indirizzare le regressioni.
 - Duplicato storico sulla manutenzione headless dei test -> `TECH-001`.
 - `Espandere il dungeon oltre il percorso lineare` -> `DUN-001` completata
   (Milestone 5).
-- `Asset definitivi` generico -> `ASSET-001` completata (Milestone 4, ambiente),
-  restano `ASSET-002` e `UIUX-001`.
+- `Asset definitivi` generico -> `ASSET-001` (Milestone 4, ambiente) e `ASSET-002`
+  (Milestone 6, personaggi) completate; resta `UIUX-001`.
 - `Ampliare i test automatici` -> `QA-001`.
-- `Asset definitivi personaggi RPG - futuro` -> `ASSET-002`.
+- `Asset definitivi personaggi RPG - futuro` -> `ASSET-002` completata
+  (Milestone 6); resta solo l'arte `final_quality` per-personaggio.
 - `Tuning melee RPG e super - futuro` -> `RPG-001`.
 - `Polish classi RPG avanzate - futuro` -> `RPG-002`.
 - `Firma digitale dell'eseguibile Windows` -> `REL-001`.
