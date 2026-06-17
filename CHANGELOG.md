@@ -45,6 +45,14 @@
   decisione esplicita per la continuita fisica multi-regione; stato aggiornato
   in `docs/isometric_generation_audit_roadmap.md`, `TODO.md`, `ROADMAP.md`,
   `ARCHITECTURE.md` e checklist manuale.
+- Chiusa la Milestone 7 della roadmap isometrica (grafo biomi completamente
+  connesso) con report di connettivita nel debug overlay e test multi-seed;
+  stato aggiornato in `docs/isometric_generation_audit_roadmap.md`, `TODO.md`,
+  `ROADMAP.md`, `ARCHITECTURE.md` e checklist manuale.
+- Chiusa la Milestone 9 della roadmap isometrica (mappa territori esplorati) con
+  marker active regions, passaggi tematizzati e high contrast sulla mappa; stato
+  aggiornato in `docs/isometric_generation_audit_roadmap.md`, `TODO.md`,
+  `ROADMAP.md`, `ARCHITECTURE.md` e checklist manuale.
 
 ### Changed
 
@@ -77,6 +85,14 @@
   regioni lontane non istanziate. `ZombieModeController` lo invoca a ogni cambio
   regione (gated da `enable_multi_region_render`) e lo pulisce a `stop_run()`.
   Aggiunto `tests/milestone_8_multi_region_smoke_test.gd`.
+- `WorldGraph.get_connectivity_report()` e report grafo/active regions in
+  `BiomeMapDebugOverlay` (toggle `F8`); aggiunto
+  `tests/milestone_7_graph_connectivity_smoke_test.gd` con garanzia di
+  connettivita su 100 seed e regola di fog.
+- `ExplorationMapPanel` mostra marker per le active/loaded regions, passaggi noti
+  tematizzati per `passage_type` e consuma `apply_visual_settings` (high
+  contrast); `HUDManager` gli passa le active regions. Esteso
+  `tests/exploration_map_smoke_test.gd`.
 
 ### Fixed
 

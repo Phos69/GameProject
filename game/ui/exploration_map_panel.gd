@@ -3,6 +3,8 @@ class_name ExplorationMapPanel
 
 var graph: WorldGraph
 var exploration_state: WorldExplorationState
+var active_region_ids: Dictionary = {}
+var high_contrast: bool = false
 var title_label: Label
 var legend_label: Label
 var map_bounds: Rect2 = Rect2(0.0, 0.0, 520.0, 360.0)
@@ -12,7 +14,12 @@ const DISCOVERED_COLOR := Color(0.25, 0.31, 0.33, 0.98)
 const VISITED_COLOR := Color(0.31, 0.54, 0.58, 0.98)
 const CLEARED_COLOR := Color(0.36, 0.68, 0.45, 0.98)
 const CURRENT_COLOR := Color(1.0, 0.86, 0.34, 1.0)
+const LOADED_COLOR := Color(0.62, 0.78, 1.0, 0.95)
 const LINK_COLOR := Color(0.58, 0.70, 0.70, 0.72)
+const BRIDGE_LINK_COLOR := Color(0.62, 0.82, 0.86, 0.82)
+const SNOW_LINK_COLOR := Color(0.82, 0.90, 0.97, 0.84)
+const GATE_LINK_COLOR := Color(0.70, 0.74, 0.56, 0.80)
+const BURNED_LINK_COLOR := Color(0.82, 0.56, 0.44, 0.80)
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -25,17 +32,49 @@ func _ready() -> void:
 	offset_right = 330.0
 	offset_bottom = 235.0
 	visible = false
+	add_to_group("visual_settings_consumers")
 	_build_ui()
 	_apply_style()
+	VisualSettingsManager.sync_consumer(self)
 
 func configure(
 	next_graph: WorldGraph,
-	next_exploration_state: WorldExplorationState
+	next_exploration_state: WorldExplorationState,
+	next_active_region_ids: Array = []
 ) -> void:
 	graph = next_graph
 	exploration_state = next_exploration_state
+	active_region_ids.clear()
+	for region_id in next_active_region_ids:
+		active_region_ids[StringName(region_id)] = true
 	_refresh_labels()
 	queue_redraw()
+
+func apply_visual_settings(settings: Dictionary) -> void:
+	high_contrast = bool(settings.get("high_contrast", false))
+	queue_redraw()
+
+func is_region_active(region_id: StringName) -> bool:
+	return active_region_ids.has(region_id)
+
+func get_active_region_ids() -> Array[StringName]:
+	var result: Array[StringName] = []
+	for region_id in active_region_ids.keys():
+		result.append(StringName(region_id))
+	result.sort()
+	return result
+
+# Known passages = graph edges whose endpoints are both visible (not unknown).
+# The map never reveals connections out of the fog, so this mirrors what a
+# player can legitimately read from explored territory.
+func get_known_connections() -> Array[WorldRegionConnection]:
+	var result: Array[WorldRegionConnection] = []
+	if graph == null:
+		return result
+	for connection in graph.connections:
+		if _connection_visible(connection):
+			result.append(connection)
+	return result
 
 func toggle() -> void:
 	visible = not visible
@@ -59,6 +98,7 @@ func _draw() -> void:
 	var grid_rect := _get_grid_rect(regions)
 	var cell_size := _resolve_cell_size(grid_rect)
 	var origin := Vector2(70.0, 82.0)
+	var link_width := 4.0 if high_contrast else 3.0
 	for connection in graph.connections:
 		if not _connection_visible(connection):
 			continue
@@ -69,8 +109,8 @@ func _draw() -> void:
 		draw_line(
 			_grid_to_panel(from_region.grid_position, grid_rect, cell_size, origin),
 			_grid_to_panel(to_region.grid_position, grid_rect, cell_size, origin),
-			LINK_COLOR,
-			3.0,
+			_link_color_for(connection),
+			link_width,
 			true
 		)
 	for region in regions:
@@ -94,14 +134,33 @@ func _draw_region(
 	draw_colored_polygon(points, _color_for_state(state))
 	var closed := points.duplicate()
 	closed.append(points[0])
+	var outline_width := 3.0 if high_contrast else 2.0
 	draw_polyline(
 		closed,
 		Color.WHITE if state != WorldExplorationState.STATE_UNKNOWN else Color(0.22, 0.25, 0.27, 1.0),
-		2.0,
+		outline_width,
 		true
 	)
-	if exploration_state != null and exploration_state.current_region_id == region.region_id:
-		draw_polyline(closed, CURRENT_COLOR, 4.0, true)
+	var is_current := (
+		exploration_state != null
+		and exploration_state.current_region_id == region.region_id
+	)
+	# Loaded-as-data marker (active region that is not the current one): an
+	# axis-aligned square, geometrically distinct from the diamond so it reads
+	# without relying on color (high-contrast friendly).
+	if is_region_active(region.region_id) and not is_current:
+		var sx := size.x * 1.04
+		var sy := size.y * 1.18
+		var square := PackedVector2Array([
+			center + Vector2(-sx, -sy),
+			center + Vector2(sx, -sy),
+			center + Vector2(sx, sy),
+			center + Vector2(-sx, sy),
+			center + Vector2(-sx, -sy)
+		])
+		draw_polyline(square, LOADED_COLOR, outline_width, true)
+	if is_current:
+		draw_polyline(closed, CURRENT_COLOR, 5.0 if high_contrast else 4.0, true)
 		draw_circle(center, maxf(cell_size * 0.11, 4.0), CURRENT_COLOR)
 
 func _build_ui() -> void:
@@ -144,7 +203,7 @@ func _refresh_labels() -> void:
 		else ""
 	)
 	title_label.text = "Territory Map  %s" % current
-	legend_label.text = "Unknown   Discovered   Visited   Cleared   Current"
+	legend_label.text = "Unknown  Discovered  Visited  Cleared  Current  [Loaded]"
 
 func _get_grid_rect(regions: Array[WorldRegion]) -> Rect2i:
 	var first_region: WorldRegion = regions.front()
@@ -198,3 +257,16 @@ func _color_for_state(state: StringName) -> Color:
 			return DISCOVERED_COLOR
 		_:
 			return UNKNOWN_COLOR
+
+func _link_color_for(connection: WorldRegionConnection) -> Color:
+	match connection.passage_type:
+		&"bridge":
+			return BRIDGE_LINK_COLOR
+		&"snow_pass":
+			return SNOW_LINK_COLOR
+		&"broken_gate":
+			return GATE_LINK_COLOR
+		&"burned_road":
+			return BURNED_LINK_COLOR
+		_:
+			return LINK_COLOR

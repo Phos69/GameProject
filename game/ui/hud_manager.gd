@@ -696,7 +696,8 @@ func _refresh_exploration_map() -> void:
 		return
 	exploration_map_panel.configure(
 		world_runtime.graph,
-		world_runtime.get_exploration_state()
+		world_runtime.get_exploration_state(),
+		world_runtime.get_active_region_ids()
 	)
 
 func _on_intermission_started(

@@ -43,10 +43,43 @@ func _run() -> void:
 	var panel := ExplorationMapPanel.new()
 	root.add_child(panel)
 	await process_frame
-	panel.configure(runtime.graph, state)
+	var active_ids := runtime.get_active_region_ids()
+	panel.configure(runtime.graph, state, active_ids)
 	panel.show_map()
 	_expect(panel.visible, "exploration map panel opens")
 	_expect(panel.graph == runtime.graph, "map panel receives graph")
+
+	# Active / loaded region markers come from the streaming set.
+	_expect(not active_ids.is_empty(), "runtime exposes active regions to the map")
+	_expect(
+		panel.is_region_active(next_region),
+		"the current region is marked as loaded on the map"
+	)
+	_expect(
+		panel.get_active_region_ids() == active_ids,
+		"map active markers match the runtime streaming set"
+	)
+
+	# Known passages mirror the graph but never reveal unknown topology.
+	var known := panel.get_known_connections()
+	var fog_respected := true
+	for connection in known:
+		if (
+			not state.is_visible(connection.from_region_id)
+			or not state.is_visible(connection.to_region_id)
+		):
+			fog_respected = false
+	_expect(fog_respected, "known passages only connect visible regions (fog respected)")
+	_expect(
+		known.size() < runtime.graph.connections.size(),
+		"unknown regions keep some passages hidden"
+	)
+
+	# High contrast strengthens the geometric markers without changing data.
+	panel.apply_visual_settings({"high_contrast": true})
+	_expect(panel.high_contrast, "map honors the high-contrast visual setting")
+	panel.apply_visual_settings({"high_contrast": false})
+
 	panel.hide_map()
 	_expect(not panel.visible, "exploration map panel closes")
 

@@ -95,6 +95,16 @@ func is_graph_connected() -> bool:
 			queue.append(neighbor_id)
 	return visited.size() == regions.size()
 
+func get_connectivity_report() -> Dictionary:
+	var unreachable := get_unreachable_region_ids()
+	return {
+		"region_count": regions.size(),
+		"connection_count": get_connection_count(),
+		"is_connected": is_graph_connected(),
+		"unreachable_count": unreachable.size(),
+		"unreachable": unreachable
+	}
+
 func get_unreachable_region_ids() -> Array[StringName]:
 	var result: Array[StringName] = []
 	if start_region_id.is_empty():

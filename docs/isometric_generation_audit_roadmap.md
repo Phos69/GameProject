@@ -248,16 +248,17 @@ Gap principali:
 
 ### Mappa esplorata/UI
 
-Stato: presente.
+Stato: arricchita in Milestone 9.
 
-`ExplorationMapPanel` disegna una mappa isometrica stilizzata dei territori,
-con fog e connessioni note. `HUDManager` la apre con `world_map`.
+`ExplorationMapPanel` disegna i territori con fog, passaggi noti tematizzati per
+`passage_type`, marker per le active/loaded regions e supporto high contrast.
+`HUDManager` la apre con `world_map` e le passa le active regions.
 
 Gap principali:
 
-- la mappa e informativa ma non mostra dettaglio interno della regione;
-- non mostra ostacoli, hazard, crate o passaggi esatti;
-- non visualizza active regions/streaming per debug.
+- la mappa e informativa ma non mostra dettaglio interno della regione
+  (ostacoli, hazard, crate esatti): scelta deliberata per leggibilita;
+- i POI astratti per regione restano un'estensione opzionale futura.
 
 ### Asset e art direction
 
@@ -276,17 +277,18 @@ Gap principali:
 
 ### Debug tooling
 
-Stato: parziale.
+Stato: arricchito in Milestone 7.
 
-`BiomeMapDebugOverlay` espone dati del seed e puo rigenerare, ma non risulta
-una UI di debug di gioco ricca per vedere classificazione, collisioni, passaggi,
-active regions e ledger.
+`BiomeMapDebugOverlay` espone dati del seed, classi terrain e, dal Milestone 7,
+il report di connettivita del grafo (connesso, regioni, edge, irraggiungibili),
+la regione corrente e le active regions caricate, con toggle `F8` dedicato.
 
 Gap principali:
 
-- l'overlay debug riepiloga le classi terrain, ma manca ancora una vista
-  world-space per layer terrain class;
-- manca visualizzazione active regions/region id sul mondo;
+- l'overlay riepiloga classi terrain e connettivita come testo, ma manca ancora
+  una vista world-space per layer terrain class;
+- la visualizzazione active regions e testuale nell'overlay, non un overlay
+  spaziale sul mondo;
 - il report automatico manifest/generatore e coperto dallo smoke, mentre manca
   una vista debug in game per visualizzare mismatch visuali e classificazioni.
 
@@ -751,6 +753,22 @@ Sotto-task completati:
 
 ### Milestone 7 - Grafo biomi completamente connesso
 
+Stato: completata il 2026-06-17.
+
+Esito:
+
+- `WorldGraph.get_connectivity_report()` espone in un colpo solo region count,
+  connection count, stato connesso e regioni irraggiungibili.
+- `BiomeMapDebugOverlay` mostra il report grafo (connesso, regioni, edge,
+  irraggiungibili), la regione corrente, le active regions (caricate) e il conteggio
+  delle regioni non caricate; nuovo toggle `F8` non invasivo per la vista grafo.
+- `tests/milestone_7_graph_connectivity_smoke_test.gd` verifica su 100 seed che il
+  grafo resti connesso, senza regioni irraggiungibili, con edge extra (loop) e
+  passaggi fisici coerenti; verifica inoltre il riepilogo overlay e la regola di
+  fog (la regione lontana resta `unknown`).
+- Nessun cambio a generazione, gameplay o regole di mappa: solo report/overlay
+  e test.
+
 Obiettivo:
 rafforzare la garanzia di grafo connesso e renderla leggibile nel debug e nella
 mappa.
@@ -784,13 +802,13 @@ Rischi:
 
 - Debug troppo invasivo puo interferire con UI gameplay.
 
-Sotto-task:
+Sotto-task completati:
 
-1. Aggiungere test multi-seed.
-2. Estendere debug overlay.
-3. Integrare toggle debug non invasivo.
-4. QA mappa con fog.
-5. Aggiornare documentazione debug.
+1. [x] Aggiungere test multi-seed (`milestone_7_graph_connectivity`, 100 seed).
+2. [x] Estendere debug overlay con report grafo e active regions.
+3. [x] Integrare toggle debug non invasivo (`F8` vista grafo).
+4. [x] QA mappa con fog: smoke su `unknown` lontano + checklist manuale.
+5. [x] Aggiornare documentazione debug (`ARCHITECTURE.md`, checklist).
 
 ### Milestone 8 - Megamappa persistente
 
@@ -867,6 +885,25 @@ Sotto-task completati:
 
 ### Milestone 9 - Mappa territori esplorati
 
+Stato: completata il 2026-06-17.
+
+Esito:
+
+- `ExplorationMapPanel.configure()` accetta le active regions; la mappa disegna un
+  marker geometrico (quadrato) per le regioni caricate come dati, distinto dal
+  diamante e dall'evidenziazione gold della regione corrente.
+- I link dei passaggi noti sono tematizzati per `passage_type`
+  (`road`/`bridge`/`snow_pass`/`broken_gate`/`burned_road`) e disegnati solo tra
+  regioni visibili, quindi il fog non rivela topologia `unknown`.
+- `ExplorationMapPanel` e ora un consumer di `VisualSettingsManager`:
+  `apply_visual_settings()` legge `high_contrast` e rinforza bordi/marker;
+  `reduced_motion` e accettato senza animazioni da disabilitare.
+- `HUDManager` passa `world_runtime.get_active_region_ids()` al pannello.
+- API testabili: `is_region_active()`, `get_active_region_ids()`,
+  `get_known_connections()`.
+- `tests/exploration_map_smoke_test.gd` esteso: marker active, passaggi noti
+  coerenti col grafo, fog rispettato e toggle high contrast.
+
 Obiettivo:
 rendere la mappa coerente con il contratto di navigazione scelto e piu utile
 per l'orientamento.
@@ -901,13 +938,13 @@ Rischi:
 
 - Troppi dettagli possono coprire HUD o rompere leggibilita couch.
 
-Sotto-task:
+Sotto-task completati:
 
-1. Estendere dati visualizzati.
-2. Aggiornare smoke.
-3. QA tre risoluzioni.
-4. Verificare high contrast.
-5. Aggiornare checklist manuale.
+1. [x] Estendere dati visualizzati (active regions, passaggi tematizzati).
+2. [x] Aggiornare smoke (`exploration_map_smoke_test`).
+3. [x] QA tre risoluzioni: checklist manuale (screenshot reali nel playtest).
+4. [x] Verificare high contrast: `apply_visual_settings` + assert smoke.
+5. [x] Aggiornare checklist manuale.
 
 ### Milestone 10 - Polish grafico e sostituzione placeholder
 

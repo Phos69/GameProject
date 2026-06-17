@@ -15,6 +15,7 @@ var show_borders: bool = true
 var show_pathfinding: bool = false
 var show_collision: bool = false
 var show_terrain_classes: bool = true
+var show_graph: bool = true
 var refresh_timer: float = 0.0
 
 func _ready() -> void:
@@ -83,14 +84,29 @@ func get_debug_summary() -> Dictionary:
 				fall_side_count += 1
 		if not bool(cell.validation_report.get("is_valid", false)):
 			validation_failures += 1
+	var current_region_id := &""
+	var graph_report := {}
 	var biome_manager := get_tree().get_first_node_in_group(
 		"biome_manager"
 	) as BiomeManager
 	if biome_manager != null:
 		current_biome_id = biome_manager.get_current_biome_id()
+		current_region_id = biome_manager.get_current_region_id()
 		var current_cell := biome_manager.get_current_biome_cell()
 		if current_cell != null:
 			current_validation = current_cell.validation_report
+		var graph := biome_manager.get_world_graph()
+		if graph != null:
+			graph_report = graph.get_connectivity_report()
+	var active_region_ids: Array[StringName] = []
+	var world_runtime := get_tree().get_first_node_in_group("world_runtime")
+	if world_runtime != null and world_runtime.has_method("get_active_region_ids"):
+		active_region_ids = world_runtime.get_active_region_ids()
+	var loaded_region_count := active_region_ids.size()
+	var unloaded_region_count := maxi(
+		int(graph_report.get("region_count", 0)) - loaded_region_count,
+		0
+	)
 	var encounter_snapshot := _get_encounter_snapshot()
 	return {
 		"seed": seed_value,
@@ -105,12 +121,18 @@ func get_debug_summary() -> Dictionary:
 		"terrain_classification_total": terrain_classification_total,
 		"terrain_classification_complete": terrain_classification_complete,
 		"current_biome_id": current_biome_id,
+		"current_region_id": current_region_id,
 		"current_validation": current_validation,
+		"graph": graph_report,
+		"active_region_ids": active_region_ids,
+		"active_region_count": loaded_region_count,
+		"unloaded_region_count": unloaded_region_count,
 		"encounter": encounter_snapshot,
 		"show_borders": show_borders,
 		"show_pathfinding": show_pathfinding,
 		"show_collision": show_collision,
-		"show_terrain_classes": show_terrain_classes
+		"show_terrain_classes": show_terrain_classes,
+		"show_graph": show_graph
 	}
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -143,6 +165,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		KEY_F7:
 			if visible:
 				show_terrain_classes = not show_terrain_classes
+				_refresh_label()
+				get_viewport().set_input_as_handled()
+		KEY_F8:
+			if visible:
+				show_graph = not show_graph
 				_refresh_label()
 				get_viewport().set_input_as_handled()
 		KEY_F5:
@@ -203,6 +230,20 @@ func _refresh_label() -> void:
 		int(encounter.get("pending_telegraph_count", 0)),
 		String(encounter.get("last_skip_reason", &""))
 	])
+	if bool(summary.get("show_graph", false)):
+		var graph_data := summary.get("graph", {}) as Dictionary
+		lines.append("Graph connected:%s regions:%d edges:%d unreachable:%d" % [
+			str(graph_data.get("is_connected", false)),
+			int(graph_data.get("region_count", 0)),
+			int(graph_data.get("connection_count", 0)),
+			int(graph_data.get("unreachable_count", 0))
+		])
+		lines.append("Region:%s Active:%d Unloaded:%d [%s]" % [
+			String(summary.get("current_region_id", &"")),
+			int(summary.get("active_region_count", 0)),
+			int(summary.get("unloaded_region_count", 0)),
+			", ".join(_region_ids_to_strings(summary.get("active_region_ids", [])))
+		])
 	lines.append("Borders:%s  Path:%s  Collision:%s" % [
 		str(show_borders),
 		str(show_pathfinding),
@@ -226,6 +267,12 @@ func _get_encounter_snapshot() -> Dictionary:
 	):
 		return {}
 	return encounter_system.get_debug_snapshot()
+
+func _region_ids_to_strings(region_ids: Array) -> PackedStringArray:
+	var result := PackedStringArray()
+	for region_id in region_ids:
+		result.append(String(region_id))
+	return result
 
 func _empty_terrain_class_counts() -> Dictionary:
 	return {

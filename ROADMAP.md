@@ -361,6 +361,12 @@ Attivita post-roadmap:
   decisione per la continuita fisica multi-regione e prototipo
   `MultiRegionRenderer` (corrente + vicini con offset `world_origin`, vicini solo
   ground visuale, lontane non istanziate) integrato in `ZombieModeController`.
+- Milestone 7 di `docs/isometric_generation_audit_roadmap.md` completata:
+  `WorldGraph.get_connectivity_report()`, report grafo/active regions nel
+  `BiomeMapDebugOverlay` (toggle `F8`) e smoke connettivita su 100 seed.
+- Milestone 9 di `docs/isometric_generation_audit_roadmap.md` completata:
+  `ExplorationMapPanel` con marker active/loaded regions, passaggi tematizzati per
+  `passage_type` e supporto high contrast via `apply_visual_settings`.
 - asset definitivi e ulteriori pass di bilanciamento;
 - firma digitale della build pubblica.
 

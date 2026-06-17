@@ -24,7 +24,7 @@ Regole per nuove voci:
 | Mini-eventi bioma | PASS nella validazione Milestone 2 | `tests/biome_mini_events_smoke_test.gd`, `tests/random_encounter_smoke_test.gd`, `docs/latest_commit_validation_report.md` | Riprendere solo dentro playtest/bilanciamento Milestone 11 |
 | Megamappa e streaming regioni | PASS nella validazione Milestone 3 | `tests/region_streaming_smoke_test.gd`, world graph, persistent world, open passage, exploration map, `docs/latest_commit_validation_report.md` | Riprendere in Milestone 4 (asset isometrici) o nel bilanciamento Milestone 11 |
 | Asset isometrici ambiente | PASS nella validazione Milestone 4 | `tests/isometric_environment_manifest_smoke_test.gd`, manifest v2 poi v5, biome obstacle generation, `docs/latest_commit_validation_report.md` | Conversione ad arte esterna definitiva opzionale; QA visuale screenshot nel playtest Milestone 11 |
-| Audit migrazione isometrica | Milestone 1-6 e 8 PASS | `docs/isometric_generation_audit_roadmap.md`, manifest ambiente v6, `tests/isometric_environment_manifest_smoke_test.gd`, `tests/milestone_4_obstacle_collision_smoke_test.gd`, `tests/milestone_6_open_passage_smoke_test.gd`, `tests/milestone_8_multi_region_smoke_test.gd`, `tests/region_streaming_smoke_test.gd`, `tests/open_passage_transition_smoke_test.gd` | Proseguire `ISO-001` con la Milestone 7 sul grafo biomi completamente connesso |
+| Audit migrazione isometrica | Milestone 1-9 PASS | `docs/isometric_generation_audit_roadmap.md`, manifest ambiente v6, `tests/milestone_4_obstacle_collision_smoke_test.gd`, `tests/milestone_6_open_passage_smoke_test.gd`, `tests/milestone_7_graph_connectivity_smoke_test.gd`, `tests/milestone_8_multi_region_smoke_test.gd`, `tests/exploration_map_smoke_test.gd`, `tests/region_streaming_smoke_test.gd` | Proseguire `ISO-001` con la Milestone 10 su polish grafico e placeholder |
 | Dungeon ramificato/shop | PASS nella validazione Milestone 5 | `tests/dungeon_graph_smoke_test.gd`, `tests/dungeon_smoke_test.gd`, `docs/latest_commit_validation_report.md` | UI shop dedicata e arte bioma dungeon restano follow-up; screenshot tre seed nel playtest Milestone 11 |
 | Asset/pipeline personaggi RPG | PASS nella validazione Milestone 6 | `tests/rpg_character_asset_manifest_smoke_test.gd`, `assets/characters/index.json` v2, `docs/latest_commit_validation_report.md` | Arte definitiva per-personaggio (`final_quality`) resta follow-up manuale; screenshot QA nel playtest Milestone 11 |
 | Tuning melee, super e classi RPG avanzate | PASS nella validazione Milestone 7 | `tests/rpg_melee_attack_resolution_smoke_test.gd`, `tests/milestone_rpg_8_adrenaline_super_smoke_test.gd`, `tests/milestone_rpg_12_feedback_smoke_test.gd`, `tests/milestone_rpg_13_new_classes_smoke_test.gd` | QA manuale multi-risoluzione/five-wave/due-player resta follow-up nel playtest Milestone 11 |
@@ -42,9 +42,9 @@ revisione manuale, baseline e consolidamento TODO.
   bordi, connessioni, mappa esplorata, debug e regressioni.
 - Milestone collegata: `docs/isometric_generation_audit_roadmap.md` Milestone
   1-11.
-- Stato: Milestone 1, 2, 3, 4, 5, 6 e 8 completate il 2026-06-17; la prossima
-  azione e la Milestone 7 sul grafo biomi completamente connesso (la Milestone 8
-  e stata anticipata su richiesta).
+- Stato: Milestone 1-9 completate il 2026-06-17 (la 8 anticipata su richiesta);
+  la prossima azione e la Milestone 10 su polish grafico e sostituzione
+  placeholder.
 - File/sistemi coinvolti: `game/procedural/world_generation/`,
   `game/modes/zombie/`, `game/world/`, `game/ui/exploration_map_panel.gd`,
   `assets/environment/isometric/manifest.json`, `tests/`,
@@ -57,7 +57,8 @@ revisione manuale, baseline e consolidamento TODO.
   `biome_world_generation`, `isometric_environment_manifest`,
   `isometric_biome_terrain_coverage`, `biome_obstacle_generation`,
   `milestone_4_obstacle_collision`, `milestone_6_open_passage`,
-  `milestone_8_multi_region`, `open_passage_transition`,
+  `milestone_7_graph_connectivity`, `milestone_8_multi_region`,
+  `open_passage_transition`,
   `fall_boundary_visual_logic`, `player_dodge_gap`,
   `exploration_map` e QA visuale cinque biomi quando disponibile.
 

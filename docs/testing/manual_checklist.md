@@ -802,6 +802,52 @@ godot --headless --path . --script res://tests/open_passage_transition_smoke_tes
 godot --headless --path . --script res://tests/survival_wave_smoke_test.gd
 ```
 
+## Regressione ISO-001 Milestone 7 - grafo biomi completamente connesso
+
+QA da eseguire in una run survival con il debug overlay biomi attivo
+(`BiomeMapDebugOverlay`, toggle `F1`; vista grafo `F8`).
+
+- Con l'overlay visibile, confermare la riga grafo: `connected:true`, regioni
+  totali, numero edge (maggiore dello spanning tree) e `unreachable:0`.
+- Confermare la riga regione: regione corrente, conteggio active regions
+  (corrente + vicini caricati) e regioni non caricate.
+- Premere `F8` e verificare che la vista grafo si nasconda/mostri senza
+  interferire con HUD o gameplay.
+- Attraversare alcune transizioni e confermare che active regions e regione
+  corrente nell'overlay restino coerenti con la mappa esplorazione (`M`).
+- Aprire la mappa esplorazione e confermare che le regioni `unknown` lontane non
+  rivelino la topologia completa (fog rispettata).
+
+```text
+godot --headless --path . --script res://tests/milestone_7_graph_connectivity_smoke_test.gd
+godot --headless --path . --script res://tests/world_graph_connectivity_smoke_test.gd
+godot --headless --path . --script res://tests/exploration_map_smoke_test.gd
+godot --headless --path . --script res://tests/biome_world_generation_smoke_test.gd
+```
+
+## Regressione ISO-001 Milestone 9 - mappa territori esplorati
+
+QA mappa esplorazione (`M` / joypad `Back/Select/View`) a `1280x720`,
+`1024x768` e `960x540`, in `default` e `high_contrast`.
+
+- Aprire la mappa e confermare che regione corrente (oro), visitate, scoperte e
+  cleared siano leggibili e distinguibili a tutte e tre le risoluzioni.
+- Confermare che le regioni caricate come dati (active/streaming) mostrino il
+  marker quadrato distinto dalla regione corrente.
+- Verificare che i passaggi noti colleghino solo regioni visibili e che il loro
+  colore rifletta il tipo (`road`/`bridge`/`snow_pass`/`broken_gate`/`burned_road`).
+- Confermare che le regioni `unknown` lontane non rivelino la topologia completa.
+- In `high_contrast` confermare bordi/marker rinforzati senza perdere leggibilita;
+  in `reduced_motion` la mappa resta statica e leggibile.
+- Aprire/chiudere la mappa durante survival con tastiera e joypad senza perdere
+  il focus HUD.
+
+```text
+godot --headless --path . --script res://tests/exploration_map_smoke_test.gd
+godot --headless --path . --script res://tests/region_streaming_smoke_test.gd
+godot --headless --path . --script res://tests/open_passage_transition_smoke_test.gd
+```
+
 ## Regressione todo_roadmap Milestone 5 - dungeon ramificato, shop e biomi
 
 QA da eseguire con almeno tre seed diversi, con tastiera e joypad.
