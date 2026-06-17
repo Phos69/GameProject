@@ -160,6 +160,7 @@ func _spawn_melee_attack(
 		weapon_data.windup_time,
 		weapon_data.active_time,
 		weapon_data.knockback,
+		weapon_data.hitstop,
 		weapon_data.max_hit_count,
 		weapon_data.visual_data,
 		weapon_data.trail_style,

@@ -6,6 +6,7 @@ var obstacle_size: Vector2 = Vector2(48.0, 40.0)
 var shape_id: StringName = &"rectangle"
 var primary_color: Color = Color(0.38, 0.30, 0.16, 1.0)
 var accent_color: Color = Color(0.74, 0.58, 0.16, 0.82)
+var sort_offset: float = 0.0
 
 func configure(
 	next_obstacle_id: StringName,
@@ -13,7 +14,8 @@ func configure(
 	next_shape_id: StringName,
 	rotation_radians: float,
 	base_color: Color,
-	detail_color: Color
+	detail_color: Color,
+	next_sort_offset: float = 0.0
 ) -> void:
 	obstacle_id = next_obstacle_id
 	obstacle_size = Vector2(
@@ -24,9 +26,12 @@ func configure(
 	rotation = rotation_radians
 	primary_color = base_color
 	accent_color = detail_color
+	sort_offset = next_sort_offset
 	collision_layer = 1
 	collision_mask = 0
-	z_index = 1
+	# z_index 0 so obstacles take part in the World Y-sort together with zombies
+	# and pickups instead of flatly covering them.
+	z_index = 0
 	set_meta("zone_radius", get_clearance_radius())
 	_rebuild_collision()
 	queue_redraw()
@@ -67,6 +72,7 @@ func _rebuild_collision() -> void:
 	collision_shape.shape = rectangle
 
 func _draw() -> void:
+	_draw_ground_shadow()
 	match obstacle_id:
 		&"small_rock", &"ice_rock":
 			_draw_rock()
@@ -82,6 +88,24 @@ func _draw() -> void:
 			_draw_boundary()
 		_:
 			_draw_barrier()
+
+func _draw_ground_shadow() -> void:
+	var shadow_y := clampf(sort_offset, 0.0, obstacle_size.y * 0.5 + 8.0)
+	var radius := Vector2(
+		maxf(obstacle_size.x * 0.52, 10.0),
+		maxf(obstacle_size.x * 0.16, 5.0)
+	)
+	draw_colored_polygon(
+		_ellipse_points(Vector2(0.0, shadow_y), radius, 18),
+		Color(0.02, 0.03, 0.04, 0.34)
+	)
+
+func _ellipse_points(center: Vector2, radius: Vector2, segments: int) -> PackedVector2Array:
+	var points := PackedVector2Array()
+	for index in range(segments):
+		var angle := TAU * float(index) / float(segments)
+		points.append(center + Vector2(cos(angle) * radius.x, sin(angle) * radius.y))
+	return points
 
 func _draw_rock() -> void:
 	var half_size := obstacle_size * 0.5

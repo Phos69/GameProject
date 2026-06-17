@@ -1,9 +1,20 @@
 extends Node
 class_name WorldRuntime
 
+## Streaming contract:
+## `active_regions` is the set of regions the runtime keeps "warm" as data: the
+## current region plus every neighbor within `loaded_region_radius` hops on the
+## world graph. The current region is the only one whose gameplay content is
+## instantiated by the biome systems; neighbors are preloaded graph data ready
+## for the next transition; regions outside the set are left as pure save data
+## and are not instantiated. Consumed content (opened crates, completed
+## encounters, destroyed obstacles) is recorded per region in
+## `persistent_state` so re-entering a streamed region does not respawn it.
+
 signal current_region_changed(region_id: StringName)
 signal exploration_changed(state: WorldExplorationState)
 signal active_regions_changed(region_ids: Array[StringName])
+signal region_runtime_changed(region_id: StringName)
 
 @export_range(0, 3, 1) var loaded_region_radius: int = 1
 
@@ -98,6 +109,36 @@ func get_active_region_ids() -> Array[StringName]:
 		result.append(StringName(region_id))
 	result.sort()
 	return result
+
+func is_region_active(region_id: StringName) -> bool:
+	return active_regions.has(region_id)
+
+func mark_region_item_consumed(
+	region_id: StringName,
+	category: StringName,
+	key: StringName
+) -> bool:
+	var changed := persistent_state.mark_region_item_consumed(
+		region_id,
+		category,
+		key
+	)
+	if changed:
+		region_runtime_changed.emit(region_id)
+	return changed
+
+func is_region_item_consumed(
+	region_id: StringName,
+	category: StringName,
+	key: StringName
+) -> bool:
+	return persistent_state.is_region_item_consumed(region_id, category, key)
+
+func get_region_consumed_items(
+	region_id: StringName,
+	category: StringName
+) -> Array[StringName]:
+	return persistent_state.get_region_consumed_items(region_id, category)
 
 func get_save_data() -> Dictionary:
 	return persistent_state.to_save_data()

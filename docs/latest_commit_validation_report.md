@@ -1,5 +1,292 @@
 # Latest Commit Validation Report
 
+## Milestone 7 tuning melee, super starter e classi RPG avanzate - 2026-06-17
+- Branch: `feat/milestone-3-5-streaming-iso-dungeon`
+- HEAD corrente: non committato al momento della validazione locale.
+- Scope validato: Milestone 7 di `todo_roadmap.md`, tuning melee RPG, super
+  starter e polish automatizzabile di Mago/Domatrice/Licantropo.
+- Esito: PASS sui criteri automatizzabili; QA manuale multi-risoluzione e
+  cinque-wave resta documentata in checklist per playtest end-to-end.
+
+| Criterio | Esito | Evidenza |
+|---|---|---|
+| Ogni starter ha rischio/beneficio percepibile | PASS | smoke melee/balance verificano ascia piu lenta/pesante, spada piu sicura/rapida, arco e pistola ancora projectile distinti |
+| Super riconoscibili a colpo d'occhio | PASS | `GameplayEffects.spawn_rpg_super` restituisce kind distinti per starter e avanzate |
+| Briciola aiuta senza giocare da solo e non blocca Nina | PASS | danno/cadenza/frenzy bounded e companion `Node2D` senza collisione, coperti da smoke |
+| Notte Bestiale termina con recovery leggibile | PASS | `is_beast_recovering()`, status `RECUPERO` e marker visuale in `PlayerVisual` coperti da smoke |
+| Projectile/melee split invariato | PASS | arco/pistola restano projectile; ascia/spada/artigli restano melee |
+
+### Test Milestone 7 eseguiti
+
+| Test | Esito | Note |
+|---|---|---|
+| `godot --headless --path . --import --quit` | PASS | import script/risorse |
+| `tests/rpg_melee_attack_resolution_smoke_test.gd` | PASS | split melee/projectile, rischio starter, hitstop runtime |
+| `tests/milestone_rpg_13_new_classes_smoke_test.gd` | PASS | Mago/Domatrice/Licantropo, Briciola bounded, recovery licantropo |
+| `tests/milestone_rpg_12_feedback_smoke_test.gd` | PASS | VFX super starter e avanzate tipizzate |
+| `tests/milestone_rpg_8_adrenaline_super_smoke_test.gd` | PASS | super starter e recovery invulnerabilita Phantom Blade |
+| `tests/milestone_rpg_10_balance_smoke_test.gd` | PASS | vincoli balance starter |
+| `tests/survival_wave_smoke_test.gd` | PASS | regressione survival, exit code `0` |
+
+### Fix applicati nella Milestone 7
+
+- `game/weapons/melee_attack.gd` e `game/weapons/weapon_system.gd`: `hitstop`
+  configurato nei `WeaponData` ora viene passato e applicato dal runtime melee.
+- `game/rpg/companions/briciola_companion.gd`: danno/cooldown/frenzy resi
+  bounded e interrogabili dagli smoke.
+- `game/rpg/rpg_player_component.gd` e `game/visuals/player_visual.gd`: recovery
+  di `Notte Bestiale` esposta e visualizzata.
+- `game/visuals/gameplay_effects.gd`: super avanzate mappate a kind/colori
+  distinti.
+
+### Limiti e follow-up Milestone 7
+
+- QA manuale survival con quattro starter a 1280x720 e 960x540 non eseguita in
+  headless; resta in `docs/testing/manual_checklist.md` per playtest Milestone 11.
+- QA manuale Mago/Domatrice/Licantropo per cinque wave e prova due-player
+  Briciola/trasformazione resta da acquisire in playtest reale.
+- Arte finale per-personaggio (`final_quality`) resta follow-up artistico
+  separato dalla milestone di tuning.
+
+## Milestone 6 asset definitivi e animazioni personaggi RPG - 2026-06-17
+- Branch: `master`
+- HEAD corrente: non committato al momento della validazione locale.
+- Scope validato: Milestone 6 di `todo_roadmap.md`, pipeline asset dei sette
+  personaggi RPG (coerenza dati, non qualita artistica).
+- Esito: PASS sui criteri automatizzabili; checklist visuale aggiornata per la QA
+  artistica manuale (multi-risoluzione/profili).
+- Decisione aperta risolta: formato asset = **pipeline mista in-repo** (sorgenti
+  SVG testuali + portrait PNG opzionali), nessun asset esterno obbligatorio,
+  gameplay procedurale di fallback.
+
+| Criterio | Esito | Evidenza |
+|---|---|---|
+| Ogni personaggio ha asset configurati dai campi RpgCharacterData | PASS | `rpg_character_asset_manifest_smoke_test` valida 7 personaggi: tutti i path popolati e i file presenti in-repo |
+| Weapon layer e VFX separati dal corpo | PASS | weapon via `WeaponData.visual_data` (layer separato in `PlayerVisual._draw_weapon`); VFX via GameplayEffects; verificato per i 7 |
+| Character Select, HUD e gameplay usano gli stessi dati senza fallback incoerenti | PASS | `portrait_hud_path` ora punta sempre al portrait HUD dedicato (fix 4 .tres); Character Select carica via catena coerente; HUD usa icona procedurale dalla stessa palette |
+| Nessun asset esterno privo di licenza nel repo | PASS | ogni path sotto `res://assets/characters/`; ATTRIBUTION aggiornata (asset originali del progetto) |
+
+### Test Milestone 6 eseguiti
+
+| Test | Esito | Note |
+|---|---|---|
+| `tests/rpg_character_asset_manifest_smoke_test.gd` | PASS | 7 personaggi: path, file in-repo, weapon layer, HUD coerente, index allineato (199 assert) |
+| `tests/character_select_ui_smoke_test.gd` | PASS | esteso: ogni HUD portrait carica dal path dati; safe-area, scroll, joypad |
+| `tests/milestone_rpg_1_character_select_smoke_test.gd` | PASS | regressione character select |
+| `tests/milestone_rpg_13_new_classes_smoke_test.gd` | PASS | regressione roster/classi avanzate |
+| `tests/milestone_rpg_9_hud_smoke_test.gd` | PASS | regressione HUD RPG |
+| `tests/survival_wave_smoke_test.gd` | PASS | regressione survival |
+| `tests/combat_smoke_test.gd` | PASS | regressione combat/player visual |
+| `tests/headless_shutdown_loop_test.gd` | PASS | 100 cicli main scene |
+
+### Fix applicati nella Milestone 6
+
+- `game/rpg/characters/{ranger,berserker,domatrice,licantropo}.tres`:
+  `portrait_hud_path` ora punta al portrait HUD dedicato (`*_portrait_hud.svg`)
+  invece del PNG full, uniformando la pipeline sui 7 personaggi.
+- `assets/characters/index.json`: schema v2 con `status_definitions`
+  (base_complete vs final_quality), `available_assets` completi (passive/super
+  icon), `runtime_source_of_truth` e note pipeline.
+- `assets/ATTRIBUTION.md`, `docs/rpg_character_visual_checklist.md`: documentati
+  pipeline mista, statuses e separazione weapon/VFX.
+- `tests/rpg_character_asset_manifest_smoke_test.gd`: nuovo smoke validazione asset.
+- `tests/character_select_ui_smoke_test.gd`: esteso su path asset HUD.
+
+### Limiti e follow-up Milestone 6
+
+- L'arte definitiva per-personaggio (`final_quality`) resta un follow-up manuale
+  artistico (uno alla volta, da `ranger_final_quality_pass`); il gameplay usa
+  rendering procedurale data-driven come oggi.
+- Le sprite sheet SVG sono cablate come dato/preview ma il corpo gameplay resta
+  procedurale; l'eventuale switch a sprite animate e follow-up.
+- Screenshot QA personaggi (1280x720/1024x768/960x540, default/reduced/high
+  contrast) da acquisire nel playtest end-to-end Milestone 11.
+
+## Milestone 5 dungeon ramificato, shop e biomi dedicati - 2026-06-17
+- Branch: `master`
+- HEAD corrente: non committato al momento della validazione locale.
+- Scope validato: Milestone 5 di `todo_roadmap.md`, espansione del dungeon oltre
+  il percorso lineare.
+- Esito: PASS sui criteri automatizzabili; checklist manuale aggiornata per la QA
+  con tre seed, scelta stanza, shop e ritorno menu.
+- Decisione aperta risolta: lo shop usa **run credit** (valuta di run), non il
+  denaro party persistente, per non toccare save/progressione.
+
+| Criterio | Esito | Evidenza |
+|---|---|---|
+| Almeno un seed produce una scelta reale tra due stanze | PASS | generatore a grafo con ramo (forward >= 2); `dungeon_graph_smoke_test` su 8 seed, `dungeon_smoke_test` sceglie il ramo shop |
+| Il percorso al boss resta sempre raggiungibile | PASS | `DungeonGenerator.boss_is_always_reachable` verificato su tutti i seed/room count |
+| Shop e loot non duplicano DropSystem o progressione | PASS | shop spende run credit e genera reward via `DropSystem`; nessun uso del denaro party/save |
+| La run termina dopo boss e torna ai risultati | PASS | boss -> unlock -> `request_next_room` -> stato `complete` -> `dungeon_completed` -> RunSessionTracker |
+
+### Test Milestone 5 eseguiti
+
+| Test | Esito | Note |
+|---|---|---|
+| `tests/dungeon_graph_smoke_test.gd` | PASS | grafo: ramo reale, boss raggiungibile, shop, determinismo, grid uniche (8 seed x 3 room count) |
+| `tests/dungeon_smoke_test.gd` | PASS | traversata con scelta stanza, clear combat, shop purchase via DropSystem, boss e completamento |
+| `tests/boss_smoke_test.gd` | PASS | regressione boss condiviso |
+| `tests/milestone_19_boss_registry_smoke_test.gd` | PASS | regressione registry boss (rift_architect) |
+| `tests/survival_wave_smoke_test.gd` | PASS | regressione survival |
+| `tests/tower_defense_smoke_test.gd` | PASS | regressione cambio modalita |
+| `tests/combat_smoke_test.gd` | PASS | regressione combat |
+| `tests/isometric_environment_manifest_smoke_test.gd` | PASS | regressione Milestone 4 |
+| `tests/region_streaming_smoke_test.gd` | PASS | regressione Milestone 3 |
+| `tests/headless_shutdown_loop_test.gd` | PASS | 100 cicli main scene, lifecycle invariato |
+
+### Fix applicati nella Milestone 5
+
+- `game/procedural/dungeon_generator.gd`: generatore a grafo (DAG) con spine che
+  garantisce il boss raggiungibile, un ramo con scelta reale che rientra sulla
+  spine, kind `shop`/`rest`, helper statici `get_boss_room_id` e
+  `boss_is_always_reachable`.
+- `game/modes/dungeon/dungeon_room.gd`: supporto fino a due uscite mirate con
+  etichetta destinazione, theming pavimento per kind e tint per profondita.
+- `game/modes/dungeon/dungeon_mode.gd`: traversata su grafo, `choose_next_room`,
+  run credit (guadagnati al clear combat), shop con offerte acquistabili via
+  `DropSystem`, rest room curativa, mappa testuale e stato esteso.
+- `game/ui/hud_manager.gd`: HUD dungeon mostra credit, scelta e mappa percorso.
+- `tests/dungeon_graph_smoke_test.gd` e `tests/dungeon_smoke_test.gd`: nuovi/estesi.
+- `docs/testing/manual_checklist.md`: checklist QA Milestone 5.
+
+### Limiti e follow-up Milestone 5
+
+- Lo shop e interagibile camminando sui marker offerta (acquisto a contatto se i
+  credit bastano); una UI shop dedicata con conferma esplicita resta follow-up.
+- Il bioma dungeon e un theming minimo (colore pavimento per kind + tint
+  profondita) che riusa il rendering esistente; arte dedicata e follow-up.
+- Screenshot dei tre seed e della scelta stanza da acquisire nel playtest
+  end-to-end (Milestone 11).
+
+## Milestone 4 asset isometrici ambiente e ostacoli coerenti - 2026-06-17
+- Branch: `master`
+- HEAD corrente: non committato al momento della validazione locale.
+- Scope validato: Milestone 4 di `todo_roadmap.md`, pipeline asset isometrici
+  ambientali guidata dal manifest con fallback procedurale.
+- Esito: PASS sui criteri automatizzabili; checklist manuale aggiornata per la
+  QA visuale a piu risoluzioni e profili.
+- Gameplay implementato: nessuna nuova regola. Il manifest ambientale e ora
+  letto dal codice; gli ostacoli ottengono ombra a terra e `sort_offset`
+  data-driven; Y-sort abilitato in scena per ordinare correttamente ostacoli,
+  zombie e pickup. Nessuna milestone successiva avviata.
+
+| Criterio | Esito | Evidenza |
+|---|---|---|
+| Visual/collisione/footprint coerenti per oggetto convertito | PASS | `IsometricEnvironmentManifest` valida shape/footprint; `tests/isometric_environment_manifest_smoke_test.gd` costruisce ostacoli rettangolo/cerchio con collisione coerente |
+| Y-sort non copre player/zombie/pickup in modo errato | PASS | `World/Enemies/Pickups/EnvironmentProps` con `y_sort_enabled`; ostacoli a `z_index=0` partecipano al sort; player a z=4 restano visibili (scelta co-op) |
+| Oggetti grandi creano corridoi leggibili | PASS | layout/corridoio invariati (`biome_obstacle_generation`); ombra/sort non alterano collisioni |
+| Nessun asset esterno obbligatorio per il bootstrap | PASS | tutti i `visual_scene` sono script `.gd` o vuoti; `requires_external_asset` = false per ogni oggetto |
+
+### Test Milestone 4 eseguiti
+
+| Test | Esito | Note |
+|---|---|---|
+| `tests/isometric_environment_manifest_smoke_test.gd` | PASS | manifest live, copertura biomi, no asset esterni, collisione/footprint/sort, Y-sort scena |
+| `tests/biome_obstacle_generation_smoke_test.gd` | PASS | regressione layout/corridoi |
+| `tests/zombie_environment_milestone_smoke_test.gd` | PASS | regressione props/casse per arena |
+| `tests/survival_wave_smoke_test.gd` | PASS | regressione survival |
+| `tests/dungeon_smoke_test.gd` | PASS | regressione modalita con World Y-sort |
+| `tests/tower_defense_smoke_test.gd` | PASS | regressione enemies/pickups Y-sort |
+| `tests/open_passage_transition_smoke_test.gd` | PASS | regressione megamappa/transizioni |
+| `tests/combat_smoke_test.gd` | PASS | regressione combat |
+| `tests/region_streaming_smoke_test.gd` | PASS | regressione Milestone 3 |
+| `tests/milestone_20_arena_environment_smoke_test.gd` | PASS | gate/props arena con Y-sort |
+| `tests/milestone_10_visual_smoke_test.gd` | PASS | sistemi visual |
+| `tests/biome_world_generation_smoke_test.gd` | PASS | generazione mondo |
+| `tests/headless_shutdown_loop_test.gd` | PASS | 100 cicli main scene, lifecycle invariato |
+
+### Fix applicati nella Milestone 4
+
+- `assets/environment/isometric/manifest.json`: riscritto alla versione 2 con i 21
+  `obstacle_id` reali dei cinque biomi piu cliff/passaggio/cassa, ognuno con
+  collision_shape, footprint_tiles, flag di blocco, jumpable e `sort_offset`.
+- `game/modes/zombie/isometric_environment_manifest.gd`: nuovo loader/validatore
+  con cache statica.
+- `game/modes/zombie/biome_obstacle.gd`: ombra a terra procedurale, `sort_offset`
+  data-driven e `z_index=0` per il Y-sort; rendering resta procedurale (fallback).
+- `game/modes/zombie/obstacle_system.gd`: usa il manifest per `sort_offset` e per
+  i flag di blocco (rimozione dai gruppi blocker se non bloccante).
+- `game/main/main.tscn`: `y_sort_enabled` su `World`, `Enemies`, `Pickups` e
+  `EnvironmentProps`.
+- `assets/README.md`, `assets/ATTRIBUTION.md`: documentata la pipeline ambiente
+  isometrica procedurale.
+- `tests/isometric_environment_manifest_smoke_test.gd`: nuovo smoke.
+- `docs/testing/manual_checklist.md`: nuova checklist QA visuale Milestone 4.
+
+### Limiti e follow-up Milestone 4
+
+- Gli oggetti ambientali restano render procedurale: la conversione ad arte
+  esterna definitiva e volutamente rinviata (nessun asset esterno introdotto).
+  Il manifest e pronto a ricevere `visual_scene` reali per categoria.
+- I player restano sempre sopra gli ostacoli (`z=4`) per leggibilita co-op; il
+  Y-sort completo player-vs-ambiente resta una scelta di design futura.
+- Screenshot per bioma (default/high contrast) da acquisire nel playtest
+  end-to-end della Milestone 11.
+
+## Milestone 3 attraversamento megamappa e streaming regioni - 2026-06-17
+- Branch: `master`
+- HEAD corrente: non committato al momento della validazione locale.
+- Scope validato: Milestone 3 di `todo_roadmap.md`, QA attraversamento megamappa
+  e streaming controllato delle regioni.
+- Esito: PASS sui criteri automatizzabili; checklist manuale aggiornata per la
+  traversata reale e la cattura screenshot.
+- Gameplay implementato: nessuna nuova modalita. Aggiunta persistenza runtime per
+  regione (casse aperte non ricompaiono al rientro) e formalizzato il contratto
+  `active_regions` (regione corrente + vicini come dati, regioni lontane non
+  istanziate). Nessuna milestone successiva avviata.
+
+| Criterio | Esito | Evidenza |
+|---|---|---|
+| Attraversamento di otto regioni senza teletrasporti | PASS | `tests/region_streaming_smoke_test.gd` cammina 8+ regioni connesse; `open_passage_transition` conferma il no-teleport fisico |
+| Regioni lontane non istanziate | PASS | `active_regions` = regione corrente + vicini; oltre il raggio resta dato; solo la regione corrente istanzia contenuti (casse) |
+| Casse aperte non ricompaiono al rientro | PASS | apertura cassa registrata nel ledger per regione; rientro in regione A non rigenera la cassa consumata |
+| Encounter completati non ricompaiono | PASS | ledger `completed_encounters` per regione persistito; gli encounter casuali restano transitori per wave, non legati alla regione |
+| Mappa esplorazione e save v6 coerenti | PASS | round-trip save v6 del ledger (casse/ostacoli/encounter); `exploration_map` e `persistent_world` invariati |
+
+### Test Milestone 3 eseguiti
+
+| Test | Esito | Note |
+|---|---|---|
+| `godot --headless --path . --quit` | PASS | bootstrap pulito, exit code `0` |
+| `tests/region_streaming_smoke_test.gd` | PASS | contratto active_regions, traversata 8+ regioni, persistenza casse, round-trip save v6 |
+| `tests/world_graph_connectivity_smoke_test.gd` | PASS | regressione grafo mondo |
+| `tests/persistent_world_generation_smoke_test.gd` | PASS | regressione stato persistente |
+| `tests/open_passage_transition_smoke_test.gd` | PASS | regressione passaggi aperti / no-teleport |
+| `tests/exploration_map_smoke_test.gd` | PASS | regressione mappa esplorazione |
+| `tests/survival_wave_smoke_test.gd` | PASS | regressione survival wave |
+| `tests/milestone_9_smoke_test.gd` | PASS | regressione save/load progressione |
+| `tests/random_encounter_smoke_test.gd` | PASS | regressione encounter/reward crate |
+| `tests/biome_mini_events_smoke_test.gd` | PASS | regressione mini-eventi/reward crate |
+| `tests/zombie_environment_milestone_smoke_test.gd` | PASS | regressione casse/ostacoli per arena |
+| `tests/headless_shutdown_loop_test.gd` | PASS | 100 cicli main scene, lifecycle invariato |
+
+### Fix applicati nella Milestone 3
+
+- `game/world/persistent_world_state.gd`: ledger per regione tipizzato
+  (`opened_crates`, `destroyed_obstacles`, `completed_encounters`) con API di
+  marcatura/lettura, sopra il `region_runtime_state` esistente.
+- `game/world/world_runtime.gd`: contratto `active_regions` documentato, accessor
+  `is_region_active`, pass-through del ledger e nuovo segnale
+  `region_runtime_changed`.
+- `game/saves/save_manager.gd`: autosave su `region_runtime_changed` per portare
+  le casse aperte nel save v6 senza bump di versione.
+- `game/modes/zombie/resource_crate_system.gd`: le casse di layout ricevono una
+  chiave stabile per regione, vengono saltate se gia aperte e registrano il
+  consumo all'apertura; reset dei riferimenti in `stop_run`.
+- `tests/region_streaming_smoke_test.gd`: nuovo smoke per streaming, persistenza
+  e round-trip save.
+- `docs/testing/manual_checklist.md`: nuova checklist QA traversata 20 minuti.
+
+### Limiti e follow-up Milestone 3
+
+- `destroyed_obstacles` e `completed_encounters` sono persistiti a livello dati e
+  coperti dal round-trip save, ma non hanno ancora un trigger di gioco: gli
+  ostacoli `BiomeObstacle` non sono distruttibili e gli encounter casuali restano
+  transitori per wave. Il ledger e pronto per encounter region-bound o ostacoli
+  distruttibili futuri senza cambi di contratto.
+- Screenshot/video reali della traversata e della mappa restano da acquisire nel
+  playtest end-to-end di bilanciamento (Milestone 11).
+
 ## Milestone 2 mini-eventi bioma - 2026-06-17
 - Branch: `master`
 - HEAD corrente: non committato al momento della validazione locale.

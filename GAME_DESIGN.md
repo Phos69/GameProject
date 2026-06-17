@@ -371,7 +371,8 @@ hitbox sono configurate separatamente dal visual: pistola circle, arco capsule,
 ascia arc multi-hit e spada rectangle multi-hit. `WeaponData.attack_type`
 decide il runtime: le armi ranged creano projectile, mentre ascia, spada e
 artigli creano una hitbox melee temporanea ruotata nella direzione di mira, con
-wind-up, finestra attiva, recovery, trail e anti-multihit per singolo swing.
+wind-up, finestra attiva, recovery, knockback, hitstop percepito, trail e
+anti-multihit per singolo swing.
 L'HUD mostra pips ammo per caricatore e una barra reload; il profilo RPG puo
 accelerare o rallentare la ricarica tramite `reload_speed`.
 
@@ -389,7 +390,9 @@ Passive RPG attive:
 - `Berserker`: sotto il 40% HP infligge +25% danno;
 - `Spadaccino`: dopo un colpo valido riceve -20% danno subito per 1,5 secondi.
 - `Mago`: ogni terzo hit reale crea una mini AoE di Risonanza Arcana attorno al bersaglio.
-- `Domatrice`: Briciola segue Nina e attacca automaticamente zombie vicini senza bloccare il player.
+- `Domatrice`: Briciola segue Nina e attacca automaticamente zombie vicini senza
+  bloccare il player; il danno base resta assistivo (5 danni, 0,90s di
+  cooldown) e il frenzy aumenta presenza senza sostituire Nina.
 - `Licantropo`: Odore del Sangue aumenta il danno contro bersagli sotto il 50% HP.
 
 Adrenalina e super:
@@ -406,12 +409,21 @@ Adrenalina e super:
 - `Spadaccino`: `Lama Fantasma`, dash offensivo con breve invulnerabilita.
 - `Mago`: `Stella Cadente`, meteora AoE sul cluster di zombie piu denso vicino.
 - `Domatrice`: `Branco di Rottami`, frenzy temporaneo di Briciola con attacchi piu rapidi.
-- `Licantropo`: `Notte Bestiale`, trasformazione temporanea con onda d’urto iniziale e danni melee potenziati.
+- `Licantropo`: `Notte Bestiale`, trasformazione temporanea con onda d’urto iniziale, danni melee potenziati e recovery leggibile di 0,75s.
 
 Il primo pass di bilanciamento rende il Ranger fragile ma premiato a distanza,
 il Pistoliere rapido e accessibile senza superare 85 DPS teorici grezzi, il
 Berserker il piu resistente e lento, e lo Spadaccino il piu difensivo tra le
 classi iniziali.
+
+Il tuning Milestone 7 blocca le metriche di feeling starter: l'ascia mantiene
+wind-up/recovery lunghi, knockback e hitstop superiori come payoff rischioso; la
+spada mantiene range melee piu sicuro, recovery breve e hitstop leggero; arco e
+pistola restano sul percorso projectile con differenza chiara tra precisione a
+distanza e cadenza ravvicinata. Le super usano VFX tipizzati a colpo d'occhio:
+cono per `Pioggia di Frecce`, burst per `Scarica Finale`/`Branco di Rottami`,
+radiale per `Terremoto di Sangue`/`Stella Cadente` e dash per `Lama Fantasma`/
+`Notte Bestiale`.
 
 La prima roadmap RPG e ora completa come pass prototipale: i profili sono
 data-driven e level-up/super generano feedback world-space dedicati

@@ -334,6 +334,9 @@ Attivita post-roadmap:
 - Milestone 2 di `todo_roadmap.md` completata: mini-eventi bioma validati e
   tarati con telegraph specifici, reward crate tematiche, cooldown/frequenza
   coperti da smoke, status `whiteout` evitabile e checklist manuale aggiornata.
+- Milestone 7 di `todo_roadmap.md` completata: hitstop melee applicato,
+  rischio/beneficio starter coperto da smoke, Briciola bounded, recovery di
+  Notte Bestiale leggibile e super RPG tipizzate nei VFX.
 - asset definitivi e ulteriori pass di bilanciamento;
 - firma digitale della build pubblica.
 
@@ -348,6 +351,8 @@ Stato: completata come prototipo data-driven.
 - Character Select esteso con icone personaggio e slot player per selezioni RPG distinte nella stessa run survival.
 - Placeholder procedurali, palette HUD e path asset definitivi restano data-driven nei profili.
 - Smoke test dedicato previsto in `tests/milestone_rpg_13_new_classes_smoke_test.gd`.
+- Pass Milestone 7 completato: Briciola resta supporto non bloccante, il frenzy
+  ha limiti testati e Notte Bestiale espone recovery visuale/testabile.
 
 ## Milestone Megamappa Persistente Isometrica - primo pass
 

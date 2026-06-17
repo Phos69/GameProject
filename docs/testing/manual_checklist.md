@@ -82,6 +82,30 @@ godot --headless --path . --script res://tests/combat_smoke_test.gd
 
 Il test verifica scena principale, due player locali, sparo, collisione, danno, reload infinito e fallback da speciale esaurita.
 
+## Regressione RPG Milestone 7
+
+- A 1280x720 e 960x540, provare Ranger, Pistoliere, Berserker e Spadaccino in
+  survival: ascia rischiosa/potente, spada controllata/difensiva, arco leggibile
+  a distanza e pistola leggibile in cadenza ravvicinata.
+- Verificare che `Pioggia di Frecce`, `Scarica Finale`, `Terremoto di Sangue` e
+  `Lama Fantasma` siano distinguibili a colpo d'occhio tra zombie, pickup e
+  ostacoli.
+- Provare Mago, Domatrice e Licantropo per almeno cinque wave ciascuno:
+  `Stella Cadente` radiale, `Branco di Rottami` burst e `Notte Bestiale` dash/
+  trasformazione devono restare leggibili.
+- Con due player attivi, verificare che Briciola aiuti Nina senza bloccarla,
+  resti vicino dopo gli attacchi e non pulisca la wave da sola.
+- Verificare che `Notte Bestiale` torni sempre alla forma umana con recovery
+  breve visibile prima di riprendere il profilo normale.
+
+```text
+godot --headless --path . --script res://tests/rpg_melee_attack_resolution_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_rpg_8_adrenaline_super_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_rpg_10_balance_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_rpg_12_feedback_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_rpg_13_new_classes_smoke_test.gd
+```
+
 ## Regressione nemici
 
 - La scena principale genera i `Basic Zombie` tramite `WaveManager`.
@@ -545,6 +569,105 @@ godot --headless --path . --script res://tests/biome_mini_events_smoke_test.gd
 godot --headless --path . --script res://tests/biome_status_effects_smoke_test.gd
 godot --headless --path . --script res://tests/survival_wave_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_rpg_13_new_classes_smoke_test.gd
+```
+
+## Regressione todo_roadmap Milestone 3 - attraversamento megamappa e streaming regioni
+
+QA da eseguire con una run survival e seed fisso (es. `world_seed` debug `2026`).
+Durata indicativa: 20 minuti continui.
+
+- Partire dalla regione iniziale e attraversare almeno otto regioni distinte
+  usando i passaggi fisici aperti, senza interruzioni o cambi modalita.
+- Confermare che ogni transizione resti continua: nessun teletrasporto percepito,
+  la camera e il party restano vicino al varco attraversato.
+- Verificare che almeno un bordo per regione resti bloccato fisicamente e che le
+  corsie centrali restino attraversabili.
+- Provare il dodge su un gap piccolo in almeno tre regioni diverse e confermare
+  che l'attraversamento del varco resti affidabile.
+- Aprire alcune casse ambientali in una regione, attraversare verso i vicini e
+  poi rientrare: le casse gia aperte non devono ricomparire.
+- Confermare che gli encounter gia risolti non vengano riproposti rientrando in
+  una regione (gli encounter casuali restano legati alle wave, non alla regione).
+- Aprire la mappa esplorazione in `default` e `high_contrast`: regione corrente,
+  visitate, scoperte e fog devono restare leggibili; salvare screenshot della
+  mappa e dei passaggi aperti in entrambe le modalita.
+- Salvare ed uscire dopo aver aperto alcune casse, ricaricare e confermare che
+  lo stato runtime per regione (casse aperte e regioni visitate) sia ripristinato
+  dal save v6.
+- Monitorare il frame time durante la traversata con griglia almeno `7x7` e wave
+  affollate; annotare eventuale debito di performance.
+
+Screenshot/video reali della traversata e della mappa restano da acquisire
+durante il prossimo playtest end-to-end di bilanciamento (Milestone 11), come
+gia previsto per i mini-eventi bioma.
+
+```text
+godot --headless --path . --script res://tests/region_streaming_smoke_test.gd
+godot --headless --path . --script res://tests/world_graph_connectivity_smoke_test.gd
+godot --headless --path . --script res://tests/persistent_world_generation_smoke_test.gd
+godot --headless --path . --script res://tests/open_passage_transition_smoke_test.gd
+godot --headless --path . --script res://tests/exploration_map_smoke_test.gd
+godot --headless --path . --script res://tests/survival_wave_smoke_test.gd
+```
+
+## Regressione todo_roadmap Milestone 4 - asset isometrici ambiente e ostacoli
+
+QA visuale da eseguire a `1280x720` e `960x540`, in `default`, `reduced_motion`
+e `high_contrast`.
+
+- Avviare survival e confermare che ogni ostacolo (rocce, recinti, muretti,
+  case/rovine, barili, relitti, tronchi, ponti e bordi) abbia un'ombra a terra
+  coerente e una silhouette leggibile contro il terreno.
+- Verificare il Y-sort: uno zombie o un pickup davanti (piu in basso) a un
+  ostacolo deve disegnarsi sopra l'ostacolo; dietro (piu in alto) deve essere
+  coperto. I player restano sempre visibili sopra gli ostacoli (scelta di
+  leggibilita per il co-op locale).
+- Confermare che gli ostacoli grandi (case, bordi) lascino corridoi
+  attraversabili e non muri casuali; le corsie centrali restano percorribili.
+- Attraversare almeno tre biomi e confermare che ogni categoria di ostacolo
+  converta mantenendo collisione e footprint coerenti con il visual.
+- Verificare che nessun asset esterno sia richiesto: il bootstrap parte e gli
+  ostacoli si disegnano in fallback procedurale.
+- In `high_contrast` confermare che ombre e props non riducano la leggibilita di
+  HUD, telegraph e pickup.
+- Salvare screenshot per bioma (default e high contrast) durante il prossimo
+  playtest end-to-end (Milestone 11).
+
+```text
+godot --headless --path . --script res://tests/isometric_environment_manifest_smoke_test.gd
+godot --headless --path . --script res://tests/biome_obstacle_generation_smoke_test.gd
+godot --headless --path . --script res://tests/zombie_environment_milestone_smoke_test.gd
+godot --headless --path . --script res://tests/survival_wave_smoke_test.gd
+godot --headless --path . --script res://tests/dungeon_smoke_test.gd
+godot --headless --path . --script res://tests/tower_defense_smoke_test.gd
+```
+
+## Regressione todo_roadmap Milestone 5 - dungeon ramificato, shop e biomi
+
+QA da eseguire con almeno tre seed diversi, con tastiera e joypad.
+
+- Avviare il dungeon (`F5`) e confermare che l'HUD mostri stanza, kind, credit,
+  seed e la mappa percorso testuale.
+- Attraversare fino a trovare una stanza con due uscite (scelta): confermare due
+  portali con etichetta destinazione e che entrare in uno scelga quel percorso.
+- Verificare con tre seed che il boss resti sempre raggiungibile qualunque ramo
+  si scelga, e che la run non resti mai bloccata.
+- Entrare in una combat room, eliminare i nemici e confermare che il clear
+  sblocchi l'uscita e aggiunga run credit (HUD).
+- Entrare nella shop room: confermare le offerte e il costo; con credit
+  sufficienti l'acquisto genera il pickup (via DropSystem) e scala i credit; con
+  credit insufficienti l'acquisto e rifiutato; un'offerta gia comprata non si
+  ripete.
+- Entrare nella rest room (se presente nel seed) e confermare la cura ai player.
+- Sconfiggere il boss, completare la run e confermare il ritorno alla schermata
+  risultati e poi al menu con tastiera e joypad.
+- Confermare che lo shop NON modifichi il denaro party persistente del save.
+
+```text
+godot --headless --path . --script res://tests/dungeon_graph_smoke_test.gd
+godot --headless --path . --script res://tests/dungeon_smoke_test.gd
+godot --headless --path . --script res://tests/boss_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_19_boss_registry_smoke_test.gd
 ```
 
 ## Regressione Milestone 9

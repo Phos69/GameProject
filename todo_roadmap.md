@@ -35,22 +35,20 @@ Completate in questa roadmap operativa:
 - Milestone 0: audit, consolidamento TODO e baseline tecnica.
 - Milestone 1: stabilizzazione shutdown headless e lifecycle test.
 - Milestone 2: QA/tuning mini-eventi bioma, status e encounter.
+- Milestone 3: QA attraversamento megamappa e streaming regioni.
+- Milestone 4: asset isometrici ambiente e ostacoli coerenti (pipeline manifest).
+- Milestone 5: dungeon ramificato, shop e biomi dedicati.
+- Milestone 6: asset/pipeline personaggi RPG (coerenza dati data-driven).
+- Milestone 7: tuning melee, super starter e classi RPG avanzate.
 
-Prossima milestone non completata secondo l'ordine consigliato: Milestone 3 -
-QA attraversamento megamappa e streaming regioni.
+Prossima milestone non completata secondo l'ordine consigliato: Milestone 8 -
+UI, HUD, audio e polish UX trasversale.
 
 Restano aperti o incompleti:
 
-- QA di attraversamento continuo della megamappa e streaming selettivo delle
-  regioni lontane.
-- Sostituzione progressiva di placeholder ambientali isometrici tramite
-  `assets/environment/isometric/manifest.json`.
-- Espansione dungeon oltre il percorso lineare: diramazioni, shop, biomi,
-  scelta stanza, mappa e persistenza della run.
-- Asset definitivi, VFX separati, animazioni e pulizia qualitativa dei sette
-  personaggi RPG.
-- Tuning melee e super starter dopo playtest.
-- Polish di Mago, Domatrice e Licantropo, incluso Briciola e trasformazione.
+- Arte definitiva per-personaggio (`final_quality`) come follow-up manuale.
+- QA manuale Milestone 7 multi-risoluzione/five-wave/due-player da acquisire
+  nel playtest end-to-end.
 - Ulteriori boss, pattern avanzati, eventuale contenuto tower defense avanzato.
 - Pass di bilanciamento/performance dopo playtest reali 2-4 player.
 - Firma digitale della build Windows pubblica.
@@ -334,6 +332,31 @@ Milestone 1 consigliata per ridurre rumore nei test.
 
 ### Milestone 3 - QA attraversamento megamappa e streaming regioni
 
+**Stato**
+
+Completata il 2026-06-17.
+
+**Completato**
+
+- Contratto `active_regions` formalizzato in `WorldRuntime`: regione corrente piu
+  vicini entro `loaded_region_radius` come dati caldi, regioni lontane lasciate
+  come puro save data; aggiunti `is_region_active` e documentazione del lifecycle.
+- Ledger runtime per regione in `PersistentWorldState` (`opened_crates`,
+  `destroyed_obstacles`, `completed_encounters`) con API di marcatura/lettura e
+  pass-through in `WorldRuntime` tramite il segnale `region_runtime_changed`.
+- `ResourceCrateSystem` assegna alle casse di layout una chiave stabile per
+  regione, salta quelle gia aperte alla rigenerazione e registra il consumo
+  all'apertura: rientrando in una regione le casse aperte non ricompaiono.
+- `SaveManager` autosalva su `region_runtime_changed`, portando lo stato runtime
+  per regione nel save v6 senza bump di versione.
+- Smoke `tests/region_streaming_smoke_test.gd`: traversata 8+ regioni connesse,
+  contratto active_regions/unload, persistenza casse al rientro e round-trip
+  save v6 dei tre ledger; regressioni world graph/persistent world/open
+  passage/exploration map/survival wave verdi.
+- Limite tracciato: `destroyed_obstacles` e `completed_encounters` sono persistiti
+  a livello dati ma senza trigger di gioco (ostacoli non distruttibili, encounter
+  casuali transitori per wave); il ledger e pronto per quelle feature future.
+
 **Obiettivo**
 
 Validare l'attraversamento continuo della megamappa e implementare il caricamento
@@ -408,6 +431,34 @@ Milestone 0 e 1 consigliate.
 
 ### Milestone 4 - Asset isometrici ambiente e ostacoli coerenti
 
+**Stato**
+
+Completata il 2026-06-17.
+
+**Completato**
+
+- `assets/environment/isometric/manifest.json` portato alla versione 2: copre i
+  21 `obstacle_id` reali dei cinque biomi piu cliff/passaggio/cassa, ognuno con
+  categoria, `collision_shape`, `footprint_tiles`, flag `blocks_*`, jumpable e
+  `sort_offset`.
+- Nuovo loader/validatore `game/modes/zombie/isometric_environment_manifest.gd`
+  (cache statica) che rende il manifest una fonte di verita viva, non solo un
+  documento di pianificazione.
+- `BiomeObstacle` aggiunge un'ombra a terra procedurale e un `sort_offset`
+  data-driven, con `z_index=0` per partecipare al Y-sort; il rendering resta
+  procedurale come fallback (nessun asset esterno obbligatorio).
+- `ObstacleSystem` legge il manifest per `sort_offset` e per i flag di blocco.
+- `game/main/main.tscn`: `y_sort_enabled` su `World`, `Enemies`, `Pickups` e
+  `EnvironmentProps`, cosi ostacoli, zombie e pickup si ordinano per Y; i player
+  restano sempre visibili (`z=4`) per leggibilita co-op.
+- Smoke `tests/isometric_environment_manifest_smoke_test.gd`: manifest validato,
+  copertura di tutti gli obstacle_id dei biomi, assenza di asset esterni
+  obbligatori, collisione/footprint coerenti e Y-sort di scena; regressioni
+  obstacle generation/survival/dungeon/tower/open passage verdi.
+- Limite tracciato: la conversione ad arte esterna definitiva e volutamente
+  rinviata; il Y-sort completo player-vs-ambiente resta una scelta di design
+  futura; screenshot per bioma da acquisire nel playtest Milestone 11.
+
 **Obiettivo**
 
 Sostituire progressivamente i placeholder ambientali con oggetti isometrici
@@ -477,6 +528,30 @@ Milestone 3 consigliata.
 `Esegui Milestone 4 di todo_roadmap.md: converti asset ambiente isometrici secondo manifest e pipeline, leggi todo_roadmap.md, rispetta i criteri, aggiorna TODO.md solo a fine lavoro e non iniziare milestone successive.`
 
 ### Milestone 5 - Dungeon ramificato, shop e biomi dedicati
+
+**Stato**
+
+Completata il 2026-06-17.
+
+**Completato**
+
+- `DungeonGenerator` genera un grafo (DAG) con spine che garantisce il boss
+  sempre raggiungibile e un ramo con scelta reale tra due stanze che rientra
+  sulla spine; kind `shop` e `rest` aggiunti; helper `get_boss_room_id` e
+  `boss_is_always_reachable`; determinismo per seed.
+- `DungeonRoom` supporta fino a due uscite mirate con etichetta destinazione e
+  theming del pavimento per kind con tint di profondita (bioma dungeon minimo).
+- `DungeonMode` traversa il grafo, espone `choose_next_room`/`get_forward_options`,
+  gestisce run credit (guadagnati al clear combat), shop con offerte acquistabili
+  riusando `DropSystem`, rest room curativa, mappa testuale e stato esteso; la run
+  termina dopo il boss e raggiunge i risultati.
+- `HUDManager` mostra credit, scelta e mappa percorso del dungeon.
+- Smoke `tests/dungeon_graph_smoke_test.gd` (grafo su 8 seed) e
+  `tests/dungeon_smoke_test.gd` (traversata, scelta, shop, boss, completamento)
+  verdi; regressioni boss/registry/survival/tower defense/shutdown verdi.
+- Decisione risolta: lo shop usa run credit, non denaro party persistente.
+- Limiti tracciati: UI shop dedicata e arte bioma dungeon restano follow-up;
+  acquisto attuale a contatto con i marker offerta.
 
 **Obiettivo**
 
@@ -549,6 +624,31 @@ Milestone 1 consigliata. Milestone 4 utile se si usano asset isometrici.
 
 ### Milestone 6 - Asset definitivi e animazioni personaggi RPG
 
+**Stato**
+
+Completata il 2026-06-17 (pass di coerenza dati/pipeline; arte definitiva
+per-personaggio rinviata come follow-up manuale).
+
+**Completato**
+
+- I sette `RpgCharacterData` hanno tutti i campi asset popolati e i file presenti
+  in-repo (portrait full/hud, gameplay sprite, sprite sheet, weapon, icone
+  passive/super); validato da `tests/rpg_character_asset_manifest_smoke_test.gd`.
+- `portrait_hud_path` uniformato al portrait HUD dedicato sui 7 personaggi (fix
+  di ranger/berserker/domatrice/licantropo che puntavano al PNG full): Character
+  Select e HUD leggono dati coerenti senza fallback incoerenti.
+- Weapon layer separato dal corpo via `WeaponData.visual_data`
+  (`PlayerVisual._draw_weapon`), VFX via GameplayEffects; verificato per i 7.
+- `assets/characters/index.json` portato a schema v2 con `status_definitions`
+  (base_complete vs final_quality), `available_assets` completi, note pipeline e
+  sorgente di verita runtime.
+- Decisione risolta: formato asset = pipeline mista SVG testuale + PNG in-repo,
+  nessun asset esterno obbligatorio, gameplay procedurale di fallback.
+- `tests/character_select_ui_smoke_test.gd` esteso per verificare che ogni HUD
+  portrait carichi dal path dati; regressioni RPG/HUD/survival/shutdown verdi.
+- Limite tracciato: l'arte `final_quality` per-personaggio (portrait/sprite sheet
+  animata/VFX dedicati) resta follow-up manuale, uno alla volta.
+
 **Obiettivo**
 
 Portare i sette personaggi RPG da `base_complete` a un pass qualitativo
@@ -620,6 +720,10 @@ Milestone 0 consigliata. Milestone 4 utile per coerenza ambientale.
 
 ### Milestone 7 - Tuning melee, super starter e classi RPG avanzate
 
+Stato: completata il 2026-06-17 per i criteri automatizzabili. La QA manuale
+multi-risoluzione/five-wave/due-player resta documentata come follow-up del
+playtest end-to-end, non come milestone aperta.
+
 **Obiettivo**
 
 Playtestare e rifinire timing melee, knockback, hitstop percepito, leggibilita
@@ -660,6 +764,18 @@ tuning fine su timing percepito e feedback.
   trasformazione e recovery.
 - Aggiornare smoke e checklist.
 
+**Completato nel pass 2026-06-17**
+
+- `MeleeAttack` riceve e applica `WeaponData.hitstop`, mantenendo invariato lo
+  split con `ProjectileSystem`.
+- Le metriche starter sono bloccate da smoke: ascia piu lenta/pesante, spada
+  piu sicura/rapida, arco e pistola ancora ranged distinti.
+- Briciola usa danno/cadenza/frenzy bounded, resta `Node2D` non bloccante e
+  viene testata come supporto.
+- `Notte Bestiale` espone `is_beast_recovering()`, status `RECUPERO` e marker
+  visuale di recovery.
+- `GameplayEffects` mappa super starter e avanzate a kind/colori distinti.
+
 **Dipendenze da milestones precedenti**
 
 Milestone 6 consigliata.
@@ -683,6 +799,16 @@ Milestone 6 consigliata.
 - Estendere `tests/rpg_melee_attack_resolution_smoke_test.gd`.
 - Estendere `tests/milestone_rpg_13_new_classes_smoke_test.gd`.
 - Aggiungere smoke per recovery super se non presente.
+
+Eseguiti nel pass 2026-06-17:
+
+- `godot --headless --path . --import --quit` - PASS.
+- `tests/rpg_melee_attack_resolution_smoke_test.gd` - PASS.
+- `tests/milestone_rpg_13_new_classes_smoke_test.gd` - PASS.
+- `tests/milestone_rpg_12_feedback_smoke_test.gd` - PASS.
+- `tests/milestone_rpg_8_adrenaline_super_smoke_test.gd` - PASS.
+- `tests/milestone_rpg_10_balance_smoke_test.gd` - PASS.
+- `tests/survival_wave_smoke_test.gd` - PASS.
 
 **Rischi tecnici**
 
@@ -1121,11 +1247,11 @@ Usare questi prompt uno alla volta.
 1. Milestone 0 - Audit, consolidamento TODO e baseline tecnica. Stato: completata.
 2. Milestone 1 - Stabilizzazione shutdown headless e lifecycle test. Stato: completata.
 3. Milestone 2 - QA mini-eventi bioma, status e encounter. Stato: completata.
-4. Milestone 3 - QA attraversamento megamappa e streaming regioni.
-5. Milestone 4 - Asset isometrici ambiente e ostacoli coerenti.
-6. Milestone 5 - Dungeon ramificato, shop e biomi dedicati.
-7. Milestone 6 - Asset definitivi e animazioni personaggi RPG.
-8. Milestone 7 - Tuning melee, super starter e classi RPG avanzate.
+4. Milestone 3 - QA attraversamento megamappa e streaming regioni. Stato: completata.
+5. Milestone 4 - Asset isometrici ambiente e ostacoli coerenti. Stato: completata.
+6. Milestone 5 - Dungeon ramificato, shop e biomi dedicati. Stato: completata.
+7. Milestone 6 - Asset definitivi e animazioni personaggi RPG. Stato: completata.
+8. Milestone 7 - Tuning melee, super starter e classi RPG avanzate. Stato: completata.
 9. Milestone 8 - UI, HUD, audio e polish UX trasversale.
 10. Milestone 9 - Boss aggiuntivi e pattern avanzati.
 11. Milestone 10 - Tower defense avanzata e sistemi secondari.
@@ -1154,11 +1280,12 @@ Milestones sequenziali:
 
 ## Punti ambigui e decisioni aperte
 
-- Asset personaggi: `base_complete` significa asset base presente, non qualita
-  finale. Serve decidere se il target finale richiede PNG, SVG testuali o una
-  pipeline mista.
-- Dungeon shop: va deciso se usa denaro party persistente, valuta di run o
-  entrambi. La scelta impatta save/progressione.
+- Asset personaggi: RISOLTA nella Milestone 6 - pipeline mista SVG testuale + PNG
+  in-repo, gameplay procedurale di fallback, nessun asset esterno obbligatorio.
+  `base_complete` = set asset coerente e validato; `final_quality` = arte
+  definitiva per-personaggio, follow-up manuale.
+- Dungeon shop: RISOLTA nella Milestone 5 - usa valuta di run (run credit), non
+  denaro party persistente, cosi save e progressione restano intatti.
 - Tower defense avanzata: non e priorita nella TODO principale; va confermata
   prima di dedicarle un goal lungo.
 - Nuovi boss: serve scegliere se il prossimo goal aggiunge un boss nuovo o

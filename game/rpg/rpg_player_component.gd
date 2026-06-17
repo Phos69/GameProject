@@ -609,3 +609,6 @@ func _end_beast_night() -> void:
 
 func is_beast_transformed() -> bool:
 	return beast_night_timer > 0.0
+
+func is_beast_recovering() -> bool:
+	return beast_recovery_timer > 0.0

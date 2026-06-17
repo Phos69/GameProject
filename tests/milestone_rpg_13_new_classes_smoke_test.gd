@@ -6,6 +6,13 @@ func _initialize() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
+	var scene_root := Node2D.new()
+	root.add_child(scene_root)
+	current_scene = scene_root
+
+	var health_system := HealthSystem.new()
+	scene_root.add_child(health_system)
+
 	var player_scene := load("res://game/player/player.tscn") as PackedScene
 	_expect(player_scene != null, "player scene can be loaded")
 	if player_scene == null:
@@ -13,7 +20,7 @@ func _run() -> void:
 		return
 
 	var player := player_scene.instantiate() as PlayerController
-	root.add_child(player)
+	scene_root.add_child(player)
 	await process_frame
 	await process_frame
 
@@ -43,6 +50,16 @@ func _run() -> void:
 		rpg_component.briciola_companion != null and is_instance_valid(rpg_component.briciola_companion),
 		"domatrice spawns Briciola companion"
 	)
+	if rpg_component.briciola_companion != null:
+		var briciola := rpg_component.briciola_companion
+		var briciola_node: Node = briciola
+		_expect(not (briciola_node is CollisionObject2D), "Briciola does not block Nina")
+		_expect(briciola.attack_damage <= 5, "Briciola base damage stays assistive")
+		_expect(briciola.attack_cooldown >= 0.85, "Briciola base cadence cannot solo waves")
+		briciola.start_frenzy(1.0)
+		_expect(briciola.is_frenzy_active(), "scrap pack puts Briciola in frenzy")
+		_expect(briciola.get_effective_attack_damage() <= 8, "frenzy damage stays bounded")
+		_expect(briciola.get_effective_attack_cooldown() >= 0.45, "frenzy cadence stays bounded")
 	player.apply_rpg_character(&"mago")
 	await process_frame
 	_expect(
@@ -55,8 +72,19 @@ func _run() -> void:
 	var beast_used := rpg_component.try_activate_super(Vector2.RIGHT)
 	_expect(beast_used, "licantropo super activates")
 	_expect(rpg_component.is_beast_transformed(), "licantropo enters transformed state")
+	rpg_component.beast_night_timer = 0.02
+	for _frame in range(4):
+		await process_frame
+	_expect(not rpg_component.is_beast_transformed(), "beast night transformation ends")
+	_expect(rpg_component.is_beast_recovering(), "beast night enters readable recovery")
+	rpg_component.super_notice_timer = 0.0
+	_expect(rpg_component.get_super_status_text() == "RECUPERO", "beast recovery status is explicit")
+	rpg_component.beast_recovery_timer = 0.02
+	for _frame in range(4):
+		await process_frame
+	_expect(not rpg_component.is_beast_recovering(), "beast recovery expires")
 
-	player.queue_free()
+	scene_root.queue_free()
 	_finish()
 
 func _expect(condition: bool, message: String) -> void:

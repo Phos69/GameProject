@@ -1,6 +1,11 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "style_target": "zombie survival isometrico, cartoon dark arcade, leggibile in gameplay",
+  "runtime_source_of_truth": "game/rpg/characters/*.tres (RpgCharacterData), validato da tests/rpg_character_asset_manifest_smoke_test.gd",
+  "status_definitions": {
+    "base_complete": "Set asset completo e coerente, cablato nei campi RpgCharacterData e validato (portrait full/hud, gameplay sprite, sprite sheet, weapon, icone passive/super). Rendering gameplay procedurale come fallback.",
+    "final_quality": "Arte definitiva rifinita a mano per il personaggio (portrait, sprite sheet animata, weapon layer e VFX dedicati). Follow-up artistico per-personaggio."
+  },
   "characters": [
     {
       "id": "ranger",
@@ -15,7 +20,9 @@
         "sprite_sheet",
         "hud_icon",
         "weapon_icon",
-        "ability_icon"
+        "ability_icon",
+        "passive_icon",
+        "super_icon"
       ]
     },
     {
@@ -31,7 +38,9 @@
         "sprite_sheet",
         "hud_icon",
         "weapon_icon",
-        "ability_icon"
+        "ability_icon",
+        "passive_icon",
+        "super_icon"
       ]
     },
     {
@@ -47,7 +56,9 @@
         "sprite_sheet",
         "hud_icon",
         "weapon_icon",
-        "ability_icon"
+        "ability_icon",
+        "passive_icon",
+        "super_icon"
       ]
     },
     {
@@ -63,7 +74,9 @@
         "sprite_sheet",
         "hud_icon",
         "weapon_icon",
-        "ability_icon"
+        "ability_icon",
+        "passive_icon",
+        "super_icon"
       ]
     },
     {
@@ -79,7 +92,9 @@
         "sprite_sheet",
         "hud_icon",
         "weapon_icon",
-        "ability_icon"
+        "ability_icon",
+        "passive_icon",
+        "super_icon"
       ]
     },
     {
@@ -95,7 +110,9 @@
         "sprite_sheet",
         "hud_icon",
         "weapon_icon",
-        "ability_icon"
+        "ability_icon",
+        "passive_icon",
+        "super_icon"
       ]
     },
     {
@@ -111,11 +128,14 @@
         "sprite_sheet",
         "hud_icon",
         "weapon_icon",
-        "ability_icon"
+        "ability_icon",
+        "passive_icon",
+        "super_icon"
       ]
     }
   ],
-  "next_recommended_iteration": "ranger_quality_pass",
+  "next_recommended_iteration": "ranger_final_quality_pass",
   "asset_format": "svg_text+png_portrait",
-  "binary_free": false
+  "binary_free": false,
+  "pipeline_notes": "Pipeline mista in-repo: sorgenti SVG testuali piu portrait PNG opzionali; nessun asset esterno obbligatorio. portrait_hud_path usa sempre il portrait HUD dedicato; il gameplay resta procedurale (PlayerVisual) con weapon layer separato (WeaponData.visual_data)."
 }

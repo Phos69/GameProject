@@ -2,6 +2,21 @@
 
 Usare questa checklist per verificare il pass 1 dei personaggi RPG a 1280x720, senza leggere il testo della UI.
 
+## Stato asset (Milestone 6)
+
+- `base_complete`: set asset completo e coerente, cablato nei campi
+  `RpgCharacterData` e validato da
+  `tests/rpg_character_asset_manifest_smoke_test.gd` (portrait full/hud, gameplay
+  sprite, sprite sheet, weapon, icone passive/super). Tutti i 7 personaggi sono a
+  questo livello; il gameplay resta render procedurale (`PlayerVisual`).
+- `final_quality`: arte definitiva rifinita a mano per personaggio (follow-up
+  artistico, uno alla volta, partendo da `ranger_final_quality_pass`).
+- `portrait_hud_path` punta sempre al portrait HUD dedicato; `portrait_full_path`
+  al portrait grande (PNG dove esiste, altrimenti SVG). Nessun asset esterno
+  obbligatorio (pipeline mista SVG testuale + PNG in-repo).
+- QA visuale a 1280x720, 1024x768 e 960x540 in default/reduced motion/high
+  contrast resta manuale (screenshot nel playtest end-to-end Milestone 11).
+
 ## Character Select
 
 - [ ] La schermata mostra titolo, quattro slot player, card RPG per il roster e
@@ -38,6 +53,9 @@ Usare questa checklist per verificare il pass 1 dei personaggi RPG a 1280x720, s
 - [ ] Licantropo riconoscibile da postura curva/artigli in forma umana e scala maggiore durante Notte Bestiale.
 - [ ] Le armi restano su layer/visual separato dal corpo e seguono la mira.
 - [ ] Gli effetti di sparo/reload/super restano leggibili tra zombie, pickup e ostacoli.
+- [ ] Le super starter hanno silhouette VFX distinte: cono, burst, radiale e dash.
+- [ ] Le super avanzate hanno VFX distinti: Stella Cadente radiale viola,
+  Branco di Rottami burst teal e Notte Bestiale dash rosso.
 
 ## HUD
 
@@ -46,7 +64,9 @@ Usare questa checklist per verificare il pass 1 dei personaggi RPG a 1280x720, s
 - [ ] L'icona super usa lo stesso accent e indica chiaramente lo stato pronto/non pronto.
 - [ ] Le passiva attive restano leggibili senza coprire HP, ammo e XP.
 - [ ] Briciola non blocca il player, non resta bloccato lontano e torna vicino a Nina.
-- [ ] Rocco torna sempre alla forma umana dopo la super e mostra recovery breve.
+- [ ] Briciola in frenzy resta riconoscibile come supporto e non sostituisce Nina.
+- [ ] Rocco torna sempre alla forma umana dopo la super e mostra recovery breve
+  con marker/anello visibile.
 
 ## Sostituzione asset definitivi
 

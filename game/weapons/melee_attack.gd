@@ -20,6 +20,8 @@ var arc_degrees: float = 90.0
 var windup_time: float = 0.0
 var active_time: float = 0.08
 var knockback: float = 0.0
+var hitstop_time: float = 0.0
+var hitstop_timer: float = 0.0
 var max_hit_count: int = 1
 var trail_style: StringName = &""
 var effect_key: StringName = &""
@@ -44,6 +46,7 @@ func configure(
 	windup_value: float,
 	active_value: float,
 	knockback_value: float,
+	hitstop_value: float,
 	max_hits: int,
 	weapon_visual_data: WeaponVisualData = null,
 	trail_style_value: StringName = &"",
@@ -66,6 +69,7 @@ func configure(
 	windup_time = maxf(windup_value, 0.0)
 	active_time = maxf(active_value, 0.01)
 	knockback = maxf(knockback_value, 0.0)
+	hitstop_time = maxf(hitstop_value, 0.0)
 	max_hit_count = maxi(max_hits, 1)
 	visual_data = weapon_visual_data
 	trail_style = trail_style_value
@@ -94,6 +98,10 @@ func _physics_process(delta: float) -> void:
 			if phase_timer <= 0.0:
 				_activate()
 		Phase.ACTIVE:
+			if hitstop_timer > 0.0:
+				hitstop_timer = maxf(hitstop_timer - delta, 0.0)
+				queue_redraw()
+				return
 			_scan_overlaps()
 			phase_timer = maxf(phase_timer - delta, 0.0)
 			if phase_timer <= 0.0:
@@ -218,6 +226,7 @@ func _try_hit_target(target: Node) -> void:
 			applied_damage = health_component.apply_damage(damage)
 	if applied_damage > 0:
 		_apply_knockback(target)
+		hitstop_timer = maxf(hitstop_timer, hitstop_time)
 	hit_target.emit(target, applied_damage, hit_position)
 	if hit_targets.size() >= max_hit_count:
 		_finish()

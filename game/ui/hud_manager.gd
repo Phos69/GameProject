@@ -270,7 +270,7 @@ func _format_mode_status() -> String:
 			var dungeon_mode := get_tree().get_first_node_in_group("dungeon_mode") as DungeonMode
 			if dungeon_mode == null:
 				return "Dungeon idle"
-			return "%s  Seed %d" % [dungeon_mode.get_status_text(), dungeon_mode.run_seed]
+			return "%s  Seed %d\nMap %s" % [dungeon_mode.get_status_text(), dungeon_mode.run_seed, dungeon_mode.get_map_text()]
 		if game_mode_manager.active_mode_id == GameConstants.MODE_TOWER_DEFENSE:
 			var tower_defense_mode := get_tree().get_first_node_in_group(
 				"tower_defense_mode"

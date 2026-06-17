@@ -3,6 +3,10 @@ class_name BriciolaCompanion
 
 enum State { FOLLOW, ACQUIRE_TARGET, DASH_ATTACK, RECOVER, RETURN, SUPER_FRENZY }
 
+const FRENZY_RANGE_MULTIPLIER: float = 1.25
+const FRENZY_COOLDOWN_MULTIPLIER: float = 0.55
+const FRENZY_DAMAGE_MULTIPLIER: float = 1.55
+
 var owner_player: Node2D
 var state: State = State.FOLLOW
 var target: Node2D
@@ -11,8 +15,8 @@ var attack_range: float = 150.0
 var return_range: float = 220.0
 var follow_speed: float = 260.0
 var dash_speed: float = 520.0
-var attack_damage: int = 6
-var attack_cooldown: float = 0.75
+var attack_damage: int = 5
+var attack_cooldown: float = 0.90
 var cooldown_timer: float = 0.0
 var frenzy_timer: float = 0.0
 var bite_applied: bool = false
@@ -31,6 +35,19 @@ func start_frenzy(duration: float) -> void:
 	cooldown_timer = 0.0
 	bite_applied = false
 	queue_redraw()
+
+func is_frenzy_active() -> bool:
+	return frenzy_timer > 0.0
+
+func get_effective_attack_damage() -> int:
+	return roundi(float(attack_damage) * (
+		FRENZY_DAMAGE_MULTIPLIER if is_frenzy_active() else 1.0
+	))
+
+func get_effective_attack_cooldown() -> float:
+	return attack_cooldown * (
+		FRENZY_COOLDOWN_MULTIPLIER if is_frenzy_active() else 1.0
+	)
 
 func _process(delta: float) -> void:
 	animation_time += delta
@@ -66,7 +83,7 @@ func _update_state(delta: float) -> void:
 			if global_position.distance_to(target.global_position) <= 18.0 and not bite_applied:
 				_apply_bite(target)
 				bite_applied = true
-				cooldown_timer = attack_cooldown * (0.45 if frenzy_timer > 0.0 else 1.0)
+				cooldown_timer = get_effective_attack_cooldown()
 				state = State.RECOVER
 		State.RECOVER:
 			_move_toward(owner_player.global_position + follow_offset, follow_speed * 0.8, delta)
@@ -81,7 +98,9 @@ func _move_toward(destination: Vector2, speed: float, delta: float) -> void:
 func _find_target() -> Node2D:
 	var best_target: Node2D
 	var best_score := INF
-	var search_range := attack_range * (1.35 if frenzy_timer > 0.0 else 1.0)
+	var search_range := attack_range * (
+		FRENZY_RANGE_MULTIPLIER if is_frenzy_active() else 1.0
+	)
 	for candidate in get_tree().get_nodes_in_group("damageable_targets"):
 		if not (candidate is Node2D) or candidate == owner_player:
 			continue
@@ -103,7 +122,7 @@ func _apply_bite(next_target: Node2D) -> void:
 	var health_system := get_tree().get_first_node_in_group("health_system") as HealthSystem
 	if health_system == null:
 		return
-	var damage := roundi(float(attack_damage) * (1.75 if frenzy_timer > 0.0 else 1.0))
+	var damage := get_effective_attack_damage()
 	health_system.apply_damage(next_target, damage, owner_player, &"briciola_bite", next_target.global_position)
 
 func _draw() -> void:
@@ -111,7 +130,7 @@ func _draw() -> void:
 	var copper := Color(0.66, 0.34, 0.14, 1.0)
 	var led := Color(0.30, 1.0, 0.92, 1.0)
 	var pulse := 0.5 + 0.5 * sin(animation_time * 10.0)
-	var scale_bonus := 1.25 if frenzy_timer > 0.0 else 1.0
+	var scale_bonus := 1.25 if is_frenzy_active() else 1.0
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE * scale_bonus)
 	draw_rect(Rect2(Vector2(-11.0, -7.0), Vector2(22.0, 14.0)), body_color, true)
 	draw_rect(Rect2(Vector2(-8.0, -5.0), Vector2(16.0, 10.0)), copper, false, 2.0)
@@ -119,6 +138,6 @@ func _draw() -> void:
 	draw_circle(Vector2(7.0, 3.0), 2.2, led.lightened(pulse * 0.25))
 	draw_line(Vector2(-9.0, 5.0), Vector2(-15.0, 10.0), copper, 2.5, true)
 	draw_line(Vector2(9.0, 5.0), Vector2(15.0, 10.0), copper, 2.5, true)
-	if state == State.DASH_ATTACK or frenzy_timer > 0.0:
+	if state == State.DASH_ATTACK or is_frenzy_active():
 		draw_arc(Vector2.ZERO, 16.0, 0.0, TAU, 24, Color(led, 0.55), 2.0, true)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)

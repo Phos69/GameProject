@@ -998,8 +998,8 @@ func _load_character_texture(profile: Dictionary) -> Texture2D:
 		return null
 	var character_id := StringName(profile.get("id", &""))
 	for path_key in [
-		"portrait_hud_path",
 		"portrait_full_path",
+		"portrait_hud_path",
 		"gameplay_sprite_path"
 	]:
 		var path := str(profile.get(path_key, ""))

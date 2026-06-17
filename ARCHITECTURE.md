@@ -103,7 +103,8 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
   munizioni, ricarica e dispatch tra projectile e melee.
 - `MeleeAttack`: hitbox temporanea world-space per swing melee con wind-up,
   active time, recovery tramite cooldown, anti-multihit per bersaglio e
-  feedback trail.
+  feedback trail; applica anche knockback e hitstop configurati in
+  `WeaponData`.
 - `ProjectileSystem` e `Projectile`: spawn, movimento, collisione e consegna del danno.
 - `HealthSystem` e `HealthComponent`: richieste globali di danno/cura, stato vita locale e invulnerabilita componibile per sorgente; il danno ambientale puo ignorarla esplicitamente.
 - `EnemySystem`: registro di scene nemico per ID, spawn, contenitore, registro runtime e notifica morte.
@@ -186,11 +187,14 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `PlayerHudCard`: scheda HUD riusabile per ogni slot locale, inclusa indicazione minimale del cooldown roll.
 - `CharacterSelectCard`, `CharacterDetailPanel` e `CharacterGameplayPreview`: controlli presentazionali della selezione RPG, senza autorita su context survival o applicazione profili.
 - `RpgHudIcon`: icona procedurale leggera per ritratto classe, passive e super RPG.
-- `BriciolaCompanion`: companion alleato leggero della Domatrice con follow, target acquire, dash attack, recover e frenzy super.
+- `BriciolaCompanion`: companion alleato leggero della Domatrice con follow,
+  target acquire, dash attack, recover e frenzy super bounded; e `Node2D`
+  visuale/assistivo, senza collisione fisica con Nina.
 - `ReviveIndicatorVisual`: anello world-space con colore slot e progresso.
 - `WeaponIcon`: icona HUD generata dal profilo dell'arma attiva.
 - `CombatAnnouncement`: banner temporaneo e riusabile per transizioni gameplay.
-- `GameplayEffects`: feedback visuale event-driven, inclusi level-up e super RPG, senza dipendenze dai controller.
+- `GameplayEffects`: feedback visuale event-driven, inclusi level-up e super
+  RPG tipizzate per starter e classi avanzate, senza dipendenze dai controller.
 
 ## Contratto fine run
 
@@ -280,9 +284,9 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
   `dash_slash` usano `MeleeAttack`.
 - `WeaponData.hitbox_type`, `hitbox_size` e `max_hit_count` configurano la
   collisione runtime separatamente dal visual; i campi `melee_*`,
-  `windup_time`, `active_time`, `recovery_time`, `knockback`, `trail_style`,
-  `effect_key` e `sound_key` rifiniscono i colpi melee senza duplicare il
-  sistema danni.
+  `windup_time`, `active_time`, `recovery_time`, `knockback`, `hitstop`,
+  `trail_style`, `effect_key` e `sound_key` rifiniscono i colpi melee senza
+  duplicare il sistema danni.
 - `WeaponSystem.get_reload_ratio()` espone il progresso reload; il moltiplicatore `reload_speed` RPG riduce la durata.
 - `WeaponSystem` legge il moltiplicatore fire rate RPG solo dal componente del proprio player, usato dalla passiva `Mano Veloce`.
 - Le passive RPG modificano danno, cadenza o mitigazione attraverso `RpgPlayerComponent`, senza duplicare collisioni o logica proiettile.

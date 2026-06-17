@@ -421,6 +421,12 @@ func _color_for_super(super_id: StringName) -> Color:
 			return Color(1.0, 0.24, 0.18, 1.0)
 		&"phantom_blade":
 			return Color(0.62, 0.76, 1.0, 1.0)
+		&"falling_star":
+			return Color(0.58, 0.42, 1.0, 1.0)
+		&"scrap_pack":
+			return Color(0.24, 0.92, 0.82, 1.0)
+		&"beast_night":
+			return Color(1.0, 0.32, 0.34, 1.0)
 		_:
 			return Color(0.70, 1.0, 0.74, 1.0)
 
@@ -433,6 +439,12 @@ func _effect_kind_for_super(super_id: StringName) -> StringName:
 		&"blood_quake":
 			return &"rpg_super_radial"
 		&"phantom_blade":
+			return &"rpg_super_dash"
+		&"falling_star":
+			return &"rpg_super_radial"
+		&"scrap_pack":
+			return &"rpg_super_burst"
+		&"beast_night":
 			return &"rpg_super_dash"
 		_:
 			return &"rpg_super"
