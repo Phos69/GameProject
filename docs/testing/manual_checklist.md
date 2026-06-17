@@ -517,6 +517,36 @@ godot --headless --path . --script res://tests/zombie_revamp_ten_minute_soak_tes
 godot --path . --rendering-method gl_compatibility --resolution 1280x720 --script res://tests/zombie_biome_visual_qa.gd
 ```
 
+## Regressione todo_roadmap Milestone 2 - mini-eventi bioma
+
+- Avviare una run survival con seed fisso `2026` quando il contesto debug lo
+  consente; in alternativa usare gli smoke sotto per forzare gli eventi.
+- Completare o simulare 10 wave attraversando i biomi avanzati.
+- Verificare `toxic_leak`: telegraph verde tossico, almeno tre hazard
+  evitabili, nessun blocco di passaggi/casse/spawn e reward crate tossica.
+- Verificare `fire_breakout`: telegraph arancio, hazard fuoco evitabili,
+  corridoio di fuga leggibile e reward crate fuoco.
+- Verificare `whiteout`: warning gelo leggibile, `freeze` applicato solo ai
+  player rimasti nell'area e reward crate frost.
+- Verificare `marsh_emergence`: warning palude, emergenza zombie leggibile,
+  spazio di reazione sufficiente e reward crate palude.
+- Ripetere almeno un evento con preset `high_contrast` e uno con
+  `reduced_motion`; il warning deve restare visibile e non dipendere dal pulse.
+- Con almeno due player locali, confermare che un player fuori dal warning non
+  riceve lo status mentre uno dentro lo riceve.
+- Confermare che HUD/status non coprono HP, ammo, XP o annuncio wave durante
+  gli eventi.
+- Salvare screenshot o video dei quattro eventi durante il playtest end-to-end
+  di bilanciamento.
+
+```text
+godot --headless --path . --script res://tests/random_encounter_smoke_test.gd
+godot --headless --path . --script res://tests/biome_mini_events_smoke_test.gd
+godot --headless --path . --script res://tests/biome_status_effects_smoke_test.gd
+godot --headless --path . --script res://tests/survival_wave_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_rpg_13_new_classes_smoke_test.gd
+```
+
 ## Regressione Milestone 9
 
 - Il progetto parte con il menu visibile e nessuna modalita attiva.

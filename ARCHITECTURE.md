@@ -568,4 +568,12 @@ Per mantenere il progetto gestibile:
 
 Il flusso nemici e `WaveDirector -> EnemySystem -> BasicEnemy`: il director risolve un ID pesato dal `BiomeDefinition`, `EnemySystem` inietta il `BiomeEnemyProfile`, `BasicEnemy` applica statistiche, visual profile e status on-hit/on-death. `ZombieVisual` riceve solo archetipo e tema, mantenendo silhouette procedurali distinte senza autorita gameplay.
 
-`RandomEncounterSystem` e un sistema leggero seed-based per survival biome: produce ambush, elite pack, cursed crate, hazard burst e survivor cache, annunciando l'evento via segnale e delegando spawn nemici/status/hazard ai sistemi esistenti. I telegraph temporizzati usano `Timer` figli tracciati e cancellabili, cosi il cleanup della run non lascia callback pendenti nello shutdown headless.
+`RandomEncounterSystem` e un sistema leggero seed-based per survival biome:
+produce ambush, elite pack, cursed crate, hazard burst, survivor cache e i
+mini-eventi `toxic_leak`, `fire_breakout`, `whiteout` e `marsh_emergence`,
+annunciando l'evento via segnale e delegando spawn nemici/status/hazard/casse ai
+sistemi esistenti. I telegraph temporizzati usano l'ID reale dell'evento,
+`Timer` figli tracciati e cancellabili, cosi il cleanup della run non lascia
+callback pendenti nello shutdown headless. Gli status da telegraph vengono
+applicati solo ai player rimasti nell'area annunciata, mentre i mini-eventi
+avanzati possono generare reward crate tematiche tramite `ResourceCrateSystem`.

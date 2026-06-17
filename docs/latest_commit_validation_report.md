@@ -1,5 +1,50 @@
 # Latest Commit Validation Report
 
+## Milestone 2 mini-eventi bioma - 2026-06-17
+- Branch: `master`
+- HEAD corrente: non committato al momento della validazione locale.
+- Scope validato: Milestone 2 di `todo_roadmap.md`, QA/tuning di
+  mini-eventi bioma, status e encounter.
+- Esito: PASS sui criteri automatizzabili e checklist manuale aggiornata.
+- Gameplay implementato: tuning mirato dei mini-eventi esistenti; nessuna nuova
+  modalita o milestone successiva avviata.
+- Nota manuale: screenshot/video dei quattro eventi non sono stati acquisiti in
+  questa sessione headless; la checklist manuale in
+  `docs/testing/manual_checklist.md` specifica la cattura da fare durante il
+  playtest end-to-end di bilanciamento.
+
+| Criterio | Esito | Evidenza |
+|---|---|---|
+| Mini-eventi leggibili e identificabili | PASS | telegraph con ID reale per `toxic_leak`, `fire_breakout`, `whiteout`, `marsh_emergence` |
+| Rischio evitabile | PASS | `whiteout` applica `freeze` solo al player rimasto nel warning; player fuori area non riceve status |
+| Reward proporzionata | PASS | reward crate tematiche tossico/fuoco/frost/palude quando `ResourceCrateSystem` e presente |
+| Frequenza/cooldown | PASS | cooldown di due wave complete, skip in wave critica/boss e prima wave coperti da smoke |
+| Accessibilita visuale | PASS | telegraph verificati con high contrast e reduced motion nello smoke mini-eventi |
+| Regressione survival/RPG | PASS | survival wave e roster RPG avanzato verificati in headless |
+
+### Test Milestone 2 eseguiti
+
+| Test | Esito | Note |
+|---|---|---|
+| `godot --headless --path . --import --quit` | PASS | cache Godot rigenerata prima dei test |
+| `tests/random_encounter_smoke_test.gd` | PASS | cooldown/frequenza, reward crate e ID telegraph |
+| `tests/biome_mini_events_smoke_test.gd` | PASS | quattro mini-eventi, reward, preset visuali e status evitabile |
+| `tests/biome_status_effects_smoke_test.gd` | PASS | regressione status canonici |
+| `tests/survival_wave_smoke_test.gd` | PASS | regressione survival, exit code `0` |
+| `tests/milestone_rpg_13_new_classes_smoke_test.gd` | PASS | regressione RPG roster/classi avanzate |
+
+### Fix applicati nella Milestone 2
+
+- `game/modes/zombie/random_encounter_system.gd`: i telegraph dei mini-eventi
+  usano l'ID evento reale, i mini-eventi avanzati generano reward crate
+  tematiche e gli status da warning colpiscono solo chi resta nell'area.
+- `game/modes/zombie/resource_crate_system.gd`: le crate gia in `queue_free`
+  vengono potate prima della validazione di spacing, evitando falsi blocchi tra
+  encounter consecutivi.
+- `tests/random_encounter_smoke_test.gd` e
+  `tests/biome_mini_events_smoke_test.gd`: copertura estesa su tuning,
+  cooldown, reward fisiche, preset visuali e status evitabile.
+
 ## Milestone 1 shutdown headless - 2026-06-17
 - Branch: `master`
 - HEAD corrente: `6522e4e`

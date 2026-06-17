@@ -30,11 +30,17 @@ La repository contiene gia una base molto ampia:
 - Asset personaggi in stato `base_complete` secondo `assets/characters/index.json`.
 - Suite smoke estesa e build Windows gia esportabile.
 
+Completate in questa roadmap operativa:
+
+- Milestone 0: audit, consolidamento TODO e baseline tecnica.
+- Milestone 1: stabilizzazione shutdown headless e lifecycle test.
+- Milestone 2: QA/tuning mini-eventi bioma, status e encounter.
+
+Prossima milestone non completata secondo l'ordine consigliato: Milestone 3 -
+QA attraversamento megamappa e streaming regioni.
+
 Restano aperti o incompleti:
 
-- Warning di cleanup headless `ObjectDB/resources still in use` e possibile
-  access violation intermittente in shutdown.
-- QA manuale reale dei mini-eventi bioma e tuning di frequenza, reward e status.
 - QA di attraversamento continuo della megamappa e streaming selettivo delle
   regioni lontane.
 - Sostituzione progressiva di placeholder ambientali isometrici tramite
@@ -52,8 +58,9 @@ Restano aperti o incompleti:
 
 Aree confuse o duplicate nella TODO:
 
-- `Eliminare i warning di cleanup dei test headless` compare due volte con
-  criteri simili: va trattato come una sola milestone tecnica.
+- `Eliminare i warning di cleanup dei test headless` compariva due volte con
+  criteri simili: e stato trattato nella Milestone 1 e ora va considerato solo
+  come possibile regressione futura.
 - `Asset definitivi` compare come backlog generico, come asset ambiente
   isometrici e come asset personaggi RPG: va spezzato in milestone separate.
 - Molte sezioni in `TODO.md` sono storiche e gia completate; non vanno
@@ -238,6 +245,24 @@ Milestone 0 consigliata.
 
 ### Milestone 2 - QA mini-eventi bioma, status e encounter
 
+**Stato**
+
+Completata il 2026-06-17.
+
+**Completato**
+
+- I quattro mini-eventi avanzati mantengono telegraph world-space con ID
+  specifico, leggibile in default, high contrast e reduced motion.
+- `whiteout` e il malus da crate cursed applicano status solo ai player che
+  restano dentro il warning, quindi il rischio e evitabile.
+- `toxic_leak`, `fire_breakout`, `whiteout` e `marsh_emergence` generano reward
+  crate tematiche quando `ResourceCrateSystem` e presente.
+- La frequenza resta limitata dal cooldown di due wave complete e da skip in
+  stato critico/boss.
+- Checklist manuale e report test documentano i controlli richiesti; la
+  cattura video/screenshot reale resta materiale per playtest futuri, non un
+  nuovo backlog tecnico.
+
 **Obiettivo**
 
 Validare con gameplay reale ritmo, reward e leggibilita di `toxic_leak`,
@@ -287,14 +312,16 @@ Milestone 1 consigliata per ridurre rumore nei test.
 
 **Test manuali da eseguire**
 
-- QA survival 10 wave con seed fisso.
-- Screenshot o video dei quattro mini-eventi.
-- Prova con almeno due player locali se possibile.
+- Checklist documentata in `docs/testing/manual_checklist.md`: QA survival 10
+  wave con seed fisso, screenshot o video dei quattro mini-eventi e prova con
+  almeno due player locali durante il prossimo playtest end-to-end.
 
 **Test automatici o script da aggiungere**
 
-- Estendere `tests/biome_mini_events_smoke_test.gd` con casi tuning.
-- Aggiungere un test di cooldown/frequenza se non coperto.
+- Completato: `tests/biome_mini_events_smoke_test.gd` copre telegraph,
+  reward crate, high contrast, reduced motion, tuning e status evitabile.
+- Completato: `tests/random_encounter_smoke_test.gd` copre cooldown/frequenza,
+  crate reward e ID telegraph.
 
 **Rischi tecnici**
 
@@ -1091,9 +1118,9 @@ Usare questi prompt uno alla volta.
 
 ## Ordine consigliato di esecuzione
 
-1. Milestone 0 - Audit, consolidamento TODO e baseline tecnica.
-2. Milestone 1 - Stabilizzazione shutdown headless e lifecycle test.
-3. Milestone 2 - QA mini-eventi bioma, status e encounter.
+1. Milestone 0 - Audit, consolidamento TODO e baseline tecnica. Stato: completata.
+2. Milestone 1 - Stabilizzazione shutdown headless e lifecycle test. Stato: completata.
+3. Milestone 2 - QA mini-eventi bioma, status e encounter. Stato: completata.
 4. Milestone 3 - QA attraversamento megamappa e streaming regioni.
 5. Milestone 4 - Asset isometrici ambiente e ostacoli coerenti.
 6. Milestone 5 - Dungeon ramificato, shop e biomi dedicati.
@@ -1138,8 +1165,8 @@ Milestones sequenziali:
   espande pattern dei boss esistenti.
 - Firma digitale: richiede certificato e toolchain esterna; se non disponibili,
   il goal deve documentare il blocco invece di simulare la firma.
-- Test cleanup headless: se Godot 4.6.3 mantiene warning engine-level, bisogna
-  decidere se considerarli accettabili con evidenza o bloccare la roadmap.
+- Test cleanup headless: risolto nella Milestone 1; trattare nuovi warning come
+  regressioni, non come decisione aperta della roadmap.
 
 ## Definizione di completato
 

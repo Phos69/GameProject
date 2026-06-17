@@ -331,6 +331,9 @@ Attivita post-roadmap:
   loop da 100 avvii della scena principale e smoke prioritari senza cleanup
   warning noti; i QA visuali screenshot restano fuori scope per limite del
   renderer dummy headless.
+- Milestone 2 di `todo_roadmap.md` completata: mini-eventi bioma validati e
+  tarati con telegraph specifici, reward crate tematiche, cooldown/frequenza
+  coperti da smoke, status `whiteout` evitabile e checklist manuale aggiornata.
 - asset definitivi e ulteriori pass di bilanciamento;
 - firma digitale della build pubblica.
 

@@ -135,6 +135,7 @@ func _generate_resource_crates() -> void:
 		resource_crate_spawned.emit(crate, crate_id)
 
 func _is_crate_position_valid(position: Vector2) -> bool:
+	_prune_crates()
 	var obstacle_system := get_tree().get_first_node_in_group(
 		"obstacle_system"
 	)
@@ -154,6 +155,7 @@ func _is_crate_position_valid(position: Vector2) -> bool:
 	for crate in active_crates:
 		if (
 			is_instance_valid(crate)
+			and not crate.is_queued_for_deletion()
 			and crate.global_position.distance_to(position) < minimum_crate_spacing
 		):
 			return false

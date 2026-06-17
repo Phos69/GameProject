@@ -665,4 +665,13 @@ Gli status temporanei ora usano cinque ID canonici: `poison`, `burn`, `bleed`, `
 | Neve | ghiaccio, neve alta, rocce ghiacciate | `freeze`/slow | Frozen Zombie, Ice Armored Zombie, Heavy Slow Zombie |
 | Palude | alberi morti, fango, acqua stagnante, radici | `poison`/`bleed`/slow | Drowned Zombie, Marsh Zombie, Water Emerging Zombie |
 
-Gli encounter casuali supportano `ambush`, `elite_pack`, `cursed_crate`, `hazard_burst` e `survivor_cache`. Sono selezionati per bioma con RNG seed-based, frequenza bassa e reward proporzionata; `survivor_cache` varia il ritmo senza trappola, mentre `cursed_crate` scambia loot migliore con status o pressione extra.
+Gli encounter casuali supportano `ambush`, `elite_pack`, `cursed_crate`,
+`hazard_burst`, `survivor_cache` e mini-eventi bioma dedicati:
+`toxic_leak`, `fire_breakout`, `whiteout` e `marsh_emergence`. Sono selezionati
+per bioma con RNG seed-based, frequenza bassa, cooldown di due wave complete e
+reward proporzionata; `survivor_cache` varia il ritmo senza trappola, mentre
+`cursed_crate` scambia loot migliore con status o pressione extra. I warning
+world-space dei mini-eventi usano identita visuale specifica, restano leggibili
+in high contrast e reduced motion, e gli status da warning colpiscono solo chi
+rimane nell'area annunciata. I mini-eventi avanzati assegnano una reward crate
+tematica quando il sistema casse e attivo.

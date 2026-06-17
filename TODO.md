@@ -21,28 +21,13 @@ Regole per nuove voci:
 | Suite smoke | PASS nella validazione Milestone 1 | `docs/latest_commit_validation_report.md` | Rieseguire dopo modifiche runtime o teardown |
 | Build/export Windows | PASS nell'ultima validazione completa disponibile | `docs/latest_commit_validation_report.md` | Rieseguire in Milestone 12 o se cambia packaging |
 | Shutdown headless | Risolto nella Milestone 1 | Loop 100 avvii main scene e smoke prioritari senza cleanup warning noti | Monitorare solo come regressione futura |
+| Mini-eventi bioma | PASS nella validazione Milestone 2 | `tests/biome_mini_events_smoke_test.gd`, `tests/random_encounter_smoke_test.gd`, `docs/latest_commit_validation_report.md` | Riprendere solo dentro playtest/bilanciamento Milestone 11 |
 | Roadmap storiche | Completate come primo pass o reference | `ROADMAP.md`, `roadmap_*.md`, `docs/milestones/` | Non usarle come backlog attivo se una voce e gia chiusa qui sotto |
 
 Test eseguiti per questo audit: nessun test gameplay. La Milestone 0 richiede
 revisione manuale, baseline e consolidamento TODO.
 
 ## Backlog aperto prioritizzato
-
-### BIO-001 - QA mini-eventi bioma, status e encounter
-
-- Obiettivo: validare con gameplay reale ritmo, reward, frequenza e leggibilita
-  di `toxic_leak`, `fire_breakout`, `whiteout`, `marsh_emergence` e degli
-  encounter survival biome-based.
-- Milestone collegata: `todo_roadmap.md` Milestone 2.
-- File/sistemi coinvolti: `RandomEncounterSystem`, `HazardSystem`,
-  `BiomeStatusRuntime`, `ResourceCrateSystem`, `WaveDirector`, HUD annunci,
-  debug overlay e checklist manuale.
-- Criterio di accettazione: ogni evento resta evitabile, non blocca passaggi,
-  casse o spawn validi, assegna reward proporzionata e resta leggibile in
-  default, high contrast e reduced motion.
-- Test richiesto: QA manuale 10 wave con seed fisso, screenshot o video dei
-  quattro mini-eventi, `tests/biome_mini_events_smoke_test.gd`,
-  `tests/random_encounter_smoke_test.gd` e regressione survival/RPG.
 
 ### MAP-001 - QA attraversamento continuo della megamappa
 
@@ -257,6 +242,9 @@ collegata prima di implementare.
   `BOSS-001`.
 - Firma digitale: verificare disponibilita certificato e toolchain. Collegata a
   `REL-001`.
+- Mini-eventi bioma: durante il playtest end-to-end di `BAL-001`, raccogliere
+  screenshot/video reali dei quattro eventi come materiale QA, senza riaprire
+  `BIO-001` salvo nuovi bug o tuning richiesti.
 
 ## Reference storiche completate
 
@@ -266,7 +254,7 @@ evitare reimplementazioni e per indirizzare le regressioni.
 - Milestone 0-21 della roadmap principale: completate; riferimento in
   `ROADMAP.md`, `docs/milestones/`, `README.md` e `CHANGELOG.md`.
 - Roadmap Revamp Modalita Zombie Z1-Z12: completata; sopravvivono follow-up in
-  `BIO-001`, `MAP-001`, `MAP-002` e `ASSET-001`.
+  `MAP-001`, `MAP-002` e `ASSET-001`.
 - Roadmap Motore Generazione Mappe e Biomi: completata come primo motore
   procedurale integrato; usare come riferimento per regressioni world/biomi.
 - Roadmap Megamappa Persistente Isometrica: completata come primo pass stabile;
@@ -278,8 +266,13 @@ evitare reimplementazioni e per indirizzare le regressioni.
   completati come polish post-roadmap; regressioni in `UIUX-001`.
 - Pass personaggi RPG distinguibili e melee reali: completato; regressioni in
   `RPG-001` e smoke RPG.
+- BIO-001 mini-eventi bioma, status e encounter: completato nella Milestone 2
+  di `todo_roadmap.md`; telegraph, reward crate, cooldown, high contrast,
+  reduced motion e status evitabile sono coperti da smoke, con checklist
+  manuale aggiornata per acquisire evidenza visuale durante playtest futuri.
 - Iterazione survival biome-based status, ostacoli, roster ed encounter:
-  completata come primo pass; playtest e tuning restano in `BIO-001`.
+  completata come primo pass; regressioni future passano dai test
+  `biome_mini_events`, `random_encounter`, status e survival.
 - Ammo survival anti-frustrazione, boss registry, audio mix, risultati run,
   downed/revive, arena survival e accessibilita: completati; usare i test
   elencati in README e nel report di validazione.
@@ -289,7 +282,8 @@ evitare reimplementazioni e per indirizzare le regressioni.
 
 ## Mappatura dalle vecchie sezioni TODO
 
-- `Prossima iterazione biomi zombie survival` -> `BIO-001`.
+- `Prossima iterazione biomi zombie survival` -> `BIO-001` completata,
+  follow-up residui in `MAP-001`, `MAP-002`, `ASSET-001` e `BAL-001`.
 - `Megamappa persistente isometrica - follow-up` -> `MAP-001`, `MAP-002`,
   `ASSET-001`.
 - Duplicato storico sulla manutenzione headless dei test -> `TECH-001`.

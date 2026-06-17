@@ -10,6 +10,8 @@ func _run() -> void:
 	var player := Node2D.new()
 	player.add_to_group("players")
 	scene_root.add_child(player)
+	var crate_system := ResourceCrateSystem.new()
+	scene_root.add_child(crate_system)
 	var encounter := RandomEncounterSystem.new()
 	scene_root.add_child(encounter)
 	await process_frame
@@ -29,6 +31,10 @@ func _run() -> void:
 	var result := encounter.force_encounter(biome, &"survivor_cache", 2)
 	_assert(result.get("encounter_id") == &"survivor_cache", "cache encounter")
 	_assert(result.has("threat_score"), "encounter exposes threat score")
+	_assert(
+		_has_reward_crate(result, &"medical"),
+		"survivor cache spawns a medical reward crate"
+	)
 	var cache_tuning := result.get("tuning") as Dictionary
 	_assert(
 		int(cache_tuning.get("party_size", 0)) == 1,
@@ -38,8 +44,20 @@ func _run() -> void:
 		not encounter.can_start_encounter(biome, 3, false),
 		"encounter cooldown prevents immediate repeats"
 	)
+	_assert(
+		not encounter.can_start_encounter(biome, 4, false),
+		"encounter cooldown spans two full waves"
+	)
+	_assert(
+		encounter.can_start_encounter(biome, 5, false),
+		"encounter cooldown allows later waves"
+	)
 	result = encounter.force_encounter(biome, &"cursed_crate", 2)
 	_assert(result.get("reward") == "cursed_loot", "cursed reward")
+	_assert(
+		_has_reward_crate(result, &"biome_toxic"),
+		"cursed crate spawns a biome reward crate"
+	)
 	var cursed_snapshot := encounter.get_debug_snapshot()
 	_assert(
 		int(cursed_snapshot.get("pending_telegraph_count", 0)) == 1,
@@ -67,6 +85,7 @@ func _run() -> void:
 	)
 	result = encounter.force_encounter(biome, &"toxic_leak", 6)
 	var toxic_tuning := result.get("tuning") as Dictionary
+	var toxic_telegraph := _find_telegraph(result)
 	_assert(
 		int(toxic_tuning.get("hazard_count", 0)) >= 3,
 		"toxic mini-event scales hazard count"
@@ -74,6 +93,14 @@ func _run() -> void:
 	_assert(
 		result.get("reward") == "toxic_salvage",
 		"toxic mini-event exposes biome reward"
+	)
+	_assert(
+		_has_reward_crate(result, &"biome_toxic"),
+		"toxic mini-event spawns a biome reward crate"
+	)
+	_assert(
+		toxic_telegraph != null and toxic_telegraph.encounter_id == &"toxic_leak",
+		"toxic mini-event telegraph keeps event id"
 	)
 	await create_timer(0.05).timeout
 	encounter.cleanup_encounter()
@@ -89,3 +116,17 @@ func _assert(ok: bool, message: String) -> void:
 	if not ok:
 		push_error(message)
 		quit(1)
+
+func _find_telegraph(result: Dictionary) -> EncounterTelegraphMarker:
+	for entity in result.get("entities", []):
+		if entity is EncounterTelegraphMarker:
+			return entity as EncounterTelegraphMarker
+	return null
+
+func _has_reward_crate(result: Dictionary, expected_crate_id: StringName) -> bool:
+	for entity in result.get("entities", []):
+		if not entity is SupplyCrate:
+			continue
+		if StringName((entity as SupplyCrate).get_meta("biome_crate_id", &"")) == expected_crate_id:
+			return true
+	return false

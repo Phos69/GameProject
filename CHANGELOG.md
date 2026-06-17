@@ -11,9 +11,18 @@
 - Aggiornato il report di validazione con la Milestone 1 di
   `todo_roadmap.md`, inclusi loop shutdown headless, smoke prioritari e residui
   QA visuali fuori scope.
+- Aggiornati TODO, roadmap operativa, checklist manuale e report di validazione
+  con la chiusura della Milestone 2 di `todo_roadmap.md` sui mini-eventi bioma.
 
 ### Fixed
 
+- I telegraph dei mini-eventi bioma conservano ora l'ID evento reale
+  (`toxic_leak`, `fire_breakout`, `whiteout`, `marsh_emergence`) invece di
+  riusare ID generici, rendendo QA/debug e preset visuali coerenti.
+- `whiteout` e il malus del `cursed_crate` applicano status solo ai player che
+  restano dentro l'area annunciata dal telegraph, rendendo il rischio evitabile.
+- Le crate di encounter gia in `queue_free` non bloccano piu il posizionamento
+  del reward dell'evento successivo nello stesso frame di cleanup/test.
 - Stabilizzato lo shutdown headless: `AudioManager` in headless simula fallback
   e stream opzionali senza istanziare player audio runtime, mentre
   `shutdown_audio()` libera voice pool e generatori procedurali.
@@ -51,6 +60,12 @@
 
 ### Added
 
+- I mini-eventi bioma avanzati generano reward crate tematiche reali quando
+  `ResourceCrateSystem` e disponibile: tossico, fuoco, gelo e palude usano
+  loot coerente con il bioma.
+- Estesa la copertura smoke di `random_encounter` e `biome_mini_events` con
+  cooldown/frequenza, reward crate, high contrast, reduced motion e status
+  evitabile.
 - Aggiunto `tests/headless_shutdown_loop_test.gd` per verificare 100 cicli di
   istanza/free della scena principale in headless.
 - Aggiunto `tests/test_scene_lifecycle.gd` come helper di teardown differito

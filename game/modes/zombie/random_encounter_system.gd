@@ -158,19 +158,40 @@ func force_encounter(biome: BiomeDefinition, encounter_id: StringName, wave_inde
 			_announce("Environmental hazard burst!", encounter_id)
 		&"toxic_leak":
 			result["reward"] = "toxic_salvage"
-			_begin_hazard_burst_telegraph(biome, spawn_position, tuning, result)
+			_begin_hazard_burst_telegraph(
+				biome,
+				spawn_position,
+				tuning,
+				result,
+				encounter_id
+			)
+			_spawn_reward_crate_near(biome, spawn_position, true, tuning, result)
 			_announce("Toxic pipe leak: keep moving!", encounter_id)
 		&"fire_breakout":
 			result["reward"] = "fire_salvage"
-			_begin_hazard_burst_telegraph(biome, spawn_position, tuning, result)
+			_begin_hazard_burst_telegraph(
+				biome,
+				spawn_position,
+				tuning,
+				result,
+				encounter_id
+			)
+			_spawn_reward_crate_near(biome, spawn_position, true, tuning, result)
 			_announce("Fire breakout crossing the lane!", encounter_id)
 		&"whiteout":
 			result["reward"] = "frost_cache"
-			_begin_cursed_crate_telegraph(biome, spawn_position, result)
+			_begin_cursed_crate_telegraph(
+				biome,
+				spawn_position,
+				result,
+				encounter_id
+			)
+			_spawn_reward_crate_near(biome, spawn_position, true, tuning, result)
 			_announce("Whiteout front: brace for the chill!", encounter_id)
 		&"marsh_emergence":
 			result["reward"] = "marsh_salvage"
 			_begin_emergence_telegraph(biome, spawn_position, tuning, result)
+			_spawn_reward_crate_near(biome, spawn_position, true, tuning, result)
 			_announce("Something is rising from the marsh!", encounter_id)
 		&"survivor_cache":
 			result["reward"] = "healing_ammo_cache"
@@ -287,6 +308,29 @@ func _spawn_reward_crate(
 		active_entities.append(crate)
 		(result["entities"] as Array).append(crate)
 
+func _spawn_reward_crate_near(
+	biome: BiomeDefinition,
+	position: Vector2,
+	cursed: bool,
+	tuning: Dictionary,
+	result: Dictionary
+) -> void:
+	var hazard_radius := maxf(float(tuning.get("hazard_radius", 64.0)), 64.0)
+	var reward_distance := maxf(hazard_radius * 2.35, 136.0)
+	for index in range(6):
+		var angle := (
+			float(index) * TAU / 6.0
+			+ rng.randf_range(-0.18, 0.18)
+		)
+		var candidate := position + Vector2(reward_distance, 0.0).rotated(angle)
+		if not _is_encounter_position_valid(candidate, biome):
+			continue
+		var before_count := (result["entities"] as Array).size()
+		_spawn_reward_crate(biome, candidate, cursed, tuning, result)
+		if (result["entities"] as Array).size() > before_count:
+			return
+	_spawn_reward_crate(biome, position, cursed, tuning, result)
+
 func _spawn_hazard_burst(
 	biome: BiomeDefinition,
 	position: Vector2,
@@ -316,13 +360,15 @@ func _spawn_hazard_burst(
 func _begin_cursed_crate_telegraph(
 	biome: BiomeDefinition,
 	position: Vector2,
-	result: Dictionary
+	result: Dictionary,
+	encounter_id: StringName = &"cursed_crate"
 ) -> void:
+	var warning_radius := 74.0
 	var marker := _spawn_telegraph_marker(
-		&"cursed_crate",
+		encounter_id,
 		position,
-		74.0,
-		_encounter_color(&"cursed_crate", biome)
+		warning_radius,
+		_encounter_color(encounter_id, biome)
 	)
 	if marker != null:
 		(result["entities"] as Array).append(marker)
@@ -330,20 +376,26 @@ func _begin_cursed_crate_telegraph(
 	_schedule_telegraph_action(func() -> void:
 		if not _is_telegraph_generation_active(generation):
 			return
-		_apply_status_to_near_players(_biome_status(biome), 2.5)
+		_apply_status_to_near_players(
+			_biome_status(biome),
+			2.5,
+			position,
+			warning_radius
+		)
 	)
 
 func _begin_hazard_burst_telegraph(
 	biome: BiomeDefinition,
 	position: Vector2,
 	tuning: Dictionary,
-	result: Dictionary
+	result: Dictionary,
+	encounter_id: StringName = &"hazard_burst"
 ) -> void:
 	var marker := _spawn_telegraph_marker(
-		&"hazard_burst",
+		encounter_id,
 		position,
 		float(tuning.get("hazard_radius", 62.0)) * 1.65,
-		_encounter_color(&"hazard_burst", biome)
+		_encounter_color(encounter_id, biome)
 	)
 	if marker != null:
 		(result["entities"] as Array).append(marker)
@@ -444,11 +496,20 @@ func _is_telegraph_generation_active(generation: int) -> bool:
 func _on_telegraph_marker_exited() -> void:
 	pending_telegraph_count = maxi(pending_telegraph_count - 1, 0)
 
-func _apply_status_to_near_players(status_id: StringName, duration: float) -> void:
+func _apply_status_to_near_players(
+	status_id: StringName,
+	duration: float,
+	position: Vector2,
+	radius: float
+) -> void:
 	var hazard_system := get_tree().get_first_node_in_group("hazard_system") as HazardSystem
 	if hazard_system == null:
 		return
 	for player in get_tree().get_nodes_in_group("players"):
+		if not player is Node2D:
+			continue
+		if (player as Node2D).global_position.distance_to(position) > radius:
+			continue
 		hazard_system.apply_status(player, status_id, duration, 1.0, self)
 
 func _find_valid_encounter_position(biome: BiomeDefinition) -> Vector2:
@@ -568,7 +629,7 @@ func _build_encounter_tuning(
 			reward_crate_id = _reward_crate_id(biome, true)
 		&"whiteout":
 			hazard_count = 0
-			reward_crate_id = _reward_crate_id(biome, false)
+			reward_crate_id = _reward_crate_id(biome, true)
 		&"marsh_emergence":
 			enemy_count = 2 + mini(party_size, 2) + mini(depth, 1)
 			reward_crate_id = _reward_crate_id(biome, true)
