@@ -58,6 +58,22 @@ func _run() -> void:
 		_has_effect_kind(effects, &"rpg_super"),
 		"super feedback uses dedicated effect kind"
 	)
+	var expected_super_kinds := {
+		&"arrow_rain": &"rpg_super_cone",
+		&"final_barrage": &"rpg_super_burst",
+		&"blood_quake": &"rpg_super_radial",
+		&"phantom_blade": &"rpg_super_dash",
+		&"falling_star": &"rpg_super_radial",
+		&"scrap_pack": &"rpg_super_burst",
+		&"beast_night": &"rpg_super_dash"
+	}
+	for super_id in expected_super_kinds.keys():
+		var effect := effects.spawn_rpg_super(Vector2.ZERO, super_id)
+		await process_frame
+		_expect(
+			effect != null and effect.effect_kind == expected_super_kinds[super_id],
+			"%s super feedback has distinct effect kind" % str(super_id)
+		)
 
 	await _finish()
 

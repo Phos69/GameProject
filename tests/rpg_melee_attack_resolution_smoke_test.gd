@@ -2,6 +2,7 @@ extends SceneTree
 
 var failures: PackedStringArray = []
 var projectile_spawn_count: int = 0
+var last_melee_attack: Node
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -36,16 +37,38 @@ func _run() -> void:
 	if weapon_system == null:
 		_finish()
 		return
+	weapon_system.melee_attack_started.connect(_on_melee_attack_started)
 
 	var bow := load("res://game/weapons/rpg_bow.tres") as WeaponData
+	var pistol := load("res://game/weapons/rpg_pistol.tres") as WeaponData
 	var axe := load("res://game/weapons/rpg_axe.tres") as WeaponData
 	var sword := load("res://game/weapons/rpg_sword.tres") as WeaponData
+	var claws := load("res://game/weapons/rpg_claws.tres") as WeaponData
 	_expect(bow != null and bow.uses_projectile_attack(), "bow remains projectile")
+	_expect(pistol != null and pistol.uses_projectile_attack(), "pistol remains projectile")
 	_expect(axe != null and axe.uses_melee_attack(), "axe resolves as melee")
 	_expect(sword != null and sword.uses_melee_attack(), "sword resolves as melee")
-	if bow == null or axe == null or sword == null:
+	_expect(claws != null and claws.uses_melee_attack(), "claws resolve as melee")
+	if bow == null or pistol == null or axe == null or sword == null or claws == null:
 		_finish()
 		return
+	_expect(
+		axe.damage > sword.damage and axe.knockback > sword.knockback,
+		"axe keeps heavier damage and knockback than sword"
+	)
+	_expect(
+		axe.windup_time + axe.recovery_time > sword.windup_time + sword.recovery_time,
+		"axe keeps a larger commitment window than sword"
+	)
+	_expect(axe.hitstop > sword.hitstop, "axe hitstop is heavier than sword")
+	_expect(
+		sword.melee_range > axe.melee_range and sword.recovery_time < axe.recovery_time,
+		"sword keeps safer range and faster recovery than axe"
+	)
+	_expect(
+		bow.max_range > pistol.max_range and bow.scatter_degrees < pistol.scatter_degrees,
+		"bow and pistol keep distinct ranged readability"
+	)
 
 	weapon_system.equip_weapon(bow)
 	projectile_spawn_count = 0
@@ -63,6 +86,7 @@ func _run() -> void:
 
 	weapon_system.cooldown = 0.0
 	weapon_system.equip_weapon(axe)
+	last_melee_attack = null
 	var axe_target := _spawn_target(scene_root, target_scene, Vector2(82.0, 0.0))
 	var axe_health := axe_target.get_node("HealthComponent") as HealthComponent
 	var axe_start_health := axe_health.current_health
@@ -76,6 +100,12 @@ func _run() -> void:
 		"axe swing starts"
 	)
 	_expect(projectile_spawn_count == 0, "axe swing does not create a projectile")
+	_expect(last_melee_attack != null, "axe creates a melee attack node")
+	if last_melee_attack != null:
+		_expect(
+			is_equal_approx(float(last_melee_attack.get("hitstop_time")), axe.hitstop),
+			"axe passes hitstop value to melee runtime"
+		)
 	for _frame in range(24):
 		await physics_frame
 	_expect(axe_health.current_health < axe_start_health, "axe melee hitbox damages target")
@@ -84,6 +114,7 @@ func _run() -> void:
 
 	weapon_system.cooldown = 0.0
 	weapon_system.equip_weapon(sword)
+	last_melee_attack = null
 	var sword_target := _spawn_target(scene_root, target_scene, Vector2(104.0, 0.0))
 	var sword_health := sword_target.get_node("HealthComponent") as HealthComponent
 	var sword_start_health := sword_health.current_health
@@ -97,6 +128,12 @@ func _run() -> void:
 		"sword sweep starts"
 	)
 	_expect(projectile_spawn_count == 0, "sword sweep does not create a projectile")
+	_expect(last_melee_attack != null, "sword creates a melee attack node")
+	if last_melee_attack != null:
+		_expect(
+			is_equal_approx(float(last_melee_attack.get("hitstop_time")), sword.hitstop),
+			"sword passes hitstop value to melee runtime"
+		)
 	for _frame in range(16):
 		await physics_frame
 	_expect(
@@ -124,6 +161,9 @@ func _clear_projectiles(parent: Node) -> void:
 
 func _on_projectile_spawned(_projectile: Node) -> void:
 	projectile_spawn_count += 1
+
+func _on_melee_attack_started(attack: Node, _weapon_data: WeaponData) -> void:
+	last_melee_attack = attack
 
 func _expect(condition: bool, message: String) -> void:
 	if condition:

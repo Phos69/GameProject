@@ -1,5 +1,53 @@
 # Latest Commit Validation Report
 
+## Milestone 7 tuning melee, super starter e classi RPG avanzate - 2026-06-17
+- Branch: `feat/milestone-3-5-streaming-iso-dungeon`
+- HEAD corrente: non committato al momento della validazione locale.
+- Scope validato: Milestone 7 di `todo_roadmap.md`, tuning melee RPG, super
+  starter e polish automatizzabile di Mago/Domatrice/Licantropo.
+- Esito: PASS sui criteri automatizzabili; QA manuale multi-risoluzione e
+  cinque-wave resta documentata in checklist per playtest end-to-end.
+
+| Criterio | Esito | Evidenza |
+|---|---|---|
+| Ogni starter ha rischio/beneficio percepibile | PASS | smoke melee/balance verificano ascia piu lenta/pesante, spada piu sicura/rapida, arco e pistola ancora projectile distinti |
+| Super riconoscibili a colpo d'occhio | PASS | `GameplayEffects.spawn_rpg_super` restituisce kind distinti per starter e avanzate |
+| Briciola aiuta senza giocare da solo e non blocca Nina | PASS | danno/cadenza/frenzy bounded e companion `Node2D` senza collisione, coperti da smoke |
+| Notte Bestiale termina con recovery leggibile | PASS | `is_beast_recovering()`, status `RECUPERO` e marker visuale in `PlayerVisual` coperti da smoke |
+| Projectile/melee split invariato | PASS | arco/pistola restano projectile; ascia/spada/artigli restano melee |
+
+### Test Milestone 7 eseguiti
+
+| Test | Esito | Note |
+|---|---|---|
+| `godot --headless --path . --import --quit` | PASS | import script/risorse |
+| `tests/rpg_melee_attack_resolution_smoke_test.gd` | PASS | split melee/projectile, rischio starter, hitstop runtime |
+| `tests/milestone_rpg_13_new_classes_smoke_test.gd` | PASS | Mago/Domatrice/Licantropo, Briciola bounded, recovery licantropo |
+| `tests/milestone_rpg_12_feedback_smoke_test.gd` | PASS | VFX super starter e avanzate tipizzate |
+| `tests/milestone_rpg_8_adrenaline_super_smoke_test.gd` | PASS | super starter e recovery invulnerabilita Phantom Blade |
+| `tests/milestone_rpg_10_balance_smoke_test.gd` | PASS | vincoli balance starter |
+| `tests/survival_wave_smoke_test.gd` | PASS | regressione survival, exit code `0` |
+
+### Fix applicati nella Milestone 7
+
+- `game/weapons/melee_attack.gd` e `game/weapons/weapon_system.gd`: `hitstop`
+  configurato nei `WeaponData` ora viene passato e applicato dal runtime melee.
+- `game/rpg/companions/briciola_companion.gd`: danno/cooldown/frenzy resi
+  bounded e interrogabili dagli smoke.
+- `game/rpg/rpg_player_component.gd` e `game/visuals/player_visual.gd`: recovery
+  di `Notte Bestiale` esposta e visualizzata.
+- `game/visuals/gameplay_effects.gd`: super avanzate mappate a kind/colori
+  distinti.
+
+### Limiti e follow-up Milestone 7
+
+- QA manuale survival con quattro starter a 1280x720 e 960x540 non eseguita in
+  headless; resta in `docs/testing/manual_checklist.md` per playtest Milestone 11.
+- QA manuale Mago/Domatrice/Licantropo per cinque wave e prova due-player
+  Briciola/trasformazione resta da acquisire in playtest reale.
+- Arte finale per-personaggio (`final_quality`) resta follow-up artistico
+  separato dalla milestone di tuning.
+
 ## Milestone 6 asset definitivi e animazioni personaggi RPG - 2026-06-17
 - Branch: `master`
 - HEAD corrente: non committato al momento della validazione locale.

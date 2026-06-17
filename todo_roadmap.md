@@ -39,15 +39,16 @@ Completate in questa roadmap operativa:
 - Milestone 4: asset isometrici ambiente e ostacoli coerenti (pipeline manifest).
 - Milestone 5: dungeon ramificato, shop e biomi dedicati.
 - Milestone 6: asset/pipeline personaggi RPG (coerenza dati data-driven).
+- Milestone 7: tuning melee, super starter e classi RPG avanzate.
 
-Prossima milestone non completata secondo l'ordine consigliato: Milestone 7 -
-Tuning melee, super starter e classi RPG avanzate.
+Prossima milestone non completata secondo l'ordine consigliato: Milestone 8 -
+UI, HUD, audio e polish UX trasversale.
 
 Restano aperti o incompleti:
 
 - Arte definitiva per-personaggio (`final_quality`) come follow-up manuale.
-- Tuning melee e super starter dopo playtest.
-- Polish di Mago, Domatrice e Licantropo, incluso Briciola e trasformazione.
+- QA manuale Milestone 7 multi-risoluzione/five-wave/due-player da acquisire
+  nel playtest end-to-end.
 - Ulteriori boss, pattern avanzati, eventuale contenuto tower defense avanzato.
 - Pass di bilanciamento/performance dopo playtest reali 2-4 player.
 - Firma digitale della build Windows pubblica.
@@ -719,6 +720,10 @@ Milestone 0 consigliata. Milestone 4 utile per coerenza ambientale.
 
 ### Milestone 7 - Tuning melee, super starter e classi RPG avanzate
 
+Stato: completata il 2026-06-17 per i criteri automatizzabili. La QA manuale
+multi-risoluzione/five-wave/due-player resta documentata come follow-up del
+playtest end-to-end, non come milestone aperta.
+
 **Obiettivo**
 
 Playtestare e rifinire timing melee, knockback, hitstop percepito, leggibilita
@@ -759,6 +764,18 @@ tuning fine su timing percepito e feedback.
   trasformazione e recovery.
 - Aggiornare smoke e checklist.
 
+**Completato nel pass 2026-06-17**
+
+- `MeleeAttack` riceve e applica `WeaponData.hitstop`, mantenendo invariato lo
+  split con `ProjectileSystem`.
+- Le metriche starter sono bloccate da smoke: ascia piu lenta/pesante, spada
+  piu sicura/rapida, arco e pistola ancora ranged distinti.
+- Briciola usa danno/cadenza/frenzy bounded, resta `Node2D` non bloccante e
+  viene testata come supporto.
+- `Notte Bestiale` espone `is_beast_recovering()`, status `RECUPERO` e marker
+  visuale di recovery.
+- `GameplayEffects` mappa super starter e avanzate a kind/colori distinti.
+
 **Dipendenze da milestones precedenti**
 
 Milestone 6 consigliata.
@@ -782,6 +799,16 @@ Milestone 6 consigliata.
 - Estendere `tests/rpg_melee_attack_resolution_smoke_test.gd`.
 - Estendere `tests/milestone_rpg_13_new_classes_smoke_test.gd`.
 - Aggiungere smoke per recovery super se non presente.
+
+Eseguiti nel pass 2026-06-17:
+
+- `godot --headless --path . --import --quit` - PASS.
+- `tests/rpg_melee_attack_resolution_smoke_test.gd` - PASS.
+- `tests/milestone_rpg_13_new_classes_smoke_test.gd` - PASS.
+- `tests/milestone_rpg_12_feedback_smoke_test.gd` - PASS.
+- `tests/milestone_rpg_8_adrenaline_super_smoke_test.gd` - PASS.
+- `tests/milestone_rpg_10_balance_smoke_test.gd` - PASS.
+- `tests/survival_wave_smoke_test.gd` - PASS.
 
 **Rischi tecnici**
 
@@ -1224,7 +1251,7 @@ Usare questi prompt uno alla volta.
 5. Milestone 4 - Asset isometrici ambiente e ostacoli coerenti. Stato: completata.
 6. Milestone 5 - Dungeon ramificato, shop e biomi dedicati. Stato: completata.
 7. Milestone 6 - Asset definitivi e animazioni personaggi RPG. Stato: completata.
-8. Milestone 7 - Tuning melee, super starter e classi RPG avanzate.
+8. Milestone 7 - Tuning melee, super starter e classi RPG avanzate. Stato: completata.
 9. Milestone 8 - UI, HUD, audio e polish UX trasversale.
 10. Milestone 9 - Boss aggiuntivi e pattern avanzati.
 11. Milestone 10 - Tower defense avanzata e sistemi secondari.

@@ -53,6 +53,9 @@ Usare questa checklist per verificare il pass 1 dei personaggi RPG a 1280x720, s
 - [ ] Licantropo riconoscibile da postura curva/artigli in forma umana e scala maggiore durante Notte Bestiale.
 - [ ] Le armi restano su layer/visual separato dal corpo e seguono la mira.
 - [ ] Gli effetti di sparo/reload/super restano leggibili tra zombie, pickup e ostacoli.
+- [ ] Le super starter hanno silhouette VFX distinte: cono, burst, radiale e dash.
+- [ ] Le super avanzate hanno VFX distinti: Stella Cadente radiale viola,
+  Branco di Rottami burst teal e Notte Bestiale dash rosso.
 
 ## HUD
 
@@ -61,7 +64,9 @@ Usare questa checklist per verificare il pass 1 dei personaggi RPG a 1280x720, s
 - [ ] L'icona super usa lo stesso accent e indica chiaramente lo stato pronto/non pronto.
 - [ ] Le passiva attive restano leggibili senza coprire HP, ammo e XP.
 - [ ] Briciola non blocca il player, non resta bloccato lontano e torna vicino a Nina.
-- [ ] Rocco torna sempre alla forma umana dopo la super e mostra recovery breve.
+- [ ] Briciola in frenzy resta riconoscibile come supporto e non sostituisce Nina.
+- [ ] Rocco torna sempre alla forma umana dopo la super e mostra recovery breve
+  con marker/anello visibile.
 
 ## Sostituzione asset definitivi
 

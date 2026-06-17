@@ -167,6 +167,8 @@ func _draw() -> void:
 	var beast_scale := 1.0
 	if rpg_component != null and rpg_component.is_beast_transformed():
 		beast_scale = 1.28
+	elif rpg_component != null and rpg_component.is_beast_recovering():
+		beast_scale = 1.08
 	var outline_color := Color(0.035, 0.045, 0.055, 1.0)
 
 	draw_set_transform(Vector2(0.0, -bob), 0.0, Vector2.ONE * beast_scale)
@@ -264,8 +266,30 @@ func _draw() -> void:
 			3.0,
 			true
 		)
+	if rpg_component != null and rpg_component.is_beast_recovering():
+		_draw_beast_recovery_marker(visual_accent)
 	_draw_slot_marker()
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+func _draw_beast_recovery_marker(color: Color) -> void:
+	var alpha := 0.70 * flash_intensity * glow_intensity
+	draw_arc(
+		Vector2(0.0, -7.0),
+		31.0,
+		-PI * 0.20,
+		PI * 1.20,
+		28,
+		Color(color.lightened(0.30), alpha),
+		3.0,
+		true
+	)
+	draw_line(
+		Vector2(-18.0, 18.0),
+		Vector2(18.0, 18.0),
+		Color(color, alpha * 0.55),
+		3.0,
+		true
+	)
 
 func _draw_slot_marker() -> void:
 	var center := Vector2(0.0, -39.0)

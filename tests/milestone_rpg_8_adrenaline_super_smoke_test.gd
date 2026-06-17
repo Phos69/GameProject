@@ -99,6 +99,7 @@ func _run() -> void:
 	await process_frame
 	var blade_health := blade_enemy.health_component.current_health
 	var start_position := player.global_position
+	player_health.invulnerable = false
 	rpg_component.add_adrenaline(100)
 	var blade_used := rpg_component.try_activate_super(Vector2.RIGHT)
 	_expect(blade_used, "spadaccino super activates")
@@ -111,6 +112,10 @@ func _run() -> void:
 		blade_enemy.health_component.current_health < blade_health,
 		"phantom blade damages enemies in the dash path"
 	)
+	rpg_component.super_invulnerable_timer = 0.02
+	for _frame in range(4):
+		await process_frame
+	_expect(not player_health.invulnerable, "phantom blade invulnerability recovers")
 
 	scene_root.queue_free()
 	_finish()

@@ -82,6 +82,30 @@ godot --headless --path . --script res://tests/combat_smoke_test.gd
 
 Il test verifica scena principale, due player locali, sparo, collisione, danno, reload infinito e fallback da speciale esaurita.
 
+## Regressione RPG Milestone 7
+
+- A 1280x720 e 960x540, provare Ranger, Pistoliere, Berserker e Spadaccino in
+  survival: ascia rischiosa/potente, spada controllata/difensiva, arco leggibile
+  a distanza e pistola leggibile in cadenza ravvicinata.
+- Verificare che `Pioggia di Frecce`, `Scarica Finale`, `Terremoto di Sangue` e
+  `Lama Fantasma` siano distinguibili a colpo d'occhio tra zombie, pickup e
+  ostacoli.
+- Provare Mago, Domatrice e Licantropo per almeno cinque wave ciascuno:
+  `Stella Cadente` radiale, `Branco di Rottami` burst e `Notte Bestiale` dash/
+  trasformazione devono restare leggibili.
+- Con due player attivi, verificare che Briciola aiuti Nina senza bloccarla,
+  resti vicino dopo gli attacchi e non pulisca la wave da sola.
+- Verificare che `Notte Bestiale` torni sempre alla forma umana con recovery
+  breve visibile prima di riprendere il profilo normale.
+
+```text
+godot --headless --path . --script res://tests/rpg_melee_attack_resolution_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_rpg_8_adrenaline_super_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_rpg_10_balance_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_rpg_12_feedback_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_rpg_13_new_classes_smoke_test.gd
+```
+
 ## Regressione nemici
 
 - La scena principale genera i `Basic Zombie` tramite `WaveManager`.

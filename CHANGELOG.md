@@ -13,6 +13,9 @@
   QA visuali fuori scope.
 - Aggiornati TODO, roadmap operativa, checklist manuale e report di validazione
   con la chiusura della Milestone 2 di `todo_roadmap.md` sui mini-eventi bioma.
+- Aggiornati TODO, roadmap operativa, design, architettura, checklist manuali e
+  report di validazione con la chiusura della Milestone 7 di `todo_roadmap.md`
+  su tuning melee, super starter e classi RPG avanzate.
 
 ### Fixed
 
@@ -57,6 +60,11 @@
 - Corretto il parse di `RpgCharacterData` rinominando il campo export interno
   `class_name`, riservato da GDScript, e mantenendo invariato il profilo
   pubblico usato da menu e HUD.
+- `MeleeAttack` applica ora il `hitstop` configurato in `WeaponData`, mantenendo
+  separato il runtime melee dal percorso proiettili.
+- Briciola usa valori assistivi bounded per danno/cadenza anche durante
+  `Branco di Rottami`, mentre `Notte Bestiale` espone e visualizza una recovery
+  leggibile al termine della trasformazione.
 
 ### Added
 
@@ -80,6 +88,8 @@
 - Aggiunto `tests/rpg_melee_attack_resolution_smoke_test.gd` per verificare
   che arco generi projectile mentre ascia e spada danneggiano senza emettere
   `projectile_spawned`.
+- Estesa la copertura smoke RPG su rischio/beneficio starter, recovery super,
+  frenzy di Briciola e VFX super distinti per starter e classi avanzate.
 - Character Select e dossier mostrano ora il tipo di attacco arma
   projectile/melee e la preview gameplay disegna micro-feedback dedicati per
   arco, pistola, ascia e spada.

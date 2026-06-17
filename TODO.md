@@ -26,38 +26,13 @@ Regole per nuove voci:
 | Asset isometrici ambiente | PASS nella validazione Milestone 4 | `tests/isometric_environment_manifest_smoke_test.gd`, manifest v2, biome obstacle generation, `docs/latest_commit_validation_report.md` | Conversione ad arte esterna definitiva opzionale; QA visuale screenshot nel playtest Milestone 11 |
 | Dungeon ramificato/shop | PASS nella validazione Milestone 5 | `tests/dungeon_graph_smoke_test.gd`, `tests/dungeon_smoke_test.gd`, `docs/latest_commit_validation_report.md` | UI shop dedicata e arte bioma dungeon restano follow-up; screenshot tre seed nel playtest Milestone 11 |
 | Asset/pipeline personaggi RPG | PASS nella validazione Milestone 6 | `tests/rpg_character_asset_manifest_smoke_test.gd`, `assets/characters/index.json` v2, `docs/latest_commit_validation_report.md` | Arte definitiva per-personaggio (`final_quality`) resta follow-up manuale; screenshot QA nel playtest Milestone 11 |
+| Tuning melee, super e classi RPG avanzate | PASS nella validazione Milestone 7 | `tests/rpg_melee_attack_resolution_smoke_test.gd`, `tests/milestone_rpg_8_adrenaline_super_smoke_test.gd`, `tests/milestone_rpg_12_feedback_smoke_test.gd`, `tests/milestone_rpg_13_new_classes_smoke_test.gd` | QA manuale multi-risoluzione/five-wave/due-player resta follow-up nel playtest Milestone 11 |
 | Roadmap storiche | Completate come primo pass o reference | `ROADMAP.md`, `roadmap_*.md`, `docs/milestones/` | Non usarle come backlog attivo se una voce e gia chiusa qui sotto |
 
 Test eseguiti per questo audit: nessun test gameplay. La Milestone 0 richiede
 revisione manuale, baseline e consolidamento TODO.
 
 ## Backlog aperto prioritizzato
-
-### RPG-001 - Tuning melee RPG e super starter
-
-- Obiettivo: playtestare e tarare timing, knockback, hitstop percepito,
-  leggibilita delle super starter e bilanciamento delle hitbox melee.
-- Milestone collegata: `todo_roadmap.md` Milestone 7.
-- File/sistemi coinvolti: `WeaponData`, `MeleeAttack`, `RpgSuperResolver`,
-  `GameplayEffects`, `PlayerVisual`, risorse `game/weapons/rpg_*`.
-- Criterio di accettazione: ascia resta potente ma rischiosa, spada controllata
-  e difensiva, arco/pistola restano leggibili a distanza, e le quattro super
-  starter sono riconoscibili in survival.
-- Test richiesto: QA manuale survival con i quattro starter a 1280x720 e
-  960x540, smoke RPG e `tests/rpg_melee_attack_resolution_smoke_test.gd`.
-
-### RPG-002 - Polish classi RPG avanzate
-
-- Obiettivo: rifinire Mago, Domatrice e Licantropo con VFX telegraph definitivi,
-  droni/super di Nina, companion Briciola e trasformazione licantropo completa.
-- Milestone collegata: `todo_roadmap.md` Milestone 7.
-- File/sistemi coinvolti: `RpgPlayerComponent`, `RpgSuperResolver`,
-  `BriciolaCompanion`, `PlayerVisual`, `WeaponData`, `assets/characters/`.
-- Criterio di accettazione: le tre classi sono bilanciate contro i quattro
-  starter, Briciola aiuta senza giocare da solo e `Notte Bestiale` termina
-  sempre con recovery leggibile.
-- Test richiesto: `tests/milestone_rpg_13_new_classes_smoke_test.gd`, smoke RPG
-  esistenti e checklist RPG character art.
 
 ### UIUX-001 - UI, HUD, audio e polish UX trasversale
 
@@ -225,13 +200,19 @@ evitare reimplementazioni e per indirizzare le regressioni.
   L'arte definitiva per-personaggio (`final_quality`) resta follow-up manuale.
   Coperto da `tests/rpg_character_asset_manifest_smoke_test.gd` e
   `tests/character_select_ui_smoke_test.gd`.
+- RPG-001 tuning melee RPG e super starter e RPG-002 polish classi RPG avanzate:
+  completati nella Milestone 7 di `todo_roadmap.md`. `MeleeAttack` applica
+  hitstop data-driven, i vincoli ascia/spada/arco/pistola sono coperti da smoke,
+  Briciola resta assistiva/non bloccante, `Notte Bestiale` ha recovery visibile
+  e le super starter/avanzate hanno VFX tipizzati. QA manuale
+  multi-risoluzione/five-wave/due-player resta follow-up del playtest
+  Milestone 11.
 - Roadmap RPG Mode M1-M13 e classi avanzate: completate come pass
-  data-driven; tuning e polish sono tracciati in `ASSET-002`, `RPG-001` e
-  `RPG-002`.
+  data-driven; tuning e polish Milestone 7 sono chiusi come reference storica.
 - Menu pausa, Settings condivisi, navigazione gamepad e Character Select RPG:
   completati come polish post-roadmap; regressioni in `UIUX-001`.
 - Pass personaggi RPG distinguibili e melee reali: completato; regressioni in
-  `RPG-001` e smoke RPG.
+  smoke RPG e playtest Milestone 11.
 - BIO-001 mini-eventi bioma, status e encounter: completato nella Milestone 2
   di `todo_roadmap.md`; telegraph, reward crate, cooldown, high contrast,
   reduced motion e status evitabile sono coperti da smoke, con checklist
@@ -261,6 +242,6 @@ evitare reimplementazioni e per indirizzare le regressioni.
 - `Ampliare i test automatici` -> `QA-001`.
 - `Asset definitivi personaggi RPG - futuro` -> `ASSET-002` completata
   (Milestone 6); resta solo l'arte `final_quality` per-personaggio.
-- `Tuning melee RPG e super - futuro` -> `RPG-001`.
-- `Polish classi RPG avanzate - futuro` -> `RPG-002`.
+- `Tuning melee RPG e super - futuro` -> `RPG-001` completata (Milestone 7).
+- `Polish classi RPG avanzate - futuro` -> `RPG-002` completata (Milestone 7).
 - `Firma digitale dell'eseguibile Windows` -> `REL-001`.
