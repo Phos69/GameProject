@@ -1,0 +1,19 @@
+# Godot project line endings
+*.import text eol=lf
+*.gd text eol=lf
+*.json text eol=lf
+*.tscn text eol=lf
+*.tres text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.wav binary
+*.ogg binary
+*.mp3 binary
+*.opus binary
