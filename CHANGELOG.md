@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+### Performance
+
+- Ridotto drasticamente il costo di rendering del terreno isometrico in modalità
+  zombie, che era il principale collo di bottiglia del framerate (non il
+  caricamento dei tile). Il renderer `gl_compatibility` ridisegna ogni frame
+  l'intera command-list di un canvas item, quindi le ≈40.000 celle della griglia
+  200x200 producevano ~40.000 `draw_polyline` antialiased + ~40.000
+  `draw_colored_polygon` per frame.
+  - `BiomeTileLayer` ora pre-cuoce il terreno una sola volta in
+    `_rebuild_ground_geometry()`: un'unica `ArrayMesh` vertex-coloured per i
+    riempimenti (una sola `draw_mesh`) più una singola `draw_multiline` non
+    antialiased per la griglia. Il costo per frame passa da ~80.000 comandi a 2,
+    indipendentemente dal numero di tile.
+  - `BiomeRegionGround` (ground delle regioni vicine) accorpa i contorni in una
+    sola `draw_multiline` non antialiased invece di una `draw_polyline` per cella.
+
 ### Documentation
 
 - Consolidato il backlog operativo in `TODO.md`, separando backlog aperto,

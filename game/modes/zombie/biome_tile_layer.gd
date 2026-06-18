@@ -17,6 +17,12 @@ var _chunks: Array[Rect2i] = []
 var _tile_id_cache: Dictionary = {}
 var _asset_path_cache: Dictionary = {}
 var _missing_asset_count: int = 0
+# The whole static ground is baked once into a single mesh (one draw call) plus a
+# single grid multiline, instead of issuing one draw command per cell every
+# frame. Godot re-walks a canvas item's full command list each frame, so ~40k
+# per-tile polygons were the dominant constant frame cost on gl_compatibility.
+var _ground_mesh: ArrayMesh
+var _grid_points: PackedVector2Array = PackedVector2Array()
 
 func configure(
 	next_layout: BiomeEnvironmentLayout,
@@ -38,6 +44,7 @@ func configure(
 	add_to_group("biome_tile_layers")
 	_rebuild_chunks()
 	_rebuild_tile_cache()
+	_rebuild_ground_geometry()
 	queue_redraw()
 
 func get_chunk_count() -> int:
@@ -81,31 +88,73 @@ func has_visual_tile_for_cell(cell: Vector2i) -> bool:
 	return _asset_path_exists(get_resolved_asset_path(cell))
 
 func _draw() -> void:
+	# The ground is pre-baked in _rebuild_ground_geometry(): a single mesh for the
+	# filled diamonds (vertex-coloured) and a single multiline for the grid. Two
+	# draw commands total, independent of the 200x200 tile count.
+	if _ground_mesh != null:
+		draw_mesh(_ground_mesh, null)
+	if _grid_points.size() >= 2:
+		draw_multiline(_grid_points, Color(palette.grid_color, 0.12))
+
+func _rebuild_ground_geometry() -> void:
+	_ground_mesh = null
+	_grid_points = PackedVector2Array()
 	if layout == null or palette == null:
 		return
-	for chunk in _chunks:
-		for y in range(chunk.position.y, chunk.position.y + chunk.size.y):
-			for x in range(chunk.position.x, chunk.position.x + chunk.size.x):
-				_draw_tile(Vector2i(x, y))
-
-func _draw_tile(cell: Vector2i) -> void:
-	var tile_id := get_resolved_tile_id(cell)
-	if tile_id.is_empty():
-		return
-	var center := _cell_center_to_world(cell)
 	var scale := layout.logical_tile_scale
 	var half_w := scale * 0.62
 	var half_h := scale * 0.34
-	var points := PackedVector2Array([
-		center + Vector2(0.0, -half_h),
-		center + Vector2(half_w, 0.0),
-		center + Vector2(0.0, half_h),
-		center + Vector2(-half_w, 0.0)
-	])
-	draw_colored_polygon(points, _tile_color(tile_id))
-	var closed := points.duplicate()
-	closed.append(points[0])
-	draw_polyline(closed, Color(palette.grid_color, 0.12), 1.0, true)
+	var vertices := PackedVector2Array()
+	var colors := PackedColorArray()
+	var indices := PackedInt32Array()
+	var grid := PackedVector2Array()
+	for chunk in _chunks:
+		for y in range(chunk.position.y, chunk.position.y + chunk.size.y):
+			for x in range(chunk.position.x, chunk.position.x + chunk.size.x):
+				var cell := Vector2i(x, y)
+				var tile_id := get_resolved_tile_id(cell)
+				if tile_id.is_empty():
+					continue
+				var center := _cell_center_to_world(cell)
+				var top := center + Vector2(0.0, -half_h)
+				var right := center + Vector2(half_w, 0.0)
+				var bottom := center + Vector2(0.0, half_h)
+				var left := center + Vector2(-half_w, 0.0)
+				var base := vertices.size()
+				vertices.append(top)
+				vertices.append(right)
+				vertices.append(bottom)
+				vertices.append(left)
+				var color := _tile_color(tile_id)
+				colors.append(color)
+				colors.append(color)
+				colors.append(color)
+				colors.append(color)
+				indices.append(base)
+				indices.append(base + 1)
+				indices.append(base + 2)
+				indices.append(base)
+				indices.append(base + 2)
+				indices.append(base + 3)
+				grid.append(top)
+				grid.append(right)
+				grid.append(right)
+				grid.append(bottom)
+				grid.append(bottom)
+				grid.append(left)
+				grid.append(left)
+				grid.append(top)
+	_grid_points = grid
+	if vertices.is_empty():
+		return
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = vertices
+	arrays[Mesh.ARRAY_COLOR] = colors
+	arrays[Mesh.ARRAY_INDEX] = indices
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	_ground_mesh = mesh
 
 func _rebuild_chunks() -> void:
 	_chunks.clear()
