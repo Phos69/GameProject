@@ -126,15 +126,37 @@ func _run() -> void:
 	main_menu.character_card_buttons[0].grab_focus()
 	await _press_joypad_button(JOY_BUTTON_DPAD_LEFT)
 	await _wait_navigation_cooldown()
+	var columns := clampi(
+		main_menu.character_roster_grid.columns,
+		1,
+		main_menu.character_card_buttons.size()
+	)
+	var first_row_end := mini(columns, main_menu.character_card_buttons.size()) - 1
 	_expect(
-		root.gui_get_focus_owner() == main_menu.character_back_button,
-		"character select wraps from first card to the last focusable control"
+		root.gui_get_focus_owner() == main_menu.character_card_buttons[first_row_end],
+		"character select wraps left within the visible roster row"
 	)
 	await _press_joypad_button(JOY_BUTTON_DPAD_RIGHT)
 	await _wait_navigation_cooldown()
 	_expect(
 		root.gui_get_focus_owner() == main_menu.character_card_buttons[0],
-		"character select wraps forward to the first card"
+		"character select wraps right within the visible roster row"
+	)
+	await _press_joypad_button(JOY_BUTTON_DPAD_UP)
+	await _wait_navigation_cooldown()
+	var row_count := ceili(
+		float(main_menu.character_card_buttons.size()) / float(columns)
+	)
+	var last_row_first := (row_count - 1) * columns
+	_expect(
+		root.gui_get_focus_owner() == main_menu.character_card_buttons[last_row_first],
+		"character select wraps up to the last valid row without empty slots"
+	)
+	await _press_joypad_button(JOY_BUTTON_DPAD_DOWN)
+	await _wait_navigation_cooldown()
+	_expect(
+		root.gui_get_focus_owner() == main_menu.character_card_buttons[0],
+		"character select wraps down to the first row in the same column"
 	)
 	await _press_joypad_button(JOY_BUTTON_BACK)
 	await process_frame

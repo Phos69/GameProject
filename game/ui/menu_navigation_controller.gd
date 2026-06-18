@@ -11,6 +11,7 @@ var focus_controls: Array[Control] = []
 var back_callback: Callable = Callable()
 var previous_tab_callback: Callable = Callable()
 var next_tab_callback: Callable = Callable()
+var move_callback: Callable = Callable()
 var input_blocked_callback: Callable = Callable()
 
 var _cooldown: float = 0.0
@@ -89,25 +90,37 @@ func _direction_from_event(event: InputEvent) -> Vector2i:
 		if not key_event.pressed or key_event.echo:
 			return Vector2i.ZERO
 		match key_event.keycode:
-			KEY_DOWN, KEY_RIGHT:
+			KEY_RIGHT:
 				return Vector2i.RIGHT
-			KEY_UP, KEY_LEFT:
+			KEY_LEFT:
 				return Vector2i.LEFT
+			KEY_DOWN:
+				return Vector2i.DOWN
+			KEY_UP:
+				return Vector2i.UP
 	if event is InputEventJoypadButton:
 		var button_event := event as InputEventJoypadButton
 		if not button_event.pressed:
 			return Vector2i.ZERO
 		match button_event.button_index:
-			JOY_BUTTON_DPAD_DOWN, JOY_BUTTON_DPAD_RIGHT:
+			JOY_BUTTON_DPAD_RIGHT:
 				return Vector2i.RIGHT
-			JOY_BUTTON_DPAD_UP, JOY_BUTTON_DPAD_LEFT:
+			JOY_BUTTON_DPAD_LEFT:
 				return Vector2i.LEFT
+			JOY_BUTTON_DPAD_DOWN:
+				return Vector2i.DOWN
+			JOY_BUTTON_DPAD_UP:
+				return Vector2i.UP
 	if event is InputEventJoypadMotion:
 		return _direction_from_motion(event as InputEventJoypadMotion)
-	if event.is_action_pressed(&"ui_down") or event.is_action_pressed(&"ui_right"):
+	if event.is_action_pressed(&"ui_right"):
 		return Vector2i.RIGHT
-	if event.is_action_pressed(&"ui_up") or event.is_action_pressed(&"ui_left"):
+	if event.is_action_pressed(&"ui_left"):
 		return Vector2i.LEFT
+	if event.is_action_pressed(&"ui_down"):
+		return Vector2i.DOWN
+	if event.is_action_pressed(&"ui_up"):
+		return Vector2i.UP
 	return Vector2i.ZERO
 
 func _direction_from_motion(event: InputEventJoypadMotion) -> Vector2i:
@@ -122,7 +135,7 @@ func _direction_from_motion(event: InputEventJoypadMotion) -> Vector2i:
 	if absf(state.x) > absf(state.y):
 		return Vector2i.RIGHT if state.x > 0.0 else Vector2i.LEFT
 	if absf(state.y) > 0.0:
-		return Vector2i.RIGHT if state.y > 0.0 else Vector2i.LEFT
+		return Vector2i.DOWN if state.y > 0.0 else Vector2i.UP
 	return Vector2i.ZERO
 
 func _dominant_held_direction() -> Vector2i:
@@ -132,14 +145,19 @@ func _dominant_held_direction() -> Vector2i:
 			continue
 		if absf(state.x) > absf(state.y):
 			return Vector2i.RIGHT if state.x > 0.0 else Vector2i.LEFT
-		return Vector2i.RIGHT if state.y > 0.0 else Vector2i.LEFT
+		return Vector2i.DOWN if state.y > 0.0 else Vector2i.UP
 	return Vector2i.ZERO
 
 func _move_focus(direction: Vector2i) -> bool:
+	if move_callback.is_valid():
+		var custom_result: Variant = move_callback.call(direction)
+		if custom_result is bool:
+			return bool(custom_result)
+		return true
 	var controls := _available_focus_controls()
 	if controls.is_empty():
 		return false
-	var step := 1 if direction.x >= 0 else -1
+	var step := -1 if direction.x < 0 or direction.y < 0 else 1
 	var current := get_viewport().gui_get_focus_owner()
 	var current_index := controls.find(current)
 	var next_index := 0

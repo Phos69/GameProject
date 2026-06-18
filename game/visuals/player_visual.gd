@@ -151,6 +151,7 @@ func _draw() -> void:
 		_draw_dead_survivor(
 			display_color if is_downed else display_color.darkened(0.45)
 		)
+		_draw_compact_player_hud()
 		return
 
 	var walk_phase := sin(animation_time * 11.0) * movement_ratio
@@ -254,22 +255,10 @@ func _draw() -> void:
 				)
 			)
 
-	if reload_timer > 0.0:
-		var reload_ratio := 1.0 - reload_timer / reload_duration
-		draw_arc(
-			Vector2(0.0, -34.0),
-			11.0,
-			-PI * 0.5,
-			-PI * 0.5 + TAU * reload_ratio,
-			20,
-			Color(1.0, 0.79, 0.28, 0.95),
-			3.0,
-			true
-		)
 	if rpg_component != null and rpg_component.is_beast_recovering():
 		_draw_beast_recovery_marker(visual_accent)
-	_draw_slot_marker()
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	_draw_compact_player_hud()
 
 func _draw_beast_recovery_marker(color: Color) -> void:
 	var alpha := 0.70 * flash_intensity * glow_intensity
@@ -291,36 +280,103 @@ func _draw_beast_recovery_marker(color: Color) -> void:
 		true
 	)
 
-func _draw_slot_marker() -> void:
-	var center := Vector2(0.0, -39.0)
+func _draw_compact_player_hud() -> void:
+	var parent := get_parent()
+	if parent == null:
+		return
+	var health_component := parent.get_node_or_null(
+		"HealthComponent"
+	) as HealthComponent
+	var weapon_system := parent.get_node_or_null("WeaponSystem") as WeaponSystem
+	if health_component == null and weapon_system == null and reload_timer <= 0.0:
+		return
+
+	var health_ratio := 0.0
+	if health_component != null:
+		health_ratio = health_component.get_health_ratio()
+	var reload_ratio := _get_reload_display_ratio(weapon_system)
+	var show_reload := reload_ratio > 0.0
+	var panel_height := 17.0 if not show_reload else 24.0
+	var panel_rect := Rect2(Vector2(-36.0, -62.0), Vector2(72.0, panel_height))
+	draw_rect(panel_rect.grow(1.0), Color(0.0, 0.0, 0.0, 0.42), true)
+	draw_rect(panel_rect, Color(0.018, 0.026, 0.034, 0.88), true)
+	draw_rect(
+		panel_rect,
+		Color.WHITE if high_contrast else Color(accent_color.lightened(0.18), 0.92),
+		false,
+		1.4
+	)
+	_draw_slot_hud_marker(Vector2(-30.0, -53.5))
+	if health_component != null:
+		_draw_compact_bar(
+			Rect2(Vector2(-22.0, -57.0), Vector2(50.0, 5.0)),
+			health_ratio,
+			_resolve_health_bar_color(health_ratio, health_component.is_downed)
+		)
+	if show_reload:
+		_draw_compact_bar(
+			Rect2(Vector2(-22.0, -49.0), Vector2(50.0, 4.0)),
+			reload_ratio,
+			Color(1.0, 0.72, 0.24, 1.0)
+		)
+
+func _get_reload_display_ratio(weapon_system: WeaponSystem) -> float:
+	if weapon_system != null and weapon_system.is_reloading:
+		return weapon_system.get_reload_ratio()
+	if reload_timer <= 0.0 or reload_duration <= 0.0:
+		return 0.0
+	return clampf(1.0 - reload_timer / reload_duration, 0.0, 1.0)
+
+func _resolve_health_bar_color(ratio: float, downed: bool) -> Color:
+	if high_contrast:
+		return Color.WHITE
+	if downed or ratio <= 0.30:
+		return Color(1.0, 0.28, 0.20, 1.0)
+	if ratio <= 0.60:
+		return Color(1.0, 0.70, 0.24, 1.0)
+	return Color(0.30, 0.90, 0.44, 1.0)
+
+func _draw_compact_bar(rect: Rect2, ratio: float, fill_color: Color) -> void:
+	var clamped_ratio := clampf(ratio, 0.0, 1.0)
+	draw_rect(rect, Color(0.06, 0.075, 0.085, 1.0), true)
+	if clamped_ratio > 0.0:
+		draw_rect(
+			Rect2(rect.position, Vector2(rect.size.x * clamped_ratio, rect.size.y)),
+			fill_color,
+			true
+		)
+	draw_rect(rect, Color(0.0, 0.0, 0.0, 0.72), false, 1.0)
+
+func _draw_slot_hud_marker(center: Vector2) -> void:
 	var outline := Color(0.01, 0.015, 0.02, 1.0)
-	var fill := Color.WHITE if high_contrast else accent_color.lightened(0.28)
+	var fill := Color.WHITE if high_contrast else accent_color.lightened(0.26)
 	match player_slot:
 		2:
 			var triangle := PackedVector2Array([
-				center + Vector2(0.0, -6.0),
-				center + Vector2(6.0, 5.0),
-				center + Vector2(-6.0, 5.0),
-				center + Vector2(0.0, -6.0)
+				center + Vector2(0.0, -4.0),
+				center + Vector2(4.2, 3.6),
+				center + Vector2(-4.2, 3.6),
+				center + Vector2(0.0, -4.0)
 			])
-			draw_polyline(triangle, outline, 6.0, true)
-			draw_polyline(triangle, fill, 2.5, true)
+			draw_polyline(triangle, outline, 3.5, true)
+			draw_polyline(triangle, fill, 1.8, true)
 		3:
-			draw_rect(Rect2(center - Vector2(5.0, 5.0), Vector2(10.0, 10.0)), outline, false, 6.0)
-			draw_rect(Rect2(center - Vector2(5.0, 5.0), Vector2(10.0, 10.0)), fill, false, 2.5)
+			var square := Rect2(center - Vector2(3.6, 3.6), Vector2(7.2, 7.2))
+			draw_rect(square, outline, false, 3.2)
+			draw_rect(square, fill, false, 1.8)
 		4:
 			var diamond := PackedVector2Array([
-				center + Vector2(0.0, -7.0),
-				center + Vector2(7.0, 0.0),
-				center + Vector2(0.0, 7.0),
-				center + Vector2(-7.0, 0.0),
-				center + Vector2(0.0, -7.0)
+				center + Vector2(0.0, -4.8),
+				center + Vector2(4.8, 0.0),
+				center + Vector2(0.0, 4.8),
+				center + Vector2(-4.8, 0.0),
+				center + Vector2(0.0, -4.8)
 			])
-			draw_polyline(diamond, outline, 6.0, true)
-			draw_polyline(diamond, fill, 2.5, true)
+			draw_polyline(diamond, outline, 3.5, true)
+			draw_polyline(diamond, fill, 1.8, true)
 		_:
-			draw_arc(center, 6.0, 0.0, TAU, 18, outline, 6.0, true)
-			draw_arc(center, 6.0, 0.0, TAU, 18, fill, 2.5, true)
+			draw_rect(Rect2(center - Vector2(2.2, 5.0), Vector2(4.4, 10.0)), outline, true)
+			draw_rect(Rect2(center - Vector2(1.1, 3.9), Vector2(2.2, 7.8)), fill, true)
 
 func _draw_weapon(
 	hand: Vector2,

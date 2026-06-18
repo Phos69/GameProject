@@ -79,10 +79,34 @@ func _run() -> void:
 	await process_frame
 	var player_card := hud.player_cards.get(1) as PlayerHudCard
 	_expect(player_card != null and player_card.visible, "HUD shows player one card")
+	_expect(
+		hud.status_panel != null and not hud.status_panel.is_visible_in_tree(),
+		"gameplay HUD hides the persistent status info panel"
+	)
+	_expect(
+		not hud.status_label.text.contains("Party Lv"),
+		"gameplay HUD omits the persistent party level panel"
+	)
+	_expect(
+		not hud.status_label.text.contains("Wave ")
+		and not hud.status_label.text.contains("Next Wave")
+		and not hud.status_label.text.contains("Enemies"),
+		"survival HUD omits the persistent wave info panel"
+	)
 	if player_card != null:
 		_expect(
 			player_card.health_bar.value == 100.0,
-			"player card exposes the current health bar"
+			"player card still tracks current health data"
+		)
+		_expect(
+			not player_card.health_bar.is_visible_in_tree()
+			and not player_card.reload_bar.is_visible_in_tree(),
+			"HP and reload are no longer duplicated in the corner card"
+		)
+		_expect(
+			player_card.get_global_rect().position.x <= 24.0
+			and player_card.get_global_rect().position.y <= 24.0,
+			"player one card is anchored in the top-left corner"
 		)
 		_expect(
 			"Starter Pistol" in player_card.weapon_label.text,
@@ -90,6 +114,10 @@ func _run() -> void:
 		)
 
 	if player_visual != null:
+		_expect(
+			not player_visual.has_method("_draw_slot_marker"),
+			"survivor visual no longer exposes the standalone overhead marker"
+		)
 		player_visual.play_reload(1.0)
 		_expect(player_visual.reload_timer > 0.0, "survivor visual exposes reload feedback")
 		player_visual.play_fire()

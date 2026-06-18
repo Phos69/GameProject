@@ -29,6 +29,15 @@
 
 ### Changed
 
+- Character Select ora supporta navigazione griglia a quattro direzioni con
+  wrapping su card valide e avvio survival tramite `Start`/`pause` solo quando
+  gli slot attivi hanno una selezione completa; lo `Start` di controller non
+  attivi continua a servire il join locale.
+- L'HUD gameplay separa vita/reload, ora compatti sopra il survivor, dalle
+  statistiche slot nelle schede P1-P4 ancorate ai quattro angoli schermo.
+- Rimosso dal gameplay il riquadro status persistente, inclusi progresso party,
+  stato ondata survival e riepilogo bioma; gli annunci temporanei restano nel
+  canale HUD esistente.
 - La generazione biomi survival usa ora chunk logici `500x500` e una megamappa
   default `3x3`; `BiomeMapGenerator` mantiene override di debug per dimensione
   e numero regioni.

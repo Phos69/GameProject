@@ -56,9 +56,10 @@ Controlli debug:
   menu precedente quando presente.
 - Settings: `LB` e `RB` cambiano tab in modo circolare e spostano il focus su
   un controllo valido della tab corrente.
-- Character Select: frecce/D-pad cambiano card, `Invio`/joypad `A` assegna
-  il personaggio allo slot attivo, il pulsante `Start Zombie Survival`
-  conferma la run, `Esc`/joypad `B` torna al menu.
+- Character Select: frecce/D-pad/stick navigano la griglia in quattro
+  direzioni con wrapping solo su card valide, `Invio`/joypad `A` assegna il
+  personaggio allo slot attivo, `Start` joypad o `P` avvia la run quando tutti
+  gli slot attivi hanno una selezione valida, `Esc`/joypad `B` torna al menu.
 - Partita: joypad `Start` o `P` apre/chiude la pausa; `Esc` torna al menu principale arrestando la run.
 - Tastiera: `WASD` per movimento, frecce per mira, `Spazio` per sparare, `R` per ricaricare e `Q` per la super RPG.
 - Tastiera: `Shift`/`Ctrl` esegue dodge/roll, `M` apre o chiude la mappa dei territori esplorati.
@@ -231,7 +232,8 @@ Completato:
 - fallback automatico quando una speciale esaurisce caricatore e riserva;
 - proiettili con collisione e danno tramite `HealthSystem`;
 - bersagli statici con vita nella scena principale;
-- HUD per-player con vita e munizioni;
+- HUD per-player con vita e reload sopra il survivor e statistiche slot negli
+  angoli schermo;
 - nemico base melee con stati idle, chase, attack e dead;
 - targeting del player vivo piu vicino e retarget su join/leave;
 - spawn e registro nemici tramite `EnemySystem`;
@@ -248,7 +250,8 @@ Completato:
   reload e `attack_type` distinti;
 - hitbox arma configurabili e separate dal visual, con projectile per ranged e
   hitbox temporanee melee per ascia/spada/artigli;
-- pips ammo e barra reload nel player HUD per le armi RPG;
+- pips ammo nelle schede angolo e barra reload compatta sopra il player per le
+  armi RPG;
 - XP RPG assegnata al killer e a fine ondata senza pickup XP dagli zombie;
 - passive automatiche RPG per Ranger, Pistoliere, Berserker e Spadaccino con stato visibile nell'HUD;
 - adrenalina RPG da combat e fine ondata, con super attivabile a 100 per ogni classe;
@@ -292,7 +295,7 @@ Completato:
 - intermissione e ricompense party tra le ondate;
 - ammo director survival con soglia anti-frustrazione e cooldown configurabili;
 - supply crate con drop ammo/vita e fonte garantita nelle boss wave;
-- HUD con ondata, nemici rimasti, countdown e ultima ricompensa;
+- annunci temporanei per ondata, reward e boss senza riquadro status persistente;
 - boss reale ogni cinque ondate, integrato nel conteggio e nel completamento della wave;
 - sconfitta survival quando tutti i player attivi sono morti;
 - boss `Wave Warden` nella quinta ondata con due fasi;

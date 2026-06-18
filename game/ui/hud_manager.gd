@@ -11,7 +11,7 @@ var boss_health_fill_style: StyleBoxFlat
 var boss_warning_label: Label
 var combat_announcement: CombatAnnouncement
 var exploration_map_panel: ExplorationMapPanel
-var player_cards_container: HBoxContainer
+var player_cards_container: Control
 var player_cards: Dictionary = {}
 var pickup_feedback_text: String = ""
 var pickup_feedback_timer: float = 0.0
@@ -26,6 +26,9 @@ const SLOT_COLORS: Array[Color] = [
 	Color(0.52, 0.86, 0.32, 1.0),
 	Color(0.94, 0.78, 0.28, 1.0)
 ]
+const PLAYER_CARD_SIZE: Vector2 = Vector2(276.0, 162.0)
+const PLAYER_CARD_MARGIN: Vector2 = Vector2(18.0, 16.0)
+const STATUS_PANEL_WIDTH: float = 340.0
 
 func _ready() -> void:
 	add_to_group("hud_manager")
@@ -83,8 +86,7 @@ func apply_visual_settings(settings: Dictionary) -> void:
 func _create_status_hud() -> void:
 	status_panel = PanelContainer.new()
 	status_panel.name = "StatusPanel"
-	status_panel.position = Vector2(16.0, 16.0)
-	status_panel.custom_minimum_size = Vector2(368.0, 0.0)
+	status_panel.custom_minimum_size = Vector2(STATUS_PANEL_WIDTH, 0.0)
 	status_panel_style = StyleBoxFlat.new()
 	status_panel_style.bg_color = Color(0.02, 0.032, 0.04, 0.90)
 	status_panel_style.border_color = Color(0.36, 0.48, 0.50, 0.78)
@@ -102,9 +104,12 @@ func _create_status_hud() -> void:
 
 	status_label = Label.new()
 	status_label.name = "StatusLabel"
+	status_label.custom_minimum_size = Vector2(STATUS_PANEL_WIDTH - 28.0, 0.0)
+	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	status_label.add_theme_font_size_override("font_size", 16)
 	status_label.modulate = Color(0.90, 0.96, 1.0, 1.0)
 	status_panel.add_child(status_label)
+	status_panel.hide()
 
 func _process(delta: float) -> void:
 	pickup_feedback_timer = maxf(pickup_feedback_timer - delta, 0.0)
@@ -140,57 +145,33 @@ func _refresh() -> void:
 		return
 
 	var players := get_tree().get_nodes_in_group("players")
-	var active_slots := _get_active_slots(players)
 	_refresh_player_cards(players)
-	var progression = get_tree().get_first_node_in_group("progression_manager")
-	var level := 1
-	var experience := 0
-	var money := 0
-	if progression != null:
-		level = progression.level
-		experience = progression.experience
-		money = progression.money
-
-	status_label.text = "%s\nPlayers: %d/4  Slots: %s\nParty Lv %d  XP %d  Money %d" % [
-		_get_mode_title(),
-		active_slots.size(),
-		_format_slots(active_slots),
-		level,
-		experience,
-		money
-	]
+	var status_parts := PackedStringArray()
 	var biome_status := _format_biome_status()
 	if not biome_status.is_empty():
-		status_label.text += "\n" + biome_status
+		status_parts.append(biome_status)
 	var mode_status := _format_mode_status()
 	if not mode_status.is_empty():
-		status_label.text += "\n" + mode_status
+		status_parts.append(mode_status)
 	if not pickup_feedback_text.is_empty():
-		status_label.text += "\n" + pickup_feedback_text
+		status_parts.append(pickup_feedback_text)
+	status_label.text = "\n".join(status_parts)
+	if status_panel != null:
+		status_panel.hide()
 	_refresh_boss_hud()
 
 func _create_player_hud() -> void:
-	var margin := MarginContainer.new()
-	margin.name = "PlayerCardsMargin"
-	margin.anchor_left = 0.0
-	margin.anchor_top = 1.0
-	margin.anchor_right = 1.0
-	margin.anchor_bottom = 1.0
-	margin.offset_left = 18.0
-	margin.offset_top = -204.0
-	margin.offset_right = -18.0
-	margin.offset_bottom = -16.0
-	add_child(margin)
-
-	player_cards_container = HBoxContainer.new()
+	player_cards_container = Control.new()
 	player_cards_container.name = "PlayerCards"
-	player_cards_container.alignment = BoxContainer.ALIGNMENT_CENTER
-	player_cards_container.add_theme_constant_override("separation", 12)
-	margin.add_child(player_cards_container)
+	player_cards_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	player_cards_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(player_cards_container)
 	for player_slot in range(1, 5):
 		var card := PlayerHudCard.new()
 		card.name = "Player%dCard" % player_slot
 		card.configure(player_slot, SLOT_COLORS[player_slot - 1])
+		card.custom_minimum_size = PLAYER_CARD_SIZE
+		_place_player_card(card, player_slot)
 		card.hide()
 		player_cards_container.add_child(card)
 		player_cards[player_slot] = card
@@ -200,52 +181,43 @@ func _refresh_player_cards(players: Array[Node]) -> void:
 		var card := player_cards.get(player_slot) as PlayerHudCard
 		if card == null:
 			continue
+		_place_player_card(card, player_slot)
 		card.refresh(_find_player_by_slot(players, player_slot))
+
+func _place_player_card(card: Control, player_slot: int) -> void:
+	if card == null:
+		return
+	card.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	var left := PLAYER_CARD_MARGIN.x
+	var top := PLAYER_CARD_MARGIN.y
+	match player_slot:
+		2:
+			left = -PLAYER_CARD_MARGIN.x - PLAYER_CARD_SIZE.x
+			card.anchor_left = 1.0
+			card.anchor_right = 1.0
+		3:
+			top = -PLAYER_CARD_MARGIN.y - PLAYER_CARD_SIZE.y
+			card.anchor_top = 1.0
+			card.anchor_bottom = 1.0
+		4:
+			left = -PLAYER_CARD_MARGIN.x - PLAYER_CARD_SIZE.x
+			top = -PLAYER_CARD_MARGIN.y - PLAYER_CARD_SIZE.y
+			card.anchor_left = 1.0
+			card.anchor_right = 1.0
+			card.anchor_top = 1.0
+			card.anchor_bottom = 1.0
+		_:
+			pass
+	card.offset_left = left
+	card.offset_top = top
+	card.offset_right = left + PLAYER_CARD_SIZE.x
+	card.offset_bottom = top + PLAYER_CARD_SIZE.y
 
 func _find_player_by_slot(players: Array[Node], player_slot: int) -> Node:
 	for player in players:
 		if int(player.get("player_slot")) == player_slot:
 			return player
 	return null
-
-func _get_active_slots(players: Array[Node]) -> Array:
-	var local_multiplayer = get_tree().get_first_node_in_group("local_multiplayer_manager")
-	if local_multiplayer != null and local_multiplayer.has_method("get_active_slots"):
-		return local_multiplayer.get_active_slots()
-
-	var slots: Array[int] = []
-	for player in players:
-		slots.append(int(player.get("player_slot")))
-	return slots
-
-func _format_slots(active_slots: Array) -> String:
-	var labels := PackedStringArray()
-	for player_slot in active_slots:
-		labels.append("P%d" % int(player_slot))
-	return " ".join(labels)
-
-func _format_combat_status(players: Array[Node]) -> String:
-	var lines := PackedStringArray()
-	for player in players:
-		var player_slot := int(player.get("player_slot"))
-		var health_component := player.get_node_or_null("HealthComponent")
-		var weapon_system := player.get_node_or_null("WeaponSystem")
-		var current_health := 0
-		var max_health := 0
-		var ammo_text := "-"
-		if health_component != null:
-			current_health = int(health_component.get("current_health"))
-			max_health = int(health_component.get("max_health"))
-		if weapon_system != null and weapon_system.has_method("get_ammo_text"):
-			ammo_text = weapon_system.get_ammo_text()
-		lines.append("P%d  HP %d/%d  Ammo %s" % [
-			player_slot,
-			current_health,
-			max_health,
-			ammo_text
-		])
-	lines.sort()
-	return "\n".join(lines)
 
 func _get_mode_title() -> String:
 	var game_mode_manager := get_tree().get_first_node_in_group("game_mode_manager") as GameModeManager
@@ -270,7 +242,12 @@ func _format_mode_status() -> String:
 			var dungeon_mode := get_tree().get_first_node_in_group("dungeon_mode") as DungeonMode
 			if dungeon_mode == null:
 				return "Dungeon idle"
-			return "%s  Seed %d\nMap %s" % [dungeon_mode.get_status_text(), dungeon_mode.run_seed, dungeon_mode.get_map_text()]
+			return "%s\n%s  Seed %d\nMap %s" % [
+				_get_mode_title(),
+				dungeon_mode.get_status_text(),
+				dungeon_mode.run_seed,
+				dungeon_mode.get_map_text()
+			]
 		if game_mode_manager.active_mode_id == GameConstants.MODE_TOWER_DEFENSE:
 			var tower_defense_mode := get_tree().get_first_node_in_group(
 				"tower_defense_mode"
@@ -278,41 +255,7 @@ func _format_mode_status() -> String:
 			if tower_defense_mode == null:
 				return "Defense idle"
 			return tower_defense_mode.get_status_text()
-	return _format_wave_status()
-
-func _format_wave_status() -> String:
-	var wave_manager := get_tree().get_first_node_in_group("wave_manager") as WaveManager
-	if wave_manager == null:
-		return ""
-
-	match wave_manager.state:
-		&"intermission":
-			return "Next Wave %d in %.1fs%s" % [
-				wave_manager.current_wave + 1,
-				wave_manager.get_intermission_time_left(),
-				_format_last_reward(wave_manager.last_reward)
-			]
-		&"spawning":
-			return "Wave %d%s  Spawning  Enemies %d/%d" % [
-				wave_manager.current_wave,
-				" BOSS" if wave_manager.current_wave_is_boss else "",
-				wave_manager.get_enemies_remaining(),
-				wave_manager.current_wave_enemy_total
-			]
-		&"combat":
-			return "Wave %d%s  Enemies %d/%d" % [
-				wave_manager.current_wave,
-				" BOSS" if wave_manager.current_wave_is_boss else "",
-				wave_manager.get_enemies_remaining(),
-				wave_manager.current_wave_enemy_total
-			]
-		&"reward":
-			return "Wave %d Complete%s" % [
-				wave_manager.current_wave,
-				_format_last_reward(wave_manager.last_reward)
-			]
-		_:
-			return "Survival idle"
+	return ""
 
 func _format_biome_status() -> String:
 	var game_mode_manager := get_tree().get_first_node_in_group(
@@ -390,16 +333,6 @@ func _status_icon_label(status_id: StringName) -> String:
 			return "FALL"
 		_:
 			return String(status_id).to_upper()
-
-func _format_last_reward(reward: Dictionary) -> String:
-	if reward.is_empty():
-		return ""
-	return "  Reward +%d$ +%d Ammo +%d HP +%d XP" % [
-		int(reward.get("money", 0)),
-		int(reward.get("ammo", 0)),
-		int(reward.get("health", 0)),
-		int(reward.get("experience", 0))
-	]
 
 func _create_boss_hud() -> void:
 	boss_panel = PanelContainer.new()
