@@ -11,8 +11,8 @@ func _run() -> void:
 	await process_frame
 	biome_manager.start_run({
 		"world_seed": 616161,
-		"biome_map_width": 5,
-		"biome_map_height": 5,
+		"biome_map_width": 3,
+		"biome_map_height": 3,
 		"extra_edge_chance": 0.35
 	})
 	var cells := biome_manager.get_generated_biome_map()

@@ -15,7 +15,7 @@ class_name BiomeDefinition
 @export var danger_summary: String = "Low environmental danger"
 @export var resource_summary: String = "Ammo and medical supplies"
 @export var enemy_summary: String = "Basic zombies"
-@export var biome_size: Vector2i = Vector2i(200, 200)
+@export var biome_size: Vector2i = BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE
 
 @export var terrain_tags: Array[StringName] = []
 @export var terrain_tile_ids: Array[StringName] = []
@@ -60,7 +60,7 @@ class_name BiomeDefinition
 
 func get_biome_size() -> Vector2i:
 	if biome_size.x <= 0 or biome_size.y <= 0:
-		return Vector2i(200, 200)
+		return BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE
 	return biome_size
 
 func resolve_enemy_id(

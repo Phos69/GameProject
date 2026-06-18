@@ -485,7 +485,7 @@ selezione dal menu. I profili attuali sono:
 Il revamp zombie e completo come prima versione giocabile:
 
 - a inizio run viene generata una megamappa globale seed-based con territori
-  `200x200`;
+  default `3x3` da `500x500`;
 - lo stesso seed ricrea biomi, confini, passaggi, strade, ostacoli, casse e
   fall zone;
 - ogni run parte dalla `Pianura Infetta`, il bioma iniziale semplice;
@@ -516,8 +516,9 @@ Identita dei biomi:
 - `Bioma Infuocato`: fiamme, lava, casse militari, runner ed esplosivi;
 - `Bioma Neve`: ghiaccio, neve alta, kit termici e zombie corazzati;
 - `Bioma Palude`: acqua profonda, fango, loot organico e zombie emergenti;
-- tutti i layout sono deterministici e mantengono diramazioni principali
-  diagonali, coerenti con la lettura isometrica del terreno;
+- tutti i layout sono deterministici e partono da void: il generatore scava
+  strade principali orizzontali/verticali larghe 10 celle, sentieri tematici
+  larghi 4 celle, passaggi fisici e blocchi interni;
 - ogni layout generato contiene strade, corridoi e ostacoli grandi che
   influenzano movimento e combattimento invece di restare solo decorazione;
 - case, cabine, laboratori, barriere, barili, relitti, tronchi, ponti e crate
@@ -526,7 +527,8 @@ Identita dei biomi:
 - i lati collegati tra biomi hanno muri o barriere tematiche con almeno un
   passaggio raggiungibile; i lati senza vicino diventano fall zone con visuale
   cliff/depth;
-- tutto il `200x200` viene classificato come walkable, obstacle, hazard, border, void o fall zone;
+- tutto il `500x500` viene classificato come walkable, obstacle, hazard, border,
+  void o fall zone;
 - casse e spawn vengono validati contro ostacoli e hazard.
 
 Zombie tematici:

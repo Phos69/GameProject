@@ -12,8 +12,8 @@ const REQUIRED_SECTIONS: Array[StringName] = [
 ]
 const GENERATED_WORLD_CONTEXT := {
 	"world_seed": 717171,
-	"biome_map_width": 5,
-	"biome_map_height": 5,
+	"biome_map_width": 3,
+	"biome_map_height": 3,
 	"preserve_biome_sequence": false
 }
 
@@ -72,7 +72,7 @@ func _run_generated_contract_coverage(manifest: IsometricEnvironmentManifest) ->
 	biome_manager.start_run(GENERATED_WORLD_CONTEXT)
 
 	var cells := biome_manager.get_generated_biome_map()
-	_expect(cells.size() == 25, "v7 contract smoke generates a 5x5 map")
+	_expect(cells.size() == 9, "v7 contract smoke generates a 3x3 map")
 	var generated_object_ids: Array[StringName] = []
 	var generated_terrain_tags: Array[StringName] = []
 	var generated_passage_types: Array[StringName] = []

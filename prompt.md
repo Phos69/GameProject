@@ -1,141 +1,165 @@
-Analizza lo stato attuale della repository GameProject con focus esclusivo sulla migrazione verso un’ambientazione completamente isometrica.
+Agisci in modalità GOAL sulla repository GameProject.
 
-Obiettivo:
-capire cosa ci siamo persi per strada nella migrazione grafica e strutturale verso biomi/mappe totalmente isometrici, soprattutto per quanto riguarda:
-- generazione dei biomi;
-- terrain isometrico;
-- oggetti ambientali;
-- ostacoli;
-- props;
-- bordi del bioma;
-- zone di caduta;
-- connessioni tra biomi;
-- coerenza visiva tra gameplay, mappa e navigazione;
-- sostituzione di asset non isometrici con equivalenti isometrici;
-- eventuali sistemi chiamati nel codice “genomi”, “biomi”, “biome generation”, “terrain generation”, “map generation” o simili.
+Obiettivo generale:
+riscrivere completamente la generazione isometrica di ogni bioma partendo da zero, senza limitarsi a correggere la situazione attuale. In questo momento solo alcune tiles centrali sono isometriche: voglio una generazione isometrica completa, coerente, leggibile e giocabile su tutto il chunk.
 
-Prima fase: audit completo
-1. Esplora la repo e individua tutti i file coinvolti in:
-   - generazione mappa/bioma;
-   - spawn oggetti/ostacoli/props;
+Prima di modificare codice:
+1. Analizza lo stato attuale della generazione biomi/mappe/tiles/ostacoli/collisioni/rendering.
+2. Trova i file responsabili di:
+   - generazione terrain/bioma/chunk;
    - rendering isometrico;
-   - tilemap/terrain;
-   - collisioni;
-   - pathfinding o navigazione;
+   - collisioni, pathfinding, ostacoli;
    - transizioni tra biomi;
-   - minimappa/mappa territori esplorati;
-   - asset loading;
-   - menu o debug relativi ai biomi.
+   - danno da caduta/void;
+   - asset grafici degli oggetti.
+3. Se esiste già una roadmap o audit isometrico, aggiornala. Altrimenti crea `isometric_biome_generation_rewrite_roadmap.md`.
+4. Lavora in modo incrementale: scegli il prossimo blocco non completato, implementalo davvero, testa, documenta cosa hai fatto e cosa resta.
 
-2. Ricostruisci lo stato attuale:
-   - cosa è già realmente isometrico;
-   - cosa è ancora top-down, placeholder, flat, non coerente o non convertito;
-   - quali oggetti sono ancora fuori stile;
-   - quali biomi sono incompleti;
-   - quali funzioni sembrano duplicate, abbandonate o parziali;
-   - quali TODO/commenti/roadmap esistenti sono rimasti non implementati.
+Specifiche della nuova generazione:
 
-3. Cerca esplicitamente regressioni o feature lasciate a metà rispetto agli obiettivi precedenti:
-   - bioma 200x200 completamente riempito da terreno calpestabile;
-   - sfondo non limitato solo al centro;
-   - ostacoli isometrici coerenti;
-   - case/strutture grandi che creano corridoi;
-   - muri sui lati confinanti;
-   - vuoto/caduta sui lati non confinanti;
-   - passaggi aperti tra biomi connessi;
-   - grafo dei biomi completamente connesso;
-   - megamappa persistente;
-   - mappa dei territori esplorati;
-   - zone dove si cade leggibili visivamente in isometrico;
-   - dodge/roll utile anche per saltare piccoli vuoti;
-   - coerenza fra collisioni e rappresentazione visiva.
+A. Chunk base
+- Il chunk/bioma base deve diventare 500x500 celle.
+- La generazione deve partire da un chunk completamente VOID, senza pavimento.
+- Il void non deve sembrare terreno nero/piatto: deve essere chiaramente un vuoto/fossa/caduta in visuale isometrica.
+- I bordi calpestabili vicino al void devono avere resa visiva evidente, con profondità, ombre e/o linee verticali che facciano capire che il giocatore può cadere.
+- Il void deve avere collisione/danno coerente: entrarci provoca caduta o danno da caduta, non deve essere attraversabile come pavimento.
 
-Seconda fase: output richiesto
-Crea o aggiorna un file:
+B. Pareti perimetrali
+- Genera pareti verticali isometriche tutto intorno al chunk.
+- Le pareti devono essere alte, leggibili e coerenti con la prospettiva isometrica.
+- Dove esistono connessioni verso altri biomi, il perimetro deve aprirsi in varchi/strade, non in portali placeholder.
+- Evita portali trigger o caricamenti visibili: la transizione deve essere rappresentata da passaggi fisici coerenti con la mappa.
 
-docs/isometric_generation_audit_roadmap.md
+C. Strade e sentieri
+- Dopo il void e le pareti, genera la rete di attraversamento.
+- I sentieri devono avere larghezza 4 celle.
+- Le strade principali devono avere larghezza 10 celle.
+- Le strade devono diramarsi orizzontalmente e verticalmente, creando una rete leggibile.
+- Alcune strade possono portare ad altri biomi tramite aperture sui bordi.
+- La rete deve essere connessa: il giocatore deve poter attraversare il bioma senza rimanere bloccato.
+- Strade e sentieri devono essere isometrici su tutta la loro estensione, non solo nella zona centrale.
+- Le tiles del terreno devono avere varianti grafiche coerenti per bioma, con bordi, angoli, raccordi, transizioni e dettagli.
 
-Il file deve contenere:
+D. Blocchi interni tra le strade
+- Le strade devono creare blocchi/quartieri/slot quadrati o rettangolari all’interno del chunk.
+- Ogni blocco interno deve essere classificato proceduralmente, per esempio:
+  - edificio/casa/gruppo di case;
+  - bosco/alberi grandi;
+  - rovine/rocce;
+  - piazza/spazio aperto;
+  - ostacoli grandi;
+  - area parzialmente void;
+  - area completamente void.
+- Gli oggetti grandi devono occupare chiaramente slot isometrici e avere collisioni coerenti.
+- Case, alberi, rocce, rovine o altri ostacoli grandi NON devono essere placeholder. Devono avere grafica finita, leggibile, con volume isometrico, ombre e proporzioni coerenti.
+- Gli spazi aperti devono comunque avere resa grafica finita, non un rettangolo vuoto.
+- Alcuni slot possono restare void, ma il void deve essere visivamente chiaro e giocabile/collidibile correttamente.
 
-1. Stato attuale sintetico
-   - elenco dei sistemi già presenti;
-   - file principali coinvolti;
-   - cosa funziona;
-   - cosa è incompleto.
+E. Oggetti piccoli e decorazioni
+- Dopo aver generato struttura, strade e blocchi grandi, completa il bioma con oggetti piccoli:
+  - cespugli;
+  - fences/staccionate;
+  - pietre;
+  - tronchi;
+  - casse;
+  - lampioni/segni/props coerenti con il bioma;
+  - piccoli dettagli ambientali.
+- Gli oggetti piccoli devono rispettare:
+  - griglia isometrica;
+  - layer corretto;
+  - collisione se necessario;
+  - occlusione/profondità;
+  - coerenza con il bioma.
+- Non usare rettangoli colorati, icone provvisorie, sprite mancanti o placeholder evidenti.
 
-2. Gap analysis
-   Dividi i problemi in aree:
-   - Terrain e tile isometrici;
-   - Oggetti ambientali e props;
-   - Ostacoli e collisioni;
-   - Biomi e generazione procedurale;
-   - Bordi, muri, vuoto e caduta;
-   - Connessioni tra biomi;
-   - Megamappa persistente;
-   - Mappa esplorata/UI;
-   - Asset e art direction;
-   - Debug tooling;
-   - Performance e compatibilità.
+F. Asset grafici
+- Dai particolare cura agli asset.
+- Ogni asset deve essere “finito” per quanto possibile nel codice/progetto attuale.
+- Se il progetto usa asset sprite, crea o sostituisci gli asset necessari.
+- Se il progetto usa rendering procedurale/canvas/shapes, costruisci oggetti isometrici composti da forme, ombre, dettagli, tetti, pareti, bordi e profondità.
+- Ogni bioma deve avere un set visivo riconoscibile:
+  - tile base;
+  - varianti terreno;
+  - strada/sentiero;
+  - bordo void;
+  - pareti;
+  - ostacoli grandi;
+  - oggetti piccoli.
+- Rimuovi o sostituisci ogni placeholder grafico collegato alla generazione bioma.
 
-3. Lista dei punti persi per strada
-   Per ogni punto indica:
-   - descrizione;
-   - file coinvolti;
-   - stato: mancante / parziale / rotto / placeholder;
-   - impatto sul gameplay;
-   - dipendenze tecniche;
-   - priorità: P0, P1, P2.
+G. Biomi
+- Applica il nuovo sistema a ogni bioma esistente, non solo al bioma iniziale.
+- Ogni bioma deve condividere la stessa logica strutturale, ma avere identità visiva diversa.
+- Le tiles base o le loro varianti devono essere persistenti e coerenti su tutto il bioma.
+- Gli ostacoli grandi devono cambiare in base al bioma.
+- Gli oggetti piccoli devono essere tematici.
+- Le strade/sentieri devono collegare correttamente eventuali biomi confinanti.
 
-4. Roadmap organica in milestone
-   La roadmap deve essere realistica, iterativa e adatta a essere eseguita in modalità goal.
-   Usa questa struttura:
+H. Gameplay e integrazione
+- Mantieni compatibilità con player, zombie, collisioni, spawn, pathfinding e minimappa se presenti.
+- Gli zombie devono poter inseguire il giocatore attraverso strade e passaggi.
+- Non introdurre passaggi che bloccano il pathfinding senza motivo.
+- Il giocatore non deve spawnare nel void o dentro ostacoli.
+- I nemici non devono spawnare nel void o dentro ostacoli.
+- Le aree calpestabili devono essere distinguibili dalle aree pericolose.
+- La generazione deve essere deterministica rispetto al seed, se il progetto ha già un seed o se lo introduci.
 
-   Milestone 1 — Audit tecnico e pulizia nomenclatura
-   Milestone 2 — Base terrain isometrico 200x200
-   Milestone 3 — Oggetti e ostacoli isometrici
-   Milestone 4 — Collisioni coerenti con props e strutture
-   Milestone 5 — Bordi del bioma, muri, vuoto e caduta
-   Milestone 6 — Connessioni aperte tra biomi
-   Milestone 7 — Grafo biomi completamente connesso
-   Milestone 8 — Megamappa persistente
-   Milestone 9 — Mappa territori esplorati
-   Milestone 10 — Polish grafico e sostituzione placeholder
-   Milestone 11 — Test, debug overlay e regressioni
+Modalità iterativa:
+A ogni esecuzione di questo prompt:
+1. Leggi `isometric_biome_generation_rewrite_roadmap.md`, se esiste.
+2. Identifica il prossimo step non completato più importante.
+3. Implementa un incremento concreto e funzionante.
+4. Non limitarti a scrivere TODO o stub.
+5. Non lasciare placeholder grafici.
+6. Aggiorna la roadmap marcando cosa è stato completato.
+7. Aggiungi note tecniche su file modificati, decisioni prese e problemi rimasti.
+8. Esegui test/build/lint disponibili.
+9. Se non esistono test adeguati, aggiungi almeno test o debug utility minime per verificare:
+   - dimensione chunk 500x500;
+   - presenza void iniziale;
+   - generazione pareti perimetrali;
+   - larghezza sentieri 4;
+   - larghezza strade 10;
+   - connettività delle strade;
+   - collisioni di void e ostacoli;
+   - assenza di spawn invalidi;
+   - rendering/layering degli oggetti isometrici.
 
-5. Per ogni milestone includi:
-   - obiettivo;
-   - modifiche tecniche;
-   - file probabili da modificare;
-   - criteri di accettazione verificabili;
-   - test manuali;
-   - rischi;
-   - sotto-task ordinati.
+Priorità consigliata dei passaggi:
+1. Audit e roadmap della generazione attuale.
+2. Nuovo modello dati per chunk 500x500, celle void, celle calpestabili, pareti, strade, sentieri, blocchi interni e props.
+3. Generazione chunk completamente void.
+4. Pareti verticali perimetrali e aperture verso biomi confinanti.
+5. Generatore di strade principali larghe 10.
+6. Generatore di sentieri larghi 4.
+7. Segmentazione dei blocchi interni creati dalle strade.
+8. Riempimento blocchi con ostacoli grandi, spazi aperti o void.
+9. Collisioni e danno da caduta per il void.
+10. Asset isometrici finiti per terreno, strade, pareti e void.
+11. Asset isometrici finiti per case/alberi/rocce/ostacoli grandi.
+12. Oggetti piccoli: cespugli, fences, pietre, props.
+13. Applicazione del sistema a tutti i biomi.
+14. Integrazione con spawn, zombie, pathfinding e transizioni.
+15. Pulizia finale di placeholder, vecchio codice non usato e debug temporaneo.
 
-6. Crea anche una sezione finale:
-   “Prompt iterativo per continuare la roadmap”
-   con un prompt breve che posso copiare più volte per farti implementare la milestone successiva senza perdere il contesto.
+Definition of Done:
+- Il bioma è 500x500.
+- Non esiste più una sola area centrale isometrica: tutta la generazione è isometrica.
+- Il chunk parte concettualmente da void e viene poi scavato/riempito da strade, sentieri, blocchi e oggetti.
+- Le strade sono larghe 10 celle.
+- I sentieri sono larghi 4 celle.
+- Le pareti perimetrali sono visibili e isometriche.
+- Il void è visivamente chiaro e causa caduta/danno.
+- I blocchi interni sono riempiti con oggetti grandi, spazi aperti o void.
+- Gli oggetti grandi hanno grafica finita, collisioni e occupazione isometrica evidente.
+- Gli oggetti piccoli arricchiscono il bioma senza rompere pathfinding o leggibilità.
+- Tutti i biomi esistenti usano il nuovo sistema.
+- Non restano placeholder evidenti nella generazione biomi.
+- Build/test passano oppure viene documentato esattamente cosa fallisce e perché.
 
-Terza fase: implementazione minima
-Dopo aver creato la roadmap:
-- non implementare ancora grossi refactor;
-- fai solo eventuali modifiche leggere se servono a rendere la roadmap tracciabile, per esempio:
-  - aggiungere TODO tecnici nei file corretti;
-  - aggiungere riferimenti nel README o nel TODO principale;
-  - creare cartelle docs se mancanti;
-  - collegare la nuova roadmap ai documenti esistenti.
-
-Vincoli:
-- Non cancellare sistemi esistenti senza motivo.
-- Non rompere le modalità già funzionanti.
-- Non introdurre asset pesanti o generati casualmente se non necessari.
-- Non limitarti a una roadmap generica: deve essere basata sui file reali della repo.
-- Ogni affermazione sulla roadmap deve derivare da codice o asset effettivamente trovati.
-- Se trovi termini ambigui come “genomi” verifica se nel codice esistono davvero o se probabilmente indicano “biomi/generazione”.
-- Alla fine esegui i test disponibili o almeno indica chiaramente quali non sono eseguibili e perché.
-
-Output finale nella risposta:
-1. riepilogo breve dell’audit;
-2. file creato/modificato;
-3. prime 3 priorità consigliate;
-4. comando/test eseguiti;
-5. prossimo prompt da lanciare in modalità goal.
+Alla fine della tua esecuzione, rispondi con:
+- cosa hai implementato;
+- file modificati;
+- test eseguiti;
+- cosa resta da fare nel prossimo ciclo;
+- eventuale prompt breve consigliato per continuare.

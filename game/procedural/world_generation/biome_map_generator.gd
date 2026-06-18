@@ -3,9 +3,9 @@ class_name BiomeMapGenerator
 
 signal biome_map_generated(cells: Array[BiomeCell])
 
-@export_range(1, 12, 1) var map_width: int = 5
-@export_range(1, 12, 1) var map_height: int = 5
-@export var cell_size: Vector2i = Vector2i(200, 200)
+@export_range(1, 12, 1) var map_width: int = 3
+@export_range(1, 12, 1) var map_height: int = 3
+@export var cell_size: Vector2i = BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE
 @export_range(0.0, 1.0, 0.05) var extra_edge_chance: float = 0.38
 @export var starting_biome_id: StringName = &"infected_plains"
 @export var default_biome_order: Array[StringName] = [
@@ -31,6 +31,7 @@ func generate_map(
 ) -> Array[BiomeCell]:
 	var width := maxi(int(context.get("biome_map_width", map_width)), 1)
 	var height := maxi(int(context.get("biome_map_height", map_height)), 1)
+	var resolved_cell_size := _resolve_cell_size(context)
 	var preserve_sequence := bool(context.get(
 		"preserve_biome_sequence",
 		not _context_has_explicit_seed(context)
@@ -56,7 +57,7 @@ func generate_map(
 				StringName("biome_%d_%d" % [x, y]),
 				biome_id,
 				Vector2i(x, y),
-				cell_size,
+				resolved_cell_size,
 				_derive_cell_seed(seed_value, x, y, biome_id)
 			)
 			cells.append(cell)
@@ -312,3 +313,26 @@ func _context_has_explicit_seed(context: Dictionary) -> bool:
 		or context.has("global_seed")
 		or context.has("seed")
 	)
+
+func _resolve_cell_size(context: Dictionary) -> Vector2i:
+	var raw_size: Variant = context.get("biome_cell_size", cell_size)
+	if raw_size is Vector2i:
+		return _valid_cell_size(raw_size as Vector2i)
+	if raw_size is Vector2:
+		var vector := raw_size as Vector2
+		return _valid_cell_size(Vector2i(roundi(vector.x), roundi(vector.y)))
+	if raw_size is Array:
+		var values := raw_size as Array
+		if values.size() >= 2:
+			return _valid_cell_size(Vector2i(int(values[0]), int(values[1])))
+	if context.has("biome_cell_width") or context.has("biome_cell_height"):
+		return _valid_cell_size(Vector2i(
+			int(context.get("biome_cell_width", cell_size.x)),
+			int(context.get("biome_cell_height", cell_size.y))
+		))
+	return _valid_cell_size(cell_size)
+
+func _valid_cell_size(value: Vector2i) -> Vector2i:
+	if value.x <= 0 or value.y <= 0:
+		return BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE
+	return value

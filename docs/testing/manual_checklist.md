@@ -643,18 +643,18 @@ godot --headless --path . --script res://tests/dungeon_smoke_test.gd
 godot --headless --path . --script res://tests/tower_defense_smoke_test.gd
 ```
 
-## Regressione ISO-001 Milestone 2 - terrain isometrico 200x200
+## Regressione ISO-001 Milestone 2 - terrain isometrico 500x500
 
 QA visuale da eseguire con seed fisso a `1280x720` e `960x540`, in `default`
 e `high_contrast`.
 
-- Avviare survival con una megamappa `5x5` e attraversare almeno una regione
+- Avviare survival con una megamappa default `3x3` e attraversare almeno una regione
   per ciascuno dei cinque biomi.
 - Confermare che `main_road`, `road`, `broken_street`, `service_lane`,
   `ash_lane`, `packed_snow_path`, `wooden_walkway`, `bridge`, `snow_pass`,
   `broken_gate` e `burned_road` siano leggibili come strade, passaggi, ponti o
   cancelli, non come dirt generico.
-- Verificare che la base `200x200` resti continua e che passaggi e fall zone
+- Verificare che la base `500x500` resti continua e che passaggi e fall zone
   non si sovrappongano visivamente in modo confuso.
 - Attivare l'overlay debug e controllare che i conteggi terrain mostrino
   `walkable`, `obstacle`, `hazard`, `border`, `void` e `fall_zone`.
@@ -979,7 +979,7 @@ QA visuale e runtime da eseguire dopo modifiche a ground, manifest v7 o layout
 bioma.
 
 - Avviare survival con seed fisso e confermare che il terreno visibile copra
-  tutta la regione `200x200`, non solo il centro.
+  tutta la regione `500x500`, non solo il centro.
 - Visitare o forzare i cinque biomi (`infected_plains`, `toxic_wastes`,
   `burning_fields`, `frozen_outskirts`, `drowned_marsh`) e acquisire screenshot
   a 1280x720 e 960x540.
@@ -989,7 +989,7 @@ bioma.
   non appaiano piu come ovali `BiomeTerrainPatch` sopra il terreno.
 - Verificare cliff/fall boundary: il bordo vicino al terreno usa
   `void_edge_near`, il fuori-mappa/esterno resta `void_depth`.
-- Aprire il profiler o l'overlay debug e confermare assenza di 40.000 nodi
+- Aprire il profiler o l'overlay debug e confermare assenza di nodi per-tile
   tile: il ground deve essere un `BiomeTileLayer` chunked.
 
 ```text

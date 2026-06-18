@@ -303,8 +303,8 @@ Stato: completata come primo pass configurabile e misurabile.
 
 Attivita post-roadmap:
 
-- roadmap motore generazione mappe e biomi completata come primo pass: seed globale, mappa biomi `200x200`, confini, passaggi, fall zone, layout interni, validazione flood-fill e integrazione zombie;
-- roadmap megamappa persistente isometrica completata come primo pass: grafo seed-based connesso, territori `200x200`, passaggi fisici aperti, fall boundary sui lati esterni, terreno classificato su tutta la regione, mappa esplorazione persistente, dodge/roll e manifest asset isometrici;
+- roadmap motore generazione mappe e biomi completata come primo pass storico; il rewrite corrente usa seed globale, mappa biomi default `3x3`, chunk `500x500`, confini, passaggi, fall zone, layout interni, validazione flood-fill e integrazione zombie;
+- roadmap megamappa persistente isometrica completata come primo pass storico; il rewrite corrente mantiene grafo seed-based connesso, territori `500x500`, passaggi fisici aperti, fall boundary sui lati esterni, terreno classificato su tutta la regione, mappa esplorazione persistente, dodge/roll e manifest asset isometrici;
 - roadmap revamp modalita zombie completata fino alla Milestone Z12: cinque biomi attraversabili, spawn camera-edge, wave contestuali, layout, loot, hazard, zombie tematici, HUD e test di durata;
 - sistema ammo survival robusto con fallback infinita, pickup condivisi, supply crate e director anti-frustrazione completato;
 - visual gameplay pass della zombie survival completato;
@@ -422,6 +422,10 @@ Attivita post-roadmap:
   smoke su mappa `7x7` in preset `balanced` a `16,54 ms` medi, suite smoke
   asset/terrain/passaggi/oggetti/cliff/no-portal/streaming/chase/legacy verde e
   `ISO-001` spostato tra le reference completate.
+- Milestone R1 di `isometric_biome_generation_rewrite_roadmap.md` completata:
+  chunk bioma `500x500`, megamappa default `3x3`, base void con floor/strade/
+  blocchi scavati, strade principali larghe 10, sentieri larghi 4, passaggi
+  larghi 10, cache terrain, validazione void/spawn e smoke dedicato.
 - asset definitivi e ulteriori pass di bilanciamento;
 - firma digitale della build pubblica.
 
@@ -444,9 +448,9 @@ Stato: completata come prototipo data-driven.
 Stato: completata come prototipo integrato.
 
 - Aggiunto `game/world/` con `WorldGraph`, `WorldRegion`, `WorldRegionConnection`, `WorldExplorationState`, `PersistentWorldState` e `WorldRuntime`.
-- La survival genera una griglia `5x5` di territori `200x200` tramite seed, spanning tree e edge extra per avere connessione garantita e loop.
+- La survival genera una griglia default `3x3` di territori `500x500` tramite seed, spanning tree e edge extra per avere connessione garantita e loop.
 - I passaggi tra regioni confinanti sono aperture fisiche aperte e non teletrasporti; i lati senza regione vicina restano fall boundary validati.
-- Il layout di ogni territorio produce classificazione completa del `200x200` per walkable, obstacle, hazard, border, void e fall zone.
+- Il layout di ogni territorio produce classificazione completa del `500x500` per walkable, obstacle, hazard, border, void e fall zone.
 - Il save v6 conserva stato mondo/esplorazione e posizione di riferimento del party.
 - L'HUD espone una mappa consultabile con unknown/fog, discovered, visited, cleared e marker della regione corrente.
 - Aggiunto `PlayerDodgeComponent` con input tastiera/joypad, cooldown, invulnerabilita breve e validazione gap/landing.

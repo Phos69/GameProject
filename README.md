@@ -128,6 +128,7 @@ godot --headless --path . --script res://tests/milestone_10_tile_layer_smoke_tes
 godot --headless --path . --script res://tests/milestone_10_passage_tile_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_10_object_asset_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_10_void_cliff_asset_smoke_test.gd
+godot --headless --path . --script res://tests/isometric_biome_generation_rewrite_smoke_test.gd
 godot --headless --path . --script res://tests/isometric_biome_terrain_coverage_smoke_test.gd
 godot --headless --path . --script res://tests/fall_boundary_visual_logic_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_10_no_portal_transition_smoke_test.gd
@@ -256,9 +257,9 @@ Completato:
 - profili classe RPG data-driven tramite risorse `RpgCharacterData`;
 - feedback world-space e cue procedurali dedicati per level-up e super RPG;
 - revamp zombie completo con controller, biomi, wave director, spawner camera-edge, transizioni e sistemi ambientali modulari;
-- motore procedurale seed-based per mappa globale biomi, celle `200x200`, passaggi, fall boundary, layout interno e validazione pathfinding;
-- megamappa persistente seed-based con grafo connesso, regioni `200x200`, passaggi fisici aperti, stato esplorazione salvabile e mappa consultabile;
-- classificazione completa del terreno `200x200` come walkable, obstacle, hazard, border, void o fall zone;
+- motore procedurale seed-based per mappa globale biomi, celle `500x500`, passaggi, fall boundary, layout interno e validazione pathfinding;
+- megamappa persistente seed-based con grafo connesso, regioni default `3x3` da `500x500`, passaggi fisici aperti, stato esplorazione salvabile e mappa consultabile;
+- classificazione completa del terreno `500x500` come walkable, obstacle, hazard, border, void o fall zone;
 - dodge/roll per player con cooldown, invulnerabilita breve e validazione per
   piccoli gap/fall zone attraversabili, lasciando gli hazard ambientali
   bloccanti;
@@ -267,7 +268,7 @@ Completato:
   da sostituire con versioni isometriche coerenti;
 - tile layer asset-driven per ground, strade diagonali, road connector e
   passaggi: entry/exit, ponti, snow pass, broken gate e burned road sono
-  risolti come asset tile nel `200x200`, non come patch o frecce del gate;
+  risolti come asset tile nel `500x500`, non come patch o frecce del gate;
 - oggetti e ostacoli asset-backed tramite SVG trasparenti e silhouette
   isometriche dedicate per case, cabine, laboratori, recinti, muri, barili,
   relitti, tronchi, ponti e crate, senza asset esterni obbligatori e senza

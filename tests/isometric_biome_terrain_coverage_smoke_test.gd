@@ -23,12 +23,12 @@ func _run() -> void:
 	await process_frame
 	biome_manager.start_run({
 		"world_seed": 515151,
-		"biome_map_width": 5,
-		"biome_map_height": 5,
+		"biome_map_width": 3,
+		"biome_map_height": 3,
 		"preserve_biome_sequence": false
 	})
 	var cells := biome_manager.get_generated_biome_map()
-	_expect(cells.size() == 25, "megamap generates 25 regions")
+	_expect(cells.size() == 9, "megamap generates 9 large regions")
 	_run_generated_terrain_coverage(manifest, cells)
 	for cell in cells:
 		var layout := cell.generated_layout
@@ -36,13 +36,17 @@ func _run() -> void:
 		if layout == null:
 			continue
 		var report := layout.get_classification_report()
+		var expected_total := layout.zone_size.x * layout.zone_size.y
 		_expect(bool(report.get("is_complete", false)), "%s classifies every tile" % String(cell.id))
-		_expect(int(report.get("total", 0)) == 40000, "%s classification covers 200x200" % String(cell.id))
+		_expect(
+			int(report.get("total", 0)) == expected_total,
+			"%s classification covers the full 500x500 chunk" % String(cell.id)
+		)
 		var counts := report.get("counts", {}) as Dictionary
 		var sum := 0
 		for value in counts.values():
 			sum += int(value)
-		_expect(sum == 40000, "%s classification counts sum to 40000" % String(cell.id))
+		_expect(sum == expected_total, "%s classification counts sum to the chunk size" % String(cell.id))
 		_expect(int(counts.get(BiomeEnvironmentLayout.TERRAIN_WALKABLE, 0)) > 0, "%s has walkable terrain" % String(cell.id))
 		for passage in cell.passages:
 			var probe := _passage_probe_cell(passage, layout.zone_size)

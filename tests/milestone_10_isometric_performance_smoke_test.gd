@@ -65,19 +65,19 @@ func _run() -> void:
 	_expect(
 		game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL, {
 			"world_seed": WORLD_SEED,
-			"biome_map_width": 7,
-			"biome_map_height": 7,
+			"biome_map_width": 3,
+			"biome_map_height": 3,
 			"extra_edge_chance": 0.5
 		}),
-		"survival starts with a 7x7 isometric world"
+		"survival starts with a 3x3 isometric world"
 	)
 	await process_frame
 	await physics_frame
 	await process_frame
 
 	_expect(
-		biome_manager.get_generated_biome_map().size() == 49,
-		"7x7 biome map is generated"
+		biome_manager.get_generated_biome_map().size() == 9,
+		"3x3 biome map is generated"
 	)
 	var streamed_ids: Array[StringName] = streamer.get_streamed_region_ids()
 	_expect(
@@ -90,9 +90,15 @@ func _run() -> void:
 			"%s is streamed as FULL gameplay content" % String(region_id)
 		)
 		var counts: Dictionary = streamer.get_region_content_counts(region_id)
+		var region := biome_manager.get_world_graph().get_region(region_id)
+		var expected_tiles := (
+			region.size_tiles.x * region.size_tiles.y
+			if region != null
+			else BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE.x * BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE.y
+		)
 		_expect(
-			int(counts.get("tiles", 0)) == 40000,
-			"%s has the full 200x200 tile layer" % String(region_id)
+			int(counts.get("tiles", 0)) == expected_tiles,
+			"%s has the full 500x500 tile layer" % String(region_id)
 		)
 
 	var tile_layers := get_nodes_in_group("biome_tile_layers")
@@ -109,7 +115,9 @@ func _run() -> void:
 			"tile layer uses the balanced preset"
 		)
 		_expect(
-			tile_layer.get_visual_tile_count() == 40000,
+			tile_layer.get_visual_tile_count() == (
+				tile_layer.layout.zone_size.x * tile_layer.layout.zone_size.y
+			),
 			"tile layer caches every cell without per-tile nodes"
 		)
 		_expect(
@@ -154,7 +162,7 @@ func _run() -> void:
 	var profile_elapsed_usec := Time.get_ticks_usec() - profile_start
 	var average_frame_msec := float(profile_elapsed_usec) / 1000.0 / 120.0
 	print(
-		"MILESTONE_10_ISOMETRIC_PROFILE: 7x7 world, %d streamed regions, %d enemies, avg %.2f ms"
+		"MILESTONE_10_ISOMETRIC_PROFILE: 3x3 world, %d streamed regions, %d enemies, avg %.2f ms"
 		% [streamed_ids.size(), spawned_enemies.size(), average_frame_msec]
 	)
 	_expect(

@@ -12,8 +12,8 @@ func _run() -> void:
 
 	var context := {
 		"world_seed": 120120,
-		"biome_map_width": 5,
-		"biome_map_height": 5,
+		"biome_map_width": 3,
+		"biome_map_height": 3,
 		"preserve_biome_sequence": false,
 		"extra_edge_chance": 0.42
 	}
@@ -23,8 +23,11 @@ func _run() -> void:
 	if graph == null:
 		_finish()
 		return
-	_expect(graph.regions.size() == 25, "graph contains 25 persistent regions")
-	_expect(graph.region_size == Vector2i(200, 200), "regions are 200x200")
+	_expect(graph.regions.size() == 9, "graph contains 9 persistent regions")
+	_expect(
+		graph.region_size == BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE,
+		"regions are 500x500"
+	)
 	_expect(graph.start_region_id == &"biome_0_0", "start region is stable at grid origin")
 	_expect(graph.is_graph_connected(), "graph is fully connected")
 	_expect(graph.get_unreachable_region_ids().is_empty(), "no isolated regions exist")

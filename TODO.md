@@ -35,6 +35,28 @@ revisione manuale, baseline e consolidamento TODO.
 
 ## Backlog aperto prioritizzato
 
+### ISO-RW-001 - Pareti perimetrali e void edge del rewrite 500x500
+
+- Obiettivo: completare il prossimo ciclo del rewrite isometrico sostituendo i
+  segmenti perimetrali rettangolari con pareti verticali isometriche
+  asset-driven e rendendo bordo void/cliff/depth leggibile su ogni lato.
+- Milestone collegata: `isometric_biome_generation_rewrite_roadmap.md`
+  Milestone R2.
+- File/sistemi coinvolti: `game/procedural/world_generation/`,
+  `game/modes/zombie/biome_environment_layout.gd`,
+  `game/modes/zombie/isometric_tile_resolver.gd`,
+  `assets/environment/isometric/manifest.json`,
+  `game/modes/zombie/biome_fall_zone.gd`, `tests/`.
+- Criterio di accettazione: ogni lato non fall ha pareti alte e leggibili, i
+  passaggi tagliano fisicamente le pareti senza portali, ogni lato fall mostra
+  bordo/profondita e danno coerente, e il chunk resta `500x500` con strade 10 e
+  sentieri 4.
+- Test richiesto: estensione
+  `tests/isometric_biome_generation_rewrite_smoke_test.gd`, regressione
+  `tests/fall_boundary_visual_logic_smoke_test.gd`,
+  `tests/milestone_10_passage_tile_smoke_test.gd` e
+  `tests/milestone_10_void_cliff_asset_smoke_test.gd`.
+
 ### UIUX-001 - UI, HUD, audio e polish UX trasversale
 
 - Obiettivo: rifinire menu, HUD, Character Select, status, mappa, boss, feedback

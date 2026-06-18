@@ -21,8 +21,8 @@ var _asset_path_cache: Dictionary = {}
 var _missing_asset_count: int = 0
 # The whole static ground is baked once into a single mesh (one draw call) plus a
 # single grid multiline, instead of issuing one draw command per cell every
-# frame. Godot re-walks a canvas item's full command list each frame, so ~40k
-# per-tile polygons were the dominant constant frame cost on gl_compatibility.
+# frame. Godot re-walks a canvas item's full command list each frame, so
+# per-tile draw commands were the dominant constant frame cost on gl_compatibility.
 var _ground_mesh: ArrayMesh
 var _grid_points: PackedVector2Array = PackedVector2Array()
 
@@ -112,7 +112,7 @@ func has_visual_tile_for_cell(cell: Vector2i) -> bool:
 func _draw() -> void:
 	# The ground is pre-baked in _rebuild_ground_geometry(): a single mesh for the
 	# filled diamonds (vertex-coloured) and a single multiline for the grid. Two
-	# draw commands total, independent of the 200x200 tile count.
+	# draw commands total, independent of the logical tile count.
 	if _ground_mesh != null:
 		draw_mesh(_ground_mesh, null)
 	if _grid_points.size() >= 2:

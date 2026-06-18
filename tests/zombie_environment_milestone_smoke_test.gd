@@ -98,7 +98,10 @@ func _run() -> void:
 	var tile_layer := terrain_generator.get_active_tile_layer()
 	_expect(tile_layer != null, "terrain generator creates the asset tile layer")
 	if tile_layer != null:
-		_expect(tile_layer.get_visual_tile_count() == 40000, "asset tile layer covers the full 200x200 layout")
+		_expect(
+			tile_layer.get_visual_tile_count() == layout.zone_size.x * layout.zone_size.y,
+			"asset tile layer covers the full generated layout"
+		)
 		_expect(tile_layer.get_missing_asset_count() == 0, "asset tile layer has no missing visual cells")
 	_expect(
 		terrain_generator.get_generated_patches().is_empty(),

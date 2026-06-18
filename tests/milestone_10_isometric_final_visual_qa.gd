@@ -55,8 +55,8 @@ func _run() -> void:
 	_expect(
 		game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL, {
 			"world_seed": WORLD_SEED,
-			"biome_map_width": 5,
-			"biome_map_height": 5,
+			"biome_map_width": 3,
+			"biome_map_height": 3,
 			"extra_edge_chance": 0.5
 		}),
 		"survival starts for final isometric QA"

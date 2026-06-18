@@ -2,8 +2,8 @@ extends SceneTree
 
 const WORLD_CONTEXT := {
 	"world_seed": 641004,
-	"biome_map_width": 5,
-	"biome_map_height": 5,
+	"biome_map_width": 3,
+	"biome_map_height": 3,
 	"preserve_biome_sequence": false,
 	"extra_edge_chance": 0.42
 }
@@ -69,7 +69,7 @@ func _run() -> void:
 	biome_manager.start_run(WORLD_CONTEXT)
 
 	var cells := biome_manager.get_generated_biome_map()
-	_expect(cells.size() == 25, "passage tile smoke generates a 5x5 biome map")
+	_expect(cells.size() == 9, "passage tile smoke generates a 3x3 biome map")
 	var graph := biome_manager.get_world_graph()
 	_expect(graph != null, "passage tile smoke generates a world graph")
 	if graph != null:

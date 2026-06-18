@@ -166,8 +166,8 @@ func _run_layout_side_metadata() -> void:
 	await process_frame
 	biome_manager.start_run({
 		"world_seed": 106106,
-		"biome_map_width": 5,
-		"biome_map_height": 5,
+		"biome_map_width": 3,
+		"biome_map_height": 3,
 		"extra_edge_chance": 0.35
 	})
 	var cells := biome_manager.get_generated_biome_map()
@@ -203,8 +203,8 @@ func _run_hazard_system_runtime() -> void:
 	await process_frame
 	biome_manager.start_run({
 		"world_seed": 106206,
-		"biome_map_width": 5,
-		"biome_map_height": 5,
+		"biome_map_width": 3,
+		"biome_map_height": 3,
 		"extra_edge_chance": 0.35
 	})
 	var target_cell := _first_cell_with_fall_zone(

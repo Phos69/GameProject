@@ -112,7 +112,7 @@ assi isometrici; i rettangoli restano per aperture e compatibilita. La variante
 floor deriva da seed, cella e bioma.
 
 `game/modes/zombie/biome_tile_layer.gd` e il ground primario asset-driven per
-`TerrainGenerator`: cache-a tutte le 40.000 celle della regione `200x200`, le
+`TerrainGenerator`: cache-a tutte le 250.000 celle della regione `500x500`, le
 divide in chunk e usa il manifest v7 come contratto per gli asset. I vecchi
 `BiomeRegionGround` e `BiomeTerrainPatch` restano fallback tecnici solo quando
 la modalita asset viene disattivata.

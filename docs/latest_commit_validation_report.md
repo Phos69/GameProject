@@ -1,5 +1,25 @@
 # Latest Commit Validation Report
 
+## Isometric biome generation rewrite R1 - 2026-06-18
+- Branch: `feat/iso-milestone-10-complete`
+- Scope validato: primo incremento del rewrite richiesto da `prompt.md`:
+  chunk `500x500`, megamappa default `3x3`, base void con floor/strade/blocchi
+  scavati, strade principali larghe 10, sentieri larghi 4, passaggi larghi 10,
+  cache terrain e validazione spawn/crate su celle walkable.
+- Esito: PASS sui test mirati eseguiti. Nota performance: il tile layer da
+  250.000 celle passa ma resta sensibilmente piu pesante del precedente
+  `200x200`; ottimizzazione/profiling ulteriore resta parte del prossimo ciclo.
+
+| Test | Esito | Note |
+|---|---|---|
+| `tests/isometric_biome_generation_rewrite_smoke_test.gd` | PASS | copre `500x500`, strade 10, sentieri 4, blocchi, void/fall zone e passaggi |
+| `tests/biome_world_generation_smoke_test.gd` | PASS | generazione default `3x3`, streaming e transizione legacy/debug |
+| `tests/isometric_biome_terrain_coverage_smoke_test.gd` | PASS | classificazione completa `500x500` e passaggi walkable |
+| `tests/milestone_10_tile_layer_smoke_test.gd` | PASS | 250.000 celle asset-backed per regione, chunk/cache |
+| `tests/world_graph_connectivity_smoke_test.gd` | PASS | grafo `3x3` connesso e regioni `500x500` |
+| `tests/milestone_7_graph_connectivity_smoke_test.gd` | PASS | 100 seed con grafo `3x3`, overlay e fog |
+| `tests/milestone_10_no_portal_transition_smoke_test.gd` | PASS | crossing world-space senza gate/portali |
+
 ## Milestone 10.11 QA visuale/performance finale - 2026-06-18
 - Branch: `feat/iso-milestone-10-complete`
 - HEAD di partenza: `e282aac`

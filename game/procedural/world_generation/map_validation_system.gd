@@ -21,7 +21,7 @@ func validate_layout(
 	)
 	var obstructed_passages := _find_obstructed_passages(cell, layout)
 	var crate_failures := _find_unreachable_crates(layout, visited)
-	var placement_failures := _find_invalid_placements(layout)
+	var placement_failures := _find_invalid_placements(cell, layout)
 	var fall_failures := _find_invalid_fall_boundaries(cell, layout)
 	var classification_report := layout.get_classification_report()
 	var is_valid := (
@@ -64,10 +64,16 @@ func _build_blocked_lookup(
 	layout: BiomeEnvironmentLayout
 ) -> Dictionary:
 	var blocked := {}
-	for rect in layout.obstacle_rects:
-		_mark_rect(blocked, _clip_rect(rect, zone_size))
-	for rect in layout.fall_zone_rects:
-		_mark_rect(blocked, _clip_rect(rect, zone_size))
+	for y in range(zone_size.y):
+		for x in range(zone_size.x):
+			var cell := Vector2i(x, y)
+			var terrain_class := layout.get_terrain_class_at_cell(cell)
+			if (
+				terrain_class == BiomeEnvironmentLayout.TERRAIN_VOID
+				or terrain_class == BiomeEnvironmentLayout.TERRAIN_FALL_ZONE
+				or terrain_class == BiomeEnvironmentLayout.TERRAIN_OBSTACLE
+			):
+				blocked[cell] = true
 	return blocked
 
 func _mark_rect(blocked: Dictionary, rect: Rect2i) -> void:
@@ -145,9 +151,14 @@ func _find_obstructed_passages(
 			failures.append(passage.side)
 	return failures
 
-func _find_invalid_placements(layout: BiomeEnvironmentLayout) -> PackedStringArray:
+func _find_invalid_placements(
+	cell: BiomeCell,
+	layout: BiomeEnvironmentLayout
+) -> PackedStringArray:
 	var failures := PackedStringArray()
 	var spawn := _clamp_cell(layout.player_spawn_cell, layout.zone_size)
+	if layout.get_terrain_class_at_cell(spawn, cell) != BiomeEnvironmentLayout.TERRAIN_WALKABLE:
+		failures.append("player_spawn_not_walkable")
 	if _cell_inside_any_rect(spawn, layout.obstacle_rects):
 		failures.append("player_spawn_inside_obstacle")
 	if _cell_inside_any_rect(spawn, layout.fall_zone_rects):
@@ -156,6 +167,11 @@ func _find_invalid_placements(layout: BiomeEnvironmentLayout) -> PackedStringArr
 		failures.append("player_spawn_inside_hazard")
 	for crate_cell in layout.crate_cells:
 		var clamped_crate := _clamp_cell(crate_cell, layout.zone_size)
+		if (
+			layout.get_terrain_class_at_cell(clamped_crate, cell)
+			!= BiomeEnvironmentLayout.TERRAIN_WALKABLE
+		):
+			failures.append("crate_not_walkable:%s" % str(crate_cell))
 		if _cell_inside_any_rect(clamped_crate, layout.obstacle_rects):
 			failures.append("crate_inside_obstacle:%s" % str(crate_cell))
 		if _cell_inside_any_rect(clamped_crate, layout.fall_zone_rects):

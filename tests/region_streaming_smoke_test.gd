@@ -17,8 +17,8 @@ func _run() -> void:
 	await process_frame
 	biome_manager.start_run({
 		"world_seed": 240617,
-		"biome_map_width": 5,
-		"biome_map_height": 5,
+		"biome_map_width": 3,
+		"biome_map_height": 3,
 		"preserve_biome_sequence": false,
 		"extra_edge_chance": 0.42
 	})

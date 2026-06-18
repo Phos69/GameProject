@@ -2,6 +2,7 @@ extends RefCounted
 class_name BiomePassageGenerator
 
 const SIDES_TO_OPEN: Array[StringName] = [&"east", &"south"]
+const PASSAGE_WIDTH := 10
 const GENERATED_PASSAGE_TERRAIN_TAG_CATEGORIES: Dictionary = {
 	&"bridge": &"passage",
 	&"broken_gate": &"passage",
@@ -25,9 +26,10 @@ func generate_passages(cells: Array[BiomeCell], seed_value: int) -> void:
 			var local_seed := _derive_seed(seed_value, cell, neighbor, side)
 			var rng := RandomNumberGenerator.new()
 			rng.seed = local_seed
-			var width := rng.randi_range(8, 14)
-			var safe_min := 24
-			var safe_max := cell.height - 24
+			var width := PASSAGE_WIDTH
+			var safe_margin := maxi(40, width * 3)
+			var safe_min := safe_margin
+			var safe_max := cell.height - safe_margin
 			var position := rng.randi_range(safe_min, safe_max)
 			var passage_type := _resolve_passage_type(
 				cell.biome_id,
