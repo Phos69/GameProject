@@ -494,6 +494,9 @@ Il revamp zombie e completo come prima versione giocabile:
   regione corrente cambia dalla posizione world-space del gruppo, senza
   teletrasporto, portali o trigger visibili nel flusso standard;
 - ogni area ha passaggi fisici solo sui lati collegati; i lati esterni senza vicino sono fall boundary leggibili;
+- la regione corrente e i territori collegati adiacenti sono presenti come
+  contenuto gameplay: ostacoli, hazard e crate dei vicini sono gia fisici prima
+  dell'attraversamento;
 - il cambio regione aggiorna palette, terreno, ostacoli, casse, hazard, HUD, mappa esplorazione e wave successive;
 - la mappa consultabile mostra solo territori unknown/discovered/visited/cleared e la posizione corrente del party;
 - le ondate leggono il bioma corrente tramite `WaveDirector`;

@@ -20,6 +20,9 @@ signal active_biome_applied(biome_id: StringName)
 const REGION_SEAM_SYSTEM_SCRIPT = preload(
 	"res://game/world/region_seam_system.gd"
 )
+const WORLD_REGION_STREAMER_SCRIPT = preload(
+	"res://game/world/world_region_streamer.gd"
+)
 
 var biome_manager
 var wave_director
@@ -32,6 +35,7 @@ var transition_system
 var random_encounter_system
 var world_runtime: WorldRuntime
 var region_seam_system
+var world_region_streamer
 var multi_region_renderer: MultiRegionRenderer
 var is_active: bool = false
 var last_applied_region_id: StringName = &""
@@ -75,6 +79,8 @@ func stop_run() -> void:
 		transition_system.stop_run()
 	if region_seam_system != null:
 		region_seam_system.stop_run()
+	if world_region_streamer != null:
+		world_region_streamer.clear()
 	if multi_region_renderer != null:
 		multi_region_renderer.clear()
 	if random_encounter_system != null and random_encounter_system.has_method("cleanup_encounter"):
@@ -133,6 +139,14 @@ func _resolve_components() -> void:
 		region_seam_system = REGION_SEAM_SYSTEM_SCRIPT.new()
 		region_seam_system.name = "RegionSeamSystem"
 		add_child(region_seam_system)
+	if world_region_streamer == null:
+		world_region_streamer = get_tree().get_first_node_in_group(
+			"world_region_streamer"
+		)
+	if world_region_streamer == null:
+		world_region_streamer = WORLD_REGION_STREAMER_SCRIPT.new()
+		world_region_streamer.name = "WorldRegionStreamer"
+		add_child(world_region_streamer)
 	if multi_region_renderer == null:
 		multi_region_renderer = get_tree().get_first_node_in_group(
 			"multi_region_renderer"
@@ -197,6 +211,14 @@ func _apply_active_biome(biome: BiomeDefinition) -> void:
 	if not region_id.is_empty() and region_id == last_applied_region_id:
 		return
 	last_applied_region_id = region_id
+	if transition_system != null:
+		if transition_system.is_active:
+			transition_system.configure_biome(biome)
+		else:
+			transition_system.start_run(biome, biome_manager)
+	if _stream_active_regions(region_id):
+		active_biome_applied.emit(biome.biome_id)
+		return
 	if terrain_generator != null:
 		terrain_generator.start_run(biome)
 	if obstacle_system != null:
@@ -205,13 +227,36 @@ func _apply_active_biome(biome: BiomeDefinition) -> void:
 		hazard_system.start_run(biome)
 	if resource_crate_system != null:
 		resource_crate_system.start_run(biome)
-	if transition_system != null:
-		if transition_system.is_active:
-			transition_system.configure_biome(biome)
-		else:
-			transition_system.start_run(biome, biome_manager)
 	_render_neighbor_regions(region_id)
 	active_biome_applied.emit(biome.biome_id)
+
+func _stream_active_regions(region_id: StringName) -> bool:
+	if (
+		not enable_multi_region_render
+		or world_region_streamer == null
+		or biome_manager == null
+		or region_id.is_empty()
+	):
+		return false
+	var graph = biome_manager.get_world_graph()
+	if graph == null:
+		return false
+	var environment_container := _get_environment_container()
+	var pickup_container := _get_pickup_container()
+	if environment_container == null:
+		return false
+	return world_region_streamer.stream_world(
+		graph,
+		region_id,
+		biome_manager,
+		world_runtime,
+		environment_container,
+		pickup_container,
+		terrain_generator,
+		obstacle_system,
+		hazard_system,
+		resource_crate_system
+	)
 
 func _render_neighbor_regions(region_id: StringName) -> void:
 	if (
@@ -259,6 +304,12 @@ func _get_environment_container() -> Node:
 	if scene == null:
 		return null
 	return scene.get_node_or_null("World/EnvironmentProps")
+
+func _get_pickup_container() -> Node:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return null
+	return scene.get_node_or_null("World/Pickups")
 
 func _resolve_node(path: NodePath, group_name: StringName) -> Node:
 	if not path.is_empty():

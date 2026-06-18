@@ -400,6 +400,11 @@ Attivita post-roadmap:
   completata: `RegionSeamSystem` aggiorna la regione corrente dalla posizione
   world-space del party e dai `WorldRegionConnection` aperti; la survival non
   istanzia piu `BiomeTransitionGate` o trigger visibili per cambiare bioma.
+- Milestone 10.8 di `milestone_10_isometric_asset_rewrite_roadmap.md`
+  completata: `WorldRegionStreamer` istanzia regione corrente e vicini connessi
+  come contenuto gameplay `FULL` con tile, ostacoli, hazard/fall zone e crate;
+  le query dei sistemi vedono i vicini prima dell'attraversamento e le crate
+  aperte restano persistenti per `region_id`.
 - asset definitivi e ulteriori pass di bilanciamento;
 - firma digitale della build pubblica.
 

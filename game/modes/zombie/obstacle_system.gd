@@ -35,6 +35,14 @@ func start_run(biome: BiomeDefinition) -> void:
 		active_biome.biome_id if active_biome != null else &""
 	)
 
+func begin_streaming_run(biome: BiomeDefinition) -> void:
+	_clear_runtime()
+	active_biome = biome
+	is_active = true
+	obstacle_rules_configured.emit(
+		active_biome.biome_id if active_biome != null else &""
+	)
+
 func stop_run() -> void:
 	_clear_runtime()
 	is_active = false
@@ -57,6 +65,33 @@ func is_position_jumpable_obstacle(position: Vector2) -> bool:
 		if _is_jumpable(blocker) and _node_contains_position(blocker, position):
 			return true
 	return false
+
+func create_obstacle_instance(
+	obstacle_id: StringName,
+	size: Vector2,
+	shape_id: StringName,
+	rotation_radians: float,
+	base_color: Color,
+	detail_color: Color
+) -> BiomeObstacle:
+	return _create_obstacle(
+		obstacle_id,
+		size,
+		shape_id,
+		rotation_radians,
+		base_color,
+		detail_color
+	)
+
+func register_streamed_obstacle(
+	obstacle: Node2D,
+	obstacle_id: StringName
+) -> void:
+	if obstacle == null:
+		return
+	if not active_obstacles.has(obstacle):
+		active_obstacles.append(obstacle)
+	obstacle_spawned.emit(obstacle, obstacle_id)
 
 func _is_position_blocked(position: Vector2, skip_jumpable: bool) -> bool:
 	for group in ["spawn_blockers", "environment_obstacles"]:

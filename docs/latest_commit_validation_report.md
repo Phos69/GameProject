@@ -1,5 +1,26 @@
 # Latest Commit Validation Report
 
+## Milestone 10.8 streaming gameplay multi-regione - 2026-06-18
+- Branch: `master`
+- HEAD corrente: non committato al momento della validazione locale.
+- Scope validato: `WorldRegionStreamer`, registrazione di tile/ostacoli/hazard/
+  crate multi-regione nei sistemi zombie esistenti, persistenza crate per
+  `region_id` e assenza di duplicati al re-stream.
+- Esito: PASS sui criteri automatizzabili. Current + vicini connessi sono
+  contenuto `FULL`, le query obstacle/hazard vedono i vicini prima
+  dell'attraversamento, una crate aperta in un vicino aggiorna il ledger del
+  territorio corretto e non ricompare al re-stream.
+
+| Test | Esito | Note |
+|---|---|---|
+| `tests/milestone_10_full_region_streaming_smoke_test.gd` | PASS | active ring `FULL`, query vicini, ledger crate e deduplicazione |
+| `tests/milestone_10_no_portal_transition_smoke_test.gd` | PASS | no gate runtime dopo integrazione streamer |
+| `tests/open_passage_transition_smoke_test.gd` | PASS | crossing senza trigger/gate |
+| `tests/biome_world_generation_smoke_test.gd` | PASS | bootstrap survival con streamer attivo |
+| `tests/zombie_biome_transition_smoke_test.gd` | PASS | contenuti bioma e transizioni legacy compatibili |
+| `tests/region_streaming_smoke_test.gd` | PASS | ledger persistente storico |
+| `tests/milestone_8_multi_region_smoke_test.gd` | PASS | fallback/prototipo visuale storico invariato |
+
 ## Milestone 10.7 transizione senza portali - 2026-06-18
 - Branch: `master`
 - HEAD corrente: non committato al momento della validazione locale.

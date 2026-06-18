@@ -775,26 +775,29 @@ godot --headless --path . --script res://tests/region_streaming_smoke_test.gd
 godot --headless --path . --script res://tests/biome_world_generation_smoke_test.gd
 ```
 
-## Regressione ISO-001 Milestone 8 - megamappa multi-regione
+## Regressione ISO-001 Milestone 8/10.8 - megamappa multi-regione gameplay
 
 QA visuale da eseguire con seed fisso a `1280x720` e `960x540`, attraversando
 almeno otto regioni con ritorno alla regione precedente.
 
-- Confermare che, oltre alla regione corrente giocabile, i territori vicini
-  connessi siano visibili come ground attorno all'arena, posizionati nei lati
-  corretti (nord/sud/est/ovest) e affiancati senza sovrapposizioni ne buchi.
-- Verificare che i vicini siano solo sfondo: nessun nemico, cassa o hazard
-  appare nelle regioni vicine; gli spawn restano nella regione corrente.
+- Confermare che, oltre alla regione corrente, i territori vicini connessi siano
+  visibili e fisicamente presenti: tile, ostacoli, hazard/fall zone e crate
+  devono essere gia attivi prima dell'attraversamento.
+- Verificare che ostacoli e hazard dei vicini blocchino o danneggino in modo
+  coerente se raggiunti dal bordo, senza duplicati al cambio regione.
+- Verificare che gli spawn zombie restino controllati dal bordo camera e dal
+  bioma corrente: lo streaming dei vicini non deve generare spawn lontani.
 - Attraversare un passaggio e confermare che il set di regioni renderizzate si
   aggiorni (la nuova regione diventa corrente, i suoi vicini compaiono, le
   regioni fuori raggio spariscono).
-- Tornare alla regione precedente e confermare che le casse gia aperte restino
-  consumate (persistenza per regione invariata).
+- Aprire una crate in un vicino, uscire/rientrare o forzare un re-stream e
+  confermare che resti consumata per quel `region_id`.
 - Monitorare il frame time con i vicini renderizzati e griglia almeno `7x7`;
   annotare eventuale debito di performance (camera/spawn cross-regione restano
   follow-up).
 
 ```text
+godot --headless --path . --script res://tests/milestone_10_full_region_streaming_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_8_multi_region_smoke_test.gd
 godot --headless --path . --script res://tests/region_streaming_smoke_test.gd
 godot --headless --path . --script res://tests/open_passage_transition_smoke_test.gd

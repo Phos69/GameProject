@@ -574,6 +574,26 @@ Rimuovere il concetto di portale di transizione: il cambio bioma deve derivare d
 
 # Milestone 10.8 — Streaming gameplay multi-regione reale
 
+Stato: completata il 2026-06-18.
+
+Esito:
+
+- Aggiunto `WorldRegionStreamer`: istanzia current + vicini connessi come
+  contenuto `FULL`, con tile layer, ostacoli, hazard/fall zone e crate
+  gameplay a offset world-space derivato da `WorldRegion.world_origin`.
+- `ZombieModeController` usa lo streamer come percorso standard quando
+  `enable_multi_region_render` e attivo; `MultiRegionRenderer` resta fallback
+  visuale/prototipale.
+- `TerrainGenerator`, `ObstacleSystem`, `HazardSystem` e
+  `ResourceCrateSystem` espongono hook `begin_streaming_run`/registrazione per
+  mantenere query, segnali, safe position, danno da caduta e ledger crate
+  persistente anche con contenuto multi-regione.
+- Le crate aperte in una regione vicina vengono registrate nel ledger del
+  rispettivo `region_id` e non ricompaiono al re-stream; ostacoli e crate
+  usano chiavi region-bound per evitare duplicati.
+- Aggiunto `tests/milestone_10_full_region_streaming_smoke_test.gd` per active
+  ring `FULL`, query gameplay sui vicini, persistenza crate e deduplicazione.
+
 ## Obiettivo
 
 Passare dal prototipo “vicini solo ground” a regioni adiacenti vive, con collisioni, ostacoli, hazard e oggetti gameplay già presenti prima dell’attraversamento.

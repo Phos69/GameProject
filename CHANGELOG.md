@@ -8,12 +8,20 @@
   posizione world-space del party e dai `WorldRegionConnection` aperti, senza
   istanziare portali o trigger di transizione. Aggiunto
   `tests/milestone_10_no_portal_transition_smoke_test.gd`.
+- Aggiunto `WorldRegionStreamer` per istanziare regione corrente e vicini
+  connessi come contenuto gameplay `FULL` con tile layer, ostacoli, hazard/fall
+  zone e crate. Aggiunto
+  `tests/milestone_10_full_region_streaming_smoke_test.gd`.
 
 ### Changed
 
 - `BiomeTransitionSystem` resta una API legacy/debug per `transition_to()`, ma
   non genera piu `BiomeTransitionGate` nella survival standard; gli smoke di
   open passage e transizione bioma validano ora il contratto senza gate runtime.
+- `ZombieModeController` usa lo streamer multi-regione quando
+  `enable_multi_region_render` e attivo; `TerrainGenerator`, `ObstacleSystem`,
+  `HazardSystem` e `ResourceCrateSystem` registrano i nodi streamati per
+  mantenere query, danno da caduta, safe position e ledger crate centralizzati.
 
 ### Fixed
 
