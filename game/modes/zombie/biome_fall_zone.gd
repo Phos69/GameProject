@@ -5,6 +5,10 @@ const CLIFF_RENDERER_SCRIPT = preload(
 	"res://game/modes/zombie/isometric_cliff_renderer.gd"
 )
 const VALID_FALL_SIDES: Array[StringName] = [&"north", &"south", &"east", &"west"]
+# A void zone whose smaller side exceeds this is an internal pit (not a thin
+# perimeter strip); it is rendered procedurally so no small tile is stretched
+# into a grainy placeholder.
+const LARGE_VOID_MIN := 110.0
 
 var hazard_id: StringName = &"fall_zone"
 var fall_style: StringName = &"cliff"
@@ -167,9 +171,82 @@ func _rebuild_collision() -> void:
 	collision_shape.shape = rectangle
 
 func _draw() -> void:
+	if _is_large_void():
+		_draw_large_void()
+		return
 	if has_asset_renderer() and not uses_procedural_fallback():
 		return
 	_draw_procedural_cliff()
+
+func _draw_large_void() -> void:
+	# A clean, readable pit: a dark void floor with depth banding, a bright rim
+	# where the walkable floor ends, and vertical depth lines that drop from the
+	# floor edge and fade into the void colour.
+	var half := zone_size * 0.5
+	var depth := _depth_color_for_style()
+	var rim := _edge_color_for_style()
+
+	# Solid void base so nothing of the floor shows through the pit.
+	draw_rect(Rect2(-half, zone_size), Color(depth, 1.0))
+	# Depth banding: progressively darker toward the far (bottom) edge.
+	var band_count := 5
+	for index in range(band_count):
+		var t0 := lerpf(-half.y, half.y, float(index) / float(band_count))
+		var t1 := lerpf(-half.y, half.y, float(index + 1) / float(band_count))
+		var shade := depth.darkened(0.06 * float(index))
+		draw_rect(
+			Rect2(Vector2(-half.x, t0), Vector2(zone_size.x, t1 - t0)),
+			Color(shade, 0.55)
+		)
+	# Inner shadow frame so the pit reads as recessed below the surrounding floor.
+	draw_rect(Rect2(-half, zone_size), Color(0.0, 0.0, 0.0, 0.55), false, 4.0)
+
+	# Bright rim along the near (top) floor edge.
+	draw_line(
+		Vector2(-half.x, -half.y),
+		Vector2(half.x, -half.y),
+		Color(rim.lightened(0.10), 0.92),
+		3.0,
+		true
+	)
+
+	_draw_void_depth_lines(half, rim, depth)
+
+func _draw_void_depth_lines(
+	half: Vector2,
+	rim: Color,
+	depth: Color
+) -> void:
+	# Vertical lines start at the floor (top edge) and fade down into the void.
+	var count := maxi(6, int(zone_size.x / 46.0))
+	var drop := zone_size.y * 0.82
+	var near_color := Color(rim.darkened(0.10), 0.7)
+	var far_color := Color(depth, 0.0)
+	for index in range(count):
+		var ratio := float(index + 1) / float(count + 1)
+		var jitter := _line_jitter(index) * zone_size.x * 0.012
+		var x_position := lerpf(-half.x * 0.94, half.x * 0.94, ratio) + jitter
+		var start := Vector2(x_position, -half.y)
+		var length := drop * (0.82 + _line_jitter(index + 31) * 0.18)
+		_draw_faded_line(start, start + Vector2(0.0, length), near_color, far_color, 7)
+
+func _draw_faded_line(
+	start: Vector2,
+	end: Vector2,
+	near_color: Color,
+	far_color: Color,
+	segments: int
+) -> void:
+	var previous := start
+	for index in range(1, segments + 1):
+		var t := float(index) / float(segments)
+		var point := start.lerp(end, t)
+		draw_line(previous, point, near_color.lerp(far_color, t), 2.0, true)
+		previous = point
+
+func _line_jitter(index: int) -> float:
+	var value := int(hash("%d:%s:%d" % [visual_seed, String(fall_side), index]))
+	return float(abs(value % 2001)) / 1000.0 - 1.0
 
 func _draw_procedural_cliff() -> void:
 	var half_size := zone_size * 0.5
@@ -218,8 +295,12 @@ func _configure_cliff_renderer() -> void:
 		edge_color,
 		depth_color,
 		visual_seed,
-		show_debug_visual
+		show_debug_visual,
+		true
 	)
+
+func _is_large_void() -> bool:
+	return minf(zone_size.x, zone_size.y) >= LARGE_VOID_MIN
 
 func _normalize_fall_side(value: StringName) -> StringName:
 	if VALID_FALL_SIDES.has(value):

@@ -2,6 +2,89 @@
 
 ## Unreleased
 
+### Added
+
+- Aggiunto `isometric_biome_generation_rewrite_roadmap.md` con audit della
+  generazione biomi, stato R1 e prossimo ciclo R2 su pareti/void perimetrale.
+- Aggiunto `tests/isometric_biome_generation_rewrite_smoke_test.gd` per coprire
+  chunk `500x500`, base void/fall zone, strade larghe 40, sentieri medi larghi
+  20, blocchi interni, passaggi fisici e spawn/crate su celle walkable.
+- Aggiunto `RegionSeamSystem` per aggiornare la regione survival corrente dalla
+  posizione world-space del party e dai `WorldRegionConnection` aperti, senza
+  istanziare portali o trigger di transizione. Aggiunto
+  `tests/milestone_10_no_portal_transition_smoke_test.gd`.
+- Aggiunto `WorldRegionStreamer` per istanziare regione corrente e vicini
+  connessi come contenuto gameplay `FULL` con tile layer, ostacoli, hazard/fall
+  zone e crate. Aggiunto
+  `tests/milestone_10_full_region_streaming_smoke_test.gd`.
+- Aggiunto metadata regione per gli zombie (`spawn_region_id`,
+  `current_region_id`, `last_seen_player_region_id`) e smoke
+  `tests/milestone_10_cross_biome_chase_smoke_test.gd` per il chase
+  cross-bioma.
+- Aggiunto `tests/milestone_10_legacy_cleanup_smoke_test.gd` per bloccare il
+  ritorno di visual legacy nel bootstrap survival asset-driven.
+- Aggiunti `tests/milestone_10_isometric_final_visual_qa.gd` e
+  `tests/milestone_10_isometric_performance_smoke_test.gd` per chiudere la QA
+  visuale/performance finale della roadmap asset isometrica.
+- Aggiunto il primo sistema completo di texture isometriche forestali per il
+  bioma base `infected_plains`: grass, tall grass, path, road, void, cliff edge,
+  mountain wall e transizioni `grass_to_*`, `path_to_road`,
+  `ground_to_void_cliff` e `ground_to_mountain_wall`.
+- Aggiunto `tests/forest_isometric_texture_transition_smoke_test.gd` per
+  validare contratti manifest, asset SVG, transizioni emesse dal layout
+  generato, tall grass walkable e dettaglio texture nel `BiomeTileLayer`.
+
+### Changed
+
+- `ObstacleLayoutGenerator` scala la rete bioma: le strade principali passano
+  a 40 celle, i sentieri medi a 20 celle e i passaggi fisici generati a 40
+  celle, mantenendo il valore storico da 10 come base di scala.
+- La generazione biomi survival usa ora chunk logici `500x500` e una megamappa
+  default `3x3`; `BiomeMapGenerator` mantiene override di debug per dimensione
+  e numero regioni.
+- `BiomeEnvironmentLayout` non considera piu walkable ogni cella non occupata:
+  il layout parte da void e scava `floor_rects`, strade, passaggi e blocchi
+  interni, con cache terrain `PackedByteArray` per query su 250.000 celle.
+- `ObstacleLayoutGenerator` genera una rete orizzontale/verticale con strade
+  principali larghe 40, sentieri bioma medi larghi 20, blocchi interni
+  classificati e fall zone per void/partial void.
+- `MapValidationSystem` blocca il void nel flood-fill e verifica che spawn e
+  crate siano su terrain walkable; `ZombieSpawner` rifiuta le celle streamate
+  non walkable.
+- `BiomeTransitionSystem` resta una API legacy/debug per `transition_to()`, ma
+  non genera piu `BiomeTransitionGate` nella survival standard; gli smoke di
+  open passage e transizione bioma validano ora il contratto senza gate runtime.
+- `ZombieModeController` usa lo streamer multi-regione quando
+  `enable_multi_region_render` e attivo; `TerrainGenerator`, `ObstacleSystem`,
+  `HazardSystem` e `ResourceCrateSystem` registrano i nodi streamati per
+  mantenere query, danno da caduta, safe position e ledger crate centralizzati.
+- `EnemySystem` assegna la regione di spawn dalla posizione world-space e
+  `ZombieSpawner` valida le posizioni camera-edge contro le regioni streamate;
+  gli zombie gia vivi non vengono despawnati o resettati al cambio bioma.
+- `ZombieModeController` non crea piu `MultiRegionRenderer` durante la
+  risoluzione componenti standard: il renderer storico resta fallback/debug
+  lazy-only se lo streamer gameplay non e disponibile.
+- `IsometricTileResolver` risolve `infected_plains` con tile forestali
+  neighbor-aware, mantenendo i passage tile prioritari e senza cambiare
+  classificazione terrain, pathfinding, hazard o collisioni.
+- `BiomeTileLayer` pre-bake-a linee di dettaglio per grass, tall grass, path,
+  road, transizioni, cliff e void, cosi il ground forestale non dipende da
+  placeholder piatti o da nodi per-tile.
+- Il pass texture forestale usa ora ombre, dettagli e underlay scuri relativi
+  al tipo di tile: verde bosco per erba/void/cliff e marrone scuro per
+  path/road. Il reticolo sul ground forestale e disattivato per eliminare gli
+  spazi neri tra i rombi calpestabili.
+- `assets/environment/isometric/manifest.json` punta il tile set base a
+  `tiles/forest/forest_tileset.svg` e registra 108 SVG ambiente verificati dalla
+  pipeline asset.
+
+### Fixed
+
+- Corretto il loader runtime degli SVG ambiente isometrici: ora rasterizza il
+  contenuto SVG trasparente quando disponibile, scarta import opachi e usa un
+  fallback isometrico specifico per categoria oggetto invece della sagoma
+  placeholder generica.
+
 ### Performance
 
 - Ridotto drasticamente il costo di rendering del terreno isometrico in modalità
@@ -73,7 +156,7 @@
   v7, sezioni asset-driven, fallback policy esplicita, documentazione asset e
   report di validazione aggiornati.
 - Chiusa la Milestone 10.2 della roadmap asset isometrica con pipeline locale,
-  generatore SVG headless, struttura cartelle ambiente e asset placeholder
+  generatore SVG headless, struttura cartelle ambiente e asset base
   asset-driven in-repo.
 - Chiusa la Milestone 10.3 della roadmap asset isometrica con `BiomeTileLayer`,
   resolver deterministico per ogni cella `200x200`, tile `void_edge_near`,
@@ -84,6 +167,24 @@
 - Chiusa la Milestone 10.5 della roadmap asset isometrica con oggetti e
   ostacoli slot-based, factory asset-driven, crate su sprite da manifest e
   smoke dedicato sugli object scene.
+- Iterato il pass isometrico ambiente: le strade generate usano ora celle route
+  diagonali asset-driven (`road_cell_tags`) per diramarsi lungo gli assi
+  isometrici invece di corsie orizzontali/verticali; il resolver mantiene i
+  rettangoli solo per aperture e compatibilita.
+- Rigenerati gli SVG interni ambiente con sfondo trasparente e silhouette
+  dedicate per case, cabine, laboratori, recinti, muri, barili, relitti,
+  tronchi, ponti e crate, rimuovendo il placeholder unico a forma di casetta
+  generica dagli `object_scenes`.
+- Chiusa la Milestone 10.11 della roadmap asset isometrica con screenshot QA,
+  performance su mappa `7x7`, suite smoke finale e spostamento di `ISO-001` tra
+  le reference completate.
+- Documentato il sistema texture forestali in
+  `docs/forest_isometric_texture_system.md`, con contratto ID, regole di
+  risoluzione, procedura per estendere altri biomi, checklist manuale e smoke
+  test dedicati.
+- Aggiornati TODO, roadmap rewrite isometrico, architettura, design, asset
+  README, attribution e report di validazione con la chiusura di `ISO-RW-001`
+  e del primo pass forestale.
 
 ### Changed
 

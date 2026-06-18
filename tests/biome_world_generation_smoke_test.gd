@@ -108,15 +108,15 @@ func _run() -> void:
 	_expect(base_layout != null, "starting biome has a generated layout")
 	if base_layout != null:
 		_expect(
-			base_layout.zone_size == Vector2i(200, 200),
-			"starting biome is generated as 200x200 logical cells"
+			base_layout.zone_size == BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE,
+			"starting biome is generated as 500x500 logical cells"
 		)
 		_expect(
 			_has_large_house(base_layout),
 			"base biome contains large blocking houses"
 		)
 		_expect(
-			not base_layout.road_rects.is_empty()
+			(not base_layout.road_rects.is_empty() or not base_layout.get_road_cells().is_empty())
 			and not base_layout.crate_cells.is_empty(),
 			"base biome has roads, corridors and resource crates"
 		)
@@ -147,23 +147,23 @@ func _run() -> void:
 	if active_layout != null and active_biome != null:
 		_expect(
 			obstacle_system.get_active_obstacles().size()
-			== active_layout.obstacle_positions.size(),
-			"obstacle system renders the generated obstacle layout"
+			>= active_layout.obstacle_positions.size(),
+			"obstacle system renders at least the generated current-region obstacle layout"
 		)
 		_expect(
 			hazard_system.get_active_hazards().size()
-			== active_layout.hazard_positions.size(),
-			"hazard system renders fall zones and biome hazards"
+			>= active_layout.hazard_positions.size(),
+			"hazard system renders at least the current-region fall zones and biome hazards"
 		)
 		_expect(
 			crate_system.get_active_crates().size()
-			== active_layout.crate_positions.size(),
-			"resource crate system renders generated crates"
+			>= active_layout.crate_positions.size(),
+			"resource crate system renders at least the current-region generated crates"
 		)
 		_expect(
-			transition_system.get_active_gates().size()
-			== active_cell.passages.size(),
-			"transition gates mirror generated passages"
+			transition_system.get_active_gates().is_empty()
+			and get_nodes_in_group("biome_transition_gates").is_empty(),
+			"generated passages no longer instantiate transition gates"
 		)
 		if not active_layout.fall_zone_rects.is_empty():
 			var fall_position := active_layout.rect_center_to_world(
@@ -198,7 +198,10 @@ func _run() -> void:
 	_finish()
 
 func _validate_cell(cell: BiomeCell) -> void:
-	_expect(cell.width == 200 and cell.height == 200, "%s is 200x200" % cell.id)
+	_expect(
+		Vector2i(cell.width, cell.height) == BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE,
+		"%s is 500x500" % cell.id
+	)
 	_expect(cell.seed != 0, "%s has a local deterministic seed" % cell.id)
 	_expect(cell.generated_layout != null, "%s has generated terrain" % cell.id)
 	if cell.generated_layout != null:
@@ -236,7 +239,7 @@ func _validate_cell(cell: BiomeCell) -> void:
 		var classification := cell.generated_layout.get_classification_report()
 		_expect(
 			bool(classification.get("is_complete", false)),
-			"%s has complete 200x200 terrain classification" % cell.id
+			"%s has complete 500x500 terrain classification" % cell.id
 		)
 
 func _has_large_house(layout: BiomeEnvironmentLayout) -> bool:

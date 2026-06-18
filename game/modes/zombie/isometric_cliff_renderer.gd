@@ -41,7 +41,8 @@ func configure(
 	next_edge_color: Color,
 	next_depth_color: Color,
 	next_visual_seed: int = 0,
-	debug_visual_enabled: bool = false
+	debug_visual_enabled: bool = false,
+	disable_assets: bool = false
 ) -> void:
 	zone_size = Vector2(
 		maxf(next_zone_size.x, 32.0),
@@ -54,8 +55,16 @@ func configure(
 	visual_seed = next_visual_seed
 	show_debug_visual = debug_visual_enabled
 	_ensure_sprites()
-	_load_asset_sprites()
-	_position_sprites()
+	if disable_assets:
+		# Large internal void blocks must not stretch a small void tile across the
+		# whole area (it rasterises into a grainy placeholder). The owning fall
+		# zone renders a clean procedural void instead.
+		procedural_fallback_active = true
+		loaded_asset_ids.clear()
+		_hide_sprites()
+	else:
+		_load_asset_sprites()
+		_position_sprites()
 	queue_redraw()
 
 func _ready() -> void:

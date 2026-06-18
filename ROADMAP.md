@@ -303,8 +303,8 @@ Stato: completata come primo pass configurabile e misurabile.
 
 Attivita post-roadmap:
 
-- roadmap motore generazione mappe e biomi completata come primo pass: seed globale, mappa biomi `200x200`, confini, passaggi, fall zone, layout interni, validazione flood-fill e integrazione zombie;
-- roadmap megamappa persistente isometrica completata come primo pass: grafo seed-based connesso, territori `200x200`, passaggi fisici aperti, fall boundary sui lati esterni, terreno classificato su tutta la regione, mappa esplorazione persistente, dodge/roll e manifest asset isometrici;
+- roadmap motore generazione mappe e biomi completata come primo pass storico; il rewrite corrente usa seed globale, mappa biomi default `3x3`, chunk `500x500`, confini, passaggi, fall zone, layout interni, validazione flood-fill e integrazione zombie;
+- roadmap megamappa persistente isometrica completata come primo pass storico; il rewrite corrente mantiene grafo seed-based connesso, territori `500x500`, passaggi fisici aperti, fall boundary sui lati esterni, terreno classificato su tutta la regione, mappa esplorazione persistente, dodge/roll e manifest asset isometrici;
 - roadmap revamp modalita zombie completata fino alla Milestone Z12: cinque biomi attraversabili, spawn camera-edge, wave contestuali, layout, loot, hazard, zombie tematici, HUD e test di durata;
 - sistema ammo survival robusto con fallback infinita, pickup condivisi, supply crate e director anti-frustrazione completato;
 - visual gameplay pass della zombie survival completato;
@@ -360,7 +360,8 @@ Attivita post-roadmap:
 - Milestone 8 di `docs/isometric_generation_audit_roadmap.md` completata:
   decisione per la continuita fisica multi-regione e prototipo
   `MultiRegionRenderer` (corrente + vicini con offset `world_origin`, vicini solo
-  ground visuale, lontane non istanziate) integrato in `ZombieModeController`.
+  ground visuale, lontane non istanziate), ora mantenuto come fallback/debug
+  storico dopo l'introduzione di `WorldRegionStreamer`.
 - Milestone 7 di `docs/isometric_generation_audit_roadmap.md` completata:
   `WorldGraph.get_connectivity_report()`, report grafo/active regions nel
   `BiomeMapDebugOverlay` (toggle `F8`) e smoke connettivita su 100 seed.
@@ -381,13 +382,55 @@ Attivita post-roadmap:
   asset.
 - Milestone 10.4 di `milestone_10_isometric_asset_rewrite_roadmap.md`
   completata: strade, curve/edge/intersezioni, entry/exit e connector di
-  passaggio asset-driven; `WorldRegionConnection` conserva rettangoli globali e
-  tile entry/exit per continuita tra regioni.
+  passaggio asset-driven; polish successivo con `road_cell_tags` diagonali per
+  far diramare le strade lungo assi isometrici; `WorldRegionConnection`
+  conserva rettangoli globali e tile entry/exit per continuita tra regioni.
 - Milestone 10.5 di `milestone_10_isometric_asset_rewrite_roadmap.md`
   completata: `ObstacleSystem` usa una factory per istanziare oggetti
   isometrici slot-based, `IsometricEnvironmentObject` carica sprite/texture dal
   contratto `object_scenes`, `BiomeObstacle` resta fallback tecnico e la supply
-  crate usa il proprio asset manifest.
+  crate usa il proprio asset manifest; polish successivo con SVG trasparenti e
+  silhouette dedicate per gli oggetti principali al posto del placeholder unico;
+  il loader runtime rasterizza SVG trasparenti o fallback isometrici per
+  categoria quando l'import editor non e affidabile.
+- Milestone 10.6 di `milestone_10_isometric_asset_rewrite_roadmap.md`
+  completata: `BiomeFallZone` usa `IsometricCliffRenderer`, asset v7 per
+  void/cliff/lip orientati e linee verticali deterministiche, mantenendo danno
+  da caduta, respawn sicuro e query fall/hazard separate.
+- Milestone 10.7 di `milestone_10_isometric_asset_rewrite_roadmap.md`
+  completata: `RegionSeamSystem` aggiorna la regione corrente dalla posizione
+  world-space del party e dai `WorldRegionConnection` aperti; la survival non
+  istanzia piu `BiomeTransitionGate` o trigger visibili per cambiare bioma.
+- Milestone 10.8 di `milestone_10_isometric_asset_rewrite_roadmap.md`
+  completata: `WorldRegionStreamer` istanzia regione corrente e vicini connessi
+  come contenuto gameplay `FULL` con tile, ostacoli, hazard/fall zone e crate;
+  le query dei sistemi vedono i vicini prima dell'attraversamento e le crate
+  aperte restano persistenti per `region_id`.
+- Milestone 10.9 di `milestone_10_isometric_asset_rewrite_roadmap.md`
+  completata: gli zombie restano world-space durante il chase cross-bioma,
+  tracciano `spawn_region_id`, `current_region_id` e
+  `last_seen_player_region_id`, attraversano i varchi aperti senza despawn,
+  reset di health o perdita del target.
+- Milestone 10.10 di `milestone_10_isometric_asset_rewrite_roadmap.md`
+  completata: la survival standard non istanzia piu visual legacy
+  (`BiomeTransitionGate`, `BiomeRegionGround`, `BiomeTerrainPatch`,
+  `NeighborGround_` o renderer vicini storico); `MultiRegionRenderer` resta
+  fallback lazy-only e `tests/milestone_10_legacy_cleanup_smoke_test.gd`
+  blocca regressioni sul percorso asset-driven.
+- Milestone 10.11 di `milestone_10_isometric_asset_rewrite_roadmap.md`
+  completata: QA visuale finale con sette screenshot `1280x720`, performance
+  smoke su mappa `7x7` in preset `balanced` a `16,54 ms` medi, suite smoke
+  asset/terrain/passaggi/oggetti/cliff/no-portal/streaming/chase/legacy verde e
+  `ISO-001` spostato tra le reference completate.
+- Milestone R1 di `isometric_biome_generation_rewrite_roadmap.md` completata:
+  chunk bioma `500x500`, megamappa default `3x3`, base void con floor/strade/
+  blocchi scavati, strade principali larghe 40, sentieri medi larghi 20,
+  passaggi larghi 40, cache terrain, validazione void/spawn e smoke dedicato.
+- Milestone R2/forest pass di `isometric_biome_generation_rewrite_roadmap.md`
+  completata: pareti perimetrali isometriche, bordo void/cliff leggibile,
+  varchi fisici senza portali e primo set texture forestale asset-driven per il
+  bioma base `infected_plains`, con grass, tall grass, path, road, void, cliff,
+  mountain wall e transizioni neighbor-aware.
 - asset definitivi e ulteriori pass di bilanciamento;
 - firma digitale della build pubblica.
 
@@ -410,9 +453,9 @@ Stato: completata come prototipo data-driven.
 Stato: completata come prototipo integrato.
 
 - Aggiunto `game/world/` con `WorldGraph`, `WorldRegion`, `WorldRegionConnection`, `WorldExplorationState`, `PersistentWorldState` e `WorldRuntime`.
-- La survival genera una griglia `5x5` di territori `200x200` tramite seed, spanning tree e edge extra per avere connessione garantita e loop.
+- La survival genera una griglia default `3x3` di territori `500x500` tramite seed, spanning tree e edge extra per avere connessione garantita e loop.
 - I passaggi tra regioni confinanti sono aperture fisiche aperte e non teletrasporti; i lati senza regione vicina restano fall boundary validati.
-- Il layout di ogni territorio produce classificazione completa del `200x200` per walkable, obstacle, hazard, border, void e fall zone.
+- Il layout di ogni territorio produce classificazione completa del `500x500` per walkable, obstacle, hazard, border, void e fall zone.
 - Il save v6 conserva stato mondo/esplorazione e posizione di riferimento del party.
 - L'HUD espone una mappa consultabile con unknown/fog, discovered, visited, cleared e marker della regione corrente.
 - Aggiunto `PlayerDodgeComponent` con input tastiera/joypad, cooldown, invulnerabilita breve e validazione gap/landing.

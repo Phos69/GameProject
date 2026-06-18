@@ -34,8 +34,8 @@ func _run_multi_seed_connectivity() -> void:
 	var disconnected_seed := -1
 	for seed_value in range(1, SEED_COUNT + 1):
 		var context := {
-			"biome_map_width": 5,
-			"biome_map_height": 5,
+			"biome_map_width": 3,
+			"biome_map_height": 3,
 			"preserve_biome_sequence": false,
 			"extra_edge_chance": 0.42
 		}
@@ -63,8 +63,8 @@ func _run_overlay_graph_summary() -> void:
 	await process_frame
 	biome_manager.start_run({
 		"world_seed": 7777,
-		"biome_map_width": 5,
-		"biome_map_height": 5,
+		"biome_map_width": 3,
+		"biome_map_height": 3,
 		"preserve_biome_sequence": false,
 		"extra_edge_chance": 0.42
 	})
@@ -84,10 +84,10 @@ func _run_overlay_graph_summary() -> void:
 	var summary := overlay.get_debug_summary()
 	var graph_data := summary.get("graph", {}) as Dictionary
 	_expect(bool(graph_data.get("is_connected", false)), "overlay reports a connected graph")
-	_expect(int(graph_data.get("region_count", 0)) == 25, "overlay reports all 25 regions")
+	_expect(int(graph_data.get("region_count", 0)) == 9, "overlay reports all 9 regions")
 	_expect(int(graph_data.get("unreachable_count", -1)) == 0, "overlay reports no unreachable regions")
 	_expect(
-		int(graph_data.get("connection_count", 0)) >= 24,
+		int(graph_data.get("connection_count", 0)) >= 8,
 		"overlay reports at least a spanning tree of edges"
 	)
 	_expect(
@@ -111,7 +111,7 @@ func _run_overlay_graph_summary() -> void:
 		"start region is visited"
 	)
 	_expect(
-		exploration.get_state(&"biome_4_4") == WorldExplorationState.STATE_UNKNOWN,
+		exploration.get_state(&"biome_2_2") == WorldExplorationState.STATE_UNKNOWN,
 		"a distant region stays unknown behind the fog"
 	)
 

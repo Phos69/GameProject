@@ -17,6 +17,13 @@ signal active_biome_applied(biome_id: StringName)
 @export var world_runtime_path: NodePath = NodePath("WorldRuntime")
 @export var enable_multi_region_render: bool = true
 
+const REGION_SEAM_SYSTEM_SCRIPT = preload(
+	"res://game/world/region_seam_system.gd"
+)
+const WORLD_REGION_STREAMER_SCRIPT = preload(
+	"res://game/world/world_region_streamer.gd"
+)
+
 var biome_manager
 var wave_director
 var zombie_spawner
@@ -27,9 +34,17 @@ var hazard_system
 var transition_system
 var random_encounter_system
 var world_runtime: WorldRuntime
+var region_seam_system
+var world_region_streamer
 var multi_region_renderer: MultiRegionRenderer
 var is_active: bool = false
 var last_applied_region_id: StringName = &""
+# Screen-space backdrop painted with the active biome's void colour so anything
+# beyond the chunk borders reads as void instead of the default clear colour.
+var _void_backdrop_layer: CanvasLayer
+var _void_backdrop: ColorRect
+
+const VOID_BACKDROP_DARKEN := 0.68
 
 func _ready() -> void:
 	add_to_group("zombie_mode_controller")
@@ -42,6 +57,8 @@ func start_run(context: Dictionary = {}) -> void:
 		biome_manager.start_run(context)
 	if world_runtime != null and biome_manager != null:
 		world_runtime.start_run(biome_manager.active_world_data, biome_manager)
+	if region_seam_system != null and biome_manager != null:
+		region_seam_system.start_run(biome_manager, world_runtime)
 	var biome = get_current_biome()
 	is_active = true
 	if wave_director != null and wave_director.has_method("start_run"):
@@ -66,6 +83,10 @@ func stop_run() -> void:
 		hazard_system.stop_run()
 	if transition_system != null:
 		transition_system.stop_run()
+	if region_seam_system != null:
+		region_seam_system.stop_run()
+	if world_region_streamer != null:
+		world_region_streamer.clear()
 	if multi_region_renderer != null:
 		multi_region_renderer.clear()
 	if random_encounter_system != null and random_encounter_system.has_method("cleanup_encounter"):
@@ -78,6 +99,7 @@ func stop_run() -> void:
 		biome_manager.stop_run()
 	is_active = false
 	last_applied_region_id = &""
+	_clear_void_backdrop()
 	zombie_run_stopped.emit()
 
 func get_current_biome():
@@ -117,14 +139,25 @@ func _resolve_components() -> void:
 		world_runtime_path,
 		&"world_runtime"
 	) as WorldRuntime
+	region_seam_system = get_tree().get_first_node_in_group(
+		"region_seam_system"
+	)
+	if region_seam_system == null:
+		region_seam_system = REGION_SEAM_SYSTEM_SCRIPT.new()
+		region_seam_system.name = "RegionSeamSystem"
+		add_child(region_seam_system)
+	if world_region_streamer == null:
+		world_region_streamer = get_tree().get_first_node_in_group(
+			"world_region_streamer"
+		)
+	if world_region_streamer == null:
+		world_region_streamer = WORLD_REGION_STREAMER_SCRIPT.new()
+		world_region_streamer.name = "WorldRegionStreamer"
+		add_child(world_region_streamer)
 	if multi_region_renderer == null:
 		multi_region_renderer = get_tree().get_first_node_in_group(
 			"multi_region_renderer"
 		) as MultiRegionRenderer
-	if multi_region_renderer == null:
-		multi_region_renderer = MultiRegionRenderer.new()
-		multi_region_renderer.name = "MultiRegionRenderer"
-		add_child(multi_region_renderer)
 	_connect_biome_manager()
 	_connect_wave_manager()
 
@@ -170,9 +203,40 @@ func _on_current_region_changed(
 	if is_active:
 		_apply_active_biome(get_current_biome())
 
+func _ensure_void_backdrop() -> void:
+	if _void_backdrop != null and is_instance_valid(_void_backdrop):
+		return
+	_void_backdrop_layer = CanvasLayer.new()
+	_void_backdrop_layer.name = "VoidBackdropLayer"
+	# Behind the world (canvas layer 0) but still rendered, so everything outside
+	# the streamed chunk shows the void colour.
+	_void_backdrop_layer.layer = -100
+	add_child(_void_backdrop_layer)
+	_void_backdrop = ColorRect.new()
+	_void_backdrop.name = "VoidBackdrop"
+	_void_backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_void_backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_void_backdrop_layer.add_child(_void_backdrop)
+
+func _update_void_backdrop(biome: BiomeDefinition) -> void:
+	if biome == null or biome.palette == null:
+		return
+	_ensure_void_backdrop()
+	# Match the tile layer's TILE_VOID_DEPTH colour so the off-map void is the
+	# same shade as the in-map void cells.
+	_void_backdrop.color = biome.palette.background_color.darkened(VOID_BACKDROP_DARKEN)
+	_void_backdrop_layer.visible = true
+
+func _clear_void_backdrop() -> void:
+	if _void_backdrop_layer != null and is_instance_valid(_void_backdrop_layer):
+		_void_backdrop_layer.queue_free()
+	_void_backdrop_layer = null
+	_void_backdrop = null
+
 func _apply_active_biome(biome: BiomeDefinition) -> void:
 	if biome == null:
 		return
+	_update_void_backdrop(biome)
 	var region_id: StringName = (
 		biome_manager.get_current_region_id()
 		if biome_manager != null
@@ -181,6 +245,14 @@ func _apply_active_biome(biome: BiomeDefinition) -> void:
 	if not region_id.is_empty() and region_id == last_applied_region_id:
 		return
 	last_applied_region_id = region_id
+	if transition_system != null:
+		if transition_system.is_active:
+			transition_system.configure_biome(biome)
+		else:
+			transition_system.start_run(biome, biome_manager)
+	if _stream_active_regions(region_id):
+		active_biome_applied.emit(biome.biome_id)
+		return
 	if terrain_generator != null:
 		terrain_generator.start_run(biome)
 	if obstacle_system != null:
@@ -189,22 +261,52 @@ func _apply_active_biome(biome: BiomeDefinition) -> void:
 		hazard_system.start_run(biome)
 	if resource_crate_system != null:
 		resource_crate_system.start_run(biome)
-	if transition_system != null:
-		if transition_system.is_active:
-			transition_system.configure_biome(biome)
-		else:
-			transition_system.start_run(biome, biome_manager)
 	_render_neighbor_regions(region_id)
 	active_biome_applied.emit(biome.biome_id)
+
+func _stream_active_regions(region_id: StringName) -> bool:
+	if (
+		not enable_multi_region_render
+		or world_region_streamer == null
+		or biome_manager == null
+		or region_id.is_empty()
+	):
+		return false
+	var graph = biome_manager.get_world_graph()
+	if graph == null:
+		return false
+	var environment_container := _get_environment_container()
+	var pickup_container := _get_pickup_container()
+	if environment_container == null:
+		return false
+	return world_region_streamer.stream_world(
+		graph,
+		region_id,
+		biome_manager,
+		world_runtime,
+		environment_container,
+		pickup_container,
+		terrain_generator,
+		obstacle_system,
+		hazard_system,
+		resource_crate_system
+	)
 
 func _render_neighbor_regions(region_id: StringName) -> void:
 	if (
 		not enable_multi_region_render
-		or multi_region_renderer == null
 		or biome_manager == null
 		or region_id.is_empty()
 	):
 		return
+	if multi_region_renderer == null:
+		multi_region_renderer = get_tree().get_first_node_in_group(
+			"multi_region_renderer"
+		) as MultiRegionRenderer
+	if multi_region_renderer == null:
+		multi_region_renderer = MultiRegionRenderer.new()
+		multi_region_renderer.name = "LegacyMultiRegionRenderer"
+		add_child(multi_region_renderer)
 	var graph = biome_manager.get_world_graph()
 	if graph == null:
 		return
@@ -243,6 +345,12 @@ func _get_environment_container() -> Node:
 	if scene == null:
 		return null
 	return scene.get_node_or_null("World/EnvironmentProps")
+
+func _get_pickup_container() -> Node:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return null
+	return scene.get_node_or_null("World/Pickups")
 
 func _resolve_node(path: NodePath, group_name: StringName) -> Node:
 	if not path.is_empty():

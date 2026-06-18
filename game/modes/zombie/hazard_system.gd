@@ -72,6 +72,14 @@ func start_run(biome: BiomeDefinition) -> void:
 		active_biome.biome_id if active_biome != null else &""
 	)
 
+func begin_streaming_run(biome: BiomeDefinition) -> void:
+	_clear_runtime()
+	active_biome = biome
+	is_active = true
+	hazard_rules_configured.emit(
+		active_biome.biome_id if active_biome != null else &""
+	)
+
 func stop_run() -> void:
 	_clear_runtime()
 	is_active = false
@@ -200,6 +208,65 @@ func is_position_safe(position: Vector2) -> bool:
 		and obstacle_system.has_method("is_position_blocked")
 		and obstacle_system.is_position_blocked(position)
 	)
+
+func create_hazard_instance(
+	hazard_id: StringName,
+	size: Vector2,
+	rotation_radians: float,
+	biome: BiomeDefinition,
+	layout: BiomeEnvironmentLayout,
+	index: int,
+	position: Vector2
+) -> Node2D:
+	if biome == null:
+		return null
+	var palette := biome.palette
+	if palette == null:
+		return null
+	if hazard_id == &"fall_zone":
+		var fall_zone := FALL_ZONE_SCRIPT.new() as BiomeFallZone
+		if fall_zone == null:
+			return null
+		var hazard_side := _hazard_side_for(layout, index, position, size)
+		fall_zone.configure(
+			hazard_id,
+			size,
+			rotation_radians,
+			palette.hazard_color,
+			_fall_style_for_biome(biome.biome_id),
+			hazard_side,
+			layout.generation_seed + index * 97 if layout != null else index * 97
+		)
+		fall_zone.body_entered.connect(
+			_on_hazard_body_entered.bind(fall_zone)
+		)
+		return fall_zone
+	var hazard_zone := HAZARD_ZONE_SCRIPT.new() as BiomeHazardZone
+	if hazard_zone == null:
+		return null
+	hazard_zone.configure(
+		hazard_id,
+		size,
+		rotation_radians,
+		BiomeHazardCatalog.get_color(hazard_id, biome),
+		BiomeHazardCatalog.get_config(hazard_id)
+	)
+	return hazard_zone
+
+func register_streamed_hazard(
+	hazard: Node2D,
+	hazard_id: StringName
+) -> void:
+	if hazard == null:
+		return
+	if not active_hazards.has(hazard):
+		active_hazards.append(hazard)
+	hazard_spawned.emit(hazard, hazard_id)
+
+func finalize_streamed_hazards() -> void:
+	if status_runtime != null:
+		status_runtime.process_runtime(0.0, get_tree(), active_hazards)
+	_update_safe_positions()
 
 func trigger_fall(player: Node, _hazard: BiomeFallZone = null) -> bool:
 	if (

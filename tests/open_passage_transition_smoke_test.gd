@@ -21,12 +21,14 @@ func _run() -> void:
 	var wave_manager := get_first_node_in_group("wave_manager") as WaveManager
 	var biome_manager := get_first_node_in_group("biome_manager") as BiomeManager
 	var transition_system := get_first_node_in_group("biome_transition_system") as BiomeTransitionSystem
+	var seam_system = get_first_node_in_group("region_seam_system")
 	var world_runtime := get_first_node_in_group("world_runtime") as WorldRuntime
 	var player_manager := get_first_node_in_group("player_manager") as PlayerManager
 	_expect(game_mode_manager != null, "game mode manager is available")
 	_expect(wave_manager != null, "wave manager is available")
 	_expect(biome_manager != null, "biome manager is available")
 	_expect(transition_system != null, "transition system is available")
+	_expect(seam_system != null, "region seam system is available")
 	_expect(world_runtime != null, "world runtime is available")
 	_expect(player_manager != null, "player manager is available")
 	if (
@@ -34,6 +36,7 @@ func _run() -> void:
 		or wave_manager == null
 		or biome_manager == null
 		or transition_system == null
+		or seam_system == null
 		or world_runtime == null
 		or player_manager == null
 	):
@@ -43,11 +46,12 @@ func _run() -> void:
 	wave_manager.initial_delay = 100.0
 	transition_system.transition_cooldown = 0.01
 	transition_system.move_party_on_transition = false
+	seam_system.transition_cooldown = 0.01
 	_expect(
 		game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL, {
 			"world_seed": 31337,
-			"biome_map_width": 5,
-			"biome_map_height": 5,
+			"biome_map_width": 3,
+			"biome_map_height": 3,
 			"extra_edge_chance": 0.5
 		}),
 		"survival starts with persistent megamap"
@@ -56,33 +60,45 @@ func _run() -> void:
 	await physics_frame
 
 	var start_cell := biome_manager.get_current_biome_cell()
+	var graph := biome_manager.get_world_graph()
 	_expect(start_cell != null, "current region cell exists")
+	_expect(graph != null, "world graph exists")
 	_expect(world_runtime.get_current_region_id() == start_cell.id, "world runtime tracks current region")
-	_expect(not transition_system.get_active_gates().is_empty(), "open physical passages are spawned")
-	if start_cell == null or start_cell.passages.is_empty():
+	_expect(transition_system.get_active_gates().is_empty(), "open passages use no runtime gates")
+	_expect(get_nodes_in_group("biome_transition_gates").is_empty(), "no biome transition gate nodes exist")
+	if start_cell == null or graph == null or start_cell.passages.is_empty():
 		_finish()
 		return
-	_assert_gates_align_with_passages(transition_system, start_cell)
 	var player := player_manager.players.get(1) as PlayerController
 	_expect(player != null, "player one exists")
 	var original_position: Vector2 = player.global_position if player != null else Vector2.ZERO
-	var passage: BiomePassage = start_cell.passages.front()
-	transition_system.cooldown_timer = 0.0
+	var connection := _first_connection_for_cell(graph, start_cell)
+	_expect(connection != null, "start cell has an open WorldRegionConnection")
+	if connection == null:
+		_finish()
+		return
+	var crossing_position: Vector2 = seam_system.get_crossing_position_for_connection(
+		connection,
+		graph.start_region_id
+	)
+	if player != null:
+		player.global_position = crossing_position
+	seam_system.cooldown_timer = 0.0
 	_expect(
-		transition_system.transition_to(passage.to_biome_id, passage.side, passage.to_cell_id),
-		"transition uses target region id"
+		seam_system.try_update_region_for_position(crossing_position),
+		"world-space seam crossing uses the target region id"
 	)
 	await process_frame
-	_expect(biome_manager.get_current_region_id() == passage.to_cell_id, "biome manager changes to target region")
-	_expect(world_runtime.get_current_region_id() == passage.to_cell_id, "world runtime changes to target region")
+	_expect(biome_manager.get_current_region_id() == connection.to_region_id, "biome manager changes to target region")
+	_expect(world_runtime.get_current_region_id() == connection.to_region_id, "world runtime changes to target region")
 	if player != null:
 		_expect(
-			player.global_position.distance_to(original_position) < 80.0,
-			"transition does not teleport the party to a remote entry point"
+			player.global_position.distance_to(original_position) > 80.0,
+			"transition follows physical movement instead of teleporting the party"
 		)
 	_expect(
-		transition_system.get_active_gates().all(func(gate): return gate.is_in_group("open_region_passages")),
-		"generated passages are open physical passage nodes"
+		get_nodes_in_group("biome_transition_gates").is_empty(),
+		"generated passages do not require open passage nodes"
 	)
 
 	var survival_mode := get_first_node_in_group("survival_mode") as SurvivalMode
@@ -90,45 +106,16 @@ func _run() -> void:
 		survival_mode.stop_mode()
 	_finish()
 
-func _assert_gates_align_with_passages(
-	transition_system: BiomeTransitionSystem,
+func _first_connection_for_cell(
+	graph: WorldGraph,
 	cell: BiomeCell
-) -> void:
-	var layout := cell.generated_layout
-	var scale: float = layout.logical_tile_scale if layout != null else 8.0
-	var sides_covered := {}
-	for gate in transition_system.get_active_gates():
-		var passage := _find_passage(cell, gate.direction_id, gate.target_region_id)
-		if passage == null:
-			continue
-		sides_covered[gate.direction_id] = true
-		var expected_span: float = maxf(
-			float(passage.width) * scale,
-			BiomeTransitionGate.MIN_SPAN
-		)
-		var opening: float = (
-			gate.gate_size.x
-			if gate.direction_id == &"north" or gate.direction_id == &"south"
-			else gate.gate_size.y
-		)
-		_expect(
-			gate.passage_kind == passage.passage_type,
-			"gate to %s carries the passage type" % String(gate.target_region_id)
-		)
-		_expect(
-			is_equal_approx(opening, expected_span),
-			"gate opening matches the passage width on side %s" % String(gate.direction_id)
-		)
-	_expect(not sides_covered.is_empty(), "at least one gate is aligned to a passage")
-
-func _find_passage(
-	cell: BiomeCell,
-	side: StringName,
-	target_region_id: StringName
-) -> BiomePassage:
-	for passage in cell.passages:
-		if passage.side == side and passage.to_cell_id == target_region_id:
-			return passage
+) -> WorldRegionConnection:
+	var region := graph.get_region(cell.id)
+	if region == null:
+		return null
+	for connection in region.connection_edges:
+		if connection.is_open and connection.physical_passage:
+			return connection
 	return null
 
 func _expect(condition: bool, message: String) -> void:

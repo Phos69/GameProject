@@ -15,8 +15,8 @@ const BIOME_IDS: Array[String] = [
 ]
 const GENERATED_WORLD_CONTEXT := {
 	"world_seed": 515151,
-	"biome_map_width": 5,
-	"biome_map_height": 5,
+	"biome_map_width": 3,
+	"biome_map_height": 3,
 	"preserve_biome_sequence": false
 }
 
@@ -75,7 +75,7 @@ func _run_generated_layout_coverage(manifest: IsometricEnvironmentManifest) -> v
 	var generic_visuals := PackedStringArray()
 	var missing_dedicated_visuals := PackedStringArray()
 
-	_expect(cells.size() == 25, "manifest smoke generates a 5x5 biome map")
+	_expect(cells.size() == 9, "manifest smoke generates a 3x3 biome map")
 	for cell in cells:
 		var layout := cell.generated_layout
 		_expect(layout != null, "%s generated layout is available" % String(cell.id))

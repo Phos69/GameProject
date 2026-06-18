@@ -36,10 +36,4 @@ func _add_fall_boundary(
 				Vector2i(zone_size.x - FALL_THICKNESS, 0),
 				Vector2i(FALL_THICKNESS, zone_size.y)
 			)
-	layout.fall_zone_rects.append(rect)
-	layout.hazard_rects.append(rect)
-	layout.hazard_ids.append(&"fall_zone")
-	layout.hazard_positions.append(layout.rect_center_to_world(rect))
-	layout.hazard_sizes.append(layout.rect_size_to_world(rect))
-	layout.hazard_rotations.append(0.0)
-	layout.hazard_sides.append(side)
+	layout.add_fall_zone_rect(rect, side)

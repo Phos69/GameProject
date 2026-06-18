@@ -477,40 +477,64 @@ selezione dal menu. I profili attuali sono:
 - `Industrial Crossroads`: otto ingressi, corsie incrociate e due barili;
 - `Rift Foundry`: sei ingressi radiali, anelli di lettura e tre barili;
 - entrambi usano lo stesso `SurvivalMode`, `WaveManager` e roster;
-- gate e decorazioni non bloccano il pathing diretto degli zombie;
+- i passaggi tra biomi sono aperture fisiche nel terreno, senza portali o gate
+  di transizione visibili;
 - il barile e colpibile, mostra area e countdown, poi danneggia tutti gli
   attori nell'area tramite `HealthSystem`.
 
 Il revamp zombie e completo come prima versione giocabile:
 
 - a inizio run viene generata una megamappa globale seed-based con territori
-  `200x200`;
+  default `3x3` da `500x500`;
 - lo stesso seed ricrea biomi, confini, passaggi, strade, ostacoli, casse e
   fall zone;
 - ogni run parte dalla `Pianura Infetta`, il bioma iniziale semplice;
 - la topologia e un grafo connesso generato con spanning tree ed edge extra, quindi tutte le regioni sono raggiungibili e possono esistere loop;
-- il party attraversa passaggi fisici aperti tra territori confinanti, senza teletrasporto nel flusso standard;
+- il party attraversa passaggi fisici aperti tra territori confinanti; la
+  regione corrente cambia dalla posizione world-space del gruppo, senza
+  teletrasporto, portali o trigger visibili nel flusso standard;
 - ogni area ha passaggi fisici solo sui lati collegati; i lati esterni senza vicino sono fall boundary leggibili;
+- la regione corrente e i territori collegati adiacenti sono presenti come
+  contenuto gameplay: ostacoli, hazard e crate dei vicini sono gia fisici prima
+  dell'attraversamento;
 - il cambio regione aggiorna palette, terreno, ostacoli, casse, hazard, HUD, mappa esplorazione e wave successive;
+- gli zombie gia vivi continuano il chase attraverso i varchi aperti tra biomi,
+  senza despawn, reset di vita, perdita del target o cambio forzato di roster;
 - la mappa consultabile mostra solo territori unknown/discovered/visited/cleared e la posizione corrente del party;
 - le ondate leggono il bioma corrente tramite `WaveDirector`;
 - lo spawn reale degli zombie viene richiesto a `ZombieSpawner` sui bordi della camera;
-- i vecchi punti arena restano fallback e supporto visuale per i gate.
+- i vecchi punti arena restano fallback di spawn/debug e non rappresentano piu
+  il cambio bioma.
+- il flusso survival standard non usa piu visual legacy per comunicare la
+  megamappa: niente gate di transizione, ground vicino placeholder o patch
+  ovali sopra il tile layer asset-driven.
 
 Identita dei biomi:
 
 - `Pianura Infetta`: onboarding, zombie base, casse comuni/mediche e fall zone;
+  il visuale ground usa il set foresta base con erba, erba alta, sentieri,
+  strada, cliff/void e pareti rocciose, piu transizioni tra grass/path/road,
+  tall grass, cliff e mountain wall;
 - `Bioma Tossico`: pozze e gas, antidoti, zombie tossici ed esplosivi;
 - `Bioma Infuocato`: fiamme, lava, casse militari, runner ed esplosivi;
 - `Bioma Neve`: ghiaccio, neve alta, kit termici e zombie corazzati;
 - `Bioma Palude`: acqua profonda, fango, loot organico e zombie emergenti;
-- tutti i layout sono deterministici e mantengono una corsia centrale;
+- tutti i layout sono deterministici e partono da void: il generatore scava
+  strade principali orizzontali/verticali larghe 40 celle, sentieri tematici
+  medi larghi 20 celle, passaggi fisici larghi 40 celle e blocchi interni;
 - ogni layout generato contiene strade, corridoi e ostacoli grandi che
   influenzano movimento e combattimento invece di restare solo decorazione;
+- case, cabine, laboratori, barriere, barili, relitti, tronchi, ponti e crate
+  usano sprite SVG trasparenti con silhouette isometrica dedicata, non il
+  placeholder generico unico;
 - i lati collegati tra biomi hanno muri o barriere tematiche con almeno un
   passaggio raggiungibile; i lati senza vicino diventano fall zone con visuale
   cliff/depth;
-- tutto il `200x200` viene classificato come walkable, obstacle, hazard, border, void o fall zone;
+- tall grass, path, road e transizioni del bioma base sono solo lettura
+  visuale: non rendono obbligatori asset esterni e non cambiano walkability,
+  danno, spawn o pathfinding;
+- tutto il `500x500` viene classificato come walkable, obstacle, hazard, border,
+  void o fall zone;
 - casse e spawn vengono validati contro ostacoli e hazard.
 
 Zombie tematici:

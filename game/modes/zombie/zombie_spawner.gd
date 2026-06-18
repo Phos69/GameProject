@@ -211,12 +211,57 @@ func _is_position_hazardous(position: Vector2) -> bool:
 	)
 
 func _is_position_inside_generated_biome(position: Vector2, biome) -> bool:
+	var seam_system := get_tree().get_first_node_in_group("region_seam_system")
+	if (
+		seam_system != null
+		and seam_system.has_method("get_region_id_for_world_position")
+	):
+		var region_id := StringName(
+			seam_system.get_region_id_for_world_position(position)
+		)
+		if region_id.is_empty():
+			return false
+		var streamer := get_tree().get_first_node_in_group("world_region_streamer")
+		if (
+			streamer != null
+			and streamer.has_method("is_region_streamed")
+			and not bool(streamer.is_region_streamed(region_id))
+		):
+			return false
+		return _is_position_on_streamed_walkable_terrain(
+			position,
+			region_id,
+			seam_system
+		)
 	if biome == null:
 		return true
 	var layout := biome.get("environment_layout") as BiomeEnvironmentLayout
 	if layout == null or not layout.has_generated_map_data():
 		return true
-	return layout.is_world_position_inside_zone(position)
+	if not layout.is_world_position_inside_zone(position):
+		return false
+	var cell := layout.world_to_logical(position)
+	return _is_walkable_spawn_class(layout.get_terrain_class_at_cell(cell))
+
+func _is_position_on_streamed_walkable_terrain(
+	position: Vector2,
+	region_id: StringName,
+	seam_system: Node
+) -> bool:
+	var biome_manager := get_tree().get_first_node_in_group("biome_manager") as BiomeManager
+	if biome_manager == null or not seam_system.has_method("world_position_to_logical_tile"):
+		return true
+	var cell := biome_manager.get_cell_by_region_id(region_id) as BiomeCell
+	if cell == null or cell.generated_layout == null:
+		return true
+	var world_tile: Vector2i = seam_system.world_position_to_logical_tile(position)
+	var local_tile := world_tile - cell.world_origin
+	return _is_walkable_spawn_class(
+		cell.generated_layout.get_terrain_class_at_cell(local_tile, cell)
+	)
+
+func _is_walkable_spawn_class(terrain_class: StringName) -> bool:
+	return terrain_class == BiomeEnvironmentLayout.TERRAIN_WALKABLE
 
 func _unit_sample(spawn_index: int, attempt: int, salt: int) -> float:
 	var raw := absi(spawn_index * 110351 + attempt * 9176 + salt * 131)

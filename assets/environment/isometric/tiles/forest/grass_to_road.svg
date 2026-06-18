@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="120" viewBox="0 0 160 120" data-generated-by="generate_isometric_environment_assets" data-section="terrain_tiles" data-id="grass_to_road">
+  <title>terrain_tiles grass_to_road</title>
+  <ellipse cx="80" cy="87" rx="60" ry="18" fill="#283416" opacity="0.40"/>
+  <polygon points="80,16 143,53 80,90 17,53" fill="#24401d" stroke="#5d7836" stroke-width="4"/>
+  <path d="M25 53 L80 22 L135 53 L80 86 Z" fill="#604526" opacity="0.88"/>
+  <path d="M24 53 C40 48 51 50 63 56 M98 55 C113 48 125 48 137 52" fill="none" stroke="#73934a" stroke-width="7" stroke-linecap="round" opacity="0.78"/>
+  <path d="M40 48 C60 44 76 52 92 59 C107 66 121 61 131 55" fill="none" stroke="#372414" stroke-width="3" opacity="0.42"/>
+  <circle cx="60" cy="59" r="2" fill="#372817" opacity="0.58"/>
+  <circle cx="108" cy="52" r="2" fill="#2d2216" opacity="0.50"/>
+</svg>

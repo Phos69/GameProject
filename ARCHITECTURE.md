@@ -33,37 +33,42 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 16. `DropPickup` delega l'applicazione della ricompensa a `DropSystem`.
 17. `GameModeManager` avvia `SurvivalMode`, che applica il profilo RPG scelto e seleziona un profilo arena tramite `SurvivalArenaManager`.
 18. `ZombieModeController` avvia i componenti revamp zombie e forza il bioma iniziale tramite `BiomeManager`.
-19. `BiomeManager` genera una megamappa seed-based tramite `BiomeWorldGenerator`, con territori `200x200`, grafo connesso, passaggi condivisi, fall boundary, layout validati e regione corrente.
+19. `BiomeManager` genera una megamappa seed-based tramite `BiomeWorldGenerator`, con territori default `3x3` da `500x500`, grafo connesso, passaggi condivisi, fall boundary, layout validati e regione corrente.
 20. `WorldRuntime` mantiene grafo, stato esplorazione, regione corrente e stato persistente sovrapposto al layout rigenerato dal seed.
-21. `BiomeTransitionSystem` crea passaggi fisici aperti tra regioni confinanti e aggiorna la regione corrente senza teletrasporto nel flusso standard.
-22. `SurvivalArenaManager` configura playground, player, crate, gate e fallback spawn per lo spawner.
-23. `HazardSystem` genera fall zone e hazard ambientali, aggiorna posizioni sicure, status e modificatori movimento.
-24. `WaveManager` interroga `WaveDirector` per roster/scaling bioma e `ZombieSpawner` per spawn dai bordi camera, poi crea zombie tramite `EnemySystem`.
-25. `SurvivalMode` usa `GameModeManager` e `BossSystem` per creare il boss della quinta ondata.
-26. `WaveManager` conta scorte e boss prima di assegnare la ricompensa.
-27. `DungeonMode` genera un layout da seed, istanzia una `DungeonRoom` alla volta e usa nemici, drop e boss condivisi.
-28. `DungeonRoom` controlla pareti, portale e stato locked/unlocked della stanza corrente.
-29. `TowerDefenseMode` gestisce lifecycle, arena, player e richieste costruzione.
-30. `TowerDefenseWaveController` governa ondate e usa `EnemySystem` per i nemici da percorso.
-31. `TowerDefenseManager` mantiene vita core e crediti, mentre gli slot delegano lo spawn delle torri.
-32. `DefenseTower` seleziona target e inoltra direzione e fuoco a `DefenseTowerVisual`.
-33. `ProgressionManager` prepara i player a ogni nuova run applicando gli unlock persistenti.
-34. `ReviveSystem` coordina prossimita, interact tenuto e progresso per i player downed.
-35. `SurvivalAmmoDirector` osserva l'ammo speciale dei player vivi e genera supply crate configurabili.
-36. `AudioEventRouter` traduce eventi gameplay in cue richiesti ad `AudioManager`.
-37. `AudioManager` gestisce bus, fallback, stream opzionali, priorita e volumi.
-38. `VideoSettingsManager` applica fullscreen, borderless, risoluzione, VSync
+21. `RegionSeamSystem` legge posizione world-space del party, grafo e
+    `WorldRegionConnection` aperti per aggiornare la regione corrente senza
+    portali, trigger visibili o teletrasporto.
+22. `WorldRegionStreamer` mantiene la regione corrente e i vicini connessi come
+    contenuto gameplay attivo: tile, ostacoli, hazard/fall zone e crate sono
+    gia presenti prima dell'attraversamento.
+23. `SurvivalArenaManager` configura playground, player, crate, gate e fallback spawn per lo spawner.
+24. `HazardSystem` genera fall zone e hazard ambientali, aggiorna posizioni sicure, status e modificatori movimento.
+25. `WaveManager` interroga `WaveDirector` per roster/scaling bioma e `ZombieSpawner` per spawn dai bordi camera, poi crea zombie tramite `EnemySystem`.
+26. `SurvivalMode` usa `GameModeManager` e `BossSystem` per creare il boss della quinta ondata.
+27. `WaveManager` conta scorte e boss prima di assegnare la ricompensa.
+28. `DungeonMode` genera un layout da seed, istanzia una `DungeonRoom` alla volta e usa nemici, drop e boss condivisi.
+29. `DungeonRoom` controlla pareti, portale e stato locked/unlocked della stanza corrente.
+30. `TowerDefenseMode` gestisce lifecycle, arena, player e richieste costruzione.
+31. `TowerDefenseWaveController` governa ondate e usa `EnemySystem` per i nemici da percorso.
+32. `TowerDefenseManager` mantiene vita core e crediti, mentre gli slot delegano lo spawn delle torri.
+33. `DefenseTower` seleziona target e inoltra direzione e fuoco a `DefenseTowerVisual`.
+34. `ProgressionManager` prepara i player a ogni nuova run applicando gli unlock persistenti.
+35. `ReviveSystem` coordina prossimita, interact tenuto e progresso per i player downed.
+36. `SurvivalAmmoDirector` osserva l'ammo speciale dei player vivi e genera supply crate configurabili.
+37. `AudioEventRouter` traduce eventi gameplay in cue richiesti ad `AudioManager`.
+38. `AudioManager` gestisce bus, fallback, stream opzionali, priorita e volumi.
+39. `VideoSettingsManager` applica fullscreen, borderless, risoluzione, VSync
    e limite framerate.
-39. `VisualSettingsManager` distribuisce solo impostazioni presentazionali e le persiste nel save.
-40. `IsometricCameraController` segue il gruppo e applica shake solo tramite offset.
-41. `HUDManager` mostra slot, progressione, vita, munizioni, stato modalita, boss e mappa esplorazione.
-42. I componenti visuali ricevono stato e profilo senza possedere logica gameplay.
-43. `BossTelegraphVisual` riceve pattern, direzione e durata senza possedere danno.
-44. `WaveWardenVisual` e `RiftArchitectVisual` ricevono solo stato presentazionale.
-45. `CombatAnnouncement` presenta segnali wave e boss tradotti da `HUDManager`.
-46. `GameplayEffects` ascolta segnali pubblici e genera effetti temporanei.
-47. `RunSessionTracker` misura durata e delta progressione tra start e fine run.
-48. `RunResultsScreen` presenta il risultato e delega retry/menu/cambio.
+40. `VisualSettingsManager` distribuisce solo impostazioni presentazionali e le persiste nel save.
+41. `IsometricCameraController` segue il gruppo e applica shake solo tramite offset.
+42. `HUDManager` mostra slot, progressione, vita, munizioni, stato modalita, boss e mappa esplorazione.
+43. I componenti visuali ricevono stato e profilo senza possedere logica gameplay.
+44. `BossTelegraphVisual` riceve pattern, direzione e durata senza possedere danno.
+45. `WaveWardenVisual` e `RiftArchitectVisual` ricevono solo stato presentazionale.
+46. `CombatAnnouncement` presenta segnali wave e boss tradotti da `HUDManager`.
+47. `GameplayEffects` ascolta segnali pubblici e genera effetti temporanei.
+48. `RunSessionTracker` misura durata e delta progressione tra start e fine run.
+49. `RunResultsScreen` presenta il risultato e delega retry/menu/cambio.
 
 ## Sistemi principali
 
@@ -110,8 +115,11 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
   `WeaponData`.
 - `ProjectileSystem` e `Projectile`: spawn, movimento, collisione e consegna del danno.
 - `HealthSystem` e `HealthComponent`: richieste globali di danno/cura, stato vita locale e invulnerabilita componibile per sorgente; il danno ambientale puo ignorarla esplicitamente.
-- `EnemySystem`: registro di scene nemico per ID, spawn, contenitore, registro runtime e notifica morte.
-- `BasicEnemy`: AI melee condivisa con stati idle, chase, attack e dead.
+- `EnemySystem`: registro di scene nemico per ID, spawn, contenitore, registro runtime e notifica morte. In survival assegna `spawn_region_id` dalla posizione world-space tramite `RegionSeamSystem`.
+- `BasicEnemy`: AI melee condivisa con stati idle, chase, attack e dead; resta
+  world-space durante il chase cross-bioma e traccia `spawn_region_id`,
+  `current_region_id` e `last_seen_player_region_id` senza modificare target,
+  health, status o drop.
 - `RangedEnemy`: specializzazione di `BasicEnemy` con distanza preferita, windup e proiettile ostile.
 - `ZombieVisual`: profili procedurali basic, runner e tank senza autorita gameplay.
 - `EnemyShotTelegraphVisual`: corsia e countdown ranged senza collisioni o danno.
@@ -122,19 +130,28 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `ZombieModeController`: coordinatore interno del revamp survival per bioma, terrain, casse, ostacoli e hazard.
 - `BiomeManager`: registro biomi, regione/bioma corrente, layout procedurale corrente e selezione iniziale della `Pianura Infetta`.
 - `WorldGraph`: grafo seed-based dei territori, connesso tramite spanning tree ed edge extra, con API per raggiungibilita e connessioni fisiche.
-- `WorldRegion`: dati stabili di un territorio `200x200`, inclusi biome ID, coordinate, origine mondo, vicini, connessioni e layout generato.
+- `WorldRegion`: dati stabili di un territorio `500x500`, inclusi biome ID, coordinate, origine mondo, vicini, connessioni e layout generato.
 - `WorldRegionConnection`: edge navigazionale tra due regioni confinanti, con lato, direzione opposta, centro/larghezza del passaggio e coordinate globali.
 - `WorldExplorationState`: stato unknown/discovered/visited/cleared per regione e marker della regione corrente.
 - `PersistentWorldState`: payload serializzabile del mondo, seed, regione corrente, posizione party e stato esplorazione.
 - `WorldRuntime`: runtime del grafo persistente; sincronizza `BiomeManager`, exploration state e save/load, con spazio per streaming regioni.
-- `MultiRegionRenderer`: prototipo del renderer multi-regione; istanzia la regione corrente piu i vicini connessi a offset derivati da `WorldRegion.world_origin`, con i vicini come solo ground visuale e le regioni lontane mai istanziate.
+- `WorldRegionStreamer`: streamer gameplay multi-regione; istanzia regione
+  corrente e vicini connessi a offset derivati da `WorldRegion.world_origin`,
+  con tile layer, ostacoli, hazard/fall zone e crate gia presenti prima
+  dell'attraversamento. Registra i nodi nei sistemi zombie esistenti, cosi
+  query di collisione, safe position, danno da caduta e ledger crate restano
+  centralizzati.
+- `MultiRegionRenderer`: prototipo/fallback visuale storico; conserva il
+  contratto dei vicini solo ground per test e debug. Non viene creato durante
+  la risoluzione componenti della survival standard; `ZombieModeController` lo
+  istanzia solo come fallback lazy se `WorldRegionStreamer` non puo streamare.
 - `WorldGenerationSeed`: seed globale di run e derivazione deterministica degli stream RNG per mappa, terreno, ostacoli, bordi, loot e spawn.
 - `BiomeWorldGenerator`: orchestratore della pipeline procedurale globale per mappa biomi, layout per cella e debug seed.
-- `BiomeMapGenerator`: costruisce la griglia di `BiomeCell` `200x200`, assegna tipi bioma, coordinate globali, vicini, seed locali e grafo connesso con loop.
+- `BiomeMapGenerator`: costruisce la griglia di `BiomeCell` `500x500` con default `3x3`, assegna tipi bioma, coordinate globali, vicini, seed locali e grafo connesso con loop.
 - `BorderGenerator`: calcola lati connessi e lati esterni di caduta per ogni cella bioma.
 - `BiomePassageGenerator`: crea passaggi condivisi e allineati tra celle
-  confinanti, con rettangoli local/global e tile entry/exit derivati dal
-  `passage_type`.
+  confinanti, con larghezza fisica standard di 40 celle, rettangoli
+  local/global e tile entry/exit derivati dal `passage_type`.
 - `BiomeTerrainGenerator`: genera il layout interno del bioma attivo e collega ostacoli, casse, hazard e report di validazione.
 - `IsometricEnvironmentManifest`: legge `assets/environment/isometric/manifest.json`
   come inventario di ostacoli, draw mode oggetto, border tematici, fall zone
@@ -143,26 +160,44 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
   `passage_tiles`, `biome_asset_sets`, `fallback_policy`). Il loader normalizza
   path, status, footprint, anchor, collisione, blocchi e attribution senza
   rendere obbligatori asset esterni.
-- `ObstacleLayoutGenerator`: produce strade, corridoi, case grandi, ostacoli
-  secondari e muri/bordi tematici sui lati connessi o bloccati.
+- `ObstacleLayoutGenerator`: produce strade e sentieri isometrici con scala
+  standard 40 celle per strade principali e 20 celle per sentieri medi,
+  diramazioni verso i passaggi, case grandi, ostacoli secondari e muri/bordi
+  tematici sui lati connessi o bloccati.
 - `FallBoundaryGenerator`: trasforma i lati senza vicino in `fall_zone` data-driven con il contratto di danno ambientale esistente.
-- `MapValidationSystem`: valida con flood-fill spawn, corridoi, passaggi, casse raggiungibili, grafo connesso, passaggi non ostruiti e classificazione completa del `200x200`.
+- `MapValidationSystem`: valida con flood-fill spawn, corridoi, passaggi, casse raggiungibili, grafo connesso, passaggi non ostruiti, void non attraversabile e classificazione completa del `500x500`.
 - `BiomeMapDebugOverlay`: espone seed corrente, riepilogo celle/passaggi,
   classi terrain aggregate, il report di connettivita del grafo (`WorldGraph.get_connectivity_report()`), regione corrente e active regions caricate, con toggle `F8`, e richieste di rigenerazione per debug.
 - `BiomeDefinition`: risorsa dati con terreno, ostacoli, casse, zombie ammessi, pesi, palette e moltiplicatori.
-- `BiomeTransitionSystem`: passaggi fisici aperti tra regioni confinanti, cambio regione/bioma e fallback legacy di spostamento party solo se esplicitamente abilitato.
-- `BiomeTransitionGate`: area non bloccante e leggibile che rappresenta un'apertura fisica e richiede il cambio regione; e dimensionata e orientata dalla larghezza/lato del `BiomePassage`, tematizzata per `passage_type` e con freccia direzione-aware, senza teletrasportare il party quando `move_party_on_transition` resta `false`.
-- `BiomeEnvironmentLayout`: placement deterministico di patch terreno, ostacoli fisici, casse e hazard per un bioma, con classificazione completa del `200x200`.
+- `RegionSeamSystem`: tracker world-space della regione survival corrente.
+  Converte la posizione del party in tile globali, verifica che il bordo
+  attraversato appartenga a un `WorldRegionConnection` aperto e aggiorna
+  `BiomeManager`/`WorldRuntime` senza creare `Area2D` o marker di transizione.
+- `BiomeTransitionSystem`: API legacy/debug per forzare `transition_to()` negli
+  smoke e nei tool esistenti; non istanzia piu `BiomeTransitionGate` nel
+  runtime survival standard.
+- `BiomeTransitionGate`: classe storica mantenuta per compatibilita dei test di
+  dimensionamento/span; non e piu creata dalla survival.
+- `BiomeEnvironmentLayout`: placement deterministico di floor scavati,
+  `road_cell_tags`, rettangoli di apertura, blocchi interni, ostacoli fisici,
+  casse e hazard per un bioma, con classificazione completa del `500x500`.
 - `WaveDirector`: composizione wave e scaling basati sul bioma corrente.
-- `ZombieSpawner`: spawn dai bordi della camera con distanza minima dai player, validazione hazard/ostacoli e fallback arena.
+- `ZombieSpawner`: spawn dai bordi della camera con distanza minima dai player,
+  validazione hazard/ostacoli e fallback arena; nella megamappa valida le
+  posizioni contro regioni streamate world-space invece del solo layout locale
+  corrente.
 - `TerrainGenerator`: applica la palette del bioma, genera il piano visuale
-  `200x200`, legge gli stili terrain dal manifest e crea decorazioni non
-  collidenti dal layout.
+  `500x500` e legge gli stili terrain dal manifest. Nel percorso standard
+  registra il tile layer streamato; patch e ground procedurali restano fallback
+  espliciti.
 - `BiomeRegionGround`: base visuale estesa dell'intero territorio, separata
   dalle patch decorative puntuali, con `sample_step` guidato dai preset del
-  manifest.
+  manifest. E un fallback tecnico, non un nodo della survival standard
+  asset-driven.
 - `BiomeTerrainPatch`: patch decorativa procedurale che usa draw mode
   data-driven per strade, passaggi e dettagli bioma senza possedere collisioni.
+  Rimane per fallback/test legacy e non viene istanziata quando il tile layer
+  asset-driven e attivo.
 - `ObstacleSystem`: genera e registra ostacoli fisici usati anche come spawn
   blocker; nel percorso asset-driven delega a `IsometricEnvironmentObjectFactory`.
 - `IsometricEnvironmentObjectFactory`: legge il contratto `object_scenes` dal
@@ -429,18 +464,32 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 ## Contratto megamappa persistente
 
 - `WorldGenerationSeed` resta la sorgente deterministica; il layout fisico viene rigenerato dal seed, non salvato integralmente.
-- `BiomeMapGenerator` produce una griglia di territori `200x200` con grafo connesso: uno spanning tree garantisce raggiungibilita e edge extra aggiungono loop.
+- `BiomeMapGenerator` produce una griglia default `3x3` di territori `500x500`
+  con grafo connesso: uno spanning tree garantisce raggiungibilita e edge extra
+  aggiungono loop. La dimensione e il numero regioni restano override di debug
+  tramite context.
 - Ogni `WorldRegionConnection` deve corrispondere a un passaggio fisico aperto su entrambi i lati confinanti.
 - Due regioni adiacenti senza edge navigazionale hanno bordo bloccato; un lato senza regione vicina diventa fall boundary.
-- `BiomeEnvironmentLayout` deve classificare tutto il `200x200` come walkable, obstacle, hazard, border, void o fall zone.
+- `BiomeEnvironmentLayout` deve classificare tutto il `500x500` come walkable,
+  obstacle, hazard, border, void o fall zone. Il layout non assume piu pavimento
+  continuo: parte da void e scava floor, strade, passaggi e blocchi interni.
 - `MapValidationSystem` rifiuta grafi non connessi, passaggi ostruiti, passaggi non fisici e classificazione incompleta.
 - `WorldRuntime` mantiene `current_region_id` e marca visited/discovered senza possedere regole combat.
 - `WorldRuntime.stop_run()` rilascia riferimenti a grafo e `BiomeManager`; i
   generatori di supporto procedurale senza lifecycle di scena sono `RefCounted`.
 - `ExplorationMapPanel` mostra solo regioni note; unknown/fog non rivela la topologia completa.
 - `SaveManager` sovrappone `PersistentWorldState` alla prossima generazione con lo stesso seed.
-- Contratto megamappa scelto (Milestone 8): continuita fisica multi-regione come prototipo. `MultiRegionRenderer` istanzia la regione corrente piu i vicini connessi entro `neighbor_radius`, posizionandoli con offset `(world_origin_vicino - world_origin_corrente) * logical_tile_scale`. Solo la regione corrente possiede contenuto gameplay (ostacoli, hazard, casse, spawn) tramite i sistemi zombie esistenti; i vicini sono solo `BiomeRegionGround` visuale, quindi non duplicano casse/hazard ne generano nemici; le regioni oltre il raggio restano dati persistenti non istanziati.
-- `ZombieModeController` invoca `MultiRegionRenderer.render_world()` a ogni cambio regione e lo pulisce a `stop_run()`; l'integrazione e gated da `enable_multi_region_render`.
+- Contratto megamappa scelto (Milestone 10.8): continuita fisica multi-regione
+  gameplay. `WorldRegionStreamer` istanzia la regione corrente piu i vicini
+  connessi entro `active_radius`, posizionandoli con offset
+  `(world_origin_regione - world_origin_start) * logical_tile_scale`. Current e
+  vicini hanno contenuto `FULL`; regioni oltre il raggio restano dati
+  persistenti non istanziati.
+- `ZombieModeController` invoca `WorldRegionStreamer.stream_world()` a ogni
+  cambio regione e lo pulisce a `stop_run()`; l'integrazione e gated da
+  `enable_multi_region_render`. `MultiRegionRenderer` resta fallback visuale
+  lazy-only se lo streamer non e disponibile, quindi il bootstrap survival
+  standard non crea piu neighbor ground placeholder.
 
 ## Contratto progressione e run
 
@@ -477,33 +526,52 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - `BiomeManager.stop_run()` ripristina i layout base dei biomi e libera i dati
   world generati, evitando che celle, grafi e report restino vivi tra test.
 - Ogni run survival genera o rigenera una megamappa persistente seed-based; in assenza di seed manuale usa un seed default stabile, mentre un context `world_seed` permette riproduzione e debug.
-- La megamappa contiene territori `200x200`, seed locali, vicini, bordi, grafo connesso, passaggi fisici, fall boundary e layout ambientali validati prima di essere assegnati alle `BiomeDefinition`.
+- La megamappa contiene territori `500x500`, seed locali, vicini, bordi, grafo connesso, passaggi fisici, fall boundary e layout ambientali validati prima di essere assegnati alle `BiomeDefinition`.
 - Ogni nuova run survival riparte dalla `Pianura Infetta`.
 - `WorldRuntime` marca la regione iniziale come visited, scopre i vicini collegati e conserva lo stato esplorazione.
 - `BiomeTransitionSystem` collega territori confinanti tramite passaggi aperti; il party condivide una sola regione corrente.
-- Quando e disponibile una cella procedurale corrente, `BiomeTransitionSystem` genera aperture dai `BiomePassage` e propaga al gate il `passage_type` e lo span (`width * logical_tile_scale`), cosi il trigger resta dentro il varco aperto tra i muri di bordo; il fallback `previous_biome_id`/`next_biome_id` resta per compatibilita.
-- I `BiomeTransitionGate` sono trigger fisici: di default non disegnano frecce,
-  marker o direzione; il draw resta solo debug opzionale (`show_debug_visual`).
+- Quando il party attraversa un varco, `RegionSeamSystem` verifica posizione,
+  regione target e connessione aperta usando coordinate globali; i lati senza
+  edge non cambiano regione e restano muro, bordo o fall zone.
+- Durante la survival standard non esistono nodi nel gruppo
+  `biome_transition_gates`; i passaggi sono comunicati da tile, apertura fisica
+  e continuita del terreno.
 - Il cambio regione applica terreno, ostacoli, casse, hazard e passaggi della nuova regione senza riavviare `WaveManager`.
 - `WaveDirector` legge il bioma corrente per risolvere roster, moltiplicatori, ritmo spawn e drop.
 - Lo scaling contestuale considera wave, player vivi, tempo sopravvissuto e profondita del bioma.
 - Ogni bioma legge `BiomeEnvironmentLayout` per terreno, ostacoli, casse e hazard senza placement hardcoded nei controller.
-- Ogni `BiomeEnvironmentLayout` espone una classificazione completa del `200x200` usata da validazione, dodge/gap e debug.
+- Ogni `BiomeEnvironmentLayout` espone una classificazione completa del `500x500`
+  usata da validazione, dodge/gap, spawn, streaming e debug.
+- `BiomeEnvironmentLayout.get_floor_tag_at_cell()` espone anche il tag visuale
+  dei floor rect scavati, cosi il resolver puo distinguere tall grass, path e
+  altre superfici senza cambiare la classe terrain walkable.
 - `TerrainGenerator` modifica palette e ground visuale; non possiede collisioni
   o regole combat.
-- In modalita asset, `TerrainGenerator` crea `BiomeTileLayer` come ground
-  primario e non istanzia i vecchi `BiomeTerrainPatch` ovali. Se
-  `use_asset_tile_layer` viene disattivato, `BiomeRegionGround` e
-  `BiomeTerrainPatch` restano fallback tecnici controllati.
+- In modalita asset, `TerrainGenerator` registra il `BiomeTileLayer` della
+  regione corrente creato da `WorldRegionStreamer`; nel fallback mono-regione
+  puo ancora creare direttamente il ground primario e non istanzia i vecchi
+  `BiomeTerrainPatch` ovali. Se `use_asset_tile_layer` viene disattivato o lo
+  streaming non e disponibile, `BiomeRegionGround` e `BiomeTerrainPatch`
+  restano fallback tecnici controllati, non visuali della survival standard.
 - `IsometricTileResolver` risolve deterministicamente ogni cella logica
-  `200x200` in `floor_base`, varianti floor, route tile asset-driven
+  `500x500` in `floor_base`, varianti floor, route tile asset-driven
   (`main_road`, road tematiche, curve/edge/intersezioni), passage tile
   (`road`, `bridge`, `snow_pass`, `broken_gate`, `burned_road`, entry/exit),
   `hazard_floor`, `border_floor`, `void_edge_near` o `void_depth` usando seed,
-  cella e bioma. I connector di passaggio hanno priorita sulle road decorative
-  sovrapposte.
-  `BiomeTileLayer` cache-a tutti i 40.000 tile e li divide in chunk (`balanced`
-  20x20, `performance` 25x25, `quality` 16x16) senza creare 40.000 nodi.
+  cella e bioma. Le route generate preferiscono `road_cell_tags` diagonali; i
+  rettangoli restano per aperture/passaggi e compatibilita. I connector di
+  passaggio hanno priorita sulle road decorative sovrapposte.
+- Per `infected_plains`, `IsometricTileResolver` usa il set forestale dedicato:
+  `forest_grass`, `forest_tall_grass`, `forest_path`, `forest_road`,
+  `forest_void`, `forest_cliff_edge`, `forest_mountain_wall` e le transizioni
+  `grass_to_path`, `grass_to_road`, `grass_to_tall_grass`, `path_to_road`,
+  `ground_to_void_cliff` e `ground_to_mountain_wall`. Queste scelte sono
+  presentazionali e neighbor-aware: non cambiano pathfinding, collisioni,
+  hazard o spawn.
+- `BiomeTileLayer` cache-a tutti i 250.000 tile e li divide in chunk
+  (`balanced` 20x20, `performance` 25x25, `quality` 16x16) senza creare nodi
+  per-tile. Il layer pre-bake-a anche linee di dettaglio per grass, tall grass,
+  path, road, transizioni, cliff e void.
 - Gli ostacoli runtime sono `StaticBody2D` sul layer `1`, quindi player e zombie
   li trattano come impedimento fisico.
 - Gli ostacoli appartengono anche ai gruppi `environment_obstacles` e `spawn_blockers`.
@@ -512,10 +580,16 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
   `asset_path` `object_scenes`, ancorato al pavimento e ordinato con
   `sort_offset`. `BiomeObstacle` resta adapter/fallback quando il contratto
   dichiara esplicitamente un fallback procedurale.
+- In streaming multi-regione, `ObstacleSystem` registra gli ostacoli creati da
+  `WorldRegionStreamer`; le query `is_position_blocked` leggono tutti i nodi
+  attivi nei gruppi `environment_obstacles`/`spawn_blockers`, inclusi i vicini.
 - `IsometricSvgTextureLoader` evita che il runtime dipenda dall'import editor:
-  se Godot non puo caricare direttamente uno SVG, legge il file generato e
-  produce una `ImageTexture` runtime con base isometrica, ombra e volume usando
-  i colori dichiarati nello SVG.
+  rasterizza direttamente il contenuto SVG quando mantiene corner trasparenti,
+  accetta la texture importata solo se non introduce un canvas opaco e, in
+  fallback, disegna una silhouette isometrica per categoria usando i metadata
+  `data-section`/`data-id`. Gli SVG ambiente interni restano trasparenti e
+  hanno silhouette specifiche per case, recinti, muri, barili, relitti, tronchi,
+  ponti e crate.
 - `BiomeObstacle` legge `draw_mode` e `dedicated_draw` da
   `IsometricEnvironmentManifest`; se un ID ricade su `generic_barrier`, deve
   essere una scelta esplicita del manifest e non un fallback implicito.
@@ -546,7 +620,7 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - `assets/environment/isometric/manifest.json` v7 contiene i draw mode oggetto
   legacy in `object_visuals`, i contratti asset per tile, terrain, edge, void,
   object scenes, passage tiles e asset set di bioma, inclusi `void_edge_near`,
-  `void_depth`, road connector e entry/exit passaggio; i preset
+  `void_depth`, tile forestali, road connector e entry/exit passaggio; i preset
   `performance`/`balanced`/`quality` restano disponibili per fallback ground e
   qualita del tile layer.
 - `WorldRegionConnection` serializza apertura locale, connector locale,
@@ -560,6 +634,9 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
   presentazionale: non modifica classificazione, collisioni, pathfinding,
   hazard o regole di movimento.
 - `ResourceCrateSystem` valida le posizioni contro `ObstacleSystem`, `HazardSystem` e la distanza minima tra casse.
+- In streaming multi-regione, le crate layout create da `WorldRegionStreamer`
+  portano `region_id` e `region_crate_key`; aprirle aggiorna il ledger del
+  rispettivo territorio e il re-stream non le ripristina.
 - Casse comuni, mediche, militari e tematiche usano loot table dedicate ma continuano a generare pickup tramite `DropSystem`.
 - I loot tematici aggiungono `resource_tag` presentazionali senza creare un secondo inventario.
 - `HazardSystem` delega tossico, fuoco, gelo, acqua e fango a `BiomeStatusRuntime`, tramite danno periodico o `environment_speed_multiplier`.
@@ -579,7 +656,11 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - Gli stati runtime sono `idle`, `intermission`, `spawning`, `combat` e `reward`.
 - Gli zombie vengono creati esclusivamente tramite `EnemySystem.spawn_enemy()`.
 - `WaveManager.get_enemy_id_for_spawn()` delega a `WaveDirector` quando presente, con fallback deterministico legacy.
-- Le posizioni spawn reali vengono richieste a `ZombieSpawner`; `spawn_points` resta fallback e contratto visuale per i gate arena.
+- Le posizioni spawn reali vengono richieste a `ZombieSpawner`; `spawn_points`
+  resta fallback/debug di arena e non rappresenta il cambio bioma.
+- Gli zombie gia vivi non vengono despawnati al cambio regione: mantengono
+  target, health, status e loot, aggiornando solo metadata di regione mentre
+  inseguono il player attraverso varchi aperti.
 - `SurvivalArenaManager` applica `context.arena_id` senza duplicare `SurvivalMode`.
 - Il profilo attivo configura spawn nemici, player, supply crate e boss.
 - I gate non hanno collisioni; il loro impulso deriva da `WaveManager.enemy_spawned`.

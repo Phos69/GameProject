@@ -6,6 +6,7 @@ const REQUIRED_DIRS: Array[String] = [
 	"res://assets/environment/isometric/tiles/ash",
 	"res://assets/environment/isometric/tiles/snow",
 	"res://assets/environment/isometric/tiles/marsh",
+	"res://assets/environment/isometric/tiles/forest",
 	"res://assets/environment/isometric/tiles/shared",
 	"res://assets/environment/isometric/objects/buildings",
 	"res://assets/environment/isometric/objects/barriers",

@@ -1,141 +1,141 @@
-Analizza lo stato attuale della repository GameProject con focus esclusivo sulla migrazione verso un’ambientazione completamente isometrica.
+Analizza la repo del gioco e implementa un primo sistema completo di texture isometriche per pavimenti, muri e cliff/void, partendo dal bioma base foresta.
 
 Obiettivo:
-capire cosa ci siamo persi per strada nella migrazione grafica e strutturale verso biomi/mappe totalmente isometrici, soprattutto per quanto riguarda:
-- generazione dei biomi;
-- terrain isometrico;
-- oggetti ambientali;
-- ostacoli;
-- props;
-- bordi del bioma;
-- zone di caduta;
-- connessioni tra biomi;
-- coerenza visiva tra gameplay, mappa e navigazione;
-- sostituzione di asset non isometrici con equivalenti isometrici;
-- eventuali sistemi chiamati nel codice “genomi”, “biomi”, “biome generation”, “terrain generation”, “map generation” o simili.
+Riscrivere/estendere gli asset grafici del terreno del bioma foresta in modo che ogni zona sia chiaramente leggibile in visuale isometrica, senza placeholder. Le texture devono includere anche transizioni visive tra un tipo di terreno e l’altro.
 
-Prima fase: audit completo
-1. Esplora la repo e individua tutti i file coinvolti in:
-   - generazione mappa/bioma;
-   - spawn oggetti/ostacoli/props;
-   - rendering isometrico;
-   - tilemap/terrain;
-   - collisioni;
-   - pathfinding o navigazione;
-   - transizioni tra biomi;
-   - minimappa/mappa territori esplorati;
-   - asset loading;
-   - menu o debug relativi ai biomi.
+Contesto:
+Il gioco deve avere biomi isometrici credibili. Non basta avere tile piatti centrali: ogni pavimento, bordo, muro e zona di caduta deve comunicare chiaramente se è calpestabile, ostacolo, bordo pericoloso o void. Repo di riferimento: :contentReference[oaicite:0]{index=0}
 
-2. Ricostruisci lo stato attuale:
-   - cosa è già realmente isometrico;
-   - cosa è ancora top-down, placeholder, flat, non coerente o non convertito;
-   - quali oggetti sono ancora fuori stile;
-   - quali biomi sono incompleti;
-   - quali funzioni sembrano duplicate, abbandonate o parziali;
-   - quali TODO/commenti/roadmap esistenti sono rimasti non implementati.
+Implementa o prepara gli asset per il bioma base foresta:
 
-3. Cerca esplicitamente regressioni o feature lasciate a metà rispetto agli obiettivi precedenti:
-   - bioma 200x200 completamente riempito da terreno calpestabile;
-   - sfondo non limitato solo al centro;
-   - ostacoli isometrici coerenti;
-   - case/strutture grandi che creano corridoi;
-   - muri sui lati confinanti;
-   - vuoto/caduta sui lati non confinanti;
-   - passaggi aperti tra biomi connessi;
-   - grafo dei biomi completamente connesso;
-   - megamappa persistente;
-   - mappa dei territori esplorati;
-   - zone dove si cade leggibili visivamente in isometrico;
-   - dodge/roll utile anche per saltare piccoli vuoti;
-   - coerenza fra collisioni e rappresentazione visiva.
+1. Pavimenti calpestabili
+   - Sentiero stretto:
+     - terra battuta
+     - larghezza logica compatibile con i path già previsti
+     - bordi irregolari naturali
+     - variazioni leggere tra tile per evitare ripetizione evidente
+   - Strada larga:
+     - strada sterrata più ampia e leggibile
+     - può avere pietre, solchi, radici, fango leggero
+     - deve distinguersi chiaramente dal sentiero
+   - Erba:
+     - terreno base del bioma foresta
+     - texture persistente per tutto il bioma
+     - varianti leggere: ciuffi, foglie, sassolini, radici
+   - Erba alta:
+     - deve essere distinguibile dall’erba normale
+     - più densa, più scura/alta, con volume isometrico
+     - può essere usata come ostacolo leggero, decorazione o zona semi-pericolosa in futuro
 
-Seconda fase: output richiesto
-Crea o aggiorna un file:
+2. Void / cliff / zone da cui si cade
+   - Il void non deve sembrare semplicemente “nero” o “mancanza di tile”.
+   - Deve essere evidente che il giocatore cade se entra lì.
+   - Crea un bordo cliff isometrico leggibile:
+     - lato verticale del terreno visibile
+     - linee verticali/discesa dal bordo calpestabile
+     - ombra profonda sotto il bordo
+     - eventuale nebbia/scuro in basso
+   - I confini tra terreno calpestabile e void devono avere texture dedicate:
+     - bordo nord/sud/est/ovest
+     - angoli interni/esterni
+     - raccordi diagonali compatibili con griglia isometrica
+   - Evita transizioni ambigue: il giocatore deve capire subito dove si può camminare e dove si cade.
 
-docs/isometric_generation_audit_roadmap.md
+3. Muri esterni montagna
+   - Intorno al chunk/bioma, dove serve delimitare lo spazio, usa muri verticali naturali di montagna/roccia.
+   - Devono sembrare pareti alte, non semplici blocchi piatti.
+   - Prevedi:
+     - parete rocciosa frontale
+     - pareti laterali
+     - angoli
+     - raccordi con terreno erboso
+     - eventuali radici, muschio, crepe, pietre sporgenti
+   - I muri esterni devono bloccare chiaramente il passaggio.
+   - Se un lato confina con un altro bioma, lascia possibilità di apertura/passaggio invece del muro continuo.
 
-Il file deve contenere:
+4. Transizioni tra zone
+   Ogni coppia importante di terreni deve avere una transizione visiva.
+   Implementa preferibilmente texture dedicate o, se più pratico, overlay/edge mask applicati sui tile.
 
-1. Stato attuale sintetico
-   - elenco dei sistemi già presenti;
-   - file principali coinvolti;
-   - cosa funziona;
-   - cosa è incompleto.
+   Transizioni richieste:
+   - erba → sentiero
+   - erba → strada
+   - erba → erba alta
+   - sentiero → strada
+   - erba/sentiero/strada → cliff/void
+   - erba → muro montagna
+   - strada/sentiero → apertura tra muri o passaggio verso altro bioma
 
-2. Gap analysis
-   Dividi i problemi in aree:
-   - Terrain e tile isometrici;
-   - Oggetti ambientali e props;
-   - Ostacoli e collisioni;
-   - Biomi e generazione procedurale;
-   - Bordi, muri, vuoto e caduta;
-   - Connessioni tra biomi;
-   - Megamappa persistente;
-   - Mappa esplorata/UI;
-   - Asset e art direction;
-   - Debug tooling;
-   - Performance e compatibilità.
+   Le transizioni devono funzionare con:
+   - bordi dritti
+   - angoli
+   - incroci
+   - raccordi a T
+   - curve naturali
+   - tile isolati o piccoli cluster
 
-3. Lista dei punti persi per strada
-   Per ogni punto indica:
-   - descrizione;
-   - file coinvolti;
-   - stato: mancante / parziale / rotto / placeholder;
-   - impatto sul gameplay;
-   - dipendenze tecniche;
-   - priorità: P0, P1, P2.
+5. Requisiti grafici
+   - Niente placeholder.
+   - Niente rettangoli colorati provvisori.
+   - Niente texture piatte senza profondità.
+   - Ogni asset deve essere pensato per visuale isometrica.
+   - Ogni tile deve avere volume, ombre coerenti e bordo leggibile.
+   - Le cliff devono essere più scure/profonde rispetto al terreno.
+   - I muri montagna devono avere altezza e silhouette riconoscibile.
+   - Le texture devono essere modulari e riutilizzabili.
+   - Le varianti devono essere randomizzabili tramite seed senza rompere la leggibilità.
 
-4. Roadmap organica in milestone
-   La roadmap deve essere realistica, iterativa e adatta a essere eseguita in modalità goal.
-   Usa questa struttura:
+6. Requisiti tecnici
+   - Individua dove sono definiti/generati gli asset attuali del terreno.
+   - Crea una struttura dati chiara per i terrain types:
+     - forest_grass
+     - forest_tall_grass
+     - forest_path
+     - forest_road
+     - forest_void
+     - forest_cliff_edge
+     - forest_mountain_wall
+   - Aggiungi supporto per edge/transition tiles:
+     - grass_to_path
+     - grass_to_road
+     - grass_to_tall_grass
+     - ground_to_void_cliff
+     - ground_to_mountain_wall
+     - path_to_road
+   - Se il motore non supporta ancora tile transitions, implementa un sistema semplice basato sui vicini:
+     - controlla i tile adiacenti
+     - scegli automaticamente bordo, angolo o transizione
+     - usa varianti seeded
+   - Mantieni compatibilità con la generazione esistente.
+   - Non rompere gameplay, collisioni o pathfinding.
+   - Le zone void devono essere marcate anche a livello logico come non calpestabili/pericolose.
+   - I muri montagna devono essere non attraversabili.
 
-   Milestone 1 — Audit tecnico e pulizia nomenclatura
-   Milestone 2 — Base terrain isometrico 200x200
-   Milestone 3 — Oggetti e ostacoli isometrici
-   Milestone 4 — Collisioni coerenti con props e strutture
-   Milestone 5 — Bordi del bioma, muri, vuoto e caduta
-   Milestone 6 — Connessioni aperte tra biomi
-   Milestone 7 — Grafo biomi completamente connesso
-   Milestone 8 — Megamappa persistente
-   Milestone 9 — Mappa territori esplorati
-   Milestone 10 — Polish grafico e sostituzione placeholder
-   Milestone 11 — Test, debug overlay e regressioni
+7. Primo risultato atteso
+   Al termine voglio poter avviare il gioco e vedere il bioma foresta con:
+   - erba base isometrica estesa
+   - sentieri e strade distinguibili
+   - erba alta riconoscibile
+   - void leggibile con cliff edge e profondità
+   - muri esterni montagna con volume verticale
+   - transizioni credibili tra tutte le zone principali
+   - nessun placeholder visibile
 
-5. Per ogni milestone includi:
-   - obiettivo;
-   - modifiche tecniche;
-   - file probabili da modificare;
-   - criteri di accettazione verificabili;
-   - test manuali;
-   - rischi;
-   - sotto-task ordinati.
+8. Output richiesto
+   - Modifica il codice necessario.
+   - Aggiungi eventuali nuovi asset generati/procedurali.
+   - Aggiorna o crea documentazione breve in markdown spiegando:
+     - terrain types aggiunti
+     - sistema di transizioni
+     - come aggiungere nuove texture per altri biomi
+     - cosa resta da fare
+   - Aggiungi una checklist finale dei test manuali da eseguire.
 
-6. Crea anche una sezione finale:
-   “Prompt iterativo per continuare la roadmap”
-   con un prompt breve che posso copiare più volte per farti implementare la milestone successiva senza perdere il contesto.
-
-Terza fase: implementazione minima
-Dopo aver creato la roadmap:
-- non implementare ancora grossi refactor;
-- fai solo eventuali modifiche leggere se servono a rendere la roadmap tracciabile, per esempio:
-  - aggiungere TODO tecnici nei file corretti;
-  - aggiungere riferimenti nel README o nel TODO principale;
-  - creare cartelle docs se mancanti;
-  - collegare la nuova roadmap ai documenti esistenti.
-
-Vincoli:
-- Non cancellare sistemi esistenti senza motivo.
-- Non rompere le modalità già funzionanti.
-- Non introdurre asset pesanti o generati casualmente se non necessari.
-- Non limitarti a una roadmap generica: deve essere basata sui file reali della repo.
-- Ogni affermazione sulla roadmap deve derivare da codice o asset effettivamente trovati.
-- Se trovi termini ambigui come “genomi” verifica se nel codice esistono davvero o se probabilmente indicano “biomi/generazione”.
-- Alla fine esegui i test disponibili o almeno indica chiaramente quali non sono eseguibili e perché.
-
-Output finale nella risposta:
-1. riepilogo breve dell’audit;
-2. file creato/modificato;
-3. prime 3 priorità consigliate;
-4. comando/test eseguiti;
-5. prossimo prompt da lanciare in modalità goal.
+Procedi in modalità goal:
+1. Prima analizza lo stato attuale della repo.
+2. Poi individua il punto migliore dove inserire il sistema texture/transition.
+3. Implementa un primo pass completo per il bioma foresta.
+4. Avvia test/build disponibili.
+5. Correggi gli errori.
+6. Aggiorna la documentazione.
+7. Lascia un report finale con file modificati, scelte fatte e follow-up consigliati.

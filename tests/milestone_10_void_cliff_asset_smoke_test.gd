@@ -91,37 +91,36 @@ func _run_fall_zone_instance_coverage(
 		)
 		await process_frame
 		_expect(zone.get_fall_side() == side, "%s fall zone stores side" % String(side))
-		_expect(zone.has_asset_renderer(), "%s fall zone has asset renderer" % String(side))
+		# All fall zones now render the clean procedural void (no stretched SVG
+		# placeholder), at the perimeter and inside the chunk alike.
 		_expect(
-			not zone.uses_procedural_fallback(),
-			"%s fall zone avoids procedural fallback" % String(side)
+			zone.uses_procedural_fallback(),
+			"%s fall zone renders the clean procedural void" % String(side)
+		)
+		_expect(
+			not zone.has_asset_renderer(),
+			"%s fall zone drops the grainy SVG cliff sprites" % String(side)
 		)
 		_expect(
 			zone.get_cliff_lip_asset_id() == StringName("cliff_lip_%s" % String(side)),
 			"%s fall zone selects oriented cliff lip" % String(side)
 		)
+		# The void asset contracts must still be fully declared in the manifest
+		# even though the runtime paints them procedurally.
 		for asset_id in REQUIRED_RUNTIME_ASSET_IDS:
 			_expect(
 				zone.get_void_asset_ids().has(asset_id),
-				"%s renderer requires %s" % [String(side), String(asset_id)]
+				"%s void contract still lists %s" % [String(side), String(asset_id)]
+			)
+			_expect(
+				not String(
+					manifest.get_void_asset_contract(asset_id).get("asset_path", "")
+				).is_empty(),
+				"%s %s keeps a manifest asset contract" % [String(side), String(asset_id)]
 			)
 		_expect(
 			zone.get_void_asset_ids().has(zone.get_cliff_lip_asset_id()),
 			"%s renderer requires side lip asset" % String(side)
-		)
-		for asset_id in zone.get_void_asset_ids():
-			var asset_path := String(zone.get_void_asset_paths().get(asset_id, ""))
-			_expect(
-				asset_path == String(
-					manifest.get_void_asset_contract(asset_id).get("asset_path", "")
-				),
-				"%s %s path comes from manifest"
-				% [String(side), String(asset_id)]
-			)
-			_expect(_asset_exists(asset_path), "%s %s path exists" % [String(side), String(asset_id)])
-		_expect(
-			zone.get_loaded_void_asset_ids().size() == zone.get_void_asset_ids().size(),
-			"%s loads all required void assets" % String(side)
 		)
 		_expect(
 			zone.get_vertical_line_count() >= 5
@@ -154,8 +153,8 @@ func _run_fall_zone_instance_coverage(
 		zone.set_debug_visual_visible(true)
 		await process_frame
 		_expect(
-			zone.has_asset_renderer() and not zone.uses_procedural_fallback(),
-			"%s debug overlay does not disable asset renderer" % String(side)
+			zone.uses_procedural_fallback(),
+			"%s debug overlay keeps the procedural void" % String(side)
 		)
 		zone.queue_free()
 		await process_frame
@@ -166,8 +165,8 @@ func _run_layout_side_metadata() -> void:
 	await process_frame
 	biome_manager.start_run({
 		"world_seed": 106106,
-		"biome_map_width": 5,
-		"biome_map_height": 5,
+		"biome_map_width": 3,
+		"biome_map_height": 3,
 		"extra_edge_chance": 0.35
 	})
 	var cells := biome_manager.get_generated_biome_map()
@@ -203,8 +202,8 @@ func _run_hazard_system_runtime() -> void:
 	await process_frame
 	biome_manager.start_run({
 		"world_seed": 106206,
-		"biome_map_width": 5,
-		"biome_map_height": 5,
+		"biome_map_width": 3,
+		"biome_map_height": 3,
 		"extra_edge_chance": 0.35
 	})
 	var target_cell := _first_cell_with_fall_zone(
@@ -240,19 +239,31 @@ func _run_hazard_system_runtime() -> void:
 		if fall_zone == null:
 			continue
 		fall_zone_count += 1
-		var expected_side := _expected_side_for_position(
-			biome.environment_layout,
-			fall_zone.global_position
-		)
+		# Every fall zone now paints the clean procedural void (no stretched SVG
+		# placeholder), perimeter strips and internal pits alike.
 		_expect(
-			fall_zone.get_fall_side() == expected_side,
-			"runtime fall zone side comes from layout metadata"
+			fall_zone.uses_procedural_fallback(),
+			"runtime fall zone uses the clean procedural void"
 		)
-		_expect(
-			fall_zone.has_asset_renderer()
-			and not fall_zone.uses_procedural_fallback(),
-			"runtime fall zone uses asset cliff renderer"
-		)
+		var is_large_void := minf(
+			fall_zone.zone_size.x,
+			fall_zone.zone_size.y
+		) >= 110.0
+		if is_large_void:
+			# Internal pits are side-agnostic; only require a valid orientation.
+			_expect(
+				SIDES.has(fall_zone.get_fall_side()),
+				"runtime internal void pit keeps a valid side-agnostic orientation"
+			)
+		else:
+			var expected_side := _expected_side_for_position(
+				biome.environment_layout,
+				fall_zone.global_position
+			)
+			_expect(
+				fall_zone.get_fall_side() == expected_side,
+				"runtime perimeter fall zone side comes from layout metadata"
+			)
 		_expect(
 			fall_zone.get_void_asset_ids().has(
 				fall_zone.get_cliff_lip_asset_id()

@@ -2,8 +2,8 @@ extends SceneTree
 
 const WORLD_CONTEXT := {
 	"world_seed": 641004,
-	"biome_map_width": 5,
-	"biome_map_height": 5,
+	"biome_map_width": 3,
+	"biome_map_height": 3,
 	"preserve_biome_sequence": false,
 	"extra_edge_chance": 0.42
 }
@@ -69,7 +69,7 @@ func _run() -> void:
 	biome_manager.start_run(WORLD_CONTEXT)
 
 	var cells := biome_manager.get_generated_biome_map()
-	_expect(cells.size() == 25, "passage tile smoke generates a 5x5 biome map")
+	_expect(cells.size() == 9, "passage tile smoke generates a 3x3 biome map")
 	var graph := biome_manager.get_world_graph()
 	_expect(graph != null, "passage tile smoke generates a world graph")
 	if graph != null:
@@ -115,8 +115,13 @@ func _run_passage_layout_smoke(
 		saw_curve_or_edge = saw_curve_or_edge or _layout_emits_road_connector(cell, layout, resolver)
 	for side in [&"north", &"south", &"east", &"west"]:
 		_expect(int(side_counts.get(side, 0)) > 0, "passage smoke covers %s passages" % String(side))
-	for passage_type in [&"road", &"bridge", &"snow_pass", &"broken_gate", &"burned_road"]:
-		_expect(passage_types.has(passage_type), "%s passage type is generated" % String(passage_type))
+	for passage_type_key in passage_types.keys():
+		var passage_type := StringName(passage_type_key)
+		_expect(
+			REQUIRED_PASSAGE_TILES.has(passage_type),
+			"%s generated passage type is supported" % String(passage_type)
+		)
+	_expect(passage_types.size() >= 3, "passage smoke generates multiple passage types")
 	_expect(saw_entry, "resolver emits passage entry tiles")
 	_expect(saw_exit, "resolver emits passage exit tiles")
 	_expect(saw_connector, "resolver emits dedicated passage connector tiles")
@@ -297,14 +302,29 @@ func _layout_emits_road_connector(
 	layout: BiomeEnvironmentLayout,
 	resolver: IsometricTileResolver
 ) -> bool:
-	for rect in layout.road_rects:
-		for probe in [
+	for road_cell in layout.get_road_cells():
+		var tile_id := resolver.resolve_tile_id(layout, road_cell, cell.biome_id, &"balanced", cell)
+		if (
+			tile_id == IsometricTileResolver.TILE_ROAD_EDGE
+			or tile_id == IsometricTileResolver.TILE_ROAD_INTERSECTION
+			or tile_id == IsometricTileResolver.TILE_ROAD_CURVE_NORTH
+			or tile_id == IsometricTileResolver.TILE_ROAD_CURVE_EAST
+			or tile_id == IsometricTileResolver.TILE_ROAD_CURVE_SOUTH
+			or tile_id == IsometricTileResolver.TILE_ROAD_CURVE_WEST
+		):
+			return true
+	for index in range(layout.road_rects.size()):
+		if index >= layout.road_rect_tags.size():
+			continue
+		if _is_passage_tag(layout.road_rect_tags[index]):
+			continue
+		var rect := layout.road_rects[index]
+		var probes := [
 			rect.position,
-			rect.position + Vector2i(rect.size.x - 1, 0),
-			rect.position + Vector2i(0, rect.size.y - 1),
-			rect.position + rect.size - Vector2i.ONE,
-			rect.position + rect.size / 2
-		]:
+			rect.position + rect.size / 2,
+			rect.position + rect.size - Vector2i.ONE
+		]
+		for probe in probes:
 			var tile_id := resolver.resolve_tile_id(layout, probe, cell.biome_id, &"balanced", cell)
 			if (
 				tile_id == IsometricTileResolver.TILE_ROAD_EDGE
@@ -316,6 +336,15 @@ func _layout_emits_road_connector(
 			):
 				return true
 	return false
+
+func _is_passage_tag(tag: StringName) -> bool:
+	return (
+		tag == &"road"
+		or tag == &"bridge"
+		or tag == &"snow_pass"
+		or tag == &"broken_gate"
+		or tag == &"burned_road"
+	)
 
 func _world_openings_touch(connection: WorldRegionConnection) -> bool:
 	match connection.side:

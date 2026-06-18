@@ -145,9 +145,9 @@ func _run() -> void:
 			"%s retains a physical blocked boundary" % String(biome_id)
 		)
 		_expect(
-			transition_system.get_active_gates().size()
-			== cell.passages.size(),
-			"%s exposes generated open passages" % String(biome_id)
+			transition_system.get_active_gates().is_empty()
+			and get_nodes_in_group("biome_transition_gates").is_empty(),
+			"%s exposes open passages without runtime gates" % String(biome_id)
 		)
 		_expect(
 			_has_thematic_loot(crate_system, biome_id),

@@ -35,7 +35,8 @@ func _run() -> void:
 	_assert(summary.get("hazard_count") == 1, "overlay counts hazards")
 	_assert(summary.get("crate_count") == 1, "overlay counts crates")
 	_assert(
-		int(summary.get("terrain_classification_total", 0)) == 40000,
+		int(summary.get("terrain_classification_total", 0))
+		== layout.zone_size.x * layout.zone_size.y,
 		"overlay reports terrain classification total"
 	)
 	_assert(

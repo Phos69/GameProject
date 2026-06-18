@@ -643,18 +643,18 @@ godot --headless --path . --script res://tests/dungeon_smoke_test.gd
 godot --headless --path . --script res://tests/tower_defense_smoke_test.gd
 ```
 
-## Regressione ISO-001 Milestone 2 - terrain isometrico 200x200
+## Regressione ISO-001 Milestone 2 - terrain isometrico 500x500
 
 QA visuale da eseguire con seed fisso a `1280x720` e `960x540`, in `default`
 e `high_contrast`.
 
-- Avviare survival con una megamappa `5x5` e attraversare almeno una regione
+- Avviare survival con una megamappa default `3x3` e attraversare almeno una regione
   per ciascuno dei cinque biomi.
 - Confermare che `main_road`, `road`, `broken_street`, `service_lane`,
   `ash_lane`, `packed_snow_path`, `wooden_walkway`, `bridge`, `snow_pass`,
   `broken_gate` e `burned_road` siano leggibili come strade, passaggi, ponti o
   cancelli, non come dirt generico.
-- Verificare che la base `200x200` resti continua e che passaggi e fall zone
+- Verificare che la base `500x500` resti continua e che passaggi e fall zone
   non si sovrappongano visivamente in modo confuso.
 - Attivare l'overlay debug e controllare che i conteggi terrain mostrino
   `walkable`, `obstacle`, `hazard`, `border`, `void` e `fall_zone`.
@@ -751,55 +751,132 @@ godot --headless --path . --script res://tests/combat_smoke_test.gd
 godot --headless --path . --script res://tests/player_dodge_gap_smoke_test.gd
 ```
 
-## Regressione ISO-001 Milestone 6 - connessioni aperte tra biomi
+## Regressione ISO-001 Milestone 6/10.7 - connessioni aperte senza portali
 
 QA visuale da eseguire con seed fisso a `1280x720` e `960x540`, attraversando
 almeno otto regioni con tastiera e joypad.
 
-- Verificare che ogni passaggio aperto mostri un gate allineato al varco lasciato
-  tra i muri di bordo, non sovrapposto ai muri ne alle fall zone.
-- Confermare che il gate sia largo quanto l'apertura del passaggio: passaggi piu
-  larghi hanno gate piu largo, quelli stretti restano comunque leggibili.
-- Verificare i passaggi nei quattro lati (nord, sud, est, ovest) e che la freccia
-  del gate punti nel verso di attraversamento corretto.
-- Confermare la differenza tematica del gate per `road`, `bridge`, `snow_pass`,
-  `broken_gate` e `burned_road` senza dipendere da testo.
-- Attraversare un gate e confermare che il party non venga teletrasportato a un
-  punto di ingresso remoto (la camera/party resta vicino al varco).
-- Confermare che entrare nel gate cambi regione una sola volta (nessuna doppia
-  transizione) e che il terreno del passaggio resti coerente con il gate.
+- Verificare che ogni passaggio aperto sia leggibile come apertura fisica tra
+  muri/cliff, senza frecce, testo, gate o portali.
+- Confermare che `road`, `bridge`, `snow_pass`, `broken_gate` e `burned_road`
+  siano riconoscibili dai tile e dai raccordi, non da trigger visibili.
+- Attraversare il varco e confermare che il cambio bioma avvenga dalla posizione
+  world-space del party, senza teletrasporto o snap a un punto remoto.
+- Confermare che i lati senza edge non cambino regione: restano bloccati da muro
+  o trattati come fall zone.
+- Confermare che il cambio regione avvenga una sola volta per attraversamento e
+  che non compaiano nodi/marker di transizione nel gameplay.
 
 ```text
 godot --headless --path . --script res://tests/milestone_6_open_passage_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_no_portal_transition_smoke_test.gd
 godot --headless --path . --script res://tests/open_passage_transition_smoke_test.gd
 godot --headless --path . --script res://tests/region_streaming_smoke_test.gd
 godot --headless --path . --script res://tests/biome_world_generation_smoke_test.gd
 ```
 
-## Regressione ISO-001 Milestone 8 - megamappa multi-regione
+## Regressione ISO-001 Milestone 8/10.8 - megamappa multi-regione gameplay
 
 QA visuale da eseguire con seed fisso a `1280x720` e `960x540`, attraversando
 almeno otto regioni con ritorno alla regione precedente.
 
-- Confermare che, oltre alla regione corrente giocabile, i territori vicini
-  connessi siano visibili come ground attorno all'arena, posizionati nei lati
-  corretti (nord/sud/est/ovest) e affiancati senza sovrapposizioni ne buchi.
-- Verificare che i vicini siano solo sfondo: nessun nemico, cassa o hazard
-  appare nelle regioni vicine; gli spawn restano nella regione corrente.
+- Confermare che, oltre alla regione corrente, i territori vicini connessi siano
+  visibili e fisicamente presenti: tile, ostacoli, hazard/fall zone e crate
+  devono essere gia attivi prima dell'attraversamento.
+- Verificare che ostacoli e hazard dei vicini blocchino o danneggino in modo
+  coerente se raggiunti dal bordo, senza duplicati al cambio regione.
+- Verificare che gli spawn zombie restino controllati dal bordo camera e dal
+  bioma corrente: lo streaming dei vicini non deve generare spawn lontani.
 - Attraversare un passaggio e confermare che il set di regioni renderizzate si
   aggiorni (la nuova regione diventa corrente, i suoi vicini compaiono, le
   regioni fuori raggio spariscono).
-- Tornare alla regione precedente e confermare che le casse gia aperte restino
-  consumate (persistenza per regione invariata).
+- Aprire una crate in un vicino, uscire/rientrare o forzare un re-stream e
+  confermare che resti consumata per quel `region_id`.
+- Attirare un gruppo di zombie da una regione a quella adiacente e confermare
+  che mantengano target, vita e status durante il varco, senza sparire o
+  tornare allo spawn.
 - Monitorare il frame time con i vicini renderizzati e griglia almeno `7x7`;
   annotare eventuale debito di performance (camera/spawn cross-regione restano
   follow-up).
 
 ```text
+godot --headless --path . --script res://tests/milestone_10_full_region_streaming_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_cross_biome_chase_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_8_multi_region_smoke_test.gd
 godot --headless --path . --script res://tests/region_streaming_smoke_test.gd
 godot --headless --path . --script res://tests/open_passage_transition_smoke_test.gd
 godot --headless --path . --script res://tests/survival_wave_smoke_test.gd
+```
+
+## Regressione ISO-001 Milestone 10.10 - cleanup legacy survival
+
+QA manuale da eseguire con seed fisso dopo un avvio survival standard.
+
+- Confermare che la regione corrente e i vicini siano costruiti da tile layer,
+  oggetti, hazard/fall zone e crate streamati, senza ground vicino placeholder.
+- Attraversare un passaggio aperto e confermare che non appaiano gate, marker,
+  frecce, testo o trigger visibili di transizione.
+- Ispezionare la scena in debug: non devono esserci nodi
+  `BiomeTransitionGate`, `BiomeRegionGround`, `BiomeTerrainPatch` o
+  `NeighborGround_` nel percorso standard.
+- Confermare che `MultiRegionRenderer` venga usato solo come fallback/debug:
+  nella survival standard con `WorldRegionStreamer` attivo non deve essere
+  presente un nodo nel gruppo `multi_region_renderer`.
+- Tornare al menu e riavviare la survival: i nodi streamati devono essere
+  ricreati senza residui legacy o duplicati.
+
+```text
+godot --headless --path . --script res://tests/milestone_10_legacy_cleanup_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_full_region_streaming_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_no_portal_transition_smoke_test.gd
+godot --headless --path . --script res://tests/open_passage_transition_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_8_multi_region_smoke_test.gd
+```
+
+## Regressione ISO-001 Milestone 10.11 - QA finale asset isometrico
+
+Stato QA del 18 giugno 2026: PASS automatico e catture generate con
+`gl_compatibility` a `1280x720`.
+
+- Confermare che i cinque biomi abbiano tile base continui, varianti persistenti
+  e passaggi leggibili senza patch ovali o gate di transizione.
+- Confermare che muri/bordi siano distinguibili dal vuoto/cliff e dagli hazard
+  ambientali.
+- Confermare che case, cabine, laboratori, barriere, relitti, tronchi, barili,
+  ponti e crate restino slot-based con ombra/altezza leggibile.
+- Confermare che player e zombie restino leggibili davanti/dietro gli oggetti.
+- Confermare che il cambio bioma derivi dal seam world-space e non da portali,
+  trigger, frecce o teletrasporti.
+- Confermare che uno zombie in chase attraversi il passaggio mantenendo target,
+  health e stato.
+- Confermare che la mappa `7x7` resti sotto budget nel preset `balanced`.
+
+Screenshot richiesti/generati in `build/qa/`:
+
+```text
+plains_full_region.png
+toxic_void_edge.png
+ash_passage_crossing.png
+snow_objects_slots.png
+marsh_bridge_void.png
+cross_biome_chase_sequence_01.png
+cross_biome_chase_sequence_02.png
+```
+
+```text
+godot --path . --rendering-method gl_compatibility --script res://tests/milestone_10_isometric_final_visual_qa.gd
+godot --headless --path . --script res://tests/milestone_10_isometric_performance_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_asset_manifest_v7_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_asset_pipeline_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_tile_layer_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_passage_tile_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_object_asset_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_void_cliff_asset_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_no_portal_transition_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_full_region_streaming_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_cross_biome_chase_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_legacy_cleanup_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_visual_smoke_test.gd
 ```
 
 ## Regressione ISO-001 Milestone 7 - grafo biomi completamente connesso
@@ -902,7 +979,7 @@ QA visuale e runtime da eseguire dopo modifiche a ground, manifest v7 o layout
 bioma.
 
 - Avviare survival con seed fisso e confermare che il terreno visibile copra
-  tutta la regione `200x200`, non solo il centro.
+  tutta la regione `500x500`, non solo il centro.
 - Visitare o forzare i cinque biomi (`infected_plains`, `toxic_wastes`,
   `burning_fields`, `frozen_outskirts`, `drowned_marsh`) e acquisire screenshot
   a 1280x720 e 960x540.
@@ -912,7 +989,7 @@ bioma.
   non appaiano piu come ovali `BiomeTerrainPatch` sopra il terreno.
 - Verificare cliff/fall boundary: il bordo vicino al terreno usa
   `void_edge_near`, il fuori-mappa/esterno resta `void_depth`.
-- Aprire il profiler o l'overlay debug e confermare assenza di 40.000 nodi
+- Aprire il profiler o l'overlay debug e confermare assenza di nodi per-tile
   tile: il ground deve essere un `BiomeTileLayer` chunked.
 
 ```text
@@ -922,6 +999,36 @@ godot --headless --path . --script res://tests/milestone_10_asset_pipeline_smoke
 godot --headless --path . --script res://tests/isometric_biome_terrain_coverage_smoke_test.gd
 godot --headless --path . --script res://tests/zombie_environment_milestone_smoke_test.gd
 godot --headless --path . --script res://tests/zombie_biome_transition_smoke_test.gd
+```
+
+## Regressione texture forestali base
+
+QA visuale e runtime da eseguire dopo modifiche a `infected_plains`,
+`IsometricTileResolver`, `BiomeTileLayer` o agli asset in
+`assets/environment/isometric/tiles/forest/`.
+
+- Avviare survival con seed `772031` e confermare che il bioma base mostri
+  `forest_grass`, varianti, `forest_tall_grass`, `forest_path` e `forest_road`,
+  non il floor generico.
+- Verificare che gli incroci path/road e i bordi path/grass o road/grass usino
+  transizioni leggibili, senza rettangoli piatti o patch ovali legacy.
+- Camminare vicino a void/fall zone e confermare che `forest_cliff_edge`,
+  `forest_void` e `ground_to_void_cliff` siano distinguibili dal terreno
+  walkable.
+- Controllare i lati con parete: `forest_mountain_wall` e
+  `ground_to_mountain_wall` devono leggere come roccia/montagna e non come
+  recinto placeholder.
+- Verificare che tall grass, path, road e transizioni non cambino collisioni,
+  spawn, casse, pathfinding zombie o danno da caduta.
+- In high contrast/reduced motion, confermare che player, zombie, pickup,
+  cliff, wall, path e road restino separabili a 1280x720 e 960x540.
+
+Dettagli del contratto: `docs/forest_isometric_texture_system.md`.
+
+```text
+godot --headless --path . --script res://tests/forest_isometric_texture_transition_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_tile_layer_smoke_test.gd
+godot --headless --path . --script res://tools/generate_isometric_environment_assets.gd -- --check
 ```
 
 ## Regressione Milestone 10.4 - strade e passaggi asset-driven
@@ -935,6 +1042,8 @@ QA visuale e runtime da eseguire dopo modifiche a `BiomePassage`,
   l'apertura deve essere leggibile dai tile entry/exit e dai muri/cliff laterali.
 - Verificare che `bridge`, `snow_pass`, `broken_gate`, `burned_road` e `road`
   abbiano silhouette distinta nel ground tile layer.
+- Verificare che le strade principali e le diramazioni verso i varchi corrano
+  in diagonale sugli assi isometrici, non come croci orizzontali/verticali.
 - Verificare che nessun tile di passaggio cada su fall zone, muro/bordo o void e
   che il trigger resti dentro lo span del varco.
 - Aprire la mappa dei territori e attraversare avanti/indietro un confine:
@@ -957,6 +1066,12 @@ QA visuale e runtime da eseguire dopo modifiche a `ObstacleSystem`,
 - Avviare survival con seed fisso e verificare che rocce, case, barriere,
   relitti, tronchi, barili e muri appaiano come oggetti con base/ombra
   isometrica, non come rettangoli/poligoni runtime scollegati dal terreno.
+- Confermare che case, cabine, laboratori, recinti, muri, barili, relitti,
+  tronchi, ponti e crate abbiano silhouette diverse e non usino piu la stessa
+  casetta placeholder generica.
+- Confermare che `tests/milestone_10_object_asset_smoke_test.gd` passi anche il
+  confronto alpha tra `ruined_house` e `toxic_barrel`, inclusa la regressione
+  sul fallback SVG temporaneo.
 - Kiting attorno a `ruined_house`, `burned_house`, `snow_cabin`,
   `sunken_house`, `lab_block`, muri, auto bruciate, tronchi e barili: collisione
   e passaggio davanti/dietro devono restare coerenti con Y-sort.

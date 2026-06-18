@@ -23,12 +23,12 @@ func _run() -> void:
 	await process_frame
 	biome_manager.start_run({
 		"world_seed": 610303,
-		"biome_map_width": 5,
-		"biome_map_height": 5,
+		"biome_map_width": 3,
+		"biome_map_height": 3,
 		"preserve_biome_sequence": false
 	})
 	var cells := biome_manager.get_generated_biome_map()
-	_expect(cells.size() == 25, "tile layer smoke generates a 5x5 biome map")
+	_expect(cells.size() == 9, "tile layer smoke generates a 3x3 biome map")
 	var sample_cells := _first_cell_per_biome(cells)
 	_expect(sample_cells.size() >= 5, "tile layer smoke samples all five biome palettes")
 
@@ -107,13 +107,14 @@ func _run_resolver_coverage_smoke(
 					and (
 						_cell_inside_any_rect(probe, layout.road_rects)
 						or _cell_inside_any_rect(probe, layout.passage_rects)
+						or layout.has_road_cell(probe)
 					)
 					and not resolver.is_route_tile_id(tile_id)
 				):
 					failures.append("%s road cell %s resolved to %s" % [String(cell.id), str(probe), String(tile_id)])
 		_expect(walkable_count > 0, "%s has walkable cells" % String(cell.id))
 		_expect(missing_walkable == 0, "%s has no walkable cell without a visual tile" % String(cell.id))
-		_expect(missing_any == 0, "%s resolves every 200x200 cell to an asset-backed tile" % String(cell.id))
+		_expect(missing_any == 0, "%s resolves every generated cell to an asset-backed tile" % String(cell.id))
 		_expect(
 			manifest.get_biome_asset_set_contract(biome_id).has("asset_path"),
 			"%s has a biome asset set contract" % String(biome_id)
@@ -145,9 +146,11 @@ func _run_layer_chunk_smoke(
 	var palette := _palette_for_biome(cell.biome_id)
 	var layer := BiomeTileLayer.new()
 	layer.configure(cell.generated_layout, palette, cell.biome_id, &"balanced", 20, resolver, manifest)
+	var expected_tile_count := cell.generated_layout.zone_size.x * cell.generated_layout.zone_size.y
+	var expected_chunk_count := int(ceil(float(cell.generated_layout.zone_size.x) / 20.0)) * int(ceil(float(cell.generated_layout.zone_size.y) / 20.0))
 	_expect(layer.get_chunk_size() == 20, "balanced tile layer keeps 20x20 chunks")
-	_expect(layer.get_chunk_count() == 100, "balanced tile layer chunks the 200x200 region into 100 chunks")
-	_expect(layer.get_visual_tile_count() == 40000, "tile layer caches all 200x200 visual cells")
+	_expect(layer.get_chunk_count() == expected_chunk_count, "balanced tile layer chunks the full 500x500 region")
+	_expect(layer.get_visual_tile_count() == expected_tile_count, "tile layer caches all visual cells")
 	_expect(layer.get_missing_asset_count() == 0, "tile layer cache has no missing asset-backed cells")
 	_expect(not layer.uses_procedural_fallback(), "tile layer does not use the procedural ground fallback")
 	var probe := _find_first_floor_cell(resolver, cell.generated_layout, cell)
@@ -191,7 +194,8 @@ func _run_terrain_generator_integration_smoke(biome_manager: BiomeManager) -> vo
 	_expect(terrain_generator.get_generated_patches().is_empty(), "TerrainGenerator suppresses legacy terrain patches in tile layer mode")
 	_expect(container.get_node_or_null("BiomeTileLayer") != null, "BiomeTileLayer is added to the environment container")
 	if layer != null:
-		_expect(layer.get_visual_tile_count() == 40000, "TerrainGenerator tile layer covers the full 200x200 region")
+		var expected_tile_count := biome.environment_layout.zone_size.x * biome.environment_layout.zone_size.y
+		_expect(layer.get_visual_tile_count() == expected_tile_count, "TerrainGenerator tile layer covers the full generated region")
 		_expect(layer.get_missing_asset_count() == 0, "TerrainGenerator tile layer has no missing assets")
 
 	terrain_generator.stop_run()

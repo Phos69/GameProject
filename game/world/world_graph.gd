@@ -2,7 +2,7 @@ extends RefCounted
 class_name WorldGraph
 
 var seed_value: int = 0
-var region_size: Vector2i = Vector2i(200, 200)
+var region_size: Vector2i = BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE
 var regions: Dictionary = {}
 var connections: Array[WorldRegionConnection] = []
 var start_region_id: StringName = &""
@@ -190,7 +190,8 @@ func to_save_data() -> Dictionary:
 static func from_save_data(data: Dictionary) -> WorldGraph:
 	var graph := WorldGraph.new()
 	graph.seed_value = int(data.get("seed", 0))
-	var size_values := data.get("region_size", [200, 200]) as Array
+	var default_size := BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE
+	var size_values := data.get("region_size", [default_size.x, default_size.y]) as Array
 	graph.region_size = Vector2i(int(size_values[0]), int(size_values[1]))
 	graph.start_region_id = StringName(data.get("start_region_id", ""))
 	for region_value in data.get("regions", []):

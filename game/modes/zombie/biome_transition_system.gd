@@ -48,27 +48,10 @@ func configure_biome(biome: BiomeDefinition) -> void:
 	active_biome = biome
 	if not is_active or active_biome == null:
 		return
-	var color := (
-		active_biome.palette.gate_color
-		if active_biome.palette != null
-		else Color(0.42, 0.90, 0.58, 1.0)
-	)
-	if _spawn_generated_map_gates(color):
-		return
-	if not active_biome.next_biome_id.is_empty():
-		_spawn_gate(
-			active_biome.next_biome_id,
-			&"east",
-			east_gate_position,
-			color
-		)
-	if not active_biome.previous_biome_id.is_empty():
-		_spawn_gate(
-			active_biome.previous_biome_id,
-			&"west",
-			west_gate_position,
-			color
-		)
+	# Milestone 10.7 keeps this node as a compatibility command API for older
+	# smoke tests and debug helpers, but the standard survival runtime no longer
+	# creates Area2D gates. Region changes are detected by RegionSeamSystem from
+	# party world-space position and open WorldRegionConnection data.
 
 func stop_run() -> void:
 	_clear_gates()

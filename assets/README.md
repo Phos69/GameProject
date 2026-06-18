@@ -94,9 +94,11 @@ godot --headless --path . --script res://tools/generate_isometric_environment_as
 
 Gli SVG generati includono metadata `data-generated-by`,
 `data-section` e `data-id` per rendere il controllo manifest/file system
-ripetibile. Restano placeholder asset-driven originali del progetto e possono
-essere sostituiti gradualmente con arte `needs_polish`/`final` senza cambiare il
-contratto runtime.
+ripetibile. Gli asset base sono originali del progetto: i terrain/passaggi
+espongono silhouette isometriche di route, mentre gli `object_scenes` usano
+sprite trasparenti distinti per case, barriere, barili, relitti, tronchi, ponti
+e crate. Possono essere sostituiti gradualmente con arte `needs_polish`/`final`
+senza cambiare il contratto runtime.
 
 ## Ambiente isometrico (tile layer runtime)
 
@@ -105,17 +107,26 @@ contratto runtime.
 varianti floor, route tile (`main_road`, road tematiche, curve, edge e
 intersezioni), passage tile (`road`, `bridge`, `snow_pass`, `broken_gate`,
 `burned_road`, entry/exit), `hazard_floor`, `border_floor`, `void_edge_near` o
-`void_depth`. La variante floor deriva da seed, cella e bioma.
+`void_depth`. Le route generate usano `road_cell_tags` diagonali per seguire gli
+assi isometrici; i rettangoli restano per aperture e compatibilita. La variante
+floor deriva da seed, cella e bioma.
+
+Per `infected_plains`, il resolver usa il set forestale dedicato:
+`forest_grass`, varianti grass, `forest_tall_grass`, `forest_path`,
+`forest_road`, `forest_void`, `forest_cliff_edge`, `forest_mountain_wall` e le
+transizioni `grass_to_path`, `grass_to_road`, `grass_to_tall_grass`,
+`path_to_road`, `ground_to_void_cliff` e `ground_to_mountain_wall`. Gli asset
+vivono in `environment/isometric/tiles/forest/` e nelle cartelle `edges/`.
 
 `game/modes/zombie/biome_tile_layer.gd` e il ground primario asset-driven per
-`TerrainGenerator`: cache-a tutte le 40.000 celle della regione `200x200`, le
+`TerrainGenerator`: cache-a tutte le 250.000 celle della regione `500x500`, le
 divide in chunk e usa il manifest v7 come contratto per gli asset. I vecchi
 `BiomeRegionGround` e `BiomeTerrainPatch` restano fallback tecnici solo quando
 la modalita asset viene disattivata.
 
-Il generator asset controlla 93 SVG ambiente isometrico dopo la Milestone 10.5,
-inclusi road connector, entry/exit dei passaggi e object scene per ostacoli e
-crate.
+Il generator asset controlla 108 SVG ambiente isometrico dopo il pass texture
+forestali, inclusi road connector, entry/exit dei passaggi, object scene per
+ostacoli/crate e tile forestali con transizioni.
 
 ## Ambiente isometrico (oggetti runtime)
 
@@ -127,9 +138,10 @@ fallback procedurale esplicito.
 
 Gli asset correnti sono SVG generati in-repo. In runtime headless Godot puo non
 avere la cache import editor per caricarli direttamente come `Texture2D`; per
-questo `IsometricSvgTextureLoader` legge lo SVG e produce una `ImageTexture`
-leggera mantenendo `asset_path` e metadata come fonte del contratto. La supply
-crate usa lo stesso percorso tramite `object_scenes/supply_crate`.
+questo `IsometricSvgTextureLoader` rasterizza il contenuto SVG trasparente
+quando possibile, scarta gli import con canvas opaco e produce una
+`ImageTexture` fallback per categoria oggetto usando `data-section`/`data-id`.
+La supply crate usa lo stesso percorso tramite `object_scenes/supply_crate`.
 
 ## Sostituzione Placeholder
 
@@ -148,4 +160,3 @@ crate usa lo stesso percorso tramite `object_scenes/supply_crate`.
 - nessun asset esterno obbligatorio per il bootstrap;
 - licenza compatibile con distribuzione e modifica;
 - QA default, reduced motion e high contrast completata.
-

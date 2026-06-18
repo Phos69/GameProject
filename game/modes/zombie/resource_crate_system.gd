@@ -58,6 +58,20 @@ func start_run(biome: BiomeDefinition) -> void:
 		active_biome.biome_id if active_biome != null else &""
 	)
 
+func begin_streaming_run(biome: BiomeDefinition) -> void:
+	_clear_runtime()
+	active_biome = biome
+	is_active = true
+	_resolve_world_runtime()
+	active_region_id = (
+		world_runtime.get_current_region_id()
+		if world_runtime != null
+		else &""
+	)
+	crate_rules_configured.emit(
+		active_biome.biome_id if active_biome != null else &""
+	)
+
 func stop_run() -> void:
 	_clear_runtime()
 	is_active = false
@@ -106,6 +120,73 @@ func spawn_encounter_crate(
 	crate.tree_exited.connect(_on_crate_tree_exited.bind(crate))
 	resource_crate_spawned.emit(crate, crate_id)
 	return crate
+
+func is_crate_position_valid(position: Vector2) -> bool:
+	return _is_crate_position_valid(position)
+
+func should_spawn_layout_crate(
+	crate_id: StringName,
+	crate_position: Vector2,
+	region_id: StringName,
+	index: int
+) -> bool:
+	if active_biome == null:
+		return false
+	if not active_biome.crate_ids.has(crate_id):
+		return false
+	if not _is_crate_position_valid(crate_position):
+		return false
+	return not is_layout_crate_consumed_for_region(
+		region_id,
+		_layout_crate_key(index)
+	)
+
+func create_layout_crate(
+	crate_id: StringName,
+	index: int,
+	region_id: StringName
+) -> SupplyCrate:
+	if supply_crate_scene == null:
+		return null
+	var crate := supply_crate_scene.instantiate() as SupplyCrate
+	if crate == null:
+		return null
+	crate.name = "%sResourceCrate%d" % [
+		String(crate_id).capitalize(),
+		index + 1
+	]
+	crate.loot_table = _get_loot_table(crate_id)
+	crate.set_meta("biome_crate_id", crate_id)
+	crate.set_meta("region_crate_key", _layout_crate_key(index))
+	crate.set_meta("region_id", region_id)
+	crate.add_to_group("biome_resource_crates")
+	var visual := crate.get_node_or_null("Visual") as SupplyCrateVisual
+	if visual != null:
+		visual.configure_crate_type(crate_id)
+	crate.tree_exited.connect(_on_crate_tree_exited.bind(crate))
+	crate.opened.connect(_on_layout_crate_opened)
+	return crate
+
+func register_streamed_crate(crate: SupplyCrate, crate_id: StringName) -> void:
+	if crate == null:
+		return
+	if not active_crates.has(crate):
+		active_crates.append(crate)
+	resource_crate_spawned.emit(crate, crate_id)
+
+func is_layout_crate_consumed_for_region(
+	region_id: StringName,
+	crate_key: StringName
+) -> bool:
+	return (
+		world_runtime != null
+		and not region_id.is_empty()
+		and world_runtime.is_region_item_consumed(
+			region_id,
+			PersistentWorldState.CATEGORY_OPENED_CRATES,
+			crate_key
+		)
+	)
 
 func _generate_resource_crates() -> void:
 	if active_biome == null or supply_crate_scene == null:
