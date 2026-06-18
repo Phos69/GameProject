@@ -66,6 +66,7 @@
   },
   "void_tiles": {
     "fall_zone": { "asset_path": "res://assets/environment/isometric/edges/cliffs/fall_zone.svg", "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_fall_zone.gd" },
+    "void_edge_near": { "asset_path": "res://assets/environment/isometric/edges/cliffs/void_edge_near.svg", "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_fall_zone.gd" },
     "cliff_lip_north": { "asset_path": "res://assets/environment/isometric/edges/cliffs/cliff_lip_north.svg", "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_fall_zone.gd" },
     "cliff_lip_south": { "asset_path": "res://assets/environment/isometric/edges/cliffs/cliff_lip_south.svg", "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_fall_zone.gd" },
     "cliff_lip_east": { "asset_path": "res://assets/environment/isometric/edges/cliffs/cliff_lip_east.svg", "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_fall_zone.gd" },

@@ -896,6 +896,34 @@ godot --headless --path . --script res://tests/milestone_10_asset_manifest_v7_sm
 godot --headless --path . --script res://tests/isometric_environment_manifest_smoke_test.gd
 ```
 
+## Regressione Milestone 10.3 - tile layer persistente
+
+QA visuale e runtime da eseguire dopo modifiche a ground, manifest v7 o layout
+bioma.
+
+- Avviare survival con seed fisso e confermare che il terreno visibile copra
+  tutta la regione `200x200`, non solo il centro.
+- Visitare o forzare i cinque biomi (`infected_plains`, `toxic_wastes`,
+  `burning_fields`, `frozen_outskirts`, `drowned_marsh`) e acquisire screenshot
+  a 1280x720 e 960x540.
+- Verificare che floor base e varianti siano coerenti con la palette del bioma
+  e restino stabili rigenerando lo stesso seed.
+- Verificare che strade e passaggi siano integrati nel ground tile layer e che
+  non appaiano piu come ovali `BiomeTerrainPatch` sopra il terreno.
+- Verificare cliff/fall boundary: il bordo vicino al terreno usa
+  `void_edge_near`, il fuori-mappa/esterno resta `void_depth`.
+- Aprire il profiler o l'overlay debug e confermare assenza di 40.000 nodi
+  tile: il ground deve essere un `BiomeTileLayer` chunked.
+
+```text
+godot --headless --path . --script res://tests/milestone_10_tile_layer_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_asset_manifest_v7_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_asset_pipeline_smoke_test.gd
+godot --headless --path . --script res://tests/isometric_biome_terrain_coverage_smoke_test.gd
+godot --headless --path . --script res://tests/zombie_environment_milestone_smoke_test.gd
+godot --headless --path . --script res://tests/zombie_biome_transition_smoke_test.gd
+```
+
 ## Regressione todo_roadmap Milestone 5 - dungeon ramificato, shop e biomi
 
 QA da eseguire con almeno tre seed diversi, con tastiera e joypad.

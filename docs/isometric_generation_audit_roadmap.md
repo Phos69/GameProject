@@ -948,7 +948,7 @@ Sotto-task completati:
 
 ### Milestone 10 - Polish grafico e sostituzione placeholder
 
-Stato: in corso. Sotto-milestone 10.1 e 10.2 completate il 2026-06-18.
+Stato: in corso. Sotto-milestone 10.1, 10.2 e 10.3 completate il 2026-06-18.
 
 Esito 10.1:
 
@@ -975,6 +975,19 @@ Esito 10.2:
   v7 ora validano come `base_complete` e restano coperti da fallback tecnico.
 - `tests/milestone_10_asset_pipeline_smoke_test.gd` verifica struttura cartelle,
   allineamento manifest/file system, metadata SVG, naming e attribution.
+
+Esito 10.3:
+
+- Aggiunti `IsometricTileResolver` e `BiomeTileLayer`: ogni cella logica del
+  `200x200` risolve un tile asset-backed stabile da seed + cella + bioma.
+- `TerrainGenerator` usa il tile layer come ground primario e non istanzia piu
+  i patch terreno ovali quando la modalita asset e attiva; `BiomeRegionGround`
+  resta fallback tecnico.
+- Il manifest v7 include `void_edge_near` e gli SVG controllati dal generator
+  salgono a 75.
+- `tests/milestone_10_tile_layer_smoke_test.gd` copre contratti richiesti,
+  determinismo, copertura walkable/asset, chunking 20x20 e integrazione
+  `TerrainGenerator`.
 
 Obiettivo:
 sostituire gradualmente placeholder procedurali con asset o scene dedicate,

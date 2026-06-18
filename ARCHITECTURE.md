@@ -475,7 +475,17 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - Lo scaling contestuale considera wave, player vivi, tempo sopravvissuto e profondita del bioma.
 - Ogni bioma legge `BiomeEnvironmentLayout` per terreno, ostacoli, casse e hazard senza placement hardcoded nei controller.
 - Ogni `BiomeEnvironmentLayout` espone una classificazione completa del `200x200` usata da validazione, dodge/gap e debug.
-- `TerrainGenerator` modifica solo palette e decorazioni; non possiede collisioni o regole combat.
+- `TerrainGenerator` modifica palette e ground visuale; non possiede collisioni
+  o regole combat.
+- In modalita asset, `TerrainGenerator` crea `BiomeTileLayer` come ground
+  primario e non istanzia i vecchi `BiomeTerrainPatch` ovali. Se
+  `use_asset_tile_layer` viene disattivato, `BiomeRegionGround` e
+  `BiomeTerrainPatch` restano fallback tecnici controllati.
+- `IsometricTileResolver` risolve deterministicamente ogni cella logica
+  `200x200` in `floor_base`, varianti floor, `road`, `hazard_floor`,
+  `border_floor`, `void_edge_near` o `void_depth` usando seed, cella e bioma.
+  `BiomeTileLayer` cache-a tutti i 40.000 tile e li divide in chunk (`balanced`
+  20x20, `performance` 25x25, `quality` 16x16) senza creare 40.000 nodi.
 - `BiomeObstacle` usa `StaticBody2D` sul layer `1`, quindi player e zombie lo trattano come impedimento fisico.
 - Gli ostacoli appartengono anche ai gruppi `environment_obstacles` e `spawn_blockers`.
 - `BiomeObstacle` legge `draw_mode` e `dedicated_draw` da
@@ -502,11 +512,11 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
   collegati usano border ID tematici per bioma; il lato senza regione resta
   fall zone e non ostacolo.
 - Ogni layout conserva un corridoio centrale libero per l'AI diretta esistente.
-- `assets/environment/isometric/manifest.json` v6 contiene i draw mode oggetto
-  in `object_visuals`, i border tematici generati, lo stato procedurale
-  dedicato della `fall_zone` e i tag terrain generati per strade e passaggi,
-  il relativo `draw_mode` procedurale e i preset
-  `performance`/`balanced`/`quality` per il campionamento del ground.
+- `assets/environment/isometric/manifest.json` v7 contiene i draw mode oggetto
+  legacy in `object_visuals`, i contratti asset per tile, terrain, edge, void,
+  object scenes, passage tiles e asset set di bioma, inclusi `void_edge_near` e
+  `void_depth`; i preset `performance`/`balanced`/`quality` restano disponibili
+  per fallback ground e qualita del tile layer.
 - I tag terrain generati da `ObstacleLayoutGenerator` e
   `BiomePassageGenerator` devono essere presenti nel manifest o avere fallback
   documentato; gli smoke falliscono se un nuovo tag strada/passaggio ricade su

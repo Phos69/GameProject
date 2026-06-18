@@ -274,6 +274,12 @@ func get_passage_asset_contract(passage_type: StringName) -> Dictionary:
 func get_void_asset_contract(void_id: StringName) -> Dictionary:
 	return get_asset_contract(&"void_tiles", void_id)
 
+func get_tile_variant_asset_contract(tile_id: StringName) -> Dictionary:
+	return get_asset_contract(&"tile_variants", tile_id)
+
+func get_biome_asset_set_contract(biome_id: StringName) -> Dictionary:
+	return get_asset_contract(&"biome_asset_sets", biome_id)
+
 func get_fallback_policy() -> Dictionary:
 	return fallback_policy.duplicate(true)
 
@@ -570,8 +576,9 @@ func _validate_asset_coverage(failures: PackedStringArray) -> void:
 	for border_id in [&"boundary_fence", &"toxic_boundary_wall", &"lava_boundary", &"ice_boundary", &"deep_water_boundary"]:
 		if not has_asset_contract(&"edge_tiles", border_id):
 			failures.append("%s: border id missing edge_tiles asset contract" % String(border_id))
-	if not has_asset_contract(&"void_tiles", &"fall_zone"):
-		failures.append("fall_zone: missing void_tiles asset contract")
+	for void_id in [&"fall_zone", &"void_edge_near", &"void_depth"]:
+		if not has_asset_contract(&"void_tiles", void_id):
+			failures.append("%s: missing void_tiles asset contract" % String(void_id))
 
 func _asset_path_exists(asset_path: String) -> bool:
 	if asset_path.is_empty():

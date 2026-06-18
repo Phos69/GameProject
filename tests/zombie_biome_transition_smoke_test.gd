@@ -104,10 +104,20 @@ func _run() -> void:
 			terrain_generator.get_active_biome_id() == biome_id,
 			"terrain switches to %s" % String(biome_id)
 		)
+		var tile_layer := terrain_generator.get_active_tile_layer()
+		_expect(tile_layer != null, "%s creates an asset tile layer" % String(biome_id))
+		if tile_layer != null:
+			_expect(
+				tile_layer.get_visual_tile_count() == layout.zone_size.x * layout.zone_size.y,
+				"%s tile layer covers every logical cell" % String(biome_id)
+			)
+			_expect(
+				tile_layer.get_missing_asset_count() == 0,
+				"%s tile layer has no missing visual cells" % String(biome_id)
+			)
 		_expect(
-			terrain_generator.get_generated_patches().size()
-			== layout.terrain_patch_positions.size(),
-			"%s creates all terrain patches" % String(biome_id)
+			terrain_generator.get_generated_patches().is_empty(),
+			"%s suppresses legacy terrain patches while tile layer is active" % String(biome_id)
 		)
 		_expect(
 			obstacle_system.get_active_obstacles().size()

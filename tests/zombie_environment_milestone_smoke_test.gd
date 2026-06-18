@@ -95,10 +95,14 @@ func _run() -> void:
 		_finish()
 		return
 
-	var patches: Array = terrain_generator.get_generated_patches()
+	var tile_layer := terrain_generator.get_active_tile_layer()
+	_expect(tile_layer != null, "terrain generator creates the asset tile layer")
+	if tile_layer != null:
+		_expect(tile_layer.get_visual_tile_count() == 40000, "asset tile layer covers the full 200x200 layout")
+		_expect(tile_layer.get_missing_asset_count() == 0, "asset tile layer has no missing visual cells")
 	_expect(
-		patches.size() == layout.terrain_patch_positions.size(),
-		"terrain generator creates every configured ground patch"
+		terrain_generator.get_generated_patches().is_empty(),
+		"terrain generator suppresses legacy terrain patches when tile layer is active"
 	)
 	_expect(
 		playground.floor_color.is_equal_approx(palette.background_color)
@@ -233,7 +237,7 @@ func _run() -> void:
 	await process_frame
 	_expect(
 		terrain_generator.get_generated_patches().is_empty(),
-		"terrain patches are removed when survival stops"
+		"terrain patch fallback remains inactive when survival stops"
 	)
 	_expect(
 		obstacle_system.get_active_obstacles().is_empty(),

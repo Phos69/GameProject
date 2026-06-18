@@ -374,6 +374,11 @@ Attivita post-roadmap:
 - Milestone 10.2 di `milestone_10_isometric_asset_rewrite_roadmap.md`
   completata: struttura cartelle ambiente isometrico, generatore SVG headless
   con dry-run/check/write, 74 asset SVG interni e smoke pipeline.
+- Milestone 10.3 di `milestone_10_isometric_asset_rewrite_roadmap.md`
+  completata: `BiomeTileLayer` chunked come ground primario, resolver
+  deterministico per tile base/road/hazard/border/void su tutto il `200x200`,
+  `void_edge_near` in manifest e patch terreno legacy disattivati in modalita
+  asset.
 - asset definitivi e ulteriori pass di bilanciamento;
 - firma digitale della build pubblica.
 

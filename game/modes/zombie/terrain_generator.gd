@@ -10,6 +10,9 @@ const TERRAIN_PATCH_SCRIPT = preload(
 const REGION_GROUND_SCRIPT = preload(
 	"res://game/modes/zombie/biome_region_ground.gd"
 )
+const BIOME_TILE_LAYER_SCRIPT = preload(
+	"res://game/modes/zombie/biome_tile_layer.gd"
+)
 
 @export var playground_path: NodePath = NodePath("../../../../World/Playground")
 @export var environment_container_path: NodePath = NodePath(
@@ -17,11 +20,13 @@ const REGION_GROUND_SCRIPT = preload(
 )
 @export_enum("performance", "balanced", "quality") var region_ground_quality_preset: String = "balanced"
 @export_range(0, 32, 1) var region_ground_sample_step_override: int = 0
+@export var use_asset_tile_layer: bool = true
 
 var active_biome: BiomeDefinition
 var is_active: bool = false
 var generated_patches: Array[Node2D] = []
 var active_ground: BiomeRegionGround
+var active_tile_layer: BiomeTileLayer
 
 func _ready() -> void:
 	add_to_group("terrain_generator")
@@ -52,6 +57,9 @@ func get_generated_patches() -> Array[Node2D]:
 func get_active_ground() -> BiomeRegionGround:
 	return active_ground
 
+func get_active_tile_layer() -> BiomeTileLayer:
+	return active_tile_layer
+
 func _apply_biome_palette() -> void:
 	if active_biome == null:
 		return
@@ -62,6 +70,8 @@ func _apply_biome_palette() -> void:
 
 func _generate_terrain_patches() -> void:
 	if active_biome == null:
+		return
+	if active_tile_layer != null:
 		return
 	var layout := active_biome.environment_layout
 	var palette := active_biome.palette
@@ -103,6 +113,19 @@ func _generate_region_ground() -> void:
 	var container := _get_environment_container()
 	if layout == null or palette == null or container == null:
 		return
+	if use_asset_tile_layer:
+		active_tile_layer = BIOME_TILE_LAYER_SCRIPT.new() as BiomeTileLayer
+		if active_tile_layer == null:
+			return
+		active_tile_layer.name = "BiomeTileLayer"
+		active_tile_layer.configure(
+			layout,
+			palette,
+			active_biome.biome_id,
+			StringName(region_ground_quality_preset)
+		)
+		container.add_child(active_tile_layer)
+		return
 	active_ground = REGION_GROUND_SCRIPT.new() as BiomeRegionGround
 	if active_ground == null:
 		return
@@ -129,6 +152,9 @@ func _clear_runtime() -> void:
 	if active_ground != null and is_instance_valid(active_ground):
 		active_ground.queue_free()
 	active_ground = null
+	if active_tile_layer != null and is_instance_valid(active_tile_layer):
+		active_tile_layer.queue_free()
+	active_tile_layer = null
 
 func _prune_runtime() -> void:
 	for patch in generated_patches.duplicate():

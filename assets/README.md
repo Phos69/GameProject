@@ -97,6 +97,19 @@ ripetibile. Restano placeholder asset-driven originali del progetto e possono
 essere sostituiti gradualmente con arte `needs_polish`/`final` senza cambiare il
 contratto runtime.
 
+## Ambiente isometrico (tile layer runtime)
+
+`game/modes/zombie/isometric_tile_resolver.gd` mappa ogni cella logica del
+`BiomeEnvironmentLayout` in un tile asset-backed deterministico: `floor_base`,
+varianti floor, `road`, `hazard_floor`, `border_floor`, `void_edge_near` o
+`void_depth`. La variante floor deriva da seed, cella e bioma.
+
+`game/modes/zombie/biome_tile_layer.gd` e il ground primario asset-driven per
+`TerrainGenerator`: cache-a tutte le 40.000 celle della regione `200x200`, le
+divide in chunk e usa il manifest v7 come contratto per gli asset. I vecchi
+`BiomeRegionGround` e `BiomeTerrainPatch` restano fallback tecnici solo quando
+la modalita asset viene disattivata.
+
 ## Sostituzione Placeholder
 
 1. Conservare controller, collisioni e timing esistenti.

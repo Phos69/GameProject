@@ -1,5 +1,60 @@
 # Latest Commit Validation Report
 
+## Milestone 10.3 tile layer persistente - 2026-06-18
+- Branch: `master`
+- HEAD corrente: non committato al momento della validazione locale.
+- Scope validato: sotto-milestone 10.3 di
+  `milestone_10_isometric_asset_rewrite_roadmap.md`, tile base persistenti per
+  tutto il bioma `200x200`.
+- Esito: PASS sui criteri automatizzabili. `BiomeTileLayer` e
+  `IsometricTileResolver` coprono ogni cella logica con tile asset-backed
+  deterministico; `TerrainGenerator` usa il tile layer come ground primario e
+  disattiva i patch terreno legacy in modalita asset.
+
+| Criterio | Esito | Evidenza |
+|---|---|---|
+| Ogni cella `200x200` risolve un tile | PASS | `tests/milestone_10_tile_layer_smoke_test.gd` controlla 40.000 celle per cinque biomi campione |
+| Varianti stabili per seed+cella+bioma | PASS | smoke 10.3 confronta due risoluzioni della stessa cella |
+| Asset contract presenti | PASS | resolver verifica `floor_*`, `road`, `hazard_floor`, `border_floor`, `void_edge_near`, `void_depth` |
+| Chunk/caching attivi | PASS | `BiomeTileLayer` usa chunk 20x20 balanced e cache 40.000 celle senza nodi per-tile |
+| Patch ovali legacy disattivati | PASS | smoke 10.3 e smoke survival verificano `generated_patches` vuoto con tile layer attivo |
+
+### Test Milestone 10.3 eseguiti
+
+| Test | Esito | Note |
+|---|---|---|
+| `godot --headless --path . --import` | PASS | classi globali aggiornate e SVG importabili |
+| `tools/generate_isometric_environment_assets.gd -- --check` | PASS | 75 SVG verificati dopo `void_edge_near` |
+| `tests/milestone_10_tile_layer_smoke_test.gd` | PASS | contratti, determinismo, copertura, chunk e integrazione |
+| `tests/milestone_10_asset_manifest_v7_smoke_test.gd` | PASS | regressione manifest v7 |
+| `tests/milestone_10_asset_pipeline_smoke_test.gd` | PASS | regressione pipeline asset |
+| `tests/isometric_environment_manifest_smoke_test.gd` | PASS | regressione manifest/ostacoli/Y-sort |
+| `tests/isometric_biome_terrain_coverage_smoke_test.gd` | PASS | classificazione `200x200` e passaggi walkable |
+| `tests/zombie_environment_milestone_smoke_test.gd` | PASS | survival runtime con tile layer primario |
+| `tests/zombie_biome_transition_smoke_test.gd` | PASS | transizione bioma con tile layer e patch legacy disattivati |
+| `tests/milestone_8_multi_region_smoke_test.gd` | PASS | regressione vicini visual-only legacy |
+
+### Fix applicati nella Milestone 10.3
+
+- `game/modes/zombie/isometric_tile_resolver.gd`: resolver deterministico per
+  tile base, road, hazard, border e void.
+- `game/modes/zombie/biome_tile_layer.gd`: layer chunked/cache per 40.000 celle
+  senza nodi per-tile.
+- `game/modes/zombie/terrain_generator.gd`: tile layer come ground primario;
+  `BiomeRegionGround`/`BiomeTerrainPatch` solo fallback tecnico.
+- `assets/environment/isometric/manifest.json`: aggiunto `void_edge_near`.
+- `assets/environment/isometric/edges/cliffs/void_edge_near.svg`: nuovo SVG
+  generato internamente.
+- `tests/milestone_10_tile_layer_smoke_test.gd`: smoke dedicato 10.3.
+
+### Limiti e follow-up Milestone 10.3
+
+- I passaggi specializzati (`bridge`, `snow_pass`, `broken_gate`,
+  `burned_road`) sono ancora normalizzati dal tile base `road`; la Milestone
+  10.4 li trasforma in tile asset-driven dedicati.
+- QA screenshot reale cinque biomi a 1280x720 e 960x540 resta tracciato nella
+  checklist manuale e verra chiuso nella milestone QA visuale finale.
+
 ## Milestone 10.2 asset pipeline locale - 2026-06-18
 - Branch: `master`
 - HEAD corrente: non committato al momento della validazione locale.

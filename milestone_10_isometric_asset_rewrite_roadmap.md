@@ -205,6 +205,8 @@ assets/environment/isometric/
 
 # Milestone 10.3 — Tile base isometrici persistenti per tutto il bioma
 
+Stato: completata il 2026-06-18.
+
 ## Obiettivo
 
 Sostituire il ground procedurale campionato con tile base o varianti persistenti su tutta la regione `200x200`.
@@ -254,6 +256,18 @@ Sostituire il ground procedurale campionato con tile base o varianti persistenti
 - Smoke: per seed fisso, la stessa cella produce sempre lo stesso tile variant.
 - Smoke: nessuna cella walkable senza tile risolto.
 - Manuale: screenshot cinque biomi a 1280x720 e 960x540.
+
+## Esito implementato
+
+- `IsometricTileResolver` risolve tile base, varianti, road, hazard, border,
+  `void_edge_near` e `void_depth` per ogni cella logica `200x200`.
+- `BiomeTileLayer` e il ground primario del bioma attivo: cache 40.000 celle,
+  chunk `20x20` in preset balanced, `25x25` performance e `16x16` quality.
+- `TerrainGenerator` non genera piu `BiomeTerrainPatch` quando il tile layer
+  asset e attivo; `BiomeRegionGround` resta fallback tecnico controllato.
+- Aggiunto `void_edge_near` al manifest v7 e generato il relativo SVG.
+- Smoke: `tests/milestone_10_tile_layer_smoke_test.gd`; checklist manuale
+  aggiornata per screenshot cinque biomi alle due risoluzioni richieste.
 
 ---
 

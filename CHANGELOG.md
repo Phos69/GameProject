@@ -59,9 +59,15 @@
 - Chiusa la Milestone 10.2 della roadmap asset isometrica con pipeline locale,
   generatore SVG headless, struttura cartelle ambiente e asset placeholder
   asset-driven in-repo.
+- Chiusa la Milestone 10.3 della roadmap asset isometrica con `BiomeTileLayer`,
+  resolver deterministico per ogni cella `200x200`, tile `void_edge_near`,
+  soppressione dei patch terreno legacy in modalita asset e smoke dedicato.
 
 ### Changed
 
+- `TerrainGenerator` usa `BiomeTileLayer` come ground primario asset-driven
+  quando `use_asset_tile_layer` e attivo; `BiomeRegionGround` e
+  `BiomeTerrainPatch` restano fallback tecnici controllati.
 - `BiomeObstacle` costruisce ora la collisione dal manifest: `collision_shape`
   (`rectangle`/`circle`/`open`) guida shape runtime e `contains_global_position`,
   `blocks_movement`/`blocks_projectiles` guidano i bit di `collision_layer` e
