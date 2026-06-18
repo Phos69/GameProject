@@ -62,12 +62,21 @@
 - Chiusa la Milestone 10.3 della roadmap asset isometrica con `BiomeTileLayer`,
   resolver deterministico per ogni cella `200x200`, tile `void_edge_near`,
   soppressione dei patch terreno legacy in modalita asset e smoke dedicato.
+- Chiusa la Milestone 10.4 della roadmap asset isometrica con strade,
+  raccordi, entry/exit e passaggi asset-driven, continuita globale tra regioni
+  e smoke dedicato sui passaggi.
 
 ### Changed
 
 - `TerrainGenerator` usa `BiomeTileLayer` come ground primario asset-driven
   quando `use_asset_tile_layer` e attivo; `BiomeRegionGround` e
   `BiomeTerrainPatch` restano fallback tecnici controllati.
+- `IsometricTileResolver` distingue tile terrain e passage per strade,
+  curve/edge/intersezioni, entry/exit di passaggio e connector dedicati; i
+  connector di passaggio hanno priorita sulle road decorative sovrapposte.
+- `BiomeTransitionGate` non comunica piu la direzione con draw runtime: il draw
+  resta solo debug opzionale, mentre apertura e direzione sono leggibili dai
+  tile di passaggio.
 - `BiomeObstacle` costruisce ora la collisione dal manifest: `collision_shape`
   (`rectangle`/`circle`/`open`) guida shape runtime e `contains_global_position`,
   `blocks_movement`/`blocks_projectiles` guidano i bit di `collision_layer` e
@@ -115,6 +124,9 @@
   asset-driven dal manifest v7, con dry-run, write, check e guardia anti
   overwrite per asset `final`. Aggiunti 74 SVG ambiente e
   `tests/milestone_10_asset_pipeline_smoke_test.gd`.
+- `tests/milestone_10_passage_tile_smoke_test.gd` valida contratti tile
+  passaggi, span sui quattro lati, overlap con fall/wall, coordinate globali dei
+  connector e serializzazione `WorldRegionConnection`.
 
 ### Fixed
 

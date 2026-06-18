@@ -15,6 +15,8 @@ var resolver: IsometricTileResolver
 
 var _chunks: Array[Rect2i] = []
 var _tile_id_cache: Dictionary = {}
+var _tile_section_cache: Dictionary = {}
+var _tile_role_cache: Dictionary = {}
 var _asset_path_cache: Dictionary = {}
 var _missing_asset_count: int = 0
 
@@ -69,6 +71,26 @@ func get_resolved_tile_id(cell: Vector2i) -> StringName:
 		return &""
 	return resolver.resolve_tile_id(layout, cell, biome_id, quality_preset)
 
+func get_resolved_tile_section(cell: Vector2i) -> StringName:
+	var key := _cell_key(cell)
+	if _tile_section_cache.has(key):
+		return StringName(_tile_section_cache[key])
+	if resolver == null:
+		return &""
+	return StringName(
+		resolver.resolve_tile_data(layout, cell, biome_id, quality_preset).get("section", &"")
+	)
+
+func get_resolved_tile_role(cell: Vector2i) -> StringName:
+	var key := _cell_key(cell)
+	if _tile_role_cache.has(key):
+		return StringName(_tile_role_cache[key])
+	if resolver == null:
+		return &""
+	return StringName(
+		resolver.resolve_tile_data(layout, cell, biome_id, quality_preset).get("role", &"")
+	)
+
 func get_resolved_asset_path(cell: Vector2i) -> String:
 	var key := _cell_key(cell)
 	if _asset_path_cache.has(key):
@@ -121,25 +143,30 @@ func _rebuild_chunks() -> void:
 
 func _rebuild_tile_cache() -> void:
 	_tile_id_cache.clear()
+	_tile_section_cache.clear()
+	_tile_role_cache.clear()
 	_asset_path_cache.clear()
 	_missing_asset_count = 0
 	if layout == null or resolver == null:
 		return
-	var asset_path_by_tile_id: Dictionary = {}
-	var asset_exists_by_tile_id: Dictionary = {}
+	var asset_exists_by_contract: Dictionary = {}
 	for y in range(layout.zone_size.y):
 		for x in range(layout.zone_size.x):
 			var cell := Vector2i(x, y)
-			var tile_id := resolver.resolve_tile_id(layout, cell, biome_id, quality_preset)
-			if not asset_path_by_tile_id.has(tile_id):
-				var resolved_asset_path := String(resolver.resolve_tile_contract(tile_id).get("asset_path", ""))
-				asset_path_by_tile_id[tile_id] = resolved_asset_path
-				asset_exists_by_tile_id[tile_id] = _asset_path_exists(resolved_asset_path)
-			var cached_asset_path := String(asset_path_by_tile_id[tile_id])
+			var tile_data := resolver.resolve_tile_data(layout, cell, biome_id, quality_preset)
+			var tile_id := StringName(tile_data.get("tile_id", &""))
+			var section := StringName(tile_data.get("section", &""))
+			var role := StringName(tile_data.get("role", &""))
+			var cached_asset_path := String(tile_data.get("asset_path", ""))
+			var contract_key := "%s:%s" % [String(section), String(tile_id)]
+			if not asset_exists_by_contract.has(contract_key):
+				asset_exists_by_contract[contract_key] = _asset_path_exists(cached_asset_path)
 			var key := _cell_key(cell)
 			_tile_id_cache[key] = tile_id
+			_tile_section_cache[key] = section
+			_tile_role_cache[key] = role
 			_asset_path_cache[key] = cached_asset_path
-			if not bool(asset_exists_by_tile_id[tile_id]):
+			if not bool(asset_exists_by_contract[contract_key]):
 				_missing_asset_count += 1
 
 func _resolve_chunk_size(next_chunk_size: int, preset: StringName) -> int:
@@ -163,9 +190,33 @@ func _cell_center_to_world(cell: Vector2i) -> Vector2:
 	)
 
 func _tile_color(tile_id: StringName) -> Color:
+	if _is_passage_endpoint_tile(tile_id):
+		return palette.gate_color.lightened(0.08)
 	match tile_id:
-		IsometricTileResolver.TILE_ROAD:
+		IsometricTileResolver.TILE_MAIN_ROAD, IsometricTileResolver.TILE_ROAD:
 			return Color(palette.lane_color, maxf(palette.lane_color.a, 0.46))
+		IsometricTileResolver.TILE_ROAD_INTERSECTION:
+			return Color(palette.lane_color.lightened(0.12), 0.58)
+		IsometricTileResolver.TILE_ROAD_EDGE:
+			return Color(palette.lane_color.darkened(0.12), 0.50)
+		IsometricTileResolver.TILE_ROAD_CURVE_NORTH, IsometricTileResolver.TILE_ROAD_CURVE_EAST, IsometricTileResolver.TILE_ROAD_CURVE_SOUTH, IsometricTileResolver.TILE_ROAD_CURVE_WEST:
+			return Color(palette.lane_color.lightened(0.06), 0.54)
+		IsometricTileResolver.TILE_BROKEN_STREET:
+			return Color(palette.lane_color.darkened(0.18), 0.52)
+		IsometricTileResolver.TILE_SERVICE_LANE:
+			return Color(palette.gate_color.lightened(0.06), 0.52)
+		IsometricTileResolver.TILE_ASH_LANE, IsometricTileResolver.TILE_BURNED_ROAD:
+			return Color(palette.hazard_color.darkened(0.22), 0.58)
+		IsometricTileResolver.TILE_PACKED_SNOW_PATH, IsometricTileResolver.TILE_SNOW_PASS:
+			return Color(palette.floor_color.lightened(0.22), 0.58)
+		IsometricTileResolver.TILE_WOODEN_WALKWAY, IsometricTileResolver.TILE_BRIDGE:
+			return Color(palette.prop_color.lightened(0.08), 0.56)
+		IsometricTileResolver.TILE_BROKEN_GATE:
+			return Color(palette.gate_color.darkened(0.10), 0.54)
+		IsometricTileResolver.TILE_BRIDGE_BROKEN:
+			return Color(palette.prop_color.darkened(0.18), 0.56)
+		IsometricTileResolver.TILE_CLIFF_RAMP:
+			return Color(palette.background_color.lightened(0.12), 0.54)
 		IsometricTileResolver.TILE_HAZARD_FLOOR:
 			return Color(palette.hazard_color, 0.60)
 		IsometricTileResolver.TILE_BORDER_FLOOR:
@@ -182,6 +233,9 @@ func _tile_color(tile_id: StringName) -> Color:
 			return palette.alternate_floor_color.darkened(0.045)
 		_:
 			return palette.floor_color
+
+func _is_passage_endpoint_tile(tile_id: StringName) -> bool:
+	return String(tile_id).ends_with("_entry") or String(tile_id).ends_with("_exit")
 
 func _cell_key(cell: Vector2i) -> int:
 	if layout == null:

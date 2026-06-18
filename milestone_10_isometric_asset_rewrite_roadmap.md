@@ -322,6 +322,22 @@ Rendere strade e passaggi parte fisica e visiva della mappa, non patch decorativ
 - Smoke: nessun tile passaggio sovrapposto a fall zone o muro.
 - Manuale: attraversare almeno otto confini con seed fisso.
 
+## Esito implementato
+
+- Il manifest v7 contiene contratti asset per terrain route, curve
+  nord/est/sud/ovest, intersezioni, road edge, entry/exit di ogni
+  `passage_type`, `bridge_broken` e `cliff_ramp`; il generator controlla 93 SVG.
+- `IsometricTileResolver` emette route tile specifici, entry/exit sui varchi di
+  bordo e connector `passage_tiles` con priorita sulle road decorative
+  sovrapposte.
+- `BiomePassage` e `WorldRegionConnection` conservano rettangoli local/global,
+  connector source/target e tile entry/exit per garantire continuita visuale
+  tra regioni adiacenti.
+- `BiomeTransitionGate._draw()` non comunica piu direzione o apertura: resta
+  solo debug opzionale con `show_debug_visual`.
+- Smoke: `tests/milestone_10_passage_tile_smoke_test.gd`; checklist manuale
+  aggiornata per traversare almeno otto confini con seed fisso.
+
 ---
 
 # Milestone 10.5 — Oggetti e ostacoli come scene isometriche slot-based

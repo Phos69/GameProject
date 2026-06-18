@@ -125,6 +125,7 @@ godot --headless --path . --script res://tests/isometric_environment_manifest_sm
 godot --headless --path . --script res://tests/milestone_10_asset_manifest_v7_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_10_asset_pipeline_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_10_tile_layer_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_passage_tile_smoke_test.gd
 godot --headless --path . --script res://tests/isometric_biome_terrain_coverage_smoke_test.gd
 godot --headless --path . --script res://tests/fall_boundary_visual_logic_smoke_test.gd
 godot --headless --path . --script res://tests/player_dodge_gap_smoke_test.gd
@@ -257,6 +258,9 @@ Completato:
 - manifest `assets/environment/isometric/manifest.json` per censire ostacoli,
   props, border tematici, fall zone, draw mode oggetti e tag terrain/passaggi
   da sostituire con versioni isometriche coerenti;
+- tile layer asset-driven per ground, road connector e passaggi: entry/exit,
+  ponti, snow pass, broken gate e burned road sono risolti come asset tile nel
+  `200x200`, non come patch o frecce del gate;
 - draw procedurali dedicati per gli ostacoli generati e i border tematici dei
   cinque biomi, senza asset esterni obbligatori e senza fallback barriera
   generico implicito;

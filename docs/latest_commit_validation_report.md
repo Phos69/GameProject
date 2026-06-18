@@ -1,5 +1,66 @@
 # Latest Commit Validation Report
 
+## Milestone 10.4 strade e passaggi asset-driven - 2026-06-18
+- Branch: `master`
+- HEAD corrente: non committato al momento della validazione locale.
+- Scope validato: sotto-milestone 10.4 di
+  `milestone_10_isometric_asset_rewrite_roadmap.md`, strade, ponti, passaggi e
+  raccordi come tile asset-driven.
+- Esito: PASS sui criteri automatizzabili. I passaggi espongono tile dedicati
+  per tipo, entry/exit leggibili al bordo, connector continui in coordinate
+  globali e nessuna direzione viene comunicata da `BiomeTransitionGate._draw()`.
+
+| Criterio | Esito | Evidenza |
+|---|---|---|
+| Ogni `passage_type` ha tile dedicati | PASS | manifest v7 contiene `road`, `bridge`, `snow_pass`, `broken_gate`, `burned_road` in `passage_tiles` piu entry/exit |
+| Raccordi route presenti | PASS | `road_intersection`, `road_edge`, `road_curve_north/east/south/west`, `bridge_broken`, `cliff_ramp` hanno asset SVG |
+| Passaggi sui quattro lati con span coerente | PASS | `tests/milestone_10_passage_tile_smoke_test.gd` valida north/south/east/west e `passage_width` |
+| Nessun passaggio su fall/wall | PASS | smoke 10.4 controlla opening e connector contro fall zone, obstacle, border e void |
+| Continuita globale tra regioni | PASS | `WorldRegionConnection` conserva `world_rect`, connector source/target e tile entry/exit |
+| Gate non comunicano direzione | PASS | `BiomeTransitionGate.show_debug_visual` default false; smoke verifica assenza di frecce/marker |
+
+### Test Milestone 10.4 eseguiti
+
+| Test | Esito | Note |
+|---|---|---|
+| `tools/generate_isometric_environment_assets.gd -- --write` | PASS | 18 nuovi SVG generati, 75 esistenti saltati |
+| `tools/generate_isometric_environment_assets.gd -- --check` | PASS | 93 SVG verificati |
+| `tests/milestone_10_passage_tile_smoke_test.gd` | PASS | contratti, span, overlap, coordinate globali e gate debug |
+| `tests/milestone_10_tile_layer_smoke_test.gd` | PASS | regressione tile layer con route tile specifici |
+| `tests/milestone_10_asset_manifest_v7_smoke_test.gd` | PASS | regressione manifest v7 |
+| `tests/milestone_10_asset_pipeline_smoke_test.gd` | PASS | regressione pipeline asset |
+| `tests/zombie_biome_transition_smoke_test.gd` | PASS | transizioni survival con tile layer |
+| `tests/open_passage_transition_smoke_test.gd` | PASS | trigger fisici allineati ai passaggi |
+| `tests/world_graph_connectivity_smoke_test.gd` | PASS | grafo persistente e passaggi fisici |
+| `tests/milestone_6_open_passage_smoke_test.gd` | PASS | contratto gate/span storico |
+| `tests/zombie_environment_milestone_smoke_test.gd` | PASS | regressione ambiente survival |
+| `tests/isometric_biome_terrain_coverage_smoke_test.gd` | PASS | classificazione e terrain tag |
+| `tests/milestone_8_multi_region_smoke_test.gd` | PASS | regressione renderer multi-regione |
+| `tests/isometric_environment_manifest_smoke_test.gd` | PASS | regressione manifest/ostacoli/Y-sort |
+
+### Fix applicati nella Milestone 10.4
+
+- `assets/environment/isometric/manifest.json`: aggiunti route connector, entry
+  e exit per ogni `passage_type`, `bridge_broken` e `cliff_ramp`.
+- `assets/environment/isometric/passages/*.svg` e
+  `assets/environment/isometric/tiles/shared/road_*.svg`: 18 SVG generati
+  internamente.
+- `game/modes/zombie/isometric_tile_resolver.gd`: risoluzione route/passage con
+  sezioni distinte e priorita ai connector di passaggio.
+- `game/procedural/world_generation/biome_passage.gd` e
+  `game/world/world_region_connection.gd`: rettangoli local/global, connector e
+  tile entry/exit serializzati.
+- `game/modes/zombie/biome_transition_gate.gd`: draw runtime ridotto a debug
+  opzionale.
+- `tests/milestone_10_passage_tile_smoke_test.gd`: smoke dedicato 10.4.
+
+### Limiti e follow-up Milestone 10.4
+
+- Gli SVG restano placeholder testuali generati in-repo; il pass visuale finale
+  resta tracciato nella Milestone 10.11.
+- La Milestone 10.5 deve spostare oggetti e ostacoli verso scene isometriche
+  slot-based, mantenendo collisioni e fallback controllati.
+
 ## Milestone 10.3 tile layer persistente - 2026-06-18
 - Branch: `master`
 - HEAD corrente: non committato al momento della validazione locale.

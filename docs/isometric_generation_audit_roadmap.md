@@ -948,7 +948,7 @@ Sotto-task completati:
 
 ### Milestone 10 - Polish grafico e sostituzione placeholder
 
-Stato: in corso. Sotto-milestone 10.1, 10.2 e 10.3 completate il 2026-06-18.
+Stato: in corso. Sotto-milestone 10.1, 10.2, 10.3 e 10.4 completate il 2026-06-18.
 
 Esito 10.1:
 
@@ -988,6 +988,19 @@ Esito 10.3:
 - `tests/milestone_10_tile_layer_smoke_test.gd` copre contratti richiesti,
   determinismo, copertura walkable/asset, chunking 20x20 e integrazione
   `TerrainGenerator`.
+
+Esito 10.4:
+
+- Strade, curve/edge/intersezioni, entry/exit e connector dei passaggi sono tile
+  asset-driven nel manifest v7; il controllo generator passa a 93 SVG.
+- `IsometricTileResolver` distingue `terrain_tiles` e `passage_tiles`, assegna
+  entry/exit sui varchi di bordo e mantiene i connector di passaggio sopra le
+  road decorative sovrapposte.
+- `BiomePassage` e `WorldRegionConnection` espongono rettangoli local/global e
+  tile entry/exit per continuita visiva tra regioni confinanti.
+- `tests/milestone_10_passage_tile_smoke_test.gd` copre contratti, quattro lati,
+  span, overlap con fall/wall, serializzazione e assenza di frecce/marker nei
+  gate runtime.
 
 Obiettivo:
 sostituire gradualmente placeholder procedurali con asset o scene dedicate,

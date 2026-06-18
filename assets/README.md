@@ -101,7 +101,9 @@ contratto runtime.
 
 `game/modes/zombie/isometric_tile_resolver.gd` mappa ogni cella logica del
 `BiomeEnvironmentLayout` in un tile asset-backed deterministico: `floor_base`,
-varianti floor, `road`, `hazard_floor`, `border_floor`, `void_edge_near` o
+varianti floor, route tile (`main_road`, road tematiche, curve, edge e
+intersezioni), passage tile (`road`, `bridge`, `snow_pass`, `broken_gate`,
+`burned_road`, entry/exit), `hazard_floor`, `border_floor`, `void_edge_near` o
 `void_depth`. La variante floor deriva da seed, cella e bioma.
 
 `game/modes/zombie/biome_tile_layer.gd` e il ground primario asset-driven per
@@ -109,6 +111,9 @@ varianti floor, `road`, `hazard_floor`, `border_floor`, `void_edge_near` o
 divide in chunk e usa il manifest v7 come contratto per gli asset. I vecchi
 `BiomeRegionGround` e `BiomeTerrainPatch` restano fallback tecnici solo quando
 la modalita asset viene disattivata.
+
+Il generator asset controlla 93 SVG ambiente isometrico dopo la Milestone 10.4,
+inclusi road connector e entry/exit dei passaggi.
 
 ## Sostituzione Placeholder
 

@@ -97,7 +97,7 @@ func _add_roads(layout: BiomeEnvironmentLayout, cell: BiomeCell) -> void:
 		_add_road_rect(layout, passage_rect, passage.passage_type)
 		_add_road_rect(
 			layout,
-			_connector_rect_for_passage(passage, zone_size),
+			passage.get_connector_rect(zone_size),
 			passage.passage_type
 		)
 
@@ -220,34 +220,6 @@ func _add_road_rect(
 	layout.terrain_patch_radii.append(
 		maxf(float(maxi(rect.size.x, rect.size.y)) * layout.logical_tile_scale * 0.18, 28.0)
 	)
-
-func _connector_rect_for_passage(
-	passage: BiomePassage,
-	zone_size: Vector2i
-) -> Rect2i:
-	var center := zone_size / 2
-	var half_width := maxi(passage.width / 2, 2)
-	match passage.side:
-		&"north":
-			return Rect2i(
-				Vector2i(passage.position - half_width, 0),
-				Vector2i(passage.width, center.y)
-			)
-		&"south":
-			return Rect2i(
-				Vector2i(passage.position - half_width, center.y),
-				Vector2i(passage.width, zone_size.y - center.y)
-			)
-		&"west":
-			return Rect2i(
-				Vector2i(0, passage.position - half_width),
-				Vector2i(center.x, passage.width)
-			)
-		_:
-			return Rect2i(
-				Vector2i(center.x, passage.position - half_width),
-				Vector2i(zone_size.x - center.x, passage.width)
-			)
 
 func _add_large_obstacles(
 	layout: BiomeEnvironmentLayout,

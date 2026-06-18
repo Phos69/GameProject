@@ -379,6 +379,10 @@ Attivita post-roadmap:
   deterministico per tile base/road/hazard/border/void su tutto il `200x200`,
   `void_edge_near` in manifest e patch terreno legacy disattivati in modalita
   asset.
+- Milestone 10.4 di `milestone_10_isometric_asset_rewrite_roadmap.md`
+  completata: strade, curve/edge/intersezioni, entry/exit e connector di
+  passaggio asset-driven; `WorldRegionConnection` conserva rettangoli globali e
+  tile entry/exit per continuita tra regioni.
 - asset definitivi e ulteriori pass di bilanciamento;
 - firma digitale della build pubblica.
 

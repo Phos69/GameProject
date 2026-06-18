@@ -924,6 +924,30 @@ godot --headless --path . --script res://tests/zombie_environment_milestone_smok
 godot --headless --path . --script res://tests/zombie_biome_transition_smoke_test.gd
 ```
 
+## Regressione Milestone 10.4 - strade e passaggi asset-driven
+
+QA visuale e runtime da eseguire dopo modifiche a `BiomePassage`,
+`IsometricTileResolver`, manifest v7 o transizioni tra regioni.
+
+- Avviare survival con seed fisso `641004` e attraversare almeno otto confini
+  fisici, includendo almeno un passaggio north, south, east e west.
+- Confermare che i passaggi non appaiano come frecce, testo o marker del gate:
+  l'apertura deve essere leggibile dai tile entry/exit e dai muri/cliff laterali.
+- Verificare che `bridge`, `snow_pass`, `broken_gate`, `burned_road` e `road`
+  abbiano silhouette distinta nel ground tile layer.
+- Verificare che nessun tile di passaggio cada su fall zone, muro/bordo o void e
+  che il trigger resti dentro lo span del varco.
+- Aprire la mappa dei territori e attraversare avanti/indietro un confine:
+  la continuita visiva deve restare allineata tra le due regioni adiacenti.
+
+```text
+godot --headless --path . --script res://tests/milestone_10_passage_tile_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_tile_layer_smoke_test.gd
+godot --headless --path . --script res://tests/open_passage_transition_smoke_test.gd
+godot --headless --path . --script res://tests/world_graph_connectivity_smoke_test.gd
+godot --headless --path . --script res://tools/generate_isometric_environment_assets.gd -- --check
+```
+
 ## Regressione todo_roadmap Milestone 5 - dungeon ramificato, shop e biomi
 
 QA da eseguire con almeno tre seed diversi, con tastiera e joypad.

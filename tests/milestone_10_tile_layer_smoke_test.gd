@@ -57,7 +57,8 @@ func _run_resolver_coverage_smoke(
 ) -> void:
 	var saw_tile_ids: Dictionary = {}
 	var saw_biome_ids: Dictionary = {}
-	var saw_road_tile := false
+	var saw_route_tile := false
+	var saw_passage_endpoint := false
 	var saw_void_edge := false
 	var saw_void_depth := false
 	var saw_hazard_floor := false
@@ -85,8 +86,10 @@ func _run_resolver_coverage_smoke(
 					var resolved_asset_path := String(resolver.resolve_tile_contract(tile_id).get("asset_path", ""))
 					asset_exists_by_tile_id[tile_id] = _asset_exists(resolved_asset_path)
 				saw_tile_ids[tile_id] = true
-				if tile_id == IsometricTileResolver.TILE_ROAD:
-					saw_road_tile = true
+				if resolver.is_route_tile_id(tile_id):
+					saw_route_tile = true
+				if String(tile_id).ends_with("_entry") or String(tile_id).ends_with("_exit"):
+					saw_passage_endpoint = true
 				elif tile_id == IsometricTileResolver.TILE_VOID_EDGE_NEAR:
 					saw_void_edge = true
 				elif tile_id == IsometricTileResolver.TILE_VOID_DEPTH:
@@ -105,7 +108,7 @@ func _run_resolver_coverage_smoke(
 						_cell_inside_any_rect(probe, layout.road_rects)
 						or _cell_inside_any_rect(probe, layout.passage_rects)
 					)
-					and tile_id != IsometricTileResolver.TILE_ROAD
+					and not resolver.is_route_tile_id(tile_id)
 				):
 					failures.append("%s road cell %s resolved to %s" % [String(cell.id), str(probe), String(tile_id)])
 		_expect(walkable_count > 0, "%s has walkable cells" % String(cell.id))
@@ -127,7 +130,8 @@ func _run_resolver_coverage_smoke(
 	_expect(saw_tile_ids.has(IsometricTileResolver.TILE_FLOOR_BASE), "resolver emits floor_base")
 	_expect(saw_tile_ids.has(IsometricTileResolver.TILE_FLOOR_VARIANT_01), "resolver emits floor_variant_01")
 	_expect(saw_tile_ids.has(IsometricTileResolver.TILE_FLOOR_VARIANT_02), "resolver emits floor_variant_02")
-	_expect(saw_road_tile, "resolver emits road for road and passage rects")
+	_expect(saw_route_tile, "resolver emits asset route tiles for road and passage rects")
+	_expect(saw_passage_endpoint, "resolver emits passage endpoint tiles for border openings")
 	_expect(saw_void_edge, "resolver emits void_edge_near for cliff lips")
 	_expect(saw_void_depth or void_depth_probe == IsometricTileResolver.TILE_VOID_DEPTH, "resolver emits void_depth")
 	_expect(saw_hazard_floor, "resolver emits hazard_floor for hazard cells")

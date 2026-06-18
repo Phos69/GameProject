@@ -132,12 +132,14 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `BiomeWorldGenerator`: orchestratore della pipeline procedurale globale per mappa biomi, layout per cella e debug seed.
 - `BiomeMapGenerator`: costruisce la griglia di `BiomeCell` `200x200`, assegna tipi bioma, coordinate globali, vicini, seed locali e grafo connesso con loop.
 - `BorderGenerator`: calcola lati connessi e lati esterni di caduta per ogni cella bioma.
-- `BiomePassageGenerator`: crea passaggi condivisi e allineati tra celle confinanti.
+- `BiomePassageGenerator`: crea passaggi condivisi e allineati tra celle
+  confinanti, con rettangoli local/global e tile entry/exit derivati dal
+  `passage_type`.
 - `BiomeTerrainGenerator`: genera il layout interno del bioma attivo e collega ostacoli, casse, hazard e report di validazione.
 - `IsometricEnvironmentManifest`: legge `assets/environment/isometric/manifest.json`
   come inventario di ostacoli, draw mode oggetto, border tematici, fall zone
   procedurali, tag terrain generati e contratto asset v7 (`tile_sets`,
-  `terrain_tiles`, `edge_tiles`, `void_tiles`, `object_scenes`,
+  `tile_variants`, `terrain_tiles`, `edge_tiles`, `void_tiles`, `object_scenes`,
   `passage_tiles`, `biome_asset_sets`, `fallback_policy`). Il loader normalizza
   path, status, footprint, anchor, collisione, blocchi e attribution senza
   rendere obbligatori asset esterni.
@@ -470,6 +472,8 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - `WorldRuntime` marca la regione iniziale come visited, scopre i vicini collegati e conserva lo stato esplorazione.
 - `BiomeTransitionSystem` collega territori confinanti tramite passaggi aperti; il party condivide una sola regione corrente.
 - Quando e disponibile una cella procedurale corrente, `BiomeTransitionSystem` genera aperture dai `BiomePassage` e propaga al gate il `passage_type` e lo span (`width * logical_tile_scale`), cosi il trigger resta dentro il varco aperto tra i muri di bordo; il fallback `previous_biome_id`/`next_biome_id` resta per compatibilita.
+- I `BiomeTransitionGate` sono trigger fisici: di default non disegnano frecce,
+  marker o direzione; il draw resta solo debug opzionale (`show_debug_visual`).
 - Il cambio regione applica terreno, ostacoli, casse, hazard e passaggi della nuova regione senza riavviare `WaveManager`.
 - `WaveDirector` legge il bioma corrente per risolvere roster, moltiplicatori, ritmo spawn e drop.
 - Lo scaling contestuale considera wave, player vivi, tempo sopravvissuto e profondita del bioma.
@@ -482,8 +486,12 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
   `use_asset_tile_layer` viene disattivato, `BiomeRegionGround` e
   `BiomeTerrainPatch` restano fallback tecnici controllati.
 - `IsometricTileResolver` risolve deterministicamente ogni cella logica
-  `200x200` in `floor_base`, varianti floor, `road`, `hazard_floor`,
-  `border_floor`, `void_edge_near` o `void_depth` usando seed, cella e bioma.
+  `200x200` in `floor_base`, varianti floor, route tile asset-driven
+  (`main_road`, road tematiche, curve/edge/intersezioni), passage tile
+  (`road`, `bridge`, `snow_pass`, `broken_gate`, `burned_road`, entry/exit),
+  `hazard_floor`, `border_floor`, `void_edge_near` o `void_depth` usando seed,
+  cella e bioma. I connector di passaggio hanno priorita sulle road decorative
+  sovrapposte.
   `BiomeTileLayer` cache-a tutti i 40.000 tile e li divide in chunk (`balanced`
   20x20, `performance` 25x25, `quality` 16x16) senza creare 40.000 nodi.
 - `BiomeObstacle` usa `StaticBody2D` sul layer `1`, quindi player e zombie lo trattano come impedimento fisico.
@@ -514,9 +522,13 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - Ogni layout conserva un corridoio centrale libero per l'AI diretta esistente.
 - `assets/environment/isometric/manifest.json` v7 contiene i draw mode oggetto
   legacy in `object_visuals`, i contratti asset per tile, terrain, edge, void,
-  object scenes, passage tiles e asset set di bioma, inclusi `void_edge_near` e
-  `void_depth`; i preset `performance`/`balanced`/`quality` restano disponibili
-  per fallback ground e qualita del tile layer.
+  object scenes, passage tiles e asset set di bioma, inclusi `void_edge_near`,
+  `void_depth`, road connector e entry/exit passaggio; i preset
+  `performance`/`balanced`/`quality` restano disponibili per fallback ground e
+  qualita del tile layer.
+- `WorldRegionConnection` serializza apertura locale, connector locale,
+  rettangoli world-space source/target e tile `entry_tile_id`/`exit_tile_id` per
+  mantenere continuita visuale tra regioni adiacenti.
 - I tag terrain generati da `ObstacleLayoutGenerator` e
   `BiomePassageGenerator` devono essere presenti nel manifest o avere fallback
   documentato; gli smoke falliscono se un nuovo tag strada/passaggio ricade su
