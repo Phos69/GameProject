@@ -111,15 +111,22 @@ intersezioni), passage tile (`road`, `bridge`, `snow_pass`, `broken_gate`,
 assi isometrici; i rettangoli restano per aperture e compatibilita. La variante
 floor deriva da seed, cella e bioma.
 
+Per `infected_plains`, il resolver usa il set forestale dedicato:
+`forest_grass`, varianti grass, `forest_tall_grass`, `forest_path`,
+`forest_road`, `forest_void`, `forest_cliff_edge`, `forest_mountain_wall` e le
+transizioni `grass_to_path`, `grass_to_road`, `grass_to_tall_grass`,
+`path_to_road`, `ground_to_void_cliff` e `ground_to_mountain_wall`. Gli asset
+vivono in `environment/isometric/tiles/forest/` e nelle cartelle `edges/`.
+
 `game/modes/zombie/biome_tile_layer.gd` e il ground primario asset-driven per
 `TerrainGenerator`: cache-a tutte le 250.000 celle della regione `500x500`, le
 divide in chunk e usa il manifest v7 come contratto per gli asset. I vecchi
 `BiomeRegionGround` e `BiomeTerrainPatch` restano fallback tecnici solo quando
 la modalita asset viene disattivata.
 
-Il generator asset controlla 93 SVG ambiente isometrico dopo la Milestone 10.5,
-inclusi road connector, entry/exit dei passaggi e object scene per ostacoli e
-crate.
+Il generator asset controlla 108 SVG ambiente isometrico dopo il pass texture
+forestali, inclusi road connector, entry/exit dei passaggi, object scene per
+ostacoli/crate e tile forestali con transizioni.
 
 ## Ambiente isometrico (oggetti runtime)
 

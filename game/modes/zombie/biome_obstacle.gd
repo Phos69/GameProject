@@ -374,6 +374,24 @@ func _draw_wall_style_accent(face_a: Vector2, face_b: Vector2, lift: Vector2) ->
 	var mid_a := face_a + lift * 0.42
 	var mid_b := face_b + lift * 0.42
 	match draw_mode:
+		&"forest_mountain_wall":
+			draw_line(mid_a, mid_b, Color(0.34, 0.50, 0.23, 0.62), 2.2, true)
+			draw_line(
+				face_a + lift * 0.72,
+				face_b + lift * 0.72,
+				Color(accent_color.lightened(0.10), 0.48),
+				1.6,
+				true
+			)
+			for ratio in [0.18, 0.42, 0.66, 0.84]:
+				var root_base := face_a.lerp(face_b, ratio)
+				draw_line(
+					root_base + lift * 0.18,
+					root_base + lift * 0.48 + Vector2(4.0, 3.0),
+					Color(0.18, 0.10, 0.045, 0.46),
+					1.6,
+					true
+				)
 		&"lava_boundary":
 			draw_line(mid_a, mid_b, Color(0.98, 0.32, 0.10, 0.82), 2.5, true)
 			draw_line(

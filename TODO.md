@@ -35,28 +35,6 @@ revisione manuale, baseline e consolidamento TODO.
 
 ## Backlog aperto prioritizzato
 
-### ISO-RW-001 - Pareti perimetrali e void edge del rewrite 500x500
-
-- Obiettivo: completare il prossimo ciclo del rewrite isometrico sostituendo i
-  segmenti perimetrali rettangolari con pareti verticali isometriche
-  asset-driven e rendendo bordo void/cliff/depth leggibile su ogni lato.
-- Milestone collegata: `isometric_biome_generation_rewrite_roadmap.md`
-  Milestone R2.
-- File/sistemi coinvolti: `game/procedural/world_generation/`,
-  `game/modes/zombie/biome_environment_layout.gd`,
-  `game/modes/zombie/isometric_tile_resolver.gd`,
-  `assets/environment/isometric/manifest.json`,
-  `game/modes/zombie/biome_fall_zone.gd`, `tests/`.
-- Criterio di accettazione: ogni lato non fall ha pareti alte e leggibili, i
-  passaggi tagliano fisicamente le pareti senza portali, ogni lato fall mostra
-  bordo/profondita e danno coerente, e il chunk resta `500x500` con strade 10 e
-  sentieri 4.
-- Test richiesto: estensione
-  `tests/isometric_biome_generation_rewrite_smoke_test.gd`, regressione
-  `tests/fall_boundary_visual_logic_smoke_test.gd`,
-  `tests/milestone_10_passage_tile_smoke_test.gd` e
-  `tests/milestone_10_void_cliff_asset_smoke_test.gd`.
-
 ### UIUX-001 - UI, HUD, audio e polish UX trasversale
 
 - Obiettivo: rifinire menu, HUD, Character Select, status, mappa, boss, feedback
@@ -218,6 +196,18 @@ evitare reimplementazioni e per indirizzare le regressioni.
   `isometric_environment_manifest`, `isometric_biome_terrain_coverage`,
   `fall_boundary_visual_logic`, `player_dodge_gap`,
   `milestone_8_multi_region` e `open_passage_transition`.
+- ISO-RW-001 pareti perimetrali, void edge e texture forestali del rewrite
+  `500x500`: completato come primo pass stabile. La survival usa pareti
+  perimetrali isometriche, fall/void leggibili, varchi fisici senza portali e
+  un set forestale asset-driven per `infected_plains` (`forest_grass`,
+  `forest_tall_grass`, `forest_path`, `forest_road`, `forest_void`,
+  `forest_cliff_edge`, `forest_mountain_wall` e transizioni). Coperto da
+  `tests/forest_isometric_texture_transition_smoke_test.gd`,
+  `tests/isometric_biome_generation_rewrite_smoke_test.gd`,
+  `tests/isometric_perimeter_wall_smoke_test.gd`,
+  `tests/fall_boundary_visual_logic_smoke_test.gd`,
+  `tests/milestone_10_tile_layer_smoke_test.gd` e
+  `tests/milestone_10_void_cliff_asset_smoke_test.gd`.
 - DUN-001 dungeon ramificato, shop e biomi dedicati: completato nella Milestone 5
   di `todo_roadmap.md`; `DungeonGenerator` produce un grafo con ramo reale e boss
   sempre raggiungibile, `DungeonMode` gestisce scelta stanza, run credit, shop

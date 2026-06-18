@@ -19,12 +19,17 @@ var _tile_section_cache: Dictionary = {}
 var _tile_role_cache: Dictionary = {}
 var _asset_path_cache: Dictionary = {}
 var _missing_asset_count: int = 0
-# The whole static ground is baked once into a single mesh (one draw call) plus a
-# single grid multiline, instead of issuing one draw command per cell every
-# frame. Godot re-walks a canvas item's full command list each frame, so
-# per-tile draw commands were the dominant constant frame cost on gl_compatibility.
+# The whole static ground is baked once into meshes instead of issuing one draw
+# command per cell every frame. Godot re-walks a canvas item's full command list
+# each frame, so per-tile draw commands were the dominant constant frame cost on
+# gl_compatibility.
 var _ground_mesh: ArrayMesh
+var _ground_underlay_mesh: ArrayMesh
 var _grid_points: PackedVector2Array = PackedVector2Array()
+var _texture_dark_lines: PackedVector2Array = PackedVector2Array()
+var _texture_light_lines: PackedVector2Array = PackedVector2Array()
+var _transition_lines: PackedVector2Array = PackedVector2Array()
+var _depth_lines: PackedVector2Array = PackedVector2Array()
 
 func configure(
 	next_layout: BiomeEnvironmentLayout,
@@ -66,6 +71,14 @@ func get_missing_asset_count() -> int:
 
 func uses_procedural_fallback() -> bool:
 	return _missing_asset_count > 0
+
+func get_texture_detail_line_count() -> int:
+	return int((
+		_texture_dark_lines.size()
+		+ _texture_light_lines.size()
+		+ _transition_lines.size()
+		+ _depth_lines.size()
+	) / 2)
 
 func get_chunk_rects() -> Array[Rect2i]:
 	return _chunks.duplicate()
@@ -110,17 +123,32 @@ func has_visual_tile_for_cell(cell: Vector2i) -> bool:
 	return _asset_path_exists(get_resolved_asset_path(cell))
 
 func _draw() -> void:
-	# The ground is pre-baked in _rebuild_ground_geometry(): a single mesh for the
-	# filled diamonds (vertex-coloured) and a single multiline for the grid. Two
-	# draw commands total, independent of the logical tile count.
+	# The ground is pre-baked in _rebuild_ground_geometry(): a mesh for the
+	# filled diamonds and, for forest terrain, a coloured underlay that removes
+	# black gaps between playable tiles.
+	if _ground_underlay_mesh != null:
+		draw_mesh(_ground_underlay_mesh, null)
 	if _ground_mesh != null:
 		draw_mesh(_ground_mesh, null)
-	if _grid_points.size() >= 2:
+	if _texture_dark_lines.size() >= 2:
+		draw_multiline(_texture_dark_lines, Color(0.09, 0.18, 0.075, 0.34), 1.0)
+	if _texture_light_lines.size() >= 2:
+		draw_multiline(_texture_light_lines, Color(0.70, 0.76, 0.42, 0.24), 1.0)
+	if _transition_lines.size() >= 2:
+		draw_multiline(_transition_lines, Color(0.24, 0.15, 0.075, 0.42), 1.2)
+	if _depth_lines.size() >= 2:
+		draw_multiline(_depth_lines, Color(0.12, 0.22, 0.14, 0.48), 1.4)
+	if _should_draw_grid() and _grid_points.size() >= 2:
 		draw_multiline(_grid_points, Color(palette.grid_color, 0.12))
 
 func _rebuild_ground_geometry() -> void:
 	_ground_mesh = null
+	_ground_underlay_mesh = null
 	_grid_points = PackedVector2Array()
+	_texture_dark_lines = PackedVector2Array()
+	_texture_light_lines = PackedVector2Array()
+	_transition_lines = PackedVector2Array()
+	_depth_lines = PackedVector2Array()
 	if layout == null or palette == null:
 		return
 	var scale := layout.logical_tile_scale
@@ -130,6 +158,8 @@ func _rebuild_ground_geometry() -> void:
 	var colors := PackedColorArray()
 	var indices := PackedInt32Array()
 	var grid := PackedVector2Array()
+	if _uses_forest_ground():
+		_ground_underlay_mesh = _build_forest_underlay_mesh(scale)
 	for chunk in _chunks:
 		for y in range(chunk.position.y, chunk.position.y + chunk.size.y):
 			for x in range(chunk.position.x, chunk.position.x + chunk.size.x):
@@ -166,6 +196,13 @@ func _rebuild_ground_geometry() -> void:
 				grid.append(left)
 				grid.append(left)
 				grid.append(top)
+				_append_texture_details(
+					cell,
+					tile_id,
+					center,
+					half_w,
+					half_h
+				)
 	_grid_points = grid
 	if vertices.is_empty():
 		return
@@ -177,6 +214,96 @@ func _rebuild_ground_geometry() -> void:
 	var mesh := ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	_ground_mesh = mesh
+
+func _build_forest_underlay_mesh(scale: float) -> ArrayMesh:
+	var vertices := PackedVector2Array()
+	var colors := PackedColorArray()
+	var indices := PackedInt32Array()
+	for y in range(layout.zone_size.y):
+		var run_start := 0
+		var run_key := _forest_underlay_key(get_resolved_tile_id(Vector2i(0, y)))
+		for x in range(1, layout.zone_size.x + 1):
+			var next_key := &""
+			if x < layout.zone_size.x:
+				next_key = _forest_underlay_key(get_resolved_tile_id(Vector2i(x, y)))
+			if x < layout.zone_size.x and next_key == run_key:
+				continue
+			_append_underlay_run(vertices, colors, indices, run_start, x, y, scale, _forest_underlay_color(run_key))
+			run_start = x
+			run_key = next_key
+	if vertices.is_empty():
+		return null
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = vertices
+	arrays[Mesh.ARRAY_COLOR] = colors
+	arrays[Mesh.ARRAY_INDEX] = indices
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return mesh
+
+func _append_underlay_run(
+	vertices: PackedVector2Array,
+	colors: PackedColorArray,
+	indices: PackedInt32Array,
+	start_x: int,
+	end_x: int,
+	y: int,
+	scale: float,
+	color: Color
+) -> void:
+	if end_x <= start_x:
+		return
+	var zone_offset := Vector2(float(layout.zone_size.x), float(layout.zone_size.y)) * 0.5
+	var left := (float(start_x) - zone_offset.x) * scale
+	var right := (float(end_x) - zone_offset.x) * scale
+	var top := (float(y) - zone_offset.y) * scale
+	var bottom := (float(y + 1) - zone_offset.y) * scale
+	var base := vertices.size()
+	vertices.append(Vector2(left, top))
+	vertices.append(Vector2(right, top))
+	vertices.append(Vector2(right, bottom))
+	vertices.append(Vector2(left, bottom))
+	for _index in range(4):
+		colors.append(color)
+	indices.append(base)
+	indices.append(base + 1)
+	indices.append(base + 2)
+	indices.append(base)
+	indices.append(base + 2)
+	indices.append(base + 3)
+
+func _forest_underlay_key(tile_id: StringName) -> StringName:
+	match tile_id:
+		IsometricTileResolver.TILE_FOREST_PATH, IsometricTileResolver.TILE_GRASS_TO_PATH:
+			return &"path"
+		IsometricTileResolver.TILE_FOREST_ROAD, IsometricTileResolver.TILE_GRASS_TO_ROAD, IsometricTileResolver.TILE_PATH_TO_ROAD:
+			return &"road"
+		IsometricTileResolver.TILE_FOREST_VOID, IsometricTileResolver.TILE_FOREST_CLIFF_EDGE, IsometricTileResolver.TILE_GROUND_TO_VOID_CLIFF:
+			return &"void"
+		IsometricTileResolver.TILE_FOREST_MOUNTAIN_WALL, IsometricTileResolver.TILE_GROUND_TO_MOUNTAIN_WALL:
+			return &"wall"
+		_:
+			return &"grass"
+
+func _forest_underlay_color(key: StringName) -> Color:
+	match key:
+		&"path":
+			return Color(0.31, 0.20, 0.10, 1.0)
+		&"road":
+			return Color(0.36, 0.25, 0.12, 1.0)
+		&"void":
+			return Color(0.10, 0.18, 0.12, 1.0)
+		&"wall":
+			return Color(0.18, 0.22, 0.14, 1.0)
+		_:
+			return Color(0.13, 0.24, 0.12, 1.0)
+
+func _uses_forest_ground() -> bool:
+	return biome_id == IsometricTileResolver.FOREST_BIOME_ID
+
+func _should_draw_grid() -> bool:
+	return not _uses_forest_ground()
 
 func _rebuild_chunks() -> void:
 	_chunks.clear()
@@ -242,6 +369,36 @@ func _tile_color(tile_id: StringName) -> Color:
 	if _is_passage_endpoint_tile(tile_id):
 		return palette.gate_color.lightened(0.08)
 	match tile_id:
+		IsometricTileResolver.TILE_FOREST_GRASS:
+			return Color(0.20, 0.34, 0.17, 1.0)
+		IsometricTileResolver.TILE_FOREST_GRASS_VARIANT_01:
+			return Color(0.17, 0.30, 0.15, 1.0)
+		IsometricTileResolver.TILE_FOREST_GRASS_VARIANT_02:
+			return Color(0.23, 0.36, 0.18, 1.0)
+		IsometricTileResolver.TILE_FOREST_TALL_GRASS:
+			return Color(0.12, 0.25, 0.11, 1.0)
+		IsometricTileResolver.TILE_FOREST_PATH:
+			return Color(0.43, 0.31, 0.17, 1.0)
+		IsometricTileResolver.TILE_FOREST_ROAD:
+			return Color(0.50, 0.38, 0.22, 1.0)
+		IsometricTileResolver.TILE_GRASS_TO_PATH:
+			return Color(0.34, 0.31, 0.16, 1.0)
+		IsometricTileResolver.TILE_GRASS_TO_ROAD:
+			return Color(0.37, 0.32, 0.17, 1.0)
+		IsometricTileResolver.TILE_GRASS_TO_TALL_GRASS:
+			return Color(0.15, 0.28, 0.12, 1.0)
+		IsometricTileResolver.TILE_PATH_TO_ROAD:
+			return Color(0.47, 0.35, 0.19, 1.0)
+		IsometricTileResolver.TILE_GROUND_TO_VOID_CLIFF:
+			return Color(0.19, 0.28, 0.15, 1.0)
+		IsometricTileResolver.TILE_GROUND_TO_MOUNTAIN_WALL:
+			return Color(0.21, 0.25, 0.16, 1.0)
+		IsometricTileResolver.TILE_FOREST_CLIFF_EDGE:
+			return Color(0.13, 0.21, 0.14, 1.0)
+		IsometricTileResolver.TILE_FOREST_VOID:
+			return Color(0.08, 0.14, 0.095, 1.0)
+		IsometricTileResolver.TILE_FOREST_MOUNTAIN_WALL:
+			return Color(0.19, 0.21, 0.17, 1.0)
 		IsometricTileResolver.TILE_MAIN_ROAD, IsometricTileResolver.TILE_ROAD:
 			return Color(palette.lane_color, maxf(palette.lane_color.a, 0.46))
 		IsometricTileResolver.TILE_ROAD_INTERSECTION:
@@ -283,6 +440,162 @@ func _tile_color(tile_id: StringName) -> Color:
 			return palette.alternate_floor_color.darkened(0.045)
 		_:
 			return palette.floor_color
+
+func _append_texture_details(
+	cell: Vector2i,
+	tile_id: StringName,
+	center: Vector2,
+	half_w: float,
+	half_h: float
+) -> void:
+	match tile_id:
+		IsometricTileResolver.TILE_FOREST_GRASS, IsometricTileResolver.TILE_FOREST_GRASS_VARIANT_01, IsometricTileResolver.TILE_FOREST_GRASS_VARIANT_02:
+			_append_grass_texture(cell, center, half_w, half_h)
+		IsometricTileResolver.TILE_FOREST_TALL_GRASS:
+			_append_tall_grass_texture(cell, center, half_w, half_h)
+		IsometricTileResolver.TILE_FOREST_PATH, IsometricTileResolver.TILE_GRASS_TO_PATH:
+			_append_path_texture(cell, center, half_w, half_h, false)
+		IsometricTileResolver.TILE_FOREST_ROAD, IsometricTileResolver.TILE_GRASS_TO_ROAD, IsometricTileResolver.TILE_PATH_TO_ROAD:
+			_append_path_texture(cell, center, half_w, half_h, true)
+		IsometricTileResolver.TILE_GRASS_TO_TALL_GRASS, IsometricTileResolver.TILE_GROUND_TO_MOUNTAIN_WALL:
+			_append_transition_texture(cell, center, half_w, half_h)
+		IsometricTileResolver.TILE_GROUND_TO_VOID_CLIFF, IsometricTileResolver.TILE_FOREST_CLIFF_EDGE:
+			_append_cliff_texture(cell, center, half_w, half_h)
+		IsometricTileResolver.TILE_FOREST_VOID:
+			_append_void_texture(cell, center, half_w, half_h)
+		_:
+			pass
+
+func _append_grass_texture(
+	cell: Vector2i,
+	center: Vector2,
+	half_w: float,
+	half_h: float
+) -> void:
+	var seed := _detail_hash(cell)
+	if seed % 5 != 0:
+		return
+	var base := center + _seeded_offset(seed, half_w * 0.58, half_h * 0.45)
+	_append_line(_texture_dark_lines, base + Vector2(-3.0, 1.0), base + Vector2(3.0, -2.0))
+	if seed % 3 == 0:
+		var leaf := center + _seeded_offset(seed + 41, half_w * 0.42, half_h * 0.35)
+		_append_line(_texture_light_lines, leaf + Vector2(-2.0, -1.0), leaf + Vector2(2.5, 1.0))
+
+func _append_tall_grass_texture(
+	cell: Vector2i,
+	center: Vector2,
+	half_w: float,
+	half_h: float
+) -> void:
+	var seed := _detail_hash(cell)
+	if seed % 3 != 0:
+		return
+	for index in range(2):
+		var base := center + _seeded_offset(seed + index * 23, half_w * 0.55, half_h * 0.46)
+		var bend := float(((seed + index) % 5) - 2)
+		_append_line(_texture_dark_lines, base + Vector2(0.0, 3.0), base + Vector2(bend, -6.0))
+	_append_line(
+		_texture_light_lines,
+		center + Vector2(-half_w * 0.28, half_h * 0.10),
+		center + Vector2(half_w * 0.22, -half_h * 0.12)
+	)
+
+func _append_path_texture(
+	cell: Vector2i,
+	center: Vector2,
+	half_w: float,
+	half_h: float,
+	wide: bool
+) -> void:
+	var seed := _detail_hash(cell)
+	var modulo := 4 if wide else 3
+	if seed % modulo != 0:
+		return
+	var span := half_w * (0.72 if wide else 0.48)
+	var y_offset := float((seed % 7) - 3) * half_h * 0.06
+	_append_line(
+		_transition_lines,
+		center + Vector2(-span, y_offset),
+		center + Vector2(span, y_offset + half_h * 0.20)
+	)
+	if wide and seed % 5 == 0:
+		var pebble := center + _seeded_offset(seed + 19, half_w * 0.42, half_h * 0.28)
+		_append_line(_texture_dark_lines, pebble + Vector2(-1.5, 0.0), pebble + Vector2(1.5, 0.0))
+
+func _append_transition_texture(
+	cell: Vector2i,
+	center: Vector2,
+	half_w: float,
+	half_h: float
+) -> void:
+	var seed := _detail_hash(cell)
+	if seed % 2 != 0:
+		return
+	_append_line(
+		_transition_lines,
+		center + Vector2(-half_w * 0.46, -half_h * 0.12),
+		center + Vector2(half_w * 0.42, half_h * 0.18)
+	)
+	if seed % 5 == 0:
+		_append_line(
+			_texture_light_lines,
+			center + Vector2(-half_w * 0.24, half_h * 0.18),
+			center + Vector2(half_w * 0.18, half_h * 0.02)
+		)
+
+func _append_cliff_texture(
+	cell: Vector2i,
+	center: Vector2,
+	half_w: float,
+	half_h: float
+) -> void:
+	var seed := _detail_hash(cell)
+	if seed % 2 != 0:
+		return
+	_append_line(
+		_depth_lines,
+		center + Vector2(-half_w * 0.36, -half_h * 0.16),
+		center + Vector2(-half_w * 0.18, half_h * 0.82)
+	)
+	if seed % 4 == 0:
+		_append_line(
+			_transition_lines,
+			center + Vector2(-half_w * 0.58, -half_h * 0.18),
+			center + Vector2(half_w * 0.52, -half_h * 0.02)
+		)
+
+func _append_void_texture(
+	cell: Vector2i,
+	center: Vector2,
+	half_w: float,
+	half_h: float
+) -> void:
+	var seed := _detail_hash(cell)
+	if seed % 7 != 0:
+		return
+	_append_line(
+		_depth_lines,
+		center + Vector2(-half_w * 0.28, -half_h * 0.30),
+		center + Vector2(-half_w * 0.12, half_h * 0.62)
+	)
+
+func _append_line(
+	target: PackedVector2Array,
+	start: Vector2,
+	end: Vector2
+) -> void:
+	target.append(start)
+	target.append(end)
+
+func _seeded_offset(seed: int, radius_x: float, radius_y: float) -> Vector2:
+	var x := (float(posmod(seed * 37, 1000)) / 1000.0 - 0.5) * radius_x * 2.0
+	var y := (float(posmod(seed * 91, 1000)) / 1000.0 - 0.5) * radius_y * 2.0
+	return Vector2(x, y)
+
+func _detail_hash(cell: Vector2i) -> int:
+	var seed := layout.generation_seed if layout != null else 0
+	var value := seed * 1664525 + cell.x * 73856093 + cell.y * 19349663
+	return posmod(value, 2147483647)
 
 func _is_passage_endpoint_tile(tile_id: StringName) -> bool:
 	return String(tile_id).ends_with("_entry") or String(tile_id).ends_with("_exit")

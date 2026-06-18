@@ -1,10 +1,33 @@
 # Latest Commit Validation Report
 
+## Forest isometric texture pass - 2026-06-18
+- Branch: `feat/iso-milestone-10-complete`
+- Scope validato: primo sistema completo di texture isometriche per il bioma
+  base foresta (`infected_plains`): grass, tall grass, path, road, void, cliff
+  edge, mountain wall, transizioni neighbor-aware e fallback/documentazione.
+- Esito: PASS sui test mirati eseguiti. Nota: `milestone_10_tile_layer` lavora
+  sul chunk `500x500` e richiede un timeout ampio; in questa validazione ha
+  completato in circa 189 secondi.
+
+| Test | Esito | Note |
+|---|---|---|
+| `tests/forest_isometric_texture_transition_smoke_test.gd` | PASS | contratti forestali, layout generato, tall grass walkable, detail lines |
+| `tests/milestone_10_tile_layer_smoke_test.gd` | PASS | tile layer completo, asset-backed, nessun missing asset |
+| `tests/milestone_10_asset_pipeline_smoke_test.gd` | PASS | filesystem, metadata SVG, cartella `tiles/forest` |
+| `tests/isometric_environment_manifest_smoke_test.gd` | PASS | manifest v7 e contratti normalizzati |
+| `tests/isometric_biome_terrain_coverage_smoke_test.gd` | PASS | classificazione `500x500` e tag terrain generati |
+| `tests/isometric_biome_generation_rewrite_smoke_test.gd` | PASS | rewrite `500x500`, strade, passaggi, blocchi e spawn/crate |
+| `tests/isometric_perimeter_wall_smoke_test.gd` | PASS | pareti perimetrali isometriche e varchi |
+| `tests/milestone_10_void_cliff_asset_smoke_test.gd` | PASS | cliff/void/fall zone e contratti void |
+| `tests/fall_boundary_visual_logic_smoke_test.gd` | PASS | fall boundary e passaggi fisici |
+| `tools/generate_isometric_environment_assets.gd -- --check` | PASS | 108 SVG asset-driven verificati |
+
 ## Isometric biome generation rewrite R1 - 2026-06-18
 - Branch: `feat/iso-milestone-10-complete`
 - Scope validato: primo incremento del rewrite richiesto da `prompt.md`:
   chunk `500x500`, megamappa default `3x3`, base void con floor/strade/blocchi
-  scavati, strade principali larghe 10, sentieri larghi 4, passaggi larghi 10,
+  scavati, strade principali larghe 40, sentieri medi larghi 20,
+  passaggi larghi 40,
   cache terrain e validazione spawn/crate su celle walkable.
 - Esito: PASS sui test mirati eseguiti. Nota performance: il tile layer da
   250.000 celle passa ma resta sensibilmente piu pesante del precedente
@@ -12,7 +35,7 @@
 
 | Test | Esito | Note |
 |---|---|---|
-| `tests/isometric_biome_generation_rewrite_smoke_test.gd` | PASS | copre `500x500`, strade 10, sentieri 4, blocchi, void/fall zone e passaggi |
+| `tests/isometric_biome_generation_rewrite_smoke_test.gd` | PASS | copre `500x500`, strade 40, sentieri 20, passaggi 40, blocchi e void/fall zone |
 | `tests/biome_world_generation_smoke_test.gd` | PASS | generazione default `3x3`, streaming e transizione legacy/debug |
 | `tests/isometric_biome_terrain_coverage_smoke_test.gd` | PASS | classificazione completa `500x500` e passaggi walkable |
 | `tests/milestone_10_tile_layer_smoke_test.gd` | PASS | 250.000 celle asset-backed per regione, chunk/cache |

@@ -424,8 +424,13 @@ Attivita post-roadmap:
   `ISO-001` spostato tra le reference completate.
 - Milestone R1 di `isometric_biome_generation_rewrite_roadmap.md` completata:
   chunk bioma `500x500`, megamappa default `3x3`, base void con floor/strade/
-  blocchi scavati, strade principali larghe 10, sentieri larghi 4, passaggi
-  larghi 10, cache terrain, validazione void/spawn e smoke dedicato.
+  blocchi scavati, strade principali larghe 40, sentieri medi larghi 20,
+  passaggi larghi 40, cache terrain, validazione void/spawn e smoke dedicato.
+- Milestone R2/forest pass di `isometric_biome_generation_rewrite_roadmap.md`
+  completata: pareti perimetrali isometriche, bordo void/cliff leggibile,
+  varchi fisici senza portali e primo set texture forestale asset-driven per il
+  bioma base `infected_plains`, con grass, tall grass, path, road, void, cliff,
+  mountain wall e transizioni neighbor-aware.
 - asset definitivi e ulteriori pass di bilanciamento;
 - firma digitale della build pubblica.
 

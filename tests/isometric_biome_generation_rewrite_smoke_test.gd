@@ -50,13 +50,65 @@ func _validate_rewritten_cell(cell: BiomeCell) -> void:
 	_expect(not layout.floor_rects.is_empty(), "%s has carved walkable floor blocks" % String(cell.id))
 	_expect(not layout.block_rects.is_empty(), "%s has procedural internal blocks" % String(cell.id))
 	_expect(layout.block_kinds.has(&"full_void") or layout.block_kinds.has(&"partial_void"), "%s keeps void/fall blocks inside the chunk" % String(cell.id))
-	_expect(_has_axis_road(layout, &"main_road", ObstacleLayoutGenerator.ROAD_WIDTH, true), "%s has a vertical 10-cell main road" % String(cell.id))
-	_expect(_has_axis_road(layout, &"main_road", ObstacleLayoutGenerator.ROAD_WIDTH, false), "%s has a horizontal 10-cell main road" % String(cell.id))
+	_expect(
+		ObstacleLayoutGenerator.ROAD_WIDTH == 40,
+		"large road width is 40 cells"
+	)
+	_expect(
+		ObstacleLayoutGenerator.SECONDARY_ROAD_WIDTH == 20,
+		"medium path width is 20 cells"
+	)
+	_expect(
+		BiomePassageGenerator.PASSAGE_WIDTH == 40,
+		"physical passage width is 40 cells"
+	)
+	_expect(
+		_has_axis_road(
+			layout,
+			&"main_road",
+			ObstacleLayoutGenerator.ROAD_WIDTH,
+			true
+		),
+		"%s has a vertical %d-cell main road"
+		% [String(cell.id), ObstacleLayoutGenerator.ROAD_WIDTH]
+	)
+	_expect(
+		_has_axis_road(
+			layout,
+			&"main_road",
+			ObstacleLayoutGenerator.ROAD_WIDTH,
+			false
+		),
+		"%s has a horizontal %d-cell main road"
+		% [String(cell.id), ObstacleLayoutGenerator.ROAD_WIDTH]
+	)
 	var path_tag := _expected_path_tag(cell.biome_id)
-	_expect(_has_axis_road(layout, path_tag, ObstacleLayoutGenerator.SECONDARY_ROAD_WIDTH, true), "%s has a vertical 4-cell biome path" % String(cell.id))
-	_expect(_has_axis_road(layout, path_tag, ObstacleLayoutGenerator.SECONDARY_ROAD_WIDTH, false), "%s has a horizontal 4-cell biome path" % String(cell.id))
+	_expect(
+		_has_axis_road(
+			layout,
+			path_tag,
+			ObstacleLayoutGenerator.SECONDARY_ROAD_WIDTH,
+			true
+		),
+		"%s has a vertical %d-cell biome path"
+		% [String(cell.id), ObstacleLayoutGenerator.SECONDARY_ROAD_WIDTH]
+	)
+	_expect(
+		_has_axis_road(
+			layout,
+			path_tag,
+			ObstacleLayoutGenerator.SECONDARY_ROAD_WIDTH,
+			false
+		),
+		"%s has a horizontal %d-cell biome path"
+		% [String(cell.id), ObstacleLayoutGenerator.SECONDARY_ROAD_WIDTH]
+	)
 	for passage in cell.passages:
-		_expect(passage.width == BiomePassageGenerator.PASSAGE_WIDTH, "%s passage uses the 10-cell physical opening" % String(cell.id))
+		_expect(
+			passage.width == BiomePassageGenerator.PASSAGE_WIDTH,
+			"%s passage uses the %d-cell physical opening"
+			% [String(cell.id), BiomePassageGenerator.PASSAGE_WIDTH]
+		)
 		var probe := _passage_probe_cell(passage, layout.zone_size)
 		_expect(
 			layout.get_terrain_class_at_cell(probe, cell)

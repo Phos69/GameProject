@@ -2,7 +2,7 @@ extends RefCounted
 class_name BiomePassageGenerator
 
 const SIDES_TO_OPEN: Array[StringName] = [&"east", &"south"]
-const PASSAGE_WIDTH := 10
+const PASSAGE_WIDTH := 40
 const GENERATED_PASSAGE_TERRAIN_TAG_CATEGORIES: Dictionary = {
 	&"bridge": &"passage",
 	&"broken_gate": &"passage",

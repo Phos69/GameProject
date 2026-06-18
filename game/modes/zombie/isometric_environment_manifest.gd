@@ -28,6 +28,11 @@ const TERRAIN_DRAW_MODES: Array[String] = [
 	"debris",
 	"dirt",
 	"dry_grass",
+	"forest_grass",
+	"forest_path",
+	"forest_road",
+	"forest_tall_grass",
+	"forest_transition",
 	"growth",
 	"main_road",
 	"pool",
@@ -48,6 +53,7 @@ const OBJECT_DRAW_MODES: Array[String] = [
 	"dead_tree",
 	"deep_water_boundary",
 	"fence",
+	"forest_mountain_wall",
 	"generic_barrier",
 	"ice_boundary",
 	"ice_block",
@@ -579,12 +585,14 @@ func _validate_asset_coverage(failures: PackedStringArray) -> void:
 		var passage_type := StringName(passage_id)
 		if not has_asset_contract(&"passage_tiles", passage_type):
 			failures.append("%s: passage type missing passage_tiles asset contract" % String(passage_type))
-	for border_id in [&"boundary_fence", &"toxic_boundary_wall", &"lava_boundary", &"ice_boundary", &"deep_water_boundary"]:
+	for border_id in [&"boundary_fence", &"forest_mountain_wall", &"toxic_boundary_wall", &"lava_boundary", &"ice_boundary", &"deep_water_boundary"]:
 		if not has_asset_contract(&"edge_tiles", border_id):
 			failures.append("%s: border id missing edge_tiles asset contract" % String(border_id))
 	for void_id in [
 		&"fall_zone",
 		&"void_edge_near",
+		&"forest_void",
+		&"forest_cliff_edge",
 		&"cliff_lip_north",
 		&"cliff_lip_south",
 		&"cliff_lip_east",

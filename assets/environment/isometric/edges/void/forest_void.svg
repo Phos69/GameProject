@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="120" viewBox="0 0 160 120" data-generated-by="generate_isometric_environment_assets" data-section="void_tiles" data-id="forest_void">
+  <title>void_tiles forest_void</title>
+  <ellipse cx="80" cy="88" rx="60" ry="20" fill="#132719" opacity="0.52"/>
+  <polygon points="80,16 143,52 80,91 17,52" fill="#112319" stroke="#243a2b" stroke-width="4"/>
+  <path d="M24 55 L80 87 L136 55 L136 88 L80 116 L24 88 Z" fill="#0f2218" stroke="#1c3024" stroke-width="3"/>
+  <path d="M45 59 L48 102 M80 74 L80 111 M115 59 L111 102" stroke="#223329" stroke-width="3" opacity="0.70"/>
+  <path d="M31 53 C48 47 62 62 80 53 C98 44 113 59 129 51" fill="none" stroke="#283c2f" stroke-width="2" opacity="0.42"/>
+</svg>

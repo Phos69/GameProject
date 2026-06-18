@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="120" viewBox="0 0 160 120" data-generated-by="generate_isometric_environment_assets" data-section="terrain_tiles" data-id="forest_road">
+  <title>terrain_tiles forest_road</title>
+  <ellipse cx="80" cy="87" rx="60" ry="18" fill="#321f0f" opacity="0.40"/>
+  <polygon points="80,16 143,53 80,90 17,53" fill="#24401d" stroke="#5d7836" stroke-width="4"/>
+  <path d="M23 52 L80 20 L137 52 L80 86 Z" fill="#604526" stroke="#84643a" stroke-width="4"/>
+  <path d="M40 48 C58 42 70 50 85 58 C101 67 116 62 129 55" fill="none" stroke="#3a2817" stroke-width="4" opacity="0.48"/>
+  <path d="M35 61 C55 68 70 64 87 56 C103 48 119 49 132 55" fill="none" stroke="#917548" stroke-width="2.5" opacity="0.56"/>
+  <circle cx="55" cy="55" r="2.5" fill="#332719" opacity="0.58"/>
+  <circle cx="103" cy="51" r="2" fill="#2b2117" opacity="0.55"/>
+  <path d="M66 39 L73 43 M93 70 L102 66 M118 56 L127 60" stroke="#4a351e" stroke-width="2" stroke-linecap="round" opacity="0.72"/>
+</svg>
