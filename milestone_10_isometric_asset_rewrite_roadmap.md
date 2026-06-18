@@ -424,6 +424,22 @@ Sostituire il draw procedurale degli ostacoli con scene/sprite asset-driven, leg
 
 # Milestone 10.6 — Vuoto, cliff e danno da caduta asset-driven
 
+Stato: completata il 2026-06-18.
+
+Esito:
+
+- Creato `IsometricCliffRenderer` con sprite asset-driven per fall_zone,
+  void_edge_near, void_depth, void_vertical_lines e cliff_lip orientati.
+- `BiomeFallZone` ora usa renderer e legge side metadata da layout per
+  selezionare cliff lip nord/sud/est/ovest.
+- Linee verticali seeded determiniache partono dal bordo calpestabile verso
+  la profondità, con colori specifici per bioma (toxic/lava/ice/marsh).
+- Manifest v7 esteso: void_tiles include cliff_lip_north/south/east/west e
+  void_vertical_lines per ogni bioma asset set.
+- Aggiunto `tests/milestone_10_void_cliff_asset_smoke_test.gd` per copertura
+  manifest contracts, instance setup per-side, layout metadata propagation,
+  hazard system integration e line determinism.
+
 ## Obiettivo
 
 Rendere i punti vuoti immediatamente riconoscibili come caduta pericolosa, non come terreno scuro.
