@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+### Added
+
+- Aggiunto `RegionSeamSystem` per aggiornare la regione survival corrente dalla
+  posizione world-space del party e dai `WorldRegionConnection` aperti, senza
+  istanziare portali o trigger di transizione. Aggiunto
+  `tests/milestone_10_no_portal_transition_smoke_test.gd`.
+
+### Changed
+
+- `BiomeTransitionSystem` resta una API legacy/debug per `transition_to()`, ma
+  non genera piu `BiomeTransitionGate` nella survival standard; gli smoke di
+  open passage e transizione bioma validano ora il contratto senza gate runtime.
+
 ### Fixed
 
 - Corretto il loader runtime degli SVG ambiente isometrici: ora rasterizza il

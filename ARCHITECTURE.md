@@ -35,7 +35,9 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 18. `ZombieModeController` avvia i componenti revamp zombie e forza il bioma iniziale tramite `BiomeManager`.
 19. `BiomeManager` genera una megamappa seed-based tramite `BiomeWorldGenerator`, con territori `200x200`, grafo connesso, passaggi condivisi, fall boundary, layout validati e regione corrente.
 20. `WorldRuntime` mantiene grafo, stato esplorazione, regione corrente e stato persistente sovrapposto al layout rigenerato dal seed.
-21. `BiomeTransitionSystem` crea passaggi fisici aperti tra regioni confinanti e aggiorna la regione corrente senza teletrasporto nel flusso standard.
+21. `RegionSeamSystem` legge posizione world-space del party, grafo e
+    `WorldRegionConnection` aperti per aggiornare la regione corrente senza
+    portali, trigger visibili o teletrasporto.
 22. `SurvivalArenaManager` configura playground, player, crate, gate e fallback spawn per lo spawner.
 23. `HazardSystem` genera fall zone e hazard ambientali, aggiorna posizioni sicure, status e modificatori movimento.
 24. `WaveManager` interroga `WaveDirector` per roster/scaling bioma e `ZombieSpawner` per spawn dai bordi camera, poi crea zombie tramite `EnemySystem`.
@@ -151,12 +153,15 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `BiomeMapDebugOverlay`: espone seed corrente, riepilogo celle/passaggi,
   classi terrain aggregate, il report di connettivita del grafo (`WorldGraph.get_connectivity_report()`), regione corrente e active regions caricate, con toggle `F8`, e richieste di rigenerazione per debug.
 - `BiomeDefinition`: risorsa dati con terreno, ostacoli, casse, zombie ammessi, pesi, palette e moltiplicatori.
-- `BiomeTransitionSystem`: passaggi fisici aperti tra regioni confinanti, cambio regione/bioma e fallback legacy di spostamento party solo se esplicitamente abilitato.
-- `BiomeTransitionGate`: area non bloccante e leggibile che rappresenta
-  un'apertura fisica e richiede il cambio regione; e dimensionata e orientata
-  dalla larghezza/lato del `BiomePassage`, tematizzata dai tile di passaggio e
-  senza frecce runtime o teletrasporto party quando `move_party_on_transition`
-  resta `false`.
+- `RegionSeamSystem`: tracker world-space della regione survival corrente.
+  Converte la posizione del party in tile globali, verifica che il bordo
+  attraversato appartenga a un `WorldRegionConnection` aperto e aggiorna
+  `BiomeManager`/`WorldRuntime` senza creare `Area2D` o marker di transizione.
+- `BiomeTransitionSystem`: API legacy/debug per forzare `transition_to()` negli
+  smoke e nei tool esistenti; non istanzia piu `BiomeTransitionGate` nel
+  runtime survival standard.
+- `BiomeTransitionGate`: classe storica mantenuta per compatibilita dei test di
+  dimensionamento/span; non e piu creata dalla survival.
 - `BiomeEnvironmentLayout`: placement deterministico di patch terreno,
   `road_cell_tags` diagonali, rettangoli di apertura, ostacoli fisici, casse e
   hazard per un bioma, con classificazione completa del `200x200`.
@@ -488,9 +493,12 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - Ogni nuova run survival riparte dalla `Pianura Infetta`.
 - `WorldRuntime` marca la regione iniziale come visited, scopre i vicini collegati e conserva lo stato esplorazione.
 - `BiomeTransitionSystem` collega territori confinanti tramite passaggi aperti; il party condivide una sola regione corrente.
-- Quando e disponibile una cella procedurale corrente, `BiomeTransitionSystem` genera aperture dai `BiomePassage` e propaga al gate il `passage_type` e lo span (`width * logical_tile_scale`), cosi il trigger resta dentro il varco aperto tra i muri di bordo; il fallback `previous_biome_id`/`next_biome_id` resta per compatibilita.
-- I `BiomeTransitionGate` sono trigger fisici: di default non disegnano frecce,
-  marker o direzione; il draw resta solo debug opzionale (`show_debug_visual`).
+- Quando il party attraversa un varco, `RegionSeamSystem` verifica posizione,
+  regione target e connessione aperta usando coordinate globali; i lati senza
+  edge non cambiano regione e restano muro, bordo o fall zone.
+- Durante la survival standard non esistono nodi nel gruppo
+  `biome_transition_gates`; i passaggi sono comunicati da tile, apertura fisica
+  e continuita del terreno.
 - Il cambio regione applica terreno, ostacoli, casse, hazard e passaggi della nuova regione senza riavviare `WaveManager`.
 - `WaveDirector` legge il bioma corrente per risolvere roster, moltiplicatori, ritmo spawn e drop.
 - Lo scaling contestuale considera wave, player vivi, tempo sopravvissuto e profondita del bioma.

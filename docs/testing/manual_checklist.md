@@ -751,26 +751,25 @@ godot --headless --path . --script res://tests/combat_smoke_test.gd
 godot --headless --path . --script res://tests/player_dodge_gap_smoke_test.gd
 ```
 
-## Regressione ISO-001 Milestone 6 - connessioni aperte tra biomi
+## Regressione ISO-001 Milestone 6/10.7 - connessioni aperte senza portali
 
 QA visuale da eseguire con seed fisso a `1280x720` e `960x540`, attraversando
 almeno otto regioni con tastiera e joypad.
 
-- Verificare che ogni passaggio aperto mostri un gate allineato al varco lasciato
-  tra i muri di bordo, non sovrapposto ai muri ne alle fall zone.
-- Confermare che il gate sia largo quanto l'apertura del passaggio: passaggi piu
-  larghi hanno gate piu largo, quelli stretti restano comunque leggibili.
-- Verificare i passaggi nei quattro lati (nord, sud, est, ovest) e che la freccia
-  del gate punti nel verso di attraversamento corretto.
-- Confermare la differenza tematica del gate per `road`, `bridge`, `snow_pass`,
-  `broken_gate` e `burned_road` senza dipendere da testo.
-- Attraversare un gate e confermare che il party non venga teletrasportato a un
-  punto di ingresso remoto (la camera/party resta vicino al varco).
-- Confermare che entrare nel gate cambi regione una sola volta (nessuna doppia
-  transizione) e che il terreno del passaggio resti coerente con il gate.
+- Verificare che ogni passaggio aperto sia leggibile come apertura fisica tra
+  muri/cliff, senza frecce, testo, gate o portali.
+- Confermare che `road`, `bridge`, `snow_pass`, `broken_gate` e `burned_road`
+  siano riconoscibili dai tile e dai raccordi, non da trigger visibili.
+- Attraversare il varco e confermare che il cambio bioma avvenga dalla posizione
+  world-space del party, senza teletrasporto o snap a un punto remoto.
+- Confermare che i lati senza edge non cambino regione: restano bloccati da muro
+  o trattati come fall zone.
+- Confermare che il cambio regione avvenga una sola volta per attraversamento e
+  che non compaiano nodi/marker di transizione nel gameplay.
 
 ```text
 godot --headless --path . --script res://tests/milestone_6_open_passage_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_no_portal_transition_smoke_test.gd
 godot --headless --path . --script res://tests/open_passage_transition_smoke_test.gd
 godot --headless --path . --script res://tests/region_streaming_smoke_test.gd
 godot --headless --path . --script res://tests/biome_world_generation_smoke_test.gd

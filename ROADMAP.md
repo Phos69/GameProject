@@ -392,6 +392,14 @@ Attivita post-roadmap:
   silhouette dedicate per gli oggetti principali al posto del placeholder unico;
   il loader runtime rasterizza SVG trasparenti o fallback isometrici per
   categoria quando l'import editor non e affidabile.
+- Milestone 10.6 di `milestone_10_isometric_asset_rewrite_roadmap.md`
+  completata: `BiomeFallZone` usa `IsometricCliffRenderer`, asset v7 per
+  void/cliff/lip orientati e linee verticali deterministiche, mantenendo danno
+  da caduta, respawn sicuro e query fall/hazard separate.
+- Milestone 10.7 di `milestone_10_isometric_asset_rewrite_roadmap.md`
+  completata: `RegionSeamSystem` aggiorna la regione corrente dalla posizione
+  world-space del party e dai `WorldRegionConnection` aperti; la survival non
+  istanzia piu `BiomeTransitionGate` o trigger visibili per cambiare bioma.
 - asset definitivi e ulteriori pass di bilanciamento;
 - firma digitale della build pubblica.
 

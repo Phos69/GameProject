@@ -507,6 +507,22 @@ Rendere i punti vuoti immediatamente riconoscibili come caduta pericolosa, non c
 
 # Milestone 10.7 — Eliminazione totale dei portali/gate/trigger di transizione
 
+Stato: completata il 2026-06-18.
+
+Esito:
+
+- Aggiunto `RegionSeamSystem`: determina la regione corrente dalla posizione
+  world-space del party, dal grafo `WorldRegion` e dai
+  `WorldRegionConnection` aperti, senza creare `Area2D` di transizione.
+- `ZombieModeController` avvia e arresta il seam tracker insieme alla survival;
+  `BiomeTransitionSystem` resta solo API legacy/debug per `transition_to`, ma
+  non istanzia piu `BiomeTransitionGate` durante il runtime standard.
+- Durante la survival il gruppo `biome_transition_gates` resta vuoto; i
+  passaggi sono terreno, apertura fisica e dati di connessione.
+- Aggiunto `tests/milestone_10_no_portal_transition_smoke_test.gd`; aggiornati
+  gli smoke `open_passage_transition`, `biome_world_generation` e
+  `zombie_biome_transition` al contratto senza portali.
+
 ## Obiettivo
 
 Rimuovere il concetto di portale di transizione: il cambio bioma deve derivare dalla posizione world-space del party dentro una megamappa continua.

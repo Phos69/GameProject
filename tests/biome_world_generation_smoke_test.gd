@@ -161,9 +161,9 @@ func _run() -> void:
 			"resource crate system renders generated crates"
 		)
 		_expect(
-			transition_system.get_active_gates().size()
-			== active_cell.passages.size(),
-			"transition gates mirror generated passages"
+			transition_system.get_active_gates().is_empty()
+			and get_nodes_in_group("biome_transition_gates").is_empty(),
+			"generated passages no longer instantiate transition gates"
 		)
 		if not active_layout.fall_zone_rects.is_empty():
 			var fall_position := active_layout.rect_center_to_world(

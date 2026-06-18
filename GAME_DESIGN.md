@@ -477,7 +477,8 @@ selezione dal menu. I profili attuali sono:
 - `Industrial Crossroads`: otto ingressi, corsie incrociate e due barili;
 - `Rift Foundry`: sei ingressi radiali, anelli di lettura e tre barili;
 - entrambi usano lo stesso `SurvivalMode`, `WaveManager` e roster;
-- gate e decorazioni non bloccano il pathing diretto degli zombie;
+- i passaggi tra biomi sono aperture fisiche nel terreno, senza portali o gate
+  di transizione visibili;
 - il barile e colpibile, mostra area e countdown, poi danneggia tutti gli
   attori nell'area tramite `HealthSystem`.
 
@@ -489,13 +490,16 @@ Il revamp zombie e completo come prima versione giocabile:
   fall zone;
 - ogni run parte dalla `Pianura Infetta`, il bioma iniziale semplice;
 - la topologia e un grafo connesso generato con spanning tree ed edge extra, quindi tutte le regioni sono raggiungibili e possono esistere loop;
-- il party attraversa passaggi fisici aperti tra territori confinanti, senza teletrasporto nel flusso standard;
+- il party attraversa passaggi fisici aperti tra territori confinanti; la
+  regione corrente cambia dalla posizione world-space del gruppo, senza
+  teletrasporto, portali o trigger visibili nel flusso standard;
 - ogni area ha passaggi fisici solo sui lati collegati; i lati esterni senza vicino sono fall boundary leggibili;
 - il cambio regione aggiorna palette, terreno, ostacoli, casse, hazard, HUD, mappa esplorazione e wave successive;
 - la mappa consultabile mostra solo territori unknown/discovered/visited/cleared e la posizione corrente del party;
 - le ondate leggono il bioma corrente tramite `WaveDirector`;
 - lo spawn reale degli zombie viene richiesto a `ZombieSpawner` sui bordi della camera;
-- i vecchi punti arena restano fallback e supporto visuale per i gate.
+- i vecchi punti arena restano fallback di spawn/debug e non rappresentano piu
+  il cambio bioma.
 
 Identita dei biomi:
 

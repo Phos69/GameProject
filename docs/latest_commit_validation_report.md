@@ -1,5 +1,25 @@
 # Latest Commit Validation Report
 
+## Milestone 10.7 transizione senza portali - 2026-06-18
+- Branch: `master`
+- HEAD corrente: non committato al momento della validazione locale.
+- Scope validato: eliminazione dei `BiomeTransitionGate` dal runtime survival,
+  introduzione di `RegionSeamSystem` per cambio regione da posizione
+  world-space e mantenimento di `BiomeTransitionSystem.transition_to()` come
+  API legacy/debug senza nodi gate.
+- Esito: PASS sui criteri automatizzabili. La survival non crea nodi nel gruppo
+  `biome_transition_gates`, attraversare un varco aperto aggiorna
+  `BiomeManager` e `WorldRuntime`, i bordi senza edge non cambiano regione e
+  gli smoke storici restano compatibili con il nuovo contratto senza portali.
+
+| Test | Esito | Note |
+|---|---|---|
+| `tests/milestone_10_no_portal_transition_smoke_test.gd` | PASS | nessun gate runtime, crossing world-space e bordo bloccato |
+| `tests/open_passage_transition_smoke_test.gd` | PASS | passaggio fisico senza trigger/gate |
+| `tests/biome_world_generation_smoke_test.gd` | PASS | bootstrap survival e generazione mondo senza gate |
+| `tests/zombie_biome_transition_smoke_test.gd` | PASS | transizioni legacy via comando e contenuti bioma invariati |
+| `tests/milestone_6_open_passage_smoke_test.gd` | PASS | contratto storico `BiomeTransitionGate` mantenuto come compatibilita |
+
 ## Polish strade diagonali e oggetti isometrici - 2026-06-18
 - Branch: `master`
 - HEAD corrente: non committato al momento della validazione locale.

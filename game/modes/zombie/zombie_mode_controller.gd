@@ -17,6 +17,10 @@ signal active_biome_applied(biome_id: StringName)
 @export var world_runtime_path: NodePath = NodePath("WorldRuntime")
 @export var enable_multi_region_render: bool = true
 
+const REGION_SEAM_SYSTEM_SCRIPT = preload(
+	"res://game/world/region_seam_system.gd"
+)
+
 var biome_manager
 var wave_director
 var zombie_spawner
@@ -27,6 +31,7 @@ var hazard_system
 var transition_system
 var random_encounter_system
 var world_runtime: WorldRuntime
+var region_seam_system
 var multi_region_renderer: MultiRegionRenderer
 var is_active: bool = false
 var last_applied_region_id: StringName = &""
@@ -42,6 +47,8 @@ func start_run(context: Dictionary = {}) -> void:
 		biome_manager.start_run(context)
 	if world_runtime != null and biome_manager != null:
 		world_runtime.start_run(biome_manager.active_world_data, biome_manager)
+	if region_seam_system != null and biome_manager != null:
+		region_seam_system.start_run(biome_manager, world_runtime)
 	var biome = get_current_biome()
 	is_active = true
 	if wave_director != null and wave_director.has_method("start_run"):
@@ -66,6 +73,8 @@ func stop_run() -> void:
 		hazard_system.stop_run()
 	if transition_system != null:
 		transition_system.stop_run()
+	if region_seam_system != null:
+		region_seam_system.stop_run()
 	if multi_region_renderer != null:
 		multi_region_renderer.clear()
 	if random_encounter_system != null and random_encounter_system.has_method("cleanup_encounter"):
@@ -117,6 +126,13 @@ func _resolve_components() -> void:
 		world_runtime_path,
 		&"world_runtime"
 	) as WorldRuntime
+	region_seam_system = get_tree().get_first_node_in_group(
+		"region_seam_system"
+	)
+	if region_seam_system == null:
+		region_seam_system = REGION_SEAM_SYSTEM_SCRIPT.new()
+		region_seam_system.name = "RegionSeamSystem"
+		add_child(region_seam_system)
 	if multi_region_renderer == null:
 		multi_region_renderer = get_tree().get_first_node_in_group(
 			"multi_region_renderer"
