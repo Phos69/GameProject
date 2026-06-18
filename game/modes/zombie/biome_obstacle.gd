@@ -151,7 +151,18 @@ func _rebuild_collision() -> void:
 	rectangle.size = obstacle_size
 	collision_shape.shape = rectangle
 
+func is_perimeter_wall() -> bool:
+	return obstacle_category == &"border"
+
+func get_wall_height() -> float:
+	# Tall, readable isometric wall: clearly taller than the footprint thickness.
+	var thickness := minf(obstacle_size.x, obstacle_size.y)
+	return maxf(50.0, thickness * 1.4)
+
 func _draw() -> void:
+	if is_perimeter_wall():
+		_draw_iso_perimeter_wall()
+		return
 	_draw_ground_shadow()
 	match draw_mode:
 		&"rock":
@@ -234,6 +245,159 @@ func _ellipse_points(center: Vector2, radius: Vector2, segments: int) -> PackedV
 		var angle := TAU * float(index) / float(segments)
 		points.append(center + Vector2(cos(angle) * radius.x, sin(angle) * radius.y))
 	return points
+
+func _draw_iso_perimeter_wall() -> void:
+	# The world uses an oblique top-down projection (no screen shear), so the
+	# correct extrusion differs by orientation: E-W walls extrude straight up
+	# into a box, while N-S walls need a sheared side face to avoid collapsing
+	# into a degenerate, zero-width sliver.
+	if obstacle_size.x >= obstacle_size.y:
+		_draw_horizontal_wall()
+	else:
+		_draw_vertical_wall()
+
+func _draw_horizontal_wall() -> void:
+	# Extrude the footprint straight up into a tall isometric box.
+	var half := obstacle_size * 0.5
+	var height := get_wall_height()
+	var up := Vector2(0.0, -height)
+
+	var bl := Vector2(-half.x, half.y)
+	var br := Vector2(half.x, half.y)
+	var tr := Vector2(half.x, -half.y)
+	var tl := Vector2(-half.x, -half.y)
+	var bl_top := bl + up
+	var br_top := br + up
+	var tr_top := tr + up
+	var tl_top := tl + up
+
+	var top_color := primary_color.lightened(0.18)
+	var near_color := primary_color.darkened(0.08)
+	var side_color := primary_color.darkened(0.30)
+
+	# Cast shadow on the ground, offset toward the light-away (down-right) side.
+	draw_colored_polygon(
+		PackedVector2Array([
+			bl + Vector2(6.0, 4.0),
+			br + Vector2(6.0, 4.0),
+			br + Vector2(18.0, 13.0),
+			bl + Vector2(18.0, 13.0)
+		]),
+		Color(0.02, 0.03, 0.04, 0.34)
+	)
+
+	# End faces (darkest) give the wall solid thickness.
+	draw_colored_polygon(PackedVector2Array([tl, bl, bl_top, tl_top]), side_color)
+	draw_colored_polygon(
+		PackedVector2Array([tr, br, br_top, tr_top]),
+		side_color.darkened(0.06)
+	)
+	# Near (front-facing) vertical face.
+	draw_colored_polygon(PackedVector2Array([bl, br, br_top, bl_top]), near_color)
+	# Top cap (lit) sits above everything.
+	draw_colored_polygon(
+		PackedVector2Array([tl_top, tr_top, br_top, bl_top]),
+		top_color
+	)
+	# Top edge highlight for readability.
+	draw_line(tl_top, tr_top, accent_color, 2.0, true)
+	draw_line(bl_top, br_top, accent_color.darkened(0.10), 2.0, true)
+
+	_draw_wall_grooves(bl, br, up)
+	_draw_wall_style_accent(bl, br, up)
+
+func _draw_vertical_wall() -> void:
+	# N-S wall: shear the extrusion up-and-right so the long near face reads as
+	# a tall isometric wall instead of a degenerate vertical line.
+	var half := obstacle_size * 0.5
+	var height := get_wall_height()
+	var lift := Vector2(maxf(half.x * 1.15, 13.0), -height)
+
+	var bl := Vector2(-half.x, half.y)
+	var br := Vector2(half.x, half.y)
+	var tr := Vector2(half.x, -half.y)
+	var tl := Vector2(-half.x, -half.y)
+
+	var top_color := primary_color.lightened(0.18)
+	var near_color := primary_color.darkened(0.04)
+	var base_color := primary_color.darkened(0.34)
+
+	# Cast shadow: footprint sheared a little down-right.
+	draw_colored_polygon(
+		PackedVector2Array([
+			tl + Vector2(5.0, 5.0),
+			tr + Vector2(5.0, 5.0),
+			br + Vector2(11.0, 11.0),
+			bl + Vector2(11.0, 11.0)
+		]),
+		Color(0.02, 0.03, 0.04, 0.30)
+	)
+	# Ground footprint base (dark).
+	draw_colored_polygon(PackedVector2Array([tl, tr, br, bl]), base_color)
+	# South end cap face.
+	draw_colored_polygon(
+		PackedVector2Array([bl, br, br + lift, bl + lift]),
+		base_color.darkened(0.04)
+	)
+	# Near long face (west side) sheared into a visible parallelogram.
+	draw_colored_polygon(
+		PackedVector2Array([tl, bl, bl + lift, tl + lift]),
+		near_color
+	)
+	# Top cap (lit).
+	draw_colored_polygon(
+		PackedVector2Array([tl + lift, tr + lift, br + lift, bl + lift]),
+		top_color
+	)
+	# Top edge highlight along the wall crest.
+	draw_line(tl + lift, bl + lift, accent_color, 2.0, true)
+	draw_line(tl + lift, tr + lift, accent_color.darkened(0.10), 1.5, true)
+
+	# Depth courses run along the length of the near face.
+	var course := accent_color.darkened(0.40)
+	for depth in [0.34, 0.68]:
+		draw_line(tl + lift * depth, bl + lift * depth, course, 1.0, true)
+	_draw_wall_grooves(tl, bl, lift)
+	_draw_wall_style_accent(tl, bl, lift)
+
+func _draw_wall_grooves(face_a: Vector2, face_b: Vector2, lift: Vector2) -> void:
+	# Vertical seams (pilasters) stepped along the near face's ground edge.
+	var groove := accent_color.darkened(0.32)
+	var run := face_a.distance_to(face_b)
+	var count := maxi(2, int(run / 28.0))
+	for index in range(1, count):
+		var base := face_a.lerp(face_b, float(index) / float(count))
+		draw_line(base, base + lift, groove, 1.5, true)
+
+func _draw_wall_style_accent(face_a: Vector2, face_b: Vector2, lift: Vector2) -> void:
+	# Biome-specific flourish on the near face so each wall keeps its identity.
+	var mid_a := face_a + lift * 0.42
+	var mid_b := face_b + lift * 0.42
+	match draw_mode:
+		&"lava_boundary":
+			draw_line(mid_a, mid_b, Color(0.98, 0.32, 0.10, 0.82), 2.5, true)
+			draw_line(
+				face_a + lift * 0.7,
+				face_b + lift * 0.7,
+				Color(1.0, 0.55, 0.18, 0.55),
+				1.5,
+				true
+			)
+		&"ice_boundary":
+			draw_line(face_a + lift, face_b + lift, Color(0.62, 0.86, 0.98, 0.7), 2.0, true)
+			draw_line(mid_a, mid_b, Color(0.74, 0.90, 1.0, 0.45), 1.5, true)
+		&"toxic_boundary_wall":
+			draw_line(mid_a, mid_b, Color(0.44, 0.92, 0.52, 0.6), 2.0, true)
+		&"deep_water_boundary":
+			draw_line(
+				face_a + lift * 0.18,
+				face_b + lift * 0.18,
+				Color(0.34, 0.66, 0.78, 0.6),
+				2.0,
+				true
+			)
+		_:
+			draw_line(mid_a, mid_b, accent_color.darkened(0.12), 1.5, true)
 
 func _draw_rock() -> void:
 	var half_size := obstacle_size * 0.5

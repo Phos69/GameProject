@@ -81,7 +81,7 @@ func set_debug_footprint_visible(enabled: bool) -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	if procedural_fallback_active:
+	if is_perimeter_wall() or procedural_fallback_active:
 		super._draw()
 		return
 	_draw_ground_shadow()
@@ -106,6 +106,11 @@ func _apply_asset_contract() -> void:
 		blocks_movement = bool(contract.get("blocks_movement", blocks_movement))
 	if contract.has("blocks_projectiles"):
 		projectile_blocking = bool(contract.get("blocks_projectiles", projectile_blocking))
+	# Perimeter walls are tiled across the whole side, so a single centred
+	# sprite cannot represent them; render the procedural isometric wall volume
+	# (orientation-aware, tileable) for every border segment instead.
+	if is_perimeter_wall():
+		asset_path = ""
 	_apply_collision_layers()
 	_rebuild_collision()
 	_ensure_visual_nodes()

@@ -95,7 +95,7 @@ Test eseguiti:
 
 ## Milestone R2 - Pareti perimetrali isometriche e bordo void avanzato
 
-Stato: prossima.
+Stato: completata (R2.1 tiling + volume; R2.2 facce verticali rifinite).
 
 Obiettivo:
 
@@ -104,21 +104,72 @@ Obiettivo:
 - Separare visivamente wall, cliff lip e void depth sui bordi.
 - Rendere i varchi tra biomi leggibili come strada o ponte senza portali.
 
+Implementato:
+
+- Prima il perimetro era UN solo ostacolo per lato: a runtime diventava un
+  singolo sprite centrato (problema "solo il centro e isometrico" applicato ai
+  muri). Inoltre `repair_layout` rimuoveva l'intero muro del lato appena
+  toccava una strada principale, lasciando i lati quasi senza pareti.
+- `BiomeEnvironmentLayout` ora espone un contratto esplicito di parete:
+  `wall_segment_rects`, `wall_segment_sides`, `wall_height_cells`,
+  `add_wall_segment()` e `get_wall_segments_for_side()`.
+- `ObstacleLayoutGenerator._add_border_segment` piastrella ogni lato in una
+  sequenza contigua di segmenti `WALL_SEGMENT_LENGTH = 12` celle, registrando
+  il contratto sul layout; cosi l'intera parete e isometrica e continua.
+- `_add_connected_border_walls` apre un varco per OGNI passaggio del lato (non
+  solo il primo): le connessioni extra-edge non vengono piu sigillate.
+- `BiomeObstacle` rende le pareti `border` come volume isometrico estruso
+  (`_draw_iso_perimeter_wall`): ombra, facce laterali, faccia frontale, tetto
+  illuminato, pilastri verticali e accento per bioma; `is_perimeter_wall()` e
+  `get_wall_height()` espongono il contratto alto.
+- `IsometricEnvironmentObject` forza il path procedurale per i `border` cosi il
+  muro lungo e orientabile invece del singolo sprite tile.
+- Bugfix collegato: un blocco interno void poteva cadere sopra il corridoio di
+  un passaggio (il fall zone sovrascriveva la strada in classificazione e
+  metteva un hazard di caduta sulla strada). Ora i blocchi void/partial-void che
+  intersecano `passage_rects`/`passage_connector_rects` diventano `open`.
+
 Criterio di accettazione:
 
-- Ogni lato non fall ha pareti alte e asset-driven.
-- Ogni lato fall mostra bordo, profondita e danno coerente.
-- I passaggi tagliano le pareti senza overlap collisioni.
+- Ogni lato non fall ha pareti alte, continue e con volume isometrico. OK
+- Ogni lato fall mostra bordo, profondita e danno coerente (cliff renderer). OK
+- I passaggi tagliano le pareti senza overlap collisioni. OK (test)
 
-Test richiesto:
+Test:
 
-- Estendere `isometric_biome_generation_rewrite_smoke_test.gd`.
-- Rieseguire `fall_boundary_visual_logic`, `milestone_10_passage_tile` e
-  `milestone_10_void_cliff_asset`.
+- Nuovo `tests/isometric_perimeter_wall_smoke_test.gd` - PASS.
+- `isometric_biome_generation_rewrite_smoke_test.gd` - PASS.
+- `biome_world_generation_smoke_test.gd` - PASS (regressione passaggio
+  irraggiungibile individuata e risolta).
+
+R2.2 implementato:
+
+- Il mondo usa una proiezione obliqua dall'alto (nessuno shear di schermo):
+  estrudere in verticale un muro N-S faceva collassare le facce laterali in una
+  riga degenere. `_draw_iso_perimeter_wall` ora dispatcha per orientamento:
+  `_draw_horizontal_wall` (box estruso) per E-W, `_draw_vertical_wall` (faccia
+  laterale con shear up-and-right, depth courses, crest illuminata) per N-S.
+- Helper unificati `_draw_wall_grooves`/`_draw_wall_style_accent` operano sul
+  bordo della faccia vicina per entrambi gli orientamenti, con accento bioma.
+
+Resta aperto:
+
+- I varchi aperti da `repair_layout` dove una strada principale tocca un lato
+  non-passaggio creano un buco singolo nel muro: valutare se chiudere o
+  trasformare in uscita esplicita.
+
+Test pre-esistenti rossi (non causati da R2, da affrontare in cicli futuri):
+
+- `milestone_10_passage_tile_smoke_test.gd`: FAIL 4 (era 26 su tree pulito,
+  ridotto dal fix corridoi). Le 4 restanti verificano comportamenti del vecchio
+  generatore a strade diagonali/portali sostituito da R1 (road/burned_road
+  passage type, resolver road connector, branching diagonale).
+- `milestone_10_void_cliff_asset_smoke_test.gd`: FAIL 2, gia rosso su tree
+  pulito, riguarda metadata `fall_side` runtime, indipendente dalle pareti.
 
 ## Milestone R3 - Asset e blocchi interni finalizzati
 
-Stato: aperta.
+Stato: in corso (R3.1 props piccoli avviato).
 
 Obiettivo:
 
@@ -127,10 +178,87 @@ Obiettivo:
 - Aggiungere props piccoli tematici su griglia isometrica.
 - Verificare che ogni bioma usi identita visiva distinta senza placeholder.
 
-Test richiesto:
+R3.1 implementato (props piccoli):
+
+- `ObstacleLayoutGenerator._add_block_props` riempie ogni blocco non-void con
+  props piccoli tematici (densita per kind: bosco 6, rovine 5, open 3, altri 2;
+  cap globale `MAX_BLOCK_PROPS = 64`). Deterministico dal seed cella.
+- `_add_prop_if_clear` posiziona solo su celle libere: mai su strade/route,
+  ostacoli, fall zone o hazard -> nessun impatto sul pathfinding.
+- Pool props per bioma in `_small_prop_ids` usa SOLO id gia con contratto
+  `object_scenes` completo (small_rock, fallen_log/marsh_log, broken_fence,
+  toxic_barrel, industrial_fence, ash_barrier, ice_rock, reed_wall), cosi i
+  props hanno sempre resa finita. Gli id finiscono nel whitelist bioma via
+  `BiomeManager._apply_generated_layouts` (merge di `layout.obstacle_ids`).
+- Nuovo `tests/isometric_block_props_smoke_test.gd` - PASS: verifica >=3 props
+  dentro i blocchi per bioma, off-route/off-fall, layout ancora valido.
+
+Resta (R3.2+):
+
+- Art dedicata per cespugli/lampioni/casse decorative: richiede nuovi id con
+  contratto `object_scenes` completo (asset SVG, source, license, attribution,
+  biome_ids, footprint) + draw mode in `OBJECT_DRAW_MODES` + `_draw_*` in
+  `biome_obstacle.gd`. Il test v7 impone il contratto, quindi va fatto in blocco.
+- Props soft non-collidenti (erba/cespugli a terra): valutare `blocks_movement`
+  false nel manifest per i nuovi id, oppure un layer di decorazioni tile-level
+  (il `terrain_patch` attuale NON viene renderizzato nello streaming survival).
+- Differenziare la classificazione blocchi (piazza vs open) e l'identita visiva
+  per bioma con set props piu ampi.
+
+Test richiesto (futuro):
 
 - Smoke su presenza asset per block kind e biome id.
 - QA screenshot per i cinque biomi.
+
+## Milestone R4 - Resa void leggibile
+
+Stato: in corso (R4.1 placeholder sgranato rimosso).
+
+Problema riscontrato:
+
+- I blocchi void interni venivano renderizzati come `BiomeFallZone` dimensionati
+  sull'intero blocco (es. 800x800 px) che stiracchiavano una singola tile SVG
+  `fall_zone.svg` (160x120) -> placeholder sgranato/sfocato che copriva il void e
+  parte del contorno. Le strisce void perimetrali (sottili) restavano nitide.
+
+R4.1 implementato:
+
+- `BiomeFallZone._is_large_void()` (lato minore >= `LARGE_VOID_MIN = 110` px)
+  distingue le fosse interne dalle strisce di bordo.
+- Per le fosse grandi `IsometricCliffRenderer.configure(..., disable_assets)`
+  salta gli sprite SVG stiracchiati (niente placeholder sgranato).
+- `BiomeFallZone._draw_large_void()` rende una fossa pulita: base scura piena,
+  banding di profondita, cornice/ombra interna che la fa leggere come incassata,
+  rim luminoso sul bordo del pavimento e linee verticali di profondita che
+  partono dal pavimento e sfumano nel colore del void (`_draw_faded_line`).
+- Le strisce perimetrali sottili continuano a usare il cliff renderer SVG.
+- `milestone_10_void_cliff_asset_smoke_test.gd` aggiornato: per le fosse interne
+  grandi verifica il path procedurale pulito, per le perimetrali il renderer
+  asset. Resta FAIL 2 PRE-ESISTENTE (`fall_side` "internal" normalizzato a
+  north/west vs metadata layout) non collegato a questo lavoro.
+
+R4.2 implementato (placeholder rimosso anche dai bordi + esterno void):
+
+- Ora TUTTE le fall zone disattivano gli sprite SVG (`_configure_cliff_renderer`
+  passa sempre `disable_assets = true`): niente piu placeholder sgranato neanche
+  sui bordi esterni della mappa. Le strisce perimetrali usano il cliff
+  procedurale pulito (`_draw_procedural_cliff`), le fosse interne `_draw_large_void`.
+- `ZombieModeController` dipinge un backdrop a tutto schermo
+  (`CanvasLayer.layer = -100` + `ColorRect` full-rect) col colore void del bioma
+  attivo (`palette.background_color.darkened(0.68)`, stesso shade di
+  `TILE_VOID_DEPTH`): tutto cio che sta oltre i bordi del chunk e ora void.
+  Backdrop aggiornato a ogni cambio bioma e liberato in `stop_run`.
+- `milestone_10_void_cliff_asset_smoke_test.gd` aggiornato: le fall zone runtime
+  usano il void procedurale (niente asset renderer); i contratti void restano
+  comunque validati a livello manifest. Le 2 asserzioni pre-esistenti sul
+  `fall_side` interno erano gia state risolte in R4.1. Test verde.
+
+Resta (R4.3+):
+
+- Linee di profondita anche dai lati laterali per fosse molto larghe.
+- Allineare colore: il fill procedurale usa `depth_color`/style mentre il
+  backdrop usa `background_color.darkened(0.68)`; valutare unificazione esatta
+  del colore void tra tile layer, fosse e backdrop per ogni bioma.
 
 ## Note tecniche e rischi
 

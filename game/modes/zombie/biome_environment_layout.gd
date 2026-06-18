@@ -28,6 +28,13 @@ const DEFAULT_ZONE_SIZE := Vector2i(500, 500)
 
 @export_range(80.0, 500.0, 10.0) var central_corridor_width: float = 220.0
 
+# Explicit perimeter wall contract: the chunk is ringed by tall, isometric
+# vertical walls. Walls are emitted as a contiguous run of tile-sized segments
+# (see ObstacleLayoutGenerator) instead of a single stretched obstacle per side,
+# so the whole perimeter reads as a continuous wall and not just a central tile.
+const PERIMETER_WALL_HEIGHT_CELLS := 5
+@export var wall_height_cells: int = PERIMETER_WALL_HEIGHT_CELLS
+
 var road_rects: Array[Rect2i] = []
 var road_rect_tags: Array[StringName] = []
 var road_cell_tags: Dictionary = {}
@@ -35,6 +42,8 @@ var floor_rects: Array[Rect2i] = []
 var floor_rect_tags: Array[StringName] = []
 var block_rects: Array[Rect2i] = []
 var block_kinds: Array[StringName] = []
+var wall_segment_rects: Array[Rect2i] = []
+var wall_segment_sides: Array[StringName] = []
 var passage_rects: Array[Rect2i] = []
 var passage_connector_rects: Array[Rect2i] = []
 var obstacle_rects: Array[Rect2i] = []
@@ -141,6 +150,20 @@ func add_block_rect(rect: Rect2i, block_kind: StringName) -> void:
 		return
 	block_rects.append(clipped)
 	block_kinds.append(block_kind)
+
+func add_wall_segment(rect: Rect2i, side: StringName) -> void:
+	var clipped := _clip_rect(rect)
+	if clipped.size.x <= 0 or clipped.size.y <= 0:
+		return
+	wall_segment_rects.append(clipped)
+	wall_segment_sides.append(side)
+
+func get_wall_segments_for_side(side: StringName) -> Array[Rect2i]:
+	var result: Array[Rect2i] = []
+	for index in range(wall_segment_rects.size()):
+		if index < wall_segment_sides.size() and wall_segment_sides[index] == side:
+			result.append(wall_segment_rects[index])
+	return result
 
 func add_fall_zone_rect(rect: Rect2i, side: StringName = &"") -> void:
 	var clipped := _clip_rect(rect)

@@ -39,6 +39,12 @@ var world_region_streamer
 var multi_region_renderer: MultiRegionRenderer
 var is_active: bool = false
 var last_applied_region_id: StringName = &""
+# Screen-space backdrop painted with the active biome's void colour so anything
+# beyond the chunk borders reads as void instead of the default clear colour.
+var _void_backdrop_layer: CanvasLayer
+var _void_backdrop: ColorRect
+
+const VOID_BACKDROP_DARKEN := 0.68
 
 func _ready() -> void:
 	add_to_group("zombie_mode_controller")
@@ -93,6 +99,7 @@ func stop_run() -> void:
 		biome_manager.stop_run()
 	is_active = false
 	last_applied_region_id = &""
+	_clear_void_backdrop()
 	zombie_run_stopped.emit()
 
 func get_current_biome():
@@ -196,9 +203,40 @@ func _on_current_region_changed(
 	if is_active:
 		_apply_active_biome(get_current_biome())
 
+func _ensure_void_backdrop() -> void:
+	if _void_backdrop != null and is_instance_valid(_void_backdrop):
+		return
+	_void_backdrop_layer = CanvasLayer.new()
+	_void_backdrop_layer.name = "VoidBackdropLayer"
+	# Behind the world (canvas layer 0) but still rendered, so everything outside
+	# the streamed chunk shows the void colour.
+	_void_backdrop_layer.layer = -100
+	add_child(_void_backdrop_layer)
+	_void_backdrop = ColorRect.new()
+	_void_backdrop.name = "VoidBackdrop"
+	_void_backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_void_backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_void_backdrop_layer.add_child(_void_backdrop)
+
+func _update_void_backdrop(biome: BiomeDefinition) -> void:
+	if biome == null or biome.palette == null:
+		return
+	_ensure_void_backdrop()
+	# Match the tile layer's TILE_VOID_DEPTH colour so the off-map void is the
+	# same shade as the in-map void cells.
+	_void_backdrop.color = biome.palette.background_color.darkened(VOID_BACKDROP_DARKEN)
+	_void_backdrop_layer.visible = true
+
+func _clear_void_backdrop() -> void:
+	if _void_backdrop_layer != null and is_instance_valid(_void_backdrop_layer):
+		_void_backdrop_layer.queue_free()
+	_void_backdrop_layer = null
+	_void_backdrop = null
+
 func _apply_active_biome(biome: BiomeDefinition) -> void:
 	if biome == null:
 		return
+	_update_void_backdrop(biome)
 	var region_id: StringName = (
 		biome_manager.get_current_region_id()
 		if biome_manager != null

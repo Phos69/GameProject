@@ -4,6 +4,13 @@ class_name ObstacleLayoutGenerator
 const ROAD_WIDTH := 10
 const SECONDARY_ROAD_WIDTH := 4
 const BORDER_THICKNESS := 4
+# Perimeter walls are tiled as a contiguous run of segments so the whole side
+# reads as a continuous isometric wall instead of a single centred sprite.
+const WALL_SEGMENT_LENGTH := 12
+const WALL_MIN_SEGMENT := 5
+# Small thematic props scattered inside internal blocks for ambient detail.
+const MAX_BLOCK_PROPS := 64
+const PROP_BLOCK_MARGIN := 4
 const MIN_RECT_GAP := 2
 const BLOCK_INSET := 0
 const MIN_BLOCK_SIZE := 32
@@ -68,6 +75,7 @@ func populate_layout(
 	_add_connected_border_walls(layout, cell, biome)
 	_add_crates(layout, biome)
 	_add_theme_hazards(layout, biome)
+	_add_block_props(layout, biome, rng)
 
 func repair_layout(layout: BiomeEnvironmentLayout) -> void:
 	for index in range(layout.obstacle_rects.size() - 1, -1, -1):
@@ -246,9 +254,26 @@ func _add_internal_blocks(
 			):
 				continue
 			var block_kind := _resolve_block_kind(biome.biome_id, block_index, rng)
+			# Never drop a void/fall block onto a passage corridor: the connector
+			# road must stay walkable and free of fall hazards so cross-biome
+			# passages remain reachable.
+			if (
+				(block_kind == &"full_void" or block_kind == &"partial_void")
+				and _rect_overlaps_passage_corridor(layout, block_rect)
+			):
+				block_kind = &"open"
 			layout.add_block_rect(block_rect, block_kind)
 			_apply_block_surface(layout, block_rect, block_kind)
 			block_index += 1
+
+func _rect_overlaps_passage_corridor(
+	layout: BiomeEnvironmentLayout,
+	rect: Rect2i
+) -> bool:
+	return (
+		_intersects_any(rect, layout.passage_connector_rects)
+		or _intersects_any(rect, layout.passage_rects)
+	)
 
 func _apply_block_surface(
 	layout: BiomeEnvironmentLayout,
@@ -476,6 +501,103 @@ func _add_secondary_obstacles(
 		)
 		placed += 1
 
+func _add_block_props(
+	layout: BiomeEnvironmentLayout,
+	biome: BiomeDefinition,
+	rng: RandomNumberGenerator
+) -> void:
+	# Enrich each non-void block with small thematic props so open areas read as
+	# finished spaces, not empty rectangles. Props are placed only on clear
+	# interior cells (never on routes, obstacles, fall zones or hazards), so they
+	# add detail without breaking pathfinding.
+	var prop_ids := _small_prop_ids(biome.biome_id if biome != null else &"")
+	if prop_ids.is_empty():
+		return
+	var placed := 0
+	for index in range(layout.block_rects.size()):
+		if placed >= MAX_BLOCK_PROPS:
+			return
+		var kind := (
+			layout.block_kinds[index]
+			if index < layout.block_kinds.size()
+			else &"open"
+		)
+		if kind == &"full_void":
+			continue
+		var block_rect := layout.block_rects[index]
+		var attempts := _prop_attempts_for_kind(kind, block_rect)
+		for _attempt in range(attempts):
+			if placed >= MAX_BLOCK_PROPS:
+				break
+			var prop_id := prop_ids[rng.randi_range(0, prop_ids.size() - 1)]
+			var size := _prop_size(prop_id, rng)
+			var max_x := maxi(block_rect.size.x - size.x - PROP_BLOCK_MARGIN, PROP_BLOCK_MARGIN)
+			var max_y := maxi(block_rect.size.y - size.y - PROP_BLOCK_MARGIN, PROP_BLOCK_MARGIN)
+			var pos := block_rect.position + Vector2i(
+				rng.randi_range(PROP_BLOCK_MARGIN, max_x),
+				rng.randi_range(PROP_BLOCK_MARGIN, max_y)
+			)
+			if _add_prop_if_clear(layout, prop_id, Rect2i(pos, size), rng):
+				placed += 1
+
+func _prop_attempts_for_kind(kind: StringName, block_rect: Rect2i) -> int:
+	var area_budget := int(float(block_rect.size.x * block_rect.size.y) / 1100.0)
+	var density := 2
+	match kind:
+		&"forest":
+			density = 6
+		&"ruins":
+			density = 5
+		&"open":
+			density = 3
+		&"large_obstacle", &"building", &"partial_void":
+			density = 2
+		_:
+			density = 2
+	return clampi(area_budget, 1, density)
+
+func _add_prop_if_clear(
+	layout: BiomeEnvironmentLayout,
+	prop_id: StringName,
+	rect: Rect2i,
+	rng: RandomNumberGenerator
+) -> bool:
+	var padded := _inflate_rect(rect, MIN_RECT_GAP)
+	if _intersects_route(layout, padded):
+		return false
+	if _intersects_any(padded, layout.obstacle_rects):
+		return false
+	if _intersects_any(rect, layout.fall_zone_rects):
+		return false
+	if _intersects_any(rect, layout.hazard_rects):
+		return false
+	_add_obstacle(layout, prop_id, rect, &"rectangle", rng.randf_range(-0.4, 0.4))
+	return true
+
+func _prop_size(prop_id: StringName, rng: RandomNumberGenerator) -> Vector2i:
+	match prop_id:
+		&"fallen_log", &"marsh_log":
+			return Vector2i(rng.randi_range(5, 8), rng.randi_range(3, 4))
+		&"toxic_barrel":
+			return Vector2i(rng.randi_range(3, 4), rng.randi_range(3, 4))
+		_:
+			return Vector2i(rng.randi_range(3, 5), rng.randi_range(3, 5))
+
+func _small_prop_ids(biome_id: StringName) -> Array[StringName]:
+	# Only contract-complete, biome-whitelisted ids so props always render with a
+	# finished look (no placeholders). Bespoke bush/lamp art is a later R3 step.
+	match biome_id:
+		&"toxic_wastes":
+			return [&"small_rock", &"toxic_barrel", &"industrial_fence"]
+		&"burning_fields":
+			return [&"small_rock", &"ash_barrier", &"broken_fence"]
+		&"frozen_outskirts":
+			return [&"ice_rock", &"fallen_log", &"small_rock"]
+		&"drowned_marsh":
+			return [&"marsh_log", &"small_rock", &"reed_wall"]
+		_:
+			return [&"small_rock", &"broken_fence", &"fallen_log"]
+
 func _add_connected_border_walls(
 	layout: BiomeEnvironmentLayout,
 	cell: BiomeCell,
@@ -486,18 +608,36 @@ func _add_connected_border_walls(
 		var border_type := cell.get_border(side)
 		if border_type == BiomeCell.BorderType.FALL:
 			continue
-		if border_type != BiomeCell.BorderType.CONNECTED:
-			_add_border_segment(layout, side, 0, layout.zone_size.y, border_obstacle_id)
-			continue
-		var passages := cell.get_passages_for_side(side)
-		if passages.is_empty():
-			_add_border_segment(layout, side, 0, layout.zone_size.y, border_obstacle_id)
-			continue
-		var passage: BiomePassage = passages.front()
-		var start := clampi(passage.position - passage.width / 2 - 2, 0, layout.zone_size.y)
-		var finish := clampi(passage.position + passage.width / 2 + 2, 0, layout.zone_size.y)
-		_add_border_segment(layout, side, 0, start, border_obstacle_id)
-		_add_border_segment(layout, side, finish, layout.zone_size.y, border_obstacle_id)
+		var axis_limit := _side_axis_limit(layout, side)
+		var gaps := _passage_gaps_for_side(cell, side, axis_limit)
+		# Wall the side, leaving a clean physical opening for every passage so
+		# additional (extra-edge) connections are never sealed shut.
+		var cursor := 0
+		for gap in gaps:
+			_add_border_segment(layout, side, cursor, gap.x, border_obstacle_id)
+			cursor = maxi(cursor, gap.y)
+		_add_border_segment(layout, side, cursor, axis_limit, border_obstacle_id)
+
+func _side_axis_limit(layout: BiomeEnvironmentLayout, side: StringName) -> int:
+	if side == &"west" or side == &"east":
+		return layout.zone_size.y
+	return layout.zone_size.x
+
+func _passage_gaps_for_side(
+	cell: BiomeCell,
+	side: StringName,
+	axis_limit: int
+) -> Array[Vector2i]:
+	var gaps: Array[Vector2i] = []
+	if cell.get_border(side) != BiomeCell.BorderType.CONNECTED:
+		return gaps
+	for passage in cell.get_passages_for_side(side):
+		var start := clampi(passage.position - passage.width / 2 - 2, 0, axis_limit)
+		var finish := clampi(passage.position + passage.width / 2 + 2, 0, axis_limit)
+		if finish > start:
+			gaps.append(Vector2i(start, finish))
+	gaps.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return a.x < b.x)
+	return gaps
 
 func _add_border_segment(
 	layout: BiomeEnvironmentLayout,
@@ -506,26 +646,46 @@ func _add_border_segment(
 	finish: int,
 	obstacle_id: StringName
 ) -> void:
-	if finish - start < 10:
-		return
+	# Tile the [start, finish) span into contiguous wall-tile segments so the
+	# entire perimeter is a continuous isometric wall, recording the explicit
+	# wall contract on the layout for validation and rendering.
+	var cursor := start
+	while cursor < finish:
+		var remaining := finish - cursor
+		if remaining < WALL_MIN_SEGMENT:
+			break
+		var segment_length := mini(WALL_SEGMENT_LENGTH, remaining)
+		# Absorb a tiny trailing remainder into the current segment so we never
+		# leave a sub-minimum sliver behind.
+		if remaining - segment_length > 0 and remaining - segment_length < WALL_MIN_SEGMENT:
+			segment_length = remaining
+		var rect := _wall_segment_rect(layout, side, cursor, segment_length)
+		_add_obstacle(layout, obstacle_id, rect, &"rectangle", 0.0)
+		layout.add_wall_segment(rect, side)
+		cursor += segment_length
+
+func _wall_segment_rect(
+	layout: BiomeEnvironmentLayout,
+	side: StringName,
+	axis_start: int,
+	axis_length: int
+) -> Rect2i:
 	var zone_size := layout.zone_size
-	var rect := Rect2i()
 	match side:
 		&"north":
-			rect = Rect2i(Vector2i(start, 0), Vector2i(finish - start, BORDER_THICKNESS))
+			return Rect2i(Vector2i(axis_start, 0), Vector2i(axis_length, BORDER_THICKNESS))
 		&"south":
-			rect = Rect2i(
-				Vector2i(start, zone_size.y - BORDER_THICKNESS),
-				Vector2i(finish - start, BORDER_THICKNESS)
+			return Rect2i(
+				Vector2i(axis_start, zone_size.y - BORDER_THICKNESS),
+				Vector2i(axis_length, BORDER_THICKNESS)
 			)
 		&"west":
-			rect = Rect2i(Vector2i(0, start), Vector2i(BORDER_THICKNESS, finish - start))
+			return Rect2i(Vector2i(0, axis_start), Vector2i(BORDER_THICKNESS, axis_length))
 		_:
-			rect = Rect2i(
-				Vector2i(zone_size.x - BORDER_THICKNESS, start),
-				Vector2i(BORDER_THICKNESS, finish - start)
+			return Rect2i(
+				Vector2i(zone_size.x - BORDER_THICKNESS, axis_start),
+				Vector2i(BORDER_THICKNESS, axis_length)
 			)
-	_add_obstacle(layout, obstacle_id, rect, &"rectangle", 0.0)
 
 func _add_obstacle_if_clear(
 	layout: BiomeEnvironmentLayout,
