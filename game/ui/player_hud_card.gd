@@ -8,6 +8,7 @@ var slot_label: Label
 var weapon_icon: WeaponIcon
 var weapon_label: Label
 var class_label: Label
+var health_row: HBoxContainer
 var health_bar: ProgressBar
 var health_label: Label
 var ammo_label: Label
@@ -26,7 +27,7 @@ var high_contrast: bool = false
 
 func _ready() -> void:
 	add_to_group("visual_settings_consumers")
-	custom_minimum_size = Vector2(292.0, 178.0)
+	custom_minimum_size = Vector2(276.0, 150.0)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_ui()
 	_apply_style()
@@ -157,7 +158,7 @@ func refresh(player: Node) -> void:
 		if health_component.is_downed:
 			health_label.text = "DOWNED"
 	if weapon_system != null:
-		ammo_label.text = weapon_system.get_ammo_text()
+		ammo_label.text = _format_corner_ammo_text(weapon_system)
 		weapon_icon.set_visual_data(
 			weapon_system.weapon_data.visual_data
 			if weapon_system.weapon_data != null
@@ -183,7 +184,7 @@ func refresh(player: Node) -> void:
 
 func _build_ui() -> void:
 	var content := VBoxContainer.new()
-	content.add_theme_constant_override("separation", 4)
+	content.add_theme_constant_override("separation", 3)
 	add_child(content)
 
 	var top_row := HBoxContainer.new()
@@ -201,14 +202,18 @@ func _build_ui() -> void:
 	weapon_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	weapon_label.add_theme_font_size_override("font_size", 14)
 	weapon_label.modulate = Color(0.76, 0.82, 0.86, 1.0)
+	weapon_label.max_lines_visible = 1
+	weapon_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	top_row.add_child(weapon_label)
 
 	class_label = Label.new()
 	class_label.add_theme_font_size_override("font_size", 12)
 	class_label.modulate = Color(0.68, 0.76, 0.82, 1.0)
+	class_label.max_lines_visible = 1
+	class_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	content.add_child(class_label)
 
-	var health_row := HBoxContainer.new()
+	health_row = HBoxContainer.new()
 	health_row.add_theme_constant_override("separation", 8)
 	content.add_child(health_row)
 	var health_icon := Label.new()
@@ -227,6 +232,7 @@ func _build_ui() -> void:
 	health_label.custom_minimum_size = Vector2(66.0, 20.0)
 	health_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	health_row.add_child(health_label)
+	health_row.hide()
 
 	var ammo_row := HBoxContainer.new()
 	ammo_row.add_theme_constant_override("separation", 7)
@@ -251,6 +257,7 @@ func _build_ui() -> void:
 	reload_bar.max_value = 1.0
 	reload_bar.show_percentage = false
 	content.add_child(reload_bar)
+	reload_bar.hide()
 
 	var xp_row := HBoxContainer.new()
 	xp_row.add_theme_constant_override("separation", 8)
@@ -475,14 +482,7 @@ func _refresh_ammo_widgets(weapon_system: WeaponSystem) -> void:
 			else inactive_color
 		)
 	if weapon_system.weapon_data.infinite_reserve_ammo:
-		ammo_label.text = (
-			"RELOAD"
-			if weapon_system.is_reloading
-			else "%d/%d" % [
-				weapon_system.current_ammo,
-				weapon_system.weapon_data.magazine_size
-			]
-		)
+		ammo_label.text = _format_corner_ammo_text(weapon_system)
 	if reload_bar != null:
 		reload_bar.value = weapon_system.get_reload_ratio()
 		reload_bar.modulate = (
@@ -490,6 +490,17 @@ func _refresh_ammo_widgets(weapon_system: WeaponSystem) -> void:
 			if weapon_system.is_reloading
 			else Color(1.0, 1.0, 1.0, 0.22)
 		)
+
+func _format_corner_ammo_text(weapon_system: WeaponSystem) -> String:
+	if weapon_system == null or weapon_system.weapon_data == null:
+		return "-"
+	if weapon_system.weapon_data.infinite_reserve_ammo:
+		if weapon_system.has_special_weapon() and weapon_system.is_fallback_active():
+			var special_total := maxi(weapon_system.get_special_ammo_total(), 0)
+			return "SP %d" % special_total
+		return "RES INF"
+	var suffix := " LOW" if weapon_system.low_ammo_active else ""
+	return "RES %d%s" % [weapon_system.reserve_ammo, suffix]
 
 func _ensure_ammo_pips(target_count: int) -> void:
 	target_count = clampi(target_count, 0, 12)

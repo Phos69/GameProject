@@ -141,8 +141,14 @@ func _run() -> void:
 	_expect(wave_two_enemy.move_speed > wave_one_speed, "wave two increases enemy speed")
 	_expect(wave_two_enemy.attack_damage > wave_one_damage, "wave two increases enemy damage")
 	await process_frame
-	_expect("Wave 2" in hud.status_label.text, "HUD displays the current wave")
-	_expect("Enemies 3/3" in hud.status_label.text, "HUD displays remaining enemies")
+	_expect(
+		not hud.status_label.text.contains("Wave 2"),
+		"survival HUD omits the persistent wave info panel"
+	)
+	_expect(
+		not hud.status_label.text.contains("Enemies 3/3"),
+		"survival HUD omits the persistent enemy count panel"
+	)
 	var saved_current_ammo := player_one_weapon.current_ammo
 	var saved_reserve_ammo := player_one_weapon.reserve_ammo
 	player_one_weapon.current_ammo = 0

@@ -65,7 +65,19 @@ func _input(event: InputEvent) -> void:
 	if character_select_panel == null or not character_select_panel.visible:
 		return
 	var player_slot := _player_slot_from_input_event(event)
-	if player_slot <= 0 or not _is_character_slot_active(player_slot):
+	if player_slot <= 0:
+		return
+	if _is_character_start_event(event):
+		if not _is_character_slot_active(player_slot):
+			return
+		_set_current_character_slot(player_slot)
+		if _all_active_character_slots_selected():
+			_start_survival_with_selected_characters()
+		else:
+			_refresh_character_selection_ui()
+		get_viewport().set_input_as_handled()
+		return
+	if not _is_character_slot_active(player_slot):
 		return
 	_set_current_character_slot(player_slot)
 
@@ -395,6 +407,10 @@ func _create_character_navigation() -> void:
 	character_navigation.back_callback = Callable(
 		self,
 		"_handle_character_select_back"
+	)
+	character_navigation.move_callback = Callable(
+		self,
+		"_move_character_select_focus"
 	)
 	var controls: Array[Control] = []
 	for button in character_card_buttons:
@@ -789,6 +805,62 @@ func _refresh_character_select_layout() -> void:
 		var card_count := maxi(character_card_buttons.size(), 1)
 		var fit := int(available / (card_width + 8.0))
 		character_roster_grid.columns = clampi(fit, 1, card_count)
+
+func _move_character_select_focus(direction: Vector2i) -> bool:
+	if character_select_panel == null or not character_select_panel.visible:
+		return false
+	if character_card_buttons.is_empty():
+		return false
+	var current_index := _current_character_card_focus_index()
+	if current_index < 0:
+		current_index = 0
+	var next_index := _resolve_character_grid_index(current_index, direction)
+	next_index = clampi(next_index, 0, character_card_buttons.size() - 1)
+	var next_button := character_card_buttons[next_index]
+	next_button.grab_focus()
+	if character_roster_scroll != null:
+		character_roster_scroll.ensure_control_visible(next_button)
+	return true
+
+func _current_character_card_focus_index() -> int:
+	var current := get_viewport().gui_get_focus_owner()
+	var current_index := character_card_buttons.find(current)
+	if current_index >= 0:
+		return current_index
+	if RpgCharacterRegistry.is_character_available(focused_character_id):
+		var focused_button := character_card_by_id.get(focused_character_id) as Button
+		current_index = character_card_buttons.find(focused_button)
+		if current_index >= 0:
+			return current_index
+	return 0
+
+func _resolve_character_grid_index(
+	current_index: int,
+	direction: Vector2i
+) -> int:
+	var card_count := character_card_buttons.size()
+	if card_count <= 1:
+		return 0
+	var columns := (
+		character_roster_grid.columns
+		if character_roster_grid != null
+		else card_count
+	)
+	columns = clampi(columns, 1, card_count)
+	var row := int(current_index / columns)
+	var column := current_index % columns
+	var row_count := ceili(float(card_count) / float(columns))
+	if direction.x != 0:
+		var row_start := row * columns
+		var row_length := mini(columns, card_count - row_start)
+		var row_offset := current_index - row_start
+		return row_start + posmod(row_offset + direction.x, row_length)
+	if direction.y != 0:
+		var target_row := posmod(row + direction.y, row_count)
+		var target_start := target_row * columns
+		var target_length := mini(columns, card_count - target_start)
+		return target_start + mini(column, target_length - 1)
+	return current_index
 
 func _handle_main_menu_back() -> bool:
 	return false
@@ -1219,6 +1291,13 @@ func _player_slot_from_input_event(event: InputEvent) -> int:
 		if key_event.pressed and not key_event.echo:
 			return 1
 	return 0
+
+func _is_character_start_event(event: InputEvent) -> bool:
+	if event is InputEventKey:
+		var key_event := event as InputEventKey
+		if not key_event.pressed or key_event.echo:
+			return false
+	return event.is_action_pressed(&"pause")
 
 func _on_active_slots_changed(_active_slots: Array[int]) -> void:
 	if character_select_panel != null and character_select_panel.visible:

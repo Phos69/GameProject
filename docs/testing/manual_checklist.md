@@ -29,7 +29,14 @@
 - La scena parte con player 1 attivo.
 - `F2`, `F3` e `F4` attivano rispettivamente player 2, 3 e 4.
 - Premere di nuovo `F2`, `F3` o `F4` rimuove lo slot corrispondente senza rimuovere player 1.
-- Con piu player attivi, l'HUD mostra conteggio e slot corretti.
+- Con piu player attivi, l'HUD mostra le schede degli slot corretti.
+- Con 2-4 player attivi, le schede HUD stanno nei quattro angoli senza tagli o
+  sovrapposizioni con pannelli globali.
+- Durante il gameplay non compare un riquadro persistente `Party Lv / XP / Money`.
+- Durante la survival non compare un riquadro persistente con `Wave`,
+  `Next Wave` o `Enemies`.
+- Durante la survival non compare il riquadro status bioma con nome, pericolo o
+  risorse.
 - Con piu player attivi, la camera segue il centro del gruppo e modifica lo zoom.
 - Con joypad multipli, `Start` attiva lo slot associato al controller dal menu e `Back/Select` lo disattiva se non e player 1.
 - Ogni player mantiene input, mira e fire action del proprio slot.
@@ -41,6 +48,11 @@
 - D-pad, frecce e stick sinistro navigano le voci menu in modo circolare.
 - `Esc`, joypad `B` o `Back` tornano al menu precedente da Character Select,
   Settings e pausa; nel menu principale non rompono lo stato.
+- In Character Select, frecce/D-pad/stick navigano la griglia in quattro
+  direzioni, con wrapping ai bordi e senza focus su slot vuoti.
+- In Character Select, `Start` joypad o `P` avvia la survival solo quando ogni
+  slot attivo ha un personaggio valido; `Start` di un controller inattivo
+  continua ad attivare il relativo slot.
 - In Settings, `LB` seleziona la tab precedente e `RB` quella successiva,
   entrambe con wrapping e focus su un controllo valido della tab corrente.
 - Master, Music e SFX sono nel tab Audio e non nella pagina principale.
@@ -58,11 +70,13 @@ godot --headless --path . --script res://tests/pause_settings_smoke_test.gd
 
 ## Regressione combat
 
-- L'HUD mostra `HP 100/100` e `Ammo 12/INF` per ogni player appena spawnato.
+- Il mini HUD sopra ogni player mostra HP e reload/cooldown utile, mentre la
+  scheda angolo del relativo slot mostra arma, ammo e statistiche RPG.
 - Sparare riduce il caricatore di una unita per colpo valido.
 - Le munizioni di un player non modificano quelle degli altri player.
 - Tenere premuto fire rispetta il fire rate della pistola.
-- `R` o pulsante `X` avvia la ricarica e l'HUD mostra `RELOAD`.
+- `R` o pulsante `X` avvia la ricarica e il feedback `RELOAD` resta leggibile
+  tra scheda slot e mini HUD world-space.
 - Dopo un secondo il caricatore viene riempito senza consumare una riserva finita.
 - Equipaggiare una speciale mantiene disponibile la `Starter Pistol`.
 - Con speciale a 0/0, premere fire spara nello stesso input con la fallback.
@@ -174,7 +188,8 @@ build/qa/milestone_12_enemy_variants.png
 
 - La scena mostra un countdown iniziale di 3 secondi.
 - L'ondata 1 genera 3 zombie in modo scaglionato.
-- L'HUD mostra indice ondata e nemici rimasti sul totale.
+- L'HUD non mostra un riquadro persistente con indice ondata e nemici rimasti;
+  gli eventi ondata restano annunci temporanei.
 - L'ondata termina solo dopo la morte di tutti i nemici registrati.
 - Alla fine dell'ondata il party riceve denaro.
 - Ogni player vivo riceve munizioni e cura.
@@ -559,7 +574,7 @@ godot --path . --rendering-method gl_compatibility --resolution 1280x720 --scrip
   `reduced_motion`; il warning deve restare visibile e non dipendere dal pulse.
 - Con almeno due player locali, confermare che un player fuori dal warning non
   riceve lo status mentre uno dentro lo riceve.
-- Confermare che HUD/status non coprono HP, ammo, XP o annuncio wave durante
+- Confermare che HUD e annunci non coprono HP, ammo, XP o annuncio wave durante
   gli eventi.
 - Salvare screenshot o video dei quattro eventi durante il playtest end-to-end
   di bilanciamento.
@@ -1175,7 +1190,8 @@ Esito QA del 15 giugno 2026:
 - XP, denaro, ammo, cura e arma hanno icone world-space diverse.
 - Nessun pickup usa label `XP`, `$`, `A`, `+` o `W`.
 - La supply crate e riconoscibile senza la label `SUP`.
-- Le schede HUD mostrano vita, arma e munizioni di ogni player attivo.
+- Le schede HUD mostrano arma, munizioni e statistiche di ogni player attivo,
+  mentre vita e reload restano sul mini HUD sopra il survivor.
 - Sparo, hit valido, morte nemico e raccolta generano effetti visuali.
 - Con 2-4 player, schede e colori restano distinguibili a 1280x720.
 - Dungeon e tower defense continuano ad avviarsi e a tornare alla survival.

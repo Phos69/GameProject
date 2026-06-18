@@ -295,11 +295,21 @@ procedurale come fallback. Gli eventi downed, revive, wave e fine run hanno
 priorita maggiore degli spari ripetuti. Master, Music e SFX sono regolabili
 dal tab Audio della pagina Settings e persistiti.
 
-L'HUD aggiunge `LOW`, `RELOAD` e `FALLBACK` allo stato ammo e mostra per 1,75 secondi la quantita di ammo condivisa raccolta.
+L'HUD aggiunge `LOW`, `RELOAD` e `FALLBACK` allo stato ammo e mostra per 1,75
+secondi la quantita di ammo condivisa raccolta. Vita e reload/cooldown utile
+sono compatti sopra il survivor; le statistiche rimanenti stanno nelle schede
+dei quattro angoli per gli slot attivi. Il riquadro di progresso party
+`Party Lv / XP / Money`, il riquadro persistente di ondata survival e il
+riquadro status bioma non vengono mostrati nel gameplay.
 
-D-pad/stick cambiano focus in modo circolare e joypad `A` conferma da
-qualunque controller. `Esc`, joypad `B` o `Back` tornano al menu precedente
-quando esiste; nel menu principale non devono rompere lo stato corrente.
+D-pad/stick cambiano focus in modo circolare nei menu lineari; nella Character
+Select navigano la griglia in quattro direzioni con wrapping su card valide e
+senza fermarsi su celle mancanti. Joypad `A` conferma da qualunque controller.
+In Character Select `Start` joypad o `P` avvia la run solo se gli slot attivi
+hanno selezioni valide; se lo slot controller non e ancora attivo, `Start`
+resta disponibile al join multiplayer. `Esc`, joypad `B` o `Back` tornano al
+menu precedente quando esiste; nel menu principale non devono rompere lo stato
+corrente.
 Nei Settings, `LB` e `RB` cambiano tab in modo circolare e portano il focus al
 contenuto valido della tab attiva. `M` o joypad `Back/Select/View` apre la
 mappa dei territori esplorati durante la survival. Il tab Video contiene
@@ -356,8 +366,9 @@ Statistiche attive:
 - livello per-run con `+10 HP`, `+2 attacco` e `+1 difesa`.
 
 Le schede HUD player mostrano ritratto classe, livello, classe, icona arma,
-barra XP, HP, ammo, riga ATK/DEF/SPD, adrenalina, icona super e il buff
-passivo attivo.
+ammo, riga ATK/DEF/SPD, XP, adrenalina, icona super e il buff passivo attivo.
+HP e reload/cooldown leggibile sono invece nel mini HUD world-space sopra il
+player.
 
 Armi base RPG attive:
 
@@ -376,8 +387,9 @@ decide il runtime: le armi ranged creano projectile, mentre ascia, spada e
 artigli creano una hitbox melee temporanea ruotata nella direzione di mira, con
 wind-up, finestra attiva, recovery, knockback, hitstop percepito, trail e
 anti-multihit per singolo swing.
-L'HUD mostra pips ammo per caricatore e una barra reload; il profilo RPG puo
-accelerare o rallentare la ricarica tramite `reload_speed`.
+L'HUD mostra pips ammo per caricatore nelle schede angolo e una barra reload
+compatta sopra il player quando serve; il profilo RPG puo accelerare o
+rallentare la ricarica tramite `reload_speed`.
 
 XP RPG:
 
@@ -601,21 +613,21 @@ Ammo director survival:
 
 L'HUD mostra:
 
-- countdown alla prossima ondata;
-- indice ondata e indicatore boss;
-- nemici rimasti sul totale;
-- ultima ricompensa;
-- vita e munizioni di ogni player;
+- annunci temporanei per preparazione ondata, inizio ondata, reward e boss,
+  senza riquadro persistente con countdown, indice ondata o nemici rimasti;
+- vita/reload sopra ogni player e munizioni nelle schede angolo;
 - stato low ammo, reload e fallback;
 - conferma temporanea dei pickup ammo condivisi;
-- nome e icona compatta del bioma;
-- pericolo, risorse utili e status ambientali per player;
+- dati bioma e status ambientali restano nel runtime, senza riquadro HUD
+  persistente;
 - annuncio centrale e cambio colore bordo quando il party entra in un nuovo bioma;
-- XP e denaro party.
+- XP e denaro party restano dati di progressione, senza riquadro dedicato nel
+  gameplay corrente.
 
-Ogni player dispone inoltre di una scheda colorata con barra vita, arma attiva
-e munizioni. Le informazioni party e wave restano nel pannello superiore,
-mentre i dettagli individuali sono raccolti nella fascia inferiore.
+Ogni player dispone inoltre di una scheda colorata ancorata al proprio angolo:
+P1 in alto a sinistra, P2 in alto a destra, P3 in basso a sinistra e P4 in
+basso a destra. Le informazioni wave restano eventi temporanei, mentre i
+dettagli individuali di HP/reload restano vicino al survivor.
 
 Feedback visuali implementati:
 

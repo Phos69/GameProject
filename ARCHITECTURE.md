@@ -10,8 +10,9 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 2. `GameModeManager` entra nello stato `menu` senza avviare gameplay.
 3. `SaveManager` carica progressione party, unlock e ultima modalita da JSON.
 4. `MainMenu` seleziona una modalita registrata; per survival apre prima
-   `Character Select` e passa `character_ids_by_slot` nel context, con
-   `character_id` come fallback legacy.
+   `Character Select`, naviga la griglia personaggi in quattro direzioni,
+   accetta `Start`/`pause` solo dagli slot attivi con selezione valida e passa
+   `character_ids_by_slot` nel context, con `character_id` come fallback legacy.
 5. `SettingsPanel` e condiviso da main menu e pausa, con tab Audio, Video e
    Controls; LB/RB cambiano tab in modo circolare e rifocalizzano il contenuto.
 6. `InputManager` registra azioni tastiera/joypad e applica i binding joypad
@@ -61,7 +62,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
    e limite framerate.
 40. `VisualSettingsManager` distribuisce solo impostazioni presentazionali e le persiste nel save.
 41. `IsometricCameraController` segue il gruppo e applica shake solo tramite offset.
-42. `HUDManager` mostra slot, progressione, vita, munizioni, stato modalita, boss e mappa esplorazione.
+42. `HUDManager` mostra slot negli angoli, munizioni, boss e mappa esplorazione; il riquadro status persistente non e mostrato durante il gameplay e vita/reload compatti restano world-space sul player.
 43. I componenti visuali ricevono stato e profilo senza possedere logica gameplay.
 44. `BossTelegraphVisual` riceve pattern, direzione e durata senza possedere danno.
 45. `WaveWardenVisual` e `RiftArchitectVisual` ricevono solo stato presentazionale.
@@ -74,7 +75,8 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 
 - `InputManager`: crea e legge azioni per slot player e globali. Ogni slot usa azioni `p{slot}_{azione}`, incluso `dodge`; `world_map` e una azione globale; `ui_cancel` mappa `Esc` e joypad `B` per tornare dai pannelli menu; `ui_up/down/left/right` includono frecce, D-pad e stick sinistro per la navigazione UI.
 - `MenuNavigationController`: helper UI riusabile per liste focus circolari,
-  Back/B, input D-pad/stick con cooldown e cambio tab LB/RB.
+  Back/B, input D-pad/stick con cooldown, cambio tab LB/RB e callback di
+  movimento custom quando una schermata deve interpretare le quattro direzioni.
 - `LocalMultiplayerManager`: mantiene gli slot locali attivi, gestisce join/leave e usa mapping deterministico `device joypad + 1 = player_slot`.
 - `PlayerManager`: spawna/despawna player in base agli slot attivi e tiene il registro degli slot.
 - `PlayerController`: movimento, mira, fire action, dodge/roll e colore visuale per slot.
@@ -86,7 +88,10 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `GameModeManager`: registra, arresta e avvia le modalita.
 - `RunSessionTracker`: traduce i segnali terminali in dati risultato runtime.
 - `RunResultsScreen`: overlay condiviso con focus e azioni di fine run.
-- `MainMenu`: UI iniziale, selezione modalita, `Character Select` survival per slot player, continue e ritorno con `Esc`/joypad `B`; usa `MenuNavigationController` per focus circolare e back coerente.
+- `MainMenu`: UI iniziale, selezione modalita, `Character Select` survival per
+  slot player, continue e ritorno con `Esc`/joypad `B`; usa
+  `MenuNavigationController` per focus/back coerenti, grid navigation della
+  roster e avvio con `Start`/`pause` solo quando gli slot attivi sono validi.
 - `CharacterSelectCard`: card RPG selezionabile con portrait menu dedicato,
   fallback gameplay/procedurale, icone classe/arma, stat bar compatte e
   indicatori slot.
@@ -246,16 +251,21 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
   usa `MenuNavigationController` per focus circolare, Back e tab LB/RB.
 - `PauseMenu`: overlay durante le run; usa `SceneTree.paused` e resta attivo
   insieme alla propria UI.
-- `HUDManager`: UI prototipo per HUD gameplay, boss, annunci e mappa esplorazione.
+- `HUDManager`: UI prototipo per HUD gameplay, boss, annunci e mappa
+  esplorazione; ancora le schede player ai quattro angoli senza occupare il
+  centro world-space.
 - `ExplorationMapPanel`: pannello consultabile che disegna grafo, fog/unknown, regioni discovered/visited/cleared, connessioni note tematizzate per `passage_type`, marker per le active/loaded regions e regione corrente; consuma `apply_visual_settings` per il high contrast.
-- `PlayerVisual`: presentazione procedurale data-driven del player, con silhouette e palette derivate dal profilo RPG.
+- `PlayerVisual`: presentazione procedurale data-driven del player, con
+  silhouette e palette derivate dal profilo RPG; disegna anche il mini HUD
+  world-space per vita, marker slot e reload attivo.
 - `ZombieVisual`: presentazione animata procedurale degli zombie.
 - `DropPickupVisual` e `SupplyCrateVisual`: icone world-space sostituibili;
   la supply crate usa `object_scenes/supply_crate` come sprite asset-backed e
   conserva il draw procedurale solo come fallback tecnico.
 - `BossTelegraphVisual`: warning world-space per pattern aimed, radial e cambio fase.
 - `WaveWardenVisual`: silhouette, animazione e stato visuale delle due fasi del boss.
-- `PlayerHudCard`: scheda HUD riusabile per ogni slot locale, inclusa indicazione minimale del cooldown roll.
+- `PlayerHudCard`: scheda HUD riusabile per ogni slot locale, pensata come
+  pannello statistiche angolo con arma, ammo, XP, adrenalina, super e passive.
 - `CharacterSelectCard`, `CharacterDetailPanel` e `CharacterGameplayPreview`: controlli presentazionali della selezione RPG, senza autorita su context survival o applicazione profili.
 - `RpgHudIcon`: icona procedurale leggera per ritratto classe, passive e super RPG.
 - `BriciolaCompanion`: companion alleato leggero della Domatrice con follow,

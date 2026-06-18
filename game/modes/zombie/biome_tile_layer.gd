@@ -427,9 +427,10 @@ func _tile_color(tile_id: StringName) -> Color:
 			return Color(palette.hazard_color, 0.60)
 		IsometricTileResolver.TILE_BORDER_FLOOR:
 			return palette.floor_color.darkened(0.24)
-		IsometricTileResolver.TILE_VOID_EDGE_NEAR:
-			return palette.background_color.darkened(0.38)
-		IsometricTileResolver.TILE_VOID_DEPTH:
+		IsometricTileResolver.TILE_VOID_EDGE_NEAR, IsometricTileResolver.TILE_VOID_DEPTH:
+			# One uniform void colour (matching the off-map backdrop) so the void
+			# is not distinguished by shading; the world edge is shown by the fall
+			# zone boundary lines instead.
 			return palette.background_color.darkened(0.68)
 		IsometricTileResolver.TILE_FLOOR_VARIANT_01:
 			return palette.alternate_floor_color
