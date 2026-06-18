@@ -150,8 +150,8 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `BiomeMapGenerator`: costruisce la griglia di `BiomeCell` `500x500` con default `3x3`, assegna tipi bioma, coordinate globali, vicini, seed locali e grafo connesso con loop.
 - `BorderGenerator`: calcola lati connessi e lati esterni di caduta per ogni cella bioma.
 - `BiomePassageGenerator`: crea passaggi condivisi e allineati tra celle
-  confinanti, con rettangoli local/global e tile entry/exit derivati dal
-  `passage_type`.
+  confinanti, con larghezza fisica standard di 40 celle, rettangoli
+  local/global e tile entry/exit derivati dal `passage_type`.
 - `BiomeTerrainGenerator`: genera il layout interno del bioma attivo e collega ostacoli, casse, hazard e report di validazione.
 - `IsometricEnvironmentManifest`: legge `assets/environment/isometric/manifest.json`
   come inventario di ostacoli, draw mode oggetto, border tematici, fall zone
@@ -160,9 +160,10 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
   `passage_tiles`, `biome_asset_sets`, `fallback_policy`). Il loader normalizza
   path, status, footprint, anchor, collisione, blocchi e attribution senza
   rendere obbligatori asset esterni.
-- `ObstacleLayoutGenerator`: produce strade diagonali isometriche, diramazioni
-  verso i passaggi, case grandi, ostacoli secondari e muri/bordi tematici sui
-  lati connessi o bloccati.
+- `ObstacleLayoutGenerator`: produce strade e sentieri isometrici con scala
+  standard 40 celle per strade principali e 20 celle per sentieri medi,
+  diramazioni verso i passaggi, case grandi, ostacoli secondari e muri/bordi
+  tematici sui lati connessi o bloccati.
 - `FallBoundaryGenerator`: trasforma i lati senza vicino in `fall_zone` data-driven con il contratto di danno ambientale esistente.
 - `MapValidationSystem`: valida con flood-fill spawn, corridoi, passaggi, casse raggiungibili, grafo connesso, passaggi non ostruiti, void non attraversabile e classificazione completa del `500x500`.
 - `BiomeMapDebugOverlay`: espone seed corrente, riepilogo celle/passaggi,

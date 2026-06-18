@@ -7,8 +7,8 @@
 - Aggiunto `isometric_biome_generation_rewrite_roadmap.md` con audit della
   generazione biomi, stato R1 e prossimo ciclo R2 su pareti/void perimetrale.
 - Aggiunto `tests/isometric_biome_generation_rewrite_smoke_test.gd` per coprire
-  chunk `500x500`, base void/fall zone, strade larghe 10, sentieri larghi 4,
-  blocchi interni, passaggi fisici e spawn/crate su celle walkable.
+  chunk `500x500`, base void/fall zone, strade larghe 40, sentieri medi larghi
+  20, blocchi interni, passaggi fisici e spawn/crate su celle walkable.
 - Aggiunto `RegionSeamSystem` per aggiornare la regione survival corrente dalla
   posizione world-space del party e dai `WorldRegionConnection` aperti, senza
   istanziare portali o trigger di transizione. Aggiunto
@@ -36,6 +36,9 @@
 
 ### Changed
 
+- `ObstacleLayoutGenerator` scala la rete bioma: le strade principali passano
+  a 40 celle, i sentieri medi a 20 celle e i passaggi fisici generati a 40
+  celle, mantenendo il valore storico da 10 come base di scala.
 - La generazione biomi survival usa ora chunk logici `500x500` e una megamappa
   default `3x3`; `BiomeMapGenerator` mantiene override di debug per dimensione
   e numero regioni.
@@ -43,8 +46,8 @@
   il layout parte da void e scava `floor_rects`, strade, passaggi e blocchi
   interni, con cache terrain `PackedByteArray` per query su 250.000 celle.
 - `ObstacleLayoutGenerator` genera una rete orizzontale/verticale con strade
-  principali larghe 10, sentieri bioma larghi 4, blocchi interni classificati e
-  fall zone per void/partial void.
+  principali larghe 40, sentieri bioma medi larghi 20, blocchi interni
+  classificati e fall zone per void/partial void.
 - `MapValidationSystem` blocca il void nel flood-fill e verifica che spawn e
   crate siano su terrain walkable; `ZombieSpawner` rifiuta le celle streamate
   non walkable.

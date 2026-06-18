@@ -520,8 +520,8 @@ Identita dei biomi:
 - `Bioma Neve`: ghiaccio, neve alta, kit termici e zombie corazzati;
 - `Bioma Palude`: acqua profonda, fango, loot organico e zombie emergenti;
 - tutti i layout sono deterministici e partono da void: il generatore scava
-  strade principali orizzontali/verticali larghe 10 celle, sentieri tematici
-  larghi 4 celle, passaggi fisici e blocchi interni;
+  strade principali orizzontali/verticali larghe 40 celle, sentieri tematici
+  medi larghi 20 celle, passaggi fisici larghi 40 celle e blocchi interni;
 - ogni layout generato contiene strade, corridoi e ostacoli grandi che
   influenzano movimento e combattimento invece di restare solo decorazione;
 - case, cabine, laboratori, barriere, barili, relitti, tronchi, ponti e crate

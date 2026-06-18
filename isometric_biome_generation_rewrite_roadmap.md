@@ -65,10 +65,10 @@ Implementato:
   scavate, invece di fallback walkable.
 - `MapValidationSystem` considera void, fall zone e ostacoli come bloccati nel
   flood-fill e verifica spawn/crate su terrain walkable.
-- `BiomePassageGenerator` genera aperture fisiche a larghezza 10.
+- `BiomePassageGenerator` genera aperture fisiche a larghezza 40.
 - `ObstacleLayoutGenerator` genera rete principale orizzontale/verticale a
-  larghezza 10, sentieri bioma a larghezza 4, blocchi interni classificati e
-  void/fall zone interni.
+  larghezza 40, sentieri bioma medi a larghezza 20, blocchi interni
+  classificati e void/fall zone interni.
 - `ZombieSpawner` valida la classe terrain della cella nelle regioni streamate,
   impedendo spawn su void non walkable.
 - Aggiunto `tests/isometric_biome_generation_rewrite_smoke_test.gd`.
@@ -76,9 +76,9 @@ Implementato:
 Criteri coperti:
 
 - Chunk `500x500`.
-- Strade principali larghe 10.
-- Sentieri larghi 4.
-- Passaggi fisici larghi 10 e walkable.
+- Strade principali larghe 40.
+- Sentieri medi larghi 20.
+- Passaggi fisici larghi 40 e walkable.
 - Blocchi interni con floor, ostacoli e void/fall zone.
 - Spawn player e crate su celle walkable.
 - Classificazione completa del chunk.

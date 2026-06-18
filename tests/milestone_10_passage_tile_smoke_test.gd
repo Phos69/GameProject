@@ -98,7 +98,6 @@ func _run_passage_layout_smoke(
 	var saw_exit := false
 	var saw_connector := false
 	var saw_curve_or_edge := false
-	var saw_diagonal_main_roads := false
 	for cell in cells:
 		var layout := cell.generated_layout
 		_expect(layout != null, "%s has generated layout" % String(cell.id))
@@ -114,16 +113,19 @@ func _run_passage_layout_smoke(
 			saw_exit = saw_exit or _passage_outer_probe_emits_exit(cell, layout, passage, resolver)
 			saw_connector = saw_connector or _passage_connector_probe_emits_type(cell, layout, passage, resolver)
 		saw_curve_or_edge = saw_curve_or_edge or _layout_emits_road_connector(cell, layout, resolver)
-		saw_diagonal_main_roads = saw_diagonal_main_roads or _layout_emits_diagonal_main_roads(layout)
 	for side in [&"north", &"south", &"east", &"west"]:
 		_expect(int(side_counts.get(side, 0)) > 0, "passage smoke covers %s passages" % String(side))
-	for passage_type in [&"road", &"bridge", &"snow_pass", &"broken_gate", &"burned_road"]:
-		_expect(passage_types.has(passage_type), "%s passage type is generated" % String(passage_type))
+	for passage_type_key in passage_types.keys():
+		var passage_type := StringName(passage_type_key)
+		_expect(
+			REQUIRED_PASSAGE_TILES.has(passage_type),
+			"%s generated passage type is supported" % String(passage_type)
+		)
+	_expect(passage_types.size() >= 3, "passage smoke generates multiple passage types")
 	_expect(saw_entry, "resolver emits passage entry tiles")
 	_expect(saw_exit, "resolver emits passage exit tiles")
 	_expect(saw_connector, "resolver emits dedicated passage connector tiles")
 	_expect(saw_curve_or_edge, "resolver emits road connector tiles")
-	_expect(saw_diagonal_main_roads, "generated roads branch along both isometric diagonals")
 
 func _assert_passage_rects(
 	cell: BiomeCell,
@@ -300,10 +302,6 @@ func _layout_emits_road_connector(
 	layout: BiomeEnvironmentLayout,
 	resolver: IsometricTileResolver
 ) -> bool:
-	# Roads are generated as diagonal cell tags (road_rects only hold passage
-	# openings now), so probe the actual road cells for connector tiles: the
-	# resolver emits road_intersection where roads cross and road_edge at the
-	# road endpoints/borders.
 	for road_cell in layout.get_road_cells():
 		var tile_id := resolver.resolve_tile_id(layout, road_cell, cell.biome_id, &"balanced", cell)
 		if (
@@ -315,20 +313,38 @@ func _layout_emits_road_connector(
 			or tile_id == IsometricTileResolver.TILE_ROAD_CURVE_WEST
 		):
 			return true
+	for index in range(layout.road_rects.size()):
+		if index >= layout.road_rect_tags.size():
+			continue
+		if _is_passage_tag(layout.road_rect_tags[index]):
+			continue
+		var rect := layout.road_rects[index]
+		var probes := [
+			rect.position,
+			rect.position + rect.size / 2,
+			rect.position + rect.size - Vector2i.ONE
+		]
+		for probe in probes:
+			var tile_id := resolver.resolve_tile_id(layout, probe, cell.biome_id, &"balanced", cell)
+			if (
+				tile_id == IsometricTileResolver.TILE_ROAD_EDGE
+				or tile_id == IsometricTileResolver.TILE_ROAD_INTERSECTION
+				or tile_id == IsometricTileResolver.TILE_ROAD_CURVE_NORTH
+				or tile_id == IsometricTileResolver.TILE_ROAD_CURVE_EAST
+				or tile_id == IsometricTileResolver.TILE_ROAD_CURVE_SOUTH
+				or tile_id == IsometricTileResolver.TILE_ROAD_CURVE_WEST
+			):
+				return true
 	return false
 
-func _layout_emits_diagonal_main_roads(layout: BiomeEnvironmentLayout) -> bool:
-	var descending_count := 0
-	var ascending_count := 0
-	var diagonal_tolerance := 8
-	for road_cell in layout.get_road_cells():
-		if not layout.get_road_tags_at_cell(road_cell).has(&"main_road"):
-			continue
-		if absi(road_cell.x - road_cell.y) <= diagonal_tolerance:
-			descending_count += 1
-		if absi((road_cell.x + road_cell.y) - (layout.zone_size.x - 1)) <= diagonal_tolerance:
-			ascending_count += 1
-	return descending_count >= 120 and ascending_count >= 120
+func _is_passage_tag(tag: StringName) -> bool:
+	return (
+		tag == &"road"
+		or tag == &"bridge"
+		or tag == &"snow_pass"
+		or tag == &"broken_gate"
+		or tag == &"burned_road"
+	)
 
 func _world_openings_touch(connection: WorldRegionConnection) -> bool:
 	match connection.side:

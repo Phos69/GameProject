@@ -26,7 +26,8 @@
 - Branch: `feat/iso-milestone-10-complete`
 - Scope validato: primo incremento del rewrite richiesto da `prompt.md`:
   chunk `500x500`, megamappa default `3x3`, base void con floor/strade/blocchi
-  scavati, strade principali larghe 10, sentieri larghi 4, passaggi larghi 10,
+  scavati, strade principali larghe 40, sentieri medi larghi 20,
+  passaggi larghi 40,
   cache terrain e validazione spawn/crate su celle walkable.
 - Esito: PASS sui test mirati eseguiti. Nota performance: il tile layer da
   250.000 celle passa ma resta sensibilmente piu pesante del precedente
@@ -34,7 +35,7 @@
 
 | Test | Esito | Note |
 |---|---|---|
-| `tests/isometric_biome_generation_rewrite_smoke_test.gd` | PASS | copre `500x500`, strade 10, sentieri 4, blocchi, void/fall zone e passaggi |
+| `tests/isometric_biome_generation_rewrite_smoke_test.gd` | PASS | copre `500x500`, strade 40, sentieri 20, passaggi 40, blocchi e void/fall zone |
 | `tests/biome_world_generation_smoke_test.gd` | PASS | generazione default `3x3`, streaming e transizione legacy/debug |
 | `tests/isometric_biome_terrain_coverage_smoke_test.gd` | PASS | classificazione completa `500x500` e passaggi walkable |
 | `tests/milestone_10_tile_layer_smoke_test.gd` | PASS | 250.000 celle asset-backed per regione, chunk/cache |

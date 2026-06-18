@@ -140,7 +140,7 @@ func _connection_data(from_id: String, to_id: String, side: String, opposite: St
 		"side": side,
 		"opposite_side": opposite,
 		"passage_position": 100,
-		"passage_width": 10,
+		"passage_width": 40,
 		"passage_type": "road",
 		"seed": 1,
 		"is_open": true,

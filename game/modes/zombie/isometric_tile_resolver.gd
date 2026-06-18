@@ -659,6 +659,8 @@ func _resolve_cell_route_tile_data(
 			&"road_intersection"
 		)
 	var selected_tag: StringName = route_tags[route_tags.size() - 1]
+	if _route_cell_touches_non_route(layout, cell):
+		return _tile_data(TILE_ROAD_EDGE, TILE_SECTION_TERRAIN, &"road_edge")
 	if _count_route_neighbors(layout, cell) <= 1:
 		return _tile_data(TILE_ROAD_EDGE, TILE_SECTION_TERRAIN, &"road_edge")
 	return _tile_data(selected_tag, TILE_SECTION_TERRAIN, &"road")

@@ -1,8 +1,8 @@
 extends RefCounted
 class_name ObstacleLayoutGenerator
 
-const ROAD_WIDTH := 10
-const SECONDARY_ROAD_WIDTH := 4
+const ROAD_WIDTH := 40
+const SECONDARY_ROAD_WIDTH := 20
 const BORDER_THICKNESS := 4
 # Perimeter walls are tiled as a contiguous run of segments so the whole side
 # reads as a continuous isometric wall instead of a single centred sprite.
@@ -265,6 +265,37 @@ func _add_internal_blocks(
 			layout.add_block_rect(block_rect, block_kind)
 			_apply_block_surface(layout, block_rect, block_kind, biome.biome_id)
 			block_index += 1
+	_ensure_internal_void_block(layout, biome.biome_id if biome != null else &"")
+
+func _ensure_internal_void_block(
+	layout: BiomeEnvironmentLayout,
+	biome_id: StringName
+) -> void:
+	if (
+		layout.block_kinds.has(&"full_void")
+		or layout.block_kinds.has(&"partial_void")
+	):
+		return
+	var selected_index := -1
+	var selected_area := 0
+	for index in range(layout.block_rects.size()):
+		var block_rect := layout.block_rects[index]
+		if _rect_overlaps_passage_corridor(layout, block_rect):
+			continue
+		var area := block_rect.size.x * block_rect.size.y
+		if area <= selected_area:
+			continue
+		selected_index = index
+		selected_area = area
+	if selected_index < 0:
+		return
+	layout.block_kinds[selected_index] = &"partial_void"
+	_apply_block_surface(
+		layout,
+		layout.block_rects[selected_index],
+		&"partial_void",
+		biome_id
+	)
 
 func _rect_overlaps_passage_corridor(
 	layout: BiomeEnvironmentLayout,
