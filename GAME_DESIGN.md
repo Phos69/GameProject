@@ -512,6 +512,9 @@ Il revamp zombie e completo come prima versione giocabile:
 Identita dei biomi:
 
 - `Pianura Infetta`: onboarding, zombie base, casse comuni/mediche e fall zone;
+  il visuale ground usa il set foresta base con erba, erba alta, sentieri,
+  strada, cliff/void e pareti rocciose, piu transizioni tra grass/path/road,
+  tall grass, cliff e mountain wall;
 - `Bioma Tossico`: pozze e gas, antidoti, zombie tossici ed esplosivi;
 - `Bioma Infuocato`: fiamme, lava, casse militari, runner ed esplosivi;
 - `Bioma Neve`: ghiaccio, neve alta, kit termici e zombie corazzati;
@@ -527,6 +530,9 @@ Identita dei biomi:
 - i lati collegati tra biomi hanno muri o barriere tematiche con almeno un
   passaggio raggiungibile; i lati senza vicino diventano fall zone con visuale
   cliff/depth;
+- tall grass, path, road e transizioni del bioma base sono solo lettura
+  visuale: non rendono obbligatori asset esterni e non cambiano walkability,
+  danno, spawn o pathfinding;
 - tutto il `500x500` viene classificato come walkable, obstacle, hazard, border,
   void o fall zone;
 - casse e spawn vengono validati contro ostacoli e hazard.

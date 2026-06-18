@@ -541,6 +541,9 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - Ogni bioma legge `BiomeEnvironmentLayout` per terreno, ostacoli, casse e hazard senza placement hardcoded nei controller.
 - Ogni `BiomeEnvironmentLayout` espone una classificazione completa del `500x500`
   usata da validazione, dodge/gap, spawn, streaming e debug.
+- `BiomeEnvironmentLayout.get_floor_tag_at_cell()` espone anche il tag visuale
+  dei floor rect scavati, cosi il resolver puo distinguere tall grass, path e
+  altre superfici senza cambiare la classe terrain walkable.
 - `TerrainGenerator` modifica palette e ground visuale; non possiede collisioni
   o regole combat.
 - In modalita asset, `TerrainGenerator` registra il `BiomeTileLayer` della
@@ -557,9 +560,17 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
   cella e bioma. Le route generate preferiscono `road_cell_tags` diagonali; i
   rettangoli restano per aperture/passaggi e compatibilita. I connector di
   passaggio hanno priorita sulle road decorative sovrapposte.
-  `BiomeTileLayer` cache-a tutti i 250.000 tile e li divide in chunk
+- Per `infected_plains`, `IsometricTileResolver` usa il set forestale dedicato:
+  `forest_grass`, `forest_tall_grass`, `forest_path`, `forest_road`,
+  `forest_void`, `forest_cliff_edge`, `forest_mountain_wall` e le transizioni
+  `grass_to_path`, `grass_to_road`, `grass_to_tall_grass`, `path_to_road`,
+  `ground_to_void_cliff` e `ground_to_mountain_wall`. Queste scelte sono
+  presentazionali e neighbor-aware: non cambiano pathfinding, collisioni,
+  hazard o spawn.
+- `BiomeTileLayer` cache-a tutti i 250.000 tile e li divide in chunk
   (`balanced` 20x20, `performance` 25x25, `quality` 16x16) senza creare nodi
-  per-tile.
+  per-tile. Il layer pre-bake-a anche linee di dettaglio per grass, tall grass,
+  path, road, transizioni, cliff e void.
 - Gli ostacoli runtime sono `StaticBody2D` sul layer `1`, quindi player e zombie
   li trattano come impedimento fisico.
 - Gli ostacoli appartengono anche ai gruppi `environment_obstacles` e `spawn_blockers`.
@@ -608,7 +619,7 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - `assets/environment/isometric/manifest.json` v7 contiene i draw mode oggetto
   legacy in `object_visuals`, i contratti asset per tile, terrain, edge, void,
   object scenes, passage tiles e asset set di bioma, inclusi `void_edge_near`,
-  `void_depth`, road connector e entry/exit passaggio; i preset
+  `void_depth`, tile forestali, road connector e entry/exit passaggio; i preset
   `performance`/`balanced`/`quality` restano disponibili per fallback ground e
   qualita del tile layer.
 - `WorldRegionConnection` serializza apertura locale, connector locale,

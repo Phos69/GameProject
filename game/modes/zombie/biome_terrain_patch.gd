@@ -38,6 +38,16 @@ func _draw() -> void:
 			_draw_road()
 		&"broken_street":
 			_draw_broken_street()
+		&"forest_grass":
+			_draw_forest_grass()
+		&"forest_tall_grass":
+			_draw_forest_tall_grass()
+		&"forest_path":
+			_draw_forest_path()
+		&"forest_road":
+			_draw_forest_road()
+		&"forest_transition":
+			_draw_forest_transition()
 		&"service_lane":
 			_draw_service_lane()
 		&"ash_lane":
@@ -207,6 +217,65 @@ func _draw_broken_street() -> void:
 		])
 		draw_polyline(crack, Color(accent_color.lightened(0.20), 0.44), 1.4, true)
 		draw_polyline(crack, Color(primary_color.darkened(0.48), 0.56), 0.8, true)
+
+func _draw_forest_grass() -> void:
+	_draw_dry_grass()
+	for index in range(3):
+		var offset := _sample_offset(index + 12)
+		draw_line(
+			offset + Vector2(-5.0, 2.0),
+			offset + Vector2(5.0, -2.0),
+			Color(accent_color.darkened(0.20), 0.36),
+			1.3,
+			true
+		)
+
+func _draw_forest_tall_grass() -> void:
+	_draw_growth()
+	for index in range(5):
+		var offset := _sample_offset(index + 21)
+		draw_line(
+			offset + Vector2(0.0, 8.0),
+			offset + Vector2(float(index % 3 - 1) * 4.0, -14.0),
+			Color(accent_color.lightened(0.10), 0.62),
+			2.0,
+			true
+		)
+
+func _draw_forest_path() -> void:
+	_draw_path_base(
+		Color(0.36, 0.24, 0.12, 0.58),
+		Color(0.66, 0.54, 0.30, 0.34),
+		1.45,
+		0.32
+	)
+	_draw_side_lines(Color(0.24, 0.38, 0.18, 0.42))
+
+func _draw_forest_road() -> void:
+	_draw_path_base(
+		Color(0.40, 0.29, 0.16, 0.62),
+		Color(0.72, 0.58, 0.32, 0.38),
+		1.82,
+		0.42
+	)
+	_draw_side_lines(Color(0.24, 0.38, 0.18, 0.36))
+
+func _draw_forest_transition() -> void:
+	_draw_path_base(
+		Color(0.30, 0.26, 0.13, 0.42),
+		Color(0.63, 0.66, 0.36, 0.28),
+		1.35,
+		0.34
+	)
+	for index in range(4):
+		var offset := _sample_offset(index + 31)
+		draw_line(
+			offset + Vector2(-7.0, 1.0),
+			offset + Vector2(7.0, -1.0),
+			Color(accent_color.darkened(0.18), 0.34),
+			1.2,
+			true
+		)
 
 func _draw_service_lane() -> void:
 	_draw_path_base(

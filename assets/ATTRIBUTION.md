@@ -8,7 +8,7 @@ repository o alla build.
 | Visual procedurali correnti | Progetto Iso Local Sandbox | Repository locale | Codice del progetto | Generati a runtime |
 | Cue audio procedurali correnti | Progetto Iso Local Sandbox | Repository locale | Codice del progetto | Sintesi a runtime |
 | Contratto asset ambiente isometrico v7 | Progetto Iso Local Sandbox | `assets/environment/isometric/manifest.json` | Originali del progetto | Inventario asset-driven pianificato con `needs_asset` e fallback espliciti; nessun asset esterno obbligatorio |
-| Asset ambiente SVG generati | Progetto Iso Local Sandbox | `assets/environment/isometric/**/*.svg` | Originali del progetto | Generati da `tools/generate_isometric_environment_assets.gd`; 93 asset base trasparenti/sostituibili con silhouette isometriche dedicate |
+| Asset ambiente SVG generati | Progetto Iso Local Sandbox | `assets/environment/isometric/**/*.svg` | Originali del progetto | Generati da `tools/generate_isometric_environment_assets.gd`; 108 asset base trasparenti/sostituibili con silhouette isometriche dedicate |
 | Oggetti ambientali isometrici procedurali | Progetto Iso Local Sandbox | `assets/environment/isometric/manifest.json` + `game/modes/zombie/biome_obstacle.gd` | Codice del progetto | Render procedurale usato come fallback tecnico controllato |
 | Asset personaggi RPG (7) | Progetto Iso Local Sandbox | `assets/characters/*` (SVG testuali + portrait PNG) | Originali del progetto | Autorati in-repo; nessun asset esterno; gameplay procedurale di fallback |
 

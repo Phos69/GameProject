@@ -144,6 +144,15 @@ func add_floor_rect(rect: Rect2i, terrain_tag: StringName = &"floor_base") -> vo
 	floor_rects.append(clipped)
 	floor_rect_tags.append(terrain_tag)
 
+func get_floor_tag_at_cell(cell: Vector2i) -> StringName:
+	for index in range(floor_rects.size() - 1, -1, -1):
+		if not floor_rects[index].has_point(cell):
+			continue
+		if index < floor_rect_tags.size():
+			return floor_rect_tags[index]
+		return &"floor_base"
+	return &""
+
 func add_block_rect(rect: Rect2i, block_kind: StringName) -> void:
 	var clipped := _clip_rect(rect)
 	if clipped.size.x <= 0 or clipped.size.y <= 0:

@@ -158,14 +158,12 @@ Resta aperto:
   non-passaggio creano un buco singolo nel muro: valutare se chiudere o
   trasformare in uscita esplicita.
 
-Test pre-esistenti rossi (non causati da R2, da affrontare in cicli futuri):
+Regressioni rivalidate il 2026-06-18:
 
-- `milestone_10_passage_tile_smoke_test.gd`: FAIL 4 (era 26 su tree pulito,
-  ridotto dal fix corridoi). Le 4 restanti verificano comportamenti del vecchio
-  generatore a strade diagonali/portali sostituito da R1 (road/burned_road
-  passage type, resolver road connector, branching diagonale).
-- `milestone_10_void_cliff_asset_smoke_test.gd`: FAIL 2, gia rosso su tree
-  pulito, riguarda metadata `fall_side` runtime, indipendente dalle pareti.
+- `isometric_perimeter_wall_smoke_test.gd` - PASS.
+- `fall_boundary_visual_logic_smoke_test.gd` - PASS.
+- `milestone_10_void_cliff_asset_smoke_test.gd` - PASS.
+- `milestone_10_tile_layer_smoke_test.gd` - PASS.
 
 ## Milestone R3 - Asset e blocchi interni finalizzati
 
@@ -259,6 +257,57 @@ Resta (R4.3+):
 - Allineare colore: il fill procedurale usa `depth_color`/style mentre il
   backdrop usa `background_color.darkened(0.68)`; valutare unificazione esatta
   del colore void tra tile layer, fosse e backdrop per ogni bioma.
+
+## Pass F1 - Texture isometriche foresta base
+
+Stato: completato.
+
+Obiettivo:
+
+- Implementare un primo sistema completo di texture isometriche per il bioma
+  base foresta, mappato sull'ID gameplay `infected_plains`.
+- Separare visivamente grass, tall grass, path, road, void, cliff edge,
+  mountain wall e transizioni.
+- Mantenere gameplay, collisioni, pathfinding, spawn e danno da caduta
+  invariati.
+
+Implementato:
+
+- `assets/environment/isometric/tiles/forest/` contiene tile SVG dedicati per
+  `forest_grass`, varianti, `forest_tall_grass`, `forest_path`, `forest_road` e
+  transizioni.
+- `assets/environment/isometric/edges/` contiene `forest_void`,
+  `forest_cliff_edge` e `forest_mountain_wall`.
+- `assets/environment/isometric/manifest.json` collega `infected_plains` al
+  tile set forestale e registra i nuovi contratti in `terrain_tiles`,
+  `edge_tiles`, `void_tiles`, `biome_asset_sets` e `terrain.tags`.
+- `ObstacleLayoutGenerator` marca i blocchi `forest` del bioma base come
+  `forest_tall_grass`; il terrain resta walkable.
+- `BiomeEnvironmentLayout.get_floor_tag_at_cell()` espone i floor tag al
+  resolver senza cambiare la classificazione terrain.
+- `IsometricTileResolver` applica regole neighbor-aware per `grass_to_path`,
+  `grass_to_road`, `grass_to_tall_grass`, `path_to_road`,
+  `ground_to_void_cliff` e `ground_to_mountain_wall`.
+- `BiomeTileLayer` pre-bake-a linee di dettaglio per erba, tall grass, path,
+  road, transizioni, cliff e void.
+- `BiomeTerrainPatch` e `BiomeObstacle` hanno fallback procedurali coerenti
+  per i nuovi draw mode forestali.
+- Aggiunto `tests/forest_isometric_texture_transition_smoke_test.gd`.
+- Documentato il contratto in `docs/forest_isometric_texture_system.md`.
+
+Test eseguiti:
+
+- `forest_isometric_texture_transition_smoke_test.gd` - PASS.
+- `milestone_10_tile_layer_smoke_test.gd` - PASS.
+- `isometric_environment_manifest_smoke_test.gd` - PASS.
+- `milestone_10_asset_pipeline_smoke_test.gd` - PASS.
+- `isometric_biome_terrain_coverage_smoke_test.gd` - PASS.
+- `isometric_biome_generation_rewrite_smoke_test.gd` - PASS.
+- `isometric_perimeter_wall_smoke_test.gd` - PASS.
+- `milestone_10_void_cliff_asset_smoke_test.gd` - PASS.
+- `fall_boundary_visual_logic_smoke_test.gd` - PASS.
+- `tools/generate_isometric_environment_assets.gd -- --check` - PASS
+  (`checked=108`).
 
 ## Note tecniche e rischi
 

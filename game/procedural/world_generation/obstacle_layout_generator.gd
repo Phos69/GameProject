@@ -263,7 +263,7 @@ func _add_internal_blocks(
 			):
 				block_kind = &"open"
 			layout.add_block_rect(block_rect, block_kind)
-			_apply_block_surface(layout, block_rect, block_kind)
+			_apply_block_surface(layout, block_rect, block_kind, biome.biome_id)
 			block_index += 1
 
 func _rect_overlaps_passage_corridor(
@@ -278,7 +278,8 @@ func _rect_overlaps_passage_corridor(
 func _apply_block_surface(
 	layout: BiomeEnvironmentLayout,
 	block_rect: Rect2i,
-	block_kind: StringName
+	block_kind: StringName,
+	biome_id: StringName = &""
 ) -> void:
 	match block_kind:
 		&"full_void":
@@ -291,7 +292,10 @@ func _apply_block_surface(
 			)
 			layout.add_fall_zone_rect(pocket, &"internal")
 		_:
-			layout.add_floor_rect(block_rect, &"open_block")
+			var floor_tag := &"open_block"
+			if biome_id == &"infected_plains" and block_kind == &"forest":
+				floor_tag = &"forest_tall_grass"
+			layout.add_floor_rect(block_rect, floor_tag)
 
 func _resolve_block_kind(
 	biome_id: StringName,

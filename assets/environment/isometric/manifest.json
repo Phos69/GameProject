@@ -29,7 +29,7 @@
     }
   },
   "tile_sets": {
-    "infected_plains": { "asset_path": "res://assets/environment/isometric/tiles/plains/plains_tileset.svg", "biome_ids": ["infected_plains"], "fallback_path": "res://game/modes/zombie/biome_region_ground.gd" },
+    "infected_plains": { "asset_path": "res://assets/environment/isometric/tiles/forest/forest_tileset.svg", "biome_ids": ["infected_plains"], "fallback_path": "res://game/modes/zombie/biome_region_ground.gd" },
     "toxic_wastes": { "asset_path": "res://assets/environment/isometric/tiles/toxic/toxic_tileset.svg", "biome_ids": ["toxic_wastes"], "fallback_path": "res://game/modes/zombie/biome_region_ground.gd" },
     "burning_fields": { "asset_path": "res://assets/environment/isometric/tiles/ash/ash_tileset.svg", "biome_ids": ["burning_fields"], "fallback_path": "res://game/modes/zombie/biome_region_ground.gd" },
     "frozen_outskirts": { "asset_path": "res://assets/environment/isometric/tiles/snow/snow_tileset.svg", "biome_ids": ["frozen_outskirts"], "fallback_path": "res://game/modes/zombie/biome_region_ground.gd" },
@@ -48,6 +48,18 @@
     "main_road": { "asset_path": "res://assets/environment/isometric/tiles/shared/main_road.svg", "fallback_path": "res://game/modes/zombie/biome_terrain_patch.gd" },
     "road": { "asset_path": "res://assets/environment/isometric/tiles/shared/road.svg", "fallback_path": "res://game/modes/zombie/biome_terrain_patch.gd" },
     "broken_street": { "asset_path": "res://assets/environment/isometric/tiles/plains/broken_street.svg", "biome_ids": ["infected_plains"], "fallback_path": "res://game/modes/zombie/biome_terrain_patch.gd" },
+    "forest_grass": { "asset_path": "res://assets/environment/isometric/tiles/forest/forest_grass.svg", "biome_ids": ["infected_plains"], "fallback_path": "res://game/modes/zombie/biome_region_ground.gd" },
+    "forest_grass_variant_01": { "asset_path": "res://assets/environment/isometric/tiles/forest/forest_grass_variant_01.svg", "biome_ids": ["infected_plains"], "fallback_path": "res://game/modes/zombie/biome_region_ground.gd" },
+    "forest_grass_variant_02": { "asset_path": "res://assets/environment/isometric/tiles/forest/forest_grass_variant_02.svg", "biome_ids": ["infected_plains"], "fallback_path": "res://game/modes/zombie/biome_region_ground.gd" },
+    "forest_tall_grass": { "asset_path": "res://assets/environment/isometric/tiles/forest/forest_tall_grass.svg", "biome_ids": ["infected_plains"], "fallback_path": "res://game/modes/zombie/biome_region_ground.gd" },
+    "forest_path": { "asset_path": "res://assets/environment/isometric/tiles/forest/forest_path.svg", "biome_ids": ["infected_plains"], "fallback_path": "res://game/modes/zombie/biome_terrain_patch.gd" },
+    "forest_road": { "asset_path": "res://assets/environment/isometric/tiles/forest/forest_road.svg", "biome_ids": ["infected_plains"], "fallback_path": "res://game/modes/zombie/biome_terrain_patch.gd" },
+    "grass_to_path": { "asset_path": "res://assets/environment/isometric/tiles/forest/grass_to_path.svg", "biome_ids": ["infected_plains"], "fallback_path": "res://game/modes/zombie/biome_terrain_patch.gd" },
+    "grass_to_road": { "asset_path": "res://assets/environment/isometric/tiles/forest/grass_to_road.svg", "biome_ids": ["infected_plains"], "fallback_path": "res://game/modes/zombie/biome_terrain_patch.gd" },
+    "grass_to_tall_grass": { "asset_path": "res://assets/environment/isometric/tiles/forest/grass_to_tall_grass.svg", "biome_ids": ["infected_plains"], "fallback_path": "res://game/modes/zombie/biome_terrain_patch.gd" },
+    "path_to_road": { "asset_path": "res://assets/environment/isometric/tiles/forest/path_to_road.svg", "biome_ids": ["infected_plains"], "fallback_path": "res://game/modes/zombie/biome_terrain_patch.gd" },
+    "ground_to_void_cliff": { "asset_path": "res://assets/environment/isometric/tiles/forest/ground_to_void_cliff.svg", "biome_ids": ["infected_plains"], "fallback_path": "res://game/modes/zombie/biome_terrain_patch.gd" },
+    "ground_to_mountain_wall": { "asset_path": "res://assets/environment/isometric/tiles/forest/ground_to_mountain_wall.svg", "biome_ids": ["infected_plains"], "fallback_path": "res://game/modes/zombie/biome_terrain_patch.gd" },
     "service_lane": { "asset_path": "res://assets/environment/isometric/tiles/toxic/service_lane.svg", "biome_ids": ["toxic_wastes"], "fallback_path": "res://game/modes/zombie/biome_terrain_patch.gd" },
     "ash_lane": { "asset_path": "res://assets/environment/isometric/tiles/ash/ash_lane.svg", "biome_ids": ["burning_fields"], "fallback_path": "res://game/modes/zombie/biome_terrain_patch.gd" },
     "packed_snow_path": { "asset_path": "res://assets/environment/isometric/tiles/snow/packed_snow_path.svg", "biome_ids": ["frozen_outskirts"], "fallback_path": "res://game/modes/zombie/biome_terrain_patch.gd" },
@@ -65,6 +77,7 @@
   },
   "edge_tiles": {
     "boundary_fence": { "asset_path": "res://assets/environment/isometric/edges/walls/boundary_fence.svg", "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "forest_mountain_wall": { "asset_path": "res://assets/environment/isometric/edges/walls/forest_mountain_wall.svg", "biome_ids": ["infected_plains"], "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
     "toxic_boundary_wall": { "asset_path": "res://assets/environment/isometric/edges/walls/toxic_boundary_wall.svg", "biome_ids": ["toxic_wastes"], "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
     "lava_boundary": { "asset_path": "res://assets/environment/isometric/edges/walls/lava_boundary.svg", "biome_ids": ["burning_fields"], "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
     "ice_boundary": { "asset_path": "res://assets/environment/isometric/edges/walls/ice_boundary.svg", "biome_ids": ["frozen_outskirts"], "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
@@ -73,6 +86,8 @@
   "void_tiles": {
     "fall_zone": { "asset_path": "res://assets/environment/isometric/edges/cliffs/fall_zone.svg", "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_fall_zone.gd" },
     "void_edge_near": { "asset_path": "res://assets/environment/isometric/edges/cliffs/void_edge_near.svg", "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_fall_zone.gd" },
+    "forest_void": { "asset_path": "res://assets/environment/isometric/edges/void/forest_void.svg", "biome_ids": ["infected_plains"], "anchor": "center", "fallback_path": "res://game/modes/zombie/biome_fall_zone.gd" },
+    "forest_cliff_edge": { "asset_path": "res://assets/environment/isometric/edges/cliffs/forest_cliff_edge.svg", "biome_ids": ["infected_plains"], "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_fall_zone.gd" },
     "cliff_lip_north": { "asset_path": "res://assets/environment/isometric/edges/cliffs/cliff_lip_north.svg", "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_fall_zone.gd" },
     "cliff_lip_south": { "asset_path": "res://assets/environment/isometric/edges/cliffs/cliff_lip_south.svg", "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_fall_zone.gd" },
     "cliff_lip_east": { "asset_path": "res://assets/environment/isometric/edges/cliffs/cliff_lip_east.svg", "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_fall_zone.gd" },
@@ -141,7 +156,7 @@
     "cliff_ramp": { "asset_path": "res://assets/environment/isometric/passages/cliff_ramp.svg", "fallback_path": "res://game/modes/zombie/biome_terrain_patch.gd" }
   },
   "biome_asset_sets": {
-    "infected_plains": { "asset_path": "res://assets/environment/isometric/previews/infected_plains_asset_set.svg", "biome_ids": ["infected_plains"], "fallback_path": "res://game/modes/zombie/biome_region_ground.gd", "tile_set": "infected_plains", "terrain_tiles": ["main_road", "road", "broken_street", "road_intersection", "road_edge", "road_curve_north", "road_curve_east", "road_curve_south", "road_curve_west"], "object_scenes": ["small_rock", "broken_fence", "wood_barrier", "boundary_fence", "ruined_house", "abandoned_house"], "edge_tiles": ["boundary_fence"], "void_tiles": ["fall_zone", "void_edge_near", "cliff_lip_north", "cliff_lip_south", "cliff_lip_east", "cliff_lip_west", "void_depth", "void_vertical_lines"], "passage_tiles": ["road", "road_entry", "road_exit", "cliff_ramp"] },
+    "infected_plains": { "asset_path": "res://assets/environment/isometric/previews/infected_plains_asset_set.svg", "biome_ids": ["infected_plains"], "fallback_path": "res://game/modes/zombie/biome_region_ground.gd", "tile_set": "infected_plains", "terrain_tiles": ["forest_grass", "forest_grass_variant_01", "forest_grass_variant_02", "forest_tall_grass", "forest_path", "forest_road", "grass_to_path", "grass_to_road", "grass_to_tall_grass", "path_to_road", "ground_to_void_cliff", "ground_to_mountain_wall", "main_road", "road", "broken_street", "road_intersection", "road_edge", "road_curve_north", "road_curve_east", "road_curve_south", "road_curve_west"], "object_scenes": ["small_rock", "broken_fence", "wood_barrier", "boundary_fence", "ruined_house", "abandoned_house"], "edge_tiles": ["boundary_fence", "forest_mountain_wall"], "void_tiles": ["fall_zone", "void_edge_near", "forest_void", "forest_cliff_edge", "cliff_lip_north", "cliff_lip_south", "cliff_lip_east", "cliff_lip_west", "void_depth", "void_vertical_lines"], "passage_tiles": ["road", "road_entry", "road_exit", "cliff_ramp"] },
     "toxic_wastes": { "asset_path": "res://assets/environment/isometric/previews/toxic_wastes_asset_set.svg", "biome_ids": ["toxic_wastes"], "fallback_path": "res://game/modes/zombie/biome_region_ground.gd", "tile_set": "toxic_wastes", "terrain_tiles": ["main_road", "road", "service_lane", "broken_gate", "road_intersection", "road_edge", "road_curve_north", "road_curve_east", "road_curve_south", "road_curve_west"], "object_scenes": ["corroded_barrier", "lab_ruin", "chemical_barrel", "pipe_stack", "lab_block", "industrial_fence", "toxic_barrel", "lab_wall", "toxic_boundary_wall"], "edge_tiles": ["toxic_boundary_wall"], "void_tiles": ["fall_zone", "void_edge_near", "cliff_lip_north", "cliff_lip_south", "cliff_lip_east", "cliff_lip_west", "void_depth", "void_vertical_lines"], "passage_tiles": ["broken_gate", "broken_gate_entry", "broken_gate_exit", "road", "road_entry", "road_exit", "cliff_ramp"] },
     "burning_fields": { "asset_path": "res://assets/environment/isometric/previews/burning_fields_asset_set.svg", "biome_ids": ["burning_fields"], "fallback_path": "res://game/modes/zombie/biome_region_ground.gd", "tile_set": "burning_fields", "terrain_tiles": ["main_road", "road", "ash_lane", "burned_road", "road_intersection", "road_edge", "road_curve_north", "road_curve_east", "road_curve_south", "road_curve_west"], "object_scenes": ["scorched_barricade", "burned_house", "burned_car", "charred_wall", "ash_barrier", "lava_boundary"], "edge_tiles": ["lava_boundary"], "void_tiles": ["fall_zone", "void_edge_near", "cliff_lip_north", "cliff_lip_south", "cliff_lip_east", "cliff_lip_west", "void_depth", "void_vertical_lines"], "passage_tiles": ["burned_road", "burned_road_entry", "burned_road_exit", "road", "road_entry", "road_exit", "cliff_ramp"] },
     "frozen_outskirts": { "asset_path": "res://assets/environment/isometric/previews/frozen_outskirts_asset_set.svg", "biome_ids": ["frozen_outskirts"], "fallback_path": "res://game/modes/zombie/biome_region_ground.gd", "tile_set": "frozen_outskirts", "terrain_tiles": ["main_road", "road", "packed_snow_path", "snow_pass", "road_intersection", "road_edge", "road_curve_north", "road_curve_east", "road_curve_south", "road_curve_west"], "object_scenes": ["ice_rock", "ice_block", "snow_cabin", "snow_wall", "ice_boundary"], "edge_tiles": ["ice_boundary"], "void_tiles": ["fall_zone", "void_edge_near", "cliff_lip_north", "cliff_lip_south", "cliff_lip_east", "cliff_lip_west", "void_depth", "void_vertical_lines"], "passage_tiles": ["snow_pass", "snow_pass_entry", "snow_pass_exit", "road", "road_entry", "road_exit", "cliff_ramp"] },
@@ -172,6 +187,90 @@
         "id": "broken_street",
         "category": "road",
         "draw_mode": "broken_street",
+        "dedicated_draw": true,
+        "fallback": ""
+      },
+      {
+        "id": "forest_grass",
+        "category": "floor",
+        "draw_mode": "forest_grass",
+        "dedicated_draw": true,
+        "fallback": ""
+      },
+      {
+        "id": "forest_grass_variant_01",
+        "category": "floor",
+        "draw_mode": "forest_grass",
+        "dedicated_draw": true,
+        "fallback": ""
+      },
+      {
+        "id": "forest_grass_variant_02",
+        "category": "floor",
+        "draw_mode": "forest_grass",
+        "dedicated_draw": true,
+        "fallback": ""
+      },
+      {
+        "id": "forest_tall_grass",
+        "category": "floor_detail",
+        "draw_mode": "forest_tall_grass",
+        "dedicated_draw": true,
+        "fallback": ""
+      },
+      {
+        "id": "forest_path",
+        "category": "road",
+        "draw_mode": "forest_path",
+        "dedicated_draw": true,
+        "fallback": ""
+      },
+      {
+        "id": "forest_road",
+        "category": "road",
+        "draw_mode": "forest_road",
+        "dedicated_draw": true,
+        "fallback": ""
+      },
+      {
+        "id": "grass_to_path",
+        "category": "transition",
+        "draw_mode": "forest_transition",
+        "dedicated_draw": true,
+        "fallback": ""
+      },
+      {
+        "id": "grass_to_road",
+        "category": "transition",
+        "draw_mode": "forest_transition",
+        "dedicated_draw": true,
+        "fallback": ""
+      },
+      {
+        "id": "grass_to_tall_grass",
+        "category": "transition",
+        "draw_mode": "forest_transition",
+        "dedicated_draw": true,
+        "fallback": ""
+      },
+      {
+        "id": "path_to_road",
+        "category": "transition",
+        "draw_mode": "forest_transition",
+        "dedicated_draw": true,
+        "fallback": ""
+      },
+      {
+        "id": "ground_to_void_cliff",
+        "category": "transition",
+        "draw_mode": "forest_transition",
+        "dedicated_draw": true,
+        "fallback": ""
+      },
+      {
+        "id": "ground_to_mountain_wall",
+        "category": "transition",
+        "draw_mode": "forest_transition",
         "dedicated_draw": true,
         "fallback": ""
       },
@@ -241,7 +340,7 @@
     "corroded_barrier": { "draw_mode": "lab_wall", "dedicated_draw": true, "fallback": "" },
     "scorched_barricade": { "draw_mode": "scorched_barricade", "dedicated_draw": true, "fallback": "" },
     "reed_wall": { "draw_mode": "reed_wall", "dedicated_draw": true, "fallback": "" },
-    "boundary_fence": { "draw_mode": "fence", "dedicated_draw": true, "fallback": "" },
+    "boundary_fence": { "draw_mode": "forest_mountain_wall", "dedicated_draw": true, "fallback": "" },
     "ruined_house": { "draw_mode": "ruined_house", "dedicated_draw": true, "fallback": "" },
     "lab_ruin": { "draw_mode": "lab_block", "dedicated_draw": true, "fallback": "" },
     "burned_house": { "draw_mode": "burned_house", "dedicated_draw": true, "fallback": "" },

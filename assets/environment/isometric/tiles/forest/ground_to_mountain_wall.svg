@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="120" viewBox="0 0 160 120" data-generated-by="generate_isometric_environment_assets" data-section="terrain_tiles" data-id="ground_to_mountain_wall">
+  <title>terrain_tiles ground_to_mountain_wall</title>
+  <ellipse cx="80" cy="88" rx="60" ry="18" fill="#1f2f18" opacity="0.42"/>
+  <polygon points="80,16 143,53 80,90 17,53" fill="#24401d" stroke="#5d7836" stroke-width="4"/>
+  <path d="M31 49 L62 31 L96 33 L129 49 L80 77 Z" fill="#32382f" stroke="#151915" stroke-width="4"/>
+  <path d="M38 52 L80 75 L122 52 L122 68 L80 91 L38 68 Z" fill="#252a24" opacity="0.88"/>
+  <path d="M57 43 L49 62 M80 35 L76 75 M104 44 L94 67" stroke="#56604d" stroke-width="3" opacity="0.72"/>
+  <path d="M39 68 C55 61 67 77 82 67 C96 58 108 73 123 65" fill="none" stroke="#58743a" stroke-width="3" opacity="0.66"/>
+</svg>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="120" viewBox="0 0 160 120" data-generated-by="generate_isometric_environment_assets" data-section="terrain_tiles" data-id="ground_to_void_cliff">
+  <title>terrain_tiles ground_to_void_cliff</title>
+  <ellipse cx="80" cy="88" rx="60" ry="20" fill="#142b18" opacity="0.48"/>
+  <polygon points="80,16 143,53 80,90 17,53" fill="#24401d" stroke="#5d7836" stroke-width="4"/>
+  <path d="M20 55 L80 88 L140 55 L139 80 L80 112 L21 80 Z" fill="#17311f" opacity="0.88"/>
+  <path d="M23 53 L80 82 L137 53" fill="none" stroke="#7d934d" stroke-width="5" stroke-linecap="round"/>
+  <path d="M45 66 L50 94 M80 82 L80 108 M112 66 L107 94" stroke="#233021" stroke-width="3" opacity="0.76"/>
+  <path d="M45 49 L56 45 M100 48 L111 43" stroke="#8aa65a" stroke-width="2" stroke-linecap="round" opacity="0.55"/>
+</svg>

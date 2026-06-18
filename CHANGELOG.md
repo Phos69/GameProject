@@ -26,6 +26,13 @@
 - Aggiunti `tests/milestone_10_isometric_final_visual_qa.gd` e
   `tests/milestone_10_isometric_performance_smoke_test.gd` per chiudere la QA
   visuale/performance finale della roadmap asset isometrica.
+- Aggiunto il primo sistema completo di texture isometriche forestali per il
+  bioma base `infected_plains`: grass, tall grass, path, road, void, cliff edge,
+  mountain wall e transizioni `grass_to_*`, `path_to_road`,
+  `ground_to_void_cliff` e `ground_to_mountain_wall`.
+- Aggiunto `tests/forest_isometric_texture_transition_smoke_test.gd` per
+  validare contratti manifest, asset SVG, transizioni emesse dal layout
+  generato, tall grass walkable e dettaglio texture nel `BiomeTileLayer`.
 
 ### Changed
 
@@ -54,6 +61,19 @@
 - `ZombieModeController` non crea piu `MultiRegionRenderer` durante la
   risoluzione componenti standard: il renderer storico resta fallback/debug
   lazy-only se lo streamer gameplay non e disponibile.
+- `IsometricTileResolver` risolve `infected_plains` con tile forestali
+  neighbor-aware, mantenendo i passage tile prioritari e senza cambiare
+  classificazione terrain, pathfinding, hazard o collisioni.
+- `BiomeTileLayer` pre-bake-a linee di dettaglio per grass, tall grass, path,
+  road, transizioni, cliff e void, cosi il ground forestale non dipende da
+  placeholder piatti o da nodi per-tile.
+- Il pass texture forestale usa ora ombre, dettagli e underlay scuri relativi
+  al tipo di tile: verde bosco per erba/void/cliff e marrone scuro per
+  path/road. Il reticolo sul ground forestale e disattivato per eliminare gli
+  spazi neri tra i rombi calpestabili.
+- `assets/environment/isometric/manifest.json` punta il tile set base a
+  `tiles/forest/forest_tileset.svg` e registra 108 SVG ambiente verificati dalla
+  pipeline asset.
 
 ### Fixed
 
@@ -155,6 +175,13 @@
 - Chiusa la Milestone 10.11 della roadmap asset isometrica con screenshot QA,
   performance su mappa `7x7`, suite smoke finale e spostamento di `ISO-001` tra
   le reference completate.
+- Documentato il sistema texture forestali in
+  `docs/forest_isometric_texture_system.md`, con contratto ID, regole di
+  risoluzione, procedura per estendere altri biomi, checklist manuale e smoke
+  test dedicati.
+- Aggiornati TODO, roadmap rewrite isometrico, architettura, design, asset
+  README, attribution e report di validazione con la chiusura di `ISO-RW-001`
+  e del primo pass forestale.
 
 ### Changed
 

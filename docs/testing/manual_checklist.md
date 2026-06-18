@@ -1001,6 +1001,36 @@ godot --headless --path . --script res://tests/zombie_environment_milestone_smok
 godot --headless --path . --script res://tests/zombie_biome_transition_smoke_test.gd
 ```
 
+## Regressione texture forestali base
+
+QA visuale e runtime da eseguire dopo modifiche a `infected_plains`,
+`IsometricTileResolver`, `BiomeTileLayer` o agli asset in
+`assets/environment/isometric/tiles/forest/`.
+
+- Avviare survival con seed `772031` e confermare che il bioma base mostri
+  `forest_grass`, varianti, `forest_tall_grass`, `forest_path` e `forest_road`,
+  non il floor generico.
+- Verificare che gli incroci path/road e i bordi path/grass o road/grass usino
+  transizioni leggibili, senza rettangoli piatti o patch ovali legacy.
+- Camminare vicino a void/fall zone e confermare che `forest_cliff_edge`,
+  `forest_void` e `ground_to_void_cliff` siano distinguibili dal terreno
+  walkable.
+- Controllare i lati con parete: `forest_mountain_wall` e
+  `ground_to_mountain_wall` devono leggere come roccia/montagna e non come
+  recinto placeholder.
+- Verificare che tall grass, path, road e transizioni non cambino collisioni,
+  spawn, casse, pathfinding zombie o danno da caduta.
+- In high contrast/reduced motion, confermare che player, zombie, pickup,
+  cliff, wall, path e road restino separabili a 1280x720 e 960x540.
+
+Dettagli del contratto: `docs/forest_isometric_texture_system.md`.
+
+```text
+godot --headless --path . --script res://tests/forest_isometric_texture_transition_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_tile_layer_smoke_test.gd
+godot --headless --path . --script res://tools/generate_isometric_environment_assets.gd -- --check
+```
+
 ## Regressione Milestone 10.4 - strade e passaggi asset-driven
 
 QA visuale e runtime da eseguire dopo modifiche a `BiomePassage`,
