@@ -5,10 +5,6 @@ const CLIFF_RENDERER_SCRIPT = preload(
 	"res://game/modes/zombie/isometric_cliff_renderer.gd"
 )
 const VALID_FALL_SIDES: Array[StringName] = [&"north", &"south", &"east", &"west"]
-# A void zone whose smaller side exceeds this is an internal pit (not a thin
-# perimeter strip); it is rendered procedurally so no small tile is stretched
-# into a grainy placeholder.
-const LARGE_VOID_MIN := 110.0
 
 var hazard_id: StringName = &"fall_zone"
 var fall_style: StringName = &"cliff"
@@ -171,106 +167,54 @@ func _rebuild_collision() -> void:
 	collision_shape.shape = rectangle
 
 func _draw() -> void:
-	if _is_large_void():
-		_draw_large_void()
-		return
-	if has_asset_renderer() and not uses_procedural_fallback():
-		return
-	_draw_procedural_cliff()
+	# No void "image": the void colour is painted by the tile layer (void cells)
+	# and the off-map backdrop. The fall zone only draws the world-end boundary so
+	# the edge of the map reads clearly, like a wall/ledge where the world stops.
+	_draw_world_edges()
 
-func _draw_large_void() -> void:
-	# A clean, readable pit: a dark void floor with depth banding, a bright rim
-	# where the walkable floor ends, and vertical depth lines that drop from the
-	# floor edge and fade into the void colour.
+func _draw_world_edges() -> void:
 	var half := zone_size * 0.5
-	var depth := _depth_color_for_style()
-	var rim := _edge_color_for_style()
+	if _is_edge_strip():
+		# Perimeter strip: floor only on the inner side; mark that single edge.
+		var inner := _inner_edge(half)
+		_draw_world_edge(inner[0], inner[1], inner[2])
+	else:
+		# Internal pit: floor surrounds it; outline the whole drop.
+		_draw_world_edge(Vector2(-half.x, -half.y), Vector2(half.x, -half.y), Vector2.DOWN)
+		_draw_world_edge(Vector2(-half.x, half.y), Vector2(half.x, half.y), Vector2.UP)
+		_draw_world_edge(Vector2(-half.x, -half.y), Vector2(-half.x, half.y), Vector2.RIGHT)
+		_draw_world_edge(Vector2(half.x, -half.y), Vector2(half.x, half.y), Vector2.LEFT)
 
-	# Solid void base so nothing of the floor shows through the pit.
-	draw_rect(Rect2(-half, zone_size), Color(depth, 1.0))
-	# Depth banding: progressively darker toward the far (bottom) edge.
-	var band_count := 5
-	for index in range(band_count):
-		var t0 := lerpf(-half.y, half.y, float(index) / float(band_count))
-		var t1 := lerpf(-half.y, half.y, float(index + 1) / float(band_count))
-		var shade := depth.darkened(0.06 * float(index))
-		draw_rect(
-			Rect2(Vector2(-half.x, t0), Vector2(zone_size.x, t1 - t0)),
-			Color(shade, 0.55)
-		)
-	# Inner shadow frame so the pit reads as recessed below the surrounding floor.
-	draw_rect(Rect2(-half, zone_size), Color(0.0, 0.0, 0.0, 0.55), false, 4.0)
+func _draw_world_edge(p1: Vector2, p2: Vector2, into_void: Vector2) -> void:
+	# A clear ledge: a bright lit crest exactly at the floor/void boundary with a
+	# dark shadow stepped into the void, so the edge of the world reads as a wall.
+	var crest := Color(_edge_color_for_style().lightened(0.18), 0.95)
+	var shadow := Color(0.0, 0.0, 0.0, 0.7)
+	var lift := 8.0
+	draw_line(p1 + into_void * lift, p2 + into_void * lift, shadow, 2.0, true)
+	draw_line(p1 + into_void * (lift * 0.5), p2 + into_void * (lift * 0.5), Color(0.0, 0.0, 0.0, 0.35), 2.0, true)
+	draw_line(p1, p2, crest, 3.5, true)
 
-	# Bright rim along the near (top) floor edge.
-	draw_line(
-		Vector2(-half.x, -half.y),
-		Vector2(half.x, -half.y),
-		Color(rim.lightened(0.10), 0.92),
-		3.0,
-		true
-	)
+func _is_edge_strip() -> bool:
+	# Thin, elongated zones are perimeter strips along a single map border; blocky
+	# zones are internal pits ringed by floor on every side.
+	var longest := maxf(zone_size.x, zone_size.y)
+	var shortest := maxf(minf(zone_size.x, zone_size.y), 1.0)
+	return longest / shortest > 4.0
 
-	_draw_void_depth_lines(half, rim, depth)
-
-func _draw_void_depth_lines(
-	half: Vector2,
-	rim: Color,
-	depth: Color
-) -> void:
-	# Vertical lines start at the floor (top edge) and fade down into the void.
-	var count := maxi(6, int(zone_size.x / 46.0))
-	var drop := zone_size.y * 0.82
-	var near_color := Color(rim.darkened(0.10), 0.7)
-	var far_color := Color(depth, 0.0)
-	for index in range(count):
-		var ratio := float(index + 1) / float(count + 1)
-		var jitter := _line_jitter(index) * zone_size.x * 0.012
-		var x_position := lerpf(-half.x * 0.94, half.x * 0.94, ratio) + jitter
-		var start := Vector2(x_position, -half.y)
-		var length := drop * (0.82 + _line_jitter(index + 31) * 0.18)
-		_draw_faded_line(start, start + Vector2(0.0, length), near_color, far_color, 7)
-
-func _draw_faded_line(
-	start: Vector2,
-	end: Vector2,
-	near_color: Color,
-	far_color: Color,
-	segments: int
-) -> void:
-	var previous := start
-	for index in range(1, segments + 1):
-		var t := float(index) / float(segments)
-		var point := start.lerp(end, t)
-		draw_line(previous, point, near_color.lerp(far_color, t), 2.0, true)
-		previous = point
-
-func _line_jitter(index: int) -> float:
-	var value := int(hash("%d:%s:%d" % [visual_seed, String(fall_side), index]))
-	return float(abs(value % 2001)) / 1000.0 - 1.0
-
-func _draw_procedural_cliff() -> void:
-	var half_size := zone_size * 0.5
-	var outline := _jagged_outline(half_size)
-	var resolved_depth_color := _depth_color_for_style()
-	var resolved_edge_color := _edge_color_for_style()
-	draw_colored_polygon(outline, resolved_depth_color)
-	for band_index in range(4):
-		var inset := float(band_index + 1) * 0.10
-		draw_colored_polygon(
-			_scaled_points(outline, 1.0 - inset, 1.0 - inset * 0.55),
-			Color(resolved_depth_color.lightened(0.035 * float(band_index + 1)), 0.22)
-		)
-	var closed_outline := outline.duplicate()
-	closed_outline.append(outline[0])
-	draw_polyline(closed_outline, resolved_edge_color, 4.0, true)
-	draw_polyline(
-		closed_outline,
-		Color(resolved_edge_color.lightened(0.22), 0.52),
-		1.5,
-		true
-	)
-	_draw_cliff_lip(half_size, resolved_edge_color)
-	_draw_depth_streaks(half_size, resolved_edge_color)
+func _inner_edge(half: Vector2) -> Array:
+	# Returns [p1, p2, into_void] for the floor-facing boundary of a perimeter
+	# strip, oriented by which map border the strip sits on.
+	match fall_side:
+		&"south":
+			return [Vector2(-half.x, -half.y), Vector2(half.x, -half.y), Vector2.DOWN]
+		&"west":
+			return [Vector2(half.x, -half.y), Vector2(half.x, half.y), Vector2.LEFT]
+		&"east":
+			return [Vector2(-half.x, -half.y), Vector2(-half.x, half.y), Vector2.RIGHT]
+		_:
+			# north (and fallback): floor is below the strip, void extends upward.
+			return [Vector2(-half.x, half.y), Vector2(half.x, half.y), Vector2.UP]
 
 func _ensure_cliff_renderer() -> void:
 	if cliff_renderer != null and is_instance_valid(cliff_renderer):
@@ -299,77 +243,12 @@ func _configure_cliff_renderer() -> void:
 		true
 	)
 
-func _is_large_void() -> bool:
-	return minf(zone_size.x, zone_size.y) >= LARGE_VOID_MIN
-
 func _normalize_fall_side(value: StringName) -> StringName:
 	if VALID_FALL_SIDES.has(value):
 		return value
 	if zone_size.x >= zone_size.y:
 		return &"north"
 	return &"west"
-
-func _draw_cliff_lip(half_size: Vector2, color: Color) -> void:
-	var lip_points := PackedVector2Array([
-		Vector2(-half_size.x, -half_size.y * 0.62),
-		Vector2(-half_size.x * 0.70, -half_size.y),
-		Vector2(-half_size.x * 0.28, -half_size.y * 0.78),
-		Vector2(half_size.x * 0.14, -half_size.y),
-		Vector2(half_size.x * 0.62, -half_size.y * 0.72),
-		Vector2(half_size.x, -half_size.y * 0.34)
-	])
-	draw_polyline(lip_points, color.lightened(0.16), 6.0, true)
-	draw_polyline(lip_points, Color(0.02, 0.025, 0.028, 0.58), 2.0, true)
-
-func _draw_depth_streaks(half_size: Vector2, color: Color) -> void:
-	for index in range(5):
-		var ratio := float(index + 1) / 6.0
-		var x_position := lerpf(-half_size.x * 0.72, half_size.x * 0.72, ratio)
-		draw_line(
-			Vector2(x_position - 12.0, -half_size.y * 0.36),
-			Vector2(x_position + 7.0, half_size.y * 0.34),
-			Color(color.darkened(0.38), 0.64),
-			2.0,
-			true
-		)
-
-func _jagged_outline(half_size: Vector2) -> PackedVector2Array:
-	return PackedVector2Array([
-		Vector2(-half_size.x, -half_size.y * 0.62),
-		Vector2(-half_size.x * 0.70, -half_size.y),
-		Vector2(-half_size.x * 0.28, -half_size.y * 0.78),
-		Vector2(half_size.x * 0.14, -half_size.y),
-		Vector2(half_size.x * 0.62, -half_size.y * 0.72),
-		Vector2(half_size.x, -half_size.y * 0.34),
-		Vector2(half_size.x * 0.82, half_size.y * 0.58),
-		Vector2(half_size.x * 0.35, half_size.y),
-		Vector2(-half_size.x * 0.10, half_size.y * 0.76),
-		Vector2(-half_size.x * 0.58, half_size.y),
-		Vector2(-half_size.x, half_size.y * 0.42)
-	])
-
-func _scaled_points(
-	points: PackedVector2Array,
-	scale_x: float,
-	scale_y: float
-) -> PackedVector2Array:
-	var scaled := PackedVector2Array()
-	for point in points:
-		scaled.append(Vector2(point.x * scale_x, point.y * scale_y))
-	return scaled
-
-func _depth_color_for_style() -> Color:
-	match fall_style:
-		&"toxic_cliff":
-			return Color(0.018, 0.035, 0.024, 1.0)
-		&"lava_cliff":
-			return Color(0.055, 0.018, 0.012, 1.0)
-		&"ice_cliff":
-			return Color(0.018, 0.030, 0.042, 1.0)
-		&"marsh_cliff":
-			return Color(0.014, 0.026, 0.030, 1.0)
-		_:
-			return depth_color
 
 func _edge_color_for_style() -> Color:
 	match fall_style:

@@ -253,14 +253,51 @@ R4.2 implementato (placeholder rimosso anche dai bordi + esterno void):
   comunque validati a livello manifest. Le 2 asserzioni pre-esistenti sul
   `fall_side` interno erano gia state risolte in R4.1. Test verde.
 
-Resta (R4.3+):
+R4.3 implementato (void = solo colore + confini, niente immagine):
 
-- Linee di profondita anche dai lati laterali per fosse molto larghe.
-- Allineare colore: il fill procedurale usa `depth_color`/style mentre il
-  backdrop usa `background_color.darkened(0.68)`; valutare unificazione esatta
-  del colore void tra tile layer, fosse e backdrop per ogni bioma.
+- `BiomeFallZone` non disegna piu alcuna "immagine" del void (rimossi outline
+  jagged, depth band, streak, fading lines, cliff lip). Il colore void e fornito
+  dal tile layer (celle void) e dal backdrop off-map; la fall zone disegna solo
+  il confine del mondo.
+- `_draw_world_edges`: per le strisce perimetrali una sola linea di confine sul
+  lato pavimento (orientata per `fall_side`), per le fosse interne il contorno
+  completo. Ogni confine e un crest luminoso sul bordo pavimento/void + ombra
+  scalettata nel void, cosi il limite della mappa (es. lato alto) si legge come
+  un muro/ciglio.
+- Tile layer: `TILE_VOID_EDGE_NEAR` e `TILE_VOID_DEPTH` ora hanno lo STESSO
+  colore (`background_color.darkened(0.68)`, uguale al backdrop): il void e
+  uniforme dentro e fuori la mappa, senza la banda piu chiara che lo distingueva.
+- Rimosso codice morto: `_draw_large_void`, `_draw_procedural_cliff`,
+  `_jagged_outline`, `_draw_cliff_lip`, `_draw_depth_streaks`, ecc.
+
+Resta (R4.4+):
+
+- Le celle `TERRAIN_VOID` non coperte da una fall zone non hanno linea di
+  confine: valutare se aggiungerla o se sono sempre adiacenti a fall zone.
+- Eventuale spessore/altezza del confine differenziato per bioma.
+
+## Milestone R5 - Pulizia render legacy
+
+Stato: in corso.
+
+R5.1 implementato (playground arena obsoleto al centro):
+
+- `IsometricPlayground` (`game/main/isometric_playground.gd`) disegnava una
+  griglia di tile diamante + barricate + marker + corsie all'origine del mondo
+  (centro mappa): elementi puramente visivi (nessuna collisione) ormai obsoleti
+  perche il tile layer streamato dipinge tutto il chunk, ma restavano visibili.
+- `TerrainGenerator.begin_streaming_run` ora nasconde il playground
+  (`_set_legacy_playground_visible(false)`); `start_run` (modalita arena
+  non-streaming) lo tiene visibile, `stop_run` lo ripristina. Cosi in survival
+  il centro mappa non mostra piu lo sfondo/oggetti legacy.
 
 ## Note tecniche e rischi
+
+- `tests/zombie_biome_transition_smoke_test.gd` FALLISCE (FAIL 15) gia dal commit
+  pre-sessione 96caf51: asserisce conteggi esatti single-region
+  (`get_active_obstacles().size() == layout.obstacle_positions.size()`)
+  incompatibili con lo streaming multi-region introdotto dalla riscrittura
+  500x500. PRE-ESISTENTE, non collegato al lavoro di questa sessione.
 
 - `500x500` aumenta la cache tile da 40.000 a 250.000 celle per regione. Il
   renderer usa gia mesh pre-baked, ma va rivalidato con `milestone_10_isometric_performance_smoke_test.gd`.

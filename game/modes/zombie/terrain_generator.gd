@@ -36,6 +36,7 @@ func start_run(biome: BiomeDefinition) -> void:
 	active_biome = biome
 	is_active = true
 	_apply_biome_palette()
+	_set_legacy_playground_visible(true)
 	_generate_region_ground()
 	_generate_terrain_patches()
 	terrain_configured.emit(
@@ -47,14 +48,24 @@ func begin_streaming_run(biome: BiomeDefinition) -> void:
 	active_biome = biome
 	is_active = true
 	_apply_biome_palette()
+	# The streamed tile layer paints the whole chunk, so the legacy playground
+	# arena (a default tile grid, barricades and lane markers drawn at the world
+	# origin) is obsolete and would show through at the map centre. Hide it.
+	_set_legacy_playground_visible(false)
 	terrain_configured.emit(
 		active_biome.biome_id if active_biome != null else &""
 	)
 
 func stop_run() -> void:
 	_clear_runtime()
+	_set_legacy_playground_visible(true)
 	is_active = false
 	active_biome = null
+
+func _set_legacy_playground_visible(value: bool) -> void:
+	var playground := get_node_or_null(playground_path) as IsometricPlayground
+	if playground != null:
+		playground.visible = value
 
 func get_active_biome_id() -> StringName:
 	return active_biome.biome_id if active_biome != null else &""
