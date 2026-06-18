@@ -53,6 +53,9 @@
   marker active regions, passaggi tematizzati e high contrast sulla mappa; stato
   aggiornato in `docs/isometric_generation_audit_roadmap.md`, `TODO.md`,
   `ROADMAP.md`, `ARCHITECTURE.md` e checklist manuale.
+- Chiusa la Milestone 10.1 della roadmap asset isometrica con manifest ambiente
+  v7, sezioni asset-driven, fallback policy esplicita, documentazione asset e
+  report di validazione aggiornati.
 
 ### Changed
 
@@ -93,6 +96,12 @@
   tematizzati per `passage_type` e consuma `apply_visual_settings` (high
   contrast); `HUDManager` gli passa le active regions. Esteso
   `tests/exploration_map_smoke_test.gd`.
+- `IsometricEnvironmentManifest` legge ora il contratto v7 del manifest
+  ambiente: `tile_sets`, `tile_variants`, `terrain_tiles`, `edge_tiles`,
+  `void_tiles`, `object_scenes`, `passage_tiles`, `biome_asset_sets` e
+  `fallback_policy`, normalizzando ogni asset con path, status, footprint,
+  anchor, collisione, blocchi e attribution. Aggiunto
+  `tests/milestone_10_asset_manifest_v7_smoke_test.gd`.
 
 ### Fixed
 

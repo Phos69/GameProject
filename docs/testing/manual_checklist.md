@@ -848,6 +848,30 @@ godot --headless --path . --script res://tests/region_streaming_smoke_test.gd
 godot --headless --path . --script res://tests/open_passage_transition_smoke_test.gd
 ```
 
+## Regressione Milestone 10.1 - contratto asset ambiente v7
+
+QA documentale e smoke da eseguire prima di creare asset nuovi.
+
+- Aprire `assets/environment/isometric/manifest.json` e confermare `version: 7`.
+- Verificare che le sezioni `tile_sets`, `tile_variants`, `terrain_tiles`,
+  `edge_tiles`, `void_tiles`, `object_scenes`, `passage_tiles`,
+  `biome_asset_sets` e `fallback_policy` siano presenti.
+- Confermare che `fallback_policy.implicit_fallback_allowed` resti `false` e
+  che nessun asset esterno sia richiesto per il bootstrap.
+- Per un ID terrain, un ostacolo, un bordo, un passaggio e `fall_zone`,
+  verificare che il contratto normalizzato abbia `asset_path`, `status`,
+  `biome_ids`, `anchor`, footprint/collisione, source, license, attribution e
+  `fallback_path` quando l'asset e ancora assente.
+- Confermare che lo status `needs_asset` non venga interpretato come arte
+  finale: indica un path pianificato coperto da fallback tecnico.
+
+```text
+godot --headless --path . --import
+godot --headless --path . --script res://tests/milestone_10_asset_manifest_v7_smoke_test.gd
+godot --headless --path . --script res://tests/isometric_environment_manifest_smoke_test.gd
+godot --headless --path . --script res://tests/isometric_biome_terrain_coverage_smoke_test.gd
+```
+
 ## Regressione todo_roadmap Milestone 5 - dungeon ramificato, shop e biomi
 
 QA da eseguire con almeno tre seed diversi, con tastiera e joypad.

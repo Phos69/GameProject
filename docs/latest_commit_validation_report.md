@@ -1,5 +1,50 @@
 # Latest Commit Validation Report
 
+## Milestone 10.1 asset manifest v7 - 2026-06-18
+- Branch: `master`
+- HEAD corrente: non committato al momento della validazione locale.
+- Scope validato: sotto-milestone 10.1 di
+  `milestone_10_isometric_asset_rewrite_roadmap.md`, contratto asset v7 e
+  inventario finale dell'ambiente isometrico.
+- Esito: PASS sui criteri automatizzabili. Nessun asset esterno obbligatorio
+  introdotto; gli asset assenti sono tracciati come `needs_asset` con fallback
+  tecnico esplicito.
+
+| Criterio | Esito | Evidenza |
+|---|---|---|
+| Manifest v7 completo | PASS | sezioni `tile_sets`, `tile_variants`, `terrain_tiles`, `edge_tiles`, `void_tiles`, `object_scenes`, `passage_tiles`, `biome_asset_sets` e `fallback_policy` validate |
+| ID generati coperti dal contratto asset | PASS | generazione `5x5` verifica object, terrain, passage, border e `fall_zone` |
+| Asset opzionale mancante sicuro | PASS | `small_rock` dichiara `needs_asset`, `asset_path` pianificato e `fallback_path` |
+| Regressione manifest/terrain invariata | PASS | smoke manifest e terrain coverage esistenti verdi |
+
+### Test Milestone 10.1 eseguiti
+
+| Test | Esito | Note |
+|---|---|---|
+| `godot --headless --path . --import` | PASS | cache Godot rigenerata e classi globali aggiornate |
+| `tests/milestone_10_asset_manifest_v7_smoke_test.gd` | PASS | contratto v7, fallback policy, generazione `5x5`, negativo asset mancante |
+| `tests/isometric_environment_manifest_smoke_test.gd` | PASS | regressione manifest/oggetti/Y-sort |
+| `tests/isometric_biome_terrain_coverage_smoke_test.gd` | PASS | regressione terrain `200x200` e tag generati |
+
+### Fix applicati nella Milestone 10.1
+
+- `assets/environment/isometric/manifest.json`: portato a v7 con sezioni
+  asset-driven e fallback policy.
+- `game/modes/zombie/isometric_environment_manifest.gd`: parsing, API e
+  validazione dei contratti v7 normalizzati.
+- `tests/milestone_10_asset_manifest_v7_smoke_test.gd`: nuovo smoke dedicato.
+- Documentazione aggiornata in `assets/README.md`, `assets/ATTRIBUTION.md`,
+  `ARCHITECTURE.md`, `ROADMAP.md`, `TODO.md`,
+  `docs/isometric_generation_audit_roadmap.md`,
+  `milestone_10_isometric_asset_rewrite_roadmap.md` e checklist manuale.
+
+### Limiti e follow-up Milestone 10.1
+
+- Il contratto v7 definisce path e fallback, ma non crea ancora file asset:
+  quello e lo scope della Milestone 10.2.
+- Il runtime usa ancora i draw procedurali principali finche le milestone
+  successive non collegano tile, passaggi, oggetti e cliff asset-driven.
+
 ## Milestone 7 tuning melee, super starter e classi RPG avanzate - 2026-06-17
 - Branch: `feat/milestone-3-5-streaming-iso-dungeon`
 - HEAD corrente: non committato al momento della validazione locale.

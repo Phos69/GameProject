@@ -46,19 +46,32 @@ assets/
 ## Ambiente isometrico (manifest)
 
 `environment/isometric/manifest.json` e la fonte di verita per gli oggetti
-ambientali del bioma (ostacoli, bordi, casse, cliff, passaggi). Per ogni id
-definisce categoria, `collision_shape`, `footprint_tiles`, flag `blocks_*`,
-`is_jumpable_gap_anchor` e `sort_offset` usato dall'ombra a terra e dal Y-sort.
+ambientali del bioma (ostacoli, bordi, casse, cliff, passaggi). Dal manifest v7
+contiene anche il contratto asset-driven per `tile_sets`, `tile_variants`,
+`terrain_tiles`, `edge_tiles`, `void_tiles`, `object_scenes`, `passage_tiles`,
+`biome_asset_sets` e `fallback_policy`.
+
+Per ogni contratto il loader normalizza `asset_path`, `status`, `biome_ids`,
+`footprint_tiles`, `anchor`, `sort_offset`, `collision_shape`, flag
+`blocks_*`, `source`, `license`, `attribution_key` e `fallback_path`.
+Gli status ammessi sono `final`, `base_complete`, `needs_polish`,
+`procedural_fallback`, `needs_asset` e `deprecated`.
 
 - Il loader `game/modes/zombie/isometric_environment_manifest.gd` legge e valida
-  il manifest; `ObstacleSystem` lo usa per `sort_offset` e flag di blocco.
-- `visual_scene` che punta a uno script `.gd` (o vuoto) significa rendering
-  procedurale: nessun file esterno e obbligatorio per il bootstrap.
+  il manifest; `ObstacleSystem` lo usa per `sort_offset` e flag di blocco, mentre
+  le milestone asset successive useranno le sezioni v7 come contratto unico.
+- `visual_scene` che punta a uno script `.gd` resta il fallback tecnico legacy.
+  Nel contratto v7 il fallback normale e dichiarato da `fallback_path` e
+  `fallback_policy`; nessun file esterno e obbligatorio per il bootstrap.
 - Lo smoke `tests/isometric_environment_manifest_smoke_test.gd` verifica che ogni
   `obstacle_id` dei biomi sia descritto, che nessun oggetto richieda asset
   esterni e che collisione/footprint/Y-sort restino coerenti.
+- Lo smoke `tests/milestone_10_asset_manifest_v7_smoke_test.gd` verifica che gli
+  ID generati da ostacoli, terrain, passaggi e fall zone abbiano un contratto v7
+  esplicito e che un asset pianificato ma assente resti sicuro tramite
+  `needs_asset` + `fallback_path`.
 - Per convertire un oggetto in arte esterna: aggiungere la risorsa al nodo
-  presentazionale mantenendo il draw procedurale come fallback, aggiornare lo
+  presentazionale mantenendo il fallback dichiarato, aggiornare `asset_path` e
   `status` nel manifest e registrare la licenza in `ATTRIBUTION.md`.
 
 ## Sostituzione Placeholder

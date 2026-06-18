@@ -1,10 +1,132 @@
 {
-  "version": 6,
+  "version": 7,
   "coordinate_system": "pseudo_isometric_2d",
-  "notes": "Environment objects are rendered procedurally (game/modes/zombie/biome_obstacle.gd) so no external art is mandatory for bootstrap. This manifest is the source of truth for collision shape, footprint, blocking flags, object visual draw modes and the ground sort offset used for Y-sorting and the drop shadow. visual_scene pointing to a .gd script means procedural fallback. IDs emitted by ObstacleLayoutGenerator are direct canonical manifest entries; no alias layer is used in manifest v3. Manifest v4 adds generated terrain tag metadata for road and passage rendering. Manifest v5 adds explicit object_visuals so generated obstacle IDs no longer silently use the generic barrier fallback. Manifest v6 adds thematic generated border draw modes and marks fall_zone as a dedicated procedural cliff/depth visual.",
+  "notes": "Environment objects still keep safe procedural fallbacks for bootstrap, but manifest v7 is the asset-driven contract for terrain tiles, edge tiles, void tiles, object scenes, passage tiles and biome asset sets. IDs emitted by ObstacleLayoutGenerator, BiomeTerrainGenerator, BiomePassageGenerator and FallBoundaryGenerator must have a v7 asset contract with either a real asset path or an explicit needs_asset/procedural_fallback status.",
   "default_sorting": {
     "mode": "y_sort",
     "sort_offset": 6
+  },
+  "asset_contract_defaults": {
+    "status": "needs_asset",
+    "source": "internal_generated",
+    "license": "Project original",
+    "attribution_key": "environment_isometric_internal",
+    "anchor": "iso_floor_center",
+    "biome_ids": ["shared"]
+  },
+  "fallback_policy": {
+    "implicit_fallback_allowed": false,
+    "bootstrap_requires_external_assets": false,
+    "allowed_missing_asset_statuses": ["needs_asset", "procedural_fallback", "deprecated"],
+    "asset_statuses": ["final", "base_complete", "needs_polish", "procedural_fallback", "needs_asset", "deprecated"],
+    "technical_fallbacks": {
+      "terrain": "res://game/modes/zombie/biome_region_ground.gd",
+      "terrain_patch": "res://game/modes/zombie/biome_terrain_patch.gd",
+      "object": "res://game/modes/zombie/biome_obstacle.gd",
+      "void": "res://game/modes/zombie/biome_fall_zone.gd",
+      "passage": "res://game/modes/zombie/biome_terrain_patch.gd",
+      "crate": "res://game/drops/supply_crate.gd"
+    }
+  },
+  "tile_sets": {
+    "infected_plains": { "asset_path": "res://assets/environment/isometric/tiles/plains/plains_tileset.svg", "biome_ids": ["infected_plains"], "fallback_path": "res://game/modes/zombie/biome_region_ground.gd" },
+    "toxic_wastes": { "asset_path": "res://assets/environment/isometric/tiles/toxic/toxic_tileset.svg", "biome_ids": ["toxic_wastes"], "fallback_path": "res://game/modes/zombie/biome_region_ground.gd" },
+    "burning_fields": { "asset_path": "res://assets/environment/isometric/tiles/ash/ash_tileset.svg", "biome_ids": ["burning_fields"], "fallback_path": "res://game/modes/zombie/biome_region_ground.gd" },
+    "frozen_outskirts": { "asset_path": "res://assets/environment/isometric/tiles/snow/snow_tileset.svg", "biome_ids": ["frozen_outskirts"], "fallback_path": "res://game/modes/zombie/biome_region_ground.gd" },
+    "drowned_marsh": { "asset_path": "res://assets/environment/isometric/tiles/marsh/marsh_tileset.svg", "biome_ids": ["drowned_marsh"], "fallback_path": "res://game/modes/zombie/biome_region_ground.gd" },
+    "shared": { "asset_path": "res://assets/environment/isometric/tiles/shared/shared_tileset.svg", "biome_ids": ["shared"], "fallback_path": "res://game/modes/zombie/biome_region_ground.gd" }
+  },
+  "tile_variants": {
+    "floor_base": { "asset_path": "res://assets/environment/isometric/tiles/shared/floor_base.svg", "fallback_path": "res://game/modes/zombie/biome_region_ground.gd" },
+    "floor_variant_01": { "asset_path": "res://assets/environment/isometric/tiles/shared/floor_variant_01.svg", "fallback_path": "res://game/modes/zombie/biome_region_ground.gd" },
+    "floor_variant_02": { "asset_path": "res://assets/environment/isometric/tiles/shared/floor_variant_02.svg", "fallback_path": "res://game/modes/zombie/biome_region_ground.gd" },
+    "floor_variant_03": { "asset_path": "res://assets/environment/isometric/tiles/shared/floor_variant_03.svg", "fallback_path": "res://game/modes/zombie/biome_region_ground.gd" },
+    "hazard_floor": { "asset_path": "res://assets/environment/isometric/tiles/shared/hazard_floor.svg", "fallback_path": "res://game/modes/zombie/biome_region_ground.gd" },
+    "border_floor": { "asset_path": "res://assets/environment/isometric/tiles/shared/border_floor.svg", "fallback_path": "res://game/modes/zombie/biome_region_ground.gd" }
+  },
+  "terrain_tiles": {
+    "main_road": { "asset_path": "res://assets/environment/isometric/tiles/shared/main_road.svg", "fallback_path": "res://game/modes/zombie/biome_terrain_patch.gd" },
+    "road": { "asset_path": "res://assets/environment/isometric/tiles/shared/road.svg", "fallback_path": "res://game/modes/zombie/biome_terrain_patch.gd" },
+    "broken_street": { "asset_path": "res://assets/environment/isometric/tiles/plains/broken_street.svg", "biome_ids": ["infected_plains"], "fallback_path": "res://game/modes/zombie/biome_terrain_patch.gd" },
+    "service_lane": { "asset_path": "res://assets/environment/isometric/tiles/toxic/service_lane.svg", "biome_ids": ["toxic_wastes"], "fallback_path": "res://game/modes/zombie/biome_terrain_patch.gd" },
+    "ash_lane": { "asset_path": "res://assets/environment/isometric/tiles/ash/ash_lane.svg", "biome_ids": ["burning_fields"], "fallback_path": "res://game/modes/zombie/biome_terrain_patch.gd" },
+    "packed_snow_path": { "asset_path": "res://assets/environment/isometric/tiles/snow/packed_snow_path.svg", "biome_ids": ["frozen_outskirts"], "fallback_path": "res://game/modes/zombie/biome_terrain_patch.gd" },
+    "wooden_walkway": { "asset_path": "res://assets/environment/isometric/tiles/marsh/wooden_walkway.svg", "biome_ids": ["drowned_marsh"], "fallback_path": "res://game/modes/zombie/biome_terrain_patch.gd" },
+    "bridge": { "asset_path": "res://assets/environment/isometric/passages/bridge.svg", "fallback_path": "res://game/modes/zombie/biome_terrain_patch.gd" },
+    "snow_pass": { "asset_path": "res://assets/environment/isometric/passages/snow_pass.svg", "biome_ids": ["frozen_outskirts"], "fallback_path": "res://game/modes/zombie/biome_terrain_patch.gd" },
+    "broken_gate": { "asset_path": "res://assets/environment/isometric/passages/broken_gate.svg", "biome_ids": ["toxic_wastes"], "fallback_path": "res://game/modes/zombie/biome_terrain_patch.gd" },
+    "burned_road": { "asset_path": "res://assets/environment/isometric/passages/burned_road.svg", "biome_ids": ["burning_fields"], "fallback_path": "res://game/modes/zombie/biome_terrain_patch.gd" }
+  },
+  "edge_tiles": {
+    "boundary_fence": { "asset_path": "res://assets/environment/isometric/edges/walls/boundary_fence.svg", "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "toxic_boundary_wall": { "asset_path": "res://assets/environment/isometric/edges/walls/toxic_boundary_wall.svg", "biome_ids": ["toxic_wastes"], "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "lava_boundary": { "asset_path": "res://assets/environment/isometric/edges/walls/lava_boundary.svg", "biome_ids": ["burning_fields"], "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "ice_boundary": { "asset_path": "res://assets/environment/isometric/edges/walls/ice_boundary.svg", "biome_ids": ["frozen_outskirts"], "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "deep_water_boundary": { "asset_path": "res://assets/environment/isometric/edges/walls/deep_water_boundary.svg", "biome_ids": ["drowned_marsh"], "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" }
+  },
+  "void_tiles": {
+    "fall_zone": { "asset_path": "res://assets/environment/isometric/edges/cliffs/fall_zone.svg", "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_fall_zone.gd" },
+    "cliff_lip_north": { "asset_path": "res://assets/environment/isometric/edges/cliffs/cliff_lip_north.svg", "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_fall_zone.gd" },
+    "cliff_lip_south": { "asset_path": "res://assets/environment/isometric/edges/cliffs/cliff_lip_south.svg", "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_fall_zone.gd" },
+    "cliff_lip_east": { "asset_path": "res://assets/environment/isometric/edges/cliffs/cliff_lip_east.svg", "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_fall_zone.gd" },
+    "cliff_lip_west": { "asset_path": "res://assets/environment/isometric/edges/cliffs/cliff_lip_west.svg", "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_fall_zone.gd" },
+    "void_depth": { "asset_path": "res://assets/environment/isometric/edges/void/void_depth.svg", "anchor": "center", "fallback_path": "res://game/modes/zombie/biome_fall_zone.gd" },
+    "void_vertical_lines": { "asset_path": "res://assets/environment/isometric/edges/void/void_vertical_lines.svg", "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_fall_zone.gd" }
+  },
+  "object_scenes": {
+    "small_rock": { "asset_path": "res://assets/environment/isometric/objects/rocks/shared_small_rock.svg", "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "ice_rock": { "asset_path": "res://assets/environment/isometric/objects/rocks/snow_ice_rock.svg", "biome_ids": ["frozen_outskirts"], "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "broken_fence": { "asset_path": "res://assets/environment/isometric/objects/barriers/plains_broken_fence.svg", "biome_ids": ["infected_plains"], "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "wood_barrier": { "asset_path": "res://assets/environment/isometric/objects/barriers/plains_wood_barrier.svg", "biome_ids": ["infected_plains"], "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "corroded_barrier": { "asset_path": "res://assets/environment/isometric/objects/barriers/toxic_corroded_barrier.svg", "biome_ids": ["toxic_wastes"], "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "scorched_barricade": { "asset_path": "res://assets/environment/isometric/objects/barriers/ash_scorched_barricade.svg", "biome_ids": ["burning_fields"], "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "reed_wall": { "asset_path": "res://assets/environment/isometric/objects/barriers/marsh_reed_wall.svg", "biome_ids": ["drowned_marsh"], "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "boundary_fence": { "asset_path": "res://assets/environment/isometric/edges/walls/boundary_fence.svg", "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "ruined_house": { "asset_path": "res://assets/environment/isometric/objects/buildings/plains_ruined_house.svg", "biome_ids": ["infected_plains"], "anchor": "bottom_center", "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "lab_ruin": { "asset_path": "res://assets/environment/isometric/objects/buildings/toxic_lab_ruin.svg", "biome_ids": ["toxic_wastes"], "anchor": "bottom_center", "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "burned_house": { "asset_path": "res://assets/environment/isometric/objects/buildings/ash_burned_house.svg", "biome_ids": ["burning_fields"], "anchor": "bottom_center", "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "abandoned_house": { "asset_path": "res://assets/environment/isometric/objects/buildings/plains_abandoned_house.svg", "biome_ids": ["infected_plains"], "anchor": "bottom_center", "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "chemical_barrel": { "asset_path": "res://assets/environment/isometric/objects/barrels/toxic_chemical_barrel.svg", "biome_ids": ["toxic_wastes"], "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "metal_wreck": { "asset_path": "res://assets/environment/isometric/objects/wrecks/shared_metal_wreck.svg", "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "sunken_wreck": { "asset_path": "res://assets/environment/isometric/objects/wrecks/marsh_sunken_wreck.svg", "biome_ids": ["drowned_marsh"], "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "fallen_log": { "asset_path": "res://assets/environment/isometric/objects/trees/shared_fallen_log.svg", "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "wood_bridge": { "asset_path": "res://assets/environment/isometric/objects/bridges/shared_wood_bridge.svg", "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "pipe_stack": { "asset_path": "res://assets/environment/isometric/objects/barriers/toxic_pipe_stack.svg", "biome_ids": ["toxic_wastes"], "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "burned_car": { "asset_path": "res://assets/environment/isometric/objects/wrecks/ash_burned_car.svg", "biome_ids": ["burning_fields"], "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "ice_block": { "asset_path": "res://assets/environment/isometric/objects/rocks/snow_ice_block.svg", "biome_ids": ["frozen_outskirts"], "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "dead_tree": { "asset_path": "res://assets/environment/isometric/objects/trees/marsh_dead_tree.svg", "biome_ids": ["drowned_marsh"], "anchor": "bottom_center", "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "lab_block": { "asset_path": "res://assets/environment/isometric/objects/buildings/toxic_lab_block.svg", "biome_ids": ["toxic_wastes"], "anchor": "bottom_center", "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "snow_cabin": { "asset_path": "res://assets/environment/isometric/objects/buildings/snow_cabin.svg", "biome_ids": ["frozen_outskirts"], "anchor": "bottom_center", "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "sunken_house": { "asset_path": "res://assets/environment/isometric/objects/buildings/marsh_sunken_house.svg", "biome_ids": ["drowned_marsh"], "anchor": "bottom_center", "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "industrial_fence": { "asset_path": "res://assets/environment/isometric/objects/barriers/toxic_industrial_fence.svg", "biome_ids": ["toxic_wastes"], "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "toxic_barrel": { "asset_path": "res://assets/environment/isometric/objects/barrels/toxic_barrel.svg", "biome_ids": ["toxic_wastes"], "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "lab_wall": { "asset_path": "res://assets/environment/isometric/objects/barriers/toxic_lab_wall.svg", "biome_ids": ["toxic_wastes"], "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "charred_wall": { "asset_path": "res://assets/environment/isometric/objects/barriers/ash_charred_wall.svg", "biome_ids": ["burning_fields"], "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "ash_barrier": { "asset_path": "res://assets/environment/isometric/objects/barriers/ash_barrier.svg", "biome_ids": ["burning_fields"], "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "snow_wall": { "asset_path": "res://assets/environment/isometric/objects/barriers/snow_wall.svg", "biome_ids": ["frozen_outskirts"], "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "marsh_log": { "asset_path": "res://assets/environment/isometric/objects/trees/marsh_log.svg", "biome_ids": ["drowned_marsh"], "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "broken_walkway": { "asset_path": "res://assets/environment/isometric/objects/bridges/marsh_broken_walkway.svg", "biome_ids": ["drowned_marsh"], "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "toxic_boundary_wall": { "asset_path": "res://assets/environment/isometric/edges/walls/toxic_boundary_wall.svg", "biome_ids": ["toxic_wastes"], "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "lava_boundary": { "asset_path": "res://assets/environment/isometric/edges/walls/lava_boundary.svg", "biome_ids": ["burning_fields"], "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "ice_boundary": { "asset_path": "res://assets/environment/isometric/edges/walls/ice_boundary.svg", "biome_ids": ["frozen_outskirts"], "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "deep_water_boundary": { "asset_path": "res://assets/environment/isometric/edges/walls/deep_water_boundary.svg", "biome_ids": ["drowned_marsh"], "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "fall_zone": { "asset_path": "res://assets/environment/isometric/edges/cliffs/fall_zone.svg", "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_fall_zone.gd" },
+    "bridge_passage": { "asset_path": "res://assets/environment/isometric/passages/bridge_passage.svg", "fallback_path": "res://game/modes/zombie/biome_terrain_patch.gd" },
+    "supply_crate": { "asset_path": "res://assets/environment/isometric/objects/crates/supply_crate.svg", "fallback_path": "res://game/drops/supply_crate.gd" }
+  },
+  "passage_tiles": {
+    "road": { "asset_path": "res://assets/environment/isometric/passages/road.svg", "fallback_path": "res://game/modes/zombie/biome_terrain_patch.gd" },
+    "bridge": { "asset_path": "res://assets/environment/isometric/passages/bridge.svg", "fallback_path": "res://game/modes/zombie/biome_terrain_patch.gd" },
+    "snow_pass": { "asset_path": "res://assets/environment/isometric/passages/snow_pass.svg", "biome_ids": ["frozen_outskirts"], "fallback_path": "res://game/modes/zombie/biome_terrain_patch.gd" },
+    "broken_gate": { "asset_path": "res://assets/environment/isometric/passages/broken_gate.svg", "biome_ids": ["toxic_wastes"], "fallback_path": "res://game/modes/zombie/biome_terrain_patch.gd" },
+    "burned_road": { "asset_path": "res://assets/environment/isometric/passages/burned_road.svg", "biome_ids": ["burning_fields"], "fallback_path": "res://game/modes/zombie/biome_terrain_patch.gd" }
+  },
+  "biome_asset_sets": {
+    "infected_plains": { "asset_path": "res://assets/environment/isometric/previews/infected_plains_asset_set.svg", "biome_ids": ["infected_plains"], "fallback_path": "res://game/modes/zombie/biome_region_ground.gd", "tile_set": "infected_plains", "terrain_tiles": ["main_road", "road", "broken_street"], "object_scenes": ["small_rock", "broken_fence", "wood_barrier", "boundary_fence", "ruined_house", "abandoned_house"], "edge_tiles": ["boundary_fence"], "void_tiles": ["fall_zone", "void_depth"], "passage_tiles": ["road"] },
+    "toxic_wastes": { "asset_path": "res://assets/environment/isometric/previews/toxic_wastes_asset_set.svg", "biome_ids": ["toxic_wastes"], "fallback_path": "res://game/modes/zombie/biome_region_ground.gd", "tile_set": "toxic_wastes", "terrain_tiles": ["main_road", "road", "service_lane", "broken_gate"], "object_scenes": ["corroded_barrier", "lab_ruin", "chemical_barrel", "pipe_stack", "lab_block", "industrial_fence", "toxic_barrel", "lab_wall", "toxic_boundary_wall"], "edge_tiles": ["toxic_boundary_wall"], "void_tiles": ["fall_zone", "void_depth"], "passage_tiles": ["broken_gate", "road"] },
+    "burning_fields": { "asset_path": "res://assets/environment/isometric/previews/burning_fields_asset_set.svg", "biome_ids": ["burning_fields"], "fallback_path": "res://game/modes/zombie/biome_region_ground.gd", "tile_set": "burning_fields", "terrain_tiles": ["main_road", "road", "ash_lane", "burned_road"], "object_scenes": ["scorched_barricade", "burned_house", "burned_car", "charred_wall", "ash_barrier", "lava_boundary"], "edge_tiles": ["lava_boundary"], "void_tiles": ["fall_zone", "void_depth"], "passage_tiles": ["burned_road", "road"] },
+    "frozen_outskirts": { "asset_path": "res://assets/environment/isometric/previews/frozen_outskirts_asset_set.svg", "biome_ids": ["frozen_outskirts"], "fallback_path": "res://game/modes/zombie/biome_region_ground.gd", "tile_set": "frozen_outskirts", "terrain_tiles": ["main_road", "road", "packed_snow_path", "snow_pass"], "object_scenes": ["ice_rock", "ice_block", "snow_cabin", "snow_wall", "ice_boundary"], "edge_tiles": ["ice_boundary"], "void_tiles": ["fall_zone", "void_depth"], "passage_tiles": ["snow_pass", "road"] },
+    "drowned_marsh": { "asset_path": "res://assets/environment/isometric/previews/drowned_marsh_asset_set.svg", "biome_ids": ["drowned_marsh"], "fallback_path": "res://game/modes/zombie/biome_region_ground.gd", "tile_set": "drowned_marsh", "terrain_tiles": ["main_road", "road", "wooden_walkway", "bridge"], "object_scenes": ["reed_wall", "sunken_wreck", "fallen_log", "wood_bridge", "dead_tree", "sunken_house", "marsh_log", "broken_walkway", "deep_water_boundary"], "edge_tiles": ["deep_water_boundary"], "void_tiles": ["fall_zone", "void_depth"], "passage_tiles": ["bridge", "road"] }
   },
   "terrain": {
     "sample_step_presets": {

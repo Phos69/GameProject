@@ -52,6 +52,18 @@ Alla fine della milestone:
 
 # Milestone 10.1 — Contratto asset v7 e inventario finale
 
+Stato: completata il 2026-06-18.
+
+Esito:
+
+- `manifest.json` portato a `version: 7` con sezioni `tile_sets`,
+  `tile_variants`, `terrain_tiles`, `edge_tiles`, `void_tiles`,
+  `object_scenes`, `passage_tiles`, `biome_asset_sets` e `fallback_policy`.
+- `IsometricEnvironmentManifest` espone e valida contratti asset normalizzati
+  con fallback esplicito, senza richiedere file esterni per il bootstrap.
+- Aggiunto `tests/milestone_10_asset_manifest_v7_smoke_test.gd` per copertura
+  v7, generazione `5x5` e asset opzionale mancante dichiarato `needs_asset`.
+
 ## Obiettivo
 
 Trasformare il manifest isometrico da inventario di draw procedurali a contratto asset-driven.

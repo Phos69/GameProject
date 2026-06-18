@@ -367,6 +367,10 @@ Attivita post-roadmap:
 - Milestone 9 di `docs/isometric_generation_audit_roadmap.md` completata:
   `ExplorationMapPanel` con marker active/loaded regions, passaggi tematizzati per
   `passage_type` e supporto high contrast via `apply_visual_settings`.
+- Milestone 10.1 di `milestone_10_isometric_asset_rewrite_roadmap.md`
+  completata: manifest ambiente v7 con sezioni asset-driven, fallback policy
+  esplicita e smoke di copertura per ID generati da terrain, oggetti, passaggi,
+  bordi e fall zone.
 - asset definitivi e ulteriori pass di bilanciamento;
 - firma digitale della build pubblica.
 

@@ -948,6 +948,22 @@ Sotto-task completati:
 
 ### Milestone 10 - Polish grafico e sostituzione placeholder
 
+Stato: in corso. Sotto-milestone 10.1 completata il 2026-06-18.
+
+Esito 10.1:
+
+- `assets/environment/isometric/manifest.json` portato a v7 con sezioni
+  asset-driven per tile set, varianti, terrain, edge, void, object scenes,
+  passage tiles, set per bioma e fallback policy.
+- `IsometricEnvironmentManifest` normalizza i contratti v7 con path, status,
+  biome ids, footprint, anchor, collisione, flag di blocco, source, license,
+  attribution e fallback esplicito.
+- Gli ID generati da ostacoli, terrain, passaggi, bordi e fall zone sono coperti
+  da `tests/milestone_10_asset_manifest_v7_smoke_test.gd`; il test negativo
+  conferma che un asset pianificato ma assente resta sicuro come `needs_asset`.
+- Nessun asset esterno e diventato obbligatorio e il runtime procedurale resta
+  fallback tecnico dichiarato.
+
 Obiettivo:
 sostituire gradualmente placeholder procedurali con asset o scene dedicate,
 mantenendo fallback e nessun asset esterno obbligatorio.

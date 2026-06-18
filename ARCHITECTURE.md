@@ -136,7 +136,11 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `BiomeTerrainGenerator`: genera il layout interno del bioma attivo e collega ostacoli, casse, hazard e report di validazione.
 - `IsometricEnvironmentManifest`: legge `assets/environment/isometric/manifest.json`
   come inventario di ostacoli, draw mode oggetto, border tematici, fall zone
-  procedurali e tag terrain isometrici generati.
+  procedurali, tag terrain generati e contratto asset v7 (`tile_sets`,
+  `terrain_tiles`, `edge_tiles`, `void_tiles`, `object_scenes`,
+  `passage_tiles`, `biome_asset_sets`, `fallback_policy`). Il loader normalizza
+  path, status, footprint, anchor, collisione, blocchi e attribution senza
+  rendere obbligatori asset esterni.
 - `ObstacleLayoutGenerator`: produce strade, corridoi, case grandi, ostacoli
   secondari e muri/bordi tematici sui lati connessi o bloccati.
 - `FallBoundaryGenerator`: trasforma i lati senza vicino in `fall_zone` data-driven con il contratto di danno ambientale esistente.
@@ -477,6 +481,10 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - `BiomeObstacle` legge `draw_mode` e `dedicated_draw` da
   `IsometricEnvironmentManifest`; se un ID ricade su `generic_barrier`, deve
   essere una scelta esplicita del manifest e non un fallback implicito.
+- Il manifest v7 vieta fallback impliciti: ogni ID generato da ostacoli,
+  terrain, passaggi, bordi o fall zone deve avere un contratto asset-driven con
+  `asset_path`, `status`, `biome_ids`, `anchor`, footprint/collisione, sorgente,
+  licenza, attribution e `fallback_path` quando l'asset e ancora assente.
 - `BiomeObstacle` costruisce la collisione dal manifest: `collision_shape`
   (`rectangle`/`circle`/`open`) guida lo shape runtime e `contains_global_position`,
   `blocks_movement` e `blocks_projectiles` guidano i bit di `collision_layer`,

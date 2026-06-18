@@ -5,9 +5,10 @@ class_name IsometricEnvironmentManifest
 ##
 ## The manifest is the single source of truth for how environment objects are
 ## converted to the pseudo-isometric pipeline: collision shape, footprint,
-## blocking flags, procedural draw mode and ground sort offset. Visuals stay
-## procedural (no external art is mandatory for bootstrap): when `visual_scene`
-## is empty or points to a script, the spawning system uses its built-in drawing.
+## blocking flags, procedural draw mode, asset contract and ground sort offset.
+## Manifest v7 separates the normal asset path from the technical fallback path:
+## missing art is allowed only when the entry explicitly declares a fallback or a
+## needs_asset/procedural_fallback status.
 
 const MANIFEST_PATH: String = "res://assets/environment/isometric/manifest.json"
 const COLLISION_SHAPES: Array[String] = [
@@ -69,12 +70,44 @@ const OBJECT_DRAW_MODES: Array[String] = [
 	"wreck"
 ]
 const BIOME_OBSTACLE_SCENE := "res://game/modes/zombie/biome_obstacle.gd"
+const ASSET_CONTRACT_SECTIONS: Array[String] = [
+	"tile_sets",
+	"tile_variants",
+	"terrain_tiles",
+	"edge_tiles",
+	"void_tiles",
+	"object_scenes",
+	"passage_tiles",
+	"biome_asset_sets"
+]
+const ASSET_STATUSES: Array[String] = [
+	"final",
+	"base_complete",
+	"needs_polish",
+	"procedural_fallback",
+	"needs_asset",
+	"deprecated"
+]
+const MISSING_ASSET_STATUSES: Array[String] = [
+	"needs_asset",
+	"procedural_fallback",
+	"deprecated"
+]
+const ASSET_ANCHORS: Array[String] = [
+	"center",
+	"bottom_center",
+	"iso_floor_center",
+	"edge_aligned"
+]
 
 static var _cached: IsometricEnvironmentManifest
 
 var version: int = 0
 var coordinate_system: String = ""
 var default_sort_offset: float = 0.0
+var asset_contract_defaults: Dictionary = {}
+var fallback_policy: Dictionary = {}
+var asset_contracts: Dictionary = {}
 var objects: Dictionary = {}
 var object_visual_styles: Dictionary = {}
 var terrain_styles: Dictionary = {}
@@ -96,6 +129,9 @@ func load_from_disk(path: String = MANIFEST_PATH) -> bool:
 	version = 0
 	coordinate_system = ""
 	default_sort_offset = 0.0
+	asset_contract_defaults.clear()
+	fallback_policy.clear()
+	asset_contracts.clear()
 	objects.clear()
 	object_visual_styles.clear()
 	terrain_styles.clear()
@@ -127,6 +163,7 @@ func load_from_disk(path: String = MANIFEST_PATH) -> bool:
 			continue
 		var normalized := _normalize_object(entry)
 		objects[normalized["id"]] = normalized
+	_load_asset_contract_data(data)
 	for backlog_value in data.get("conversion_backlog", []) as Array:
 		conversion_backlog.append(StringName(str(backlog_value)))
 	return true
@@ -200,6 +237,46 @@ func get_terrain_sample_step(preset: StringName = &"balanced") -> int:
 		return int(terrain_sample_step_presets[&"balanced"])
 	return 8
 
+func get_asset_contract_section_ids() -> Array[StringName]:
+	var ids: Array[StringName] = []
+	for section in asset_contracts.keys():
+		ids.append(StringName(str(section)))
+	ids.sort()
+	return ids
+
+func has_asset_contract(section: StringName, asset_id: StringName) -> bool:
+	var section_data := asset_contracts.get(section, {}) as Dictionary
+	return section_data.has(asset_id)
+
+func get_asset_contract(section: StringName, asset_id: StringName) -> Dictionary:
+	var section_data := asset_contracts.get(section, {}) as Dictionary
+	if section_data.has(asset_id):
+		return (section_data[asset_id] as Dictionary).duplicate(true)
+	return {}
+
+func get_asset_contract_ids(section: StringName) -> Array[StringName]:
+	var ids: Array[StringName] = []
+	var section_data := asset_contracts.get(section, {}) as Dictionary
+	for key in section_data.keys():
+		ids.append(StringName(str(key)))
+	ids.sort()
+	return ids
+
+func get_object_asset_contract(object_id: StringName) -> Dictionary:
+	return get_asset_contract(&"object_scenes", object_id)
+
+func get_terrain_asset_contract(terrain_tag: StringName) -> Dictionary:
+	return get_asset_contract(&"terrain_tiles", terrain_tag)
+
+func get_passage_asset_contract(passage_type: StringName) -> Dictionary:
+	return get_asset_contract(&"passage_tiles", passage_type)
+
+func get_void_asset_contract(void_id: StringName) -> Dictionary:
+	return get_asset_contract(&"void_tiles", void_id)
+
+func get_fallback_policy() -> Dictionary:
+	return fallback_policy.duplicate(true)
+
 func get_sort_offset(object_id: StringName) -> float:
 	if objects.has(object_id):
 		return float((objects[object_id] as Dictionary).get("sort_offset", default_sort_offset))
@@ -239,6 +316,8 @@ func validate() -> Dictionary:
 		failures.append(load_error)
 	if version <= 0:
 		failures.append("manifest version must be positive")
+	if version >= 7:
+		_validate_asset_contracts(failures)
 	for object_id in objects.keys():
 		var entry := objects[object_id] as Dictionary
 		var collision_shape := String(entry.get("collision_shape", ""))
@@ -278,6 +357,228 @@ func validate() -> Dictionary:
 		"is_valid": failures.is_empty(),
 		"failures": failures
 	}
+
+func _load_asset_contract_data(data: Dictionary) -> void:
+	asset_contract_defaults = _normalize_contract_defaults(
+		data.get("asset_contract_defaults", {}) as Dictionary
+	)
+	fallback_policy = (data.get("fallback_policy", {}) as Dictionary).duplicate(true)
+	for section in ASSET_CONTRACT_SECTIONS:
+		asset_contracts[StringName(section)] = {}
+		_load_asset_contract_section(StringName(section), data.get(section, {}))
+
+func _load_asset_contract_section(section: StringName, value: Variant) -> void:
+	var section_data := asset_contracts.get(section, {}) as Dictionary
+	if value is Dictionary:
+		var entries := value as Dictionary
+		for key in entries.keys():
+			var entry_value: Variant = entries[key]
+			if not entry_value is Dictionary:
+				continue
+			var entry := (entry_value as Dictionary).duplicate(true)
+			if not entry.has("id"):
+				entry["id"] = str(key)
+			var normalized := _normalize_asset_contract(section, entry)
+			section_data[normalized["id"]] = normalized
+	elif value is Array:
+		for entry_value in value as Array:
+			if not entry_value is Dictionary:
+				continue
+			var normalized := _normalize_asset_contract(section, entry_value as Dictionary)
+			section_data[normalized["id"]] = normalized
+	asset_contracts[section] = section_data
+
+func _normalize_contract_defaults(defaults: Dictionary) -> Dictionary:
+	return {
+		"status": String(defaults.get("status", "needs_asset")),
+		"source": String(defaults.get("source", "internal_generated")),
+		"license": String(defaults.get("license", "Project original")),
+		"attribution_key": String(defaults.get("attribution_key", "environment_isometric_internal")),
+		"anchor": StringName(str(defaults.get("anchor", "iso_floor_center"))),
+		"biome_ids": _normalize_string_name_array(defaults.get("biome_ids", ["shared"]))
+	}
+
+func _normalize_asset_contract(section: StringName, entry: Dictionary) -> Dictionary:
+	var asset_id := StringName(str(entry.get("id", "")))
+	var legacy_object := objects.get(asset_id, {}) as Dictionary
+	var terrain_style := terrain_styles.get(asset_id, {}) as Dictionary
+	var default_fallback := _get_default_fallback_path(section, asset_id)
+	return {
+		"id": asset_id,
+		"section": section,
+		"asset_path": String(entry.get("asset_path", "")),
+		"status": String(entry.get("status", asset_contract_defaults.get("status", "needs_asset"))),
+		"biome_ids": _normalize_string_name_array(
+			entry.get("biome_ids", asset_contract_defaults.get("biome_ids", ["shared"]))
+		),
+		"footprint_tiles": _resolve_contract_footprint(section, entry, legacy_object),
+		"anchor": StringName(str(entry.get("anchor", asset_contract_defaults.get("anchor", &"iso_floor_center")))),
+		"sort_offset": float(entry.get("sort_offset", _resolve_contract_sort_offset(section, legacy_object))),
+		"collision_shape": String(entry.get("collision_shape", _resolve_contract_collision_shape(section, legacy_object))),
+		"blocks_movement": bool(entry.get("blocks_movement", _resolve_contract_blocks_movement(section, legacy_object))),
+		"blocks_projectiles": bool(entry.get("blocks_projectiles", _resolve_contract_blocks_projectiles(section, legacy_object))),
+		"source": String(entry.get("source", asset_contract_defaults.get("source", "internal_generated"))),
+		"license": String(entry.get("license", asset_contract_defaults.get("license", "Project original"))),
+		"attribution_key": String(entry.get("attribution_key", asset_contract_defaults.get("attribution_key", "environment_isometric_internal"))),
+		"fallback_path": String(entry.get("fallback_path", default_fallback)),
+		"fallback_reason": String(entry.get("fallback_reason", terrain_style.get("fallback", "")))
+	}
+
+func _normalize_string_name_array(value: Variant) -> Array[StringName]:
+	var result: Array[StringName] = []
+	if value is Array:
+		for item in value as Array:
+			result.append(StringName(str(item)))
+	elif value != null:
+		result.append(StringName(str(value)))
+	return result
+
+func _resolve_contract_footprint(
+	section: StringName,
+	entry: Dictionary,
+	legacy_object: Dictionary
+) -> Vector2i:
+	if entry.has("footprint_tiles"):
+		var footprint_values := entry.get("footprint_tiles", [0, 0]) as Array
+		if footprint_values.size() >= 2:
+			return Vector2i(int(footprint_values[0]), int(footprint_values[1]))
+	if legacy_object.has("footprint_tiles"):
+		return legacy_object.get("footprint_tiles", Vector2i.ONE) as Vector2i
+	match section:
+		&"tile_sets", &"tile_variants", &"terrain_tiles", &"passage_tiles":
+			return Vector2i.ONE
+		&"edge_tiles":
+			return Vector2i(16, 4)
+		&"void_tiles":
+			return Vector2i(200, 6)
+		_:
+			return Vector2i.ONE
+
+func _resolve_contract_sort_offset(section: StringName, legacy_object: Dictionary) -> float:
+	if legacy_object.has("sort_offset"):
+		return float(legacy_object.get("sort_offset", default_sort_offset))
+	if section == &"object_scenes":
+		return default_sort_offset
+	return 0.0
+
+func _resolve_contract_collision_shape(section: StringName, legacy_object: Dictionary) -> String:
+	if legacy_object.has("collision_shape"):
+		return String(legacy_object.get("collision_shape", "rectangle"))
+	match section:
+		&"object_scenes", &"edge_tiles":
+			return "rectangle"
+		&"void_tiles":
+			return "rectangle_area"
+		_:
+			return "open"
+
+func _resolve_contract_blocks_movement(section: StringName, legacy_object: Dictionary) -> bool:
+	if legacy_object.has("blocks_movement"):
+		return bool(legacy_object.get("blocks_movement", true))
+	return section == &"object_scenes" or section == &"edge_tiles"
+
+func _resolve_contract_blocks_projectiles(section: StringName, legacy_object: Dictionary) -> bool:
+	if legacy_object.has("blocks_projectiles"):
+		return bool(legacy_object.get("blocks_projectiles", true))
+	return section == &"object_scenes" or section == &"edge_tiles"
+
+func _get_default_fallback_path(section: StringName, asset_id: StringName) -> String:
+	var technical := fallback_policy.get("technical_fallbacks", {}) as Dictionary
+	match section:
+		&"tile_sets", &"tile_variants":
+			return String(technical.get("terrain", ""))
+		&"terrain_tiles":
+			return String(technical.get("terrain_patch", ""))
+		&"edge_tiles":
+			return String(technical.get("object", ""))
+		&"void_tiles":
+			return String(technical.get("void", ""))
+		&"passage_tiles":
+			return String(technical.get("passage", ""))
+		&"object_scenes":
+			if asset_id == &"supply_crate":
+				return String(technical.get("crate", ""))
+			if asset_id == &"fall_zone":
+				return String(technical.get("void", ""))
+			if asset_id == &"bridge_passage":
+				return String(technical.get("passage", ""))
+			return String(technical.get("object", ""))
+		_:
+			return ""
+
+func _validate_asset_contracts(failures: PackedStringArray) -> void:
+	if fallback_policy.is_empty():
+		failures.append("fallback_policy section is required in manifest v7")
+	elif bool(fallback_policy.get("implicit_fallback_allowed", true)):
+		failures.append("fallback_policy must disable implicit fallbacks")
+	for section_name in ASSET_CONTRACT_SECTIONS:
+		var section := StringName(section_name)
+		var section_data := asset_contracts.get(section, {}) as Dictionary
+		if section_data.is_empty():
+			failures.append("%s section must not be empty in manifest v7" % section_name)
+			continue
+		for contract_id in section_data.keys():
+			_validate_asset_contract(section, section_data[contract_id] as Dictionary, failures)
+	_validate_asset_coverage(failures)
+
+func _validate_asset_contract(
+	section: StringName,
+	contract: Dictionary,
+	failures: PackedStringArray
+) -> void:
+	var contract_id := String(contract.get("id", ""))
+	if contract_id.is_empty():
+		failures.append("%s: asset contract id must not be empty" % String(section))
+	var status := String(contract.get("status", ""))
+	if not ASSET_STATUSES.has(status):
+		failures.append("%s/%s: unknown asset status '%s'" % [String(section), contract_id, status])
+	var asset_path := String(contract.get("asset_path", ""))
+	if asset_path.is_empty() and status != "deprecated":
+		failures.append("%s/%s: asset_path must not be empty" % [String(section), contract_id])
+	var anchor := String(contract.get("anchor", ""))
+	if not ASSET_ANCHORS.has(anchor):
+		failures.append("%s/%s: unknown anchor '%s'" % [String(section), contract_id, anchor])
+	var footprint := contract.get("footprint_tiles", Vector2i.ZERO) as Vector2i
+	if footprint.x <= 0 or footprint.y <= 0:
+		failures.append("%s/%s: footprint_tiles must be positive" % [String(section), contract_id])
+	var collision_shape := String(contract.get("collision_shape", ""))
+	if not COLLISION_SHAPES.has(collision_shape):
+		failures.append("%s/%s: unknown collision_shape '%s'" % [String(section), contract_id, collision_shape])
+	for required_field in ["source", "license", "attribution_key"]:
+		if String(contract.get(required_field, "")).is_empty():
+			failures.append("%s/%s: %s must not be empty" % [String(section), contract_id, required_field])
+	var biome_ids := contract.get("biome_ids", []) as Array
+	if biome_ids.is_empty():
+		failures.append("%s/%s: biome_ids must not be empty" % [String(section), contract_id])
+	var fallback_path := String(contract.get("fallback_path", ""))
+	if MISSING_ASSET_STATUSES.has(status) and fallback_path.is_empty():
+		failures.append("%s/%s: missing assets require explicit fallback_path" % [String(section), contract_id])
+	if not MISSING_ASSET_STATUSES.has(status) and not _asset_path_exists(asset_path):
+		failures.append("%s/%s: asset_path does not exist for status '%s'" % [String(section), contract_id, status])
+
+func _validate_asset_coverage(failures: PackedStringArray) -> void:
+	for object_id in objects.keys():
+		if not has_asset_contract(&"object_scenes", StringName(object_id)):
+			failures.append("%s: object id missing object_scenes asset contract" % String(object_id))
+	for terrain_id in terrain_styles.keys():
+		if not has_asset_contract(&"terrain_tiles", StringName(terrain_id)):
+			failures.append("%s: terrain tag missing terrain_tiles asset contract" % String(terrain_id))
+	for passage_id in BiomePassageGenerator.get_generated_passage_terrain_tag_categories().keys():
+		var passage_type := StringName(passage_id)
+		if not has_asset_contract(&"passage_tiles", passage_type):
+			failures.append("%s: passage type missing passage_tiles asset contract" % String(passage_type))
+	for border_id in [&"boundary_fence", &"toxic_boundary_wall", &"lava_boundary", &"ice_boundary", &"deep_water_boundary"]:
+		if not has_asset_contract(&"edge_tiles", border_id):
+			failures.append("%s: border id missing edge_tiles asset contract" % String(border_id))
+	if not has_asset_contract(&"void_tiles", &"fall_zone"):
+		failures.append("fall_zone: missing void_tiles asset contract")
+
+func _asset_path_exists(asset_path: String) -> bool:
+	if asset_path.is_empty():
+		return false
+	if ResourceLoader.exists(asset_path):
+		return true
+	return FileAccess.file_exists(asset_path)
 
 func _load_object_visual_data(value: Variant) -> void:
 	if not value is Dictionary:
