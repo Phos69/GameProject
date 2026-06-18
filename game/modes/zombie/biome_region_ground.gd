@@ -24,25 +24,37 @@ func get_sample_step() -> int:
 func _draw() -> void:
 	if layout == null or palette == null:
 		return
+	# Grid outlines share one color; batch them into a single non-antialiased
+	# multiline instead of a per-sample draw_polyline so neighbor grounds add a
+	# single draw call regardless of how many sample tiles they cover.
+	var grid_segments := PackedVector2Array()
 	for y in range(0, layout.zone_size.y, sample_step):
 		for x in range(0, layout.zone_size.x, sample_step):
-			_draw_sample_tile(Vector2i(x, y))
+			_draw_sample_tile(Vector2i(x, y), grid_segments)
+	if grid_segments.size() >= 2:
+		draw_multiline(grid_segments, Color(palette.grid_color, 0.22))
 
-func _draw_sample_tile(cell: Vector2i) -> void:
+func _draw_sample_tile(cell: Vector2i, grid_segments: PackedVector2Array) -> void:
 	var center := layout.logical_to_world(cell + Vector2i(sample_step / 2, sample_step / 2))
 	var scale := layout.logical_tile_scale * float(sample_step)
 	var half_w := scale * 0.62
 	var half_h := scale * 0.34
-	var points := PackedVector2Array([
-		center + Vector2(0.0, -half_h),
-		center + Vector2(half_w, 0.0),
-		center + Vector2(0.0, half_h),
-		center + Vector2(-half_w, 0.0)
-	])
-	draw_colored_polygon(points, _tile_color(cell))
-	var closed := points.duplicate()
-	closed.append(points[0])
-	draw_polyline(closed, Color(palette.grid_color, 0.22), 1.0, true)
+	var top := center + Vector2(0.0, -half_h)
+	var right := center + Vector2(half_w, 0.0)
+	var bottom := center + Vector2(0.0, half_h)
+	var left := center + Vector2(-half_w, 0.0)
+	draw_colored_polygon(
+		PackedVector2Array([top, right, bottom, left]),
+		_tile_color(cell)
+	)
+	grid_segments.append(top)
+	grid_segments.append(right)
+	grid_segments.append(right)
+	grid_segments.append(bottom)
+	grid_segments.append(bottom)
+	grid_segments.append(left)
+	grid_segments.append(left)
+	grid_segments.append(top)
 
 func _tile_color(cell: Vector2i) -> Color:
 	var terrain_class := layout.get_terrain_class_at_cell(cell)
