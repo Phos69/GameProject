@@ -69,6 +69,10 @@ func spawn_enemy(
 	var enemy := scene.instantiate()
 	var resolved_config := spawn_config.duplicate(true)
 	resolved_config["enemy_id"] = enemy_id
+	if not resolved_config.has("spawn_region_id"):
+		resolved_config["spawn_region_id"] = _resolve_spawn_region_id(position)
+	if not resolved_config.has("current_region_id"):
+		resolved_config["current_region_id"] = resolved_config["spawn_region_id"]
 	var profile := get_enemy_profile(enemy_id)
 	if profile != null:
 		resolved_config["enemy_profile"] = profile
@@ -111,3 +115,21 @@ func _on_enemy_died(enemy: Node) -> void:
 
 func _on_enemy_tree_exited(enemy: Node) -> void:
 	active_enemies.erase(enemy)
+
+func _resolve_spawn_region_id(position: Vector2) -> StringName:
+	var seam_system := get_tree().get_first_node_in_group("region_seam_system")
+	if (
+		seam_system != null
+		and seam_system.has_method("get_region_id_for_world_position")
+	):
+		var region_id := StringName(
+			seam_system.get_region_id_for_world_position(position)
+		)
+		if not region_id.is_empty():
+			return region_id
+	var world_runtime := get_tree().get_first_node_in_group(
+		"world_runtime"
+	) as WorldRuntime
+	if world_runtime != null:
+		return world_runtime.get_current_region_id()
+	return &""

@@ -1,5 +1,25 @@
 # Latest Commit Validation Report
 
+## Milestone 10.9 chase zombie cross-bioma - 2026-06-18
+- Branch: `master`
+- HEAD corrente: non committato al momento della validazione locale.
+- Scope validato: metadata regione su `BasicEnemy`, regione di spawn risolta da
+  `EnemySystem`, validazione spawn world-space nello `ZombieSpawner` e chase di
+  uno zombie attraverso un varco aperto tra regioni streamate.
+- Esito: PASS sui criteri automatizzabili. Lo zombie mantiene target, stato
+  chase/attack, health e registrazione in `EnemySystem` attraversando il seam;
+  aggiorna `current_region_id` e `last_seen_player_region_id` senza despawn o
+  reset.
+
+| Test | Esito | Note |
+|---|---|---|
+| `tests/milestone_10_cross_biome_chase_smoke_test.gd` | PASS | chase oltre seam, metadata regione, no despawn/reset |
+| `tests/milestone_10_full_region_streaming_smoke_test.gd` | PASS | streamer gameplay ancora coerente |
+| `tests/milestone_10_no_portal_transition_smoke_test.gd` | PASS | no gate runtime |
+| `tests/zombie_biome_enemy_smoke_test.gd` | PASS | profili tematici e status invariati |
+| `tests/survival_wave_smoke_test.gd` | PASS | wave survival invariata |
+| `tests/enemy_drop_smoke_test.gd` | PASS | targeting/drop base invariati |
+
 ## Milestone 10.8 streaming gameplay multi-regione - 2026-06-18
 - Branch: `master`
 - HEAD corrente: non committato al momento della validazione locale.

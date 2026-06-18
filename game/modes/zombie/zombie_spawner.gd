@@ -211,6 +211,24 @@ func _is_position_hazardous(position: Vector2) -> bool:
 	)
 
 func _is_position_inside_generated_biome(position: Vector2, biome) -> bool:
+	var seam_system := get_tree().get_first_node_in_group("region_seam_system")
+	if (
+		seam_system != null
+		and seam_system.has_method("get_region_id_for_world_position")
+	):
+		var region_id := StringName(
+			seam_system.get_region_id_for_world_position(position)
+		)
+		if region_id.is_empty():
+			return false
+		var streamer := get_tree().get_first_node_in_group("world_region_streamer")
+		if (
+			streamer != null
+			and streamer.has_method("is_region_streamed")
+			and not bool(streamer.is_region_streamed(region_id))
+		):
+			return false
+		return true
 	if biome == null:
 		return true
 	var layout := biome.get("environment_layout") as BiomeEnvironmentLayout

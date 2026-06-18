@@ -655,6 +655,22 @@ Passare dal prototipo “vicini solo ground” a regioni adiacenti vive, con col
 
 # Milestone 10.9 — Zombie chase cross-bioma
 
+Stato: completata il 2026-06-18.
+
+Esito:
+
+- `BasicEnemy` resta world-space e non dipende dalla regione corrente per
+  target, health, status o lifecycle; aggiunge metadata `spawn_region_id`,
+  `current_region_id` e `last_seen_player_region_id`.
+- `EnemySystem.spawn_enemy()` assegna automaticamente `spawn_region_id` dalla
+  posizione di spawn tramite `RegionSeamSystem`, con fallback a `WorldRuntime`.
+- `ZombieSpawner` valida posizioni world-space contro regioni streamate, cosi
+  i bordi camera restano utilizzabili vicino o oltre un seam.
+- Aggiunto `tests/milestone_10_cross_biome_chase_smoke_test.gd`: uno zombie
+  spawnato lato sorgente mantiene target e stato chase/attack, attraversa il
+  varco aperto, aggiorna `current_region_id`, non viene despawnato e non resetta
+  health.
+
 ## Obiettivo
 
 Garantire che gli zombie che inseguono il giocatore continuino a farlo attraverso il passaggio tra biomi.

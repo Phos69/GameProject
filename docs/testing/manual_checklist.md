@@ -792,12 +792,16 @@ almeno otto regioni con ritorno alla regione precedente.
   regioni fuori raggio spariscono).
 - Aprire una crate in un vicino, uscire/rientrare o forzare un re-stream e
   confermare che resti consumata per quel `region_id`.
+- Attirare un gruppo di zombie da una regione a quella adiacente e confermare
+  che mantengano target, vita e status durante il varco, senza sparire o
+  tornare allo spawn.
 - Monitorare il frame time con i vicini renderizzati e griglia almeno `7x7`;
   annotare eventuale debito di performance (camera/spawn cross-regione restano
   follow-up).
 
 ```text
 godot --headless --path . --script res://tests/milestone_10_full_region_streaming_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_cross_biome_chase_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_8_multi_region_smoke_test.gd
 godot --headless --path . --script res://tests/region_streaming_smoke_test.gd
 godot --headless --path . --script res://tests/open_passage_transition_smoke_test.gd

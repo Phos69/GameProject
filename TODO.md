@@ -24,7 +24,7 @@ Regole per nuove voci:
 | Mini-eventi bioma | PASS nella validazione Milestone 2 | `tests/biome_mini_events_smoke_test.gd`, `tests/random_encounter_smoke_test.gd`, `docs/latest_commit_validation_report.md` | Riprendere solo dentro playtest/bilanciamento Milestone 11 |
 | Megamappa e streaming regioni | PASS nella validazione Milestone 3 | `tests/region_streaming_smoke_test.gd`, world graph, persistent world, open passage, exploration map, `docs/latest_commit_validation_report.md` | Riprendere in Milestone 4 (asset isometrici) o nel bilanciamento Milestone 11 |
 | Asset isometrici ambiente | PASS nella validazione Milestone 4 | `tests/isometric_environment_manifest_smoke_test.gd`, manifest v2 poi v5, biome obstacle generation, `docs/latest_commit_validation_report.md` | Conversione ad arte esterna definitiva opzionale; QA visuale screenshot nel playtest Milestone 11 |
-| Audit migrazione isometrica | Milestone 1-9 PASS, Milestone 10.1-10.8 PASS con asset, cliff, transizione senza portali e vicini gameplay `FULL` | `docs/isometric_generation_audit_roadmap.md`, manifest ambiente v7, `BiomeTileLayer`, `IsometricTileResolver`, `IsometricEnvironmentObjectFactory`, `IsometricSvgTextureLoader`, `RegionSeamSystem`, `WorldRegionStreamer`, smoke Milestone 10.1-10.8 | Proseguire `ISO-001` con la Milestone 10.9 sul chase zombie cross-bioma |
+| Audit migrazione isometrica | Milestone 1-9 PASS, Milestone 10.1-10.9 PASS con asset, cliff, transizione senza portali, vicini gameplay `FULL` e chase cross-bioma | `docs/isometric_generation_audit_roadmap.md`, manifest ambiente v7, `BiomeTileLayer`, `IsometricTileResolver`, `IsometricEnvironmentObjectFactory`, `IsometricSvgTextureLoader`, `RegionSeamSystem`, `WorldRegionStreamer`, metadata regione nemici, smoke Milestone 10.1-10.9 | Proseguire `ISO-001` con la Milestone 10.10 su cleanup legacy e fallback controllato |
 | Dungeon ramificato/shop | PASS nella validazione Milestone 5 | `tests/dungeon_graph_smoke_test.gd`, `tests/dungeon_smoke_test.gd`, `docs/latest_commit_validation_report.md` | UI shop dedicata e arte bioma dungeon restano follow-up; screenshot tre seed nel playtest Milestone 11 |
 | Asset/pipeline personaggi RPG | PASS nella validazione Milestone 6 | `tests/rpg_character_asset_manifest_smoke_test.gd`, `assets/characters/index.json` v2, `docs/latest_commit_validation_report.md` | Arte definitiva per-personaggio (`final_quality`) resta follow-up manuale; screenshot QA nel playtest Milestone 11 |
 | Tuning melee, super e classi RPG avanzate | PASS nella validazione Milestone 7 | `tests/rpg_melee_attack_resolution_smoke_test.gd`, `tests/milestone_rpg_8_adrenaline_super_smoke_test.gd`, `tests/milestone_rpg_12_feedback_smoke_test.gd`, `tests/milestone_rpg_13_new_classes_smoke_test.gd` | QA manuale multi-risoluzione/five-wave/due-player resta follow-up nel playtest Milestone 11 |
@@ -53,8 +53,10 @@ revisione manuale, baseline e consolidamento TODO.
   vuoto/cliff asset-driven; Milestone 10.7 completata con `RegionSeamSystem`
   e transizioni world-space senza `BiomeTransitionGate` runtime; Milestone 10.8
   completata con `WorldRegionStreamer`, vicini con contenuto gameplay `FULL`,
-  query obstacle/hazard sui vicini e ledger crate per regione; la prossima
-  azione e la Milestone 10.9 sul chase zombie cross-bioma.
+  query obstacle/hazard sui vicini e ledger crate per regione; Milestone 10.9
+  completata con metadata regione nemici, spawn region-bound e chase
+  cross-bioma senza despawn/reset; la prossima azione e la Milestone 10.10 su
+  cleanup legacy e fallback controllato.
 - File/sistemi coinvolti: `game/procedural/world_generation/`,
   `game/modes/zombie/`, `game/world/`, `game/ui/exploration_map_panel.gd`,
   `assets/environment/isometric/manifest.json`, `tests/`,
@@ -70,6 +72,7 @@ revisione manuale, baseline e consolidamento TODO.
   `milestone_7_graph_connectivity`, `milestone_8_multi_region`,
   `milestone_10_no_portal_transition`,
   `milestone_10_full_region_streaming`,
+  `milestone_10_cross_biome_chase`,
   `open_passage_transition`,
   `fall_boundary_visual_logic`, `player_dodge_gap`,
   `exploration_map` e QA visuale cinque biomi quando disponibile.

@@ -12,6 +12,10 @@
   connessi come contenuto gameplay `FULL` con tile layer, ostacoli, hazard/fall
   zone e crate. Aggiunto
   `tests/milestone_10_full_region_streaming_smoke_test.gd`.
+- Aggiunto metadata regione per gli zombie (`spawn_region_id`,
+  `current_region_id`, `last_seen_player_region_id`) e smoke
+  `tests/milestone_10_cross_biome_chase_smoke_test.gd` per il chase
+  cross-bioma.
 
 ### Changed
 
@@ -22,6 +26,9 @@
   `enable_multi_region_render` e attivo; `TerrainGenerator`, `ObstacleSystem`,
   `HazardSystem` e `ResourceCrateSystem` registrano i nodi streamati per
   mantenere query, danno da caduta, safe position e ledger crate centralizzati.
+- `EnemySystem` assegna la regione di spawn dalla posizione world-space e
+  `ZombieSpawner` valida le posizioni camera-edge contro le regioni streamate;
+  gli zombie gia vivi non vengono despawnati o resettati al cambio bioma.
 
 ### Fixed
 

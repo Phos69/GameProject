@@ -405,6 +405,11 @@ Attivita post-roadmap:
   come contenuto gameplay `FULL` con tile, ostacoli, hazard/fall zone e crate;
   le query dei sistemi vedono i vicini prima dell'attraversamento e le crate
   aperte restano persistenti per `region_id`.
+- Milestone 10.9 di `milestone_10_isometric_asset_rewrite_roadmap.md`
+  completata: gli zombie restano world-space durante il chase cross-bioma,
+  tracciano `spawn_region_id`, `current_region_id` e
+  `last_seen_player_region_id`, attraversano i varchi aperti senza despawn,
+  reset di health o perdita del target.
 - asset definitivi e ulteriori pass di bilanciamento;
 - firma digitale della build pubblica.
 

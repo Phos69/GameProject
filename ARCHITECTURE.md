@@ -115,8 +115,11 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
   `WeaponData`.
 - `ProjectileSystem` e `Projectile`: spawn, movimento, collisione e consegna del danno.
 - `HealthSystem` e `HealthComponent`: richieste globali di danno/cura, stato vita locale e invulnerabilita componibile per sorgente; il danno ambientale puo ignorarla esplicitamente.
-- `EnemySystem`: registro di scene nemico per ID, spawn, contenitore, registro runtime e notifica morte.
-- `BasicEnemy`: AI melee condivisa con stati idle, chase, attack e dead.
+- `EnemySystem`: registro di scene nemico per ID, spawn, contenitore, registro runtime e notifica morte. In survival assegna `spawn_region_id` dalla posizione world-space tramite `RegionSeamSystem`.
+- `BasicEnemy`: AI melee condivisa con stati idle, chase, attack e dead; resta
+  world-space durante il chase cross-bioma e traccia `spawn_region_id`,
+  `current_region_id` e `last_seen_player_region_id` senza modificare target,
+  health, status o drop.
 - `RangedEnemy`: specializzazione di `BasicEnemy` con distanza preferita, windup e proiettile ostile.
 - `ZombieVisual`: profili procedurali basic, runner e tank senza autorita gameplay.
 - `EnemyShotTelegraphVisual`: corsia e countdown ranged senza collisioni o danno.
@@ -177,7 +180,10 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
   `road_cell_tags` diagonali, rettangoli di apertura, ostacoli fisici, casse e
   hazard per un bioma, con classificazione completa del `200x200`.
 - `WaveDirector`: composizione wave e scaling basati sul bioma corrente.
-- `ZombieSpawner`: spawn dai bordi della camera con distanza minima dai player, validazione hazard/ostacoli e fallback arena.
+- `ZombieSpawner`: spawn dai bordi della camera con distanza minima dai player,
+  validazione hazard/ostacoli e fallback arena; nella megamappa valida le
+  posizioni contro regioni streamate world-space invece del solo layout locale
+  corrente.
 - `TerrainGenerator`: applica la palette del bioma, genera il piano visuale
   `200x200`, legge gli stili terrain dal manifest e crea decorazioni non
   collidenti dal layout.
@@ -625,7 +631,11 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - Gli stati runtime sono `idle`, `intermission`, `spawning`, `combat` e `reward`.
 - Gli zombie vengono creati esclusivamente tramite `EnemySystem.spawn_enemy()`.
 - `WaveManager.get_enemy_id_for_spawn()` delega a `WaveDirector` quando presente, con fallback deterministico legacy.
-- Le posizioni spawn reali vengono richieste a `ZombieSpawner`; `spawn_points` resta fallback e contratto visuale per i gate arena.
+- Le posizioni spawn reali vengono richieste a `ZombieSpawner`; `spawn_points`
+  resta fallback/debug di arena e non rappresenta il cambio bioma.
+- Gli zombie gia vivi non vengono despawnati al cambio regione: mantengono
+  target, health, status e loot, aggiornando solo metadata di regione mentre
+  inseguono il player attraverso varchi aperti.
 - `SurvivalArenaManager` applica `context.arena_id` senza duplicare `SurvivalMode`.
 - Il profilo attivo configura spawn nemici, player, supply crate e boss.
 - I gate non hanno collisioni; il loro impulso deriva da `WaveManager.enemy_spawned`.

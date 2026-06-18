@@ -498,6 +498,8 @@ Il revamp zombie e completo come prima versione giocabile:
   contenuto gameplay: ostacoli, hazard e crate dei vicini sono gia fisici prima
   dell'attraversamento;
 - il cambio regione aggiorna palette, terreno, ostacoli, casse, hazard, HUD, mappa esplorazione e wave successive;
+- gli zombie gia vivi continuano il chase attraverso i varchi aperti tra biomi,
+  senza despawn, reset di vita, perdita del target o cambio forzato di roster;
 - la mappa consultabile mostra solo territori unknown/discovered/visited/cleared e la posizione corrente del party;
 - le ondate leggono il bioma corrente tramite `WaveDirector`;
 - lo spawn reale degli zombie viene richiesto a `ZombieSpawner` sui bordi della camera;

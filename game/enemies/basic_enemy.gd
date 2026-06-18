@@ -51,6 +51,9 @@ var death_hazard_duration: float = 0.0
 var death_hazard_radius: float = 68.0
 var emerge_timer: float = 0.0
 var active_collision_layer: int = 2
+var spawn_region_id: StringName = &""
+var current_region_id: StringName = &""
+var last_seen_player_region_id: StringName = &""
 
 func _ready() -> void:
 	add_to_group("enemies")
@@ -102,6 +105,7 @@ func _physics_process(delta: float) -> void:
 		if attack_timer <= 0.0:
 			_attack_target()
 	move_and_slide()
+	_update_region_tracking()
 	_update_visual()
 
 func get_state_name() -> StringName:
@@ -127,6 +131,8 @@ func configure_wave_scaling(config: Dictionary) -> void:
 
 func configure_spawn(config: Dictionary) -> void:
 	enemy_id = StringName(config.get("enemy_id", enemy_id))
+	spawn_region_id = StringName(config.get("spawn_region_id", spawn_region_id))
+	current_region_id = StringName(config.get("current_region_id", spawn_region_id))
 	enemy_profile = config.get("enemy_profile") as BiomeEnemyProfile
 	if enemy_profile != null:
 		_apply_enemy_profile(enemy_profile)
@@ -155,6 +161,7 @@ func _select_target() -> void:
 	if target == nearest_target:
 		return
 	target = nearest_target
+	_update_last_seen_player_region()
 	target_changed.emit(target)
 
 func _is_valid_target(candidate: Node2D) -> bool:
@@ -246,6 +253,7 @@ func _update_visual() -> void:
 	visual.set_motion(velocity, move_speed)
 	if target != null:
 		visual.set_facing(global_position.direction_to(target.global_position))
+		_update_last_seen_player_region()
 
 func _grant_kill_experience() -> void:
 	if kill_experience <= 0:
@@ -325,3 +333,31 @@ func _spawn_death_hazard() -> void:
 			"radius": death_hazard_radius
 		}
 	)
+
+func _update_region_tracking() -> void:
+	var seam_system := get_tree().get_first_node_in_group("region_seam_system")
+	if (
+		seam_system != null
+		and seam_system.has_method("get_region_id_for_world_position")
+	):
+		var resolved_region_id := StringName(
+			seam_system.get_region_id_for_world_position(global_position)
+		)
+		if not resolved_region_id.is_empty():
+			current_region_id = resolved_region_id
+	_update_last_seen_player_region()
+
+func _update_last_seen_player_region() -> void:
+	if target == null:
+		return
+	var seam_system := get_tree().get_first_node_in_group("region_seam_system")
+	if (
+		seam_system == null
+		or not seam_system.has_method("get_region_id_for_world_position")
+	):
+		return
+	var target_region_id := StringName(
+		seam_system.get_region_id_for_world_position(target.global_position)
+	)
+	if not target_region_id.is_empty():
+		last_seen_player_region_id = target_region_id
