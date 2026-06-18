@@ -163,9 +163,17 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
   manifest.
 - `BiomeTerrainPatch`: patch decorativa procedurale che usa draw mode
   data-driven per strade, passaggi e dettagli bioma senza possedere collisioni.
-- `ObstacleSystem`: genera e registra `BiomeObstacle` fisici usati anche come spawn blocker.
-- `BiomeObstacle`: usa draw mode procedurali data-driven dal manifest per
-  distinguere gli ostacoli dei biomi senza cambiare collisioni o placement.
+- `ObstacleSystem`: genera e registra ostacoli fisici usati anche come spawn
+  blocker; nel percorso asset-driven delega a `IsometricEnvironmentObjectFactory`.
+- `IsometricEnvironmentObjectFactory`: legge il contratto `object_scenes` dal
+  manifest e istanzia `IsometricEnvironmentObject` quando esiste un asset,
+  lasciando `BiomeObstacle` come fallback tecnico esplicito.
+- `IsometricEnvironmentObject`: scena base `StaticBody2D` per oggetti
+  slot-based con `Sprite2D`, ombra, anchor/footprint debug opzionale,
+  collisione/layer/sort dal manifest e hook futuri per overlay danneggiato.
+- `BiomeObstacle`: fallback compatibile che conserva draw mode procedurali
+  data-driven dal manifest per distinguere gli ostacoli dei biomi senza cambiare
+  collisioni o placement.
 - `ResourceCrateSystem`: genera casse ambientali raggiungibili riusando `SupplyCrate` e `DropSystem`.
 - `BiomeFallZone`: `Area2D` fisica e leggibile generata dai dati del bioma,
   con stile cliff/depth procedurale.
@@ -207,7 +215,9 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `ExplorationMapPanel`: pannello consultabile che disegna grafo, fog/unknown, regioni discovered/visited/cleared, connessioni note tematizzate per `passage_type`, marker per le active/loaded regions e regione corrente; consuma `apply_visual_settings` per il high contrast.
 - `PlayerVisual`: presentazione procedurale data-driven del player, con silhouette e palette derivate dal profilo RPG.
 - `ZombieVisual`: presentazione animata procedurale degli zombie.
-- `DropPickupVisual` e `SupplyCrateVisual`: icone world-space sostituibili.
+- `DropPickupVisual` e `SupplyCrateVisual`: icone world-space sostituibili;
+  la supply crate usa `object_scenes/supply_crate` come sprite asset-backed e
+  conserva il draw procedurale solo come fallback tecnico.
 - `BossTelegraphVisual`: warning world-space per pattern aimed, radial e cambio fase.
 - `WaveWardenVisual`: silhouette, animazione e stato visuale delle due fasi del boss.
 - `PlayerHudCard`: scheda HUD riusabile per ogni slot locale, inclusa indicazione minimale del cooldown roll.
@@ -494,8 +504,18 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
   sovrapposte.
   `BiomeTileLayer` cache-a tutti i 40.000 tile e li divide in chunk (`balanced`
   20x20, `performance` 25x25, `quality` 16x16) senza creare 40.000 nodi.
-- `BiomeObstacle` usa `StaticBody2D` sul layer `1`, quindi player e zombie lo trattano come impedimento fisico.
+- Gli ostacoli runtime sono `StaticBody2D` sul layer `1`, quindi player e zombie
+  li trattano come impedimento fisico.
 - Gli ostacoli appartengono anche ai gruppi `environment_obstacles` e `spawn_blockers`.
+- `ObstacleSystem` usa `IsometricEnvironmentObjectFactory` per preferire
+  `IsometricEnvironmentObject`: uno sprite asset-backed costruito dal
+  `asset_path` `object_scenes`, ancorato al pavimento e ordinato con
+  `sort_offset`. `BiomeObstacle` resta adapter/fallback quando il contratto
+  dichiara esplicitamente un fallback procedurale.
+- `IsometricSvgTextureLoader` evita che il runtime dipenda dall'import editor:
+  se Godot non puo caricare direttamente uno SVG, legge il file generato e
+  produce una `ImageTexture` runtime con base isometrica, ombra e volume usando
+  i colori dichiarati nello SVG.
 - `BiomeObstacle` legge `draw_mode` e `dedicated_draw` da
   `IsometricEnvironmentManifest`; se un ID ricade su `generic_barrier`, deve
   essere una scelta esplicita del manifest e non un fallback implicito.
@@ -516,6 +536,9 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - `ObstacleSystem.make_obstacle_key(biome_id, index, obstacle_id)` assegna a ogni
   `BiomeObstacle` una chiave stabile rigenerabile dal seed, pronta come chiave di
   persistenza per il ledger `destroyed_obstacles` (trigger gameplay in Milestone 8).
+- `SupplyCrateVisual` usa lo stesso loader SVG-runtime sul contratto
+  `object_scenes/supply_crate`; la collisione e l'apertura della crate restano
+  nel nodo `SupplyCrate`.
 - I lati con regione adiacente ma senza edge e i segmenti chiusi dei lati
   collegati usano border ID tematici per bioma; il lato senza regione resta
   fall zone e non ostacolo.

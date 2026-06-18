@@ -7,6 +7,9 @@ signal obstacle_spawned(obstacle: Node2D, obstacle_id: StringName)
 const BIOME_OBSTACLE_SCRIPT = preload(
 	"res://game/modes/zombie/biome_obstacle.gd"
 )
+const ISOMETRIC_OBJECT_FACTORY_SCRIPT = preload(
+	"res://game/modes/zombie/isometric_environment_object_factory.gd"
+)
 
 @export var environment_container_path: NodePath = NodePath(
 	"../../../../World/EnvironmentProps"
@@ -16,10 +19,12 @@ var active_biome: BiomeDefinition
 var is_active: bool = false
 var active_obstacles: Array[Node2D] = []
 var manifest: IsometricEnvironmentManifest
+var object_factory: RefCounted
 
 func _ready() -> void:
 	add_to_group("obstacle_system")
 	manifest = IsometricEnvironmentManifest.get_shared()
+	object_factory = ISOMETRIC_OBJECT_FACTORY_SCRIPT.new(manifest)
 
 func start_run(biome: BiomeDefinition) -> void:
 	_clear_runtime()
@@ -101,9 +106,6 @@ func _generate_obstacles() -> void:
 		var obstacle_id := layout.obstacle_ids[index]
 		if not allowed_ids.has(obstacle_id):
 			continue
-		var obstacle := BIOME_OBSTACLE_SCRIPT.new() as BiomeObstacle
-		if obstacle == null:
-			continue
 		var size := (
 			layout.obstacle_sizes[index]
 			if index < layout.obstacle_sizes.size()
@@ -119,19 +121,20 @@ func _generate_obstacles() -> void:
 			if index < layout.obstacle_shape_ids.size()
 			else &"rectangle"
 		)
-		obstacle.name = "%s%d" % [
-			_pascal_case(String(obstacle_id)),
-			index + 1
-		]
-		obstacle.configure(
+		var obstacle := _create_obstacle(
 			obstacle_id,
 			size,
 			shape_id,
 			rotation_radians,
 			palette.prop_color,
-			palette.hazard_color,
-			_sort_offset_for(obstacle_id)
+			palette.hazard_color
 		)
+		if obstacle == null:
+			continue
+		obstacle.name = "%s%d" % [
+			_pascal_case(String(obstacle_id)),
+			index + 1
+		]
 		obstacle.obstacle_key = make_obstacle_key(
 			active_biome.biome_id,
 			index,
@@ -148,6 +151,42 @@ func _generate_obstacles() -> void:
 func _get_environment_container() -> Node:
 	var container := get_node_or_null(environment_container_path)
 	return container if container != null else get_tree().current_scene
+
+func _create_obstacle(
+	obstacle_id: StringName,
+	size: Vector2,
+	shape_id: StringName,
+	rotation_radians: float,
+	base_color: Color,
+	detail_color: Color
+) -> BiomeObstacle:
+	if object_factory == null:
+		object_factory = ISOMETRIC_OBJECT_FACTORY_SCRIPT.new(manifest)
+	var obstacle := object_factory.call(
+		"create_obstacle",
+		obstacle_id,
+		size,
+		shape_id,
+		rotation_radians,
+		base_color,
+		detail_color,
+		_sort_offset_for(obstacle_id)
+	) as BiomeObstacle
+	if obstacle != null:
+		return obstacle
+	obstacle = BIOME_OBSTACLE_SCRIPT.new() as BiomeObstacle
+	if obstacle == null:
+		return null
+	obstacle.configure(
+		obstacle_id,
+		size,
+		shape_id,
+		rotation_radians,
+		base_color,
+		detail_color,
+		_sort_offset_for(obstacle_id)
+	)
+	return obstacle
 
 func _clear_runtime() -> void:
 	for obstacle in active_obstacles:

@@ -58,8 +58,9 @@ Gli status ammessi sono `final`, `base_complete`, `needs_polish`,
 `procedural_fallback`, `needs_asset` e `deprecated`.
 
 - Il loader `game/modes/zombie/isometric_environment_manifest.gd` legge e valida
-  il manifest; `ObstacleSystem` lo usa per `sort_offset` e flag di blocco, mentre
-  le milestone asset successive useranno le sezioni v7 come contratto unico.
+  il manifest; `ObstacleSystem` lo usa per `sort_offset` e flag di blocco e,
+  dalla Milestone 10.5, passa gli `object_scenes` a
+  `IsometricEnvironmentObjectFactory`.
 - `visual_scene` che punta a uno script `.gd` resta il fallback tecnico legacy.
   Nel contratto v7 il fallback normale e dichiarato da `fallback_path` e
   `fallback_policy`; nessun file esterno e obbligatorio per il bootstrap.
@@ -112,8 +113,23 @@ divide in chunk e usa il manifest v7 come contratto per gli asset. I vecchi
 `BiomeRegionGround` e `BiomeTerrainPatch` restano fallback tecnici solo quando
 la modalita asset viene disattivata.
 
-Il generator asset controlla 93 SVG ambiente isometrico dopo la Milestone 10.4,
-inclusi road connector e entry/exit dei passaggi.
+Il generator asset controlla 93 SVG ambiente isometrico dopo la Milestone 10.5,
+inclusi road connector, entry/exit dei passaggi e object scene per ostacoli e
+crate.
+
+## Ambiente isometrico (oggetti runtime)
+
+Gli ostacoli generati dal layout usano `IsometricEnvironmentObject` come scena
+base slot-based: uno `StaticBody2D` con collisione dal manifest, `Sprite2D`,
+ombra a terra, anchor al pavimento, `sort_offset` e footprint debug opzionale.
+`BiomeObstacle` resta il fallback tecnico quando il manifest dichiara un
+fallback procedurale esplicito.
+
+Gli asset correnti sono SVG generati in-repo. In runtime headless Godot puo non
+avere la cache import editor per caricarli direttamente come `Texture2D`; per
+questo `IsometricSvgTextureLoader` legge lo SVG e produce una `ImageTexture`
+leggera mantenendo `asset_path` e metadata come fonte del contratto. La supply
+crate usa lo stesso percorso tramite `object_scenes/supply_crate`.
 
 ## Sostituzione Placeholder
 

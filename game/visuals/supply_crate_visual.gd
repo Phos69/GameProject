@@ -1,6 +1,12 @@
 extends Node2D
 class_name SupplyCrateVisual
 
+const SUPPLY_CRATE_ASSET_ID := &"supply_crate"
+const ASSET_SPRITE_NAME := "AssetSprite"
+const SVG_TEXTURE_LOADER = preload(
+	"res://game/modes/zombie/isometric_svg_texture_loader.gd"
+)
+
 var animation_time: float = 0.0
 var glow_intensity: float = 1.0
 var high_contrast: bool = false
@@ -8,9 +14,13 @@ var reduced_motion: bool = false
 var crate_type: StringName = &"common"
 var body_color: Color = Color(0.18, 0.58, 0.68, 1.0)
 var accent_color: Color = Color(0.95, 0.66, 0.15, 1.0)
+var asset_path: String = ""
+var asset_sprite: Sprite2D
+var procedural_fallback_active: bool = false
 
 func _ready() -> void:
 	add_to_group("visual_settings_consumers")
+	_load_asset_sprite()
 	VisualSettingsManager.sync_consumer(self)
 
 func _process(delta: float) -> void:
@@ -54,7 +64,22 @@ func configure_crate_type(next_crate_type: StringName) -> void:
 		_:
 			body_color = Color(0.18, 0.58, 0.68, 1.0)
 			accent_color = Color(0.95, 0.66, 0.15, 1.0)
+	_update_asset_modulate()
 	queue_redraw()
+
+func get_asset_path() -> String:
+	return asset_path
+
+func has_asset_sprite() -> bool:
+	return (
+		asset_sprite != null
+		and is_instance_valid(asset_sprite)
+		and asset_sprite.texture != null
+		and asset_sprite.visible
+	)
+
+func uses_procedural_fallback() -> bool:
+	return procedural_fallback_active
 
 func _draw() -> void:
 	var glow_alpha := (
@@ -65,6 +90,8 @@ func _draw() -> void:
 		Color(0.01, 0.015, 0.02, 0.52)
 	)
 	draw_circle(Vector2.ZERO, 31.0, Color(accent_color, glow_alpha))
+	if has_asset_sprite():
+		return
 	draw_colored_polygon(
 		PackedVector2Array([
 			Vector2(-27.0, -14.0),
@@ -98,6 +125,57 @@ func _draw() -> void:
 		)
 	for x in [-20.0, 20.0]:
 		draw_circle(Vector2(x, 9.0), 2.5, Color(0.04, 0.07, 0.08, 1.0))
+
+func _load_asset_sprite() -> void:
+	asset_sprite = get_node_or_null(ASSET_SPRITE_NAME) as Sprite2D
+	if asset_sprite == null:
+		asset_sprite = Sprite2D.new()
+		asset_sprite.name = ASSET_SPRITE_NAME
+		add_child(asset_sprite)
+	asset_sprite.centered = true
+	asset_sprite.visible = false
+	procedural_fallback_active = true
+	var manifest := IsometricEnvironmentManifest.get_shared()
+	var contract := manifest.get_object_asset_contract(SUPPLY_CRATE_ASSET_ID)
+	asset_path = String(contract.get("asset_path", ""))
+	if asset_path.is_empty():
+		return
+	var texture := SVG_TEXTURE_LOADER.load_texture(
+		asset_path,
+		body_color,
+		accent_color
+	)
+	if texture == null:
+		return
+	asset_sprite.texture = texture
+	asset_sprite.visible = true
+	procedural_fallback_active = false
+	_position_asset_sprite()
+	_update_asset_modulate()
+
+func _position_asset_sprite() -> void:
+	if asset_sprite == null or asset_sprite.texture == null:
+		return
+	var texture_size := asset_sprite.texture.get_size()
+	if texture_size.x <= 0.0 or texture_size.y <= 0.0:
+		return
+	var target_width := 64.0
+	var target_height := 52.0
+	var scale_factor := minf(
+		target_width / texture_size.x,
+		target_height / texture_size.y
+	)
+	asset_sprite.scale = Vector2.ONE * clampf(scale_factor, 0.25, 1.25)
+	var visual_size := Vector2(
+		texture_size.x * asset_sprite.scale.x,
+		texture_size.y * asset_sprite.scale.y
+	)
+	asset_sprite.position = Vector2(0.0, 18.0 - visual_size.y * 0.5)
+
+func _update_asset_modulate() -> void:
+	if asset_sprite == null:
+		return
+	asset_sprite.modulate = Color.WHITE if not high_contrast else Color(1.08, 1.08, 1.08, 1.0)
 
 func _ellipse_points(center: Vector2, radius: Vector2, segments: int) -> PackedVector2Array:
 	var points := PackedVector2Array()

@@ -342,6 +342,25 @@ Rendere strade e passaggi parte fisica e visiva della mappa, non patch decorativ
 
 # Milestone 10.5 — Oggetti e ostacoli come scene isometriche slot-based
 
+Stato: completata il 2026-06-18.
+
+Esito:
+
+- Aggiunti `isometric_environment_object.tscn` e
+  `isometric_environment_object.gd`: scena `StaticBody2D` slot-based con
+  `Sprite2D`, ombra, anchor, sort, collisione da manifest, footprint debug
+  opzionale e hook per overlay danneggiato futuro.
+- `ObstacleSystem` usa `IsometricEnvironmentObjectFactory` per istanziare scene
+  asset-backed dagli `object_scenes`; `BiomeObstacle` resta fallback tecnico
+  solo quando il contratto lo consente.
+- `IsometricSvgTextureLoader` converte gli SVG generati in `ImageTexture`
+  runtime quando l'import editor non e disponibile in headless.
+- `SupplyCrateVisual` legge `object_scenes/supply_crate` e usa lo sprite
+  asset-backed mantenendo collisione/apertura invariata.
+- Smoke: `tests/milestone_10_object_asset_smoke_test.gd`, con regressioni su
+  collision layer, factory runtime, crate, manifest, tile/passaggi e bootstrap
+  survival.
+
 ## Obiettivo
 
 Sostituire il draw procedurale degli ostacoli con scene/sprite asset-driven, leggibili come oggetti che occupano slot isometrici.

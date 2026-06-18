@@ -1,5 +1,65 @@
 # Latest Commit Validation Report
 
+## Milestone 10.5 oggetti e ostacoli slot-based - 2026-06-18
+- Branch: `master`
+- HEAD corrente: non committato al momento della validazione locale.
+- Scope validato: sotto-milestone 10.5 di
+  `milestone_10_isometric_asset_rewrite_roadmap.md`, oggetti, ostacoli e crate
+  come scene/sprite isometriche slot-based.
+- Esito: PASS sui criteri automatizzabili. Gli ostacoli generati usano
+  `IsometricEnvironmentObject` tramite factory, mantengono collisioni/layer e
+  gruppi storici, caricano texture da `object_scenes` e non tornano al vecchio
+  `_draw()` se l'asset SVG esiste. La crate usa lo stesso contratto asset.
+
+| Criterio | Esito | Evidenza |
+|---|---|---|
+| Ogni oggetto richiesto ha asset path | PASS | `tests/milestone_10_object_asset_smoke_test.gd` controlla case, barriere, props e `supply_crate` |
+| Factory runtime asset-driven | PASS | `ObstacleSystem` crea `IsometricEnvironmentObject` per il layout `infected_plains` |
+| Collision layer invariati | PASS | smoke 10.5 e `tests/milestone_4_obstacle_collision_smoke_test.gd` confermano layer movimento/proiettili |
+| Crate asset-backed | PASS | `SupplyCrateVisual` carica `object_scenes/supply_crate` e mantiene layer/mask/shape |
+| SVG headless sicuri | PASS | `IsometricSvgTextureLoader` produce `ImageTexture` runtime dagli SVG generati senza dipendere dalla cache import editor |
+
+### Test Milestone 10.5 eseguiti
+
+| Test | Esito | Note |
+|---|---|---|
+| `tests/milestone_10_object_asset_smoke_test.gd` | PASS | object scenes, factory, crate, layer e sort |
+| `tests/biome_obstacle_generation_smoke_test.gd` | PASS | regressione layout ostacoli |
+| `tests/isometric_environment_manifest_smoke_test.gd` | PASS | manifest, categorie, fallback storici e Y-sort |
+| `tests/milestone_4_obstacle_collision_smoke_test.gd` | PASS | collision shape/layer/proiettili invariati |
+| `tests/zombie_environment_milestone_smoke_test.gd` | PASS | bootstrap survival con factory attiva |
+| `tests/milestone_10_asset_manifest_v7_smoke_test.gd` | PASS | regressione manifest v7 |
+| `tests/milestone_10_asset_pipeline_smoke_test.gd` | PASS | filesystem/metadata SVG |
+| `tools/generate_isometric_environment_assets.gd -- --check` | PASS | 93 SVG verificati |
+| `tests/milestone_10_tile_layer_smoke_test.gd` | PASS | regressione tile layer |
+| `tests/milestone_10_passage_tile_smoke_test.gd` | PASS | regressione passaggi asset-driven |
+| `tests/world_graph_connectivity_smoke_test.gd` | PASS | grafo e passaggi fisici |
+| `tests/open_passage_transition_smoke_test.gd` | PASS | transizioni aperte |
+| `tests/milestone_8_multi_region_smoke_test.gd` | PASS | renderer multi-regione |
+| `tests/milestone_10_visual_smoke_test.gd` | PASS | visual survival/crate senza label |
+
+### Fix applicati nella Milestone 10.5
+
+- `game/modes/zombie/isometric_environment_object.gd` e `.tscn`: scena base
+  slot-based con sprite, ombra, collisione manifest, anchor, sort e debug
+  footprint opzionale.
+- `game/modes/zombie/isometric_environment_object_factory.gd`: factory che
+  sceglie scena asset-driven o fallback `BiomeObstacle` dichiarato.
+- `game/modes/zombie/isometric_svg_texture_loader.gd`: loader tecnico per SVG
+  generati in headless, convertiti in `ImageTexture`.
+- `game/modes/zombie/obstacle_system.gd`: integrazione factory mantenendo chiavi
+  stabili, gruppi e cleanup.
+- `game/visuals/supply_crate_visual.gd`: sprite asset-backed da
+  `object_scenes/supply_crate` con draw procedurale solo fallback.
+- `tests/milestone_10_object_asset_smoke_test.gd`: smoke dedicato 10.5.
+
+### Limiti e follow-up Milestone 10.5
+
+- Gli SVG restano asset base generati, non final quality; la revisione estetica
+  completa resta nella Milestone 10.11.
+- La Milestone 10.6 puo partire solo dopo questo commit e dovra sostituire il
+  vuoto/cliff/fall zone con asset dedicati.
+
 ## Milestone 10.4 strade e passaggi asset-driven - 2026-06-18
 - Branch: `master`
 - HEAD corrente: non committato al momento della validazione locale.

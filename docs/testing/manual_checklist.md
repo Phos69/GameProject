@@ -948,6 +948,36 @@ godot --headless --path . --script res://tests/world_graph_connectivity_smoke_te
 godot --headless --path . --script res://tools/generate_isometric_environment_assets.gd -- --check
 ```
 
+## Regressione Milestone 10.5 - oggetti e ostacoli slot-based
+
+QA visuale e runtime da eseguire dopo modifiche a `ObstacleSystem`,
+`IsometricEnvironmentObject`, `SupplyCrateVisual`, manifest v7 o asset
+`object_scenes`.
+
+- Avviare survival con seed fisso e verificare che rocce, case, barriere,
+  relitti, tronchi, barili e muri appaiano come oggetti con base/ombra
+  isometrica, non come rettangoli/poligoni runtime scollegati dal terreno.
+- Kiting attorno a `ruined_house`, `burned_house`, `snow_cabin`,
+  `sunken_house`, `lab_block`, muri, auto bruciate, tronchi e barili: collisione
+  e passaggio davanti/dietro devono restare coerenti con Y-sort.
+- Verificare che i grandi oggetti mostrino chiaramente lo slot occupato e che
+  lo spawn di zombie/casse non avvenga dentro il footprint.
+- Confermare che `supply_crate` sia grafica senza label, con sprite asset-backed
+  e apertura/loot invariati.
+- In high contrast/reduced motion, confermare che ombra/base e silhouette
+  restino leggibili a 1280x720 e 960x540.
+
+```text
+godot --headless --path . --script res://tests/milestone_10_object_asset_smoke_test.gd
+godot --headless --path . --script res://tests/biome_obstacle_generation_smoke_test.gd
+godot --headless --path . --script res://tests/isometric_environment_manifest_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_4_obstacle_collision_smoke_test.gd
+godot --headless --path . --script res://tests/zombie_environment_milestone_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_visual_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_asset_pipeline_smoke_test.gd
+godot --headless --path . --script res://tools/generate_isometric_environment_assets.gd -- --check
+```
+
 ## Regressione todo_roadmap Milestone 5 - dungeon ramificato, shop e biomi
 
 QA da eseguire con almeno tre seed diversi, con tastiera e joypad.

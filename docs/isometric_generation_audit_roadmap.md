@@ -142,17 +142,19 @@ Gap principali:
 Stato: parziale.
 
 `ObstacleSystem` genera oggetti fisici, `ResourceCrateSystem` genera crate, e
-`SpawnGateVisual`/`ExplosiveBarrel` coprono vecchi props arena. Gli oggetti
-ambiente dei biomi sono ancora procedurali, ma gli ostacoli generati dalla
-pipeline bioma hanno `draw_mode` dedicati nel manifest v6, inclusi i bordi
-tematici, e non ricadono piu nel fallback barriera generico.
+`SpawnGateVisual`/`ExplosiveBarrel` coprono vecchi props arena. Dopo la
+Milestone 10.5 gli ostacoli generati dalla pipeline bioma passano da
+`IsometricEnvironmentObjectFactory` e usano scene/sprite asset-backed dagli
+`object_scenes`; `BiomeObstacle` resta fallback tecnico. Gli ID generati sono
+coperti dal manifest e non ricadono piu nel fallback barriera generico.
 
 Gap principali:
 
 - manifest, generatore e draw mode sono allineati sugli ID reali generati in
   Milestone 1 e 3;
-- l'arte resta procedurale e non final asset-driven;
-- crate resta un placeholder procedurale; `fall_zone` usa una visuale
+- l'arte resta generata in-repo e non final quality, ma il percorso runtime
+  normale per gli ostacoli usa sprite/scene asset-backed;
+- crate usa il contratto asset `supply_crate`; `fall_zone` usa una visuale
   procedurale dedicata cliff/depth ma non ancora asset finale;
 - props arena storici restano separati dalla pipeline bioma.
 
@@ -948,7 +950,7 @@ Sotto-task completati:
 
 ### Milestone 10 - Polish grafico e sostituzione placeholder
 
-Stato: in corso. Sotto-milestone 10.1, 10.2, 10.3 e 10.4 completate il 2026-06-18.
+Stato: in corso. Sotto-milestone 10.1, 10.2, 10.3, 10.4 e 10.5 completate il 2026-06-18.
 
 Esito 10.1:
 
@@ -1001,6 +1003,22 @@ Esito 10.4:
 - `tests/milestone_10_passage_tile_smoke_test.gd` copre contratti, quattro lati,
   span, overlap con fall/wall, serializzazione e assenza di frecce/marker nei
   gate runtime.
+
+Esito 10.5:
+
+- `ObstacleSystem` usa `IsometricEnvironmentObjectFactory` per creare oggetti
+  asset-backed dagli `object_scenes` del manifest, mantenendo chiavi stabili,
+  gruppi, collision layer e sort esistenti.
+- `isometric_environment_object.tscn`/`.gd` forniscono la scena base slot-based
+  con sprite, ombra, anchor, collisione manifest, footprint debug opzionale e
+  overlay danno futuro.
+- `IsometricSvgTextureLoader` crea texture runtime dagli SVG generati quando
+  Godot headless non dispone dell'import editor; il percorso normale non torna
+  al vecchio `_draw()` degli ostacoli.
+- `SupplyCrateVisual` usa `object_scenes/supply_crate` come sprite asset-backed,
+  lasciando invariati collisione, loot e apertura.
+- `tests/milestone_10_object_asset_smoke_test.gd` copre gli ID richiesti dalla
+  roadmap, la factory runtime, i layer movimento/proiettili e la crate.
 
 Obiettivo:
 sostituire gradualmente placeholder procedurali con asset o scene dedicate,

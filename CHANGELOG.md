@@ -65,6 +65,9 @@
 - Chiusa la Milestone 10.4 della roadmap asset isometrica con strade,
   raccordi, entry/exit e passaggi asset-driven, continuita globale tra regioni
   e smoke dedicato sui passaggi.
+- Chiusa la Milestone 10.5 della roadmap asset isometrica con oggetti e
+  ostacoli slot-based, factory asset-driven, crate su sprite da manifest e
+  smoke dedicato sugli object scene.
 
 ### Changed
 
@@ -77,6 +80,13 @@
 - `BiomeTransitionGate` non comunica piu la direzione con draw runtime: il draw
   resta solo debug opzionale, mentre apertura e direzione sono leggibili dai
   tile di passaggio.
+- `ObstacleSystem` istanzia ora gli ostacoli tramite
+  `IsometricEnvironmentObjectFactory`: il percorso normale usa
+  `IsometricEnvironmentObject` con `Sprite2D`, ombra, anchor, collisione e
+  `sort_offset` dal manifest; `BiomeObstacle` resta fallback tecnico esplicito.
+- `SupplyCrateVisual` usa il contratto `object_scenes/supply_crate` e mostra uno
+  sprite asset-backed, mantenendo il vecchio draw solo se il loader non riesce a
+  produrre una texture.
 - `BiomeObstacle` costruisce ora la collisione dal manifest: `collision_shape`
   (`rectangle`/`circle`/`open`) guida shape runtime e `contains_global_position`,
   `blocks_movement`/`blocks_projectiles` guidano i bit di `collision_layer` e
@@ -127,6 +137,10 @@
 - `tests/milestone_10_passage_tile_smoke_test.gd` valida contratti tile
   passaggi, span sui quattro lati, overlap con fall/wall, coordinate globali dei
   connector e serializzazione `WorldRegionConnection`.
+- `IsometricEnvironmentObject`, la relativa scena base e
+  `IsometricSvgTextureLoader` convertono gli SVG generati in texture runtime
+  quando Godot headless non dispone dell'import editor; aggiunto
+  `tests/milestone_10_object_asset_smoke_test.gd`.
 
 ### Fixed
 
