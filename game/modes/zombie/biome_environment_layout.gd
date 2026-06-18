@@ -30,6 +30,7 @@ var road_rects: Array[Rect2i] = []
 var road_rect_tags: Array[StringName] = []
 var road_cell_tags: Dictionary = {}
 var passage_rects: Array[Rect2i] = []
+var passage_connector_rects: Array[Rect2i] = []
 var obstacle_rects: Array[Rect2i] = []
 var fall_zone_rects: Array[Rect2i] = []
 var hazard_rects: Array[Rect2i] = []

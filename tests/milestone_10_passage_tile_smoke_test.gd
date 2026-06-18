@@ -300,24 +300,21 @@ func _layout_emits_road_connector(
 	layout: BiomeEnvironmentLayout,
 	resolver: IsometricTileResolver
 ) -> bool:
-	for rect in layout.road_rects:
-		for probe in [
-			rect.position,
-			rect.position + Vector2i(rect.size.x - 1, 0),
-			rect.position + Vector2i(0, rect.size.y - 1),
-			rect.position + rect.size - Vector2i.ONE,
-			rect.position + rect.size / 2
-		]:
-			var tile_id := resolver.resolve_tile_id(layout, probe, cell.biome_id, &"balanced", cell)
-			if (
-				tile_id == IsometricTileResolver.TILE_ROAD_EDGE
-				or tile_id == IsometricTileResolver.TILE_ROAD_INTERSECTION
-				or tile_id == IsometricTileResolver.TILE_ROAD_CURVE_NORTH
-				or tile_id == IsometricTileResolver.TILE_ROAD_CURVE_EAST
-				or tile_id == IsometricTileResolver.TILE_ROAD_CURVE_SOUTH
-				or tile_id == IsometricTileResolver.TILE_ROAD_CURVE_WEST
-			):
-				return true
+	# Roads are generated as diagonal cell tags (road_rects only hold passage
+	# openings now), so probe the actual road cells for connector tiles: the
+	# resolver emits road_intersection where roads cross and road_edge at the
+	# road endpoints/borders.
+	for road_cell in layout.get_road_cells():
+		var tile_id := resolver.resolve_tile_id(layout, road_cell, cell.biome_id, &"balanced", cell)
+		if (
+			tile_id == IsometricTileResolver.TILE_ROAD_EDGE
+			or tile_id == IsometricTileResolver.TILE_ROAD_INTERSECTION
+			or tile_id == IsometricTileResolver.TILE_ROAD_CURVE_NORTH
+			or tile_id == IsometricTileResolver.TILE_ROAD_CURVE_EAST
+			or tile_id == IsometricTileResolver.TILE_ROAD_CURVE_SOUTH
+			or tile_id == IsometricTileResolver.TILE_ROAD_CURVE_WEST
+		):
+			return true
 	return false
 
 func _layout_emits_diagonal_main_roads(layout: BiomeEnvironmentLayout) -> bool:

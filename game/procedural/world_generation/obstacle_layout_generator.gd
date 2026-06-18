@@ -98,6 +98,9 @@ func _add_roads(layout: BiomeEnvironmentLayout, cell: BiomeCell) -> void:
 	for passage in cell.passages:
 		var passage_rect := passage.get_local_rect(zone_size)
 		layout.passage_rects.append(passage_rect)
+		# Keep the whole connector corridor clear of obstacles, not just the
+		# opening and the thin diagonal feeder road, so the passage stays walkable.
+		layout.passage_connector_rects.append(passage.get_connector_rect(zone_size))
 		_add_road_rect(layout, passage_rect, passage.passage_type)
 		_add_diagonal_road(
 			layout,
@@ -562,6 +565,8 @@ func _passage_inner_anchor(
 
 func _intersects_route(layout: BiomeEnvironmentLayout, rect: Rect2i) -> bool:
 	if _intersects_any(rect, layout.road_rects):
+		return true
+	if _intersects_any(rect, layout.passage_connector_rects):
 		return true
 	return _rect_overlaps_road_cells(layout, rect)
 

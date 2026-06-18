@@ -155,7 +155,7 @@ func get_crossing_position_for_connection(
 ) -> Vector2:
 	if connection == null:
 		return Vector2.ZERO
-	var tile := _connection_target_center_tile(connection)
+	var tile := _connection_seam_tile(connection)
 	return logical_tile_to_world_position(tile, reference_region_id)
 
 func get_open_connection_for_world_position(
@@ -276,7 +276,7 @@ func _fallback_connection_band_contains(
 		_:
 			return false
 
-func _connection_target_center_tile(connection: WorldRegionConnection) -> Vector2i:
+func _connection_seam_tile(connection: WorldRegionConnection) -> Vector2i:
 	var rect := (
 		connection.target_world_connector_rect
 		if connection.target_world_connector_rect.size.x > 0
@@ -284,10 +284,22 @@ func _connection_target_center_tile(connection: WorldRegionConnection) -> Vector
 		else connection.target_world_rect
 	)
 	if rect.size.x > 0 and rect.size.y > 0:
-		return rect.position + Vector2i(
-			maxi(rect.size.x / 2, 0),
-			maxi(rect.size.y / 2, 0)
-		)
+		# The crossing position must sit on the seam (the target cell adjacent to
+		# the source boundary), centred on the passage span -- not the centre of
+		# the connector corridor, which can be many tiles deep inside the target.
+		var center_x := rect.position.x + maxi(rect.size.x / 2, 0)
+		var center_y := rect.position.y + maxi(rect.size.y / 2, 0)
+		match connection.side:
+			&"east":
+				return Vector2i(rect.position.x, center_y)
+			&"west":
+				return Vector2i(rect.position.x + rect.size.x - 1, center_y)
+			&"north":
+				return Vector2i(center_x, rect.position.y + rect.size.y - 1)
+			&"south":
+				return Vector2i(center_x, rect.position.y)
+			_:
+				return Vector2i(center_x, center_y)
 	return Vector2i(
 		connection.passage_position,
 		connection.passage_position
