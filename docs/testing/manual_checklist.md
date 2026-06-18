@@ -833,6 +833,52 @@ godot --headless --path . --script res://tests/open_passage_transition_smoke_tes
 godot --headless --path . --script res://tests/milestone_8_multi_region_smoke_test.gd
 ```
 
+## Regressione ISO-001 Milestone 10.11 - QA finale asset isometrico
+
+Stato QA del 18 giugno 2026: PASS automatico e catture generate con
+`gl_compatibility` a `1280x720`.
+
+- Confermare che i cinque biomi abbiano tile base continui, varianti persistenti
+  e passaggi leggibili senza patch ovali o gate di transizione.
+- Confermare che muri/bordi siano distinguibili dal vuoto/cliff e dagli hazard
+  ambientali.
+- Confermare che case, cabine, laboratori, barriere, relitti, tronchi, barili,
+  ponti e crate restino slot-based con ombra/altezza leggibile.
+- Confermare che player e zombie restino leggibili davanti/dietro gli oggetti.
+- Confermare che il cambio bioma derivi dal seam world-space e non da portali,
+  trigger, frecce o teletrasporti.
+- Confermare che uno zombie in chase attraversi il passaggio mantenendo target,
+  health e stato.
+- Confermare che la mappa `7x7` resti sotto budget nel preset `balanced`.
+
+Screenshot richiesti/generati in `build/qa/`:
+
+```text
+plains_full_region.png
+toxic_void_edge.png
+ash_passage_crossing.png
+snow_objects_slots.png
+marsh_bridge_void.png
+cross_biome_chase_sequence_01.png
+cross_biome_chase_sequence_02.png
+```
+
+```text
+godot --path . --rendering-method gl_compatibility --script res://tests/milestone_10_isometric_final_visual_qa.gd
+godot --headless --path . --script res://tests/milestone_10_isometric_performance_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_asset_manifest_v7_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_asset_pipeline_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_tile_layer_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_passage_tile_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_object_asset_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_void_cliff_asset_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_no_portal_transition_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_full_region_streaming_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_cross_biome_chase_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_legacy_cleanup_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_visual_smoke_test.gd
+```
+
 ## Regressione ISO-001 Milestone 7 - grafo biomi completamente connesso
 
 QA da eseguire in una run survival con il debug overlay biomi attivo

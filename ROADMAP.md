@@ -417,6 +417,11 @@ Attivita post-roadmap:
   `NeighborGround_` o renderer vicini storico); `MultiRegionRenderer` resta
   fallback lazy-only e `tests/milestone_10_legacy_cleanup_smoke_test.gd`
   blocca regressioni sul percorso asset-driven.
+- Milestone 10.11 di `milestone_10_isometric_asset_rewrite_roadmap.md`
+  completata: QA visuale finale con sette screenshot `1280x720`, performance
+  smoke su mappa `7x7` in preset `balanced` a `16,54 ms` medi, suite smoke
+  asset/terrain/passaggi/oggetti/cliff/no-portal/streaming/chase/legacy verde e
+  `ISO-001` spostato tra le reference completate.
 - asset definitivi e ulteriori pass di bilanciamento;
 - firma digitale della build pubblica.
 

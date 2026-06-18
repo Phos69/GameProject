@@ -18,6 +18,9 @@
   cross-bioma.
 - Aggiunto `tests/milestone_10_legacy_cleanup_smoke_test.gd` per bloccare il
   ritorno di visual legacy nel bootstrap survival asset-driven.
+- Aggiunti `tests/milestone_10_isometric_final_visual_qa.gd` e
+  `tests/milestone_10_isometric_performance_smoke_test.gd` per chiudere la QA
+  visuale/performance finale della roadmap asset isometrica.
 
 ### Changed
 
@@ -132,6 +135,9 @@
   dedicate per case, cabine, laboratori, recinti, muri, barili, relitti,
   tronchi, ponti e crate, rimuovendo il placeholder unico a forma di casetta
   generica dagli `object_scenes`.
+- Chiusa la Milestone 10.11 della roadmap asset isometrica con screenshot QA,
+  performance su mappa `7x7`, suite smoke finale e spostamento di `ISO-001` tra
+  le reference completate.
 
 ### Changed
 

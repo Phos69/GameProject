@@ -789,6 +789,29 @@ Eliminare confusione tra arena legacy, placeholder procedurali e nuova pipeline 
 
 # Milestone 10.11 — QA visuale, performance e checklist finale
 
+Stato: completata il 2026-06-18.
+
+Esito:
+
+- Aggiunto `tests/milestone_10_isometric_final_visual_qa.gd`, che genera le
+  sette catture richieste in `build/qa/` a `1280x720`: `plains_full_region.png`,
+  `toxic_void_edge.png`, `ash_passage_crossing.png`,
+  `snow_objects_slots.png`, `marsh_bridge_void.png`,
+  `cross_biome_chase_sequence_01.png` e
+  `cross_biome_chase_sequence_02.png`.
+- Aggiunto `tests/milestone_10_isometric_performance_smoke_test.gd` per
+  validare mappa `7x7`, regioni streamate `FULL`, tile layer `balanced`
+  asset-backed senza fallback mancanti, assenza di gate/renderer legacy e
+  scenario con 28 nemici sotto budget.
+- QA visuale eseguita con `gl_compatibility`: tutte le PNG finali sono state
+  catturate e la sequenza cross-bioma conferma enemy chase oltre il seam.
+- Suite smoke 10.11 completata: manifest, pipeline asset, tile, passaggi,
+  oggetti, cliff, no portal, streaming full, chase cross-bioma, cleanup legacy,
+  visual smoke, regressioni terrain/fall/dodge/multi-region/open passage e
+  performance passano.
+- Performance rilevata nello smoke finale: `7x7 world`, 2 regioni streamate,
+  28 nemici, media `16,54 ms` su 120 frame, sotto il budget `35 ms`.
+
 ## Obiettivo
 
 Verificare che la milestone non sia solo tecnicamente verde ma visivamente convincente.
@@ -828,6 +851,10 @@ Per ogni bioma:
 - `milestone_10_no_portal_transition_smoke_test.gd`
 - `milestone_10_full_region_streaming_smoke_test.gd`
 - `milestone_10_cross_biome_chase_smoke_test.gd`
+- `milestone_10_legacy_cleanup_smoke_test.gd`
+- `milestone_10_isometric_performance_smoke_test.gd`
+- `milestone_10_visual_smoke_test.gd`
+- `milestone_10_isometric_final_visual_qa.gd` con renderer `gl_compatibility`
 - regressioni esistenti:
   - `isometric_environment_manifest_smoke_test.gd`
   - `isometric_biome_terrain_coverage_smoke_test.gd`

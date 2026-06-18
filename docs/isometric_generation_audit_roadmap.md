@@ -132,7 +132,8 @@ Gap principali:
 - asset finali esterni e polish artistico restano aperti;
 - i fallback procedurali sono dichiarati e non devono rientrare come percorso
   standard;
-- QA screenshot/performance resta nel playtest Milestone 10.11/11.
+- QA screenshot/performance coperta dalla Milestone 10.11; resta solo polish
+  artistico opzionale oltre gli asset SVG interni.
 
 ### Oggetti ambientali e props
 
@@ -221,7 +222,7 @@ istanziati dalla survival standard.
 
 Gap principali:
 
-- QA visuale dei passaggi tra tutti i biomi resta nella Milestone 10.11;
+- QA visuale dei passaggi tra biomi coperta dalla Milestone 10.11;
 - `BiomeTransitionGate` resta solo per test storici di dimensionamento/span;
 - asset finali dei passaggi restano migliorabili oltre gli SVG interni.
 
@@ -301,7 +302,8 @@ Gap principali:
   esplicito;
 - Y-sort completo dei player rispetto all'ambiente e una scelta ancora non
   chiusa: oggi i player restano sopra per leggibilita co-op;
-- QA visuale reale/screenshot resta rinviato al playtest.
+- QA visuale reale/screenshot coperta nella Milestone 10.11 della roadmap asset
+  isometrica, con sette catture `1280x720` in `build/qa/`.
 
 ## Lista dei punti persi per strada
 
@@ -310,8 +312,8 @@ Gap principali:
 | Manifest ambiente non copre tutti gli ID prodotti dal generatore (`pipe_stack`, `burned_car`, `ice_block`, `dead_tree`, `lab_block`, `snow_cabin`, ecc.) | `assets/environment/isometric/manifest.json`, `game/procedural/world_generation/obstacle_layout_generator.gd`, `game/modes/zombie/obstacle_system.gd` | risolto in Milestone 1 | ID/categoria chiusi; draw dedicati chiusi in Milestone 3 | Milestone 10 per asset finali opzionali | chiuso |
 | `BiomeObstacle._draw()` non ha draw dedicato per diversi obstacle_id generati | `game/modes/zombie/biome_obstacle.gd`, `obstacle_layout_generator.gd` | risolto in Milestone 3 | resta il pass asset/tile finale | manifest v5 `object_visuals` | chiuso |
 | Tag strada/passaggio generati finiscono nel fallback dirt | `game/modes/zombie/biome_terrain_patch.gd`, `obstacle_layout_generator.gd`, `biome_passage_generator.gd` | risolto in Milestone 2 | resta il pass asset/tile finale | Milestone 10 per sostituzione placeholder | chiuso |
-| Nessun tileset/tilemap isometrico asset-driven | `terrain_generator.gd`, `biome_region_ground.gd`, `assets/environment/isometric/manifest.json` | mancante | il mondo resta procedurale e non final art | budget performance, pipeline tile/asset | P1 |
-| Megamappa fisica non renderizzata in continuita globale | `world_runtime.gd`, `multi_region_renderer.gd`, `zombie_mode_controller.gd`, `biome_manager.gd` | prototipo in Milestone 8 | corrente + vicini renderizzati con offset `world_origin`; camera/spawn cross-regione da rifinire | smoke `milestone_8_multi_region` | P2 |
+| Nessun tileset/tilemap isometrico asset-driven | `terrain_generator.gd`, `biome_region_ground.gd`, `assets/environment/isometric/manifest.json` | risolto in Milestone 10.3/10.11 | `BiomeTileLayer` asset-driven copre il `200x200`; performance finale PASS | smoke tile/performance 10.11 | chiuso |
+| Megamappa fisica non renderizzata in continuita globale | `world_runtime.gd`, `multi_region_renderer.gd`, `zombie_mode_controller.gd`, `biome_manager.gd` | risolto in Milestone 10.8/10.11 | current + vicini connessi sono contenuto gameplay `FULL` con offset `world_origin` | smoke streaming/chase/performance 10.11 | chiuso |
 | `WorldRegion.world_origin` e `WorldRegionConnection.world_rect` non guidano il rendering runtime | `world_region.gd`, `world_region_connection.gd`, `multi_region_renderer.gd` | risolto in Milestone 8 per `world_origin` | `MultiRegionRenderer` usa `world_origin` per gli offset dei vicini; `world_rect` resta dato connessione | smoke `milestone_8_multi_region` | chiuso |
 | Fall zone ancora placeholder procedurale | `biome_fall_zone.gd`, `manifest.json`, `fall_boundary_generator.gd` | risolto in Milestone 5 come visuale procedurale cliff/depth | resta il pass asset/tile finale | Milestone 10 per asset cliff/depth definitivi | chiuso |
 | Muri/bordi collegati usano `boundary_fence` generico | `obstacle_layout_generator.gd`, `biome_obstacle.gd`, `manifest.json` | risolto in Milestone 5 | border tematici procedurali per bioma; resta asset finale | manifest v6 `object_visuals`, Milestone 10 | chiuso |
@@ -321,7 +323,7 @@ Gap principali:
 | Mappa esplorata non mostra contenuto interno regione | `exploration_map_panel.gd`, `world_exploration_state.gd` | parziale | navigazione strategica limitata | dati POI/hazard/connection detail | P2 |
 | Debug overlay non visualizza layer runtime completi in game | `biome_map_debug_overlay.gd`, `hud_manager.gd`, test debug | parziale | audit e QA visuale piu lenti | UI debug toggle, overlay classi terrain | P2 |
 | Vecchio `IsometricPlayground` resta come arena centrale sotto il ground generato | `game/main/isometric_playground.gd`, `terrain_generator.gd`, `main.tscn` | parziale | possibile confusione visuale tra arena legacy e regione generata | decisione su deprecazione o integrazione | P2 |
-| QA visuale screenshot dei biomi rinviato | `docs/testing/manual_checklist.md`, `tests/*visual_qa.gd` | mancante | non c'e prova visiva recente della coerenza isometrica | ambiente render non dummy, playtest | P2 |
+| QA visuale screenshot dei biomi rinviato | `docs/testing/manual_checklist.md`, `tests/*visual_qa.gd` | risolto in Milestone 10.11 | sette screenshot finali `1280x720` coprono biomi, cliff/passaggi/oggetti e chase cross-bioma | `milestone_10_isometric_final_visual_qa.gd` | chiuso |
 
 ## Roadmap organica in milestone
 
@@ -461,7 +463,8 @@ Sotto-task completati:
 2. [x] Definire stile visuale per strade/passaggi.
 3. [x] Aggiornare draw procedural.
 4. [x] Aggiungere smoke sui tag coperti.
-5. [x] Eseguire QA automatico headless; QA screenshot reale resta nel playtest.
+5. [x] Eseguire QA automatico headless; screenshot reale poi coperto dalla
+   Milestone 10.11.
 
 ### Milestone 3 - Oggetti e ostacoli isometrici
 
@@ -602,7 +605,7 @@ Sotto-task completati:
 3. [x] Estendere lo smoke projectile vs obstacle
    (`tests/milestone_4_obstacle_collision_smoke_test.gd`).
 4. [x] Verificare player/zombie pathing: regressioni combat, dodge/gap e
-   ambiente survival verdi; QA screenshot reale resta nel playtest Milestone 11.
+   ambiente survival verdi; screenshot reale poi coperto dalla Milestone 10.11.
 5. [x] Aggiornare `ARCHITECTURE.md` con il contratto collisioni/proiettili.
 
 ### Milestone 5 - Bordi del bioma, muri, vuoto e caduta
@@ -675,8 +678,8 @@ Sotto-task completati:
 2. [x] Aggiornare `PlayerDodgeComponent`.
 3. [x] Aggiungere border draw per bioma.
 4. [x] Estendere smoke fall/dodge.
-5. [x] QA automatico headless su default; QA screenshot/high contrast resta nel
-   playtest Milestone 11.
+5. [x] QA automatico headless su default; screenshot/high contrast poi coperto
+   dalla Milestone 10.11.
 
 ### Milestone 6 - Connessioni aperte tra biomi
 
@@ -944,8 +947,10 @@ Sotto-task completati:
 
 ### Milestone 10 - Polish grafico e sostituzione placeholder
 
-Stato: in corso. Sotto-milestone 10.1-10.10 completate il 2026-06-18; QA
-visiva/performance finale resta nella 10.11.
+Stato: completata il 2026-06-18. Sotto-milestone 10.1-10.11 completate con
+manifest v7, pipeline asset, tile layer, passaggi, oggetti, cliff, seam
+world-space, streaming gameplay, chase cross-bioma, cleanup legacy e QA
+visuale/performance finale.
 
 Esito 10.1:
 

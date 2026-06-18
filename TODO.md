@@ -24,7 +24,7 @@ Regole per nuove voci:
 | Mini-eventi bioma | PASS nella validazione Milestone 2 | `tests/biome_mini_events_smoke_test.gd`, `tests/random_encounter_smoke_test.gd`, `docs/latest_commit_validation_report.md` | Riprendere solo dentro playtest/bilanciamento Milestone 11 |
 | Megamappa e streaming regioni | PASS nella validazione Milestone 3 | `tests/region_streaming_smoke_test.gd`, world graph, persistent world, open passage, exploration map, `docs/latest_commit_validation_report.md` | Riprendere in Milestone 4 (asset isometrici) o nel bilanciamento Milestone 11 |
 | Asset isometrici ambiente | PASS nella validazione Milestone 4 | `tests/isometric_environment_manifest_smoke_test.gd`, manifest v2 poi v5, biome obstacle generation, `docs/latest_commit_validation_report.md` | Conversione ad arte esterna definitiva opzionale; QA visuale screenshot nel playtest Milestone 11 |
-| Audit migrazione isometrica | Milestone 1-9 PASS, Milestone 10.1-10.10 PASS con asset, cliff, transizione senza portali, vicini gameplay `FULL`, chase cross-bioma e cleanup legacy | `docs/isometric_generation_audit_roadmap.md`, manifest ambiente v7, `BiomeTileLayer`, `IsometricTileResolver`, `IsometricEnvironmentObjectFactory`, `IsometricSvgTextureLoader`, `RegionSeamSystem`, `WorldRegionStreamer`, metadata regione nemici, smoke Milestone 10.1-10.10 | Proseguire `ISO-001` con la Milestone 10.11 su QA visuale, performance e checklist finale |
+| Audit migrazione isometrica | PASS completo: Milestone 1-9 e Milestone 10.1-10.11 chiuse con asset, cliff, transizione senza portali, vicini gameplay `FULL`, chase cross-bioma, cleanup legacy, QA screenshot e performance | `docs/isometric_generation_audit_roadmap.md`, `milestone_10_isometric_asset_rewrite_roadmap.md`, manifest ambiente v7, `BiomeTileLayer`, `IsometricTileResolver`, `IsometricEnvironmentObjectFactory`, `IsometricSvgTextureLoader`, `RegionSeamSystem`, `WorldRegionStreamer`, smoke e QA Milestone 10.11 | Monitorare solo come regressione futura o playtest visuale |
 | Dungeon ramificato/shop | PASS nella validazione Milestone 5 | `tests/dungeon_graph_smoke_test.gd`, `tests/dungeon_smoke_test.gd`, `docs/latest_commit_validation_report.md` | UI shop dedicata e arte bioma dungeon restano follow-up; screenshot tre seed nel playtest Milestone 11 |
 | Asset/pipeline personaggi RPG | PASS nella validazione Milestone 6 | `tests/rpg_character_asset_manifest_smoke_test.gd`, `assets/characters/index.json` v2, `docs/latest_commit_validation_report.md` | Arte definitiva per-personaggio (`final_quality`) resta follow-up manuale; screenshot QA nel playtest Milestone 11 |
 | Tuning melee, super e classi RPG avanzate | PASS nella validazione Milestone 7 | `tests/rpg_melee_attack_resolution_smoke_test.gd`, `tests/milestone_rpg_8_adrenaline_super_smoke_test.gd`, `tests/milestone_rpg_12_feedback_smoke_test.gd`, `tests/milestone_rpg_13_new_classes_smoke_test.gd` | QA manuale multi-risoluzione/five-wave/due-player resta follow-up nel playtest Milestone 11 |
@@ -34,58 +34,6 @@ Test eseguiti per questo audit: nessun test gameplay. La Milestone 0 richiede
 revisione manuale, baseline e consolidamento TODO.
 
 ## Backlog aperto prioritizzato
-
-### ISO-001 - Coerenza isometrica di terrain, biomi e asset ambiente
-
-- Obiettivo: completare in modo iterativo la migrazione isometrica emersa
-  dall'audit, partendo da nomenclatura/manifest e arrivando a terrain, props,
-  bordi, connessioni, mappa esplorata, debug e regressioni.
-- Milestone collegata: `docs/isometric_generation_audit_roadmap.md` Milestone
-  1-11.
-- Stato: Milestone 1-9 completate il 2026-06-17 (la 8 anticipata su richiesta);
-  Milestone 10.1 completata con manifest v7 e fallback policy asset-driven;
-  Milestone 10.2 completata con pipeline asset locale e SVG generati in-repo;
-  Milestone 10.3 completata con tile layer chunked persistente su `200x200`;
-  Milestone 10.4 completata con strade, ponti e passaggi asset-driven, poi
-  rifinita con route diagonali isometriche; Milestone 10.5 completata con
-  oggetti e ostacoli slot-based, poi rifinita con SVG trasparenti, silhouette
-  dedicate e loader runtime non-placeholder; Milestone 10.6 completata con
-  vuoto/cliff asset-driven; Milestone 10.7 completata con `RegionSeamSystem`
-  e transizioni world-space senza `BiomeTransitionGate` runtime; Milestone 10.8
-  completata con `WorldRegionStreamer`, vicini con contenuto gameplay `FULL`,
-  query obstacle/hazard sui vicini e ledger crate per regione; Milestone 10.9
-  completata con metadata regione nemici, spawn region-bound e chase
-  cross-bioma senza despawn/reset; Milestone 10.10 completata con cleanup
-  legacy, fallback renderer lazy-only e smoke anti-regressione; la prossima
-  azione e la Milestone 10.11 su QA visuale, performance e checklist finale.
-- File/sistemi coinvolti: `game/procedural/world_generation/`,
-  `game/modes/zombie/`, `game/world/`, `game/ui/exploration_map_panel.gd`,
-  `assets/environment/isometric/manifest.json`, `tests/`,
-  `docs/testing/manual_checklist.md`.
-- Criterio di accettazione: ogni milestone della roadmap isometrica ha
-  criteri verificabili rispettati, gli ID generati sono coperti dal manifest,
-  terrain/passaggi/bordi/fall zone sono leggibili in isometrico e i contratti
-  di megamappa/mappa esplorata non promettono piu di quanto il runtime istanzia.
-- Test richiesto: smoke mirati indicati nella roadmap isometrica, regressione
-  `biome_world_generation`, `isometric_environment_manifest`,
-  `isometric_biome_terrain_coverage`, `biome_obstacle_generation`,
-  `milestone_4_obstacle_collision`, `milestone_6_open_passage`,
-  `milestone_7_graph_connectivity`, `milestone_8_multi_region`,
-  `milestone_10_no_portal_transition`,
-  `milestone_10_full_region_streaming`,
-  `milestone_10_cross_biome_chase`,
-  `milestone_10_legacy_cleanup`,
-  `open_passage_transition`,
-  `fall_boundary_visual_logic`, `player_dodge_gap`,
-  `exploration_map` e QA visuale cinque biomi quando disponibile.
-  Per la Milestone 10.3 aggiungere sempre
-  `tests/milestone_10_tile_layer_smoke_test.gd` alle regressioni sul ground.
-  Per la Milestone 10.4 aggiungere sempre
-  `tests/milestone_10_passage_tile_smoke_test.gd` alle regressioni su strade e
-  passaggi.
-  Per la Milestone 10.5 aggiungere sempre
-  `tests/milestone_10_object_asset_smoke_test.gd` alle regressioni su oggetti,
-  ostacoli e crate asset-driven.
 
 ### UIUX-001 - UI, HUD, audio e polish UX trasversale
 
@@ -220,8 +168,7 @@ evitare reimplementazioni e per indirizzare le regressioni.
   procedurale integrato; usare come riferimento per regressioni world/biomi.
 - Roadmap Megamappa Persistente Isometrica: completata come primo pass stabile;
   streaming e QA reale (`MAP-001`, `MAP-002`) chiusi nella Milestone 3 di
-  `todo_roadmap.md`. Follow-up residui: asset isometrici (`ASSET-001`) e
-  profiling/bilanciamento (`BAL-001`).
+  `todo_roadmap.md`. Follow-up residuo: profiling/bilanciamento (`BAL-001`).
 - MAP-001 QA attraversamento megamappa e MAP-002 streaming regioni: completati
   nella Milestone 3 di `todo_roadmap.md`; contratto `active_regions` formalizzato,
   persistenza runtime per regione (casse aperte non ricompaiono) e round-trip save
@@ -240,6 +187,15 @@ evitare reimplementazioni e per indirizzare le regressioni.
   ad arte esterna definitiva e screenshot per bioma restano follow-up opzionali
   (playtest Milestone 11).
   Coperto da `tests/isometric_environment_manifest_smoke_test.gd`.
+- ISO-001 coerenza isometrica di terrain, biomi e asset ambiente: completato
+  come roadmap dedicata fino alla Milestone 10.11. Il manifest v7, la pipeline
+  SVG locale, `BiomeTileLayer`, `IsometricTileResolver`, gli oggetti slot-based,
+  cliff/vuoto asset-driven, `RegionSeamSystem`, `WorldRegionStreamer`, metadata
+  regione nemici, cleanup legacy, QA screenshot e performance sono chiusi come
+  primo pass stabile. Regressioni chiave: smoke Milestone 10.1-10.11,
+  `isometric_environment_manifest`, `isometric_biome_terrain_coverage`,
+  `fall_boundary_visual_logic`, `player_dodge_gap`,
+  `milestone_8_multi_region` e `open_passage_transition`.
 - DUN-001 dungeon ramificato, shop e biomi dedicati: completato nella Milestone 5
   di `todo_roadmap.md`; `DungeonGenerator` produce un grafo con ramo reale e boss
   sempre raggiungibile, `DungeonMode` gestisce scelta stanza, run credit, shop

@@ -126,12 +126,15 @@ godot --headless --path . --script res://tests/milestone_10_asset_manifest_v7_sm
 godot --headless --path . --script res://tests/milestone_10_asset_pipeline_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_10_tile_layer_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_10_passage_tile_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_object_asset_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_void_cliff_asset_smoke_test.gd
 godot --headless --path . --script res://tests/isometric_biome_terrain_coverage_smoke_test.gd
 godot --headless --path . --script res://tests/fall_boundary_visual_logic_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_10_no_portal_transition_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_10_full_region_streaming_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_10_cross_biome_chase_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_10_legacy_cleanup_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_isometric_performance_smoke_test.gd
 godot --headless --path . --script res://tests/player_dodge_gap_smoke_test.gd
 godot --headless --path . --script res://tests/exploration_map_smoke_test.gd
 godot --headless --path . --script res://tests/biome_debug_overlay_smoke_test.gd

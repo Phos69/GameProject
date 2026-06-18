@@ -1,5 +1,48 @@
 # Latest Commit Validation Report
 
+## Milestone 10.11 QA visuale/performance finale - 2026-06-18
+- Branch: `feat/iso-milestone-10-complete`
+- HEAD di partenza: `e282aac`
+- Scope validato: chiusura di
+  `milestone_10_isometric_asset_rewrite_roadmap.md` Milestone 10.11, con QA
+  visuale finale, performance del path asset-driven `balanced` e regressione
+  completa di manifest, tile, passaggi, oggetti, cliff, no-portal, streaming,
+  chase cross-bioma e cleanup legacy.
+- Esito: PASS. La survival standard resta asset-driven, senza gate di
+  transizione o renderer legacy nel percorso normale; i cinque biomi hanno
+  catture `1280x720`, lo zombie chase attraversa il seam e il budget
+  performance resta sotto `35 ms`.
+- Performance rilevata:
+  `MILESTONE_10_ISOMETRIC_PROFILE: 7x7 world, 2 streamed regions, 28 enemies, avg 16.54 ms`.
+- Screenshot generati in `build/qa/` (cartella ignorata da Git):
+  `plains_full_region.png`, `toxic_void_edge.png`,
+  `ash_passage_crossing.png`, `snow_objects_slots.png`,
+  `marsh_bridge_void.png`, `cross_biome_chase_sequence_01.png` e
+  `cross_biome_chase_sequence_02.png`, tutti a `1280x720`.
+
+| Test | Esito | Note |
+|---|---|---|
+| `tools/generate_isometric_environment_assets.gd -- --check` | PASS | 93 SVG asset-driven verificati |
+| `tests/milestone_10_asset_manifest_v7_smoke_test.gd` | PASS | manifest v7 e fallback policy |
+| `tests/milestone_10_asset_pipeline_smoke_test.gd` | PASS | filesystem, metadata e attribution |
+| `tests/milestone_10_tile_layer_smoke_test.gd` | PASS | tile layer `200x200`, determinismo e chunk |
+| `tests/milestone_10_passage_tile_smoke_test.gd` | PASS | route/passaggi/entry/exit asset-driven |
+| `tests/milestone_10_object_asset_smoke_test.gd` | PASS | oggetti e crate asset-backed |
+| `tests/milestone_10_void_cliff_asset_smoke_test.gd` | PASS | cliff/void/fall zone asset-driven |
+| `tests/milestone_10_no_portal_transition_smoke_test.gd` | PASS | nessun gate runtime di transizione |
+| `tests/milestone_10_full_region_streaming_smoke_test.gd` | PASS | active ring con regioni `FULL` |
+| `tests/milestone_10_cross_biome_chase_smoke_test.gd` | PASS | chase oltre seam senza despawn/reset |
+| `tests/milestone_10_legacy_cleanup_smoke_test.gd` | PASS | nessun visual legacy nel bootstrap survival |
+| `tests/milestone_10_isometric_performance_smoke_test.gd` | PASS | mappa `7x7`, 28 nemici, media `16,54 ms` |
+| `tests/milestone_10_visual_smoke_test.gd` | PASS | regressione visual survival legacy |
+| `tests/isometric_environment_manifest_smoke_test.gd` | PASS | regressione manifest/categorie/Y-sort |
+| `tests/isometric_biome_terrain_coverage_smoke_test.gd` | PASS | classificazione terrain e copertura biomi |
+| `tests/fall_boundary_visual_logic_smoke_test.gd` | PASS | fall boundary e query dedicate |
+| `tests/player_dodge_gap_smoke_test.gd` | PASS | dodge/gap invariato |
+| `tests/milestone_8_multi_region_smoke_test.gd` | PASS | fallback/prototipo storico ancora verde |
+| `tests/open_passage_transition_smoke_test.gd` | PASS | passaggi fisici aperti |
+| `tests/milestone_10_isometric_final_visual_qa.gd` | PASS | sette screenshot finali `1280x720` con `gl_compatibility` |
+
 ## Milestone 10.10 cleanup legacy survival - 2026-06-18
 - Branch: `master`
 - HEAD corrente: non committato al momento della validazione locale.
@@ -286,8 +329,8 @@ evidenza screenshot.
 - I passaggi specializzati (`bridge`, `snow_pass`, `broken_gate`,
   `burned_road`) sono ancora normalizzati dal tile base `road`; la Milestone
   10.4 li trasforma in tile asset-driven dedicati.
-- QA screenshot reale cinque biomi a 1280x720 e 960x540 resta tracciato nella
-  checklist manuale e verra chiuso nella milestone QA visuale finale.
+- QA screenshot reale cinque biomi a 1280x720 e 960x540 era tracciato nella
+  checklist manuale ed e stato poi chiuso nella Milestone 10.11.
 
 ## Milestone 10.2 asset pipeline locale - 2026-06-18
 - Branch: `master`
