@@ -1,0 +1,18 @@
+#!/bin/sh
+# Auto-stages .import sidecar files for any tracked asset in assets/
+# so you never have to manually git add *.import after adding new Godot assets.
+#
+# Install: run tools/install_hooks.ps1 (or tools/install_hooks.sh on Mac/Linux)
+
+set -e
+
+# Find every untracked .import file whose source asset is tracked by git
+git ls-files --others --exclude-standard -- "assets/" | grep '\.import$' | while IFS= read -r import_file; do
+    source_file="${import_file%.import}"
+    # Only auto-stage if the source asset itself is known to git
+    if git ls-files --error-unmatch -- "$source_file" > /dev/null 2>&1; then
+        git add -- "$import_file"
+    fi
+done
+
+exit 0
