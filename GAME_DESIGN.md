@@ -505,6 +505,9 @@ Il revamp zombie e completo come prima versione giocabile:
 - lo spawn reale degli zombie viene richiesto a `ZombieSpawner` sui bordi della camera;
 - i vecchi punti arena restano fallback di spawn/debug e non rappresentano piu
   il cambio bioma.
+- il flusso survival standard non usa piu visual legacy per comunicare la
+  megamappa: niente gate di transizione, ground vicino placeholder o patch
+  ovali sopra il tile layer asset-driven.
 
 Identita dei biomi:
 

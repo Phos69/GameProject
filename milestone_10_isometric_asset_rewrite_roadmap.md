@@ -720,6 +720,23 @@ Garantire che gli zombie che inseguono il giocatore continuino a farlo attravers
 
 # Milestone 10.10 — Rimozione legacy e fallback controllato
 
+Stato: completata il 2026-06-18.
+
+Esito:
+
+- `ZombieModeController` non crea piu `MultiRegionRenderer` durante la
+  risoluzione componenti: il renderer storico viene istanziato solo nel ramo
+  fallback `_render_neighbor_regions()` se lo streaming gameplay non e
+  disponibile.
+- La survival standard usa `WorldRegionStreamer` come percorso normale e non
+  istanzia `BiomeTransitionGate`, `BiomeRegionGround`, `BiomeTerrainPatch` o
+  nodi `NeighborGround_`.
+- `BiomeTransitionSystem` resta API legacy/debug per `transition_to()`, ma
+  `configure_biome()` non genera gate o trigger runtime.
+- Aggiunto `tests/milestone_10_legacy_cleanup_smoke_test.gd`, che combina
+  audit sorgente e bootstrap survival per bloccare il ritorno di visual legacy
+  nel percorso standard.
+
 ## Obiettivo
 
 Eliminare confusione tra arena legacy, placeholder procedurali e nuova pipeline isometrica.

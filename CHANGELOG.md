@@ -16,6 +16,8 @@
   `current_region_id`, `last_seen_player_region_id`) e smoke
   `tests/milestone_10_cross_biome_chase_smoke_test.gd` per il chase
   cross-bioma.
+- Aggiunto `tests/milestone_10_legacy_cleanup_smoke_test.gd` per bloccare il
+  ritorno di visual legacy nel bootstrap survival asset-driven.
 
 ### Changed
 
@@ -29,6 +31,9 @@
 - `EnemySystem` assegna la regione di spawn dalla posizione world-space e
   `ZombieSpawner` valida le posizioni camera-edge contro le regioni streamate;
   gli zombie gia vivi non vengono despawnati o resettati al cambio bioma.
+- `ZombieModeController` non crea piu `MultiRegionRenderer` durante la
+  risoluzione componenti standard: il renderer storico resta fallback/debug
+  lazy-only se lo streamer gameplay non e disponibile.
 
 ### Fixed
 

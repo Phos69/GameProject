@@ -808,6 +808,31 @@ godot --headless --path . --script res://tests/open_passage_transition_smoke_tes
 godot --headless --path . --script res://tests/survival_wave_smoke_test.gd
 ```
 
+## Regressione ISO-001 Milestone 10.10 - cleanup legacy survival
+
+QA manuale da eseguire con seed fisso dopo un avvio survival standard.
+
+- Confermare che la regione corrente e i vicini siano costruiti da tile layer,
+  oggetti, hazard/fall zone e crate streamati, senza ground vicino placeholder.
+- Attraversare un passaggio aperto e confermare che non appaiano gate, marker,
+  frecce, testo o trigger visibili di transizione.
+- Ispezionare la scena in debug: non devono esserci nodi
+  `BiomeTransitionGate`, `BiomeRegionGround`, `BiomeTerrainPatch` o
+  `NeighborGround_` nel percorso standard.
+- Confermare che `MultiRegionRenderer` venga usato solo come fallback/debug:
+  nella survival standard con `WorldRegionStreamer` attivo non deve essere
+  presente un nodo nel gruppo `multi_region_renderer`.
+- Tornare al menu e riavviare la survival: i nodi streamati devono essere
+  ricreati senza residui legacy o duplicati.
+
+```text
+godot --headless --path . --script res://tests/milestone_10_legacy_cleanup_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_full_region_streaming_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_no_portal_transition_smoke_test.gd
+godot --headless --path . --script res://tests/open_passage_transition_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_8_multi_region_smoke_test.gd
+```
+
 ## Regressione ISO-001 Milestone 7 - grafo biomi completamente connesso
 
 QA da eseguire in una run survival con il debug overlay biomi attivo

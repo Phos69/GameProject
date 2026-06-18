@@ -151,10 +151,6 @@ func _resolve_components() -> void:
 		multi_region_renderer = get_tree().get_first_node_in_group(
 			"multi_region_renderer"
 		) as MultiRegionRenderer
-	if multi_region_renderer == null:
-		multi_region_renderer = MultiRegionRenderer.new()
-		multi_region_renderer.name = "MultiRegionRenderer"
-		add_child(multi_region_renderer)
 	_connect_biome_manager()
 	_connect_wave_manager()
 
@@ -261,11 +257,18 @@ func _stream_active_regions(region_id: StringName) -> bool:
 func _render_neighbor_regions(region_id: StringName) -> void:
 	if (
 		not enable_multi_region_render
-		or multi_region_renderer == null
 		or biome_manager == null
 		or region_id.is_empty()
 	):
 		return
+	if multi_region_renderer == null:
+		multi_region_renderer = get_tree().get_first_node_in_group(
+			"multi_region_renderer"
+		) as MultiRegionRenderer
+	if multi_region_renderer == null:
+		multi_region_renderer = MultiRegionRenderer.new()
+		multi_region_renderer.name = "LegacyMultiRegionRenderer"
+		add_child(multi_region_renderer)
 	var graph = biome_manager.get_world_graph()
 	if graph == null:
 		return

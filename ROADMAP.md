@@ -360,7 +360,8 @@ Attivita post-roadmap:
 - Milestone 8 di `docs/isometric_generation_audit_roadmap.md` completata:
   decisione per la continuita fisica multi-regione e prototipo
   `MultiRegionRenderer` (corrente + vicini con offset `world_origin`, vicini solo
-  ground visuale, lontane non istanziate) integrato in `ZombieModeController`.
+  ground visuale, lontane non istanziate), ora mantenuto come fallback/debug
+  storico dopo l'introduzione di `WorldRegionStreamer`.
 - Milestone 7 di `docs/isometric_generation_audit_roadmap.md` completata:
   `WorldGraph.get_connectivity_report()`, report grafo/active regions nel
   `BiomeMapDebugOverlay` (toggle `F8`) e smoke connettivita su 100 seed.
@@ -410,6 +411,12 @@ Attivita post-roadmap:
   tracciano `spawn_region_id`, `current_region_id` e
   `last_seen_player_region_id`, attraversano i varchi aperti senza despawn,
   reset di health o perdita del target.
+- Milestone 10.10 di `milestone_10_isometric_asset_rewrite_roadmap.md`
+  completata: la survival standard non istanzia piu visual legacy
+  (`BiomeTransitionGate`, `BiomeRegionGround`, `BiomeTerrainPatch`,
+  `NeighborGround_` o renderer vicini storico); `MultiRegionRenderer` resta
+  fallback lazy-only e `tests/milestone_10_legacy_cleanup_smoke_test.gd`
+  blocca regressioni sul percorso asset-driven.
 - asset definitivi e ulteriori pass di bilanciamento;
 - firma digitale della build pubblica.
 

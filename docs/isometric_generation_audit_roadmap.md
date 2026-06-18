@@ -119,23 +119,20 @@ eseguibili.
 
 ### Terrain e tile isometrici
 
-Stato: parziale.
+Stato: asset-driven nel percorso survival standard.
 
-Il terreno copre logicamente `200x200` e viene classificato. La resa visuale e
-pseudo-isometrica, ma non usa tile asset-driven. `BiomeRegionGround` disegna
-campioni romboidali con preset manifest (`balanced` resta ogni 8 celle) e
-`BiomeTerrainPatch` aggiunge decorazioni procedurali. La vecchia
-`IsometricPlayground` resta sotto, come arena base centrale, ma il ground
-generato copre l'intero territorio attivo.
+Il terreno copre logicamente `200x200`, viene classificato e nel percorso
+survival standard usa `BiomeTileLayer` con tile asset-driven. `BiomeRegionGround`
+e `BiomeTerrainPatch` restano fallback tecnici/debug; la vecchia
+`IsometricPlayground` resta sotto come arena base centrale, ma non comunica piu
+il territorio principale.
 
 Gap principali:
 
-- mancano tile asset/tilemap isometrici per terreno base, strade, ponti,
-  passaggi, muri e cliff;
-- i tag strada/passaggio generati hanno draw mode dedicati nel manifest corrente, ma
-  non sono ancora tile asset-driven;
-- la classificazione e completa, ma la granularita visuale e piu grossolana
-  della griglia logica.
+- asset finali esterni e polish artistico restano aperti;
+- i fallback procedurali sono dichiarati e non devono rientrare come percorso
+  standard;
+- QA screenshot/performance resta nel playtest Milestone 10.11/11.
 
 ### Oggetti ambientali e props
 
@@ -214,36 +211,33 @@ Gap principali:
 
 ### Connessioni tra biomi
 
-Stato: implementato come passaggi/gate, non come streaming fisico continuo.
+Stato: passaggi fisici world-space senza portali nel percorso survival standard.
 
-`BiomePassageGenerator` produce passaggi condivisi e allineati. Dal Milestone 6
-il gate runtime e dimensionato dalla larghezza del passaggio, orientato per lato
-e tematizzato per `passage_type`; usa `target_region_id` e non teletrasporta il
-party se `move_party_on_transition` resta `false`.
+`BiomePassageGenerator` produce passaggi condivisi e allineati. Dal Milestone
+10.7 il cambio regione standard e gestito da `RegionSeamSystem` usando posizione
+world-space e `WorldRegionConnection` aperte; `BiomeTransitionSystem` e
+`BiomeTransitionGate` restano compatibilita legacy/debug e non vengono
+istanziati dalla survival standard.
 
 Gap principali:
 
-- il gate resta un `Area2D` visuale allineato al varco, non una continuita
-  fisica tra due regioni renderizzate nello stesso spazio (scope Milestone 8);
-- la resa passaggio e procedurale tematica; l'asset dedicato resta nello scope
-  Milestone 10;
-- la posizione globale delle regioni non viene usata per renderizzare regioni
-  adiacenti simultaneamente.
+- QA visuale dei passaggi tra tutti i biomi resta nella Milestone 10.11;
+- `BiomeTransitionGate` resta solo per test storici di dimensionamento/span;
+- asset finali dei passaggi restano migliorabili oltre gli SVG interni.
 
 ### Megamappa persistente
 
-Stato: prototipo multi-regione attivo (Milestone 8); gameplay sulla sola
-regione corrente.
+Stato: streaming gameplay multi-regione attivo nel percorso survival standard.
 
 `WorldGraph`, `WorldRuntime` e `PersistentWorldState` sono solidi come
-contratto dati. Dal Milestone 8 `MultiRegionRenderer` istanzia la regione
-corrente piu i vicini connessi (ground visuale) usando `world_origin`; solo la
-regione corrente e istanziata da terrain/obstacle/hazard/crate.
+contratto dati. Dal Milestone 10.8 `WorldRegionStreamer` istanzia la regione
+corrente piu i vicini connessi come contenuto `FULL` con tile, ostacoli,
+hazard/fall zone e crate. `MultiRegionRenderer` resta fallback/debug lazy-only
+per il vecchio contratto di ground visuale.
 
 Gap principali:
 
-- il prototipo multi-regione renderizza i vicini come ground visuale; camera,
-  spawn e collisioni cross-regione restano da rifinire;
+- camera, spawn e performance cross-regione restano da validare in QA reale;
 - `party_position` e salvata ma non guida ancora un ripristino spaziale della
   run;
 - `destroyed_obstacles` e `completed_encounters` restano ledger senza trigger.
@@ -826,9 +820,9 @@ Esito:
 - I vicini sono solo `BiomeRegionGround` visuale (campionamento `performance`),
   quindi non duplicano casse/hazard e non generano nemici; le regioni oltre il
   raggio restano dati persistenti non istanziati.
-- `ZombieModeController` crea il renderer (gated da `enable_multi_region_render`),
-  lo invoca a ogni cambio regione passando layout/palette dei vicini da
-  `BiomeManager` e lo pulisce a `stop_run()`.
+- `ZombieModeController` usava il renderer (gated da
+  `enable_multi_region_render`) per il prototipo Milestone 8; dal cleanup 10.10
+  lo crea solo come fallback lazy se `WorldRegionStreamer` non e disponibile.
 - Espone `get_region_offset()`, `get_content_level()` (`FULL`/`VISUAL`/`NONE`),
   `get_rendered_region_ids()` e `get_neighbor_ground_nodes()` per debug/test.
 - Contratto documentato in `ARCHITECTURE.md`; lo smoke streaming/casse persistenti
@@ -950,7 +944,8 @@ Sotto-task completati:
 
 ### Milestone 10 - Polish grafico e sostituzione placeholder
 
-Stato: in corso. Sotto-milestone 10.1, 10.2, 10.3, 10.4 e 10.5 completate il 2026-06-18.
+Stato: in corso. Sotto-milestone 10.1-10.10 completate il 2026-06-18; QA
+visiva/performance finale resta nella 10.11.
 
 Esito 10.1:
 
@@ -1025,6 +1020,46 @@ Esito 10.5:
   lasciando invariati collisione, loot e apertura.
 - `tests/milestone_10_object_asset_smoke_test.gd` copre gli ID richiesti dalla
   roadmap, la factory runtime, i layer movimento/proiettili e la crate.
+
+Esito 10.6:
+
+- `BiomeFallZone` usa `IsometricCliffRenderer` con visuale cliff/depth e linee
+  verticali deterministiche, separando danno da caduta, safe position e query
+  hazard.
+- Manifest e smoke coprono `void_edge_near`, void/cliff/lip orientati e
+  regressioni su dodge/gap.
+
+Esito 10.7:
+
+- `RegionSeamSystem` aggiorna la regione corrente dalla posizione world-space
+  del party e dalle `WorldRegionConnection` aperte.
+- `BiomeTransitionSystem` resta API legacy/debug per `transition_to()`, ma la
+  survival standard non istanzia piu `BiomeTransitionGate` runtime.
+
+Esito 10.8:
+
+- `WorldRegionStreamer` istanzia current + vicini connessi come contenuto
+  gameplay `FULL`, con tile layer, ostacoli, hazard/fall zone e crate gia
+  presenti prima dell'attraversamento.
+- I sistemi esistenti registrano nodi streamati, query obstacle/hazard e ledger
+  crate per `region_id`.
+
+Esito 10.9:
+
+- Gli zombie restano world-space durante il chase cross-bioma e tracciano
+  `spawn_region_id`, `current_region_id` e `last_seen_player_region_id`.
+- Nemici vivi attraversano varchi aperti senza despawn, reset di health o
+  perdita target; lo spawner valida posizioni contro regioni streamate.
+
+Esito 10.10:
+
+- `ZombieModeController` non crea `MultiRegionRenderer` nel bootstrap standard:
+  il renderer storico resta fallback/debug lazy-only.
+- La survival asset-driven non istanzia `BiomeTransitionGate`,
+  `BiomeRegionGround`, `BiomeTerrainPatch`, `NeighborGround_` o
+  `multi_region_renderer` quando `WorldRegionStreamer` e disponibile.
+- `tests/milestone_10_legacy_cleanup_smoke_test.gd` combina audit sorgente e
+  smoke bootstrap survival per bloccare regressioni legacy.
 
 Obiettivo:
 sostituire gradualmente placeholder procedurali con asset o scene dedicate,

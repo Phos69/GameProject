@@ -1,5 +1,24 @@
 # Latest Commit Validation Report
 
+## Milestone 10.10 cleanup legacy survival - 2026-06-18
+- Branch: `master`
+- HEAD corrente: non committato al momento della validazione locale.
+- Scope validato: standard survival asset-driven con `WorldRegionStreamer`,
+  fallback `MultiRegionRenderer` lazy-only, assenza di gate/ground/patch legacy
+  nel bootstrap e audit sorgente del path di configurazione bioma.
+- Esito: PASS sui criteri automatizzabili. La survival standard streama current
+  + vicini come contenuto gameplay `FULL` senza creare `BiomeTransitionGate`,
+  `BiomeRegionGround`, `BiomeTerrainPatch`, `NeighborGround_` o nodi
+  `multi_region_renderer`; i test storici del renderer fallback restano verdi.
+
+| Test | Esito | Note |
+|---|---|---|
+| `tests/milestone_10_legacy_cleanup_smoke_test.gd` | PASS | audit sorgente e bootstrap survival senza visual legacy |
+| `tests/milestone_10_full_region_streaming_smoke_test.gd` | PASS | streamer gameplay ancora percorso standard |
+| `tests/milestone_10_no_portal_transition_smoke_test.gd` | PASS | no gate runtime |
+| `tests/open_passage_transition_smoke_test.gd` | PASS | crossing senza trigger/gate |
+| `tests/milestone_8_multi_region_smoke_test.gd` | PASS | fallback/prototipo visuale storico invariato |
+
 ## Milestone 10.9 chase zombie cross-bioma - 2026-06-18
 - Branch: `master`
 - HEAD corrente: non committato al momento della validazione locale.
