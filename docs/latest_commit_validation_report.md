@@ -1,5 +1,38 @@
 # Latest Commit Validation Report
 
+## Polish strade diagonali e oggetti isometrici - 2026-06-18
+- Branch: `master`
+- HEAD corrente: non committato al momento della validazione locale.
+- Scope validato: iterazione su visuale isometrica post Milestone 10.4/10.5:
+  route diagonali per strade e diramazioni, SVG ambiente trasparenti,
+  silhouette dedicate per oggetti principali e fix del loader runtime che
+  eliminava le forme reali a favore della sagoma placeholder.
+- Esito: PASS sui criteri automatizzabili. Le route generate usano
+  `road_cell_tags` diagonali, i passaggi conservano aperture e connector
+  compatibili, gli oggetti caricano sprite `object_scenes` senza fallback
+  procedurale, il loader rasterizza SVG trasparenti o fallback isometrici per
+  categoria e il manifest non contiene piu status placeholder/procedurali per
+  gli oggetti principali.
+
+| Test | Esito | Note |
+|---|---|---|
+| `tools/generate_isometric_environment_assets.gd -- --check` | PASS | 93 SVG verificati |
+| `tests/milestone_10_passage_tile_smoke_test.gd` | PASS | include regressione sulle due diagonali principali |
+| `tests/milestone_10_tile_layer_smoke_test.gd` | PASS | route cell diagonali risolte come tile asset-backed |
+| `tests/milestone_10_object_asset_smoke_test.gd` | PASS | oggetti/crate asset-backed e silhouette runtime distinte |
+| `tests/biome_world_generation_smoke_test.gd` | PASS | layout generato e survival bootstrap coerenti |
+| `tests/isometric_biome_terrain_coverage_smoke_test.gd` | PASS | copertura terrain 200x200 e passage walkable |
+| `tests/milestone_10_asset_manifest_v7_smoke_test.gd` | PASS | manifest v7 e asset contract |
+| `tests/open_passage_transition_smoke_test.gd` | PASS | transizioni fisiche aperte |
+| `tests/isometric_environment_manifest_smoke_test.gd` | PASS | manifest, categorie e collisione/Y-sort |
+| `tests/biome_obstacle_generation_smoke_test.gd` | PASS | layout ostacoli e categorie |
+| `tests/milestone_4_obstacle_collision_smoke_test.gd` | PASS | layer movimento/proiettili invariati |
+
+Nota QA visuale: `tests/zombie_biome_visual_qa.gd` eseguito con
+`--rendering-method gl_compatibility` ha chiuso con exit code `0`, ma in questa
+sessione non ha prodotto la cartella `build/qa`; non viene quindi contato come
+evidenza screenshot.
+
 ## Milestone 10.5 oggetti e ostacoli slot-based - 2026-06-18
 - Branch: `master`
 - HEAD corrente: non committato al momento della validazione locale.

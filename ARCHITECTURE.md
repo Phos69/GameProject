@@ -143,16 +143,23 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
   `passage_tiles`, `biome_asset_sets`, `fallback_policy`). Il loader normalizza
   path, status, footprint, anchor, collisione, blocchi e attribution senza
   rendere obbligatori asset esterni.
-- `ObstacleLayoutGenerator`: produce strade, corridoi, case grandi, ostacoli
-  secondari e muri/bordi tematici sui lati connessi o bloccati.
+- `ObstacleLayoutGenerator`: produce strade diagonali isometriche, diramazioni
+  verso i passaggi, case grandi, ostacoli secondari e muri/bordi tematici sui
+  lati connessi o bloccati.
 - `FallBoundaryGenerator`: trasforma i lati senza vicino in `fall_zone` data-driven con il contratto di danno ambientale esistente.
 - `MapValidationSystem`: valida con flood-fill spawn, corridoi, passaggi, casse raggiungibili, grafo connesso, passaggi non ostruiti e classificazione completa del `200x200`.
 - `BiomeMapDebugOverlay`: espone seed corrente, riepilogo celle/passaggi,
   classi terrain aggregate, il report di connettivita del grafo (`WorldGraph.get_connectivity_report()`), regione corrente e active regions caricate, con toggle `F8`, e richieste di rigenerazione per debug.
 - `BiomeDefinition`: risorsa dati con terreno, ostacoli, casse, zombie ammessi, pesi, palette e moltiplicatori.
 - `BiomeTransitionSystem`: passaggi fisici aperti tra regioni confinanti, cambio regione/bioma e fallback legacy di spostamento party solo se esplicitamente abilitato.
-- `BiomeTransitionGate`: area non bloccante e leggibile che rappresenta un'apertura fisica e richiede il cambio regione; e dimensionata e orientata dalla larghezza/lato del `BiomePassage`, tematizzata per `passage_type` e con freccia direzione-aware, senza teletrasportare il party quando `move_party_on_transition` resta `false`.
-- `BiomeEnvironmentLayout`: placement deterministico di patch terreno, ostacoli fisici, casse e hazard per un bioma, con classificazione completa del `200x200`.
+- `BiomeTransitionGate`: area non bloccante e leggibile che rappresenta
+  un'apertura fisica e richiede il cambio regione; e dimensionata e orientata
+  dalla larghezza/lato del `BiomePassage`, tematizzata dai tile di passaggio e
+  senza frecce runtime o teletrasporto party quando `move_party_on_transition`
+  resta `false`.
+- `BiomeEnvironmentLayout`: placement deterministico di patch terreno,
+  `road_cell_tags` diagonali, rettangoli di apertura, ostacoli fisici, casse e
+  hazard per un bioma, con classificazione completa del `200x200`.
 - `WaveDirector`: composizione wave e scaling basati sul bioma corrente.
 - `ZombieSpawner`: spawn dai bordi della camera con distanza minima dai player, validazione hazard/ostacoli e fallback arena.
 - `TerrainGenerator`: applica la palette del bioma, genera il piano visuale
@@ -500,8 +507,9 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
   (`main_road`, road tematiche, curve/edge/intersezioni), passage tile
   (`road`, `bridge`, `snow_pass`, `broken_gate`, `burned_road`, entry/exit),
   `hazard_floor`, `border_floor`, `void_edge_near` o `void_depth` usando seed,
-  cella e bioma. I connector di passaggio hanno priorita sulle road decorative
-  sovrapposte.
+  cella e bioma. Le route generate preferiscono `road_cell_tags` diagonali; i
+  rettangoli restano per aperture/passaggi e compatibilita. I connector di
+  passaggio hanno priorita sulle road decorative sovrapposte.
   `BiomeTileLayer` cache-a tutti i 40.000 tile e li divide in chunk (`balanced`
   20x20, `performance` 25x25, `quality` 16x16) senza creare 40.000 nodi.
 - Gli ostacoli runtime sono `StaticBody2D` sul layer `1`, quindi player e zombie
@@ -513,9 +521,12 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
   `sort_offset`. `BiomeObstacle` resta adapter/fallback quando il contratto
   dichiara esplicitamente un fallback procedurale.
 - `IsometricSvgTextureLoader` evita che il runtime dipenda dall'import editor:
-  se Godot non puo caricare direttamente uno SVG, legge il file generato e
-  produce una `ImageTexture` runtime con base isometrica, ombra e volume usando
-  i colori dichiarati nello SVG.
+  rasterizza direttamente il contenuto SVG quando mantiene corner trasparenti,
+  accetta la texture importata solo se non introduce un canvas opaco e, in
+  fallback, disegna una silhouette isometrica per categoria usando i metadata
+  `data-section`/`data-id`. Gli SVG ambiente interni restano trasparenti e
+  hanno silhouette specifiche per case, recinti, muri, barili, relitti, tronchi,
+  ponti e crate.
 - `BiomeObstacle` legge `draw_mode` e `dedicated_draw` da
   `IsometricEnvironmentManifest`; se un ID ricade su `generic_barrier`, deve
   essere una scelta esplicita del manifest e non un fallback implicito.

@@ -112,12 +112,11 @@ func _build_svg(contract: Dictionary) -> String:
 	var secondary := _resolve_secondary_color(section)
 	var accent := _resolve_accent_color(contract)
 	var title := "%s %s" % [section, asset_id]
-	var shape := _section_shape(section, primary, secondary, accent)
+	var shape := _section_shape(section, asset_id, primary, secondary, accent)
 	var lines := PackedStringArray([
 		'<?xml version="1.0" encoding="UTF-8"?>',
 		'<svg xmlns="http://www.w3.org/2000/svg" width="160" height="120" viewBox="0 0 160 120" data-generated-by="%s" data-section="%s" data-id="%s">' % [GENERATED_BY, _xml_escape(section), _xml_escape(asset_id)],
 		'  <title>%s</title>' % _xml_escape(title),
-		'  <rect width="160" height="120" fill="#11151a"/>',
 		'  <ellipse cx="80" cy="82" rx="58" ry="18" fill="#050608" opacity="0.45"/>',
 		shape,
 		'  <path d="M24 92 L80 110 L136 92" fill="none" stroke="%s" stroke-width="3" stroke-linecap="round" opacity="0.75"/>' % accent,
@@ -127,14 +126,10 @@ func _build_svg(contract: Dictionary) -> String:
 	])
 	return "\n".join(lines)
 
-func _section_shape(section: String, primary: String, secondary: String, accent: String) -> String:
+func _section_shape(section: String, asset_id: String, primary: String, secondary: String, accent: String) -> String:
 	match section:
 		"tile_sets", "tile_variants", "terrain_tiles", "passage_tiles":
-			return "\n".join(PackedStringArray([
-				'  <polygon points="80,18 142,54 80,90 18,54" fill="%s" stroke="%s" stroke-width="4"/>' % [primary, accent],
-				'  <path d="M32 54 L80 29 L128 54 L80 79 Z" fill="none" stroke="%s" stroke-width="3" opacity="0.55"/>' % secondary,
-				'  <path d="M42 61 L118 61" stroke="%s" stroke-width="5" stroke-linecap="round" opacity="0.65"/>' % accent
-			]))
+			return _terrain_tile_shape(asset_id, primary, secondary, accent)
 		"edge_tiles":
 			return "\n".join(PackedStringArray([
 				'  <polygon points="20,58 80,28 140,58 80,88" fill="%s" stroke="%s" stroke-width="4"/>' % [secondary, accent],
@@ -148,11 +143,7 @@ func _section_shape(section: String, primary: String, secondary: String, accent:
 				'  <path d="M48 60 V94 M80 74 V108 M112 60 V94" stroke="%s" stroke-width="3" opacity="0.75"/>' % secondary
 			]))
 		"object_scenes":
-			return "\n".join(PackedStringArray([
-				'  <polygon points="40,72 80,50 120,72 80,94" fill="%s" stroke="%s" stroke-width="4"/>' % [secondary, accent],
-				'  <path d="M54 68 L54 38 L80 24 L106 38 L106 68 L80 84 Z" fill="%s" stroke="#090909" stroke-width="4"/>' % primary,
-				'  <path d="M60 42 L80 31 L100 42 M66 58 H94" stroke="%s" stroke-width="4" stroke-linecap="round"/>' % accent
-			]))
+			return _object_scene_shape(asset_id, primary, secondary, accent)
 		"biome_asset_sets":
 			return "\n".join(PackedStringArray([
 				'  <polygon points="80,14 146,50 80,86 14,50" fill="%s" stroke="%s" stroke-width="4"/>' % [primary, accent],
@@ -161,6 +152,171 @@ func _section_shape(section: String, primary: String, secondary: String, accent:
 			]))
 		_:
 			return '  <polygon points="80,18 142,54 80,90 18,54" fill="%s" stroke="%s" stroke-width="4"/>' % [primary, accent]
+
+func _terrain_tile_shape(asset_id: String, primary: String, secondary: String, accent: String) -> String:
+	var base := PackedStringArray([
+		'  <polygon points="80,18 142,54 80,90 18,54" fill="%s" stroke="%s" stroke-width="4"/>' % [primary, accent],
+		'  <path d="M32 54 L80 29 L128 54 L80 79 Z" fill="none" stroke="%s" stroke-width="3" opacity="0.42"/>' % secondary
+	])
+	if asset_id.contains("intersection"):
+		base.append('  <path d="M37 40 L123 74 M123 40 L37 74" stroke="%s" stroke-width="10" stroke-linecap="round" opacity="0.72"/>' % accent)
+	elif asset_id.contains("curve"):
+		base.append('  <path d="M42 70 C62 42 90 34 122 48" fill="none" stroke="%s" stroke-width="11" stroke-linecap="round" opacity="0.72"/>' % accent)
+	elif asset_id.contains("entry") or asset_id.contains("exit"):
+		base.append('  <path d="M35 42 L83 68 L128 44" fill="none" stroke="%s" stroke-width="11" stroke-linecap="round" opacity="0.72"/>' % accent)
+		base.append('  <path d="M80 32 L92 44 L80 56 L68 44 Z" fill="%s" opacity="0.85"/>' % secondary)
+	elif _asset_is_route(asset_id):
+		base.append('  <path d="M36 40 L124 76" stroke="%s" stroke-width="12" stroke-linecap="round" opacity="0.70"/>' % accent)
+		base.append('  <path d="M42 72 L118 39" stroke="%s" stroke-width="5" stroke-linecap="round" opacity="0.38"/>' % secondary)
+	else:
+		base.append('  <path d="M40 57 L120 57" stroke="%s" stroke-width="3" stroke-linecap="round" opacity="0.38"/>' % accent)
+	return "\n".join(base)
+
+func _object_scene_shape(asset_id: String, primary: String, secondary: String, accent: String) -> String:
+	if asset_id.contains("house") or asset_id.contains("cabin") or asset_id.contains("lab_block") or asset_id.contains("lab_ruin"):
+		return _building_shape(asset_id, primary, secondary, accent)
+	if asset_id.contains("barrel"):
+		return _barrel_shape(asset_id, primary, accent)
+	if asset_id.contains("car") or asset_id.contains("wreck"):
+		return _wreck_shape(primary, secondary, accent)
+	if asset_id.contains("tree"):
+		return _dead_tree_shape(primary, accent)
+	if asset_id.contains("log"):
+		return _log_shape(primary, accent)
+	if asset_id.contains("bridge") or asset_id.contains("walkway"):
+		return _bridge_object_shape(primary, secondary, accent)
+	if asset_id.contains("rock") or asset_id.contains("ice_block"):
+		return _rock_shape(asset_id, primary, accent)
+	if asset_id.contains("fence") or asset_id.contains("wall") or asset_id.contains("barrier"):
+		return _barrier_shape(asset_id, primary, secondary, accent)
+	if asset_id.contains("crate"):
+		return _crate_shape(primary, secondary, accent)
+	return _rock_shape(asset_id, primary, accent)
+
+func _building_shape(asset_id: String, primary: String, secondary: String, accent: String) -> String:
+	var lines := PackedStringArray([
+		'  <polygon points="38,74 80,50 122,74 80,98" fill="%s" stroke="%s" stroke-width="3"/>' % [secondary, accent],
+		'  <polygon points="40,42 80,20 120,42 80,64" fill="%s" stroke="#0b0c0d" stroke-width="4"/>' % accent,
+		'  <polygon points="40,42 80,64 80,94 40,72" fill="%s" stroke="#0b0c0d" stroke-width="3"/>' % primary,
+		'  <polygon points="120,42 80,64 80,94 120,72" fill="%s" stroke="#0b0c0d" stroke-width="3" opacity="0.82"/>' % primary,
+		'  <path d="M60 73 L60 54 L72 60 L72 81 Z" fill="#090b0c" opacity="0.88"/>',
+		'  <path d="M92 63 L107 55 L107 69 L92 78 Z" fill="#11181a" stroke="%s" stroke-width="2" opacity="0.92"/>' % accent
+	])
+	if asset_id.contains("ruin") or asset_id.contains("ruined"):
+		lines.append('  <path d="M39 42 L56 31 L72 37 L85 22 L101 31 L119 42" fill="none" stroke="#111111" stroke-width="6" stroke-linecap="round"/>')
+		lines.append('  <path d="M46 70 L62 78 M99 56 L116 50" stroke="#050505" stroke-width="4" stroke-linecap="round"/>')
+	elif asset_id.contains("burn"):
+		lines.append('  <path d="M47 43 L57 30 L65 43 L74 25 L86 47 L99 28 L114 43" fill="none" stroke="#090706" stroke-width="6" stroke-linecap="round"/>')
+		lines.append('  <path d="M54 72 L111 49" stroke="#1b0e0a" stroke-width="5" stroke-linecap="round"/>')
+	elif asset_id.contains("snow") or asset_id.contains("cabin"):
+		lines.append('  <path d="M39 41 L80 18 L121 41" fill="none" stroke="#edf8fb" stroke-width="7" stroke-linecap="round"/>')
+		lines.append('  <path d="M45 48 L80 66 L115 47" fill="none" stroke="#edf8fb" stroke-width="3" opacity="0.82"/>')
+	elif asset_id.contains("sunken"):
+		lines.append('  <path d="M34 84 C52 78 68 90 86 84 C105 78 121 88 138 81" fill="none" stroke="#7fc0a6" stroke-width="5" opacity="0.75"/>')
+		lines.append('  <path d="M44 44 L78 25 L121 43" stroke="#0c1010" stroke-width="5" opacity="0.65"/>')
+	elif asset_id.contains("lab"):
+		lines.append('  <path d="M51 48 L80 33 L110 49 M50 60 L80 76 L110 60" stroke="%s" stroke-width="4" stroke-linecap="round"/>' % accent)
+		lines.append('  <circle cx="102" cy="61" r="5" fill="%s" opacity="0.82"/>' % accent)
+	else:
+		lines.append('  <path d="M48 48 L80 31 L112 48" stroke="#141414" stroke-width="4" opacity="0.75"/>')
+	return "\n".join(lines)
+
+func _barrier_shape(asset_id: String, primary: String, secondary: String, accent: String) -> String:
+	var lines := PackedStringArray([
+		'  <polygon points="30,78 80,54 130,78 80,102" fill="%s" stroke="%s" stroke-width="3"/>' % [secondary, accent]
+	])
+	if asset_id.contains("fence"):
+		for x in [42, 58, 76, 96, 114]:
+			lines.append('  <path d="M%d 76 L%d 42" stroke="%s" stroke-width="6" stroke-linecap="round"/>' % [x, x + 6, primary])
+		lines.append('  <path d="M34 66 L124 86 M38 52 L128 72" stroke="%s" stroke-width="5" stroke-linecap="round"/>' % accent)
+	elif asset_id.contains("pipe"):
+		for y in [52, 66, 80]:
+			lines.append('  <path d="M36 %d L116 %d" stroke="%s" stroke-width="12" stroke-linecap="round"/>' % [y, y + 13, primary])
+			lines.append('  <ellipse cx="118" cy="%d" rx="8" ry="5" fill="%s" stroke="%s" stroke-width="2"/>' % [y + 13, secondary, accent])
+	elif asset_id.contains("wall") or asset_id.contains("boundary"):
+		lines.append('  <polygon points="34,48 126,70 126,88 34,66" fill="%s" stroke="#0b0b0b" stroke-width="4"/>' % primary)
+		lines.append('  <path d="M48 54 L48 72 M68 59 L68 77 M88 64 L88 82 M108 69 L108 87" stroke="%s" stroke-width="3" opacity="0.82"/>' % accent)
+	else:
+		lines.append('  <path d="M34 70 L122 48 L128 66 L40 90 Z" fill="%s" stroke="#0b0b0b" stroke-width="4"/>' % primary)
+		lines.append('  <path d="M45 76 L116 58 M63 83 L101 51" stroke="%s" stroke-width="4" stroke-linecap="round"/>' % accent)
+	return "\n".join(lines)
+
+func _barrel_shape(asset_id: String, primary: String, accent: String) -> String:
+	var symbol := (
+		'  <path d="M74 58 L86 58 M80 52 L80 64" stroke="#0b0b0b" stroke-width="3" stroke-linecap="round"/>'
+		if asset_id.contains("toxic") or asset_id.contains("chemical")
+		else '  <path d="M68 60 L92 60" stroke="#0b0b0b" stroke-width="3" stroke-linecap="round"/>'
+	)
+	return "\n".join(PackedStringArray([
+		'  <ellipse cx="80" cy="80" rx="24" ry="9" fill="%s" stroke="%s" stroke-width="3"/>' % [primary, accent],
+		'  <path d="M56 48 C56 38 104 38 104 48 L104 80 C104 91 56 91 56 80 Z" fill="%s" stroke="#0a0a0a" stroke-width="4"/>' % primary,
+		'  <ellipse cx="80" cy="48" rx="24" ry="9" fill="%s" stroke="%s" stroke-width="3"/>' % [primary, accent],
+		'  <path d="M58 61 C70 69 90 69 102 61 M58 73 C70 81 90 81 102 73" stroke="%s" stroke-width="4" opacity="0.82"/>' % accent,
+		symbol
+	]))
+
+func _wreck_shape(primary: String, secondary: String, accent: String) -> String:
+	return "\n".join(PackedStringArray([
+		'  <polygon points="36,76 78,52 124,68 86,94" fill="%s" stroke="%s" stroke-width="4"/>' % [secondary, accent],
+		'  <polygon points="43,63 73,45 111,58 126,76 85,86 52,76" fill="%s" stroke="#090909" stroke-width="4"/>' % primary,
+		'  <polygon points="71,48 94,42 111,59 82,62" fill="#101416" stroke="%s" stroke-width="3"/>' % accent,
+		'  <circle cx="58" cy="78" r="7" fill="#050505"/>',
+		'  <circle cx="105" cy="78" r="7" fill="#050505"/>',
+		'  <path d="M44 68 L118 75 M60 57 L96 83" stroke="%s" stroke-width="3" stroke-linecap="round" opacity="0.72"/>' % accent
+	]))
+
+func _rock_shape(asset_id: String, primary: String, accent: String) -> String:
+	var highlight := "#d6edf3" if asset_id.contains("ice") else accent
+	return "\n".join(PackedStringArray([
+		'  <polygon points="42,78 62,45 91,35 124,62 112,90 72,99" fill="%s" stroke="%s" stroke-width="4"/>' % [primary, accent],
+		'  <polygon points="62,45 91,35 84,66 42,78" fill="%s" opacity="0.45"/>' % highlight,
+		'  <path d="M84 66 L112 90 M84 66 L124 62 M72 99 L84 66" stroke="#0b0b0b" stroke-width="2" opacity="0.45"/>'
+	]))
+
+func _dead_tree_shape(primary: String, accent: String) -> String:
+	return "\n".join(PackedStringArray([
+		'  <path d="M79 91 C76 73 78 55 86 35" stroke="%s" stroke-width="10" stroke-linecap="round"/>' % primary,
+		'  <path d="M84 52 L50 40 M84 56 L116 42 M81 69 L54 82 M82 46 L72 24 M88 39 L104 22" stroke="%s" stroke-width="5" stroke-linecap="round"/>' % primary,
+		'  <path d="M54 40 L43 33 M116 42 L128 35 M72 24 L68 15 M104 22 L116 17" stroke="%s" stroke-width="3" stroke-linecap="round"/>' % accent,
+		'  <ellipse cx="80" cy="94" rx="18" ry="7" fill="%s" opacity="0.7"/>' % primary
+	]))
+
+func _log_shape(primary: String, accent: String) -> String:
+	return "\n".join(PackedStringArray([
+		'  <path d="M38 70 L112 50 C122 47 132 55 128 64 L55 87 C44 91 32 80 38 70 Z" fill="%s" stroke="#090909" stroke-width="4"/>' % primary,
+		'  <ellipse cx="45" cy="78" rx="12" ry="9" fill="%s" stroke="%s" stroke-width="3"/>' % [primary, accent],
+		'  <path d="M58 76 L118 58 M76 69 L83 83 M97 61 L104 74" stroke="%s" stroke-width="3" stroke-linecap="round"/>' % accent
+	]))
+
+func _bridge_object_shape(primary: String, secondary: String, accent: String) -> String:
+	var lines := PackedStringArray([
+		'  <polygon points="26,72 80,44 134,72 80,100" fill="%s" stroke="%s" stroke-width="3"/>' % [secondary, accent]
+	])
+	for index in range(6):
+		var x_a := 39 + index * 15
+		lines.append('  <path d="M%d 64 L%d 84" stroke="%s" stroke-width="8" stroke-linecap="round"/>' % [x_a, x_a + 15, primary])
+	lines.append('  <path d="M31 65 L80 91 L129 65 M31 79 L80 105 L129 79" stroke="%s" stroke-width="4" stroke-linecap="round"/>' % accent)
+	return "\n".join(lines)
+
+func _crate_shape(primary: String, secondary: String, accent: String) -> String:
+	return "\n".join(PackedStringArray([
+		'  <polygon points="50,68 80,52 110,68 80,84" fill="%s" stroke="%s" stroke-width="3"/>' % [secondary, accent],
+		'  <polygon points="50,68 80,84 80,102 50,86" fill="%s" stroke="#0b0b0b" stroke-width="3"/>' % primary,
+		'  <polygon points="110,68 80,84 80,102 110,86" fill="%s" stroke="#0b0b0b" stroke-width="3" opacity="0.82"/>' % primary,
+		'  <path d="M58 72 L80 84 L102 72 M80 55 L80 101" stroke="%s" stroke-width="3" stroke-linecap="round"/>' % accent
+	]))
+
+func _asset_is_route(asset_id: String) -> bool:
+	return (
+		asset_id.contains("road")
+		or asset_id.contains("lane")
+		or asset_id.contains("street")
+		or asset_id.contains("path")
+		or asset_id.contains("walkway")
+		or asset_id.contains("bridge")
+		or asset_id.contains("pass")
+		or asset_id.contains("gate")
+	)
 
 func _resolve_primary_color(contract: Dictionary) -> String:
 	var asset_id := String(contract.get("id", ""))

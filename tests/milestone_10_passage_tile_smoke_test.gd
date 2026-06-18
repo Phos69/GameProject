@@ -98,6 +98,7 @@ func _run_passage_layout_smoke(
 	var saw_exit := false
 	var saw_connector := false
 	var saw_curve_or_edge := false
+	var saw_diagonal_main_roads := false
 	for cell in cells:
 		var layout := cell.generated_layout
 		_expect(layout != null, "%s has generated layout" % String(cell.id))
@@ -113,6 +114,7 @@ func _run_passage_layout_smoke(
 			saw_exit = saw_exit or _passage_outer_probe_emits_exit(cell, layout, passage, resolver)
 			saw_connector = saw_connector or _passage_connector_probe_emits_type(cell, layout, passage, resolver)
 		saw_curve_or_edge = saw_curve_or_edge or _layout_emits_road_connector(cell, layout, resolver)
+		saw_diagonal_main_roads = saw_diagonal_main_roads or _layout_emits_diagonal_main_roads(layout)
 	for side in [&"north", &"south", &"east", &"west"]:
 		_expect(int(side_counts.get(side, 0)) > 0, "passage smoke covers %s passages" % String(side))
 	for passage_type in [&"road", &"bridge", &"snow_pass", &"broken_gate", &"burned_road"]:
@@ -121,6 +123,7 @@ func _run_passage_layout_smoke(
 	_expect(saw_exit, "resolver emits passage exit tiles")
 	_expect(saw_connector, "resolver emits dedicated passage connector tiles")
 	_expect(saw_curve_or_edge, "resolver emits road connector tiles")
+	_expect(saw_diagonal_main_roads, "generated roads branch along both isometric diagonals")
 
 func _assert_passage_rects(
 	cell: BiomeCell,
@@ -316,6 +319,19 @@ func _layout_emits_road_connector(
 			):
 				return true
 	return false
+
+func _layout_emits_diagonal_main_roads(layout: BiomeEnvironmentLayout) -> bool:
+	var descending_count := 0
+	var ascending_count := 0
+	var diagonal_tolerance := 8
+	for road_cell in layout.get_road_cells():
+		if not layout.get_road_tags_at_cell(road_cell).has(&"main_road"):
+			continue
+		if absi(road_cell.x - road_cell.y) <= diagonal_tolerance:
+			descending_count += 1
+		if absi((road_cell.x + road_cell.y) - (layout.zone_size.x - 1)) <= diagonal_tolerance:
+			ascending_count += 1
+	return descending_count >= 120 and ascending_count >= 120
 
 func _world_openings_touch(connection: WorldRegionConnection) -> bool:
 	match connection.side:

@@ -935,6 +935,8 @@ QA visuale e runtime da eseguire dopo modifiche a `BiomePassage`,
   l'apertura deve essere leggibile dai tile entry/exit e dai muri/cliff laterali.
 - Verificare che `bridge`, `snow_pass`, `broken_gate`, `burned_road` e `road`
   abbiano silhouette distinta nel ground tile layer.
+- Verificare che le strade principali e le diramazioni verso i varchi corrano
+  in diagonale sugli assi isometrici, non come croci orizzontali/verticali.
 - Verificare che nessun tile di passaggio cada su fall zone, muro/bordo o void e
   che il trigger resti dentro lo span del varco.
 - Aprire la mappa dei territori e attraversare avanti/indietro un confine:
@@ -957,6 +959,12 @@ QA visuale e runtime da eseguire dopo modifiche a `ObstacleSystem`,
 - Avviare survival con seed fisso e verificare che rocce, case, barriere,
   relitti, tronchi, barili e muri appaiano come oggetti con base/ombra
   isometrica, non come rettangoli/poligoni runtime scollegati dal terreno.
+- Confermare che case, cabine, laboratori, recinti, muri, barili, relitti,
+  tronchi, ponti e crate abbiano silhouette diverse e non usino piu la stessa
+  casetta placeholder generica.
+- Confermare che `tests/milestone_10_object_asset_smoke_test.gd` passi anche il
+  confronto alpha tra `ruined_house` e `toxic_barrel`, inclusa la regressione
+  sul fallback SVG temporaneo.
 - Kiting attorno a `ruined_house`, `burned_house`, `snow_cabin`,
   `sunken_house`, `lab_block`, muri, auto bruciate, tronchi e barili: collisione
   e passaggio davanti/dietro devono restare coerenti con Y-sort.

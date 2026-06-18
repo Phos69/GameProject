@@ -107,6 +107,7 @@ func _run_resolver_coverage_smoke(
 					and (
 						_cell_inside_any_rect(probe, layout.road_rects)
 						or _cell_inside_any_rect(probe, layout.passage_rects)
+						or layout.has_road_cell(probe)
 					)
 					and not resolver.is_route_tile_id(tile_id)
 				):

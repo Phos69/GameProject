@@ -258,12 +258,14 @@ Completato:
 - manifest `assets/environment/isometric/manifest.json` per censire ostacoli,
   props, border tematici, fall zone, draw mode oggetti e tag terrain/passaggi
   da sostituire con versioni isometriche coerenti;
-- tile layer asset-driven per ground, road connector e passaggi: entry/exit,
-  ponti, snow pass, broken gate e burned road sono risolti come asset tile nel
-  `200x200`, non come patch o frecce del gate;
-- draw procedurali dedicati per gli ostacoli generati e i border tematici dei
-  cinque biomi, senza asset esterni obbligatori e senza fallback barriera
-  generico implicito;
+- tile layer asset-driven per ground, strade diagonali, road connector e
+  passaggi: entry/exit, ponti, snow pass, broken gate e burned road sono
+  risolti come asset tile nel `200x200`, non come patch o frecce del gate;
+- oggetti e ostacoli asset-backed tramite SVG trasparenti e silhouette
+  isometriche dedicate per case, cabine, laboratori, recinti, muri, barili,
+  relitti, tronchi, ponti e crate, senza asset esterni obbligatori e senza
+  fallback barriera generico implicito; il loader runtime evita canvas opachi e
+  fallback placeholder generici;
 - cinque biomi giocabili nella stessa run, con partenza forzata dalla `Pianura Infetta`;
 - spawn zombie delegato a `ZombieSpawner` dai bordi della camera, con fallback ai punti arena esistenti;
 - layout ambientali data-driven per Pianura, Tossico, Infuocato, Neve e Palude;

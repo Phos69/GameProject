@@ -504,9 +504,13 @@ Identita dei biomi:
 - `Bioma Infuocato`: fiamme, lava, casse militari, runner ed esplosivi;
 - `Bioma Neve`: ghiaccio, neve alta, kit termici e zombie corazzati;
 - `Bioma Palude`: acqua profonda, fango, loot organico e zombie emergenti;
-- tutti i layout sono deterministici e mantengono una corsia centrale;
+- tutti i layout sono deterministici e mantengono diramazioni principali
+  diagonali, coerenti con la lettura isometrica del terreno;
 - ogni layout generato contiene strade, corridoi e ostacoli grandi che
   influenzano movimento e combattimento invece di restare solo decorazione;
+- case, cabine, laboratori, barriere, barili, relitti, tronchi, ponti e crate
+  usano sprite SVG trasparenti con silhouette isometrica dedicata, non il
+  placeholder generico unico;
 - i lati collegati tra biomi hanno muri o barriere tematiche con almeno un
   passaggio raggiungibile; i lati senza vicino diventano fall zone con visuale
   cliff/depth;

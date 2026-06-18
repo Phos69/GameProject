@@ -31,6 +31,9 @@ const ISOMETRIC_OBJECT_SCRIPT = preload(
 const ISOMETRIC_OBJECT_FACTORY_SCRIPT = preload(
 	"res://game/modes/zombie/isometric_environment_object_factory.gd"
 )
+const SVG_TEXTURE_LOADER = preload(
+	"res://game/modes/zombie/isometric_svg_texture_loader.gd"
+)
 
 var failures: PackedStringArray = []
 
@@ -52,6 +55,8 @@ func _run() -> void:
 	_expect(object_scene != null, "isometric environment object scene loads")
 
 	_run_asset_contract_coverage(manifest)
+	_run_runtime_texture_shape_coverage(manifest)
+	_run_loader_fallback_shape_regression()
 	await _run_factory_obstacle_coverage(manifest)
 	await _run_obstacle_system_integration()
 	await _run_supply_crate_asset_visual(manifest)
@@ -78,6 +83,55 @@ func _run_asset_contract_coverage(manifest: IsometricEnvironmentManifest) -> voi
 	_expect(
 		_asset_exists(String(crate_contract.get("asset_path", ""))),
 		"supply_crate asset path exists"
+	)
+
+func _run_runtime_texture_shape_coverage(manifest: IsometricEnvironmentManifest) -> void:
+	var house_contract := manifest.get_object_asset_contract(&"ruined_house")
+	var barrel_contract := manifest.get_object_asset_contract(&"toxic_barrel")
+	var house_texture := SVG_TEXTURE_LOADER.load_texture(
+		String(house_contract.get("asset_path", "")),
+		Color(0.42, 0.38, 0.30, 1.0),
+		Color(0.86, 0.68, 0.22, 1.0)
+	)
+	var barrel_texture := SVG_TEXTURE_LOADER.load_texture(
+		String(barrel_contract.get("asset_path", "")),
+		Color(0.20, 0.52, 0.34, 1.0),
+		Color(0.82, 0.96, 0.34, 1.0)
+	)
+	_expect(house_texture != null, "ruined_house runtime texture loads")
+	_expect(barrel_texture != null, "toxic_barrel runtime texture loads")
+	if house_texture == null or barrel_texture == null:
+		return
+	_expect(
+		_alpha_mask_difference_score(house_texture, barrel_texture) > 0.04,
+		"ruined_house and toxic_barrel have distinct runtime silhouettes"
+	)
+
+func _run_loader_fallback_shape_regression() -> void:
+	var house_path := "user://isometric_loader_house_test.svg"
+	var barrel_path := "user://isometric_loader_barrel_test.svg"
+	_expect(
+		_write_test_svg(house_path, &"ruined_house")
+		and _write_test_svg(barrel_path, &"toxic_barrel"),
+		"temporary SVG fallback fixtures are writable"
+	)
+	var house_texture := SVG_TEXTURE_LOADER.load_texture(
+		house_path,
+		Color(0.42, 0.38, 0.30, 1.0),
+		Color(0.86, 0.68, 0.22, 1.0)
+	)
+	var barrel_texture := SVG_TEXTURE_LOADER.load_texture(
+		barrel_path,
+		Color(0.20, 0.52, 0.34, 1.0),
+		Color(0.82, 0.96, 0.34, 1.0)
+	)
+	_expect(house_texture != null, "house SVG fallback texture loads")
+	_expect(barrel_texture != null, "barrel SVG fallback texture loads")
+	if house_texture == null or barrel_texture == null:
+		return
+	_expect(
+		_alpha_mask_difference_score(house_texture, barrel_texture) > 0.04,
+		"SVG fallback produces object-specific silhouettes"
 	)
 
 func _run_factory_obstacle_coverage(manifest: IsometricEnvironmentManifest) -> void:
@@ -306,6 +360,53 @@ func _asset_exists(asset_path: String) -> bool:
 	if ResourceLoader.exists(asset_path):
 		return true
 	return FileAccess.file_exists(asset_path)
+
+func _write_test_svg(path: String, asset_id: StringName) -> bool:
+	var file := FileAccess.open(path, FileAccess.WRITE)
+	if file == null:
+		return false
+	file.store_string(
+		(
+			"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"160\" height=\"120\" "
+			+ "viewBox=\"0 0 160 120\" data-section=\"object_scenes\" data-id=\"%s\">"
+			+ "<rect width=\"160\" height=\"120\" fill=\"#4f5a61\"/>"
+			+ "<rect x=\"20\" y=\"20\" width=\"120\" height=\"80\" fill=\"#b98238\"/>"
+			+ "<path d=\"M20 80 L80 35 L140 80\" fill=\"#222831\"/>"
+			+ "</svg>"
+		)
+		% String(asset_id)
+	)
+	file.close()
+	return FileAccess.file_exists(path)
+
+func _alpha_mask_difference_score(
+	texture_a: Texture2D,
+	texture_b: Texture2D
+) -> float:
+	if texture_a == null or texture_b == null:
+		return 0.0
+	var image_a := texture_a.get_image()
+	var image_b := texture_b.get_image()
+	if image_a == null or image_b == null:
+		return 0.0
+	var width := mini(image_a.get_width(), image_b.get_width())
+	var height := mini(image_a.get_height(), image_b.get_height())
+	if width <= 0 or height <= 0:
+		return 0.0
+	var step_x := maxi(int(width / 48), 1)
+	var step_y := maxi(int(height / 36), 1)
+	var changed := 0
+	var samples := 0
+	for y in range(0, height, step_y):
+		for x in range(0, width, step_x):
+			var alpha_a := image_a.get_pixel(x, y).a > 0.08
+			var alpha_b := image_b.get_pixel(x, y).a > 0.08
+			if alpha_a != alpha_b:
+				changed += 1
+			samples += 1
+	if samples <= 0:
+		return 0.0
+	return float(changed) / float(samples)
 
 func _expect(condition: bool, message: String) -> void:
 	if condition:

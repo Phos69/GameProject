@@ -27,6 +27,8 @@ class_name BiomeEnvironmentLayout
 @export_range(80.0, 500.0, 10.0) var central_corridor_width: float = 220.0
 
 var road_rects: Array[Rect2i] = []
+var road_rect_tags: Array[StringName] = []
+var road_cell_tags: Dictionary = {}
 var passage_rects: Array[Rect2i] = []
 var obstacle_rects: Array[Rect2i] = []
 var fall_zone_rects: Array[Rect2i] = []
@@ -49,7 +51,7 @@ func has_generated_map_data() -> bool:
 	return (
 		zone_size == Vector2i(200, 200)
 		and generation_seed != 0
-		and not road_rects.is_empty()
+		and (not road_rects.is_empty() or not road_cell_tags.is_empty())
 	)
 
 func logical_to_world(cell: Vector2i) -> Vector2:
@@ -80,14 +82,49 @@ func is_world_position_inside_zone(position: Vector2) -> bool:
 	)
 
 func get_generation_signature() -> String:
-	return "%d:%s:%d:%d:%d:%d" % [
+	return "%d:%s:%d:%d:%d:%d:%d" % [
 		generation_seed,
 		str(zone_size),
 		road_rects.size(),
+		road_cell_tags.size(),
 		obstacle_rects.size(),
 		fall_zone_rects.size(),
 		hazard_rects.size()
 	]
+
+func add_road_cell(cell: Vector2i, terrain_tag: StringName) -> void:
+	if (
+		cell.x < 0
+		or cell.y < 0
+		or cell.x >= zone_size.x
+		or cell.y >= zone_size.y
+	):
+		return
+	var key := _cell_key(cell)
+	var tags: Array[StringName] = get_road_tags_at_cell(cell)
+	if not tags.has(terrain_tag):
+		tags.append(terrain_tag)
+	road_cell_tags[key] = tags
+
+func has_road_cell(cell: Vector2i) -> bool:
+	return road_cell_tags.has(_cell_key(cell))
+
+func get_road_tags_at_cell(cell: Vector2i) -> Array[StringName]:
+	var result: Array[StringName] = []
+	var key := _cell_key(cell)
+	if not road_cell_tags.has(key):
+		return result
+	var raw_tags: Array = road_cell_tags[key] as Array
+	for tag in raw_tags:
+		result.append(StringName(tag))
+	return result
+
+func get_road_cells() -> Array[Vector2i]:
+	var cells: Array[Vector2i] = []
+	for key_value in road_cell_tags.keys():
+		var key := int(key_value)
+		cells.append(Vector2i(key % zone_size.x, floori(float(key) / float(zone_size.x))))
+	return cells
 
 func rebuild_terrain_classification(cell: BiomeCell = null) -> void:
 	terrain_classification_counts = {
@@ -165,3 +202,6 @@ func _cell_inside_any_rect(cell: Vector2i, rects: Array[Rect2i]) -> bool:
 		if rect.has_point(cell):
 			return true
 	return false
+
+func _cell_key(cell: Vector2i) -> int:
+	return cell.y * zone_size.x + cell.x

@@ -78,12 +78,12 @@ eseguibili.
 
 ### Cosa e incompleto o ambiguo
 
-- Il rendering non e ancora un tileset isometrico vero: `BiomeRegionGround`
-  campiona il layout ogni 8 celle e disegna rombi procedurali; non esiste una
-  `TileMap` isometrica o una pipeline tile asset-driven.
-- Gli asset ambiente sono ancora procedurali. Il manifest dichiara
-  `converted_procedural_isometric`, `procedural_isometric_placeholder`,
-  `manifest_placeholder` o `existing_procedural_placeholder`, non asset finali.
+- Stato iniziale dell'audit: il rendering non era ancora un tileset isometrico
+  vero; `BiomeRegionGround` campionava il layout ogni 8 celle e disegnava rombi
+  procedurali. Risolto nel percorso Milestone 10.3 con `BiomeTileLayer`.
+- Stato iniziale dell'audit: gli asset ambiente erano procedurali o placeholder.
+  Risolto nel percorso Milestone 10.1-10.5 con manifest v7, asset SVG
+  `base_complete`, route diagonali e oggetti `object_scenes` asset-backed.
 - Gli ID generati da `ObstacleLayoutGenerator` sono censiti nel manifest v6
   con categoria esplicita (copertura introdotta in v3) e `object_visuals`
   dedicati (introdotti in v5, estesi in v6 per i border tematici). I mismatch
@@ -973,8 +973,8 @@ Esito 10.2:
 - Aggiunto `tools/generate_isometric_environment_assets.gd`, che legge i
   contratti v7 e genera SVG interni con dry-run, write, check e guardia sugli
   asset `final`.
-- Generati 74 SVG placeholder asset-driven originali del progetto; i contratti
-  v7 ora validano come `base_complete` e restano coperti da fallback tecnico.
+- Generati 93 SVG asset-driven originali del progetto; i contratti v7 validano
+  come `base_complete` e restano coperti da fallback tecnico.
 - `tests/milestone_10_asset_pipeline_smoke_test.gd` verifica struttura cartelle,
   allineamento manifest/file system, metadata SVG, naming e attribution.
 
@@ -998,6 +998,9 @@ Esito 10.4:
 - `IsometricTileResolver` distingue `terrain_tiles` e `passage_tiles`, assegna
   entry/exit sui varchi di bordo e mantiene i connector di passaggio sopra le
   road decorative sovrapposte.
+- Polish successivo: le route generate leggono `road_cell_tags` e vengono
+  tracciate come segmenti diagonali spessi lungo gli assi isometrici, mentre i
+  rettangoli restano per aperture e compatibilita.
 - `BiomePassage` e `WorldRegionConnection` espongono rettangoli local/global e
   tile entry/exit per continuita visiva tra regioni confinanti.
 - `tests/milestone_10_passage_tile_smoke_test.gd` copre contratti, quattro lati,
@@ -1015,6 +1018,9 @@ Esito 10.5:
 - `IsometricSvgTextureLoader` crea texture runtime dagli SVG generati quando
   Godot headless non dispone dell'import editor; il percorso normale non torna
   al vecchio `_draw()` degli ostacoli.
+- Gli SVG ambiente generati sono ora trasparenti e specifici per categoria
+  (case, cabine, laboratori, recinti, muri, barili, relitti, tronchi, ponti,
+  crate), non piu un unico placeholder generico.
 - `SupplyCrateVisual` usa `object_scenes/supply_crate` come sprite asset-backed,
   lasciando invariati collisione, loot e apertura.
 - `tests/milestone_10_object_asset_smoke_test.gd` copre gli ID richiesti dalla

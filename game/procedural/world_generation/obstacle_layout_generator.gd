@@ -69,7 +69,7 @@ func populate_layout(
 func repair_layout(layout: BiomeEnvironmentLayout) -> void:
 	for index in range(layout.obstacle_rects.size() - 1, -1, -1):
 		var obstacle_rect := layout.obstacle_rects[index]
-		if _intersects_any(obstacle_rect, layout.road_rects):
+		if _intersects_route(layout, obstacle_rect):
 			layout.obstacle_rects.remove_at(index)
 			layout.obstacle_ids.remove_at(index)
 			layout.obstacle_positions.remove_at(index)
@@ -80,24 +80,30 @@ func repair_layout(layout: BiomeEnvironmentLayout) -> void:
 func _add_roads(layout: BiomeEnvironmentLayout, cell: BiomeCell) -> void:
 	var zone_size := layout.zone_size
 	var center := zone_size / 2
-	var horizontal := Rect2i(
-		Vector2i(0, center.y - ROAD_WIDTH / 2),
-		Vector2i(zone_size.x, ROAD_WIDTH)
+	_add_diagonal_road(
+		layout,
+		Vector2i(4, 4),
+		zone_size - Vector2i(5, 5),
+		ROAD_WIDTH,
+		&"main_road"
 	)
-	var vertical := Rect2i(
-		Vector2i(center.x - ROAD_WIDTH / 2, 0),
-		Vector2i(ROAD_WIDTH, zone_size.y)
+	_add_diagonal_road(
+		layout,
+		Vector2i(zone_size.x - 5, 4),
+		Vector2i(4, zone_size.y - 5),
+		ROAD_WIDTH,
+		&"main_road"
 	)
-	_add_road_rect(layout, horizontal, &"main_road")
-	_add_road_rect(layout, vertical, &"main_road")
 
 	for passage in cell.passages:
 		var passage_rect := passage.get_local_rect(zone_size)
 		layout.passage_rects.append(passage_rect)
 		_add_road_rect(layout, passage_rect, passage.passage_type)
-		_add_road_rect(
+		_add_diagonal_road(
 			layout,
-			passage.get_connector_rect(zone_size),
+			center,
+			_passage_inner_anchor(passage, zone_size),
+			ROAD_WIDTH,
 			passage.passage_type
 		)
 
@@ -108,65 +114,85 @@ func _add_biome_navigation_features(
 ) -> void:
 	match biome.biome_id:
 		&"infected_plains":
-			_add_road_rect(
+			_add_diagonal_road(
 				layout,
-				Rect2i(Vector2i(24, 48), Vector2i(152, SECONDARY_ROAD_WIDTH)),
+				Vector2i(24, 48),
+				Vector2i(176, 147),
+				SECONDARY_ROAD_WIDTH,
 				&"broken_street"
 			)
-			_add_road_rect(
+			_add_diagonal_road(
 				layout,
-				Rect2i(Vector2i(24, 147), Vector2i(152, SECONDARY_ROAD_WIDTH)),
+				Vector2i(24, 147),
+				Vector2i(176, 48),
+				SECONDARY_ROAD_WIDTH,
 				&"broken_street"
 			)
 		&"toxic_wastes":
-			_add_road_rect(
+			_add_diagonal_road(
 				layout,
-				Rect2i(Vector2i(44, 44), Vector2i(SECONDARY_ROAD_WIDTH, 112)),
+				Vector2i(44, 44),
+				Vector2i(151, 156),
+				SECONDARY_ROAD_WIDTH,
 				&"service_lane"
 			)
-			_add_road_rect(
+			_add_diagonal_road(
 				layout,
-				Rect2i(Vector2i(151, 44), Vector2i(SECONDARY_ROAD_WIDTH, 112)),
+				Vector2i(151, 44),
+				Vector2i(44, 156),
+				SECONDARY_ROAD_WIDTH,
 				&"service_lane"
 			)
 			_add_cover_cluster(layout, &"pipe_stack", Vector2i(54, 78), true)
 			_add_cover_cluster(layout, &"pipe_stack", Vector2i(130, 118), true)
 		&"burning_fields":
-			_add_road_rect(
+			_add_diagonal_road(
 				layout,
-				Rect2i(Vector2i(48, 48), Vector2i(104, SECONDARY_ROAD_WIDTH)),
+				Vector2i(48, 48),
+				Vector2i(152, 147),
+				SECONDARY_ROAD_WIDTH,
 				&"ash_lane"
 			)
-			_add_road_rect(
+			_add_diagonal_road(
 				layout,
-				Rect2i(Vector2i(48, 147), Vector2i(104, SECONDARY_ROAD_WIDTH)),
+				Vector2i(48, 147),
+				Vector2i(152, 48),
+				SECONDARY_ROAD_WIDTH,
 				&"ash_lane"
 			)
 			_add_choke_pair(layout, &"burned_car", Vector2i(82, 84), 0.25)
 			_add_choke_pair(layout, &"burned_car", Vector2i(110, 112), -0.25)
 		&"frozen_outskirts":
-			_add_road_rect(
+			_add_diagonal_road(
 				layout,
-				Rect2i(Vector2i(36, 58), Vector2i(128, SECONDARY_ROAD_WIDTH)),
+				Vector2i(36, 58),
+				Vector2i(164, 137),
+				SECONDARY_ROAD_WIDTH,
 				&"packed_snow_path"
 			)
-			_add_road_rect(
+			_add_diagonal_road(
 				layout,
-				Rect2i(Vector2i(36, 137), Vector2i(128, SECONDARY_ROAD_WIDTH)),
+				Vector2i(36, 137),
+				Vector2i(164, 58),
+				SECONDARY_ROAD_WIDTH,
 				&"packed_snow_path"
 			)
 			_add_cover_cluster(layout, &"ice_block", Vector2i(58, 118), false)
 			_add_cover_cluster(layout, &"ice_block", Vector2i(130, 66), false)
 		&"drowned_marsh":
 			var offset := rng.randi_range(-6, 6)
-			_add_road_rect(
+			_add_diagonal_road(
 				layout,
-				Rect2i(Vector2i(58, 30), Vector2i(SECONDARY_ROAD_WIDTH, 140)),
+				Vector2i(58, 30),
+				Vector2i(136 + offset, 170),
+				SECONDARY_ROAD_WIDTH,
 				&"wooden_walkway"
 			)
-			_add_road_rect(
+			_add_diagonal_road(
 				layout,
-				Rect2i(Vector2i(136 + offset, 30), Vector2i(SECONDARY_ROAD_WIDTH, 140)),
+				Vector2i(136 + offset, 30),
+				Vector2i(58, 170),
+				SECONDARY_ROAD_WIDTH,
 				&"wooden_walkway"
 			)
 			_add_choke_pair(layout, &"dead_tree", Vector2i(76, 122), 0.6)
@@ -215,11 +241,63 @@ func _add_road_rect(
 	tag: StringName
 ) -> void:
 	layout.road_rects.append(rect)
-	layout.terrain_patch_tags.append(tag)
-	layout.terrain_patch_positions.append(layout.rect_center_to_world(rect))
-	layout.terrain_patch_radii.append(
-		maxf(float(maxi(rect.size.x, rect.size.y)) * layout.logical_tile_scale * 0.18, 28.0)
+	layout.road_rect_tags.append(tag)
+	_add_route_metadata(layout, layout.rect_center_to_world(rect), maxf(float(maxi(rect.size.x, rect.size.y)) * layout.logical_tile_scale * 0.18, 28.0), tag)
+
+func _add_diagonal_road(
+	layout: BiomeEnvironmentLayout,
+	start: Vector2i,
+	end: Vector2i,
+	width: int,
+	tag: StringName
+) -> void:
+	var radius := maxi(width / 2, 1)
+	var delta := end - start
+	var steps := maxi(maxi(absi(delta.x), absi(delta.y)), 1)
+	var touched: Dictionary = {}
+	for step in range(steps + 1):
+		var t := float(step) / float(steps)
+		var center := Vector2i(
+			roundi(lerpf(float(start.x), float(end.x), t)),
+			roundi(lerpf(float(start.y), float(end.y), t))
+		)
+		for y in range(center.y - radius, center.y + radius + 1):
+			for x in range(center.x - radius, center.x + radius + 1):
+				var cell := Vector2i(x, y)
+				if (
+					cell.x < 0
+					or cell.y < 0
+					or cell.x >= layout.zone_size.x
+					or cell.y >= layout.zone_size.y
+				):
+					continue
+				var cell_delta := cell - center
+				if Vector2(float(cell_delta.x), float(cell_delta.y)).length() > float(radius) + 0.35:
+					continue
+				layout.add_road_cell(cell, tag)
+				touched[_route_cell_key(layout, cell)] = true
+	if touched.is_empty():
+		return
+	var midpoint := Vector2(
+		(float(start.x) + float(end.x)) * 0.5,
+		(float(start.y) + float(end.y)) * 0.5
 	)
+	var world_midpoint := layout.logical_to_world(Vector2i(roundi(midpoint.x), roundi(midpoint.y)))
+	var world_radius := maxf(
+		Vector2(float(delta.x), float(delta.y)).length() * layout.logical_tile_scale * 0.10,
+		34.0
+	)
+	_add_route_metadata(layout, world_midpoint, world_radius, tag)
+
+func _add_route_metadata(
+	layout: BiomeEnvironmentLayout,
+	position: Vector2,
+	radius: float,
+	tag: StringName
+) -> void:
+	layout.terrain_patch_tags.append(tag)
+	layout.terrain_patch_positions.append(position)
+	layout.terrain_patch_radii.append(radius)
 
 func _add_large_obstacles(
 	layout: BiomeEnvironmentLayout,
@@ -321,7 +399,7 @@ func _add_obstacle_if_clear(
 	shape_id: StringName,
 	rotation_radians: float
 ) -> void:
-	if _intersects_any(_inflate_rect(rect, MIN_RECT_GAP), layout.road_rects):
+	if _intersects_route(layout, _inflate_rect(rect, MIN_RECT_GAP)):
 		return
 	if _intersects_any(_inflate_rect(rect, MIN_RECT_GAP), layout.obstacle_rects):
 		return
@@ -467,3 +545,43 @@ func _inflate_rect(rect: Rect2i, amount: int) -> Rect2i:
 		rect.position - Vector2i(amount, amount),
 		rect.size + Vector2i(amount * 2, amount * 2)
 	)
+
+func _passage_inner_anchor(
+	passage: BiomePassage,
+	zone_size: Vector2i
+) -> Vector2i:
+	match passage.side:
+		&"north":
+			return Vector2i(passage.position, 3)
+		&"south":
+			return Vector2i(passage.position, zone_size.y - 4)
+		&"west":
+			return Vector2i(3, passage.position)
+		_:
+			return Vector2i(zone_size.x - 4, passage.position)
+
+func _intersects_route(layout: BiomeEnvironmentLayout, rect: Rect2i) -> bool:
+	if _intersects_any(rect, layout.road_rects):
+		return true
+	return _rect_overlaps_road_cells(layout, rect)
+
+func _rect_overlaps_road_cells(
+	layout: BiomeEnvironmentLayout,
+	rect: Rect2i
+) -> bool:
+	var clipped := _clip_rect(rect, layout.zone_size)
+	for y in range(clipped.position.y, clipped.position.y + clipped.size.y):
+		for x in range(clipped.position.x, clipped.position.x + clipped.size.x):
+			if layout.has_road_cell(Vector2i(x, y)):
+				return true
+	return false
+
+func _clip_rect(rect: Rect2i, zone_size: Vector2i) -> Rect2i:
+	var x := clampi(rect.position.x, 0, zone_size.x)
+	var y := clampi(rect.position.y, 0, zone_size.y)
+	var end_x := clampi(rect.position.x + rect.size.x, 0, zone_size.x)
+	var end_y := clampi(rect.position.y + rect.size.y, 0, zone_size.y)
+	return Rect2i(Vector2i(x, y), Vector2i(maxi(end_x - x, 0), maxi(end_y - y, 0)))
+
+func _route_cell_key(layout: BiomeEnvironmentLayout, cell: Vector2i) -> int:
+	return cell.y * layout.zone_size.x + cell.x

@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Fixed
+
+- Corretto il loader runtime degli SVG ambiente isometrici: ora rasterizza il
+  contenuto SVG trasparente quando disponibile, scarta import opachi e usa un
+  fallback isometrico specifico per categoria oggetto invece della sagoma
+  placeholder generica.
+
 ### Performance
 
 - Ridotto drasticamente il costo di rendering del terreno isometrico in modalità
@@ -73,7 +80,7 @@
   v7, sezioni asset-driven, fallback policy esplicita, documentazione asset e
   report di validazione aggiornati.
 - Chiusa la Milestone 10.2 della roadmap asset isometrica con pipeline locale,
-  generatore SVG headless, struttura cartelle ambiente e asset placeholder
+  generatore SVG headless, struttura cartelle ambiente e asset base
   asset-driven in-repo.
 - Chiusa la Milestone 10.3 della roadmap asset isometrica con `BiomeTileLayer`,
   resolver deterministico per ogni cella `200x200`, tile `void_edge_near`,
@@ -84,6 +91,14 @@
 - Chiusa la Milestone 10.5 della roadmap asset isometrica con oggetti e
   ostacoli slot-based, factory asset-driven, crate su sprite da manifest e
   smoke dedicato sugli object scene.
+- Iterato il pass isometrico ambiente: le strade generate usano ora celle route
+  diagonali asset-driven (`road_cell_tags`) per diramarsi lungo gli assi
+  isometrici invece di corsie orizzontali/verticali; il resolver mantiene i
+  rettangoli solo per aperture e compatibilita.
+- Rigenerati gli SVG interni ambiente con sfondo trasparente e silhouette
+  dedicate per case, cabine, laboratori, recinti, muri, barili, relitti,
+  tronchi, ponti e crate, rimuovendo il placeholder unico a forma di casetta
+  generica dagli `object_scenes`.
 
 ### Changed
 

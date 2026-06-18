@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="160" height="120" viewBox="0 0 160 120" data-generated-by="generate_isometric_environment_assets" data-section="edge_tiles" data-id="boundary_fence">
   <title>edge_tiles boundary_fence</title>
-  <rect width="160" height="120" fill="#11151a"/>
   <ellipse cx="80" cy="82" rx="58" ry="18" fill="#050608" opacity="0.45"/>
   <polygon points="20,58 80,28 140,58 80,88" fill="#2c3235" stroke="#c2b071" stroke-width="4"/>
   <rect x="36" y="42" width="88" height="34" rx="4" fill="#4d5b46" stroke="#101010" stroke-width="4"/>

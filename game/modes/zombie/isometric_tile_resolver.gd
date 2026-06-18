@@ -274,6 +274,9 @@ func _resolve_route_tile_data(
 	layout: BiomeEnvironmentLayout,
 	cell: Vector2i
 ) -> Dictionary:
+	var cell_route_tags := layout.get_road_tags_at_cell(cell)
+	if not cell_route_tags.is_empty():
+		return _resolve_cell_route_tile_data(layout, cell, cell_route_tags)
 	var matching_indices: Array[int] = []
 	for index in range(layout.road_rects.size()):
 		if layout.road_rects[index].has_point(cell):
@@ -319,9 +322,61 @@ func _resolve_route_tile_data(
 	)
 
 func _road_tag_for_index(layout: BiomeEnvironmentLayout, index: int) -> StringName:
-	if index >= 0 and index < layout.terrain_patch_tags.size():
-		return layout.terrain_patch_tags[index]
+	if index >= 0 and index < layout.road_rect_tags.size():
+		return layout.road_rect_tags[index]
 	return TILE_ROAD
+
+func _resolve_cell_route_tile_data(
+	layout: BiomeEnvironmentLayout,
+	cell: Vector2i,
+	route_tags: Array[StringName]
+) -> Dictionary:
+	var passage_tag := _find_passage_tag(route_tags)
+	if not passage_tag.is_empty():
+		if _cell_inside_any_rect(cell, layout.passage_rects):
+			var endpoint_tile := (
+				get_passage_exit_tile_id(passage_tag)
+				if _cell_on_outer_passage_edge(layout, cell)
+				else get_passage_entry_tile_id(passage_tag)
+			)
+			return _tile_data(
+				endpoint_tile,
+				TILE_SECTION_PASSAGE,
+				&"passage_exit" if String(endpoint_tile).ends_with("_exit") else &"passage_entry"
+			)
+		return _tile_data(passage_tag, TILE_SECTION_PASSAGE, &"passage_connector")
+	if route_tags.size() > 1:
+		return _tile_data(
+			TILE_ROAD_INTERSECTION,
+			TILE_SECTION_TERRAIN,
+			&"road_intersection"
+		)
+	var selected_tag: StringName = route_tags[route_tags.size() - 1]
+	if _count_route_neighbors(layout, cell) <= 1:
+		return _tile_data(TILE_ROAD_EDGE, TILE_SECTION_TERRAIN, &"road_edge")
+	return _tile_data(selected_tag, TILE_SECTION_TERRAIN, &"road")
+
+func _find_passage_tag(route_tags: Array[StringName]) -> StringName:
+	for tag in route_tags:
+		if _is_passage_type(tag):
+			return tag
+	return &""
+
+func _count_route_neighbors(layout: BiomeEnvironmentLayout, cell: Vector2i) -> int:
+	var count := 0
+	for offset in [
+		Vector2i(-1, -1),
+		Vector2i(0, -1),
+		Vector2i(1, -1),
+		Vector2i(-1, 0),
+		Vector2i(1, 0),
+		Vector2i(-1, 1),
+		Vector2i(0, 1),
+		Vector2i(1, 1)
+	]:
+		if layout.has_road_cell(cell + offset):
+			count += 1
+	return count
 
 func _resolve_terrain_route_tile_id(
 	layout: BiomeEnvironmentLayout,

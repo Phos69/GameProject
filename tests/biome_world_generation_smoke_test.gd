@@ -116,7 +116,7 @@ func _run() -> void:
 			"base biome contains large blocking houses"
 		)
 		_expect(
-			not base_layout.road_rects.is_empty()
+			(not base_layout.road_rects.is_empty() or not base_layout.get_road_cells().is_empty())
 			and not base_layout.crate_cells.is_empty(),
 			"base biome has roads, corridors and resource crates"
 		)

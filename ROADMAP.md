@@ -381,13 +381,17 @@ Attivita post-roadmap:
   asset.
 - Milestone 10.4 di `milestone_10_isometric_asset_rewrite_roadmap.md`
   completata: strade, curve/edge/intersezioni, entry/exit e connector di
-  passaggio asset-driven; `WorldRegionConnection` conserva rettangoli globali e
-  tile entry/exit per continuita tra regioni.
+  passaggio asset-driven; polish successivo con `road_cell_tags` diagonali per
+  far diramare le strade lungo assi isometrici; `WorldRegionConnection`
+  conserva rettangoli globali e tile entry/exit per continuita tra regioni.
 - Milestone 10.5 di `milestone_10_isometric_asset_rewrite_roadmap.md`
   completata: `ObstacleSystem` usa una factory per istanziare oggetti
   isometrici slot-based, `IsometricEnvironmentObject` carica sprite/texture dal
   contratto `object_scenes`, `BiomeObstacle` resta fallback tecnico e la supply
-  crate usa il proprio asset manifest.
+  crate usa il proprio asset manifest; polish successivo con SVG trasparenti e
+  silhouette dedicate per gli oggetti principali al posto del placeholder unico;
+  il loader runtime rasterizza SVG trasparenti o fallback isometrici per
+  categoria quando l'import editor non e affidabile.
 - asset definitivi e ulteriori pass di bilanciamento;
 - firma digitale della build pubblica.
 

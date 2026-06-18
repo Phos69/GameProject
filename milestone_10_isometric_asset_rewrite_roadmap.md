@@ -172,7 +172,7 @@ assets/environment/isometric/
   - preferenza: SVG/Texture generate in-repo, leggere e versionabili;
   - per Godot: import come `Texture2D` o scene `PackedScene` con `Sprite2D`/`Polygon2D`;
   - evitare per ora dipendenze binarie pesanti o asset pack esterni.
-- Introdurre un piccolo tool di generazione placeholder asset-driven:
+- Introdurre un piccolo tool di generazione asset base asset-driven:
   - genera SVG coerenti e non più `_draw()` runtime;
   - crea anteprime per manifest;
   - può essere rilanciato senza sovrascrivere asset marcati `final`.
@@ -330,6 +330,10 @@ Rendere strade e passaggi parte fisica e visiva della mappa, non patch decorativ
 - `IsometricTileResolver` emette route tile specifici, entry/exit sui varchi di
   bordo e connector `passage_tiles` con priorita sulle road decorative
   sovrapposte.
+- Polish successivo: `BiomeEnvironmentLayout` espone `road_cell_tags` e
+  `ObstacleLayoutGenerator` genera strade principali e diramazioni verso i
+  passaggi come segmenti diagonali spessi, coerenti con gli assi isometrici;
+  i rettangoli restano solo per aperture e compatibilita.
 - `BiomePassage` e `WorldRegionConnection` conservano rettangoli local/global,
   connector source/target e tile entry/exit per garantire continuita visuale
   tra regioni adiacenti.
@@ -355,6 +359,9 @@ Esito:
   solo quando il contratto lo consente.
 - `IsometricSvgTextureLoader` converte gli SVG generati in `ImageTexture`
   runtime quando l'import editor non e disponibile in headless.
+- `tools/generate_isometric_environment_assets.gd` genera SVG trasparenti con
+  silhouette dedicate per case, cabine, laboratori, recinti, muri, barili,
+  relitti, tronchi, ponti e crate, sostituendo il vecchio placeholder unico.
 - `SupplyCrateVisual` legge `object_scenes/supply_crate` e usa lo sprite
   asset-backed mantenendo collisione/apertura invariata.
 - Smoke: `tests/milestone_10_object_asset_smoke_test.gd`, con regressioni su

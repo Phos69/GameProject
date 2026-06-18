@@ -1,6 +1,7 @@
 extends RefCounted
 
 const DEFAULT_SIZE := Vector2i(160, 120)
+const MIN_TEXTURE_SIZE := 32
 
 static func load_texture(
 	asset_path: String,
@@ -17,6 +18,15 @@ static func load_texture(
 	var content := _read_text(asset_path)
 	if content.is_empty():
 		return null
+	var svg_texture := _load_svg_texture_from_content(content, texture_size)
+	if svg_texture != null:
+		return svg_texture
+	var imported_texture := _load_imported_texture(asset_path)
+	if (
+		imported_texture != null
+		and _texture_has_transparent_corners(imported_texture)
+	):
+		return imported_texture
 	var colors := _extract_hex_colors(content)
 	var primary := fallback_primary
 	var secondary := Color(0.14, 0.16, 0.18, 1.0)
@@ -27,7 +37,75 @@ static func load_texture(
 		secondary = colors[1]
 	if colors.size() >= 3:
 		accent = colors[2]
-	return _build_slot_texture(texture_size, primary, secondary, accent)
+	return _build_svg_fallback_texture(
+		content,
+		asset_path,
+		texture_size,
+		primary,
+		secondary,
+		accent
+	)
+
+static func _load_imported_texture(asset_path: String) -> Texture2D:
+	if not ResourceLoader.exists(asset_path):
+		return null
+	var resource := ResourceLoader.load(asset_path)
+	return resource as Texture2D
+
+static func _load_svg_texture_from_content(
+	content: String,
+	texture_size: Vector2i
+) -> Texture2D:
+	var image := Image.new()
+	var error_code := ERR_UNAVAILABLE
+	if image.has_method("load_svg_from_string"):
+		error_code = int(image.call("load_svg_from_string", content, 1.0))
+	elif image.has_method("load_svg_from_buffer"):
+		error_code = int(
+			image.call("load_svg_from_buffer", content.to_utf8_buffer(), 1.0)
+		)
+	if error_code != OK:
+		return null
+	if not _image_has_visible_pixels(image):
+		return null
+	if not _image_has_transparent_corners(image):
+		return null
+	var target_width := maxi(texture_size.x, MIN_TEXTURE_SIZE)
+	var target_height := maxi(texture_size.y, MIN_TEXTURE_SIZE)
+	if image.get_width() != target_width or image.get_height() != target_height:
+		image.resize(target_width, target_height, Image.INTERPOLATE_LANCZOS)
+	return ImageTexture.create_from_image(image)
+
+static func _texture_has_transparent_corners(texture: Texture2D) -> bool:
+	if texture == null:
+		return false
+	var image := texture.get_image()
+	if image == null:
+		return false
+	return _image_has_transparent_corners(image)
+
+static func _image_has_visible_pixels(image: Image) -> bool:
+	if image == null or image.get_width() <= 0 or image.get_height() <= 0:
+		return false
+	var step_x := maxi(int(image.get_width() / 32), 1)
+	var step_y := maxi(int(image.get_height() / 24), 1)
+	for y in range(0, image.get_height(), step_y):
+		for x in range(0, image.get_width(), step_x):
+			if image.get_pixel(x, y).a > 0.02:
+				return true
+	return false
+
+static func _image_has_transparent_corners(image: Image) -> bool:
+	if image == null or image.get_width() <= 0 or image.get_height() <= 0:
+		return false
+	var right := image.get_width() - 1
+	var bottom := image.get_height() - 1
+	return (
+		image.get_pixel(0, 0).a < 0.05
+		and image.get_pixel(right, 0).a < 0.05
+		and image.get_pixel(0, bottom).a < 0.05
+		and image.get_pixel(right, bottom).a < 0.05
+	)
 
 static func _read_text(path: String) -> String:
 	var file := FileAccess.open(path, FileAccess.READ)
@@ -52,6 +130,24 @@ static func _extract_hex_colors(content: String) -> Array[Color]:
 		index = hash_index + 7
 	return result
 
+static func _extract_data_attribute(content: String, attribute_name: String) -> String:
+	var double_quote_token := attribute_name + "=\""
+	var start := content.find(double_quote_token)
+	var quote := "\""
+	if start >= 0:
+		start += double_quote_token.length()
+	else:
+		var single_quote_token := attribute_name + "='"
+		start = content.find(single_quote_token)
+		quote = "'"
+		if start < 0:
+			return ""
+		start += single_quote_token.length()
+	var end := content.find(quote, start)
+	if end < 0:
+		return ""
+	return content.substr(start, end - start)
+
 static func _is_hex_color(value: String) -> bool:
 	if value.length() != 6:
 		return false
@@ -64,14 +160,619 @@ static func _is_hex_color(value: String) -> bool:
 			return false
 	return true
 
+static func _build_svg_fallback_texture(
+	content: String,
+	asset_path: String,
+	texture_size: Vector2i,
+	primary: Color,
+	secondary: Color,
+	accent: Color
+) -> Texture2D:
+	var section := StringName(_extract_data_attribute(content, "data-section"))
+	var asset_id := StringName(_extract_data_attribute(content, "data-id"))
+	if section == &"object_scenes":
+		return _build_object_texture(
+			asset_path,
+			asset_id,
+			texture_size,
+			primary,
+			secondary,
+			accent
+		)
+	if section == &"void_tiles":
+		return _build_void_texture(texture_size, primary, secondary, accent)
+	return _build_slot_texture(texture_size, primary, secondary, accent)
+
+static func _build_object_texture(
+	asset_path: String,
+	asset_id: StringName,
+	texture_size: Vector2i,
+	primary: Color,
+	secondary: Color,
+	accent: Color
+) -> Texture2D:
+	var width := maxi(texture_size.x, MIN_TEXTURE_SIZE)
+	var height := maxi(texture_size.y, MIN_TEXTURE_SIZE)
+	var image := Image.create(width, height, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.0, 0.0, 0.0, 0.0))
+	_draw_ellipse(
+		image,
+		Vector2(width * 0.50, height * 0.77),
+		Vector2(width * 0.36, height * 0.13),
+		Color(0.01, 0.012, 0.016, 0.32)
+	)
+	match _object_category(asset_path, asset_id):
+		&"building":
+			_draw_building_object(image, asset_id, primary, secondary, accent)
+		&"barrel":
+			_draw_barrel_object(image, asset_id, primary, secondary, accent)
+		&"wreck":
+			_draw_wreck_object(image, asset_id, primary, secondary, accent)
+		&"tree":
+			_draw_tree_object(image, asset_id, primary, secondary, accent)
+		&"log":
+			_draw_log_object(image, asset_id, primary, secondary, accent)
+		&"bridge":
+			_draw_bridge_object(image, asset_id, primary, secondary, accent)
+		&"rock":
+			_draw_rock_object(image, asset_id, primary, secondary, accent)
+		&"crate":
+			_draw_crate_object(image, asset_id, primary, secondary, accent)
+		&"barrier":
+			_draw_barrier_object(image, asset_id, primary, secondary, accent)
+		_:
+			_draw_crate_object(image, asset_id, primary, secondary, accent)
+	return ImageTexture.create_from_image(image)
+
+static func _build_void_texture(
+	texture_size: Vector2i,
+	primary: Color,
+	secondary: Color,
+	accent: Color
+) -> Texture2D:
+	var width := maxi(texture_size.x, MIN_TEXTURE_SIZE)
+	var height := maxi(texture_size.y, MIN_TEXTURE_SIZE)
+	var image := Image.create(width, height, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.0, 0.0, 0.0, 0.0))
+	_draw_diamond(
+		image,
+		Vector2(width * 0.50, height * 0.45),
+		Vector2(width * 0.42, height * 0.18),
+		primary,
+		accent
+	)
+	for index in range(6):
+		var x := lerpf(width * 0.25, width * 0.75, float(index) / 5.0)
+		_draw_line(
+			image,
+			Vector2(x, height * 0.42),
+			Vector2(x + width * 0.05, height * 0.90),
+			2.0,
+			secondary
+		)
+	return ImageTexture.create_from_image(image)
+
+static func _object_category(asset_path: String, asset_id: StringName) -> StringName:
+	var key := String(asset_id)
+	var normalized_path := asset_path.to_lower()
+	if key.contains("barrel") or normalized_path.contains("/barrels/"):
+		return &"barrel"
+	if key.contains("wreck") or key.contains("car") or normalized_path.contains("/wrecks/"):
+		return &"wreck"
+	if key.contains("bridge") or key.contains("walkway") or normalized_path.contains("/bridges/"):
+		return &"bridge"
+	if key.contains("tree"):
+		return &"tree"
+	if key.contains("log"):
+		return &"log"
+	if key.contains("rock") or key.contains("ice_block") or normalized_path.contains("/rocks/"):
+		return &"rock"
+	if key.contains("crate") or normalized_path.contains("/crates/"):
+		return &"crate"
+	if (
+		key.contains("fence")
+		or key.contains("wall")
+		or key.contains("barrier")
+		or key.contains("boundary")
+		or key.contains("pipe")
+		or key.contains("reed")
+		or normalized_path.contains("/barriers/")
+	):
+		return &"barrier"
+	if (
+		key.contains("house")
+		or key.contains("cabin")
+		or key.contains("lab")
+		or normalized_path.contains("/buildings/")
+	):
+		return &"building"
+	return &"crate"
+
+static func _draw_building_object(
+	image: Image,
+	asset_id: StringName,
+	primary: Color,
+	secondary: Color,
+	accent: Color
+) -> void:
+	var width := image.get_width()
+	var height := image.get_height()
+	var key := String(asset_id)
+	_draw_iso_prism(
+		image,
+		Vector2(width * 0.50, height * 0.45),
+		Vector2(width * 0.24, height * 0.11),
+		height * 0.25,
+		primary.lightened(0.08),
+		primary.darkened(0.18),
+		primary.darkened(0.28),
+		accent
+	)
+	_draw_diamond(
+		image,
+		Vector2(width * 0.50, height * 0.34),
+		Vector2(width * 0.30, height * 0.16),
+		secondary.lightened(0.06),
+		accent
+	)
+	_draw_line(
+		image,
+		Vector2(width * 0.50, height * 0.18),
+		Vector2(width * 0.50, height * 0.49),
+		2.0,
+		accent
+	)
+	var window_color := Color(accent.lightened(0.28), 0.78)
+	_draw_block(
+		image,
+		Rect2i(
+			Vector2i(int(width * 0.39), int(height * 0.49)),
+			Vector2i(int(width * 0.07), int(height * 0.07))
+		),
+		window_color,
+		accent.darkened(0.32)
+	)
+	_draw_block(
+		image,
+		Rect2i(
+			Vector2i(int(width * 0.55), int(height * 0.50)),
+			Vector2i(int(width * 0.07), int(height * 0.07))
+		),
+		window_color,
+		accent.darkened(0.32)
+	)
+	_draw_block(
+		image,
+		Rect2i(
+			Vector2i(int(width * 0.47), int(height * 0.60)),
+			Vector2i(int(width * 0.08), int(height * 0.13))
+		),
+		secondary.darkened(0.36),
+		accent.darkened(0.22)
+	)
+	if (
+		key.contains("ruined")
+		or key.contains("burned")
+		or key.contains("sunken")
+		or key.contains("ruin")
+	):
+		var damage_color := Color(0.035, 0.035, 0.032, 0.86)
+		_draw_line(
+			image,
+			Vector2(width * 0.34, height * 0.42),
+			Vector2(width * 0.26, height * 0.55),
+			4.0,
+			damage_color
+		)
+		_draw_line(
+			image,
+			Vector2(width * 0.64, height * 0.42),
+			Vector2(width * 0.70, height * 0.58),
+			4.0,
+			damage_color
+		)
+		_draw_line(
+			image,
+			Vector2(width * 0.43, height * 0.37),
+			Vector2(width * 0.52, height * 0.48),
+			3.0,
+			damage_color
+		)
+
+static func _draw_barrier_object(
+	image: Image,
+	asset_id: StringName,
+	primary: Color,
+	secondary: Color,
+	accent: Color
+) -> void:
+	var width := image.get_width()
+	var height := image.get_height()
+	var key := String(asset_id)
+	if key.contains("pipe"):
+		for index in range(3):
+			var offset := Vector2(0.0, float(index) * height * 0.055)
+			var start := Vector2(width * 0.28, height * 0.47) + offset
+			var end := Vector2(width * 0.72, height * 0.59) + offset
+			_draw_line(image, start, end, 8.0, primary.darkened(0.08 * float(index)))
+			_draw_ellipse(image, start, Vector2(width * 0.045, height * 0.026), accent)
+			_draw_ellipse(image, end, Vector2(width * 0.045, height * 0.026), accent.darkened(0.22))
+		return
+	if key.contains("wall") or key.contains("boundary"):
+		_draw_iso_prism(
+			image,
+			Vector2(width * 0.50, height * 0.55),
+			Vector2(width * 0.35, height * 0.08),
+			height * 0.13,
+			primary.lightened(0.04),
+			primary.darkened(0.18),
+			primary.darkened(0.26),
+			accent
+		)
+		for index in range(4):
+			var x := lerpf(width * 0.27, width * 0.73, float(index) / 3.0)
+			_draw_line(
+				image,
+				Vector2(x, height * 0.53),
+				Vector2(x + width * 0.05, height * 0.68),
+				2.0,
+				accent.darkened(0.20)
+			)
+		return
+	var rail_a := Vector2(width * 0.22, height * 0.56)
+	var rail_b := Vector2(width * 0.78, height * 0.42)
+	_draw_line(image, rail_a, rail_b, 5.0, primary)
+	_draw_line(
+		image,
+		rail_a + Vector2(0.0, height * 0.11),
+		rail_b + Vector2(0.0, height * 0.11),
+		5.0,
+		primary.darkened(0.18)
+	)
+	for index in range(5):
+		var ratio := float(index) / 4.0
+		var post := rail_a.lerp(rail_b, ratio)
+		_draw_line(
+			image,
+			post + Vector2(0.0, -height * 0.13),
+			post + Vector2(0.0, height * 0.18),
+			6.0,
+			secondary.darkened(0.10)
+		)
+	_draw_line(
+		image,
+		Vector2(width * 0.34, height * 0.43),
+		Vector2(width * 0.48, height * 0.66),
+		3.0,
+		accent
+	)
+
+static func _draw_barrel_object(
+	image: Image,
+	asset_id: StringName,
+	primary: Color,
+	secondary: Color,
+	accent: Color
+) -> void:
+	var width := image.get_width()
+	var height := image.get_height()
+	var center_x := width * 0.50
+	var body_rect := Rect2i(
+		Vector2i(int(width * 0.41), int(height * 0.39)),
+		Vector2i(int(width * 0.18), int(height * 0.31))
+	)
+	_draw_block(image, body_rect, primary, accent.darkened(0.22))
+	_draw_ellipse(
+		image,
+		Vector2(center_x, height * 0.39),
+		Vector2(width * 0.10, height * 0.045),
+		secondary.lightened(0.08)
+	)
+	_draw_ellipse(
+		image,
+		Vector2(center_x, height * 0.70),
+		Vector2(width * 0.10, height * 0.045),
+		primary.darkened(0.20)
+	)
+	for index in range(3):
+		var y := height * (0.47 + 0.08 * float(index))
+		_draw_line(
+			image,
+			Vector2(width * 0.42, y),
+			Vector2(width * 0.58, y + height * 0.05),
+			3.0,
+			secondary
+		)
+	_draw_ellipse(
+		image,
+		Vector2(width * 0.50, height * 0.50),
+		Vector2(width * 0.035, height * 0.028),
+		Color(accent.lightened(0.32), 0.88)
+	)
+
+static func _draw_wreck_object(
+	image: Image,
+	asset_id: StringName,
+	primary: Color,
+	secondary: Color,
+	accent: Color
+) -> void:
+	var width := image.get_width()
+	var height := image.get_height()
+	_draw_iso_prism(
+		image,
+		Vector2(width * 0.50, height * 0.55),
+		Vector2(width * 0.30, height * 0.10),
+		height * 0.11,
+		primary.lightened(0.05),
+		primary.darkened(0.18),
+		primary.darkened(0.30),
+		accent
+	)
+	_draw_polygon(
+		image,
+		PackedVector2Array([
+			Vector2(width * 0.39, height * 0.45),
+			Vector2(width * 0.52, height * 0.38),
+			Vector2(width * 0.64, height * 0.48),
+			Vector2(width * 0.50, height * 0.55)
+		]),
+		secondary.darkened(0.10),
+		accent
+	)
+	_draw_ellipse(
+		image,
+		Vector2(width * 0.36, height * 0.69),
+		Vector2(width * 0.055, height * 0.035),
+		Color(0.025, 0.025, 0.024, 0.92)
+	)
+	_draw_ellipse(
+		image,
+		Vector2(width * 0.65, height * 0.70),
+		Vector2(width * 0.055, height * 0.035),
+		Color(0.025, 0.025, 0.024, 0.92)
+	)
+	_draw_line(
+		image,
+		Vector2(width * 0.30, height * 0.52),
+		Vector2(width * 0.42, height * 0.62),
+		4.0,
+		accent.lightened(0.10)
+	)
+	_draw_line(
+		image,
+		Vector2(width * 0.61, height * 0.47),
+		Vector2(width * 0.72, height * 0.58),
+		4.0,
+		accent.darkened(0.24)
+	)
+
+static func _draw_tree_object(
+	image: Image,
+	asset_id: StringName,
+	primary: Color,
+	secondary: Color,
+	accent: Color
+) -> void:
+	var width := image.get_width()
+	var height := image.get_height()
+	var trunk_start := Vector2(width * 0.50, height * 0.76)
+	var trunk_end := Vector2(width * 0.52, height * 0.31)
+	_draw_line(image, trunk_start, trunk_end, 9.0, secondary.darkened(0.08))
+	_draw_line(
+		image,
+		Vector2(width * 0.51, height * 0.48),
+		Vector2(width * 0.31, height * 0.38),
+		5.0,
+		secondary.darkened(0.02)
+	)
+	_draw_line(
+		image,
+		Vector2(width * 0.52, height * 0.42),
+		Vector2(width * 0.70, height * 0.30),
+		5.0,
+		secondary.darkened(0.16)
+	)
+	_draw_line(
+		image,
+		Vector2(width * 0.52, height * 0.57),
+		Vector2(width * 0.68, height * 0.52),
+		4.0,
+		secondary.darkened(0.10)
+	)
+	if not String(asset_id).contains("dead"):
+		_draw_ellipse(
+			image,
+			Vector2(width * 0.50, height * 0.33),
+			Vector2(width * 0.19, height * 0.11),
+			Color(primary, 0.82)
+		)
+	_draw_diamond(
+		image,
+		Vector2(width * 0.50, height * 0.77),
+		Vector2(width * 0.14, height * 0.05),
+		primary.darkened(0.25),
+		accent.darkened(0.30)
+	)
+
+static func _draw_log_object(
+	image: Image,
+	asset_id: StringName,
+	primary: Color,
+	secondary: Color,
+	accent: Color
+) -> void:
+	var width := image.get_width()
+	var height := image.get_height()
+	var start := Vector2(width * 0.27, height * 0.61)
+	var end := Vector2(width * 0.73, height * 0.51)
+	_draw_line(image, start, end, 15.0, primary)
+	_draw_line(
+		image,
+		start + Vector2(0.0, height * 0.08),
+		end + Vector2(0.0, height * 0.08),
+		9.0,
+		primary.darkened(0.20)
+	)
+	_draw_ellipse(image, start, Vector2(width * 0.060, height * 0.040), secondary)
+	_draw_ellipse(image, end, Vector2(width * 0.060, height * 0.040), secondary.darkened(0.16))
+	for index in range(4):
+		var ratio := float(index + 1) / 5.0
+		var center := start.lerp(end, ratio)
+		_draw_line(
+			image,
+			center + Vector2(-width * 0.02, -height * 0.04),
+			center + Vector2(width * 0.02, height * 0.07),
+			2.0,
+			accent.darkened(0.18)
+		)
+
+static func _draw_bridge_object(
+	image: Image,
+	asset_id: StringName,
+	primary: Color,
+	secondary: Color,
+	accent: Color
+) -> void:
+	var width := image.get_width()
+	var height := image.get_height()
+	_draw_diamond(
+		image,
+		Vector2(width * 0.50, height * 0.62),
+		Vector2(width * 0.39, height * 0.15),
+		primary.darkened(0.06),
+		accent
+	)
+	for index in range(7):
+		var ratio := float(index) / 6.0
+		var x := lerpf(width * 0.26, width * 0.74, ratio)
+		_draw_line(
+			image,
+			Vector2(x, height * 0.49),
+			Vector2(width - x, height * 0.75),
+			2.0,
+			secondary.darkened(0.10)
+		)
+	_draw_line(
+		image,
+		Vector2(width * 0.24, height * 0.51),
+		Vector2(width * 0.76, height * 0.39),
+		4.0,
+		accent.darkened(0.16)
+	)
+	_draw_line(
+		image,
+		Vector2(width * 0.25, height * 0.73),
+		Vector2(width * 0.76, height * 0.61),
+		4.0,
+		accent.darkened(0.22)
+	)
+	if String(asset_id).contains("broken"):
+		_draw_line(
+			image,
+			Vector2(width * 0.48, height * 0.51),
+			Vector2(width * 0.55, height * 0.72),
+			5.0,
+			Color(0.02, 0.018, 0.014, 0.80)
+		)
+
+static func _draw_rock_object(
+	image: Image,
+	asset_id: StringName,
+	primary: Color,
+	secondary: Color,
+	accent: Color
+) -> void:
+	var width := image.get_width()
+	var height := image.get_height()
+	_draw_polygon(
+		image,
+		PackedVector2Array([
+			Vector2(width * 0.31, height * 0.64),
+			Vector2(width * 0.43, height * 0.43),
+			Vector2(width * 0.62, height * 0.42),
+			Vector2(width * 0.74, height * 0.63),
+			Vector2(width * 0.56, height * 0.76),
+			Vector2(width * 0.39, height * 0.74)
+		]),
+		primary,
+		accent
+	)
+	_draw_polygon(
+		image,
+		PackedVector2Array([
+			Vector2(width * 0.43, height * 0.43),
+			Vector2(width * 0.52, height * 0.34),
+			Vector2(width * 0.62, height * 0.42),
+			Vector2(width * 0.52, height * 0.56)
+		]),
+		secondary.lightened(0.06),
+		accent.darkened(0.20)
+	)
+	_draw_line(
+		image,
+		Vector2(width * 0.47, height * 0.55),
+		Vector2(width * 0.38, height * 0.72),
+		2.0,
+		accent.darkened(0.18)
+	)
+	_draw_line(
+		image,
+		Vector2(width * 0.56, height * 0.54),
+		Vector2(width * 0.70, height * 0.64),
+		2.0,
+		accent.darkened(0.18)
+	)
+
+static func _draw_crate_object(
+	image: Image,
+	asset_id: StringName,
+	primary: Color,
+	secondary: Color,
+	accent: Color
+) -> void:
+	var width := image.get_width()
+	var height := image.get_height()
+	_draw_iso_prism(
+		image,
+		Vector2(width * 0.50, height * 0.50),
+		Vector2(width * 0.23, height * 0.12),
+		height * 0.18,
+		primary.lightened(0.05),
+		primary.darkened(0.14),
+		primary.darkened(0.24),
+		accent
+	)
+	_draw_line(
+		image,
+		Vector2(width * 0.34, height * 0.55),
+		Vector2(width * 0.50, height * 0.80),
+		3.0,
+		secondary.darkened(0.12)
+	)
+	_draw_line(
+		image,
+		Vector2(width * 0.66, height * 0.55),
+		Vector2(width * 0.50, height * 0.80),
+		3.0,
+		secondary.darkened(0.18)
+	)
+	_draw_line(
+		image,
+		Vector2(width * 0.30, height * 0.64),
+		Vector2(width * 0.70, height * 0.64),
+		3.0,
+		accent.darkened(0.20)
+	)
+
 static func _build_slot_texture(
 	texture_size: Vector2i,
 	primary: Color,
 	secondary: Color,
 	accent: Color
 ) -> Texture2D:
-	var width := maxi(texture_size.x, 32)
-	var height := maxi(texture_size.y, 32)
+	var width := maxi(texture_size.x, MIN_TEXTURE_SIZE)
+	var height := maxi(texture_size.y, MIN_TEXTURE_SIZE)
 	var image := Image.create(width, height, false, Image.FORMAT_RGBA8)
 	image.fill(Color(0.0, 0.0, 0.0, 0.0))
 	_draw_ellipse(
@@ -104,6 +805,115 @@ static func _build_slot_texture(
 		accent
 	)
 	return ImageTexture.create_from_image(image)
+
+static func _draw_iso_prism(
+	image: Image,
+	center: Vector2,
+	radius: Vector2,
+	side_height: float,
+	top_fill: Color,
+	left_fill: Color,
+	right_fill: Color,
+	stroke: Color
+) -> void:
+	var top := center + Vector2(0.0, -radius.y)
+	var right := center + Vector2(radius.x, 0.0)
+	var front := center + Vector2(0.0, radius.y)
+	var left := center + Vector2(-radius.x, 0.0)
+	var drop := Vector2(0.0, side_height)
+	_draw_polygon(
+		image,
+		PackedVector2Array([left, front, front + drop, left + drop]),
+		left_fill,
+		stroke.darkened(0.12)
+	)
+	_draw_polygon(
+		image,
+		PackedVector2Array([front, right, right + drop, front + drop]),
+		right_fill,
+		stroke.darkened(0.20)
+	)
+	_draw_polygon(
+		image,
+		PackedVector2Array([top, right, front, left]),
+		top_fill,
+		stroke
+	)
+
+static func _draw_polygon(
+	image: Image,
+	points: PackedVector2Array,
+	fill: Color,
+	stroke: Color
+) -> void:
+	if points.size() < 3:
+		return
+	var min_x := image.get_width() - 1
+	var max_x := 0
+	var min_y := image.get_height() - 1
+	var max_y := 0
+	for point in points:
+		min_x = mini(min_x, clampi(int(floorf(point.x)), 0, image.get_width() - 1))
+		max_x = maxi(max_x, clampi(int(ceilf(point.x)), 0, image.get_width() - 1))
+		min_y = mini(min_y, clampi(int(floorf(point.y)), 0, image.get_height() - 1))
+		max_y = maxi(max_y, clampi(int(ceilf(point.y)), 0, image.get_height() - 1))
+	for y in range(min_y, max_y + 1):
+		for x in range(min_x, max_x + 1):
+			if _point_in_polygon(Vector2(float(x) + 0.5, float(y) + 0.5), points):
+				_blend_pixel(image, x, y, fill)
+	if stroke.a <= 0.0:
+		return
+	for index in range(points.size()):
+		var next_index := (index + 1) % points.size()
+		_draw_line(image, points[index], points[next_index], 2.0, stroke)
+
+static func _point_in_polygon(point: Vector2, points: PackedVector2Array) -> bool:
+	var inside := false
+	var previous_index := points.size() - 1
+	for index in range(points.size()):
+		var current := points[index]
+		var previous := points[previous_index]
+		var crosses_y := (current.y > point.y) != (previous.y > point.y)
+		var denominator := previous.y - current.y
+		if crosses_y and absf(denominator) > 0.001:
+			var intersection_x := (
+				(previous.x - current.x)
+				* (point.y - current.y)
+				/ denominator
+				+ current.x
+			)
+			if point.x < intersection_x:
+				inside = not inside
+		previous_index = index
+	return inside
+
+static func _draw_line(
+	image: Image,
+	start: Vector2,
+	end: Vector2,
+	width: float,
+	color: Color
+) -> void:
+	var radius := maxf(width * 0.5, 0.5)
+	var min_x := maxi(int(floorf(minf(start.x, end.x) - radius)), 0)
+	var max_x := mini(int(ceilf(maxf(start.x, end.x) + radius)), image.get_width() - 1)
+	var min_y := maxi(int(floorf(minf(start.y, end.y) - radius)), 0)
+	var max_y := mini(int(ceilf(maxf(start.y, end.y) + radius)), image.get_height() - 1)
+	var segment := end - start
+	var length_squared := segment.length_squared()
+	for y in range(min_y, max_y + 1):
+		for x in range(min_x, max_x + 1):
+			var point := Vector2(float(x) + 0.5, float(y) + 0.5)
+			var closest := start
+			if length_squared > 0.001:
+				var ratio := clampf(
+					(point - start).dot(segment) / length_squared,
+					0.0,
+					1.0
+				)
+				closest = start + segment * ratio
+			if point.distance_to(closest) <= radius:
+				_blend_pixel(image, x, y, color)
 
 static func _draw_ellipse(
 	image: Image,
