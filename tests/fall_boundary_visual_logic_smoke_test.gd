@@ -27,6 +27,7 @@ func _run() -> void:
 			if not adjacent_exists:
 				_expect(border_type == BiomeCell.BorderType.FALL, "%s %s without region is fall boundary" % [String(cell.id), String(side)])
 				_expect(_has_fall_rect_for_side(layout, side), "%s %s has fall visual/collision rect" % [String(cell.id), String(side)])
+				_expect(_has_fall_hazard_side_for_side(layout, side), "%s %s stores fall hazard side metadata" % [String(cell.id), String(side)])
 			elif border_type == BiomeCell.BorderType.CONNECTED:
 				_expect(not _has_fall_rect_for_side(layout, side), "%s connected %s has no fall rect" % [String(cell.id), String(side)])
 				_expect(not cell.get_passages_for_side(side).is_empty(), "%s connected %s has physical passage" % [String(cell.id), String(side)])
@@ -77,6 +78,44 @@ func _has_fall_rect_for_side(layout: BiomeEnvironmentLayout, side: StringName) -
 				):
 					return true
 	return false
+
+func _has_fall_hazard_side_for_side(
+	layout: BiomeEnvironmentLayout,
+	side: StringName
+) -> bool:
+	if layout == null:
+		return false
+	for index in range(layout.hazard_ids.size()):
+		if layout.hazard_ids[index] != &"fall_zone":
+			continue
+		if index >= layout.hazard_rects.size() or index >= layout.hazard_sides.size():
+			continue
+		if layout.hazard_sides[index] != side:
+			continue
+		if _rect_matches_side(layout.hazard_rects[index], layout, side):
+			return true
+	return false
+
+func _rect_matches_side(
+	rect: Rect2i,
+	layout: BiomeEnvironmentLayout,
+	side: StringName
+) -> bool:
+	match side:
+		&"north":
+			return rect.position.y <= 0 and rect.size.y <= 8
+		&"south":
+			return (
+				rect.position.y + rect.size.y >= layout.zone_size.y
+				and rect.size.y <= 8
+			)
+		&"west":
+			return rect.position.x <= 0 and rect.size.x <= 8
+		_:
+			return (
+				rect.position.x + rect.size.x >= layout.zone_size.x
+				and rect.size.x <= 8
+			)
 
 func _has_border_obstacle_for_side(
 	layout: BiomeEnvironmentLayout,

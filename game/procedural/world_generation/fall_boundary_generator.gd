@@ -42,3 +42,4 @@ func _add_fall_boundary(
 	layout.hazard_positions.append(layout.rect_center_to_world(rect))
 	layout.hazard_sizes.append(layout.rect_size_to_world(rect))
 	layout.hazard_rotations.append(0.0)
+	layout.hazard_sides.append(side)

@@ -427,7 +427,13 @@ func _normalize_asset_contract(section: StringName, entry: Dictionary) -> Dictio
 		"license": String(entry.get("license", asset_contract_defaults.get("license", "Project original"))),
 		"attribution_key": String(entry.get("attribution_key", asset_contract_defaults.get("attribution_key", "environment_isometric_internal"))),
 		"fallback_path": String(entry.get("fallback_path", default_fallback)),
-		"fallback_reason": String(entry.get("fallback_reason", terrain_style.get("fallback", "")))
+		"fallback_reason": String(entry.get("fallback_reason", terrain_style.get("fallback", ""))),
+		"tile_set": StringName(str(entry.get("tile_set", ""))),
+		"terrain_tiles": _normalize_string_name_array(entry.get("terrain_tiles", [])),
+		"object_scenes": _normalize_string_name_array(entry.get("object_scenes", [])),
+		"edge_tiles": _normalize_string_name_array(entry.get("edge_tiles", [])),
+		"void_tiles": _normalize_string_name_array(entry.get("void_tiles", [])),
+		"passage_tiles": _normalize_string_name_array(entry.get("passage_tiles", []))
 	}
 
 func _normalize_string_name_array(value: Variant) -> Array[StringName]:
@@ -576,7 +582,16 @@ func _validate_asset_coverage(failures: PackedStringArray) -> void:
 	for border_id in [&"boundary_fence", &"toxic_boundary_wall", &"lava_boundary", &"ice_boundary", &"deep_water_boundary"]:
 		if not has_asset_contract(&"edge_tiles", border_id):
 			failures.append("%s: border id missing edge_tiles asset contract" % String(border_id))
-	for void_id in [&"fall_zone", &"void_edge_near", &"void_depth"]:
+	for void_id in [
+		&"fall_zone",
+		&"void_edge_near",
+		&"cliff_lip_north",
+		&"cliff_lip_south",
+		&"cliff_lip_east",
+		&"cliff_lip_west",
+		&"void_depth",
+		&"void_vertical_lines"
+	]:
 		if not has_asset_contract(&"void_tiles", void_id):
 			failures.append("%s: missing void_tiles asset contract" % String(void_id))
 

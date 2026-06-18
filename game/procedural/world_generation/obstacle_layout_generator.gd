@@ -396,6 +396,7 @@ func _add_hazard(
 	layout.hazard_positions.append(layout.rect_center_to_world(rect))
 	layout.hazard_sizes.append(layout.rect_size_to_world(rect))
 	layout.hazard_rotations.append(0.0)
+	layout.hazard_sides.append(&"")
 
 func _large_obstacle_id(biome_id: StringName) -> StringName:
 	match biome_id:

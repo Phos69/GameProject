@@ -22,6 +22,7 @@ class_name BiomeEnvironmentLayout
 @export var hazard_positions: Array[Vector2] = []
 @export var hazard_sizes: Array[Vector2] = []
 @export var hazard_rotations: Array[float] = []
+@export var hazard_sides: Array[StringName] = []
 
 @export_range(80.0, 500.0, 10.0) var central_corridor_width: float = 220.0
 

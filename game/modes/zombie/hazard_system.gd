@@ -269,6 +269,7 @@ func _generate_hazards() -> void:
 			if index < layout.hazard_rotations.size()
 			else 0.0
 		)
+		var hazard_side := _hazard_side_for(layout, index, layout.hazard_positions[index], size)
 		var hazard: Node2D
 		if hazard_id == &"fall_zone":
 			var fall_zone := FALL_ZONE_SCRIPT.new() as BiomeFallZone
@@ -279,7 +280,9 @@ func _generate_hazards() -> void:
 				size,
 				rotation_radians,
 				palette.hazard_color,
-				_fall_style_for_biome(active_biome.biome_id)
+				_fall_style_for_biome(active_biome.biome_id),
+				hazard_side,
+				layout.generation_seed + index * 97
 			)
 			fall_zone.body_entered.connect(
 				_on_hazard_body_entered.bind(fall_zone)
@@ -305,6 +308,42 @@ func _generate_hazards() -> void:
 		hazard.global_position = layout.hazard_positions[index]
 		active_hazards.append(hazard)
 		hazard_spawned.emit(hazard, hazard_id)
+
+func _hazard_side_for(
+	layout: BiomeEnvironmentLayout,
+	index: int,
+	position: Vector2,
+	size: Vector2
+) -> StringName:
+	if (
+		layout != null
+		and index >= 0
+		and index < layout.hazard_sides.size()
+		and _is_valid_fall_side(layout.hazard_sides[index])
+	):
+		return layout.hazard_sides[index]
+	return _infer_hazard_side(layout, position, size)
+
+func _infer_hazard_side(
+	layout: BiomeEnvironmentLayout,
+	position: Vector2,
+	size: Vector2
+) -> StringName:
+	if layout == null:
+		if size.x >= size.y:
+			return &"north"
+		return &"west"
+	var cell := layout.world_to_logical(position)
+	if size.x >= size.y:
+		if cell.y < layout.zone_size.y / 2:
+			return &"north"
+		return &"south"
+	if cell.x < layout.zone_size.x / 2:
+		return &"west"
+	return &"east"
+
+func _is_valid_fall_side(side: StringName) -> bool:
+	return [&"north", &"south", &"east", &"west"].has(side)
 
 func _update_safe_positions() -> void:
 	for player in get_tree().get_nodes_in_group("players"):
