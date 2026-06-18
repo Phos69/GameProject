@@ -1,5 +1,51 @@
 # Latest Commit Validation Report
 
+## Milestone 10.2 asset pipeline locale - 2026-06-18
+- Branch: `master`
+- HEAD corrente: non committato al momento della validazione locale.
+- Scope validato: sotto-milestone 10.2 di
+  `milestone_10_isometric_asset_rewrite_roadmap.md`, struttura cartelle e
+  generatore asset locale.
+- Esito: PASS sui criteri automatizzabili. Generati 74 SVG testuali interni
+  sotto `assets/environment/isometric/`; nessun asset esterno o binario pesante
+  introdotto.
+
+| Criterio | Esito | Evidenza |
+|---|---|---|
+| Struttura asset locale presente | PASS | cartelle tile, oggetti, edge, passaggi e preview create |
+| Tool dry-run/write/check disponibile | PASS | `tools/generate_isometric_environment_assets.gd` |
+| Manifest e filesystem allineati | PASS | `--check` controlla 74 SVG e lo smoke pipeline verifica status non `needs_asset` |
+| Attribution completa | PASS | `assets/ATTRIBUTION.md` include contratto v7 e SVG generati |
+| Regressione manifest invariata | PASS | smoke v7 e manifest legacy verdi |
+
+### Test Milestone 10.2 eseguiti
+
+| Test | Esito | Note |
+|---|---|---|
+| `tools/generate_isometric_environment_assets.gd -- --dry-run` | PASS | 74 path SVG unici pianificati prima della generazione |
+| `tools/generate_isometric_environment_assets.gd -- --write` | PASS | 74 SVG creati, nessun overwrite final |
+| `tools/generate_isometric_environment_assets.gd -- --check` | PASS | 74 SVG verificati |
+| `tests/milestone_10_asset_pipeline_smoke_test.gd` | PASS | directory, file, metadata, naming, docs e guardia final |
+| `tests/milestone_10_asset_manifest_v7_smoke_test.gd` | PASS | contratto v7 aggiornato a `base_complete` |
+| `tests/isometric_environment_manifest_smoke_test.gd` | PASS | regressione manifest/oggetti/Y-sort |
+
+### Fix applicati nella Milestone 10.2
+
+- `tools/generate_isometric_environment_assets.gd`: nuovo generatore headless.
+- `assets/environment/isometric/**`: 74 SVG placeholder asset-driven con metadata
+  stabile.
+- `assets/environment/isometric/manifest.json`: status default dei contratti v7
+  avanzato a `base_complete`.
+- `tests/milestone_10_asset_pipeline_smoke_test.gd`: nuovo smoke pipeline.
+- Documentazione aggiornata in README asset, attribution, roadmap, TODO,
+  checklist e report.
+
+### Limiti e follow-up Milestone 10.2
+
+- Gli SVG sono asset base generati, non ancora collegati al renderer runtime.
+  Il collegamento dei tile base su tutta la regione `200x200` parte in
+  Milestone 10.3.
+
 ## Milestone 10.1 asset manifest v7 - 2026-06-18
 - Branch: `master`
 - HEAD corrente: non committato al momento della validazione locale.

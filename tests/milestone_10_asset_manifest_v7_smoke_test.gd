@@ -35,7 +35,7 @@ func _run() -> void:
 	_run_section_inventory(manifest)
 	_run_fallback_policy(manifest)
 	await _run_generated_contract_coverage(manifest)
-	_run_missing_asset_negative_smoke(manifest)
+	_run_asset_fallback_smoke(manifest)
 
 	_finish()
 
@@ -120,17 +120,17 @@ func _run_generated_contract_coverage(manifest: IsometricEnvironmentManifest) ->
 	biome_manager.queue_free()
 	await process_frame
 
-func _run_missing_asset_negative_smoke(manifest: IsometricEnvironmentManifest) -> void:
+func _run_asset_fallback_smoke(manifest: IsometricEnvironmentManifest) -> void:
 	var contract := manifest.get_object_asset_contract(&"small_rock")
 	_assert_contract_shape(contract, "object_scenes/small_rock")
 	var asset_path := String(contract.get("asset_path", ""))
 	var status := String(contract.get("status", ""))
-	_expect(status == "needs_asset", "missing planned art is reported as needs_asset")
-	_expect(not asset_path.is_empty(), "missing planned art still declares target asset_path")
-	_expect(not String(contract.get("fallback_path", "")).is_empty(), "missing planned art has explicit fallback_path")
+	_expect(["needs_asset", "base_complete", "needs_polish", "final"].has(status), "planned art status is explicit")
+	_expect(not asset_path.is_empty(), "planned art declares target asset_path")
+	_expect(not String(contract.get("fallback_path", "")).is_empty(), "planned art keeps explicit fallback_path")
 	_expect(
-		not ResourceLoader.exists(asset_path) and not FileAccess.file_exists(asset_path),
-		"negative smoke confirms optional asset is absent without breaking validation"
+		status == "needs_asset" or ResourceLoader.exists(asset_path) or FileAccess.file_exists(asset_path),
+		"generated art exists once status advances beyond needs_asset"
 	)
 
 func _assert_contract_shape(contract: Dictionary, label: String) -> void:

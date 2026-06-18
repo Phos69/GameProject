@@ -7,7 +7,7 @@
     "sort_offset": 6
   },
   "asset_contract_defaults": {
-    "status": "needs_asset",
+    "status": "base_complete",
     "source": "internal_generated",
     "license": "Project original",
     "attribution_key": "environment_isometric_internal",

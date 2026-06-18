@@ -872,6 +872,30 @@ godot --headless --path . --script res://tests/isometric_environment_manifest_sm
 godot --headless --path . --script res://tests/isometric_biome_terrain_coverage_smoke_test.gd
 ```
 
+## Regressione Milestone 10.2 - pipeline asset locale
+
+QA documentale e filesystem da eseguire dopo modifiche al manifest v7.
+
+- Eseguire il generatore in `--dry-run` e verificare che elenchi solo path sotto
+  `assets/environment/isometric/`.
+- Eseguire `--check` e confermare che tutti gli `asset_path` SVG dichiarati
+  esistano.
+- Verificare che le cartelle `tiles/`, `objects/`, `edges/`, `passages/` e
+  `previews/` esistano con sottocartelle per biomi/categorie.
+- Aprire un SVG tile, un oggetto, un edge, un void tile, un passaggio e una
+  preview; devono contenere `data-generated-by`, `data-section` e `data-id`.
+- Confermare che i file siano `snake_case` e non introducano binari pesanti o
+  asset esterni.
+- Confermare che `assets/ATTRIBUTION.md` tracci gli SVG generati internamente.
+
+```text
+godot --headless --path . --script res://tools/generate_isometric_environment_assets.gd -- --dry-run
+godot --headless --path . --script res://tools/generate_isometric_environment_assets.gd -- --check
+godot --headless --path . --script res://tests/milestone_10_asset_pipeline_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_asset_manifest_v7_smoke_test.gd
+godot --headless --path . --script res://tests/isometric_environment_manifest_smoke_test.gd
+```
+
 ## Regressione todo_roadmap Milestone 5 - dungeon ramificato, shop e biomi
 
 QA da eseguire con almeno tre seed diversi, con tastiera e joypad.

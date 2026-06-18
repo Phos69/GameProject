@@ -371,6 +371,9 @@ Attivita post-roadmap:
   completata: manifest ambiente v7 con sezioni asset-driven, fallback policy
   esplicita e smoke di copertura per ID generati da terrain, oggetti, passaggi,
   bordi e fall zone.
+- Milestone 10.2 di `milestone_10_isometric_asset_rewrite_roadmap.md`
+  completata: struttura cartelle ambiente isometrico, generatore SVG headless
+  con dry-run/check/write, 74 asset SVG interni e smoke pipeline.
 - asset definitivi e ulteriori pass di bilanciamento;
 - firma digitale della build pubblica.
 

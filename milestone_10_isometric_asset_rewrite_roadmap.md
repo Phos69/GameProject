@@ -121,6 +121,19 @@ Trasformare il manifest isometrico da inventario di draw procedurali a contratto
 
 # Milestone 10.2 — Pipeline asset locale e struttura cartelle
 
+Stato: completata il 2026-06-18.
+
+Esito:
+
+- Creata la struttura `assets/environment/isometric/` per tile, oggetti, edge,
+  passaggi e preview.
+- Aggiunto `tools/generate_isometric_environment_assets.gd` con `--dry-run`,
+  `--write`, `--check`, `--overwrite-generated` e guardia sugli asset `final`.
+- Generati 74 SVG testuali interni con metadata `data-generated-by`,
+  `data-section` e `data-id`; i contratti v7 passano a `base_complete`.
+- Aggiunto `tests/milestone_10_asset_pipeline_smoke_test.gd` per allineamento
+  manifest/file system, naming e attribution.
+
 ## Obiettivo
 
 Creare una pipeline asset stabile, semplice da iterare con Codex, senza dipendere da asset esterni obbligatori.

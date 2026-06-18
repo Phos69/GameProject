@@ -56,6 +56,9 @@
 - Chiusa la Milestone 10.1 della roadmap asset isometrica con manifest ambiente
   v7, sezioni asset-driven, fallback policy esplicita, documentazione asset e
   report di validazione aggiornati.
+- Chiusa la Milestone 10.2 della roadmap asset isometrica con pipeline locale,
+  generatore SVG headless, struttura cartelle ambiente e asset placeholder
+  asset-driven in-repo.
 
 ### Changed
 
@@ -102,6 +105,10 @@
   `fallback_policy`, normalizzando ogni asset con path, status, footprint,
   anchor, collisione, blocchi e attribution. Aggiunto
   `tests/milestone_10_asset_manifest_v7_smoke_test.gd`.
+- `tools/generate_isometric_environment_assets.gd` genera SVG testuali
+  asset-driven dal manifest v7, con dry-run, write, check e guardia anti
+  overwrite per asset `final`. Aggiunti 74 SVG ambiente e
+  `tests/milestone_10_asset_pipeline_smoke_test.gd`.
 
 ### Fixed
 

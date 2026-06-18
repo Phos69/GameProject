@@ -74,6 +74,29 @@ Gli status ammessi sono `final`, `base_complete`, `needs_polish`,
   presentazionale mantenendo il fallback dichiarato, aggiornare `asset_path` e
   `status` nel manifest e registrare la licenza in `ATTRIBUTION.md`.
 
+## Ambiente isometrico (asset generati)
+
+`tools/generate_isometric_environment_assets.gd` genera SVG testuali interni
+dai contratti v7. Il tool lavora in modo conservativo:
+
+```text
+godot --headless --path . --script res://tools/generate_isometric_environment_assets.gd -- --dry-run
+godot --headless --path . --script res://tools/generate_isometric_environment_assets.gd -- --write
+godot --headless --path . --script res://tools/generate_isometric_environment_assets.gd -- --check
+```
+
+- default: dry-run, nessuna scrittura;
+- `--write`: crea solo asset mancanti;
+- `--check`: fallisce se un `asset_path` SVG del manifest non esiste;
+- `--overwrite-generated`: rigenera asset esistenti non marcati `final`;
+- gli asset con `status: final` non vengono mai sovrascritti dal tool.
+
+Gli SVG generati includono metadata `data-generated-by`,
+`data-section` e `data-id` per rendere il controllo manifest/file system
+ripetibile. Restano placeholder asset-driven originali del progetto e possono
+essere sostituiti gradualmente con arte `needs_polish`/`final` senza cambiare il
+contratto runtime.
+
 ## Sostituzione Placeholder
 
 1. Conservare controller, collisioni e timing esistenti.

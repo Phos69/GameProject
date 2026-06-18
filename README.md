@@ -123,6 +123,7 @@ godot --headless --path . --script res://tests/persistent_world_generation_smoke
 godot --headless --path . --script res://tests/open_passage_transition_smoke_test.gd
 godot --headless --path . --script res://tests/isometric_environment_manifest_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_10_asset_manifest_v7_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_10_asset_pipeline_smoke_test.gd
 godot --headless --path . --script res://tests/isometric_biome_terrain_coverage_smoke_test.gd
 godot --headless --path . --script res://tests/fall_boundary_visual_logic_smoke_test.gd
 godot --headless --path . --script res://tests/player_dodge_gap_smoke_test.gd

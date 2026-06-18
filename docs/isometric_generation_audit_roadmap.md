@@ -948,7 +948,7 @@ Sotto-task completati:
 
 ### Milestone 10 - Polish grafico e sostituzione placeholder
 
-Stato: in corso. Sotto-milestone 10.1 completata il 2026-06-18.
+Stato: in corso. Sotto-milestone 10.1 e 10.2 completate il 2026-06-18.
 
 Esito 10.1:
 
@@ -963,6 +963,18 @@ Esito 10.1:
   conferma che un asset pianificato ma assente resta sicuro come `needs_asset`.
 - Nessun asset esterno e diventato obbligatorio e il runtime procedurale resta
   fallback tecnico dichiarato.
+
+Esito 10.2:
+
+- Creata la pipeline locale `assets/environment/isometric/` con cartelle per
+  tile, oggetti, edge, passaggi e preview.
+- Aggiunto `tools/generate_isometric_environment_assets.gd`, che legge i
+  contratti v7 e genera SVG interni con dry-run, write, check e guardia sugli
+  asset `final`.
+- Generati 74 SVG placeholder asset-driven originali del progetto; i contratti
+  v7 ora validano come `base_complete` e restano coperti da fallback tecnico.
+- `tests/milestone_10_asset_pipeline_smoke_test.gd` verifica struttura cartelle,
+  allineamento manifest/file system, metadata SVG, naming e attribution.
 
 Obiettivo:
 sostituire gradualmente placeholder procedurali con asset o scene dedicate,
