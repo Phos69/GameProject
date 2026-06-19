@@ -34,8 +34,10 @@ variazioni visuali senza modificare il controller.
 - Ogni player puo eseguire un dodge/roll: `Shift`/`Ctrl` su tastiera player 1 o `B` sul joypad dello slot.
 - Il roll concede una breve invulnerabilita, mette in cooldown l'azione,
   sospende il fuoco durante la schivata e puo attraversare piccoli gap/fall
-  zone solo se traiettoria e landing sono valide; lava, gas, acqua profonda e
-  altri hazard ambientali non vengono trattati come gap.
+  zone senza subire caduta durante il movimento; lava, gas, acqua profonda e
+  altri hazard ambientali non vengono trattati come gap. A fine roll la cella
+  sotto il player viene rivalutata: terreno valido ripristina il controllo,
+  void avvia la caduta.
 - Camera condivisa che segue il gruppo player e allarga leggermente lo zoom quando i player si separano.
 - Il mapping prototipo dei controller e deterministico: controller 1/player 1, controller 2/player 2, controller 3/player 3, controller 4/player 4.
 
@@ -597,10 +599,15 @@ Regole hazard:
   dettagliato solo sul confine con terreno calpestabile;
 - quando void e bordo esterno si incontrano non viene disegnato alcun raccordo,
   muro o cliff aggiuntivo: l'intero tratto di contatto resta puro vuoto;
-- entrando nella zona il player perde 20 HP, anche se ha un'altra invulnerabilita attiva;
+- calpestando una cella `void` o `fall_zone` il player entra in `falling`; il
+  semplice superamento geometrico di un border non infligge danno;
+- a fine animazione di caduta il player perde una sola volta 20 HP, anche se ha
+  un'altra invulnerabilita attiva;
 - il player torna all'ultima posizione sicura registrata e la velocita viene azzerata;
 - dopo il recupero riceve 1,25 secondi di invulnerabilita dedicata;
 - altre sorgenti di invulnerabilita restano attive e indipendenti;
+- gli zombie che calpestano void cadono, vengono rimossi a fine animazione con
+  death reason `void` e non assegnano drop, XP, denaro, risorse o kill reward;
 - zombie e casse non possono usare la fall zone come posizione valida;
 - danno e respawn producono feedback visuale, camera shake e cue ambientale.
 - tossico e fuoco applicano danno periodico;

@@ -1,9 +1,10 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://game/enemies/basic_enemy.gd" id="1_enemy"]
 [ext_resource type="Script" path="res://game/health/health_component.gd" id="2_health"]
 [ext_resource type="Script" path="res://game/visuals/zombie_visual.gd" id="3_visual"]
 [ext_resource type="Resource" path="res://game/drops/tank_enemy_loot.tres" id="4_loot"]
+[ext_resource type="Script" path="res://game/core/entity_void_fall_component.gd" id="5_void_fall"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_tank"]
 radius = 25.0
@@ -39,6 +40,9 @@ default_color = Color(0.2, 1, 0.18, 1)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_tank")
+
+[node name="VoidFallComponent" type="Node" parent="."]
+script = ExtResource("5_void_fall")
 
 [node name="HealthComponent" type="Node" parent="."]
 script = ExtResource("2_health")

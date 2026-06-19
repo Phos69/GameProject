@@ -56,6 +56,7 @@ func _process(delta: float) -> void:
 	_tick_fall_cooldowns(delta)
 	_tick_invulnerability(delta)
 	status_runtime.process_runtime(delta, get_tree(), active_hazards)
+	_check_void_entities()
 	safe_update_timer = maxf(safe_update_timer - delta, 0.0)
 	if safe_update_timer <= 0.0:
 		safe_update_timer = safe_position_update_interval
@@ -173,15 +174,74 @@ func spawn_runtime_hazard(
 	return zone
 
 func is_position_hazardous(position: Vector2) -> bool:
-	return is_position_fall_zone(position) or is_position_environment_hazard(position)
+	return is_void_at_world_position(position) or is_position_environment_hazard(position)
 
 func is_position_fall_zone(position: Vector2) -> bool:
-	for hazard in get_tree().get_nodes_in_group("fall_zones"):
-		if _node_contains_position(hazard, position):
-			return true
-	return false
+	return is_void_at_world_position(position)
+
+func get_terrain_at_world_position(position: Vector2) -> StringName:
+	var biome_manager := get_tree().get_first_node_in_group(
+		"biome_manager"
+	) as BiomeManager
+	var seam_system := get_tree().get_first_node_in_group("region_seam_system")
+	if (
+		biome_manager != null
+		and seam_system != null
+		and biome_manager.get_world_graph() != null
+		and seam_system.has_method("get_region_id_for_world_position")
+		and seam_system.has_method("world_position_to_logical_tile")
+	):
+		var region_id := StringName(
+			seam_system.get_region_id_for_world_position(position)
+		)
+		if region_id.is_empty():
+			return BiomeEnvironmentLayout.TERRAIN_VOID
+		var cell := biome_manager.get_cell_by_region_id(region_id) as BiomeCell
+		if cell == null or cell.generated_layout == null:
+			return BiomeEnvironmentLayout.TERRAIN_VOID
+		var world_tile: Vector2i = seam_system.world_position_to_logical_tile(
+			position
+		)
+		var local_tile := world_tile - cell.world_origin
+		return cell.generated_layout.get_terrain_class_at_cell(
+			local_tile,
+			cell
+		)
+
+	var layout := (
+		active_biome.environment_layout
+		if active_biome != null
+		else null
+	) as BiomeEnvironmentLayout
+	if layout != null and layout.has_generated_map_data():
+		return layout.get_terrain_class_at_cell(
+			layout.world_to_logical(position)
+		)
+	if _is_position_inside_group(position, "fall_zones"):
+		return BiomeEnvironmentLayout.TERRAIN_FALL_ZONE
+	if _is_position_inside_group(position, "environment_hazards"):
+		return BiomeEnvironmentLayout.TERRAIN_HAZARD
+	return BiomeEnvironmentLayout.TERRAIN_WALKABLE
+
+func is_void_at_world_position(position: Vector2) -> bool:
+	var terrain_class := get_terrain_at_world_position(position)
+	return (
+		terrain_class == BiomeEnvironmentLayout.TERRAIN_VOID
+		or terrain_class == BiomeEnvironmentLayout.TERRAIN_FALL_ZONE
+	)
+
+func is_walkable_at_world_position(position: Vector2) -> bool:
+	return (
+		get_terrain_at_world_position(position)
+		== BiomeEnvironmentLayout.TERRAIN_WALKABLE
+	)
 
 func is_position_environment_hazard(position: Vector2) -> bool:
+	if (
+		get_terrain_at_world_position(position)
+		== BiomeEnvironmentLayout.TERRAIN_HAZARD
+	):
+		return true
 	for hazard in get_tree().get_nodes_in_group("environment_hazards"):
 		if hazard.is_in_group("fall_zones"):
 			continue
@@ -279,12 +339,34 @@ func trigger_fall(player: Node, _hazard: BiomeFallZone = null) -> bool:
 	var player_id := player.get_instance_id()
 	if float(fall_cooldowns.get(player_id, 0.0)) > 0.0:
 		return false
+	if not is_void_at_world_position((player as Node2D).global_position):
+		return false
+	var dodge_component := player.get_node_or_null(
+		"PlayerDodgeComponent"
+	) as PlayerDodgeComponent
+	if dodge_component != null and dodge_component.is_dodging:
+		return false
+	if player.has_method("try_start_void_fall"):
+		return bool(player.call("try_start_void_fall"))
+	return complete_player_fall(
+		player,
+		(player as Node2D).global_position
+	)
+
+func complete_player_fall(player: Node, fall_position: Vector2) -> bool:
+	if (
+		not is_active
+		or player == null
+		or not player is Node2D
+		or not player.is_in_group("players")
+	):
+		return false
+	var player_id := player.get_instance_id()
 	var health_component := player.get_node_or_null(
 		"HealthComponent"
 	) as HealthComponent
 	if health_component == null or health_component.is_incapacitated():
 		return false
-	var fall_position := (player as Node2D).global_position
 	var respawn_position := get_last_safe_position(player)
 	var health_system := get_tree().get_first_node_in_group(
 		"health_system"
@@ -532,6 +614,21 @@ func _on_hazard_body_entered(
 	if body.is_in_group("players"):
 		trigger_fall(body, hazard)
 
+func _check_void_entities() -> void:
+	for player in get_tree().get_nodes_in_group("players"):
+		if (
+			player is Node2D
+			and is_void_at_world_position((player as Node2D).global_position)
+		):
+			trigger_fall(player)
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if (
+			enemy is Node2D
+			and enemy.has_method("try_start_void_fall")
+			and is_void_at_world_position((enemy as Node2D).global_position)
+		):
+			enemy.call("try_start_void_fall")
+
 func _on_runtime_environment_damaged(
 	player: Node,
 	hazard_id: StringName,
@@ -560,6 +657,12 @@ func _node_contains_position(node: Node, position: Vector2) -> bool:
 			(node as Node2D).global_position.distance_squared_to(position)
 			<= radius * radius
 		)
+	return false
+
+func _is_position_inside_group(position: Vector2, group_name: StringName) -> bool:
+	for node in get_tree().get_nodes_in_group(group_name):
+		if _node_contains_position(node, position):
+			return true
 	return false
 
 func _get_environment_container() -> Node:

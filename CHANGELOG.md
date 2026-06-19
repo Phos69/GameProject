@@ -4,6 +4,11 @@
 
 ### Added
 
+- Aggiunto `EntityVoidFallComponent`, condiviso da player e zombie, con stato
+  `falling`, lock del movimento e animazione di discesa, scala e alpha prima
+  dell'impatto.
+- Esteso `tests/zombie_fall_hazard_smoke_test.gd` con dodge su void/terreno,
+  danno singolo post-animazione e morte zombie senza drop o XP.
 - Aggiunti `WeaponInstance`, `PlayerWeaponInventory`, `WeaponCatalog` e
   `WeaponEffectResolver`: inventario persistente per-player, 30 nuove armi
   (10 da fuoco, 10 melee, 10 elementali) ed effetti AOE/status/chain/hazard.
@@ -55,6 +60,14 @@
 
 ### Changed
 
+- `HazardSystem` risolve ora `walkable`, `hazard`, `fall_zone` e `void` dalla
+  classificazione della cella world-space; oltrepassare un semplice border non
+  causa piu danno se la cella sotto l'entita non e void.
+- Player e zombie usano stati espliciti di dodge/fall. Il dodge attraversa il
+  void senza trigger intermedi e verifica il terreno solo al termine; il danno
+  player viene applicato una volta a fine caduta.
+- Le morti zombie con `death_reason = void` terminano dopo l'animazione e
+  saltano in modo centralizzato XP, drop, risorse e hazard on-death.
 - I pickup arma aggiungono un'istanza all'inventario invece di sovrascrivere
   la speciale corrente; i duplicati diventano ammo/denaro, il D-pad su/giu
   cambia arma per-player e l'HUD mostra selezione, lista inventario ed effetti.
