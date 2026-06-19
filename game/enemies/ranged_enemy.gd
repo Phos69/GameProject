@@ -23,7 +23,8 @@ var windup_timer: float = 0.0
 var locked_shot_direction: Vector2 = Vector2.ZERO
 
 func _physics_process(delta: float) -> void:
-	if current_state == State.DEAD:
+	if current_state == State.DEAD or current_state == State.FALLING:
+		velocity = Vector2.ZERO
 		return
 
 	attack_timer = maxf(attack_timer - delta, 0.0)

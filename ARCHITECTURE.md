@@ -82,11 +82,16 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
   movimento custom quando una schermata deve interpretare le quattro direzioni.
 - `LocalMultiplayerManager`: mantiene gli slot locali attivi, gestisce join/leave e usa mapping deterministico `device joypad + 1 = player_slot`.
 - `PlayerManager`: spawna/despawna player in base agli slot attivi e tiene il registro degli slot.
-- `PlayerController`: movimento, mira, fire action, dodge/roll e colore visuale per slot.
+- `PlayerController`: movimento, mira, fire action, dodge/roll, stato entity
+  `normal/dodging/falling/dead` e colore visuale per slot.
 - `PlayerDodgeComponent`: roll con cooldown, invulnerabilita breve, blocco
   del fuoco durante la schivata e validazione di landing/gap/ostacoli; solo le
   fall zone sono trattate come gap attraversabili, mentre gli hazard
-  ambientali bloccano traiettoria e landing.
+  ambientali bloccano traiettoria e landing. Il controllo void e sospeso
+  durante il movimento e viene rieseguito sulla posizione finale.
+- `EntityVoidFallComponent`: animazione condivisa player/zombie con lock
+  temporaneo, discesa world-space, riduzione scala/alpha e callback di impatto;
+  non applica direttamente danni o reward.
 - `ReviveSystem`: progresso cooperativo centralizzato per target downed e reviver vicino.
 - `GameModeManager`: registra, arresta e avvia le modalita.
 - `RunSessionTracker`: traduce i segnali terminali in dati risultato runtime.
@@ -697,6 +702,12 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - `HazardSystem` delega tossico, fuoco, gelo, acqua e fango a `BiomeStatusRuntime`, tramite danno periodico o `environment_speed_multiplier`.
 - `BiomeHazardCatalog` centralizza valori runtime e colori, evitando tuning nascosto nel controller.
 - La fall zone conserva il contratto speciale: 20 HP, respawn sicuro e invulnerabilita dedicata.
+- `HazardSystem.get_terrain_at_world_position()` converte la posizione reale
+  dell'entita nella cella della regione e legge la classificazione completa;
+  `is_void_at_world_position()` considera void sia `void` sia `fall_zone`.
+- `HazardSystem` registra posizioni sicure solo su terreno non-void e avvia la
+  caduta di player e zombie dalla cella sotto i piedi, non dall'attraversamento
+  del bounding box di un border.
 - `HazardSystem.is_position_hazardous()` resta la query aggregata per spawn e
   sicurezza; `is_position_fall_zone()` identifica il vuoto/caduta, mentre
   `is_position_environment_hazard()` identifica lava, gas, acqua profonda e
@@ -705,6 +716,9 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
   hazard ambientali come ostacoli di traiettoria/landing.
 - `EnemySystem` registra i profili tematici sullo stesso `basic_enemy.tscn`.
 - `BasicEnemy` applica status al contatto, resistenza, emersione o hazard alla morte solo se definiti dal profilo.
+- `BasicEnemy.death_reason` distingue `combat` da `void`: le morti void
+  disabilitano XP, drop, risorse e hazard on-death, poi notificano normalmente
+  `EnemySystem` solo al termine dell'animazione.
 - Terreno, ostacoli e casse ambientali vengono rimossi da `ZombieModeController.stop_run()`.
 - L'arresto di survival rimuove i nemici e il boss della wave prima di attivare un'altra modalita.
 - `WaveManager` e autoritativo per indice ondata, stato, spawn pendenti e nemici della wave.
