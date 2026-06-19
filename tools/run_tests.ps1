@@ -13,7 +13,8 @@ param(
 	[string]$Filter = "",
 	[string]$Godot = $(if ($env:GODOT) { $env:GODOT } else { "godot" }),
 	[int]$TimeoutSec = $(if ($env:TEST_TIMEOUT) { [int]$env:TEST_TIMEOUT } else { 180 }),
-	[switch]$SkipImport
+	[switch]$SkipImport,
+	[switch]$IncludeVisualQa
 )
 
 $ErrorActionPreference = "Stop"
@@ -42,12 +43,16 @@ Write-Host "==> Esecuzione suite di test ($($tests.Count) file)`n"
 
 $passed = 0
 $failed = 0
+$skipped = 0
 $failedNames = @()
 
 foreach ($test in $tests) {
 	if ($Filter -and ($test.Name -notlike "*$Filter*")) { continue }
 	# Esegui solo gli script-test (SceneTree); salta gli helper condivisi.
 	if (-not (Select-String -Path $test.FullName -Pattern "^extends SceneTree" -Quiet)) { continue }
+	# I test *_visual_qa catturano screenshot e richiedono un contesto di
+	# rendering reale: non eseguibili col driver dummy headless.
+	if ((-not $IncludeVisualQa) -and ($test.Name -like "*_visual_qa.gd")) { $skipped++; continue }
 
 	$outFile = [System.IO.Path]::GetTempFileName()
 	$proc = Start-Process -FilePath $Godot `
@@ -73,7 +78,7 @@ foreach ($test in $tests) {
 	Remove-Item $outFile, "$outFile.err" -ErrorAction SilentlyContinue
 }
 
-Write-Host "`n==> Risultato: $passed passati, $failed falliti"
+Write-Host "`n==> Risultato: $passed passati, $failed falliti, $skipped saltati (visual_qa)"
 if ($failed -ne 0) {
 	Write-Host "    Falliti:"
 	$failedNames | ForEach-Object { Write-Host "      - $_" }

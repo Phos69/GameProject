@@ -56,6 +56,7 @@ fi
 
 passed=0
 failed=0
+skipped=0
 failed_names=()
 
 echo "==> Esecuzione suite di test (${#tests[@]} file)"
@@ -68,6 +69,13 @@ for test_file in "${tests[@]}"; do
 	fi
 	# Esegui solo gli script-test (SceneTree); salta gli helper condivisi.
 	if ! grep -q "^extends SceneTree" "$test_file"; then
+		continue
+	fi
+	# I test *_visual_qa catturano screenshot e richiedono un contesto di
+	# rendering reale: non sono eseguibili col driver dummy headless.
+	# Si includono solo con INCLUDE_VISUAL_QA=1 (es. ambiente con GPU/xvfb).
+	if [ "${INCLUDE_VISUAL_QA:-0}" != "1" ] && [[ "$name" == *_visual_qa.gd ]]; then
+		skipped=$((skipped + 1))
 		continue
 	fi
 
@@ -92,7 +100,7 @@ done
 rm -f /tmp/test_out.$$
 
 echo
-echo "==> Risultato: ${passed} passati, ${failed} falliti"
+echo "==> Risultato: ${passed} passati, ${failed} falliti, ${skipped} saltati (visual_qa)"
 if [ "$failed" -ne 0 ]; then
 	printf '    Falliti:\n'
 	for n in "${failed_names[@]}"; do printf '      - %s\n' "$n"; done

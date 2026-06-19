@@ -49,6 +49,12 @@ Singolo test:
 godot --headless --path . --script tests/<nome_test>.gd
 ```
 
+I test `*_visual_qa.gd` catturano screenshot e richiedono un contesto di
+rendering reale: il runner li **salta di default** perche non funzionano col
+driver dummy headless. Per includerli in un ambiente con GPU (o xvfb + GL
+software): `INCLUDE_VISUAL_QA=1 tools/run_tests.sh` oppure
+`./tools/run_tests.ps1 -IncludeVisualQa`.
+
 Variabili utili: `GODOT` (path del binario, default `godot`), `TEST_TIMEOUT`
 (secondi per test, default 180), `SKIP_IMPORT=1` (salta l'import iniziale quando
 la cache `.godot/` e gia popolata).
