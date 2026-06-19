@@ -18,7 +18,9 @@ const PLAYER_JOYSTICK_ACTIONS: Array[StringName] = [
 	&"reload",
 	&"super",
 	&"interact",
-	&"dodge"
+	&"dodge",
+	&"weapon_previous",
+	&"weapon_next"
 ]
 const ALL_JOYSTICK_ACTIONS: Array[StringName] = [
 	&"move_left",
@@ -34,6 +36,8 @@ const ALL_JOYSTICK_ACTIONS: Array[StringName] = [
 	&"super",
 	&"interact",
 	&"dodge",
+	&"weapon_previous",
+	&"weapon_next",
 	&"pause"
 ]
 const ACTION_LABELS: Dictionary = {
@@ -50,6 +54,8 @@ const ACTION_LABELS: Dictionary = {
 	&"super": "Super",
 	&"interact": "Interact",
 	&"dodge": "Dodge/Roll",
+	&"weapon_previous": "Previous weapon",
+	&"weapon_next": "Next weapon",
 	&"pause": "Pause"
 }
 const DEFAULT_JOYSTICK_BINDINGS: Dictionary = {
@@ -113,6 +119,14 @@ const DEFAULT_JOYSTICK_BINDINGS: Dictionary = {
 		"type": "button",
 		"button_index": JOY_BUTTON_B
 	},
+	&"weapon_previous": {
+		"type": "button",
+		"button_index": JOY_BUTTON_DPAD_UP
+	},
+	&"weapon_next": {
+		"type": "button",
+		"button_index": JOY_BUTTON_DPAD_DOWN
+	},
 	&"pause": {
 		"type": "button",
 		"button_index": JOY_BUTTON_START
@@ -158,6 +172,12 @@ func is_player_interact_pressed(player_slot: int) -> bool:
 
 func is_player_dodge_just_pressed(player_slot: int) -> bool:
 	return Input.is_action_just_pressed(_action(player_slot, "dodge"))
+
+func is_player_weapon_previous_just_pressed(player_slot: int) -> bool:
+	return Input.is_action_just_pressed(_action(player_slot, "weapon_previous"))
+
+func is_player_weapon_next_just_pressed(player_slot: int) -> bool:
+	return Input.is_action_just_pressed(_action(player_slot, "weapon_next"))
 
 func is_world_map_just_pressed() -> bool:
 	return Input.is_action_just_pressed(&"world_map")
@@ -278,6 +298,8 @@ func _add_keyboard_debug_actions() -> void:
 	InputMap.action_add_event(_action(1, "interact"), _key(KEY_E))
 	InputMap.action_add_event(_action(1, "dodge"), _key(KEY_SHIFT))
 	InputMap.action_add_event(_action(1, "dodge"), _key(KEY_CTRL))
+	InputMap.action_add_event(_action(1, "weapon_previous"), _key(KEY_BRACKETLEFT))
+	InputMap.action_add_event(_action(1, "weapon_next"), _key(KEY_BRACKETRIGHT))
 
 func _ensure_action(action: StringName, first_event: InputEvent) -> void:
 	if not InputMap.has_action(action):

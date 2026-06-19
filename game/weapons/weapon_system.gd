@@ -7,25 +7,25 @@ signal ammo_changed(current_ammo: int, reserve_ammo: int)
 signal reload_started(duration: float)
 signal reload_finished()
 signal weapon_changed(weapon_data: WeaponData)
+signal inventory_changed(weapon_ids: Array[StringName])
+signal weapon_added(weapon_data: WeaponData)
+signal weapon_switch_feedback(text: String, weapon_data: WeaponData)
 signal low_ammo_changed(is_low: bool, total_ammo: int)
 signal fallback_activated(weapon_data: WeaponData)
 signal special_weapon_activated(weapon_data: WeaponData)
 signal melee_attack_started(attack: Node, weapon_data: WeaponData)
-signal melee_attack_hit(
-	attack: Node,
-	target: Node,
-	applied_damage: int,
-	hit_position: Vector2
-)
+signal melee_attack_hit(attack: Node, target: Node, applied_damage: int, hit_position: Vector2)
 
 const MELEE_ATTACK_SCRIPT := preload("res://game/weapons/melee_attack.gd")
+const EFFECT_RESOLVER := preload("res://game/weapons/weapon_effect_resolver.gd")
 
 @export var weapon_data: WeaponData = preload("res://game/weapons/starter_pistol.tres")
-@export var fallback_weapon_data: WeaponData = preload(
-	"res://game/weapons/starter_pistol.tres"
-)
+@export var fallback_weapon_data: WeaponData = preload("res://game/weapons/starter_pistol.tres")
 @export_range(0, 999) var low_ammo_threshold: int = 8
 
+# Compatibility fields remain public for existing consumers. The selected
+# WeaponInstance is authoritative; these values are synchronized at API/frame
+# boundaries so older tests and systems can still inspect or assign them.
 var cooldown: float = 0.0
 var current_ammo: int = 0
 var reserve_ammo: int = 0
@@ -36,175 +36,171 @@ var special_current_ammo: int = 0
 var special_reserve_ammo: int = 0
 var fallback_current_ammo: int = 0
 var low_ammo_active: bool = false
+var inventory := PlayerWeaponInventory.new()
+var last_special_weapon_id: StringName = &""
 
 func _ready() -> void:
 	_initialize_loadout()
 
 func _process(delta: float) -> void:
-	cooldown = maxf(cooldown - delta, 0.0)
-	if not is_reloading:
-		return
-
-	reload_timer = maxf(reload_timer - delta, 0.0)
-	if reload_timer <= 0.0:
-		_finish_reload()
+	_store_active_state()
+	var selected := inventory.get_selected()
+	for instance in inventory.instances:
+		var finished := instance.tick(delta)
+		if finished and instance == selected:
+			reload_finished.emit()
+	_sync_from_active()
+	_refresh_low_ammo_state()
 
 func try_fire(origin: Vector2, direction: Vector2, owner_ref: Node = null) -> bool:
-	if weapon_data == null:
+	_store_active_state()
+	var instance := inventory.get_selected()
+	if instance == null or instance.definition == null:
 		fire_blocked.emit(&"no_weapon")
 		return false
+	weapon_data = instance.definition
 	if direction.length_squared() <= 0.01:
 		fire_blocked.emit(&"no_direction")
 		return false
-	if is_reloading:
+	if instance.is_reloading:
 		fire_blocked.emit(&"reloading")
 		return false
-	if cooldown > 0.0:
+	if instance.cooldown > 0.0:
 		fire_blocked.emit(&"cooldown")
 		return false
-	if current_ammo < weapon_data.ammo_per_shot:
+	if instance.current_ammo < weapon_data.ammo_per_shot:
 		if start_reload():
 			fire_blocked.emit(&"reload_started")
 			return false
 		if not is_fallback_active() and _activate_fallback_weapon():
-			if current_ammo < weapon_data.ammo_per_shot:
+			instance = inventory.get_selected()
+			if instance == null or instance.current_ammo < instance.definition.ammo_per_shot:
 				start_reload()
 				fire_blocked.emit(&"fallback_reloading")
 				return false
+			weapon_data = instance.definition
 		else:
 			fire_blocked.emit(&"empty")
 			return false
 
-	var base_cooldown := 1.0 / maxf(
-		weapon_data.fire_rate * _get_modified_fire_rate_multiplier(),
-		0.01
-	)
-	cooldown = base_cooldown
+	var base_cooldown := 1.0 / maxf(weapon_data.fire_rate * _get_modified_fire_rate_multiplier(), 0.01)
+	instance.cooldown = base_cooldown
 	if weapon_data.uses_melee_attack():
-		cooldown = maxf(
-			base_cooldown,
-			weapon_data.windup_time
-			+ weapon_data.active_time
-			+ weapon_data.recovery_time
-		)
-	current_ammo -= weapon_data.ammo_per_shot
-	_store_active_ammo()
+		instance.cooldown = maxf(base_cooldown, weapon_data.windup_time + weapon_data.active_time + weapon_data.recovery_time)
+	instance.current_ammo -= weapon_data.ammo_per_shot
+	_sync_from_active()
 	ammo_changed.emit(current_ammo, reserve_ammo)
 	_refresh_low_ammo_state()
 	var normalized_direction := _apply_weapon_scatter(direction.normalized())
 	fired.emit(origin, normalized_direction, weapon_data.damage)
-
-	if weapon_data.uses_melee_attack():
-		_spawn_melee_attack(origin, normalized_direction, owner_ref)
-	elif weapon_data.projectile_scene != null:
-		var projectile_system = get_tree().get_first_node_in_group("projectile_system")
-		if projectile_system != null and projectile_system.has_method("spawn_projectile"):
-			projectile_system.spawn_projectile(
-				origin,
-				normalized_direction,
-				weapon_data.projectile_speed,
-				owner_ref,
-				weapon_data.projectile_scene,
-				weapon_data.damage,
-				weapon_data.weapon_id,
-				weapon_data.visual_data,
-				weapon_data.max_range,
-				weapon_data.hitbox_type,
-				weapon_data.hitbox_size,
-				weapon_data.max_hit_count
-			)
-		else:
-			var projectile := weapon_data.projectile_scene.instantiate()
-			if projectile is Node2D:
-				(projectile as Node2D).global_position = origin
-			if projectile.has_method("launch"):
-				projectile.launch(
-					normalized_direction,
-					weapon_data.projectile_speed,
-					owner_ref,
-					weapon_data.damage,
-					weapon_data.weapon_id,
-					weapon_data.visual_data,
-					weapon_data.max_range,
-					weapon_data.hitbox_type,
-					weapon_data.hitbox_size,
-					weapon_data.max_hit_count
-				)
-			var root := get_tree().current_scene
-			if root != null:
-				root.add_child(projectile)
-
+	var windup_delay := weapon_data.windup_duration
+	if windup_delay > 0.0:
+		var now_seconds := Time.get_ticks_msec() / 1000.0
+		var spun_up_until := float(instance.temporary_state.get("spun_up_until", 0.0))
+		if now_seconds < spun_up_until:
+			windup_delay = 0.0
+		instance.temporary_state["spun_up_until"] = now_seconds + 0.65
+	var delay := weapon_data.charge_duration + windup_delay
+	if delay > 0.0:
+		instance.charge_time = delay
+		_fire_pattern_delayed(origin, normalized_direction, owner_ref, weapon_data, delay)
+	else:
+		_fire_pattern(origin, normalized_direction, owner_ref, weapon_data)
 	return true
 
-func _spawn_melee_attack(
-	origin: Vector2,
-	direction: Vector2,
-	owner_ref: Node = null
-) -> Node:
-	if weapon_data == null:
+func _fire_pattern_delayed(origin: Vector2, direction: Vector2, owner_ref: Node, definition: WeaponData, delay: float) -> void:
+	await get_tree().create_timer(delay).timeout
+	if not is_instance_valid(self):
+		return
+	var instance := inventory.get_instance(definition.weapon_id)
+	if instance != null:
+		instance.charge_time = 0.0
+	_fire_pattern(origin, direction, owner_ref, definition)
+
+func _fire_pattern(origin: Vector2, direction: Vector2, owner_ref: Node, definition: WeaponData) -> void:
+	if definition.uses_melee_attack():
+		if definition.attack_type == &"dash_slash" and owner_ref is CharacterBody2D:
+			(owner_ref as CharacterBody2D).move_and_collide(direction.normalized() * 42.0)
+		_spawn_melee_attack(origin, direction, owner_ref, definition)
+		return
+	if definition.weapon_id in [&"frost_nova", &"seismic_crystal"]:
+		var center := (owner_ref as Node2D).global_position if owner_ref is Node2D else origin
+		EFFECT_RESOLVER.resolve_impact(get_tree(), definition, null, center, owner_ref, 0)
+		return
+	for burst_index in range(maxi(definition.burst_count, 1)):
+		if burst_index > 0 and definition.burst_interval > 0.0:
+			await get_tree().create_timer(definition.burst_interval).timeout
+		for projectile_index in range(maxi(definition.projectile_count, 1)):
+			var shot_direction := direction
+			if definition.projectile_count > 1:
+				var ratio := float(projectile_index) / float(definition.projectile_count - 1)
+				shot_direction = direction.rotated(deg_to_rad(lerpf(-definition.scatter_degrees, definition.scatter_degrees, ratio)))
+			_spawn_projectile(origin, shot_direction, owner_ref, definition)
+
+func _spawn_projectile(origin: Vector2, direction: Vector2, owner_ref: Node, definition: WeaponData) -> void:
+	var projectile_system = get_tree().get_first_node_in_group("projectile_system")
+	var projectile: Node
+	if projectile_system != null and projectile_system.has_method("spawn_projectile"):
+		projectile = projectile_system.spawn_projectile(origin, direction, definition.projectile_speed, owner_ref, definition.projectile_scene, definition.damage, definition.weapon_id, definition.visual_data, definition.max_range, definition.hitbox_type, definition.hitbox_size, definition.max_hit_count)
+	elif definition.projectile_scene != null:
+		projectile = definition.projectile_scene.instantiate()
+		if projectile is Node2D:
+			(projectile as Node2D).global_position = origin
+		if projectile.has_method("launch"):
+			projectile.launch(direction, definition.projectile_speed, owner_ref, definition.damage, definition.weapon_id, definition.visual_data, definition.max_range, definition.hitbox_type, definition.hitbox_size, definition.max_hit_count)
+		var root := get_tree().current_scene
+		if root != null:
+			root.add_child(projectile)
+	if projectile != null and projectile.has_signal("impacted"):
+		projectile.connect("impacted", Callable(self, "_on_projectile_effect_impact").bind(definition, owner_ref, projectile))
+	if projectile != null and projectile.has_method("set_arc_height"):
+		projectile.set_arc_height(definition.projectile_arc_height)
+
+func _on_projectile_effect_impact(target: Node, applied_damage: int, definition: WeaponData, owner_ref: Node, projectile: Node) -> void:
+	var impact_position := (projectile as Node2D).global_position if projectile is Node2D else Vector2.ZERO
+	EFFECT_RESOLVER.resolve_impact(get_tree(), definition, target, impact_position, owner_ref, applied_damage)
+
+func _spawn_melee_attack(origin: Vector2, direction: Vector2, owner_ref: Node = null, definition: WeaponData = null) -> Node:
+	var resolved := definition if definition != null else weapon_data
+	if resolved == null:
 		return null
 	var attack_origin := origin
 	if owner_ref is Node2D:
 		attack_origin = (owner_ref as Node2D).global_position
 	var attack := MELEE_ATTACK_SCRIPT.new()
-	attack.configure(
-		attack_origin,
-		direction,
-		owner_ref,
-		weapon_data.damage,
-		weapon_data.weapon_id,
-		weapon_data.get_resolved_melee_shape(),
-		weapon_data.get_resolved_melee_range(),
-		weapon_data.get_resolved_melee_width(),
-		weapon_data.melee_arc_degrees,
-		weapon_data.windup_time,
-		weapon_data.active_time,
-		weapon_data.knockback,
-		weapon_data.hitstop,
-		weapon_data.max_hit_count,
-		weapon_data.visual_data,
-		weapon_data.trail_style,
-		weapon_data.effect_key
-	)
-	attack.hit_target.connect(_on_melee_attack_hit.bind(attack))
+	attack.configure(attack_origin, direction, owner_ref, resolved.damage, resolved.weapon_id, resolved.get_resolved_melee_shape(), resolved.get_resolved_melee_range(), resolved.get_resolved_melee_width(), resolved.melee_arc_degrees, resolved.windup_time, resolved.active_time, resolved.knockback, resolved.hitstop, resolved.max_hit_count, resolved.visual_data, resolved.trail_style, resolved.effect_key)
+	attack.hit_target.connect(_on_melee_attack_hit.bind(attack, resolved, owner_ref))
 	var root := get_tree().current_scene
 	if root == null:
 		root = get_tree().root
 	root.add_child(attack)
-	melee_attack_started.emit(attack, weapon_data)
+	melee_attack_started.emit(attack, resolved)
 	return attack
 
-func _on_melee_attack_hit(
-	target: Node,
-	applied_damage: int,
-	hit_position: Vector2,
-	attack: Node
-) -> void:
+func _on_melee_attack_hit(target: Node, applied_damage: int, hit_position: Vector2, attack: Node, definition: WeaponData, owner_ref: Node) -> void:
+	EFFECT_RESOLVER.resolve_impact(get_tree(), definition, target, hit_position, owner_ref, applied_damage)
 	melee_attack_hit.emit(attack, target, applied_damage, hit_position)
 
 func start_reload() -> bool:
-	if weapon_data == null or is_reloading:
+	_store_active_state()
+	var instance := inventory.get_selected()
+	if instance == null or not instance.begin_reload(_get_modified_reload_duration()):
 		return false
-	if current_ammo >= weapon_data.magazine_size:
-		return false
-	if not weapon_data.infinite_reserve_ammo and reserve_ammo <= 0:
-		return false
-
-	is_reloading = true
-	reload_timer = _get_modified_reload_duration()
+	_sync_from_active()
 	reload_started.emit(reload_timer)
-	if reload_timer <= 0.0:
-		_finish_reload()
+	if not instance.is_reloading:
+		reload_finished.emit()
 	return true
 
 func get_ammo_text() -> String:
+	_store_active_state()
 	if weapon_data == null:
 		return "-"
 	var reserve_text := "INF" if weapon_data.infinite_reserve_ammo else str(reserve_ammo)
 	var tags := PackedStringArray()
 	if is_reloading:
 		tags.append("RELOAD")
-	if is_fallback_active() and special_weapon_data != null:
+	if is_fallback_active() and has_special_weapon():
 		tags.append("FALLBACK")
 	elif low_ammo_active:
 		tags.append("LOW")
@@ -212,149 +208,225 @@ func get_ammo_text() -> String:
 	return "%d/%s%s" % [current_ammo, reserve_text, suffix]
 
 func get_reload_ratio() -> float:
-	if not is_reloading or weapon_data == null:
-		return 0.0
-	var duration := maxf(_get_modified_reload_duration(), 0.01)
-	return clampf(1.0 - reload_timer / duration, 0.0, 1.0)
+	_store_active_state()
+	var instance := inventory.get_selected()
+	return instance.get_reload_ratio() if instance != null else 0.0
 
 func add_reserve_ammo(amount: int) -> int:
-	if special_weapon_data == null or amount <= 0:
+	if amount <= 0:
 		return 0
+	_store_active_state()
+	var target := inventory.get_selected()
+	if target == null or target.definition.infinite_reserve_ammo:
+		target = inventory.get_instance(last_special_weapon_id)
+	if target == null or target.definition.infinite_reserve_ammo:
+		return 0
+	target.reserve_ammo += amount
 	if is_fallback_active():
-		special_reserve_ammo += amount
-		_activate_special_weapon()
+		_select_instance(target, false)
 		start_reload()
 	else:
-		reserve_ammo += amount
-		_store_active_ammo()
+		_sync_from_active()
 		ammo_changed.emit(current_ammo, reserve_ammo)
 	_refresh_low_ammo_state()
 	return amount
 
-func equip_weapon(new_weapon_data: WeaponData) -> bool:
-	if new_weapon_data == null:
-		return false
-	_store_active_ammo()
-	if new_weapon_data.infinite_reserve_ammo:
-		fallback_weapon_data = new_weapon_data
-		fallback_current_ammo = new_weapon_data.magazine_size
-		_activate_fallback_weapon()
-		return true
+func add_ammo_to_weapon(weapon_id: StringName, amount: int) -> int:
+	if amount <= 0:
+		return 0
+	_store_active_state()
+	var instance := inventory.get_instance(weapon_id)
+	if instance == null or instance.definition.infinite_reserve_ammo:
+		return 0
+	instance.reserve_ammo += amount
+	_sync_from_active()
+	ammo_changed.emit(current_ammo, reserve_ammo)
+	_refresh_low_ammo_state()
+	return amount
 
-	special_weapon_data = new_weapon_data
-	special_current_ammo = new_weapon_data.magazine_size
-	special_reserve_ammo = new_weapon_data.starting_reserve_ammo
-	_activate_special_weapon()
+func add_weapon(new_weapon_data: WeaponData, auto_select: bool = true) -> bool:
+	if new_weapon_data == null or inventory.has_weapon(new_weapon_data.weapon_id):
+		return false
+	_store_active_state()
+	var instance := inventory.add_weapon(new_weapon_data, auto_select)
+	if instance == null:
+		return false
+	if not new_weapon_data.infinite_reserve_ammo:
+		last_special_weapon_id = new_weapon_data.weapon_id
+		special_weapon_data = new_weapon_data
+	if auto_select:
+		_select_instance(instance, false)
+	weapon_added.emit(new_weapon_data)
+	inventory_changed.emit(inventory.get_weapon_ids())
+	weapon_switch_feedback.emit("Nuova arma: %s" % new_weapon_data.display_name, new_weapon_data)
 	return true
 
+func equip_weapon(new_weapon_data: WeaponData) -> bool:
+	# Legacy callers expect equipping a new finite weapon to select it. Duplicate
+	# IDs now select their persistent instance instead of resetting its state.
+	if new_weapon_data == null:
+		return false
+	var existing := inventory.get_instance(new_weapon_data.weapon_id)
+	if existing != null:
+		_select_instance(existing, false)
+		return true
+	return add_weapon(new_weapon_data, true)
+
+func set_base_weapon(new_weapon_data: WeaponData) -> bool:
+	if new_weapon_data == null:
+		return false
+	_store_active_state()
+	var instance := inventory.replace_base_weapon(new_weapon_data)
+	fallback_weapon_data = new_weapon_data
+	fallback_current_ammo = instance.current_ammo
+	_select_instance(instance, false)
+	inventory_changed.emit(inventory.get_weapon_ids())
+	return true
+
+func reset_for_run(base_definition: WeaponData = null) -> void:
+	var resolved_base := base_definition if base_definition != null else fallback_weapon_data
+	inventory.instances.clear()
+	inventory.selected_index = -1
+	inventory.base_weapon_id = &""
+	last_special_weapon_id = &""
+	special_weapon_data = null
+	special_current_ammo = 0
+	special_reserve_ammo = 0
+	low_ammo_active = false
+	if resolved_base != null:
+		fallback_weapon_data = resolved_base
+		inventory.set_base_weapon(resolved_base)
+	_sync_from_active()
+	inventory_changed.emit(inventory.get_weapon_ids())
+	weapon_changed.emit(weapon_data)
+
+func switch_weapon(direction: int) -> bool:
+	if inventory.instances.size() <= 1:
+		return false
+	_store_active_state()
+	var instance := inventory.cycle(direction)
+	_select_instance(instance, true)
+	return true
+
+func select_weapon(weapon_id: StringName) -> bool:
+	_store_active_state()
+	var instance := inventory.select_weapon(weapon_id)
+	if instance == null:
+		return false
+	_select_instance(instance, true)
+	return true
+
+func has_weapon(weapon_id: StringName) -> bool:
+	return inventory.has_weapon(weapon_id)
+
+func get_weapon_count() -> int:
+	return inventory.instances.size()
+
+func get_inventory_weapon_ids() -> Array[StringName]:
+	return inventory.get_weapon_ids()
+
+func get_inventory_display_names() -> PackedStringArray:
+	return inventory.get_display_names()
+
 func has_special_weapon() -> bool:
-	return special_weapon_data != null
+	return not last_special_weapon_id.is_empty() and inventory.has_weapon(last_special_weapon_id)
 
 func is_fallback_active() -> bool:
-	return (
-		weapon_data != null
-		and fallback_weapon_data != null
-		and weapon_data.weapon_id == fallback_weapon_data.weapon_id
-	)
+	return weapon_data != null and not inventory.base_weapon_id.is_empty() and weapon_data.weapon_id == inventory.base_weapon_id
 
 func get_special_ammo_total() -> int:
-	if special_weapon_data == null:
-		return -1
-	if is_fallback_active():
-		return special_current_ammo + special_reserve_ammo
-	return current_ammo + reserve_ammo
+	_store_active_state()
+	var instance := inventory.get_instance(last_special_weapon_id)
+	return instance.current_ammo + instance.reserve_ammo if instance != null else -1
 
 func is_special_ammo_low(threshold: int = -1) -> bool:
-	if special_weapon_data == null:
+	if not has_special_weapon():
 		return false
 	var resolved_threshold := low_ammo_threshold if threshold < 0 else threshold
 	return get_special_ammo_total() <= maxi(resolved_threshold, 0)
 
-func _finish_reload() -> void:
-	if weapon_data == null:
-		is_reloading = false
-		return
-
-	var required_ammo := weapon_data.magazine_size - current_ammo
-	var loaded_ammo := required_ammo
-	if not weapon_data.infinite_reserve_ammo:
-		loaded_ammo = mini(required_ammo, reserve_ammo)
-		reserve_ammo -= loaded_ammo
-
-	current_ammo += loaded_ammo
-	is_reloading = false
-	reload_timer = 0.0
-	_store_active_ammo()
-	ammo_changed.emit(current_ammo, reserve_ammo)
-	_refresh_low_ammo_state()
-	reload_finished.emit()
-
 func _initialize_loadout() -> void:
 	var initial_weapon_data := weapon_data
-	if fallback_weapon_data == null and weapon_data != null:
-		fallback_weapon_data = weapon_data
+	if fallback_weapon_data == null:
+		fallback_weapon_data = initial_weapon_data
 	if fallback_weapon_data != null:
-		fallback_current_ammo = fallback_weapon_data.magazine_size
-
-	if (
-		initial_weapon_data != null
-		and not initial_weapon_data.infinite_reserve_ammo
-		and (
-			fallback_weapon_data == null
-			or initial_weapon_data.weapon_id != fallback_weapon_data.weapon_id
-		)
-	):
-		special_weapon_data = initial_weapon_data
-		special_current_ammo = initial_weapon_data.magazine_size
-		special_reserve_ammo = initial_weapon_data.starting_reserve_ammo
-		weapon_data = null
-		_activate_special_weapon()
-		return
-	weapon_data = null
-	_activate_fallback_weapon()
+		inventory.set_base_weapon(fallback_weapon_data)
+	if initial_weapon_data != null and (fallback_weapon_data == null or initial_weapon_data.weapon_id != fallback_weapon_data.weapon_id):
+		inventory.add_weapon(initial_weapon_data, true)
+		if not initial_weapon_data.infinite_reserve_ammo:
+			last_special_weapon_id = initial_weapon_data.weapon_id
+			special_weapon_data = initial_weapon_data
+	_sync_from_active()
+	inventory_changed.emit(inventory.get_weapon_ids())
+	weapon_changed.emit(weapon_data)
+	_refresh_low_ammo_state()
 
 func _activate_fallback_weapon() -> bool:
-	if fallback_weapon_data == null:
+	var instance := inventory.get_instance(inventory.base_weapon_id)
+	if instance == null:
 		return false
-	_store_active_ammo()
-	weapon_data = fallback_weapon_data
-	current_ammo = fallback_current_ammo
-	reserve_ammo = 0
-	_cancel_reload()
-	cooldown = 0.0
-	ammo_changed.emit(current_ammo, reserve_ammo)
-	weapon_changed.emit(weapon_data)
+	_select_instance(instance, false)
 	fallback_activated.emit(weapon_data)
-	_refresh_low_ammo_state()
 	return true
 
 func _activate_special_weapon() -> bool:
-	if special_weapon_data == null:
+	var instance := inventory.get_instance(last_special_weapon_id)
+	if instance == null:
 		return false
-	_store_active_ammo()
-	weapon_data = special_weapon_data
-	current_ammo = special_current_ammo
-	reserve_ammo = special_reserve_ammo
-	_cancel_reload()
-	cooldown = 0.0
-	ammo_changed.emit(current_ammo, reserve_ammo)
-	weapon_changed.emit(weapon_data)
+	_select_instance(instance, false)
 	special_weapon_activated.emit(weapon_data)
-	_refresh_low_ammo_state()
 	return true
 
-func _store_active_ammo() -> void:
-	if weapon_data == null:
+func _select_instance(instance: WeaponInstance, show_feedback: bool) -> void:
+	if instance == null:
 		return
+	inventory.selected_index = inventory.instances.find(instance)
+	_sync_from_active()
+	ammo_changed.emit(current_ammo, reserve_ammo)
+	weapon_changed.emit(weapon_data)
+	if show_feedback:
+		weapon_switch_feedback.emit("Arma: %s" % weapon_data.display_name, weapon_data)
+	_refresh_low_ammo_state()
+
+func _store_active_state() -> void:
+	var instance := inventory.get_selected()
+	if instance == null:
+		return
+	instance.current_ammo = current_ammo
+	instance.reserve_ammo = reserve_ammo
+	instance.cooldown = cooldown
+	instance.reload_timer = reload_timer
+	instance.is_reloading = is_reloading
+	if instance.is_reloading and instance.reload_duration <= 0.0:
+		instance.reload_duration = _get_modified_reload_duration()
 	if is_fallback_active():
 		fallback_current_ammo = current_ammo
-	elif special_weapon_data != null and weapon_data.weapon_id == special_weapon_data.weapon_id:
+	elif not instance.definition.infinite_reserve_ammo:
 		special_current_ammo = current_ammo
 		special_reserve_ammo = reserve_ammo
 
-func _cancel_reload() -> void:
-	is_reloading = false
-	reload_timer = 0.0
+func _sync_from_active() -> void:
+	var instance := inventory.get_selected()
+	if instance == null:
+		weapon_data = null
+		current_ammo = 0
+		reserve_ammo = 0
+		cooldown = 0.0
+		reload_timer = 0.0
+		is_reloading = false
+		return
+	weapon_data = instance.definition
+	current_ammo = instance.current_ammo
+	reserve_ammo = instance.reserve_ammo
+	cooldown = instance.cooldown
+	reload_timer = instance.reload_timer
+	is_reloading = instance.is_reloading
+	if is_fallback_active():
+		fallback_current_ammo = current_ammo
+	elif not instance.definition.infinite_reserve_ammo:
+		special_weapon_data = instance.definition
+		special_current_ammo = current_ammo
+		special_reserve_ammo = reserve_ammo
 
 func _refresh_low_ammo_state() -> void:
 	var is_low := is_special_ammo_low()
@@ -364,7 +436,7 @@ func _refresh_low_ammo_state() -> void:
 	low_ammo_changed.emit(low_ammo_active, maxi(get_special_ammo_total(), 0))
 
 func _apply_weapon_scatter(direction: Vector2) -> Vector2:
-	if weapon_data == null or weapon_data.scatter_degrees <= 0.0:
+	if weapon_data == null or weapon_data.scatter_degrees <= 0.0 or weapon_data.projectile_count > 1:
 		return direction
 	var scatter_radians := deg_to_rad(weapon_data.scatter_degrees)
 	return direction.rotated(randf_range(-scatter_radians, scatter_radians))
@@ -386,6 +458,4 @@ func _get_modified_fire_rate_multiplier() -> float:
 
 func _get_parent_rpg_component() -> RpgPlayerComponent:
 	var parent := get_parent()
-	if parent == null:
-		return null
-	return parent.get_node_or_null("RpgPlayerComponent") as RpgPlayerComponent
+	return parent.get_node_or_null("RpgPlayerComponent") as RpgPlayerComponent if parent != null else null

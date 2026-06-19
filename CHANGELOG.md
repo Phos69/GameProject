@@ -4,6 +4,12 @@
 
 ### Added
 
+- Aggiunti `WeaponInstance`, `PlayerWeaponInventory`, `WeaponCatalog` e
+  `WeaponEffectResolver`: inventario persistente per-player, 30 nuove armi
+  (10 da fuoco, 10 melee, 10 elementali) ed effetti AOE/status/chain/hazard.
+- Aggiunto `tests/weapon_inventory_catalog_smoke_test.gd` per persistenza
+  ammo/reload/cooldown, ciclo base weapon, D-pad per slot, unicita drop di run,
+  pool esaurito e smoke melee/fuoco/ghiaccio/esplosione/stun.
 - Aggiunto `isometric_biome_generation_rewrite_roadmap.md` con audit della
   generazione biomi, stato R1 e prossimo ciclo R2 su pareti/void perimetrale.
 - Aggiunto `tests/isometric_biome_generation_rewrite_smoke_test.gd` per coprire
@@ -40,6 +46,11 @@
 
 ### Changed
 
+- I pickup arma aggiungono un'istanza all'inventario invece di sovrascrivere
+  la speciale corrente; i duplicati diventano ammo/denaro, il D-pad su/giu
+  cambia arma per-player e l'HUD mostra selezione, lista inventario ed effetti.
+- `DropSystem` mantiene un registry globale degli ID arma apparsi nella run e
+  converte in ammo le richieste quando il catalogo e esaurito.
 - Corretto il raccordo delle mesh cliff agli angoli: le facce laterali non
   duplicano piu il segmento condiviso e interpolano la profondita verso la
   faccia north/south; anche i tile laterali precedenti vengono limitati alla

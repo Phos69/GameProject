@@ -39,6 +39,7 @@ chance = 0.05
 min_amount = 1
 max_amount = 1
 weapon_data = ExtResource("3_blaster")
+resource_tag = &"weapon_catalog"
 
 [resource]
 script = ExtResource("1_loot_table")

@@ -21,13 +21,14 @@ var super_icon: RpgHudIcon
 var super_label: Label
 var passive_label: Label
 var status_label: Label
+var inventory_label: Label
 var ammo_pips: Array[ColorRect] = []
 var hud_text_scale: float = 1.0
 var high_contrast: bool = false
 
 func _ready() -> void:
 	add_to_group("visual_settings_consumers")
-	custom_minimum_size = Vector2(276.0, 150.0)
+	custom_minimum_size = Vector2(276.0, 184.0)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_ui()
 	_apply_style()
@@ -77,6 +78,8 @@ func apply_visual_settings(settings: Dictionary) -> void:
 		)
 	if status_label != null:
 		status_label.add_theme_font_size_override("font_size", roundi(12.0 * hud_text_scale))
+	if inventory_label != null:
+		inventory_label.add_theme_font_size_override("font_size", roundi(11.0 * hud_text_scale))
 	_apply_style()
 
 func configure(slot: int, color: Color) -> void:
@@ -169,6 +172,9 @@ func refresh(player: Node) -> void:
 			if weapon_system.weapon_data != null
 			else "UNARMED"
 		)
+		if weapon_system.weapon_data != null and not weapon_system.weapon_data.effect_tags.is_empty():
+			weapon_label.text += "  [%s]" % String(weapon_system.weapon_data.effect_tags[0]).to_upper()
+		inventory_label.text = _format_inventory_text(weapon_system)
 		ammo_label.modulate = (
 			Color(1.0, 0.46, 0.24, 1.0)
 			if weapon_system.low_ammo_active
@@ -181,6 +187,7 @@ func refresh(player: Node) -> void:
 			ammo_label.modulate = slot_color.lightened(0.2)
 	else:
 		_refresh_ammo_widgets(null)
+		inventory_label.text = ""
 
 func _build_ui() -> void:
 	var content := VBoxContainer.new()
@@ -251,6 +258,15 @@ func _build_ui() -> void:
 	ammo_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	ammo_label.add_theme_font_size_override("font_size", 17)
 	ammo_row.add_child(ammo_label)
+
+	inventory_label = Label.new()
+	inventory_label.custom_minimum_size = Vector2(250.0, 16.0)
+	inventory_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	inventory_label.add_theme_font_size_override("font_size", 11)
+	inventory_label.modulate = Color(0.66, 0.78, 0.86, 1.0)
+	inventory_label.max_lines_visible = 1
+	inventory_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	content.add_child(inventory_label)
 
 	reload_bar = ProgressBar.new()
 	reload_bar.custom_minimum_size = Vector2(250.0, 8.0)
@@ -485,11 +501,21 @@ func _refresh_ammo_widgets(weapon_system: WeaponSystem) -> void:
 		ammo_label.text = _format_corner_ammo_text(weapon_system)
 	if reload_bar != null:
 		reload_bar.value = weapon_system.get_reload_ratio()
+		reload_bar.visible = weapon_system.is_reloading
 		reload_bar.modulate = (
 			Color(1.0, 1.0, 1.0, 1.0)
 			if weapon_system.is_reloading
 			else Color(1.0, 1.0, 1.0, 0.22)
 		)
+
+func _format_inventory_text(weapon_system: WeaponSystem) -> String:
+	if weapon_system == null:
+		return ""
+	var names := weapon_system.get_inventory_display_names()
+	var parts := PackedStringArray()
+	for name in names:
+		parts.append("[%s]" % name if weapon_system.weapon_data != null and name == weapon_system.weapon_data.display_name else name)
+	return "  <  %s  >" % " | ".join(parts)
 
 func _format_corner_ammo_text(weapon_system: WeaponSystem) -> String:
 	if weapon_system == null or weapon_system.weapon_data == null:

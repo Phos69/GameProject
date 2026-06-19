@@ -24,6 +24,9 @@ var trail_intensity: float = 1.0
 var default_glow_color: Color
 var default_trail_color: Color
 var default_trail_width: float = 4.0
+var arc_height: float = 0.0
+var arc_elapsed: float = 0.0
+var arc_total_duration: float = 0.0
 
 func _ready() -> void:
 	add_to_group("visual_settings_consumers")
@@ -93,11 +96,30 @@ func get_muzzle_color() -> Color:
 func get_muzzle_size() -> float:
 	return visual_data.muzzle_size if visual_data != null else 7.0
 
+func set_arc_height(value: float) -> void:
+	arc_height = maxf(value, 0.0)
+	arc_elapsed = 0.0
+	arc_total_duration = maxf(lifetime, 0.01)
+
 func _physics_process(delta: float) -> void:
 	global_position += velocity * delta
+	arc_elapsed += delta
+	_apply_arc_visual_offset()
 	lifetime -= delta
 	if lifetime <= 0.0:
 		queue_free()
+
+func _apply_arc_visual_offset() -> void:
+	if arc_height <= 0.0:
+		return
+	var ratio := clampf(arc_elapsed / maxf(arc_total_duration, 0.01), 0.0, 1.0)
+	var offset := Vector2(0.0, -sin(ratio * PI) * arc_height)
+	if visual != null:
+		visual.position = offset
+	if glow != null:
+		glow.position = offset
+	if trail != null:
+		trail.position = offset
 
 func _on_body_entered(body: Node2D) -> void:
 	_try_hit_target(body)

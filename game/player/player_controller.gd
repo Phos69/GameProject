@@ -32,6 +32,8 @@ var base_move_speed: float = 260.0
 var current_run_health_bonus: int = 0
 var character_speed_multiplier: float = 1.0
 var environment_speed_multiplier: float = 1.0
+var weapon_feedback_label: Label
+var has_prepared_run: bool = false
 
 func _ready() -> void:
 	add_to_group("players")
@@ -47,6 +49,7 @@ func _ready() -> void:
 	weapon_system.reload_started.connect(_on_reload_started)
 	weapon_system.reload_finished.connect(_on_reload_finished)
 	weapon_system.weapon_changed.connect(_on_weapon_changed)
+	weapon_system.weapon_switch_feedback.connect(_on_weapon_switch_feedback)
 	rpg_component.character_changed.connect(_on_rpg_character_changed)
 	rpg_component.stats_changed.connect(_on_rpg_stats_changed)
 	rpg_component.leveled_up.connect(_on_rpg_leveled_up)
@@ -56,6 +59,7 @@ func _ready() -> void:
 	visual.set_player_slot(player_slot)
 	visual.set_weapon_data(weapon_system.weapon_data)
 	_update_aim_line()
+	_create_weapon_feedback_label()
 
 func _physics_process(delta: float) -> void:
 	if health_component.is_incapacitated():
@@ -143,6 +147,10 @@ func _apply_slot_color() -> void:
 func _handle_weapon_input() -> void:
 	if weapon_system == null:
 		return
+	if input_manager.is_player_weapon_previous_just_pressed(player_slot):
+		weapon_system.switch_weapon(-1)
+	if input_manager.is_player_weapon_next_just_pressed(player_slot):
+		weapon_system.switch_weapon(1)
 	if input_manager.is_player_reload_just_pressed(player_slot):
 		weapon_system.start_reload()
 	var super_activated := false
@@ -158,6 +166,9 @@ func _handle_weapon_input() -> void:
 
 func prepare_for_run(max_health_bonus: int = 0) -> void:
 	current_run_health_bonus = maxi(max_health_bonus, 0)
+	if weapon_system != null and has_prepared_run:
+		weapon_system.reset_for_run(weapon_system.fallback_weapon_data)
+	has_prepared_run = true
 	_apply_rpg_runtime_stats(true)
 	velocity = Vector2.ZERO
 	if dodge_component != null:
@@ -180,7 +191,7 @@ func clear_rpg_character() -> void:
 	if rpg_component != null:
 		rpg_component.clear_character()
 	if weapon_system != null:
-		weapon_system.equip_weapon(STARTER_WEAPON)
+		weapon_system.set_base_weapon(STARTER_WEAPON)
 	_apply_rpg_runtime_stats(true)
 
 func set_revive_progress(ratio: float, active: bool) -> void:
@@ -233,6 +244,34 @@ func _on_reload_finished() -> void:
 func _on_weapon_changed(weapon_data: WeaponData) -> void:
 	visual.set_weapon_data(weapon_data)
 
+func _create_weapon_feedback_label() -> void:
+	weapon_feedback_label = Label.new()
+	weapon_feedback_label.name = "WeaponFeedback"
+	weapon_feedback_label.position = Vector2(-86.0, -68.0)
+	weapon_feedback_label.size = Vector2(172.0, 28.0)
+	weapon_feedback_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	weapon_feedback_label.add_theme_font_size_override("font_size", 14)
+	weapon_feedback_label.add_theme_constant_override("outline_size", 4)
+	weapon_feedback_label.add_theme_color_override("font_outline_color", Color(0.01, 0.02, 0.03, 0.95))
+	weapon_feedback_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	weapon_feedback_label.hide()
+	add_child(weapon_feedback_label)
+
+func _on_weapon_switch_feedback(text: String, definition: WeaponData) -> void:
+	if weapon_feedback_label == null:
+		return
+	weapon_feedback_label.text = text
+	weapon_feedback_label.modulate = (
+		definition.visual_data.projectile_color
+		if definition != null and definition.visual_data != null
+		else Color(1.0, 0.82, 0.34, 1.0)
+	)
+	weapon_feedback_label.show()
+	var tween := create_tween()
+	tween.tween_interval(1.0)
+	tween.tween_property(weapon_feedback_label, "modulate:a", 0.0, 0.45)
+	tween.tween_callback(weapon_feedback_label.hide)
+
 func _on_rpg_character_changed(_character_id: StringName, profile: Dictionary) -> void:
 	visual.set_character_profile(profile)
 
@@ -260,7 +299,7 @@ func _equip_rpg_base_weapon() -> void:
 	)
 	var base_weapon := RpgCharacterRegistry.load_base_weapon(weapon_id)
 	if base_weapon != null and weapon_system != null:
-		weapon_system.equip_weapon(base_weapon)
+		weapon_system.set_base_weapon(base_weapon)
 
 func _on_rpg_stats_changed() -> void:
 	if health_component == null:

@@ -22,9 +22,9 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 9. `PlayerController` legge input solo quando una modalita gameplay e attiva.
 10. `PauseMenu` intercetta l'azione `pause`, mette in pausa il tree e consente
    resume, settings, ritorno al menu o quit.
-11. `WeaponSystem` gestisce fallback permanente, speciale, cooldown,
-    caricatori, riserve, ricarica e risoluzione `attack_type` per il singolo
-    player.
+11. `WeaponSystem` gestisce un `PlayerWeaponInventory` per-player; ogni
+    `WeaponInstance` conserva ammo, reload, cooldown, carica e stato temporaneo,
+    mentre l'arma selezionata e solo un indice.
 12. `WeaponData` inoltra l'eventuale `WeaponVisualData` a player, HUD,
     proiettile o hitbox melee temporanea.
 13. `ProjectileSystem` spawna proiettili ranged; `MeleeAttack` copre i colpi
@@ -110,10 +110,15 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `AudioVoicePool`: limite voci e sostituzione guidata dalla priorita.
 - `AudioEventRouter`: hook gameplay separati dalla riproduzione audio.
 - `WeaponData`: risorsa immutabile con statistiche gameplay, `attack_type`,
-  timing melee opzionale e riferimento visuale opzionale.
+  timing melee, metadati catalogo/effetti e riferimento visuale opzionale.
+- `WeaponInstance`: stato runtime persistente di una singola definizione.
+- `PlayerWeaponInventory`: collezione ordinata per-player, base weapon e indice selezionato.
+- `WeaponCatalog`: registry centralizzato di 30 armi drop con ID stabili.
+- `WeaponEffectResolver`: risoluzione condivisa di AOE, status, chain,
+  knockback, delayed explosion e ground hazard.
 - `WeaponVisualData`: palette, dimensioni e profilo condivisi da arma, HUD, proiettile e flash.
-- `WeaponSystem`: stato runtime per-player di fallback, speciale, cooldown,
-  munizioni, ricarica e dispatch tra projectile e melee.
+- `WeaponSystem`: inventario runtime per-player, compatibilita fallback,
+  switch circolare e dispatch tra projectile e melee.
 - `MeleeAttack`: hitbox temporanea world-space per swing melee con wind-up,
   active time, recovery tramite cooldown, anti-multihit per bersaglio e
   feedback trail; applica anche knockback e hitstop configurati in
@@ -350,8 +355,10 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 
 ## Contratto combat
 
-- Ogni istanza player possiede il proprio `WeaponSystem`; caricatore, riserva e cooldown non sono condivisi.
-- Ogni `WeaponSystem` conserva sempre una fallback infinita e al massimo una speciale finita.
+- Ogni istanza player possiede il proprio `WeaponSystem`; inventario, caricatore, riserva e cooldown non sono condivisi.
+- Ogni `WeaponSystem` conserva sempre l'arma base e un numero arbitrario di armi raccolte.
+- `WeaponData` resta definizione statica; ogni stato mutabile vive in `WeaponInstance`.
+- Lo switch D-pad su/giu e circolare e non cancella reload, cooldown o ammo.
 - Esaurire caricatore e riserva della speciale attiva la fallback e tenta lo sparo nello stesso input.
 - La fallback infinita conserva caricatore e reload; solo la riserva e virtualmente infinita.
 - Un nuovo rifornimento della speciale la riattiva e avvia il reload.
@@ -360,6 +367,9 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `WeaponData.max_range` limita la vita del proiettile o definisce la portata
   leggibile delle armi melee.
 - `WeaponData.scatter_degrees` viene applicato da `WeaponSystem` alla direzione di sparo.
+- `projectile_count`, `burst_count`, `charge_duration`, `windup_duration`,
+  `effect_tags`, `aoe_radius`, `chain_targets`, `delayed_explosion` e
+  `ground_hazard_duration` descrivono i comportamenti catalogo senza controller dedicati.
 - `WeaponData.attack_type` decide il runtime: `projectile` usa
   `ProjectileSystem`, mentre `melee_arc`, `melee_rect`, `melee_sweep` e
   `dash_slash` usano `MeleeAttack`.
@@ -420,10 +430,12 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - I pickup XP fisici aggiornano ancora `ProgressionManager` quando presenti.
 - Gli zombie survival assegnano XP RPG direttamente al killer e non usano piu pickup XP.
 - Le munizioni vengono applicate alle speciali di tutti i player vivi.
-- Cura e arma vengono applicate al player che raccoglie.
+- Cura e nuova istanza arma vengono applicate al player che raccoglie.
 - Un pickup non viene consumato se la ricompensa non puo essere applicata, per esempio cura su vita piena.
 - Un pickup ammo non viene consumato se nessun player vivo possiede una speciale.
-- Il drop arma equipaggia immediatamente il relativo `WeaponData`; inventario e scelta arma restano futuri.
+- Il drop arma aggiunge una `WeaponInstance` e la seleziona; un duplicato viene convertito in ammo/denaro.
+- `dropped_weapon_ids_for_run` filtra globalmente gli ID gia apparsi; il pool
+  catalogo esaurito produce ammo e viene azzerato a ogni `game_mode_started`.
 - Le supply crate usano una `LootTable` e generano pickup standard tramite `DropSystem`.
 
 ## Contratto multiplayer locale

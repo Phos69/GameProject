@@ -41,15 +41,17 @@ variazioni visuali senza modificare il controller.
 
 ## Armi
 
-Tipi futuri:
+Categorie disponibili:
 
 - arma base con munizioni infinite;
 - pistole;
 - shotgun;
 - armi automatiche;
-- armi speciali da boss/drop.
+- armi speciali da boss/drop;
+- melee ed elementali.
 
-Ogni arma dovra definire danno, fire rate, spread, velocita proiettile, tipo munizione e rarita.
+Ogni arma definisce ID stabile, nome, categoria, descrizione, rarita, danno,
+fire rate, range, ammo/reload, visuale ed effetti speciali.
 
 Arma prototipo implementata:
 
@@ -62,10 +64,14 @@ Arma prototipo implementata:
 - resta sempre disponibile come fallback;
 - munizioni, caricatore e ricarica separate per ogni player.
 
-Regole fallback:
+Regole inventario e fallback:
 
-- ogni player mantiene uno slot fallback e uno slot arma speciale;
-- le armi speciali conservano caricatore e riserva quando entra in uso la fallback;
+- ogni player possiede un `PlayerWeaponInventory` di `WeaponInstance`;
+- ogni istanza conserva caricatore, riserva, reload, cooldown, carica e stato temporaneo;
+- l'arma base del personaggio resta sempre nel ciclo circolare;
+- D-pad su/giu cambia arma in direzioni opposte, separatamente per slot locale;
+- raccogliere una nuova arma la aggiunge e la seleziona senza cancellare le precedenti;
+- raccogliere un ID gia posseduto converte il pickup in ammo o denaro se l'arma e infinita;
 - se una speciale non puo ricaricare, lo stesso input fire attiva e spara la `Starter Pistol`;
 - la pistola infinita deve comunque ricaricare il caricatore;
 - un pickup ammo ripristina la riserva della speciale, la riattiva e avvia il reload;
@@ -78,7 +84,14 @@ Seconda arma prototipo:
 - 16 danni per colpo;
 - 4,5 colpi al secondo;
 - caricatore da 8 e riserva iniziale da 24;
-- sostituisce immediatamente l'arma del player che la raccoglie.
+- viene aggiunta all'inventario e selezionata senza azzerare le altre armi.
+
+Il catalogo drop contiene 30 armi aggiuntive: 10 da fuoco, 10 melee e 10
+elementali. I comportamenti coprono cono multiproiettile, burst, pierce,
+charged shot, melee arc/line/dash, AOE, explosion, stun, freeze, slow, burn,
+poison, bleed, knockback, chain lightning, delayed explosion e ground hazard.
+Ogni `weapon_id` puo apparire come drop una sola volta per run; esaurito il
+pool, il drop diventa ammo.
 
 Identita visuale delle armi:
 
@@ -236,8 +249,8 @@ Regole raccolta:
 - la vita va al player che raccoglie;
 - un pickup vita resta a terra se il player e gia a vita piena;
 - un pickup ammo resta a terra se nessun player vivo possiede una speciale;
-- un drop arma equipaggia immediatamente il player che lo raccoglie;
-- non esistono ancora inventario, confronto arma o scambio tra player.
+- un drop arma aggiunge e seleziona l'istanza del player che lo raccoglie;
+- l'inventario non e condiviso; lo scambio diretto tra player resta fuori scope.
 
 Supply crate:
 

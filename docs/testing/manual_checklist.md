@@ -1218,3 +1218,24 @@ La cattura QA viene salvata in:
 ```text
 build/qa/milestone_10_survival.png
 ```
+
+## Regressione inventario armi e catalogo
+
+- Raccogliere due armi: entrambe compaiono nella lista HUD e la seconda non
+  cancella ammo o stato della prima.
+- Sparare, iniziare reload e cambiare arma con D-pad su/giu; tornando indietro
+  verificare caricatore, riserva, reload e cooldown persistenti.
+- Verificare ciclo circolare e presenza permanente dell'arma base per P1-P4.
+- Verificare feedback world-space `Nuova arma`/`Arma` e HUD con ammo, reload ed effetto.
+- Raccogliere un ID gia posseduto: nessun duplicato, conversione in ammo/denaro.
+- Con seed fisso, nessun `weapon_id` appare due volte nella run; a pool esaurito
+  il gioco genera ammo senza errori.
+- Provare almeno shotgun, martello, bacchetta fuoco, lancia ghiacciata,
+  lanciagranate e taser per cono, melee, burn, freeze, AOE e stun.
+
+```text
+godot --headless --path . --script res://tests/weapon_inventory_catalog_smoke_test.gd
+godot --headless --path . --script res://tests/combat_smoke_test.gd
+godot --headless --path . --script res://tests/enemy_drop_smoke_test.gd
+godot --headless --path . --script res://tests/survival_wave_smoke_test.gd
+```

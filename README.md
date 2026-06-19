@@ -67,6 +67,7 @@ Controlli debug:
 - Modalita debug: `F1` avvia survival, `F5` avvia una run dungeon e `F6` avvia tower defense.
 - Joypad: stick sinistro per movimento, stick destro per mira, trigger/spalla destra per sparare, pulsante `X` per ricaricare e pulsante `Y` per la super RPG.
 - Joypad: pulsante `B` per dodge/roll, `Back/Select/View` apre o chiude la mappa dei territori esplorati.
+- Joypad gameplay: D-pad su/giu seleziona ciclicamente arma precedente/successiva per il relativo player; tastiera debug `[`/`]` per player 1.
 - Joypad multiplayer: nel menu `Start` attiva lo slot del controller, `Back/Select` lascia lo slot se non e player 1.
 - Dungeon: attraversare il portale verde a destra; nelle stanze combat e boss diventa verde solo dopo aver eliminato tutti i bersagli.
 - Tower defense: entrare in uno slot azzurro e premere `E` o pulsante joypad `A` per costruire una torre se ci sono crediti sufficienti.
@@ -166,6 +167,7 @@ godot --headless --path . --script res://tests/milestone_rpg_11_data_driven_smok
 godot --headless --path . --script res://tests/milestone_rpg_12_feedback_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_rpg_13_new_classes_smoke_test.gd
 godot --headless --path . --script res://tests/rpg_melee_attack_resolution_smoke_test.gd
+godot --headless --path . --script res://tests/weapon_inventory_catalog_smoke_test.gd
 ```
 
 Export Windows:
@@ -229,7 +231,9 @@ Completato:
 - spawn/despawn dinamico dei player locali;
 - HUD con slot locali attivi;
 - `Starter Pistol` configurata tramite `WeaponData` con riserva infinita;
-- slot fallback permanente e slot arma speciale con stato indipendente per ogni player;
+- inventario armi per-player con `WeaponInstance` persistenti per ammo, reload,
+  cooldown, carica e stato temporaneo;
+- arma base permanente inclusa nel ciclo circolare D-pad su/giu;
 - fallback automatico quando una speciale esaurisce caricatore e riserva;
 - proiettili con collisione e danno tramite `HealthSystem`;
 - bersagli statici con vita nella scena principale;
@@ -242,8 +246,9 @@ Completato:
 - pickup fisici per XP, denaro, munizioni, vita e armi;
 - XP e denaro condivisi dal party;
 - munizioni condivise tra tutti i player vivi con arma speciale;
-- cura e cambio arma applicati solo al player che raccoglie;
-- seconda arma prototipo ottenibile come drop;
+- cura e nuova arma applicate solo al player che raccoglie;
+- catalogo centralizzato di 30 drop (10 firearm, 10 melee, 10 elemental),
+  senza duplicati globali nella stessa run e con fallback ammo a pool esaurito;
 - menu principale mostrato all'avvio;
 - selezione personaggio prima della zombie survival con quattro profili iniziali;
 - statistiche classe RPG con HP, attacco, difesa, velocita, XP bar e level-up per-run;

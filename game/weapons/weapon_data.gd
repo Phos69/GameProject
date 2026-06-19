@@ -3,10 +3,14 @@ class_name WeaponData
 
 @export var weapon_id: StringName = &"weapon"
 @export var display_name: String = "Weapon"
+@export var category: StringName = &"firearm"
+@export_multiline var description: String = ""
+@export var rarity: StringName = &"common"
 @export_range(1, 1000) var damage: int = 10
 @export_range(0.1, 30.0, 0.1) var fire_rate: float = 5.0
 @export_range(1.0, 2000.0, 1.0) var projectile_speed: float = 600.0
 @export_range(0.0, 3000.0, 1.0) var max_range: float = 0.0
+@export_range(0.0, 240.0, 1.0) var projectile_arc_height: float = 0.0
 @export_range(0.0, 45.0, 0.1) var scatter_degrees: float = 0.0
 @export var attack_type: StringName = &"projectile"
 @export var hitbox_type: StringName = &"circle"
@@ -23,6 +27,19 @@ class_name WeaponData
 @export_range(0.0, 0.20, 0.01) var hitstop: float = 0.0
 @export var trail_style: StringName = &""
 @export var effect_key: StringName = &""
+@export var effect_tags: Array[StringName] = []
+@export_range(0.0, 20.0, 0.05) var effect_duration: float = 0.0
+@export_range(0.0, 1.0, 0.01) var effect_strength: float = 0.0
+@export_range(0.0, 500.0, 1.0) var aoe_radius: float = 0.0
+@export_range(1, 16) var projectile_count: int = 1
+@export_range(1, 8) var burst_count: int = 1
+@export_range(0.0, 1.0, 0.01) var burst_interval: float = 0.08
+@export_range(0.0, 3.0, 0.05) var charge_duration: float = 0.0
+@export_range(0.0, 3.0, 0.05) var windup_duration: float = 0.0
+@export_range(0.0, 3.0, 0.05) var delayed_explosion: float = 0.0
+@export_range(0, 12) var chain_targets: int = 0
+@export_range(0.0, 500.0, 1.0) var chain_range: float = 0.0
+@export_range(0.0, 12.0, 0.1) var ground_hazard_duration: float = 0.0
 @export var sound_key: StringName = &""
 @export_range(1, 999) var magazine_size: int = 12
 @export_range(0, 9999) var starting_reserve_ammo: int = 36

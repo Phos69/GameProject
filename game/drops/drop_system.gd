@@ -9,10 +9,12 @@ signal drop_collected(drop_data: Dictionary, collector: Node)
 @export var pickup_container_path: NodePath = NodePath("../../World/Pickups")
 
 var rng := RandomNumberGenerator.new()
+var dropped_weapon_ids_for_run: Dictionary = {}
 
 func _ready() -> void:
 	add_to_group("drop_system")
 	rng.randomize()
+	call_deferred("_connect_run_reset")
 
 func roll_drops(
 	source: Node,
@@ -30,7 +32,10 @@ func roll_drops(
 			entry != null
 			and rng.randf() <= minf(entry.chance * resolved_multiplier, 1.0)
 		):
-			drops.append(entry.create_drop_data(rng))
+			var drop_data := entry.create_drop_data(rng)
+			if StringName(drop_data.get("type", &"unknown")) == GameConstants.DROP_WEAPON:
+				drop_data = _resolve_weapon_drop(drop_data)
+			drops.append(drop_data)
 
 	drops_rolled.emit(source, drops)
 	return drops
@@ -98,7 +103,22 @@ func collect_drop(drop_data: Dictionary, collector: Node) -> bool:
 		GameConstants.DROP_HEALTH:
 			applied = _heal_collector(collector, amount)
 		GameConstants.DROP_WEAPON:
-			applied = _equip_weapon(collector, drop_data.get("weapon_data") as WeaponData)
+			var definition := drop_data.get("weapon_data") as WeaponData
+			var weapon_system := collector.get_node_or_null("WeaponSystem") as WeaponSystem
+			if weapon_system != null and definition != null and weapon_system.has_weapon(definition.weapon_id):
+				var ammo_amount := maxi(definition.magazine_size, 6)
+				applied = weapon_system.add_ammo_to_weapon(definition.weapon_id, ammo_amount) > 0
+				if not applied:
+					applied = _add_money(ammo_amount)
+				if applied:
+					var duplicate_feedback := drop_data.duplicate(true)
+					duplicate_feedback["type"] = GameConstants.DROP_AMMO
+					duplicate_feedback["amount"] = ammo_amount
+					duplicate_feedback["resource_tag"] = &"duplicate_weapon_ammo"
+					drop_collected.emit(duplicate_feedback, collector)
+					return true
+			else:
+				applied = _equip_weapon(collector, definition)
 
 	if not applied:
 		return false
@@ -107,6 +127,19 @@ func collect_drop(drop_data: Dictionary, collector: Node) -> bool:
 
 func set_random_seed(seed: int) -> void:
 	rng.seed = seed
+
+func reset_run_weapon_registry() -> void:
+	dropped_weapon_ids_for_run.clear()
+
+func has_weapon_dropped(weapon_id: StringName) -> bool:
+	return dropped_weapon_ids_for_run.has(weapon_id)
+
+func get_remaining_catalog_weapon_ids() -> Array[StringName]:
+	var remaining: Array[StringName] = []
+	for weapon_id in WeaponCatalog.get_ids():
+		if not dropped_weapon_ids_for_run.has(weapon_id):
+			remaining.append(weapon_id)
+	return remaining
 
 func _add_experience(amount: int) -> bool:
 	var progression = get_tree().get_first_node_in_group("progression_manager")
@@ -145,7 +178,41 @@ func _equip_weapon(collector: Node, weapon_data: WeaponData) -> bool:
 	var weapon_system := collector.get_node_or_null("WeaponSystem") as WeaponSystem
 	if weapon_system == null:
 		return false
-	return weapon_system.equip_weapon(weapon_data)
+	return weapon_system.add_weapon(weapon_data, true)
+
+func _resolve_weapon_drop(drop_data: Dictionary) -> Dictionary:
+	var requested := drop_data.get("weapon_data") as WeaponData
+	var use_catalog := StringName(drop_data.get("resource_tag", &"")) == &"weapon_catalog"
+	if use_catalog:
+		var remaining := get_remaining_catalog_weapon_ids()
+		if remaining.is_empty():
+			return _weapon_pool_fallback()
+		requested = WeaponCatalog.get_definition(remaining[rng.randi_range(0, remaining.size() - 1)])
+	if requested == null or dropped_weapon_ids_for_run.has(requested.weapon_id):
+		return _weapon_pool_fallback()
+	dropped_weapon_ids_for_run[requested.weapon_id] = true
+	var resolved := drop_data.duplicate(true)
+	resolved["weapon_data"] = requested
+	resolved["weapon_id"] = requested.weapon_id
+	return resolved
+
+func _weapon_pool_fallback() -> Dictionary:
+	return {
+		"type": GameConstants.DROP_AMMO,
+		"amount": rng.randi_range(8, 14),
+		"resource_tag": &"weapon_pool_exhausted"
+	}
+
+func _connect_run_reset() -> void:
+	var game_mode_manager := get_tree().get_first_node_in_group("game_mode_manager") as GameModeManager
+	if game_mode_manager == null:
+		return
+	var callback := Callable(self, "_on_game_mode_started")
+	if not game_mode_manager.game_mode_started.is_connected(callback):
+		game_mode_manager.game_mode_started.connect(callback)
+
+func _on_game_mode_started(_mode_id: StringName) -> void:
+	reset_run_weapon_registry()
 
 func _drop_offset(index: int, count: int) -> Vector2:
 	if count <= 1:

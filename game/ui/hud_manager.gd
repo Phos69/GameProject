@@ -26,7 +26,7 @@ const SLOT_COLORS: Array[Color] = [
 	Color(0.52, 0.86, 0.32, 1.0),
 	Color(0.94, 0.78, 0.28, 1.0)
 ]
-const PLAYER_CARD_SIZE: Vector2 = Vector2(276.0, 162.0)
+const PLAYER_CARD_SIZE: Vector2 = Vector2(276.0, 184.0)
 const PLAYER_CARD_MARGIN: Vector2 = Vector2(18.0, 16.0)
 const STATUS_PANEL_WIDTH: float = 340.0
 
@@ -761,7 +761,12 @@ func _connect_drop_feedback() -> void:
 func _on_drop_collected(drop_data: Dictionary, _collector: Node) -> void:
 	var drop_type := StringName(drop_data.get("type", &"unknown"))
 	var resource_tag := StringName(drop_data.get("resource_tag", &""))
-	if not resource_tag.is_empty():
+	if drop_type == GameConstants.DROP_WEAPON:
+		var definition := drop_data.get("weapon_data") as WeaponData
+		pickup_feedback_text = "NUOVA ARMA: %s" % (
+			definition.display_name if definition != null else "SCONOSCIUTA"
+		)
+	elif not resource_tag.is_empty():
 		pickup_feedback_text = "%s +%d" % [
 			String(resource_tag).replace("_", " ").to_upper(),
 			int(drop_data.get("amount", 0))

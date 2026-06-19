@@ -461,3 +461,16 @@ Stato: completata come prototipo integrato.
 - Aggiunto `PlayerDodgeComponent` con input tastiera/joypad, cooldown, invulnerabilita breve e validazione gap/landing.
 - Aggiunto manifest iniziale per censire asset ambientali isometrici e sostituzioni future.
 - Smoke test dedicati coprono connettivita grafo, persistenza, passaggi aperti, classificazione terreno, fall boundary, mappa esplorazione e dodge/gap.
+
+## Milestone Inventario Armi e Catalogo - primo pass
+
+Stato: completata come prototipo integrato.
+
+- Separati dati statici `WeaponData` e stato runtime `WeaponInstance`.
+- Aggiunto inventario ordinato per ogni player con arma base permanente e switch circolare D-pad su/giu.
+- Pickup non distruttivi, duplicati convertiti e stato ammo/reload/cooldown persistente.
+- Registry globale di run impedisce allo stesso `weapon_id` di apparire due volte; fallback ammo a pool esaurito.
+- Aggiunte 30 armi data-driven: 10 firearm, 10 melee e 10 elemental.
+- Generalizzati AOE, explosion, status, knockback, chain, pierce, cone, charge, delayed explosion e ground hazard.
+- HUD esteso con arma selezionata, lista inventario, reload, ammo ed effetto principale.
+- Smoke dedicato e regressioni combat/drop/RPG/survival verdi.
