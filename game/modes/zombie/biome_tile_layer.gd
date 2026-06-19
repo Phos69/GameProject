@@ -146,8 +146,6 @@ func _draw() -> void:
 		draw_mesh(_ground_underlay_mesh, null)
 	if _ground_mesh != null:
 		draw_mesh(_ground_mesh, null)
-	if _cliff_mesh_builder != null and _cliff_mesh_builder.shadow_mesh != null:
-		draw_mesh(_cliff_mesh_builder.shadow_mesh, null)
 	if _cliff_mesh_builder != null and _cliff_mesh_builder.face_mesh != null:
 		draw_mesh(_cliff_mesh_builder.face_mesh, null)
 	if _texture_dark_lines.size() >= 2:
@@ -163,12 +161,6 @@ func _draw() -> void:
 			_cliff_mesh_builder.fissure_lines,
 			Color(palette.background_color.lightened(0.24), 0.82),
 			1.4
-		)
-	if _cliff_mesh_builder != null and _cliff_mesh_builder.mist_lines.size() >= 2:
-		draw_multiline(
-			_cliff_mesh_builder.mist_lines,
-			Color(palette.grid_color.lightened(0.34), 0.34),
-			3.0
 		)
 	if _cliff_mesh_builder != null and _cliff_mesh_builder.lip_lines.size() >= 2:
 		draw_multiline(
@@ -252,11 +244,15 @@ func _rebuild_ground_geometry() -> void:
 					and resolver != null
 					and resolver.is_void_transition_tile_id(tile_id)
 				):
+					var cliff_depth := maxf(half_h * 8.0, 28.0)
+					var south_lookahead := ceili(cliff_depth / scale) + 1
 					_cliff_mesh_builder.append_transition(
 						tile_id,
 						center,
 						half_w,
-						half_h
+						half_h,
+						_get_southern_tile_ids(cell, south_lookahead),
+						scale
 					)
 	_grid_points = grid
 	if vertices.is_empty():
@@ -271,6 +267,18 @@ func _rebuild_ground_geometry() -> void:
 	_ground_mesh = mesh
 	if _cliff_mesh_builder != null:
 		_cliff_mesh_builder.build_meshes()
+
+func _get_southern_tile_ids(
+	cell: Vector2i,
+	lookahead: int
+) -> Array[StringName]:
+	var result: Array[StringName] = []
+	for offset in range(1, lookahead + 1):
+		var southern_cell := cell + Vector2i(0, offset)
+		if southern_cell.y >= layout.zone_size.y:
+			break
+		result.append(get_resolved_tile_id(southern_cell))
+	return result
 
 func _build_forest_underlay_mesh(scale: float) -> ArrayMesh:
 	var vertices := PackedVector2Array()
@@ -332,13 +340,15 @@ func _append_underlay_run(
 
 func _forest_underlay_key(tile_id: StringName) -> StringName:
 	if resolver != null and resolver.is_void_transition_tile_id(tile_id):
-		return &"void"
+		return &"cliff"
 	match tile_id:
 		IsometricTileResolver.TILE_FOREST_PATH, IsometricTileResolver.TILE_GRASS_TO_PATH:
 			return &"path"
 		IsometricTileResolver.TILE_FOREST_ROAD, IsometricTileResolver.TILE_GRASS_TO_ROAD, IsometricTileResolver.TILE_PATH_TO_ROAD:
 			return &"road"
-		IsometricTileResolver.TILE_FOREST_VOID, IsometricTileResolver.TILE_FOREST_CLIFF_EDGE, IsometricTileResolver.TILE_GROUND_TO_VOID_CLIFF:
+		IsometricTileResolver.TILE_FOREST_CLIFF_EDGE, IsometricTileResolver.TILE_GROUND_TO_VOID_CLIFF:
+			return &"cliff"
+		IsometricTileResolver.TILE_FOREST_VOID:
 			return &"void"
 		IsometricTileResolver.TILE_FOREST_MOUNTAIN_WALL, IsometricTileResolver.TILE_GROUND_TO_MOUNTAIN_WALL:
 			return &"wall"
@@ -351,6 +361,13 @@ func _forest_underlay_color(key: StringName) -> Color:
 			return Color(0.31, 0.20, 0.10, 1.0)
 		&"road":
 			return Color(0.36, 0.25, 0.12, 1.0)
+		&"cliff":
+			var cliff_value := clampf(
+				palette.prop_color.get_luminance() * 0.82,
+				0.20,
+				0.34
+			)
+			return Color(cliff_value, cliff_value, cliff_value, 1.0)
 		&"void":
 			return get_void_background_color()
 		&"wall":

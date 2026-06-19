@@ -159,6 +159,17 @@ func _run_generated_forest_smoke(
 			== ZombieModeController.get_void_background_color(palette),
 		"forest void uses the same color as the off-world backdrop"
 	)
+	var cliff_underlay_key := layer._forest_underlay_key(
+		IsometricTileResolver.TILE_VOID_EDGE_WEST
+	)
+	var cliff_underlay_color := layer._forest_underlay_color(cliff_underlay_key)
+	_expect(
+		cliff_underlay_key == &"cliff"
+		and cliff_underlay_color != layer.get_void_background_color()
+		and is_equal_approx(cliff_underlay_color.r, cliff_underlay_color.g)
+		and is_equal_approx(cliff_underlay_color.g, cliff_underlay_color.b),
+		"forest cliff gaps use a neutral grey underlay instead of void black"
+	)
 	_expect(layer.get_cliff_transition_count() > 0, "forest tile layer bakes vertical cliff faces")
 	layer.free()
 

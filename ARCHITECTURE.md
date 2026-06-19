@@ -588,8 +588,9 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
   lo stesso colore condiviso dal `VoidBackdrop` fuori-mappa.
   `IsometricCliffMeshBuilder` costruisce
   per le sole celle `fall_zone` di confine la faccia verticale con gradiente,
-  cresta chiara, fenditure, ombra profonda e foschia bassa; collisioni e regole
-  di caduta restano in `BiomeFallZone`/`HazardSystem`.
+  cresta chiara e fenditure; il gradiente della faccia termina direttamente nel
+  colore del void senza shadow mesh o secondo contorno. Collisioni e regole di
+  caduta restano in `BiomeFallZone`/`HazardSystem`.
 - Gli ostacoli runtime sono `StaticBody2D` sul layer `1`, quindi player e zombie
   li trattano come impedimento fisico.
 - Gli ostacoli appartengono anche ai gruppi `environment_obstacles` e `spawn_blockers`.

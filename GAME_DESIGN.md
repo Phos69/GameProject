@@ -566,8 +566,8 @@ Regole hazard:
   valida;
 - il confine calpestabile/caduta usa cliff orientati sui quattro lati, angoli
   interni/esterni e raccordi diagonali; la faccia verticale, le linee di
-  discesa, l'ombra e la foschia devono rendere il vuoto non ambiguo senza
-  affidarsi al nero o alla semplice assenza di tile;
+  discesa e il gradiente della parete verso il nero devono rendere il vuoto non
+  ambiguo senza affidarsi al nero o alla semplice assenza di tile;
 - il void profondo non mostra texture o reticoli ripetuti: resta uniforme e
   usa lo stesso colore del fuori-mappa e viene definito visivamente dal cliff
   dettagliato solo sul confine con terreno calpestabile;

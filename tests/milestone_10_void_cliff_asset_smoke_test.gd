@@ -51,6 +51,7 @@ func _run() -> void:
 
 	_run_manifest_coverage(manifest)
 	_run_transition_resolver_coverage()
+	_run_cliff_corner_join_coverage()
 	await _run_fall_zone_instance_coverage(manifest)
 	await _run_tile_layer_visual_authority()
 	await _run_layout_side_metadata()
@@ -116,9 +117,103 @@ func _run_transition_resolver_coverage() -> void:
 	_expect_transition(resolver, [Vector2i(-1, -1)], IsometricTileResolver.TILE_VOID_CORNER_OUTER_NORTH_WEST)
 	_expect_transition(resolver, [Vector2i.UP, Vector2i.DOWN], IsometricTileResolver.TILE_VOID_DIAGONAL_NORTH_EAST_SOUTH_WEST)
 	_expect_transition(resolver, [Vector2i.LEFT, Vector2i.RIGHT], IsometricTileResolver.TILE_VOID_DIAGONAL_NORTH_WEST_SOUTH_EAST)
-	_expect_external_border_is_depth(resolver)
+	_expect_external_border_resolves_cliff(resolver)
 
-func _expect_external_border_is_depth(resolver: IsometricTileResolver) -> void:
+func _run_cliff_corner_join_coverage() -> void:
+	var builder := IsometricCliffMeshBuilder.new()
+	var depth := 32.0
+	var south_east_faces := builder._cliff_faces(
+		IsometricTileResolver.TILE_VOID_CORNER_INNER_SOUTH_EAST,
+		Vector2.ZERO,
+		18.0,
+		10.0,
+		depth
+	)
+	_expect(south_east_faces.size() == 2, "south-east cliff corner has two joined faces")
+	if south_east_faces.size() == 2:
+		var east_path: PackedVector2Array = south_east_faces[1].get("path", PackedVector2Array())
+		var east_drops: PackedVector2Array = south_east_faces[1].get("drops", PackedVector2Array())
+		_expect(
+			east_path.size() == 2,
+			"south-east lateral face omits the segment owned by the south face"
+		)
+		_expect(
+			east_drops.size() == 2
+			and east_drops[0].x < 0.0
+			and east_drops[1] == Vector2(0.0, IsometricCliffMeshBuilder.SOUTH_INSTANT_DEPTH),
+			"south-east lateral face tapers into the shallow south drop"
+		)
+
+	var north_west_faces := builder._cliff_faces(
+		IsometricTileResolver.TILE_VOID_CORNER_INNER_NORTH_WEST,
+		Vector2.ZERO,
+		18.0,
+		10.0,
+		depth
+	)
+	_expect(north_west_faces.size() == 2, "north-west cliff corner has two joined faces")
+	if north_west_faces.size() == 2:
+		var west_path: PackedVector2Array = north_west_faces[1].get("path", PackedVector2Array())
+		var west_drops: PackedVector2Array = north_west_faces[1].get("drops", PackedVector2Array())
+		_expect(
+			west_path.size() == 2,
+			"north-west lateral face omits the segment owned by the north face"
+		)
+		_expect(
+			west_drops.size() == 2 and west_drops[0] == Vector2(0.0, depth),
+			"north-west lateral face starts at the north face depth"
+		)
+
+	var upstream_faces := builder._cliff_faces(
+		IsometricTileResolver.TILE_VOID_EDGE_WEST,
+		Vector2(0.0, -12.0),
+		18.0,
+		10.0,
+		depth,
+		IsometricCliffMeshBuilder.SOUTH_INSTANT_DEPTH
+	)
+	var upstream_path: PackedVector2Array = upstream_faces[0].get(
+		"path",
+		PackedVector2Array()
+	)
+	var upstream_drops: PackedVector2Array = upstream_faces[0].get(
+		"drops",
+		PackedVector2Array()
+	)
+	var stays_above_join := upstream_path.size() == upstream_drops.size()
+	for index in range(upstream_path.size()):
+		stays_above_join = (
+			stays_above_join
+			and upstream_path[index].y + upstream_drops[index].y
+			<= IsometricCliffMeshBuilder.SOUTH_INSTANT_DEPTH
+		)
+	_expect(
+		stays_above_join,
+		"lateral faces before a south corner do not extend below the join"
+	)
+
+	var palette := load(
+		"res://game/modes/zombie/biomes/infected_plains_palette.tres"
+	) as BiomePalette
+	builder.configure(palette, 44017)
+	builder.append_transition(
+		IsometricTileResolver.TILE_VOID_EDGE_WEST,
+		Vector2.ZERO,
+		18.0,
+		10.0
+	)
+	var expected_void_color := Color(palette.background_color.darkened(0.68), 1.0)
+	var face_reaches_void_color := false
+	for color in builder._face_colors:
+		if color.is_equal_approx(expected_void_color):
+			face_reaches_void_color = true
+			break
+	_expect(
+		face_reaches_void_color,
+		"cliff face gradient reaches the exact pure-void colour"
+	)
+
+func _expect_external_border_resolves_cliff(resolver: IsometricTileResolver) -> void:
 	var layout := BiomeEnvironmentLayout.new()
 	layout.zone_size = Vector2i(7, 7)
 	layout.generation_seed = 8130
@@ -135,8 +230,8 @@ func _expect_external_border_is_depth(resolver: IsometricTileResolver) -> void:
 			&"toxic_wastes",
 			&"balanced",
 			biome_cell
-		) == IsometricTileResolver.TILE_VOID_DEPTH,
-		"fall zone beside an external border remains pure void"
+		) == IsometricTileResolver.TILE_VOID_EDGE_NORTH,
+		"fall zone beside an external border resolves an oriented cliff"
 	)
 
 func _expect_transition(

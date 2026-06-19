@@ -36,10 +36,18 @@
 - Aggiunti 14 tile SVG dedicati per i cliff: bordi north/south/east/west,
   angoli interni/esterni e due raccordi diagonali. Il nuovo
   `IsometricCliffMeshBuilder` pre-bake-a faccia verticale, creste, fenditure,
-  ombra profonda e foschia senza creare nodi per-tile.
+  gradiente profondo sfumato nel void senza creare nodi per-tile.
 
 ### Changed
 
+- Corretto il raccordo delle mesh cliff agli angoli: le facce laterali non
+  duplicano piu il segmento condiviso e interpolano la profondita verso la
+  faccia north/south; anche i tile laterali precedenti vengono limitati alla
+  quota del join, eliminando i cunei che invadevano terreno o void. L'underlay
+  fra i diamanti cliff e separato dal void puro e usa un grigio neutro coerente
+  con l'edge. Rimossi la riga di foschia e il secondo pass shadow, che produceva
+  sovrapposizioni simili a un riflesso: la faccia termina ora direttamente nel
+  colore del void.
 - Character Select ora supporta navigazione griglia a quattro direzioni con
   wrapping su card valide e avvio survival tramite `Start`/`pause` solo quando
   gli slot attivi hanno una selezione completa; lo `Start` di controller non

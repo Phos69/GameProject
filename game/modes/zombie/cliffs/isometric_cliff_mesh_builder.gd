@@ -15,19 +15,14 @@ const SOUTH_INSTANT_DEPTH := 5.0
 var palette: BiomePalette
 var generation_seed: int = 0
 
-var shadow_mesh: ArrayMesh
 var face_mesh: ArrayMesh
 var lip_lines: PackedVector2Array = PackedVector2Array()
 var fissure_lines: PackedVector2Array = PackedVector2Array()
-var mist_lines: PackedVector2Array = PackedVector2Array()
 var transition_count: int = 0
 
 var _face_vertices: PackedVector2Array = PackedVector2Array()
 var _face_colors: PackedColorArray = PackedColorArray()
 var _face_indices: PackedInt32Array = PackedInt32Array()
-var _shadow_vertices: PackedVector2Array = PackedVector2Array()
-var _shadow_colors: PackedColorArray = PackedColorArray()
-var _shadow_indices: PackedInt32Array = PackedInt32Array()
 
 func configure(next_palette: BiomePalette, next_generation_seed: int) -> void:
 	palette = next_palette
@@ -35,57 +30,64 @@ func configure(next_palette: BiomePalette, next_generation_seed: int) -> void:
 	reset()
 
 func reset() -> void:
-	shadow_mesh = null
 	face_mesh = null
 	lip_lines = PackedVector2Array()
 	fissure_lines = PackedVector2Array()
-	mist_lines = PackedVector2Array()
 	transition_count = 0
 	_face_vertices = PackedVector2Array()
 	_face_colors = PackedColorArray()
 	_face_indices = PackedInt32Array()
-	_shadow_vertices = PackedVector2Array()
-	_shadow_colors = PackedColorArray()
-	_shadow_indices = PackedInt32Array()
 
 func append_transition(
 	tile_id: StringName,
 	center: Vector2,
 	half_w: float,
-	half_h: float
+	half_h: float,
+	southern_tile_ids: Array[StringName] = [],
+	tile_step_y: float = 0.0
 ) -> void:
 	if palette == null:
 		return
 	var depth := maxf(half_h * 8.0, 28.0)
-	var faces := _cliff_faces(tile_id, center, half_w, half_h, depth)
+	var south_join_y := _find_south_join_y(
+		tile_id,
+		center.y,
+		southern_tile_ids,
+		tile_step_y
+	)
+	var faces := _cliff_faces(
+		tile_id,
+		center,
+		half_w,
+		half_h,
+		depth,
+		south_join_y
+	)
 	if faces.is_empty():
 		return
 	transition_count += 1
 	var base_top := palette.prop_color.lightened(0.12)
-	var base_bottom := palette.prop_color.darkened(0.68)
+	var void_color := palette.background_color.darkened(0.68)
 	for face in faces:
 		var path: PackedVector2Array = face.path
 		var drop: Vector2 = face.drop
+		var drops: PackedVector2Array = face.get("drops", PackedVector2Array())
 		var brightness: float = face.brightness
 		var face_top := Color(
 			base_top.r * brightness, base_top.g * brightness, base_top.b * brightness, 1.0
 		)
-		var face_bottom := Color(
-			base_bottom.r * brightness, base_bottom.g * brightness, base_bottom.b * brightness, 1.0
-		)
-		var shadow_top := Color(palette.background_color.darkened(0.62), 0.84 * brightness)
-		var shadow_bottom := Color(palette.background_color.darkened(0.78), 0.16 * brightness)
+		# The face itself reaches the exact void colour. A separate shadow pass
+		# produced overlapping per-tile bands that looked like a reflection below
+		# the real cliff ending.
+		var face_bottom := Color(void_color, 1.0)
 		for point_index in range(path.size() - 1):
 			var start := path[point_index]
 			var end := path[point_index + 1]
+			var start_drop := drops[point_index] if drops.size() == path.size() else drop
+			var end_drop := drops[point_index + 1] if drops.size() == path.size() else drop
 			_append_gradient_quad(
 				_face_vertices, _face_colors, _face_indices,
-				start, end, drop, face_top, face_bottom
-			)
-			_append_gradient_quad(
-				_shadow_vertices, _shadow_colors, _shadow_indices,
-				start + drop * 0.72, end + drop * 0.72, drop * 0.72,
-				shadow_top, shadow_bottom
+				start, end, start_drop, end_drop, face_top, face_bottom
 			)
 			_append_line(lip_lines, start, end)
 			var stripes := int(face.get("fall_stripes", 0))
@@ -93,29 +95,31 @@ func append_transition(
 				# Evenly spaced lines parallel to the (slanted) drop: the oblique
 				# hatching that marks the lateral side of the cliff as a fall.
 				for stripe_index in range(1, stripes + 1):
-					var anchor := start.lerp(end, float(stripe_index) / float(stripes + 1))
-					_append_line(fissure_lines, anchor + drop * 0.08, anchor + drop * 0.9)
+					var stripe_weight := float(stripe_index) / float(stripes + 1)
+					var anchor := start.lerp(end, stripe_weight)
+					var stripe_drop := start_drop.lerp(end_drop, stripe_weight)
+					_append_line(
+						fissure_lines,
+						anchor + stripe_drop * 0.08,
+						anchor + stripe_drop * 0.9
+					)
 			else:
 				var midpoint := (start + end) * 0.5
+				var midpoint_drop := start_drop.lerp(end_drop, 0.5)
 				var fissure_jitter := float((_detail_hash(Vector2i(midpoint)) % 5) - 2)
 				_append_line(
 					fissure_lines,
-					midpoint + Vector2(drop.x * 0.16 + fissure_jitter, drop.y * 0.16),
-					midpoint + Vector2(drop.x * 0.78 - fissure_jitter * 0.5, drop.y * 0.78)
+					midpoint + Vector2(
+						midpoint_drop.x * 0.16 + fissure_jitter,
+						midpoint_drop.y * 0.16
+					),
+					midpoint + Vector2(
+						midpoint_drop.x * 0.78 - fissure_jitter * 0.5,
+						midpoint_drop.y * 0.78
+					)
 				)
-			_append_line(
-				mist_lines,
-				start + drop * 1.18,
-				end + drop * 1.18
-			)
-
 func build_meshes() -> void:
 	face_mesh = _build_colored_mesh(_face_vertices, _face_colors, _face_indices)
-	shadow_mesh = _build_colored_mesh(
-		_shadow_vertices,
-		_shadow_colors,
-		_shadow_indices
-	)
 
 func _build_colored_mesh(
 	vertices: PackedVector2Array,
@@ -139,15 +143,16 @@ func _append_gradient_quad(
 	indices: PackedInt32Array,
 	start: Vector2,
 	end: Vector2,
-	drop: Vector2,
+	start_drop: Vector2,
+	end_drop: Vector2,
 	top_color: Color,
 	bottom_color: Color
 ) -> void:
 	var base := vertices.size()
 	vertices.append(start)
 	vertices.append(end)
-	vertices.append(end + drop)
-	vertices.append(start + drop)
+	vertices.append(end + end_drop)
+	vertices.append(start + start_drop)
 	colors.append(top_color)
 	colors.append(top_color)
 	colors.append(bottom_color)
@@ -173,14 +178,18 @@ func _cliff_faces(
 	center: Vector2,
 	half_w: float,
 	half_h: float,
-	depth: float
+	depth: float,
+	lateral_max_y: float = INF
 ) -> Array:
 	var top := center + Vector2(0.0, -half_h)
 	var right := center + Vector2(half_w, 0.0)
 	var bottom := center + Vector2(0.0, half_h)
 	var left := center + Vector2(-half_w, 0.0)
 	var result: Array = []
-	for side in _cliff_sides_for_tile_id(tile_id):
+	var sides := _cliff_sides_for_tile_id(tile_id)
+	var north_drop := Vector2(0.0, depth)
+	var south_drop := Vector2(0.0, SOUTH_INSTANT_DEPTH)
+	for side in sides:
 		match side:
 			&"north":
 				# Ground is to the north, so the void drops away to the south (down on
@@ -188,16 +197,37 @@ func _cliff_faces(
 				# visible — it descends straight into the void below the lip.
 				result.append({
 					"path": PackedVector2Array([left, top, right]),
-					"drop": Vector2(0.0, depth),
+					"drop": north_drop,
 					"brightness": 0.62
 				})
 			&"east":
 				# Right diamond edge: top→right→bottom. Ground is to the east, so the
 				# wall slopes west (toward the void interior) and shows oblique fall
 				# stripes down its slanted side.
+				var east_drop := Vector2(-depth * LATERAL_VOID_SLOPE, depth)
+				var east_path := PackedVector2Array([top, right, bottom])
+				var east_drops := PackedVector2Array()
+				if sides.has(&"south"):
+					# The south face owns right->bottom. End the lateral face at the
+					# shared right vertex and taper it to the shallow near-side drop.
+					east_path = PackedVector2Array([top, right])
+					east_drops = PackedVector2Array([east_drop, south_drop])
+				elif sides.has(&"north"):
+					# The north face owns top->right. Start the remaining lateral
+					# segment at the north depth so the two faces meet without overlap.
+					east_path = PackedVector2Array([right, bottom])
+					east_drops = PackedVector2Array([north_drop, east_drop])
+				if east_drops.is_empty():
+					east_drops = _uniform_drops(east_path, east_drop)
+				east_drops = _clip_drops_to_max_y(
+					east_path,
+					east_drops,
+					lateral_max_y
+				)
 				result.append({
-					"path": PackedVector2Array([top, right, bottom]),
-					"drop": Vector2(-depth * LATERAL_VOID_SLOPE, depth),
+					"path": east_path,
+					"drop": east_drop,
+					"drops": east_drops,
 					"brightness": 0.72,
 					"fall_stripes": LATERAL_FALL_STRIPES
 				})
@@ -206,16 +236,33 @@ func _cliff_faces(
 				# depth leaves just the bright lip and a sliver of shadow.
 				result.append({
 					"path": PackedVector2Array([left, bottom, right]),
-					"drop": Vector2(0.0, SOUTH_INSTANT_DEPTH),
+					"drop": south_drop,
 					"brightness": 1.0
 				})
 			&"west":
 				# Left diamond edge: shadow side, noticeably darker than east. Ground
 				# is to the west, so the wall slopes east (toward the void interior) and
 				# shows the same oblique fall stripes as the east wall.
+				var west_drop := Vector2(depth * LATERAL_VOID_SLOPE, depth)
+				var west_path := PackedVector2Array([top, left, bottom])
+				var west_drops := PackedVector2Array()
+				if sides.has(&"south"):
+					west_path = PackedVector2Array([top, left])
+					west_drops = PackedVector2Array([west_drop, south_drop])
+				elif sides.has(&"north"):
+					west_path = PackedVector2Array([left, bottom])
+					west_drops = PackedVector2Array([north_drop, west_drop])
+				if west_drops.is_empty():
+					west_drops = _uniform_drops(west_path, west_drop)
+				west_drops = _clip_drops_to_max_y(
+					west_path,
+					west_drops,
+					lateral_max_y
+				)
 				result.append({
-					"path": PackedVector2Array([top, left, bottom]),
-					"drop": Vector2(depth * LATERAL_VOID_SLOPE, depth),
+					"path": west_path,
+					"drop": west_drop,
+					"drops": west_drops,
 					"brightness": 0.52,
 					"fall_stripes": LATERAL_FALL_STRIPES
 				})
@@ -232,6 +279,62 @@ func _cliff_faces(
 					"brightness": 0.88
 				})
 	return result
+
+func _find_south_join_y(
+	tile_id: StringName,
+	center_y: float,
+	southern_tile_ids: Array[StringName],
+	tile_step_y: float
+) -> float:
+	var sides := _cliff_sides_for_tile_id(tile_id)
+	var lateral_side := &""
+	if sides.has(&"east"):
+		lateral_side = &"east"
+	elif sides.has(&"west"):
+		lateral_side = &"west"
+	if lateral_side.is_empty():
+		return INF
+	if sides.has(&"south"):
+		return center_y + SOUTH_INSTANT_DEPTH
+	if tile_step_y <= 0.0:
+		return INF
+	for index in range(southern_tile_ids.size()):
+		var neighbor_sides := _cliff_sides_for_tile_id(southern_tile_ids[index])
+		if neighbor_sides.has(lateral_side) and neighbor_sides.has(&"south"):
+			return (
+				center_y
+				+ float(index + 1) * tile_step_y
+				+ SOUTH_INSTANT_DEPTH
+			)
+		if not neighbor_sides.has(lateral_side):
+			break
+	return INF
+
+func _uniform_drops(path: PackedVector2Array, drop: Vector2) -> PackedVector2Array:
+	var drops := PackedVector2Array()
+	for _point in path:
+		drops.append(drop)
+	return drops
+
+func _clip_drops_to_max_y(
+	path: PackedVector2Array,
+	drops: PackedVector2Array,
+	max_y: float
+) -> PackedVector2Array:
+	if is_inf(max_y) or path.size() != drops.size():
+		return drops
+	var clipped := PackedVector2Array()
+	for index in range(path.size()):
+		var drop := drops[index]
+		if drop.y <= 0.0:
+			clipped.append(drop)
+			continue
+		var allowed_depth := maxf(max_y - path[index].y, 0.0)
+		if allowed_depth >= drop.y:
+			clipped.append(drop)
+			continue
+		clipped.append(drop * (allowed_depth / drop.y))
+	return clipped
 
 func _cliff_sides_for_tile_id(tile_id: StringName) -> Array[StringName]:
 	match tile_id:
