@@ -54,6 +54,20 @@ const TILE_HAZARD_FLOOR: StringName = &"hazard_floor"
 const TILE_BORDER_FLOOR: StringName = &"border_floor"
 const TILE_VOID_EDGE_NEAR: StringName = &"void_edge_near"
 const TILE_VOID_DEPTH: StringName = &"void_depth"
+const TILE_VOID_EDGE_NORTH: StringName = &"void_edge_north"
+const TILE_VOID_EDGE_SOUTH: StringName = &"void_edge_south"
+const TILE_VOID_EDGE_EAST: StringName = &"void_edge_east"
+const TILE_VOID_EDGE_WEST: StringName = &"void_edge_west"
+const TILE_VOID_CORNER_INNER_NORTH_EAST: StringName = &"void_corner_inner_north_east"
+const TILE_VOID_CORNER_INNER_SOUTH_EAST: StringName = &"void_corner_inner_south_east"
+const TILE_VOID_CORNER_INNER_SOUTH_WEST: StringName = &"void_corner_inner_south_west"
+const TILE_VOID_CORNER_INNER_NORTH_WEST: StringName = &"void_corner_inner_north_west"
+const TILE_VOID_CORNER_OUTER_NORTH_EAST: StringName = &"void_corner_outer_north_east"
+const TILE_VOID_CORNER_OUTER_SOUTH_EAST: StringName = &"void_corner_outer_south_east"
+const TILE_VOID_CORNER_OUTER_SOUTH_WEST: StringName = &"void_corner_outer_south_west"
+const TILE_VOID_CORNER_OUTER_NORTH_WEST: StringName = &"void_corner_outer_north_west"
+const TILE_VOID_DIAGONAL_NORTH_EAST_SOUTH_WEST: StringName = &"void_diagonal_north_east_south_west"
+const TILE_VOID_DIAGONAL_NORTH_WEST_SOUTH_EAST: StringName = &"void_diagonal_north_west_south_east"
 
 const TILE_SECTION_VARIANTS: StringName = &"tile_variants"
 const TILE_SECTION_TERRAIN: StringName = &"terrain_tiles"
@@ -163,6 +177,20 @@ const REQUIRED_TILE_IDS: Array[StringName] = [
 	TILE_BORDER_FLOOR,
 	TILE_VOID_EDGE_NEAR,
 	TILE_VOID_DEPTH,
+	TILE_VOID_EDGE_NORTH,
+	TILE_VOID_EDGE_SOUTH,
+	TILE_VOID_EDGE_EAST,
+	TILE_VOID_EDGE_WEST,
+	TILE_VOID_CORNER_INNER_NORTH_EAST,
+	TILE_VOID_CORNER_INNER_SOUTH_EAST,
+	TILE_VOID_CORNER_INNER_SOUTH_WEST,
+	TILE_VOID_CORNER_INNER_NORTH_WEST,
+	TILE_VOID_CORNER_OUTER_NORTH_EAST,
+	TILE_VOID_CORNER_OUTER_SOUTH_EAST,
+	TILE_VOID_CORNER_OUTER_SOUTH_WEST,
+	TILE_VOID_CORNER_OUTER_NORTH_WEST,
+	TILE_VOID_DIAGONAL_NORTH_EAST_SOUTH_WEST,
+	TILE_VOID_DIAGONAL_NORTH_WEST_SOUTH_EAST,
 	TILE_FOREST_GRASS,
 	TILE_FOREST_GRASS_VARIANT_01,
 	TILE_FOREST_GRASS_VARIANT_02,
@@ -224,11 +252,7 @@ func resolve_tile_data(
 		BiomeEnvironmentLayout.TERRAIN_VOID:
 			return _tile_data(TILE_VOID_DEPTH, TILE_SECTION_VOID, &"void_depth")
 		BiomeEnvironmentLayout.TERRAIN_FALL_ZONE:
-			return (
-				_tile_data(TILE_VOID_EDGE_NEAR, TILE_SECTION_VOID, &"void_edge")
-				if _fall_zone_cell_touches_floor(layout, cell, biome_cell)
-				else _tile_data(TILE_VOID_DEPTH, TILE_SECTION_VOID, &"void_depth")
-			)
+			return _resolve_void_tile_data(layout, cell, biome_cell, TILE_VOID_DEPTH)
 		BiomeEnvironmentLayout.TERRAIN_HAZARD:
 			return _tile_data(TILE_HAZARD_FLOOR, TILE_SECTION_VARIANTS, &"hazard")
 		BiomeEnvironmentLayout.TERRAIN_BORDER:
@@ -245,7 +269,7 @@ func resolve_tile_data(
 
 func resolve_tile_section(tile_id: StringName) -> StringName:
 	if (
-		tile_id == TILE_VOID_EDGE_NEAR
+		is_void_transition_tile_id(tile_id)
 		or tile_id == TILE_VOID_DEPTH
 		or tile_id == TILE_FOREST_VOID
 		or tile_id == TILE_FOREST_CLIFF_EDGE
@@ -315,6 +339,25 @@ func has_visual_tile(
 func get_required_tile_ids() -> Array[StringName]:
 	return REQUIRED_TILE_IDS.duplicate()
 
+func is_void_transition_tile_id(tile_id: StringName) -> bool:
+	return (
+		tile_id == TILE_VOID_EDGE_NEAR
+		or tile_id == TILE_VOID_EDGE_NORTH
+		or tile_id == TILE_VOID_EDGE_SOUTH
+		or tile_id == TILE_VOID_EDGE_EAST
+		or tile_id == TILE_VOID_EDGE_WEST
+		or tile_id == TILE_VOID_CORNER_INNER_NORTH_EAST
+		or tile_id == TILE_VOID_CORNER_INNER_SOUTH_EAST
+		or tile_id == TILE_VOID_CORNER_INNER_SOUTH_WEST
+		or tile_id == TILE_VOID_CORNER_INNER_NORTH_WEST
+		or tile_id == TILE_VOID_CORNER_OUTER_NORTH_EAST
+		or tile_id == TILE_VOID_CORNER_OUTER_SOUTH_EAST
+		or tile_id == TILE_VOID_CORNER_OUTER_SOUTH_WEST
+		or tile_id == TILE_VOID_CORNER_OUTER_NORTH_WEST
+		or tile_id == TILE_VOID_DIAGONAL_NORTH_EAST_SOUTH_WEST
+		or tile_id == TILE_VOID_DIAGONAL_NORTH_WEST_SOUTH_EAST
+	)
+
 func get_route_tile_ids() -> Array[StringName]:
 	var ids := TERRAIN_ROUTE_TILE_IDS.duplicate()
 	for tile_id in PASSAGE_ROUTE_TILE_IDS:
@@ -375,11 +418,7 @@ func _resolve_forest_tile_data(
 				return _tile_data(TILE_VOID_DEPTH, TILE_SECTION_VOID, &"void_depth")
 			return _tile_data(TILE_FOREST_VOID, TILE_SECTION_VOID, &"forest_void")
 		BiomeEnvironmentLayout.TERRAIN_FALL_ZONE:
-			return (
-				_tile_data(TILE_FOREST_CLIFF_EDGE, TILE_SECTION_VOID, &"forest_cliff_edge")
-				if _fall_zone_cell_touches_floor(layout, cell, biome_cell)
-				else _tile_data(TILE_FOREST_VOID, TILE_SECTION_VOID, &"forest_void")
-			)
+			return _resolve_void_tile_data(layout, cell, biome_cell, TILE_FOREST_VOID)
 		BiomeEnvironmentLayout.TERRAIN_BORDER:
 			return _tile_data(TILE_FOREST_MOUNTAIN_WALL, &"edge_tiles", &"forest_mountain_wall")
 		BiomeEnvironmentLayout.TERRAIN_OBSTACLE:
@@ -869,19 +908,153 @@ func _resolve_floor_variant(
 	var index := posmod(_stable_cell_hash(seed, biome_id, cell), variants.size())
 	return variants[index]
 
-func _fall_zone_cell_touches_floor(
+func _resolve_void_tile_data(
+	layout: BiomeEnvironmentLayout,
+	cell: Vector2i,
+	biome_cell: BiomeCell,
+	depth_tile_id: StringName
+) -> Dictionary:
+	var north := _void_neighbor_is_ground(layout, cell + Vector2i.UP, biome_cell)
+	var east := _void_neighbor_is_ground(layout, cell + Vector2i.RIGHT, biome_cell)
+	var south := _void_neighbor_is_ground(layout, cell + Vector2i.DOWN, biome_cell)
+	var west := _void_neighbor_is_ground(layout, cell + Vector2i.LEFT, biome_cell)
+	var cardinal_count := int(north) + int(east) + int(south) + int(west)
+
+	if cardinal_count == 1:
+		if north:
+			return _void_transition_data(TILE_VOID_EDGE_NORTH, &"void_edge_north")
+		if east:
+			return _void_transition_data(TILE_VOID_EDGE_EAST, &"void_edge_east")
+		if south:
+			return _void_transition_data(TILE_VOID_EDGE_SOUTH, &"void_edge_south")
+		return _void_transition_data(TILE_VOID_EDGE_WEST, &"void_edge_west")
+
+	if cardinal_count == 2:
+		if north and east:
+			return _void_transition_data(
+				TILE_VOID_CORNER_INNER_NORTH_EAST,
+				&"void_corner_inner"
+			)
+		if east and south:
+			return _void_transition_data(
+				TILE_VOID_CORNER_INNER_SOUTH_EAST,
+				&"void_corner_inner"
+			)
+		if south and west:
+			return _void_transition_data(
+				TILE_VOID_CORNER_INNER_SOUTH_WEST,
+				&"void_corner_inner"
+			)
+		if west and north:
+			return _void_transition_data(
+				TILE_VOID_CORNER_INNER_NORTH_WEST,
+				&"void_corner_inner"
+			)
+		if north and south:
+			return _void_transition_data(
+				TILE_VOID_DIAGONAL_NORTH_EAST_SOUTH_WEST,
+				&"void_diagonal"
+			)
+		return _void_transition_data(
+			TILE_VOID_DIAGONAL_NORTH_WEST_SOUTH_EAST,
+			&"void_diagonal"
+		)
+
+	if cardinal_count >= 3:
+		# A one-cell notch is surrounded by playable terrain. Use a closed outer
+		# corner so no side of the hole can be mistaken for floor.
+		if not north:
+			return _void_transition_data(
+				TILE_VOID_CORNER_OUTER_NORTH_EAST,
+				&"void_corner_outer"
+			)
+		if not east:
+			return _void_transition_data(
+				TILE_VOID_CORNER_OUTER_SOUTH_EAST,
+				&"void_corner_outer"
+			)
+		if not south:
+			return _void_transition_data(
+				TILE_VOID_CORNER_OUTER_SOUTH_WEST,
+				&"void_corner_outer"
+			)
+		return _void_transition_data(
+			TILE_VOID_CORNER_OUTER_NORTH_WEST,
+			&"void_corner_outer"
+		)
+
+	var north_east := _void_neighbor_is_ground(
+		layout,
+		cell + Vector2i(1, -1),
+		biome_cell
+	)
+	var south_east := _void_neighbor_is_ground(
+		layout,
+		cell + Vector2i(1, 1),
+		biome_cell
+	)
+	var south_west := _void_neighbor_is_ground(
+		layout,
+		cell + Vector2i(-1, 1),
+		biome_cell
+	)
+	var north_west := _void_neighbor_is_ground(
+		layout,
+		cell + Vector2i(-1, -1),
+		biome_cell
+	)
+	var diagonal_count := (
+		int(north_east)
+		+ int(south_east)
+		+ int(south_west)
+		+ int(north_west)
+	)
+	if diagonal_count == 1:
+		if north_east:
+			return _void_transition_data(
+				TILE_VOID_CORNER_OUTER_NORTH_EAST,
+				&"void_corner_outer"
+			)
+		if south_east:
+			return _void_transition_data(
+				TILE_VOID_CORNER_OUTER_SOUTH_EAST,
+				&"void_corner_outer"
+			)
+		if south_west:
+			return _void_transition_data(
+				TILE_VOID_CORNER_OUTER_SOUTH_WEST,
+				&"void_corner_outer"
+			)
+		return _void_transition_data(
+			TILE_VOID_CORNER_OUTER_NORTH_WEST,
+			&"void_corner_outer"
+		)
+	if north_east and south_west and diagonal_count == 2:
+		return _void_transition_data(
+			TILE_VOID_DIAGONAL_NORTH_EAST_SOUTH_WEST,
+			&"void_diagonal"
+		)
+	if north_west and south_east and diagonal_count == 2:
+		return _void_transition_data(
+			TILE_VOID_DIAGONAL_NORTH_WEST_SOUTH_EAST,
+			&"void_diagonal"
+		)
+	return _tile_data(depth_tile_id, TILE_SECTION_VOID, &"void_depth")
+
+func _void_transition_data(tile_id: StringName, role: StringName) -> Dictionary:
+	return _tile_data(tile_id, TILE_SECTION_VOID, role)
+
+func _void_neighbor_is_ground(
 	layout: BiomeEnvironmentLayout,
 	cell: Vector2i,
 	biome_cell: BiomeCell
 ) -> bool:
-	for offset in CARDINAL_OFFSETS:
-		var neighbor_class := layout.get_terrain_class_at_cell(cell + offset, biome_cell)
-		if (
-			neighbor_class != BiomeEnvironmentLayout.TERRAIN_VOID
-			and neighbor_class != BiomeEnvironmentLayout.TERRAIN_FALL_ZONE
-		):
-			return true
-	return false
+	var terrain_class := layout.get_terrain_class_at_cell(cell, biome_cell)
+	return (
+		terrain_class != BiomeEnvironmentLayout.TERRAIN_VOID
+		and terrain_class != BiomeEnvironmentLayout.TERRAIN_FALL_ZONE
+		and terrain_class != BiomeEnvironmentLayout.TERRAIN_BORDER
+	)
 
 func _tile_data(tile_id: StringName, section: StringName, role: StringName) -> Dictionary:
 	var asset_path := ""

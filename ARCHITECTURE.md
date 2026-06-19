@@ -567,8 +567,10 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
   `500x500` in `floor_base`, varianti floor, route tile asset-driven
   (`main_road`, road tematiche, curve/edge/intersezioni), passage tile
   (`road`, `bridge`, `snow_pass`, `broken_gate`, `burned_road`, entry/exit),
-  `hazard_floor`, `border_floor`, `void_edge_near` o `void_depth` usando seed,
-  cella e bioma. Le route generate preferiscono `road_cell_tags` diagonali; i
+  `hazard_floor`, `border_floor`, `void_depth` o una transizione cliff
+  neighbor-aware. Le transizioni distinguono bordi north/south/east/west,
+  angoli interni/esterni e due raccordi diagonali. Le route generate
+  preferiscono `road_cell_tags` diagonali; i
   rettangoli restano per aperture/passaggi e compatibilita. I connector di
   passaggio hanno priorita sulle road decorative sovrapposte.
 - Per `infected_plains`, `IsometricTileResolver` usa il set forestale dedicato:
@@ -581,7 +583,13 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - `BiomeTileLayer` cache-a tutti i 250.000 tile e li divide in chunk
   (`balanced` 20x20, `performance` 25x25, `quality` 16x16) senza creare nodi
   per-tile. Il layer pre-bake-a anche linee di dettaglio per grass, tall grass,
-  path, road, transizioni, cliff e void.
+  path, road, transizioni e cliff; le celle pure `void_depth`/`forest_void`
+  restano escluse dalla mesh e dal reticolo, lasciando un fondale uniforme con
+  lo stesso colore condiviso dal `VoidBackdrop` fuori-mappa.
+  `IsometricCliffMeshBuilder` costruisce
+  per le sole celle `fall_zone` di confine la faccia verticale con gradiente,
+  cresta chiara, fenditure, ombra profonda e foschia bassa; collisioni e regole
+  di caduta restano in `BiomeFallZone`/`HazardSystem`.
 - Gli ostacoli runtime sono `StaticBody2D` sul layer `1`, quindi player e zombie
   li trattano come impedimento fisico.
 - Gli ostacoli appartengono anche ai gruppi `environment_obstacles` e `spawn_blockers`.
@@ -603,7 +611,7 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - `BiomeObstacle` legge `draw_mode` e `dedicated_draw` da
   `IsometricEnvironmentManifest`; se un ID ricade su `generic_barrier`, deve
   essere una scelta esplicita del manifest e non un fallback implicito.
-- Il manifest v7 vieta fallback impliciti: ogni ID generato da ostacoli,
+- Il manifest v8 vieta fallback impliciti: ogni ID generato da ostacoli,
   terrain, passaggi, bordi o fall zone deve avere un contratto asset-driven con
   `asset_path`, `status`, `biome_ids`, `anchor`, footprint/collisione, sorgente,
   licenza, attribution e `fallback_path` quando l'asset e ancora assente.
@@ -625,12 +633,16 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
   nel nodo `SupplyCrate`.
 - I lati con regione adiacente ma senza edge e i segmenti chiusi dei lati
   collegati usano border ID tematici per bioma; il lato senza regione resta
-  fall zone e non ostacolo.
+  fall zone e non ostacolo. Le pareti dei lati non-fall vengono accorciate di
+  `FALL_THICKNESS` quando un'estremita tocca un lato fall; inoltre i
+  `full_void` adiacenti al perimetro attraversano la fascia border e il loro
+  intervallo viene escluso dai wall segment, evitando bordi sopra il vuoto.
 - Ogni layout conserva un corridoio centrale libero per l'AI diretta esistente.
-- `assets/environment/isometric/manifest.json` v7 contiene i draw mode oggetto
+- `assets/environment/isometric/manifest.json` v8 contiene i draw mode oggetto
   legacy in `object_visuals`, i contratti asset per tile, terrain, edge, void,
-  object scenes, passage tiles e asset set di bioma, inclusi `void_edge_near`,
-  `void_depth`, tile forestali, road connector e entry/exit passaggio; i preset
+  object scenes, passage tiles e asset set di bioma, inclusi i 14 tile cliff
+  orientati, `void_depth`, tile forestali, road connector e entry/exit
+  passaggio; i preset
   `performance`/`balanced`/`quality` restano disponibili per fallback ground e
   qualita del tile layer.
 - `WorldRegionConnection` serializza apertura locale, connector locale,

@@ -137,11 +137,7 @@ func _section_shape(section: String, asset_id: String, primary: String, secondar
 				'  <path d="M42 50 H118 M42 64 H118" stroke="%s" stroke-width="3" opacity="0.7"/>' % accent
 			]))
 		"void_tiles":
-			return "\n".join(PackedStringArray([
-				'  <polygon points="20,46 80,18 140,46 80,74" fill="%s" stroke="%s" stroke-width="4"/>' % [primary, accent],
-				'  <path d="M28 52 L80 80 L132 52 L132 84 L80 112 L28 84 Z" fill="#05070b" stroke="%s" stroke-width="3"/>' % accent,
-				'  <path d="M48 60 V94 M80 74 V108 M112 60 V94" stroke="%s" stroke-width="3" opacity="0.75"/>' % secondary
-			]))
+			return _void_tile_shape(asset_id, primary, secondary, accent)
 		"object_scenes":
 			return _object_scene_shape(asset_id, primary, secondary, accent)
 		"biome_asset_sets":
@@ -152,6 +148,61 @@ func _section_shape(section: String, asset_id: String, primary: String, secondar
 			]))
 		_:
 			return '  <polygon points="80,18 142,54 80,90 18,54" fill="%s" stroke="%s" stroke-width="4"/>' % [primary, accent]
+
+func _void_tile_shape(
+	asset_id: String,
+	primary: String,
+	secondary: String,
+	accent: String
+) -> String:
+	var base := PackedStringArray([
+		'  <polygon points="80,18 140,46 80,74 20,46" fill="%s" stroke="#101722" stroke-width="3"/>' % primary,
+		'  <path d="M20 46 L80 74 L140 46 L140 82 L80 112 L20 82 Z" fill="#05070b" stroke="%s" stroke-width="2"/>' % secondary,
+		'  <path d="M42 57 L44 88 M62 67 L63 99 M82 74 L82 108 M102 65 L100 98 M122 56 L118 87" stroke="%s" stroke-width="3" opacity="0.72"/>' % secondary,
+		'  <path d="M24 84 C43 76 56 96 78 84 C98 73 116 91 136 81" fill="none" stroke="%s" stroke-width="4" opacity="0.28"/>' % accent
+	])
+	var lip_paths: PackedStringArray = _void_lip_paths(asset_id)
+	for lip_path in lip_paths:
+		base.append(
+			'  <path d="%s" fill="none" stroke="%s" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>'
+			% [lip_path, accent]
+		)
+		base.append(
+			'  <path d="%s" transform="translate(0 7)" fill="none" stroke="#020305" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity="0.82"/>'
+			% lip_path
+		)
+	return "\n".join(base)
+
+func _void_lip_paths(asset_id: String) -> PackedStringArray:
+	if asset_id.ends_with("edge_north"):
+		return PackedStringArray(["M20 46 L80 18 L140 46"])
+	if asset_id.ends_with("edge_south"):
+		return PackedStringArray(["M20 46 L80 74 L140 46"])
+	if asset_id.ends_with("edge_east"):
+		return PackedStringArray(["M80 18 L140 46 L80 74"])
+	if asset_id.ends_with("edge_west"):
+		return PackedStringArray(["M80 18 L20 46 L80 74"])
+	if asset_id.ends_with("inner_north_east"):
+		return PackedStringArray(["M20 46 L80 18 L140 46 L80 74"])
+	if asset_id.ends_with("inner_south_east"):
+		return PackedStringArray(["M80 18 L140 46 L80 74 L20 46"])
+	if asset_id.ends_with("inner_south_west"):
+		return PackedStringArray(["M140 46 L80 74 L20 46 L80 18"])
+	if asset_id.ends_with("inner_north_west"):
+		return PackedStringArray(["M80 74 L20 46 L80 18 L140 46"])
+	if asset_id.ends_with("outer_north_east"):
+		return PackedStringArray(["M20 46 L80 18", "M80 18 L140 46"])
+	if asset_id.ends_with("outer_south_east"):
+		return PackedStringArray(["M80 18 L140 46", "M140 46 L80 74"])
+	if asset_id.ends_with("outer_south_west"):
+		return PackedStringArray(["M140 46 L80 74", "M80 74 L20 46"])
+	if asset_id.ends_with("outer_north_west"):
+		return PackedStringArray(["M80 74 L20 46", "M20 46 L80 18"])
+	if asset_id.ends_with("north_east_south_west"):
+		return PackedStringArray(["M20 46 L140 46"])
+	if asset_id.ends_with("north_west_south_east"):
+		return PackedStringArray(["M80 18 L80 74"])
+	return PackedStringArray(["M20 46 L80 18 L140 46"])
 
 func _terrain_tile_shape(asset_id: String, primary: String, secondary: String, accent: String) -> String:
 	var base := PackedStringArray([

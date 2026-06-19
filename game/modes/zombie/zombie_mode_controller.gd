@@ -46,6 +46,11 @@ var _void_backdrop: ColorRect
 
 const VOID_BACKDROP_DARKEN := 0.68
 
+static func get_void_background_color(palette: BiomePalette) -> Color:
+	if palette == null:
+		return RenderingServer.get_default_clear_color()
+	return palette.background_color.darkened(VOID_BACKDROP_DARKEN)
+
 func _ready() -> void:
 	add_to_group("zombie_mode_controller")
 	_resolve_components()
@@ -222,9 +227,8 @@ func _update_void_backdrop(biome: BiomeDefinition) -> void:
 	if biome == null or biome.palette == null:
 		return
 	_ensure_void_backdrop()
-	# Match the tile layer's TILE_VOID_DEPTH colour so the off-map void is the
-	# same shade as the in-map void cells.
-	_void_backdrop.color = biome.palette.background_color.darkened(VOID_BACKDROP_DARKEN)
+	# The same shared colour contract is used by BiomeTileLayer for pure void.
+	_void_backdrop.color = get_void_background_color(biome.palette)
 	_void_backdrop_layer.visible = true
 
 func _clear_void_backdrop() -> void:

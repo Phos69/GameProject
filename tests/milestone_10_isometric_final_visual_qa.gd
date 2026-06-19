@@ -154,6 +154,7 @@ func _capture_biome(
 		focus
 	)
 	_move_node(player, focus_position)
+	_snap_camera(focus_position)
 	_clear_qa_enemies()
 	_spawn_biome_roster(enemy_system, biome_id, focus_position)
 	await process_frame
@@ -204,7 +205,12 @@ func _get_focus_position(
 	match focus:
 		&"fall":
 			if not layout.fall_zone_rects.is_empty():
-				return offset + layout.rect_center_to_world(layout.fall_zone_rects.front())
+				var safe_focus_cell := _find_walkable_cell_near_rect(
+					layout,
+					layout.fall_zone_rects.front()
+				)
+				if safe_focus_cell != Vector2i(-1, -1):
+					return offset + layout.logical_to_world(safe_focus_cell)
 			if not layout.hazard_positions.is_empty():
 				return offset + layout.hazard_positions.front()
 		&"passage":
@@ -218,6 +224,31 @@ func _get_focus_position(
 			if not layout.obstacle_positions.is_empty():
 				return offset + layout.obstacle_positions.front()
 	return offset
+
+func _find_walkable_cell_near_rect(
+	layout: BiomeEnvironmentLayout,
+	target_rect: Rect2i
+) -> Vector2i:
+	var expanded := target_rect.grow(4).intersection(
+		Rect2i(Vector2i.ZERO, layout.zone_size)
+	)
+	var target_center := Vector2(target_rect.position) + Vector2(target_rect.size) * 0.5
+	var best_cell := Vector2i(-1, -1)
+	var best_distance := INF
+	for y in range(expanded.position.y, expanded.end.y):
+		for x in range(expanded.position.x, expanded.end.x):
+			var candidate := Vector2i(x, y)
+			if (
+				layout.get_terrain_class_at_cell(candidate)
+				!= BiomeEnvironmentLayout.TERRAIN_WALKABLE
+			):
+				continue
+			var distance := Vector2(candidate).distance_squared_to(target_center)
+			if distance >= best_distance:
+				continue
+			best_distance = distance
+			best_cell = candidate
+	return best_cell
 
 func _spawn_biome_roster(
 	enemy_system: EnemySystem,
@@ -280,6 +311,7 @@ func _capture_cross_biome_chase(
 	)
 	_clear_qa_enemies()
 	_move_node(player, crossing_position - direction * 70.0)
+	_snap_camera(player.global_position)
 	var enemy := enemy_system.spawn_enemy(
 		&"survival_zombie",
 		crossing_position - direction * 230.0,
@@ -304,6 +336,7 @@ func _capture_cross_biome_chase(
 	seam_system.try_update_region_for_position(crossing_position)
 	await process_frame
 	_move_node(player, crossing_position + direction * 260.0)
+	_snap_camera(player.global_position)
 	for _frame in range(180):
 		await physics_frame
 		if (
@@ -353,6 +386,13 @@ func _move_node(node: Node2D, position: Vector2) -> void:
 	if node is CharacterBody2D:
 		(node as CharacterBody2D).velocity = Vector2.ZERO
 
+func _snap_camera(position: Vector2) -> void:
+	var camera := root.get_camera_2d()
+	if camera == null:
+		return
+	camera.global_position = position
+	camera.reset_smoothing()
+
 func _clear_qa_enemies() -> void:
 	for enemy in get_nodes_in_group("milestone_10_final_qa_enemies"):
 		if is_instance_valid(enemy):
@@ -364,7 +404,32 @@ func _capture(file_name: String) -> bool:
 	if image == null or image.is_empty():
 		return false
 	var output_path := "%s/%s" % [OUTPUT_DIRECTORY, file_name]
-	return image.save_png(ProjectSettings.globalize_path(output_path)) == OK
+	var saved := image.save_png(ProjectSettings.globalize_path(output_path)) == OK
+	return saved and _image_has_world_detail(image)
+
+func _image_has_world_detail(image: Image) -> bool:
+	var sampled := 0
+	var contrast_samples := 0
+	for y in range(image.get_height() / 3, image.get_height() - 4, 8):
+		for x in range(0, image.get_width() - 4, 8):
+			var color := image.get_pixel(x, y)
+			var right := image.get_pixel(x + 4, y)
+			var down := image.get_pixel(x, y + 4)
+			var contrast := (
+				absf(color.r - right.r)
+				+ absf(color.g - right.g)
+				+ absf(color.b - right.b)
+				+ absf(color.r - down.r)
+				+ absf(color.g - down.g)
+				+ absf(color.b - down.b)
+			)
+			sampled += 1
+			if contrast >= 0.03:
+				contrast_samples += 1
+	return (
+		sampled > 0
+		and float(contrast_samples) / float(sampled) >= 0.08
+	)
 
 func _expect(condition: bool, message: String) -> void:
 	if condition:

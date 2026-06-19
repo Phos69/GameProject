@@ -314,7 +314,10 @@ func _apply_block_surface(
 ) -> void:
 	match block_kind:
 		&"full_void":
-			layout.add_fall_zone_rect(block_rect, &"internal")
+			layout.add_fall_zone_rect(
+				_extend_void_rect_to_world_edge(layout, block_rect),
+				&"internal"
+			)
 		&"partial_void":
 			layout.add_floor_rect(block_rect, &"open_block")
 			var pocket := _inset_rect(
@@ -327,6 +330,22 @@ func _apply_block_surface(
 			if biome_id == &"infected_plains" and block_kind == &"forest":
 				floor_tag = &"forest_tall_grass"
 			layout.add_floor_rect(block_rect, floor_tag)
+
+func _extend_void_rect_to_world_edge(
+	layout: BiomeEnvironmentLayout,
+	void_rect: Rect2i
+) -> Rect2i:
+	var start := void_rect.position
+	var finish := void_rect.end
+	if start.x <= BORDER_THICKNESS:
+		start.x = 0
+	if start.y <= BORDER_THICKNESS:
+		start.y = 0
+	if finish.x >= layout.zone_size.x - BORDER_THICKNESS:
+		finish.x = layout.zone_size.x
+	if finish.y >= layout.zone_size.y - BORDER_THICKNESS:
+		finish.y = layout.zone_size.y
+	return Rect2i(start, finish - start)
 
 func _resolve_block_kind(
 	biome_id: StringName,
@@ -644,14 +663,102 @@ func _add_connected_border_walls(
 		if border_type == BiomeCell.BorderType.FALL:
 			continue
 		var axis_limit := _side_axis_limit(layout, side)
-		var gaps := _passage_gaps_for_side(cell, side, axis_limit)
+		var gaps := _wall_gaps_for_side(layout, cell, side, axis_limit)
+		var wall_span := _wall_axis_span_away_from_fall_corners(
+			cell,
+			side,
+			axis_limit
+		)
 		# Wall the side, leaving a clean physical opening for every passage so
-		# additional (extra-edge) connections are never sealed shut.
-		var cursor := 0
+		# additional (extra-edge) connections are never sealed shut. If an
+		# endpoint touches an external fall side, leave that corner as pure void.
+		var cursor := wall_span.x
 		for gap in gaps:
-			_add_border_segment(layout, side, cursor, gap.x, border_obstacle_id)
+			if cursor >= wall_span.y:
+				break
+			_add_border_segment(
+				layout,
+				side,
+				cursor,
+				mini(gap.x, wall_span.y),
+				border_obstacle_id
+			)
 			cursor = maxi(cursor, gap.y)
-		_add_border_segment(layout, side, cursor, axis_limit, border_obstacle_id)
+		_add_border_segment(
+			layout,
+			side,
+			cursor,
+			wall_span.y,
+			border_obstacle_id
+		)
+
+func _wall_gaps_for_side(
+	layout: BiomeEnvironmentLayout,
+	cell: BiomeCell,
+	side: StringName,
+	axis_limit: int
+) -> Array[Vector2i]:
+	var gaps := _passage_gaps_for_side(cell, side, axis_limit)
+	gaps.append_array(_void_gaps_for_side(layout, side, axis_limit))
+	gaps.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return a.x < b.x)
+	var merged: Array[Vector2i] = []
+	for gap in gaps:
+		if merged.is_empty() or gap.x > merged.back().y:
+			merged.append(gap)
+			continue
+		var previous: Vector2i = merged.pop_back()
+		merged.append(Vector2i(previous.x, maxi(previous.y, gap.y)))
+	return merged
+
+func _void_gaps_for_side(
+	layout: BiomeEnvironmentLayout,
+	side: StringName,
+	axis_limit: int
+) -> Array[Vector2i]:
+	var gaps: Array[Vector2i] = []
+	for void_rect in layout.fall_zone_rects:
+		var touches_side := false
+		var start := 0
+		var finish := 0
+		match side:
+			&"north":
+				touches_side = void_rect.position.y <= 0
+				start = void_rect.position.x
+				finish = void_rect.end.x
+			&"south":
+				touches_side = void_rect.end.y >= layout.zone_size.y
+				start = void_rect.position.x
+				finish = void_rect.end.x
+			&"west":
+				touches_side = void_rect.position.x <= 0
+				start = void_rect.position.y
+				finish = void_rect.end.y
+			_:
+				touches_side = void_rect.end.x >= layout.zone_size.x
+				start = void_rect.position.y
+				finish = void_rect.end.y
+		if not touches_side:
+			continue
+		start = clampi(start, 0, axis_limit)
+		finish = clampi(finish, 0, axis_limit)
+		if finish > start:
+			gaps.append(Vector2i(start, finish))
+	return gaps
+
+func _wall_axis_span_away_from_fall_corners(
+	cell: BiomeCell,
+	side: StringName,
+	axis_limit: int
+) -> Vector2i:
+	var start_side := &"north" if side == &"west" or side == &"east" else &"west"
+	var end_side := &"south" if side == &"west" or side == &"east" else &"east"
+	var start := 0
+	var finish := axis_limit
+	if cell.get_border(start_side) == BiomeCell.BorderType.FALL:
+		start += FallBoundaryGenerator.FALL_THICKNESS
+	if cell.get_border(end_side) == BiomeCell.BorderType.FALL:
+		finish -= FallBoundaryGenerator.FALL_THICKNESS
+	return Vector2i(start, maxi(finish, start))
 
 func _side_axis_limit(layout: BiomeEnvironmentLayout, side: StringName) -> int:
 	if side == &"west" or side == &"east":

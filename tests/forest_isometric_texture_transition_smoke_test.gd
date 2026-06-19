@@ -93,6 +93,7 @@ func _run_generated_forest_smoke(
 		return
 
 	var saw_tiles: Dictionary = {}
+	var saw_oriented_cliff := false
 	var tall_grass_cell := Vector2i(-1, -1)
 	var checked := 0
 	for y in range(layout.zone_size.y):
@@ -106,7 +107,15 @@ func _run_generated_forest_smoke(
 				cell
 			)
 			saw_tiles[tile_id] = true
-			if layout.get_floor_tag_at_cell(probe) == &"forest_tall_grass":
+			if resolver.is_void_transition_tile_id(tile_id):
+				saw_oriented_cliff = true
+			if (
+				layout.get_floor_tag_at_cell(probe) == &"forest_tall_grass"
+				and [
+					&"forest_tall_grass",
+					&"grass_to_tall_grass"
+				].has(tile_id)
+			):
 				tall_grass_cell = probe
 			checked += 1
 	_expect(checked == layout.zone_size.x * layout.zone_size.y, "forest resolver covers the full chunk")
@@ -115,13 +124,13 @@ func _run_generated_forest_smoke(
 		&"forest_path",
 		&"forest_road",
 		&"forest_void",
-		&"forest_cliff_edge",
 		&"grass_to_path",
 		&"grass_to_road",
 		&"path_to_road",
 		&"ground_to_void_cliff"
 	]:
 		_expect(saw_tiles.has(tile_id), "generated forest emits %s" % String(tile_id))
+	_expect(saw_oriented_cliff, "generated forest emits neighbor-aware cliff transitions")
 	_expect(tall_grass_cell != Vector2i(-1, -1), "generated forest has tall grass floor cells")
 	if tall_grass_cell != Vector2i(-1, -1):
 		_expect(
@@ -133,7 +142,7 @@ func _run_generated_forest_smoke(
 				&"forest_tall_grass",
 				&"grass_to_tall_grass"
 			].has(resolver.resolve_tile_id(layout, tall_grass_cell, cell.biome_id, &"balanced", cell)),
-			"forest tall grass resolves to tall grass or its edge transition"
+			"forest tall grass resolves to grass or its vegetation transition"
 		)
 
 	var palette := load("res://game/modes/zombie/biomes/infected_plains_palette.tres") as BiomePalette
@@ -141,6 +150,16 @@ func _run_generated_forest_smoke(
 	layer.configure(layout, palette, cell.biome_id, &"balanced", 20, resolver, manifest)
 	_expect(layer.get_missing_asset_count() == 0, "forest tile layer has no missing assets")
 	_expect(layer.get_texture_detail_line_count() > 0, "forest tile layer bakes texture detail lines")
+	_expect(
+		layer.get_suppressed_void_texture_count() > 0,
+		"forest tile layer keeps pure void free of repeated tile texture"
+	)
+	_expect(
+		layer.get_void_background_color()
+			== ZombieModeController.get_void_background_color(palette),
+		"forest void uses the same color as the off-world backdrop"
+	)
+	_expect(layer.get_cliff_transition_count() > 0, "forest tile layer bakes vertical cliff faces")
 	layer.free()
 
 	biome_manager.queue_free()

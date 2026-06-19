@@ -49,15 +49,23 @@ sono in `assets/environment/isometric/tiles/forest/` e in
 - Il contatto con border o wall segment produce `ground_to_mountain_wall`.
 - Le celle fall/void del bioma usano `forest_cliff_edge` vicino al terreno e
   `forest_void` come profondita.
+- Le celle `fall_zone` sul confine vengono ulteriormente risolte in tile
+  neighbor-aware: quattro bordi, quattro angoli interni, quattro angoli esterni
+  e due raccordi diagonali condivisi tra i biomi. Il tile layer ne pre-bake-a
+  faccia verticale, cresta, fenditure, ombra e foschia.
 - Le pareti perimetrali usano `forest_mountain_wall`, mantenendo collisioni e
   varchi fisici esistenti.
 
 `BiomeTileLayer` mantiene il rendering chunked, aggiunge un underlay forestale
 pre-baked colorato per tipo tile e disattiva il reticolo sul bioma base. In
-questo modo gli spazi tra i rombi calpestabili non mostrano nero: erba/void/
-cliff usano verdi scuri, path/road marroni scuri. Le linee di dettaglio
-pre-baked restano sopra erba, tall grass, path, road, transizioni, cliff e void.
-Non crea nodi per tile.
+questo modo gli spazi tra i rombi calpestabili non mostrano nero: erba/cliff
+usano verdi scuri, path/road marroni scuri. Le linee di dettaglio pre-baked
+restano sopra erba, tall grass, path, road, transizioni e cliff; il
+`forest_void` puro usa solo l'underlay uniforme, senza rombi o reticoli
+ripetuti, usando lo stesso colore del `VoidBackdrop` fuori-mappa. I border perimetrali
+si fermano sia nei corner fall sia lungo ogni tratto in cui un `full_void`
+raggiunge il limite esterno, lasciando solo il fondale void. Non crea nodi per
+tile.
 
 ## Estendere ad altri biomi
 
@@ -88,6 +96,8 @@ Non crea nodi per tile.
   o gate visibili, e le pareti laterali devono leggere come montagna/roccia.
 - Camminare vicino a void e fall zone: il bordo deve mostrare cliff/depth e
   non deve sembrare pavimento attraversabile.
+- Controllare un bordo per ciascuna direzione e almeno un angolo: nessuna
+  giunzione deve mostrare buchi neri, creste interrotte o raccordi ambigui.
 - Verificare che tall grass, path, road e grass non cambino collisioni: player,
   zombie, crate e spawn restano sulle stesse classi terrain.
 - In high contrast e reduced motion, controllare che player, zombie, pickup,

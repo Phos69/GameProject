@@ -17,6 +17,22 @@ const REQUIRED_RUNTIME_ASSET_IDS: Array[StringName] = [
 	&"void_depth",
 	&"void_vertical_lines"
 ]
+const REQUIRED_TRANSITION_ASSET_IDS: Array[StringName] = [
+	&"void_edge_north",
+	&"void_edge_south",
+	&"void_edge_east",
+	&"void_edge_west",
+	&"void_corner_inner_north_east",
+	&"void_corner_inner_south_east",
+	&"void_corner_inner_south_west",
+	&"void_corner_inner_north_west",
+	&"void_corner_outer_north_east",
+	&"void_corner_outer_south_east",
+	&"void_corner_outer_south_west",
+	&"void_corner_outer_north_west",
+	&"void_diagonal_north_east_south_west",
+	&"void_diagonal_north_west_south_east"
+]
 const SIDES: Array[StringName] = [&"north", &"south", &"east", &"west"]
 
 var failures: PackedStringArray = []
@@ -34,7 +50,9 @@ func _run() -> void:
 			push_error("manifest failure: " + String(failure))
 
 	_run_manifest_coverage(manifest)
+	_run_transition_resolver_coverage()
 	await _run_fall_zone_instance_coverage(manifest)
+	await _run_tile_layer_visual_authority()
 	await _run_layout_side_metadata()
 	await _run_hazard_system_runtime()
 	_finish()
@@ -70,6 +88,81 @@ func _run_manifest_coverage(manifest: IsometricEnvironmentManifest) -> void:
 				"%s biome asset set includes %s"
 				% [String(biome_id), String(asset_id)]
 			)
+
+	for asset_id in REQUIRED_TRANSITION_ASSET_IDS:
+		var contract := manifest.get_void_asset_contract(asset_id)
+		var asset_path := String(contract.get("asset_path", ""))
+		_expect(not contract.is_empty(), "%s has a transition contract" % String(asset_id))
+		_expect(_asset_exists(asset_path), "%s transition texture exists" % String(asset_id))
+		_expect(
+			String(contract.get("fallback_path", ""))
+			== "res://game/modes/zombie/biome_tile_layer.gd",
+			"%s falls back to the chunked cliff renderer" % String(asset_id)
+		)
+
+func _run_transition_resolver_coverage() -> void:
+	var resolver := IsometricTileResolver.new()
+	_expect_transition(resolver, [Vector2i.UP], IsometricTileResolver.TILE_VOID_EDGE_NORTH)
+	_expect_transition(resolver, [Vector2i.DOWN], IsometricTileResolver.TILE_VOID_EDGE_SOUTH)
+	_expect_transition(resolver, [Vector2i.RIGHT], IsometricTileResolver.TILE_VOID_EDGE_EAST)
+	_expect_transition(resolver, [Vector2i.LEFT], IsometricTileResolver.TILE_VOID_EDGE_WEST)
+	_expect_transition(resolver, [Vector2i.UP, Vector2i.RIGHT], IsometricTileResolver.TILE_VOID_CORNER_INNER_NORTH_EAST)
+	_expect_transition(resolver, [Vector2i.DOWN, Vector2i.RIGHT], IsometricTileResolver.TILE_VOID_CORNER_INNER_SOUTH_EAST)
+	_expect_transition(resolver, [Vector2i.DOWN, Vector2i.LEFT], IsometricTileResolver.TILE_VOID_CORNER_INNER_SOUTH_WEST)
+	_expect_transition(resolver, [Vector2i.UP, Vector2i.LEFT], IsometricTileResolver.TILE_VOID_CORNER_INNER_NORTH_WEST)
+	_expect_transition(resolver, [Vector2i(1, -1)], IsometricTileResolver.TILE_VOID_CORNER_OUTER_NORTH_EAST)
+	_expect_transition(resolver, [Vector2i(1, 1)], IsometricTileResolver.TILE_VOID_CORNER_OUTER_SOUTH_EAST)
+	_expect_transition(resolver, [Vector2i(-1, 1)], IsometricTileResolver.TILE_VOID_CORNER_OUTER_SOUTH_WEST)
+	_expect_transition(resolver, [Vector2i(-1, -1)], IsometricTileResolver.TILE_VOID_CORNER_OUTER_NORTH_WEST)
+	_expect_transition(resolver, [Vector2i.UP, Vector2i.DOWN], IsometricTileResolver.TILE_VOID_DIAGONAL_NORTH_EAST_SOUTH_WEST)
+	_expect_transition(resolver, [Vector2i.LEFT, Vector2i.RIGHT], IsometricTileResolver.TILE_VOID_DIAGONAL_NORTH_WEST_SOUTH_EAST)
+	_expect_external_border_is_depth(resolver)
+
+func _expect_external_border_is_depth(resolver: IsometricTileResolver) -> void:
+	var layout := BiomeEnvironmentLayout.new()
+	layout.zone_size = Vector2i(7, 7)
+	layout.generation_seed = 8130
+	var biome_cell := BiomeCell.new()
+	biome_cell.configure(&"synthetic", &"toxic_wastes", Vector2i.ZERO, layout.zone_size, 8130)
+	biome_cell.set_border(&"north", BiomeCell.BorderType.BLOCKED)
+	var fall_cell := Vector2i(3, 1)
+	layout.add_fall_zone_rect(Rect2i(fall_cell, Vector2i.ONE), &"internal")
+	layout.rebuild_terrain_classification(biome_cell)
+	_expect(
+		resolver.resolve_tile_id(
+			layout,
+			fall_cell,
+			&"toxic_wastes",
+			&"balanced",
+			biome_cell
+		) == IsometricTileResolver.TILE_VOID_DEPTH,
+		"fall zone beside an external border remains pure void"
+	)
+
+func _expect_transition(
+	resolver: IsometricTileResolver,
+	ground_offsets: Array[Vector2i],
+	expected_tile_id: StringName
+) -> void:
+	var layout := BiomeEnvironmentLayout.new()
+	layout.zone_size = Vector2i(7, 7)
+	layout.generation_seed = 8128
+	var center := Vector2i(3, 3)
+	layout.add_fall_zone_rect(Rect2i(center, Vector2i.ONE), &"north")
+	for offset in ground_offsets:
+		layout.add_floor_rect(Rect2i(center + offset, Vector2i.ONE), &"floor_base")
+	layout.rebuild_terrain_classification()
+	var actual_tile_id := resolver.resolve_tile_id(
+		layout,
+		center,
+		&"toxic_wastes",
+		&"balanced"
+	)
+	_expect(
+		actual_tile_id == expected_tile_id,
+		"%s neighbor mask resolves to %s"
+		% [str(ground_offsets), String(expected_tile_id)]
+	)
 
 func _run_fall_zone_instance_coverage(
 	manifest: IsometricEnvironmentManifest
@@ -158,6 +251,30 @@ func _run_fall_zone_instance_coverage(
 		)
 		zone.queue_free()
 		await process_frame
+
+func _run_tile_layer_visual_authority() -> void:
+	var layer_marker := Node2D.new()
+	layer_marker.add_to_group("biome_tile_layers")
+	root.add_child(layer_marker)
+	var zone := FALL_ZONE_SCRIPT.new() as BiomeFallZone
+	root.add_child(zone)
+	zone.configure(
+		&"fall_zone",
+		Vector2(180.0, 180.0),
+		0.0,
+		Color(0.82, 0.58, 0.16, 0.92),
+		&"cliff",
+		&"internal",
+		9902
+	)
+	await process_frame
+	_expect(
+		zone.is_world_edge_visual_suppressed(),
+		"tile layer suppresses the duplicate rectangular fall-zone border"
+	)
+	zone.queue_free()
+	layer_marker.queue_free()
+	await process_frame
 
 func _run_layout_side_metadata() -> void:
 	var biome_manager := BiomeManager.new()

@@ -8,7 +8,7 @@ func _initialize() -> void:
 func _run() -> void:
 	var manifest := IsometricEnvironmentManifest.reload_shared()
 	_expect(manifest.load_error.is_empty(), "tile layer manifest loads")
-	_expect(manifest.version >= 7, "tile layer uses manifest v7")
+	_expect(manifest.version >= 8, "tile layer uses manifest v8")
 	var manifest_report := manifest.validate()
 	_expect(bool(manifest_report.get("is_valid", false)), "tile layer manifest validates")
 	if not bool(manifest_report.get("is_valid", false)):
@@ -90,7 +90,7 @@ func _run_resolver_coverage_smoke(
 					saw_route_tile = true
 				if String(tile_id).ends_with("_entry") or String(tile_id).ends_with("_exit"):
 					saw_passage_endpoint = true
-				elif tile_id == IsometricTileResolver.TILE_VOID_EDGE_NEAR:
+				elif resolver.is_void_transition_tile_id(tile_id):
 					saw_void_edge = true
 				elif tile_id == IsometricTileResolver.TILE_VOID_DEPTH:
 					saw_void_depth = true
@@ -133,7 +133,7 @@ func _run_resolver_coverage_smoke(
 	_expect(saw_tile_ids.has(IsometricTileResolver.TILE_FLOOR_VARIANT_02), "resolver emits floor_variant_02")
 	_expect(saw_route_tile, "resolver emits asset route tiles for road and passage rects")
 	_expect(saw_passage_endpoint, "resolver emits passage endpoint tiles for border openings")
-	_expect(saw_void_edge, "resolver emits void_edge_near for cliff lips")
+	_expect(saw_void_edge, "resolver emits neighbor-aware cliff transition tiles")
 	_expect(saw_void_depth or void_depth_probe == IsometricTileResolver.TILE_VOID_DEPTH, "resolver emits void_depth")
 	_expect(saw_hazard_floor, "resolver emits hazard_floor for hazard cells")
 
@@ -153,6 +153,14 @@ func _run_layer_chunk_smoke(
 	_expect(layer.get_visual_tile_count() == expected_tile_count, "tile layer caches all visual cells")
 	_expect(layer.get_missing_asset_count() == 0, "tile layer cache has no missing asset-backed cells")
 	_expect(not layer.uses_procedural_fallback(), "tile layer does not use the procedural ground fallback")
+	_expect(
+		layer.get_suppressed_void_texture_count() > 0,
+		"tile layer omits pure void cells from the textured ground mesh"
+	)
+	_expect(
+		layer.get_cliff_transition_count() > 0,
+		"tile layer pre-bakes visible cliff faces for fall-zone transitions"
+	)
 	var probe := _find_first_floor_cell(resolver, cell.generated_layout, cell)
 	_expect(
 		layer.get_resolved_tile_id(probe) == resolver.resolve_tile_id(cell.generated_layout, probe, cell.biome_id, &"balanced", cell),

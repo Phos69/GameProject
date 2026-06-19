@@ -4,6 +4,9 @@ class_name BiomeTileLayer
 const DEFAULT_CHUNK_SIZE := 20
 const PERFORMANCE_CHUNK_SIZE := 25
 const QUALITY_CHUNK_SIZE := 16
+const CLIFF_MESH_BUILDER_SCRIPT = preload(
+	"res://game/modes/zombie/cliffs/isometric_cliff_mesh_builder.gd"
+)
 
 var layout: BiomeEnvironmentLayout
 var palette: BiomePalette
@@ -25,11 +28,13 @@ var _missing_asset_count: int = 0
 # gl_compatibility.
 var _ground_mesh: ArrayMesh
 var _ground_underlay_mesh: ArrayMesh
+var _cliff_mesh_builder: IsometricCliffMeshBuilder
 var _grid_points: PackedVector2Array = PackedVector2Array()
 var _texture_dark_lines: PackedVector2Array = PackedVector2Array()
 var _texture_light_lines: PackedVector2Array = PackedVector2Array()
 var _transition_lines: PackedVector2Array = PackedVector2Array()
 var _depth_lines: PackedVector2Array = PackedVector2Array()
+var _suppressed_void_texture_count: int = 0
 
 func configure(
 	next_layout: BiomeEnvironmentLayout,
@@ -46,6 +51,8 @@ func configure(
 	quality_preset = next_quality_preset
 	manifest = next_manifest if next_manifest != null else IsometricEnvironmentManifest.get_shared()
 	resolver = next_resolver if next_resolver != null else IsometricTileResolver.new(manifest)
+	_cliff_mesh_builder = CLIFF_MESH_BUILDER_SCRIPT.new() as IsometricCliffMeshBuilder
+	_cliff_mesh_builder.configure(palette, layout.generation_seed if layout != null else 0)
 	chunk_size = _resolve_chunk_size(next_chunk_size, quality_preset)
 	z_index = -9
 	add_to_group("biome_tile_layers")
@@ -79,6 +86,15 @@ func get_texture_detail_line_count() -> int:
 		+ _transition_lines.size()
 		+ _depth_lines.size()
 	) / 2)
+
+func get_cliff_transition_count() -> int:
+	return _cliff_mesh_builder.transition_count if _cliff_mesh_builder != null else 0
+
+func get_suppressed_void_texture_count() -> int:
+	return _suppressed_void_texture_count
+
+func get_void_background_color() -> Color:
+	return ZombieModeController.get_void_background_color(palette)
 
 func get_chunk_rects() -> Array[Rect2i]:
 	return _chunks.duplicate()
@@ -130,6 +146,10 @@ func _draw() -> void:
 		draw_mesh(_ground_underlay_mesh, null)
 	if _ground_mesh != null:
 		draw_mesh(_ground_mesh, null)
+	if _cliff_mesh_builder != null and _cliff_mesh_builder.shadow_mesh != null:
+		draw_mesh(_cliff_mesh_builder.shadow_mesh, null)
+	if _cliff_mesh_builder != null and _cliff_mesh_builder.face_mesh != null:
+		draw_mesh(_cliff_mesh_builder.face_mesh, null)
 	if _texture_dark_lines.size() >= 2:
 		draw_multiline(_texture_dark_lines, Color(0.09, 0.18, 0.075, 0.34), 1.0)
 	if _texture_light_lines.size() >= 2:
@@ -138,6 +158,24 @@ func _draw() -> void:
 		draw_multiline(_transition_lines, Color(0.24, 0.15, 0.075, 0.42), 1.2)
 	if _depth_lines.size() >= 2:
 		draw_multiline(_depth_lines, Color(0.12, 0.22, 0.14, 0.48), 1.4)
+	if _cliff_mesh_builder != null and _cliff_mesh_builder.fissure_lines.size() >= 2:
+		draw_multiline(
+			_cliff_mesh_builder.fissure_lines,
+			Color(palette.background_color.lightened(0.24), 0.82),
+			1.4
+		)
+	if _cliff_mesh_builder != null and _cliff_mesh_builder.mist_lines.size() >= 2:
+		draw_multiline(
+			_cliff_mesh_builder.mist_lines,
+			Color(palette.grid_color.lightened(0.34), 0.34),
+			3.0
+		)
+	if _cliff_mesh_builder != null and _cliff_mesh_builder.lip_lines.size() >= 2:
+		draw_multiline(
+			_cliff_mesh_builder.lip_lines,
+			Color(palette.floor_color.lightened(0.46), 0.96),
+			2.8
+		)
 	if _should_draw_grid() and _grid_points.size() >= 2:
 		draw_multiline(_grid_points, Color(palette.grid_color, 0.12))
 
@@ -149,6 +187,9 @@ func _rebuild_ground_geometry() -> void:
 	_texture_light_lines = PackedVector2Array()
 	_transition_lines = PackedVector2Array()
 	_depth_lines = PackedVector2Array()
+	_suppressed_void_texture_count = 0
+	if _cliff_mesh_builder != null:
+		_cliff_mesh_builder.reset()
 	if layout == null or palette == null:
 		return
 	var scale := layout.logical_tile_scale
@@ -166,6 +207,9 @@ func _rebuild_ground_geometry() -> void:
 				var cell := Vector2i(x, y)
 				var tile_id := get_resolved_tile_id(cell)
 				if tile_id.is_empty():
+					continue
+				if _is_untextured_void_tile(tile_id):
+					_suppressed_void_texture_count += 1
 					continue
 				var center := _cell_center_to_world(cell)
 				var top := center + Vector2(0.0, -half_h)
@@ -203,6 +247,17 @@ func _rebuild_ground_geometry() -> void:
 					half_w,
 					half_h
 				)
+				if (
+					_cliff_mesh_builder != null
+					and resolver != null
+					and resolver.is_void_transition_tile_id(tile_id)
+				):
+					_cliff_mesh_builder.append_transition(
+						tile_id,
+						center,
+						half_w,
+						half_h
+					)
 	_grid_points = grid
 	if vertices.is_empty():
 		return
@@ -214,6 +269,8 @@ func _rebuild_ground_geometry() -> void:
 	var mesh := ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	_ground_mesh = mesh
+	if _cliff_mesh_builder != null:
+		_cliff_mesh_builder.build_meshes()
 
 func _build_forest_underlay_mesh(scale: float) -> ArrayMesh:
 	var vertices := PackedVector2Array()
@@ -274,6 +331,8 @@ func _append_underlay_run(
 	indices.append(base + 3)
 
 func _forest_underlay_key(tile_id: StringName) -> StringName:
+	if resolver != null and resolver.is_void_transition_tile_id(tile_id):
+		return &"void"
 	match tile_id:
 		IsometricTileResolver.TILE_FOREST_PATH, IsometricTileResolver.TILE_GRASS_TO_PATH:
 			return &"path"
@@ -293,7 +352,7 @@ func _forest_underlay_color(key: StringName) -> Color:
 		&"road":
 			return Color(0.36, 0.25, 0.12, 1.0)
 		&"void":
-			return Color(0.10, 0.18, 0.12, 1.0)
+			return get_void_background_color()
 		&"wall":
 			return Color(0.18, 0.22, 0.14, 1.0)
 		_:
@@ -368,6 +427,10 @@ func _cell_center_to_world(cell: Vector2i) -> Vector2:
 func _tile_color(tile_id: StringName) -> Color:
 	if _is_passage_endpoint_tile(tile_id):
 		return palette.gate_color.lightened(0.08)
+	if resolver != null and resolver.is_void_transition_tile_id(tile_id):
+		if _uses_forest_ground():
+			return Color(0.12, 0.205, 0.135, 1.0)
+		return palette.background_color.darkened(0.38)
 	match tile_id:
 		IsometricTileResolver.TILE_FOREST_GRASS:
 			return Color(0.20, 0.34, 0.17, 1.0)
@@ -427,11 +490,12 @@ func _tile_color(tile_id: StringName) -> Color:
 			return Color(palette.hazard_color, 0.60)
 		IsometricTileResolver.TILE_BORDER_FLOOR:
 			return palette.floor_color.darkened(0.24)
-		IsometricTileResolver.TILE_VOID_EDGE_NEAR, IsometricTileResolver.TILE_VOID_DEPTH:
-			# One uniform void colour (matching the off-map backdrop) so the void
-			# is not distinguished by shading; the world edge is shown by the fall
-			# zone boundary lines instead.
-			return palette.background_color.darkened(0.68)
+		IsometricTileResolver.TILE_VOID_EDGE_NEAR:
+			return palette.background_color.darkened(0.38)
+		IsometricTileResolver.TILE_VOID_DEPTH:
+			# The depth remains dark, but not pure black: cliff faces, fissures and
+			# low mist provide a readable visual descent from the walkable lip.
+			return palette.background_color.darkened(0.56)
 		IsometricTileResolver.TILE_FLOOR_VARIANT_01:
 			return palette.alternate_floor_color
 		IsometricTileResolver.TILE_FLOOR_VARIANT_02:
@@ -441,6 +505,12 @@ func _tile_color(tile_id: StringName) -> Color:
 		_:
 			return palette.floor_color
 
+func _is_untextured_void_tile(tile_id: StringName) -> bool:
+	return (
+		tile_id == IsometricTileResolver.TILE_VOID_DEPTH
+		or tile_id == IsometricTileResolver.TILE_FOREST_VOID
+	)
+
 func _append_texture_details(
 	cell: Vector2i,
 	tile_id: StringName,
@@ -448,6 +518,9 @@ func _append_texture_details(
 	half_w: float,
 	half_h: float
 ) -> void:
+	if resolver != null and resolver.is_void_transition_tile_id(tile_id):
+		_append_cliff_texture(cell, center, half_w, half_h)
+		return
 	match tile_id:
 		IsometricTileResolver.TILE_FOREST_GRASS, IsometricTileResolver.TILE_FOREST_GRASS_VARIANT_01, IsometricTileResolver.TILE_FOREST_GRASS_VARIANT_02:
 			_append_grass_texture(cell, center, half_w, half_h)
@@ -461,8 +534,6 @@ func _append_texture_details(
 			_append_transition_texture(cell, center, half_w, half_h)
 		IsometricTileResolver.TILE_GROUND_TO_VOID_CLIFF, IsometricTileResolver.TILE_FOREST_CLIFF_EDGE:
 			_append_cliff_texture(cell, center, half_w, half_h)
-		IsometricTileResolver.TILE_FOREST_VOID:
-			_append_void_texture(cell, center, half_w, half_h)
 		_:
 			pass
 
@@ -563,21 +634,6 @@ func _append_cliff_texture(
 			center + Vector2(-half_w * 0.58, -half_h * 0.18),
 			center + Vector2(half_w * 0.52, -half_h * 0.02)
 		)
-
-func _append_void_texture(
-	cell: Vector2i,
-	center: Vector2,
-	half_w: float,
-	half_h: float
-) -> void:
-	var seed := _detail_hash(cell)
-	if seed % 7 != 0:
-		return
-	_append_line(
-		_depth_lines,
-		center + Vector2(-half_w * 0.28, -half_h * 0.30),
-		center + Vector2(-half_w * 0.12, half_h * 0.62)
-	)
 
 func _append_line(
 	target: PackedVector2Array,

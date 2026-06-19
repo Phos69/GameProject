@@ -564,6 +564,15 @@ Regole hazard:
 - le fall zone rappresentano vuoto/caduta, restano distinte dagli hazard
   ambientali e sono gli unici gap attraversabili dal roll entro distanza
   valida;
+- il confine calpestabile/caduta usa cliff orientati sui quattro lati, angoli
+  interni/esterni e raccordi diagonali; la faccia verticale, le linee di
+  discesa, l'ombra e la foschia devono rendere il vuoto non ambiguo senza
+  affidarsi al nero o alla semplice assenza di tile;
+- il void profondo non mostra texture o reticoli ripetuti: resta uniforme e
+  usa lo stesso colore del fuori-mappa e viene definito visivamente dal cliff
+  dettagliato solo sul confine con terreno calpestabile;
+- quando void e bordo esterno si incontrano non viene disegnato alcun raccordo,
+  muro o cliff aggiuntivo: l'intero tratto di contatto resta puro vuoto;
 - entrando nella zona il player perde 20 HP, anche se ha un'altra invulnerabilita attiva;
 - il player torna all'ultima posizione sicura registrata e la velocita viene azzerata;
 - dopo il recupero riceve 1,25 secondi di invulnerabilita dedicata;

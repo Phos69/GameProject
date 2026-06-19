@@ -170,7 +170,17 @@ func _draw() -> void:
 	# No void "image": the void colour is painted by the tile layer (void cells)
 	# and the off-map backdrop. The fall zone only draws the world-end boundary so
 	# the edge of the map reads clearly, like a wall/ledge where the world stops.
+	# In the asset-driven runtime the neighbor-aware tile layer owns that edge;
+	# drawing this rectangle too would recreate borders where two void sides meet.
+	if is_world_edge_visual_suppressed():
+		return
 	_draw_world_edges()
+
+func is_world_edge_visual_suppressed() -> bool:
+	return (
+		is_inside_tree()
+		and not get_tree().get_nodes_in_group("biome_tile_layers").is_empty()
+	)
 
 func _draw_world_edges() -> void:
 	var half := zone_size * 0.5

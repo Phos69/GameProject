@@ -33,6 +33,10 @@
 - Aggiunto `tests/forest_isometric_texture_transition_smoke_test.gd` per
   validare contratti manifest, asset SVG, transizioni emesse dal layout
   generato, tall grass walkable e dettaglio texture nel `BiomeTileLayer`.
+- Aggiunti 14 tile SVG dedicati per i cliff: bordi north/south/east/west,
+  angoli interni/esterni e due raccordi diagonali. Il nuovo
+  `IsometricCliffMeshBuilder` pre-bake-a faccia verticale, creste, fenditure,
+  ombra profonda e foschia senza creare nodi per-tile.
 
 ### Changed
 
@@ -76,19 +80,33 @@
 - `IsometricTileResolver` risolve `infected_plains` con tile forestali
   neighbor-aware, mantenendo i passage tile prioritari e senza cambiare
   classificazione terrain, pathfinding, hazard o collisioni.
+- `IsometricTileResolver` risolve ora le celle `fall_zone` dal vicinato in
+  varianti cliff orientate; `BiomeTileLayer` usa il risultato per separare in
+  modo netto terreno calpestabile e caduta anche su angoli e raccordi.
 - `BiomeTileLayer` pre-bake-a linee di dettaglio per grass, tall grass, path,
-  road, transizioni, cliff e void, cosi il ground forestale non dipende da
+  road, transizioni e cliff, cosi il ground forestale non dipende da
   placeholder piatti o da nodi per-tile.
+- `BiomeTileLayer` esclude ora `void_depth` e `forest_void` dalla mesh a rombi
+  e dal reticolo: il void resta uniforme, mentre bordo e faccia cliff
+  mantengono i dettagli di profondita.
+- Il void uniforme usa ora il colore condiviso dal `VoidBackdrop` fuori-mappa;
+  il resolver ignora `TERRAIN_BORDER` come sorgente di cliff, i blocchi
+  `full_void` che raggiungono il perimetro vengono estesi fino al limite
+  esterno e il relativo intervallo viene sottratto dai wall segment.
 - Il pass texture forestale usa ora ombre, dettagli e underlay scuri relativi
   al tipo di tile: verde bosco per erba/void/cliff e marrone scuro per
   path/road. Il reticolo sul ground forestale e disattivato per eliminare gli
   spazi neri tra i rombi calpestabili.
-- `assets/environment/isometric/manifest.json` punta il tile set base a
-  `tiles/forest/forest_tileset.svg` e registra 108 SVG ambiente verificati dalla
-  pipeline asset.
+- `assets/environment/isometric/manifest.json` v8 punta il tile set base a
+  `tiles/forest/forest_tileset.svg` e registra 122 SVG ambiente verificati dalla
+  pipeline asset, incluse le transizioni cliff orientate.
 
 ### Fixed
 
+- Corretto il QA visuale isometrico: le catture sui biomi remoti ora spostano
+  il player su una cella sicura adiacente al focus e azzerano lo smoothing
+  camera; una verifica di dettaglio world-space impedisce ai frame neri di
+  risultare PASS.
 - Corretto il loader runtime degli SVG ambiente isometrici: ora rasterizza il
   contenuto SVG trasparente quando disponibile, scarta import opachi e usa un
   fallback isometrico specifico per categoria oggetto invece della sagoma
@@ -96,6 +114,8 @@
 
 ### Performance
 
+- Il profilo `balanced` con mondo `3x3`, tre regioni streamate e 28 nemici
+  resta nel budget dopo il nuovo cliff pass: 16,59 ms medi su target 35 ms.
 - Ridotto drasticamente il costo di rendering del terreno isometrico in modalità
   zombie, che era il principale collo di bottiglia del framerate (non il
   caricamento dei tile). Il renderer `gl_compatibility` ridisegna ogni frame

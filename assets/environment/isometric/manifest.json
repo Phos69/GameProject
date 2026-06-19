@@ -1,7 +1,7 @@
 {
-  "version": 7,
+  "version": 8,
   "coordinate_system": "pseudo_isometric_2d",
-  "notes": "Environment objects still keep safe procedural fallbacks for bootstrap, but manifest v7 is the asset-driven contract for terrain tiles, edge tiles, void tiles, object scenes, passage tiles and biome asset sets. IDs emitted by ObstacleLayoutGenerator, BiomeTerrainGenerator, BiomePassageGenerator and FallBoundaryGenerator must have a v7 asset contract with either a real asset path or an explicit needs_asset/procedural_fallback status.",
+  "notes": "Environment objects still keep safe procedural fallbacks for bootstrap. Manifest v8 extends the asset-driven contract with neighbor-aware void edges, inner/outer corners and diagonal cliff connectors. IDs emitted by ObstacleLayoutGenerator, BiomeTerrainGenerator, BiomePassageGenerator and FallBoundaryGenerator must have an asset contract with either a real asset path or an explicit needs_asset/procedural_fallback status.",
   "default_sorting": {
     "mode": "y_sort",
     "sort_offset": 6
@@ -86,6 +86,20 @@
   "void_tiles": {
     "fall_zone": { "asset_path": "res://assets/environment/isometric/edges/cliffs/fall_zone.svg", "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_fall_zone.gd" },
     "void_edge_near": { "asset_path": "res://assets/environment/isometric/edges/cliffs/void_edge_near.svg", "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_fall_zone.gd" },
+    "void_edge_north": { "asset_path": "res://assets/environment/isometric/edges/cliffs/transitions/void_edge_north.svg", "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_tile_layer.gd" },
+    "void_edge_south": { "asset_path": "res://assets/environment/isometric/edges/cliffs/transitions/void_edge_south.svg", "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_tile_layer.gd" },
+    "void_edge_east": { "asset_path": "res://assets/environment/isometric/edges/cliffs/transitions/void_edge_east.svg", "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_tile_layer.gd" },
+    "void_edge_west": { "asset_path": "res://assets/environment/isometric/edges/cliffs/transitions/void_edge_west.svg", "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_tile_layer.gd" },
+    "void_corner_inner_north_east": { "asset_path": "res://assets/environment/isometric/edges/cliffs/transitions/void_corner_inner_north_east.svg", "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_tile_layer.gd" },
+    "void_corner_inner_south_east": { "asset_path": "res://assets/environment/isometric/edges/cliffs/transitions/void_corner_inner_south_east.svg", "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_tile_layer.gd" },
+    "void_corner_inner_south_west": { "asset_path": "res://assets/environment/isometric/edges/cliffs/transitions/void_corner_inner_south_west.svg", "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_tile_layer.gd" },
+    "void_corner_inner_north_west": { "asset_path": "res://assets/environment/isometric/edges/cliffs/transitions/void_corner_inner_north_west.svg", "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_tile_layer.gd" },
+    "void_corner_outer_north_east": { "asset_path": "res://assets/environment/isometric/edges/cliffs/transitions/void_corner_outer_north_east.svg", "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_tile_layer.gd" },
+    "void_corner_outer_south_east": { "asset_path": "res://assets/environment/isometric/edges/cliffs/transitions/void_corner_outer_south_east.svg", "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_tile_layer.gd" },
+    "void_corner_outer_south_west": { "asset_path": "res://assets/environment/isometric/edges/cliffs/transitions/void_corner_outer_south_west.svg", "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_tile_layer.gd" },
+    "void_corner_outer_north_west": { "asset_path": "res://assets/environment/isometric/edges/cliffs/transitions/void_corner_outer_north_west.svg", "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_tile_layer.gd" },
+    "void_diagonal_north_east_south_west": { "asset_path": "res://assets/environment/isometric/edges/cliffs/transitions/void_diagonal_north_east_south_west.svg", "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_tile_layer.gd" },
+    "void_diagonal_north_west_south_east": { "asset_path": "res://assets/environment/isometric/edges/cliffs/transitions/void_diagonal_north_west_south_east.svg", "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_tile_layer.gd" },
     "forest_void": { "asset_path": "res://assets/environment/isometric/edges/void/forest_void.svg", "biome_ids": ["infected_plains"], "anchor": "center", "fallback_path": "res://game/modes/zombie/biome_fall_zone.gd" },
     "forest_cliff_edge": { "asset_path": "res://assets/environment/isometric/edges/cliffs/forest_cliff_edge.svg", "biome_ids": ["infected_plains"], "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_fall_zone.gd" },
     "cliff_lip_north": { "asset_path": "res://assets/environment/isometric/edges/cliffs/cliff_lip_north.svg", "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_fall_zone.gd" },

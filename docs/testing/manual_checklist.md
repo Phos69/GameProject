@@ -722,6 +722,15 @@ e `high_contrast`.
   segmenti chiusi attorno al passaggio restino fisici.
 - Verificare che i lati senza regione adiacente siano fall zone visive e
   dannose, con profondita/cliff leggibile.
+- Inquadrare bordi north/south/east/west, un angolo interno, uno esterno e un
+  raccordo diagonale: devono avere cresta continua, faccia verticale, linee di
+  discesa, ombra profonda e foschia senza celle nere o transizioni ambigue.
+- Confermare che oltre il cliff il void sia uniforme, senza trama a rombi,
+  reticolo o ripetizione della texture del terreno.
+- Confrontare void interno e fuori-mappa: il colore deve essere identico.
+- Nei corner tra un lato wall e un lato fall e lungo i `full_void` che arrivano
+  al perimetro, verificare che muro/cliff non proseguano sopra il void: tutto
+  il tratto di contatto deve mostrare soltanto vuoto.
 - Provare il roll su un piccolo gap/fall zone e confermare che riesca solo con
   landing valida.
 - Provare il roll attraverso lava, gas/acqua profonda o altri hazard ambientali
@@ -850,7 +859,7 @@ godot --headless --path . --script res://tests/milestone_8_multi_region_smoke_te
 
 ## Regressione ISO-001 Milestone 10.11 - QA finale asset isometrico
 
-Stato QA del 18 giugno 2026: PASS automatico e catture generate con
+Stato QA del 19 giugno 2026: PASS automatico e catture generate con
 `gl_compatibility` a `1280x720`.
 
 - Confermare che i cinque biomi abbiano tile base continui, varianti persistenti
@@ -944,7 +953,7 @@ godot --headless --path . --script res://tests/open_passage_transition_smoke_tes
 
 QA documentale e smoke da eseguire prima di creare asset nuovi.
 
-- Aprire `assets/environment/isometric/manifest.json` e confermare `version: 7`.
+- Aprire `assets/environment/isometric/manifest.json` e confermare `version: 8`.
 - Verificare che le sezioni `tile_sets`, `tile_variants`, `terrain_tiles`,
   `edge_tiles`, `void_tiles`, `object_scenes`, `passage_tiles`,
   `biome_asset_sets` e `fallback_policy` siano presenti.
@@ -966,7 +975,7 @@ godot --headless --path . --script res://tests/isometric_biome_terrain_coverage_
 
 ## Regressione Milestone 10.2 - pipeline asset locale
 
-QA documentale e filesystem da eseguire dopo modifiche al manifest v7.
+QA documentale e filesystem da eseguire dopo modifiche al manifest v8.
 
 - Eseguire il generatore in `--dry-run` e verificare che elenchi solo path sotto
   `assets/environment/isometric/`.
@@ -990,7 +999,7 @@ godot --headless --path . --script res://tests/isometric_environment_manifest_sm
 
 ## Regressione Milestone 10.3 - tile layer persistente
 
-QA visuale e runtime da eseguire dopo modifiche a ground, manifest v7 o layout
+QA visuale e runtime da eseguire dopo modifiche a ground, manifest v8 o layout
 bioma.
 
 - Avviare survival con seed fisso e confermare che il terreno visibile copra
@@ -1002,8 +1011,9 @@ bioma.
   e restino stabili rigenerando lo stesso seed.
 - Verificare che strade e passaggi siano integrati nel ground tile layer e che
   non appaiano piu come ovali `BiomeTerrainPatch` sopra il terreno.
-- Verificare cliff/fall boundary: il bordo vicino al terreno usa
-  `void_edge_near`, il fuori-mappa/esterno resta `void_depth`.
+- Verificare cliff/fall boundary: il bordo vicino al terreno usa una variante
+  `void_edge_*`/`void_corner_*`/`void_diagonal_*`, mentre il fuori-mappa resta
+  `void_depth`.
 - Aprire il profiler o l'overlay debug e confermare assenza di nodi per-tile
   tile: il ground deve essere un `BiomeTileLayer` chunked.
 
@@ -1049,7 +1059,7 @@ godot --headless --path . --script res://tools/generate_isometric_environment_as
 ## Regressione Milestone 10.4 - strade e passaggi asset-driven
 
 QA visuale e runtime da eseguire dopo modifiche a `BiomePassage`,
-`IsometricTileResolver`, manifest v7 o transizioni tra regioni.
+`IsometricTileResolver`, manifest v8 o transizioni tra regioni.
 
 - Avviare survival con seed fisso `641004` e attraversare almeno otto confini
   fisici, includendo almeno un passaggio north, south, east e west.
@@ -1075,7 +1085,7 @@ godot --headless --path . --script res://tools/generate_isometric_environment_as
 ## Regressione Milestone 10.5 - oggetti e ostacoli slot-based
 
 QA visuale e runtime da eseguire dopo modifiche a `ObstacleSystem`,
-`IsometricEnvironmentObject`, `SupplyCrateVisual`, manifest v7 o asset
+`IsometricEnvironmentObject`, `SupplyCrateVisual`, manifest v8 o asset
 `object_scenes`.
 
 - Avviare survival con seed fisso e verificare che rocce, case, barriere,
