@@ -87,10 +87,7 @@ func _resolve_wave_manager() -> void:
 		wave_manager.wave_configured.connect(wave_callback)
 
 func _has_low_special_ammo_player() -> bool:
-	for player in get_tree().get_nodes_in_group("players"):
-		var health_component := player.get_node_or_null("HealthComponent") as HealthComponent
-		if health_component == null or not health_component.is_alive():
-			continue
+	for player in PlayerQuery.alive(get_tree()):
 		var weapon_system := player.get_node_or_null("WeaponSystem") as WeaponSystem
 		if (
 			weapon_system != null

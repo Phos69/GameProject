@@ -22,12 +22,7 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	_prune_progress()
-	for target in get_tree().get_nodes_in_group("players"):
-		var health_component := target.get_node_or_null(
-			"HealthComponent"
-		) as HealthComponent
-		if health_component == null or not health_component.is_downed:
-			continue
+	for target in PlayerQuery.downed(get_tree()):
 		var reviver := _find_active_reviver(target)
 		if reviver == null:
 			interrupt_revive(target)
@@ -90,13 +85,8 @@ func _find_active_reviver(target: Node) -> Node:
 		return null
 	var nearest: Node
 	var nearest_distance := revive_radius
-	for candidate in get_tree().get_nodes_in_group("players"):
+	for candidate in PlayerQuery.alive(get_tree()):
 		if candidate == target or not candidate is Node2D:
-			continue
-		var health_component := candidate.get_node_or_null(
-			"HealthComponent"
-		) as HealthComponent
-		if health_component == null or not health_component.is_alive():
 			continue
 		var distance := (target as Node2D).global_position.distance_to(
 			(candidate as Node2D).global_position
@@ -119,18 +109,7 @@ func _can_revive(target: Node, reviver: Node) -> bool:
 		or not reviver is Node2D
 	):
 		return false
-	var target_health := target.get_node_or_null(
-		"HealthComponent"
-	) as HealthComponent
-	var reviver_health := reviver.get_node_or_null(
-		"HealthComponent"
-	) as HealthComponent
-	if (
-		target_health == null
-		or not target_health.is_downed
-		or reviver_health == null
-		or not reviver_health.is_alive()
-	):
+	if not PlayerQuery.is_downed(target) or not PlayerQuery.is_alive(reviver):
 		return false
 	return (target as Node2D).global_position.distance_to(
 		(reviver as Node2D).global_position
@@ -163,7 +142,7 @@ func _set_indicator_progress(target: Node, ratio: float, active: bool) -> void:
 
 func _prune_progress() -> void:
 	var valid_target_ids: Dictionary = {}
-	for player in get_tree().get_nodes_in_group("players"):
+	for player in PlayerQuery.all(get_tree()):
 		valid_target_ids[player.get_instance_id()] = true
 	for target_id in progress_by_target.keys():
 		if not valid_target_ids.has(target_id):

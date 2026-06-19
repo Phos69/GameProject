@@ -155,18 +155,7 @@ func _is_too_close_to_players(position: Vector2) -> bool:
 	)
 
 func _distance_squared_to_nearest_player(position: Vector2) -> float:
-	var nearest := INF
-	for player in get_tree().get_nodes_in_group("players"):
-		if not player is Node2D:
-			continue
-		var health_component := player.get_node_or_null("HealthComponent") as HealthComponent
-		if health_component != null and not health_component.is_alive():
-			continue
-		nearest = minf(
-			nearest,
-			position.distance_squared_to((player as Node2D).global_position)
-		)
-	return nearest
+	return PlayerQuery.nearest_distance_squared(get_tree(), position)
 
 func _is_position_blocked_by_obstacles(position: Vector2) -> bool:
 	var obstacle_system := get_tree().get_first_node_in_group("obstacle_system")
