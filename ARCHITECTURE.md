@@ -174,7 +174,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
   ostacoli, casse, hazard, summary deterministico e report di validazione.
 - `IsometricEnvironmentManifest`: legge `assets/environment/isometric/manifest.json`
   come inventario di ostacoli, draw mode oggetto, border tematici, fall zone
-  procedurali, tag terrain generati e contratto asset v8 (`tile_sets`,
+  procedurali, tag terrain generati e contratto asset v9 (`tile_sets`,
   `tile_variants`, `terrain_tiles`, `edge_tiles`, `void_tiles`, `object_scenes`,
   `passage_tiles`, `biome_asset_sets`, `fallback_policy`). Il loader normalizza
   path, status, footprint, anchor, collisione, blocchi e attribution senza
@@ -649,7 +649,7 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - `BiomeObstacle` legge `draw_mode` e `dedicated_draw` da
   `IsometricEnvironmentManifest`; se un ID ricade su `generic_barrier`, deve
   essere una scelta esplicita del manifest e non un fallback implicito.
-- Il manifest v8 vieta fallback impliciti: ogni ID generato da ostacoli,
+- Il manifest v9 vieta fallback impliciti: ogni ID generato da ostacoli,
   terrain, passaggi, bordi o fall zone deve avere un contratto asset-driven con
   `asset_path`, `status`, `biome_ids`, `anchor`, footprint/collisione, sorgente,
   licenza, attribution e `fallback_path` quando l'asset e ancora assente.
@@ -658,6 +658,15 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
   `blocks_movement` e `blocks_projectiles` guidano i bit di `collision_layer`,
   `is_jumpable_gap_anchor` espone `is_jumpable_obstacle()`. La stessa footprint
   serve collisione fisica, spawn blocker e validazione casse.
+- Il contratto v9 usa slot `4x4` celle: `footprint_slots` produce
+  `footprint_tiles`, mentre `BiomeEnvironmentLayout.obstacle_rects` conserva le
+  celle realmente occupate. `ObstacleLayoutGenerator` normalizza ogni oggetto
+  non-border al footprint manifest prima delle query di spazio; posizione,
+  collisione e base visiva derivano poi dallo stesso rettangolo.
+- `BiomeEnvironmentLayout.get_obstacle_record()` espone tipo, categoria,
+  footprint, celle, asset/variante, altezza e blocchi. La validazione rifiuta
+  mismatch o ostacoli solidi privi di asset; `ObstacleSystem` propaga il record
+  ai nodi streamati e usa `F9` per il debug footprint runtime.
 - `ObstacleSystem` espone `is_position_blocked` (tutti gli ostacoli, usato da
   spawn/crate/landing) e `is_position_blocked_by_non_jumpable` /
   `is_position_jumpable_obstacle`; il dodge usa la query non-jumpable per la
@@ -676,7 +685,7 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
   `full_void` adiacenti al perimetro attraversano la fascia border e il loro
   intervallo viene escluso dai wall segment, evitando bordi sopra il vuoto.
 - Ogni layout conserva un corridoio centrale libero per l'AI diretta esistente.
-- `assets/environment/isometric/manifest.json` v8 contiene i draw mode oggetto
+- `assets/environment/isometric/manifest.json` v9 contiene i draw mode oggetto
   legacy in `object_visuals`, i contratti asset per tile, terrain, edge, void,
   object scenes, passage tiles e asset set di bioma, inclusi i 14 tile cliff
   orientati, `void_depth`, tile forestali, road connector e entry/exit

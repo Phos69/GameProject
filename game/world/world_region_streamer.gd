@@ -241,6 +241,8 @@ func _stream_obstacles(
 			obstacle.remove_from_group("environment_obstacles")
 		obstacle.position = layout.obstacle_positions[index]
 		obstacle.set_meta("region_id", region_id)
+		if index < layout.obstacle_rects.size():
+			obstacle.set_meta("obstacle_record", layout.get_obstacle_record(index, manifest))
 		obstacle_system.register_streamed_obstacle(obstacle, obstacle_id)
 		count += 1
 	return count

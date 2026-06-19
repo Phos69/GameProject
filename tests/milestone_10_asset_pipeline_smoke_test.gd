@@ -8,10 +8,13 @@ const REQUIRED_DIRS: Array[String] = [
 	"res://assets/environment/isometric/tiles/marsh",
 	"res://assets/environment/isometric/tiles/forest",
 	"res://assets/environment/isometric/tiles/shared",
-	"res://assets/environment/isometric/objects/buildings",
+	"res://assets/environment/isometric/objects/houses",
 	"res://assets/environment/isometric/objects/barriers",
+	"res://assets/environment/isometric/objects/debris",
+	"res://assets/environment/isometric/objects/fences",
 	"res://assets/environment/isometric/objects/rocks",
 	"res://assets/environment/isometric/objects/trees",
+	"res://assets/environment/isometric/objects/vegetation",
 	"res://assets/environment/isometric/objects/wrecks",
 	"res://assets/environment/isometric/objects/barrels",
 	"res://assets/environment/isometric/objects/bridges",
@@ -42,7 +45,7 @@ func _initialize() -> void:
 func _run() -> void:
 	var manifest := IsometricEnvironmentManifest.reload_shared()
 	_expect(manifest.load_error.is_empty(), "asset pipeline manifest loads")
-	_expect(manifest.version >= 7, "asset pipeline uses manifest v7")
+	_expect(manifest.version >= 9, "asset pipeline uses manifest v9")
 	_expect(bool(manifest.validate().get("is_valid", false)), "asset pipeline manifest validates")
 
 	_run_directory_structure()

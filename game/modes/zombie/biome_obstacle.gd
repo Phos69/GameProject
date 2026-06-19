@@ -13,6 +13,9 @@ var obstacle_category: StringName = &"rock"
 var draw_mode: StringName = &"rock"
 var dedicated_draw: bool = true
 var obstacle_size: Vector2 = Vector2(48.0, 40.0)
+var footprint_tiles: Vector2i = Vector2i(6, 5)
+var footprint_slots: Vector2i = Vector2i(2, 2)
+var visual_height_tiles: int = 0
 var shape_id: StringName = &"rectangle"
 var collision_shape_id: StringName = &"rectangle"
 var blocks_movement: bool = true
@@ -24,6 +27,7 @@ var obstacle_key: StringName = &""
 var primary_color: Color = Color(0.38, 0.30, 0.16, 1.0)
 var accent_color: Color = Color(0.74, 0.58, 0.16, 0.82)
 var sort_offset: float = 0.0
+var sort_anchor_y: float = 0.0
 
 func configure(
 	next_obstacle_id: StringName,
@@ -42,6 +46,9 @@ func configure(
 	blocks_movement = manifest.blocks_movement(obstacle_id)
 	projectile_blocking = manifest.blocks_projectiles(obstacle_id)
 	jumpable = manifest.is_jumpable_gap_anchor(obstacle_id)
+	footprint_tiles = manifest.get_footprint_tiles(obstacle_id)
+	footprint_slots = manifest.get_footprint_slots(obstacle_id)
+	visual_height_tiles = manifest.get_visual_height_tiles(obstacle_id)
 	obstacle_size = Vector2(
 		maxf(next_size.x, 12.0),
 		maxf(next_size.y, 12.0)
@@ -66,6 +73,12 @@ func configure(
 	# z_index 0 so obstacles take part in the World Y-sort together with zombies
 	# and pickups instead of flatly covering them.
 	z_index = 0
+	sort_anchor_y = clampf(sort_offset, 0.0, obstacle_size.y * 0.5 + 12.0)
+	set_meta("sort_anchor_y", sort_anchor_y)
+	set_meta("footprint_tiles", footprint_tiles)
+	set_meta("footprint_slots", footprint_slots)
+	set_meta("visual_height_tiles", visual_height_tiles)
+	set_meta("footprint_contract_aligned", is_footprint_contract_aligned())
 	set_meta("zone_radius", get_clearance_radius())
 	_rebuild_collision()
 	queue_redraw()
@@ -94,6 +107,25 @@ func get_clearance_radius() -> float:
 
 func get_obstacle_category() -> StringName:
 	return obstacle_category
+
+func get_footprint_tiles() -> Vector2i:
+	return footprint_tiles
+
+func get_footprint_slots() -> Vector2i:
+	return footprint_slots
+
+func get_visual_height_tiles() -> int:
+	return visual_height_tiles
+
+func get_sort_anchor_y() -> float:
+	return sort_anchor_y
+
+func get_visual_base_size() -> Vector2:
+	return obstacle_size
+
+func is_footprint_contract_aligned(logical_tile_scale: float = 8.0) -> bool:
+	var expected := Vector2(footprint_tiles) * logical_tile_scale
+	return obstacle_size.is_equal_approx(expected) or is_perimeter_wall()
 
 func get_draw_mode() -> StringName:
 	return draw_mode

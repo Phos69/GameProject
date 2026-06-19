@@ -3,6 +3,7 @@ class_name ObstacleSystem
 
 signal obstacle_rules_configured(biome_id: StringName)
 signal obstacle_spawned(obstacle: Node2D, obstacle_id: StringName)
+signal obstacle_debug_overlay_changed(visible: bool)
 
 const BIOME_OBSTACLE_SCRIPT = preload(
 	"res://game/modes/zombie/biome_obstacle.gd"
@@ -20,11 +21,18 @@ var is_active: bool = false
 var active_obstacles: Array[Node2D] = []
 var manifest: IsometricEnvironmentManifest
 var object_factory: RefCounted
+var debug_footprints_visible: bool = false
 
 func _ready() -> void:
 	add_to_group("obstacle_system")
 	manifest = IsometricEnvironmentManifest.get_shared()
 	object_factory = ISOMETRIC_OBJECT_FACTORY_SCRIPT.new(manifest)
+	set_process_unhandled_key_input(true)
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F9:
+		set_debug_footprints_visible(not debug_footprints_visible)
+		get_viewport().set_input_as_handled()
 
 func start_run(biome: BiomeDefinition) -> void:
 	_clear_runtime()
@@ -51,6 +59,15 @@ func stop_run() -> void:
 func get_active_obstacles() -> Array[Node2D]:
 	_prune_runtime()
 	return active_obstacles.duplicate()
+
+func set_debug_footprints_visible(visible: bool) -> void:
+	debug_footprints_visible = visible
+	for obstacle in get_active_obstacles():
+		_apply_debug_visibility(obstacle)
+	obstacle_debug_overlay_changed.emit(debug_footprints_visible)
+
+func are_debug_footprints_visible() -> bool:
+	return debug_footprints_visible
 
 func is_position_blocked(position: Vector2) -> bool:
 	return _is_position_blocked(position, false)
@@ -91,6 +108,7 @@ func register_streamed_obstacle(
 		return
 	if not active_obstacles.has(obstacle):
 		active_obstacles.append(obstacle)
+	_apply_debug_visibility(obstacle)
 	obstacle_spawned.emit(obstacle, obstacle_id)
 
 func _is_position_blocked(position: Vector2, skip_jumpable: bool) -> bool:
@@ -176,11 +194,14 @@ func _generate_obstacles() -> void:
 			obstacle_id
 		)
 		container.add_child(obstacle)
+		if index < layout.obstacle_rects.size():
+			obstacle.set_meta("obstacle_record", layout.get_obstacle_record(index, manifest))
 		if manifest != null and not manifest.blocks_movement(obstacle_id):
 			obstacle.remove_from_group("spawn_blockers")
 			obstacle.remove_from_group("environment_obstacles")
 		obstacle.global_position = layout.obstacle_positions[index]
 		active_obstacles.append(obstacle)
+		_apply_debug_visibility(obstacle)
 		obstacle_spawned.emit(obstacle, obstacle_id)
 
 func _get_environment_container() -> Node:
@@ -251,6 +272,10 @@ func _sort_offset_for(obstacle_id: StringName) -> float:
 	if manifest == null:
 		return 0.0
 	return manifest.get_sort_offset(obstacle_id)
+
+func _apply_debug_visibility(obstacle: Node) -> void:
+	if obstacle != null and obstacle.has_method("set_debug_footprint_visible"):
+		obstacle.call("set_debug_footprint_visible", debug_footprints_visible)
 
 func _pascal_case(value: String) -> String:
 	var result := ""

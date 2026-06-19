@@ -98,6 +98,82 @@ func rect_center_to_world(rect: Rect2i) -> Vector2:
 func rect_size_to_world(rect: Rect2i) -> Vector2:
 	return Vector2(rect.size) * logical_tile_scale
 
+func get_obstacle_record(
+	index: int,
+	manifest: IsometricEnvironmentManifest = null
+) -> Dictionary:
+	if index < 0 or index >= obstacle_ids.size() or index >= obstacle_rects.size():
+		return {}
+	var source_manifest := manifest
+	if source_manifest == null:
+		source_manifest = IsometricEnvironmentManifest.get_shared()
+	var obstacle_id := obstacle_ids[index]
+	var occupied_cells := obstacle_rects[index]
+	var asset_contract := source_manifest.get_object_asset_contract(obstacle_id)
+	return {
+		"type": obstacle_id,
+		"category": source_manifest.get_category(obstacle_id),
+		"footprint_slots": source_manifest.get_footprint_slots(obstacle_id),
+		"footprint_tiles": occupied_cells.size,
+		"occupied_cells": occupied_cells,
+		"asset_path": String(asset_contract.get("asset_path", "")),
+		"asset_variant": obstacle_id,
+		"visual_height_tiles": source_manifest.get_visual_height_tiles(obstacle_id),
+		"collision_shape": source_manifest.get_collision_shape(obstacle_id),
+		"blocks_movement": source_manifest.blocks_movement(obstacle_id),
+		"blocks_projectiles": source_manifest.blocks_projectiles(obstacle_id)
+	}
+
+func validate_obstacle_records(
+	manifest: IsometricEnvironmentManifest = null
+) -> PackedStringArray:
+	var failures := PackedStringArray()
+	var source_manifest := manifest
+	if source_manifest == null:
+		source_manifest = IsometricEnvironmentManifest.get_shared()
+	var count := obstacle_rects.size()
+	if (
+		obstacle_ids.size() != count
+		or obstacle_positions.size() != count
+		or obstacle_sizes.size() != count
+		or obstacle_rotations.size() != count
+		or obstacle_shape_ids.size() != count
+	):
+		failures.append("obstacle arrays must have identical lengths")
+		return failures
+	for index in range(count):
+		var obstacle_id := obstacle_ids[index]
+		var rect := obstacle_rects[index]
+		if not source_manifest.has_object(obstacle_id):
+			failures.append("%s[%d]: missing manifest object" % [String(obstacle_id), index])
+			continue
+		if rect.size.x <= 0 or rect.size.y <= 0:
+			failures.append("%s[%d]: occupied cell rect is empty" % [String(obstacle_id), index])
+			continue
+		if (
+			source_manifest.get_category(obstacle_id) != &"border"
+			and rect.size != source_manifest.get_footprint_tiles(obstacle_id)
+		):
+			failures.append(
+				"%s[%d]: logical rect %s differs from manifest footprint %s"
+				% [
+					String(obstacle_id),
+					index,
+					str(rect.size),
+					str(source_manifest.get_footprint_tiles(obstacle_id))
+				]
+			)
+		if not obstacle_positions[index].is_equal_approx(rect_center_to_world(rect)):
+			failures.append("%s[%d]: world anchor differs from occupied cells" % [String(obstacle_id), index])
+		if not obstacle_sizes[index].is_equal_approx(rect_size_to_world(rect)):
+			failures.append("%s[%d]: collision size differs from occupied cells" % [String(obstacle_id), index])
+		var asset_path := String(
+			source_manifest.get_object_asset_contract(obstacle_id).get("asset_path", "")
+		)
+		if source_manifest.blocks_movement(obstacle_id) and asset_path.is_empty():
+			failures.append("%s[%d]: blocking obstacle has no asset" % [String(obstacle_id), index])
+	return failures
+
 func world_to_logical(position: Vector2) -> Vector2i:
 	return Vector2i(
 		roundi(position.x / logical_tile_scale + float(zone_size.x) * 0.5),

@@ -6,7 +6,8 @@ class_name IsometricEnvironmentManifest
 ## The manifest is the single source of truth for how environment objects are
 ## converted to the pseudo-isometric pipeline: collision shape, footprint,
 ## blocking flags, procedural draw mode, asset contract and ground sort offset.
-## Manifest v7 separates the normal asset path from the technical fallback path:
+## Manifest v9 separates the normal asset path from the technical fallback path
+## and makes footprint slots authoritative for logical occupancy and rendering:
 ## missing art is allowed only when the entry explicitly declares a fallback or a
 ## needs_asset/procedural_fallback status.
 
@@ -112,6 +113,7 @@ static var _cached: IsometricEnvironmentManifest
 var version: int = 0
 var coordinate_system: String = ""
 var default_sort_offset: float = 0.0
+var footprint_slot_size_cells: Vector2i = Vector2i(4, 4)
 var asset_contract_defaults: Dictionary = {}
 var fallback_policy: Dictionary = {}
 var asset_contracts: Dictionary = {}
@@ -136,6 +138,7 @@ func load_from_disk(path: String = MANIFEST_PATH) -> bool:
 	version = 0
 	coordinate_system = ""
 	default_sort_offset = 0.0
+	footprint_slot_size_cells = Vector2i(4, 4)
 	asset_contract_defaults.clear()
 	fallback_policy.clear()
 	asset_contracts.clear()
@@ -160,6 +163,13 @@ func load_from_disk(path: String = MANIFEST_PATH) -> bool:
 	var data := parsed as Dictionary
 	version = int(data.get("version", 0))
 	coordinate_system = String(data.get("coordinate_system", ""))
+	var footprint_contract := data.get("obstacle_footprint", {}) as Dictionary
+	var slot_values := footprint_contract.get("slot_size_cells", [4, 4]) as Array
+	if slot_values.size() >= 2:
+		footprint_slot_size_cells = Vector2i(
+			maxi(int(slot_values[0]), 1),
+			maxi(int(slot_values[1]), 1)
+		)
 	var default_sorting := data.get("default_sorting", {}) as Dictionary
 	default_sort_offset = float(default_sorting.get("sort_offset", 0.0))
 	_load_object_visual_data(data.get("object_visuals", {}))
@@ -295,6 +305,36 @@ func get_sort_offset(object_id: StringName) -> float:
 		return float((objects[object_id] as Dictionary).get("sort_offset", default_sort_offset))
 	return default_sort_offset
 
+func get_footprint_tiles(object_id: StringName) -> Vector2i:
+	if objects.has(object_id):
+		return (objects[object_id] as Dictionary).get(
+			"footprint_tiles", Vector2i.ONE
+		) as Vector2i
+	return Vector2i.ONE
+
+func get_footprint_slots(object_id: StringName) -> Vector2i:
+	if objects.has(object_id):
+		return (objects[object_id] as Dictionary).get(
+			"footprint_slots", Vector2i.ONE
+		) as Vector2i
+	return Vector2i.ONE
+
+func get_footprint_slot_size_cells() -> Vector2i:
+	return footprint_slot_size_cells
+
+func get_visual_height_tiles(object_id: StringName) -> int:
+	if objects.has(object_id):
+		return int((objects[object_id] as Dictionary).get("visual_height_tiles", 0))
+	return 0
+
+func get_native_visual_size(object_id: StringName, logical_tile_scale: float = 8.0) -> Vector2:
+	var footprint := get_footprint_tiles(object_id)
+	var visual_height := get_visual_height_tiles(object_id)
+	return Vector2(
+		maxf(float(footprint.x) * logical_tile_scale * 1.55, 56.0),
+		maxf(float(footprint.y + visual_height) * logical_tile_scale, 56.0)
+	)
+
 func blocks_movement(object_id: StringName) -> bool:
 	if objects.has(object_id):
 		return bool((objects[object_id] as Dictionary).get("blocks_movement", true))
@@ -329,6 +369,8 @@ func validate() -> Dictionary:
 		failures.append(load_error)
 	if version <= 0:
 		failures.append("manifest version must be positive")
+	if footprint_slot_size_cells.x <= 0 or footprint_slot_size_cells.y <= 0:
+		failures.append("obstacle_footprint.slot_size_cells must be positive")
 	if version >= 7:
 		_validate_asset_contracts(failures)
 	for object_id in objects.keys():
@@ -339,6 +381,21 @@ func validate() -> Dictionary:
 		var footprint := entry.get("footprint_tiles", Vector2i.ZERO) as Vector2i
 		if footprint.x <= 0 or footprint.y <= 0:
 			failures.append("%s: footprint_tiles must be positive" % object_id)
+		var footprint_slots := entry.get("footprint_slots", Vector2i.ZERO) as Vector2i
+		if footprint_slots.x <= 0 or footprint_slots.y <= 0:
+			failures.append("%s: footprint_slots must be positive" % object_id)
+		if (
+			version >= 9
+			and StringName(entry.get("category", &"obstacle")) not in [&"border", &"cliff", &"passage"]
+			and footprint != Vector2i(
+				footprint_slots.x * footprint_slot_size_cells.x,
+				footprint_slots.y * footprint_slot_size_cells.y
+			)
+		):
+			failures.append(
+				"%s: footprint_tiles must equal footprint_slots * slot_size_cells"
+				% object_id
+			)
 		if _uses_biome_obstacle_visual(entry):
 			var draw_mode := String(entry.get("draw_mode", ""))
 			if not OBJECT_DRAW_MODES.has(draw_mode):
@@ -425,6 +482,11 @@ func _normalize_asset_contract(section: StringName, entry: Dictionary) -> Dictio
 			entry.get("biome_ids", asset_contract_defaults.get("biome_ids", ["shared"]))
 		),
 		"footprint_tiles": _resolve_contract_footprint(section, entry, legacy_object),
+		"footprint_slots": _resolve_contract_footprint_slots(section, entry, legacy_object),
+		"visual_height_tiles": int(entry.get(
+			"visual_height_tiles",
+			legacy_object.get("visual_height_tiles", 0)
+		)),
 		"anchor": StringName(str(entry.get("anchor", asset_contract_defaults.get("anchor", &"iso_floor_center")))),
 		"sort_offset": float(entry.get("sort_offset", _resolve_contract_sort_offset(section, legacy_object))),
 		"collision_shape": String(entry.get("collision_shape", _resolve_contract_collision_shape(section, legacy_object))),
@@ -472,6 +534,23 @@ func _resolve_contract_footprint(
 			return Vector2i(200, 6)
 		_:
 			return Vector2i.ONE
+
+func _resolve_contract_footprint_slots(
+	section: StringName,
+	entry: Dictionary,
+	legacy_object: Dictionary
+) -> Vector2i:
+	if entry.has("footprint_slots"):
+		var values := entry.get("footprint_slots", [1, 1]) as Array
+		if values.size() >= 2:
+			return Vector2i(maxi(int(values[0]), 1), maxi(int(values[1]), 1))
+	if legacy_object.has("footprint_slots"):
+		return legacy_object.get("footprint_slots", Vector2i.ONE) as Vector2i
+	var footprint := _resolve_contract_footprint(section, entry, legacy_object)
+	return Vector2i(
+		maxi(ceili(float(footprint.x) / float(footprint_slot_size_cells.x)), 1),
+		maxi(ceili(float(footprint.y) / float(footprint_slot_size_cells.y)), 1)
+	)
 
 func _resolve_contract_sort_offset(section: StringName, legacy_object: Dictionary) -> float:
 	if legacy_object.has("sort_offset"):
@@ -670,6 +749,17 @@ func _normalize_object(entry: Dictionary) -> Dictionary:
 	var footprint := Vector2i.ZERO
 	if footprint_values.size() >= 2:
 		footprint = Vector2i(int(footprint_values[0]), int(footprint_values[1]))
+	var footprint_slots := Vector2i(
+		maxi(ceili(float(footprint.x) / float(footprint_slot_size_cells.x)), 1),
+		maxi(ceili(float(footprint.y) / float(footprint_slot_size_cells.y)), 1)
+	)
+	if entry.has("footprint_slots"):
+		var slot_values := entry.get("footprint_slots", [1, 1]) as Array
+		if slot_values.size() >= 2:
+			footprint_slots = Vector2i(
+				maxi(int(slot_values[0]), 1),
+				maxi(int(slot_values[1]), 1)
+			)
 	var visual_style := object_visual_styles.get(object_id, {}) as Dictionary
 	return {
 		"id": object_id,
@@ -681,6 +771,8 @@ func _normalize_object(entry: Dictionary) -> Dictionary:
 		"fallback": String(entry.get("fallback", visual_style.get("fallback", ""))),
 		"collision_shape": String(entry.get("collision_shape", "rectangle")),
 		"footprint_tiles": footprint,
+		"footprint_slots": footprint_slots,
+		"visual_height_tiles": maxi(int(entry.get("visual_height_tiles", 0)), 0),
 		"blocks_movement": bool(entry.get("blocks_movement", true)),
 		"blocks_projectiles": bool(entry.get("blocks_projectiles", true)),
 		"is_jumpable_gap_anchor": bool(entry.get("is_jumpable_gap_anchor", false)),

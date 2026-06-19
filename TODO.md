@@ -24,7 +24,7 @@ Regole per nuove voci:
 | Mini-eventi bioma | PASS nella validazione Milestone 2 | `tests/biome_mini_events_smoke_test.gd`, `tests/random_encounter_smoke_test.gd`, `docs/latest_commit_validation_report.md` | Riprendere solo dentro playtest/bilanciamento Milestone 11 |
 | Megamappa e streaming regioni | PASS nella validazione Milestone 3 | `tests/region_streaming_smoke_test.gd`, world graph, persistent world, open passage, exploration map, `docs/latest_commit_validation_report.md` | Riprendere in Milestone 4 (asset isometrici) o nel bilanciamento Milestone 11 |
 | Caduta void e dodge | PASS nel pass runtime 2026-06-19 | `EntityVoidFallComponent`, query terrain di `HazardSystem`, `tests/zombie_fall_hazard_smoke_test.gd`, regressioni combat/drop/wave/ranged/terrain | QA manuale multiplayer locale e leggibilita animazione nel playtest Milestone 11 |
-| Asset isometrici ambiente | PASS nella validazione Milestone 4 | `tests/isometric_environment_manifest_smoke_test.gd`, manifest v2 poi v5, biome obstacle generation, `docs/latest_commit_validation_report.md` | Conversione ad arte esterna definitiva opzionale; QA visuale screenshot nel playtest Milestone 11 |
+| Asset isometrici ambiente | PASS; contratto footprint v9 completato il 2026-06-19 | `tests/obstacle_rendering_contract_smoke_test.gd`, `tests/obstacle_asset_visual_qa.gd`, `tests/isometric_environment_manifest_smoke_test.gd`, `docs/obstacle_rendering.md`, manifest v9 | QA manuale player davanti/dietro e screenshot con/senza overlay `F9` nel playtest Milestone 11 |
 | Audit migrazione isometrica | PASS completo: Milestone 1-9 e Milestone 10.1-10.11 chiuse con asset, cliff, transizione senza portali, vicini gameplay `FULL`, chase cross-bioma, cleanup legacy, QA screenshot e performance | `docs/isometric_generation_audit_roadmap.md`, `milestone_10_isometric_asset_rewrite_roadmap.md`, manifest ambiente v7, `BiomeTileLayer`, `IsometricTileResolver`, `IsometricEnvironmentObjectFactory`, `IsometricSvgTextureLoader`, `RegionSeamSystem`, `WorldRegionStreamer`, smoke e QA Milestone 10.11 | Monitorare solo come regressione futura o playtest visuale |
 | Dungeon ramificato/shop | PASS nella validazione Milestone 5 | `tests/dungeon_graph_smoke_test.gd`, `tests/dungeon_smoke_test.gd`, `docs/latest_commit_validation_report.md` | UI shop dedicata e arte bioma dungeon restano follow-up; screenshot tre seed nel playtest Milestone 11 |
 | Asset/pipeline personaggi RPG | PASS nella validazione Milestone 6 | `tests/rpg_character_asset_manifest_smoke_test.gd`, `assets/characters/index.json` v2, `docs/latest_commit_validation_report.md` | Arte definitiva per-personaggio (`final_quality`) resta follow-up manuale; screenshot QA nel playtest Milestone 11 |
@@ -212,6 +212,12 @@ evitare reimplementazioni e per indirizzare le regressioni.
   `tests/fall_boundary_visual_logic_smoke_test.gd`,
   `tests/milestone_10_tile_layer_smoke_test.gd` e
   `tests/milestone_10_void_cliff_asset_smoke_test.gd`.
+- ISO-OBS-001 coerenza ostacoli/footprint: completato il 2026-06-19. Il
+  manifest v9 copre slot `1x1`-`3x3` e case grandi, il generatore usa footprint
+  canonici, gli SVG dichiarano la dimensione, collisione e base derivano dalle
+  stesse celle e `F9` espone l'overlay runtime. Coperto da
+  `tests/obstacle_rendering_contract_smoke_test.gd`; resta solo QA manuale
+  multiplayer/screenshot dentro `QA-001` e il playtest Milestone 11.
 - DUN-001 dungeon ramificato, shop e biomi dedicati: completato nella Milestone 5
   di `todo_roadmap.md`; `DungeonGenerator` produce un grafo con ramo reale e boss
   sempre raggiungibile, `DungeonMode` gestisce scelta stanza, run credit, shop

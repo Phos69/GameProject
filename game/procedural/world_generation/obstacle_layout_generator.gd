@@ -964,26 +964,29 @@ func _add_prop_if_clear(
 	rect: Rect2i,
 	rng: RandomNumberGenerator
 ) -> bool:
-	var padded := _inflate_rect(rect, MIN_RECT_GAP)
+	var canonical_rect := _canonical_obstacle_rect(prop_id, rect)
+	var padded := _inflate_rect(canonical_rect, MIN_RECT_GAP)
 	if _intersects_route(layout, padded):
 		return false
 	if _intersects_any(padded, layout.obstacle_rects):
 		return false
-	if _intersects_any(rect, layout.fall_zone_rects):
+	if _intersects_any(canonical_rect, layout.fall_zone_rects):
 		return false
-	if _intersects_any(rect, layout.hazard_rects):
+	if _intersects_any(canonical_rect, layout.hazard_rects):
 		return false
-	_add_obstacle(layout, prop_id, rect, &"rectangle", rng.randf_range(-0.4, 0.4))
+	if _contains_any_crate(canonical_rect, layout.crate_cells):
+		return false
+	_add_obstacle(
+		layout,
+		prop_id,
+		canonical_rect,
+		&"rectangle",
+		rng.randf_range(-0.4, 0.4)
+	)
 	return true
 
-func _prop_size(prop_id: StringName, rng: RandomNumberGenerator) -> Vector2i:
-	match prop_id:
-		&"fallen_log", &"marsh_log":
-			return Vector2i(rng.randi_range(5, 8), rng.randi_range(3, 4))
-		&"toxic_barrel":
-			return Vector2i(rng.randi_range(3, 4), rng.randi_range(3, 4))
-		_:
-			return Vector2i(rng.randi_range(3, 5), rng.randi_range(3, 5))
+func _prop_size(prop_id: StringName, _rng: RandomNumberGenerator) -> Vector2i:
+	return IsometricEnvironmentManifest.get_shared().get_footprint_tiles(prop_id)
 
 func _small_prop_ids(biome_id: StringName) -> Array[StringName]:
 	# Only contract-complete, biome-whitelisted ids so props always render with a
@@ -1220,16 +1223,38 @@ func _add_obstacle_if_clear(
 	shape_id: StringName,
 	rotation_radians: float
 ) -> bool:
-	if _intersects_route(layout, _inflate_rect(rect, MIN_RECT_GAP)):
+	var canonical_rect := _canonical_obstacle_rect(obstacle_id, rect)
+	if _intersects_route(layout, _inflate_rect(canonical_rect, MIN_RECT_GAP)):
 		return false
-	if _intersects_any(_inflate_rect(rect, MIN_RECT_GAP), layout.obstacle_rects):
+	if _intersects_any(_inflate_rect(canonical_rect, MIN_RECT_GAP), layout.obstacle_rects):
 		return false
-	if _intersects_any(rect, layout.fall_zone_rects):
+	if _intersects_any(canonical_rect, layout.fall_zone_rects):
 		return false
-	if _intersects_any(rect, layout.hazard_rects):
+	if _intersects_any(canonical_rect, layout.hazard_rects):
 		return false
-	_add_obstacle(layout, obstacle_id, rect, shape_id, rotation_radians)
+	if _contains_any_crate(canonical_rect, layout.crate_cells):
+		return false
+	_add_obstacle(layout, obstacle_id, canonical_rect, shape_id, rotation_radians)
 	return true
+
+func _contains_any_crate(rect: Rect2i, crate_cells: Array[Vector2i]) -> bool:
+	for crate_cell in crate_cells:
+		if rect.has_point(crate_cell):
+			return true
+	return false
+
+func _canonical_obstacle_rect(obstacle_id: StringName, requested: Rect2i) -> Rect2i:
+	var manifest := IsometricEnvironmentManifest.get_shared()
+	if not manifest.has_object(obstacle_id):
+		return requested
+	# Border segments are intentionally variable-length tiles. Every other
+	# obstacle uses the exact manifest footprint so placement, collision and art
+	# share one size instead of inheriting generator randomness.
+	if manifest.get_category(obstacle_id) == &"border":
+		return requested
+	var footprint := manifest.get_footprint_tiles(obstacle_id)
+	var center := requested.position + requested.size / 2
+	return Rect2i(center - footprint / 2, footprint)
 
 func _add_crates(
 	layout: BiomeEnvironmentLayout,
@@ -1285,6 +1310,13 @@ func _add_crate(
 	crate_id: StringName,
 	cell: Vector2i
 ) -> void:
+	# A bridge can make a deep-water cell logically walkable, but the current
+	# runtime hazard zone still spans the water rect. Keep layout crates off all
+	# hazard geometry so generation never advertises a crate that streaming must
+	# discard as unsafe.
+	for hazard_rect in layout.hazard_rects:
+		if hazard_rect.has_point(cell):
+			return
 	if (
 		layout.get_terrain_class_at_cell(cell)
 		!= BiomeEnvironmentLayout.TERRAIN_WALKABLE

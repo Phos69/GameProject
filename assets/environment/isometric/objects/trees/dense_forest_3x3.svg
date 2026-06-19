@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="149" height="192" viewBox="0 0 160 120" data-generated-by="generate_isometric_environment_assets" data-section="object_scenes" data-id="dense_vegetation" data-footprint-slots="3x3">
+  <title>object_scenes dense_vegetation</title>
+  <ellipse cx="80" cy="82" rx="58" ry="18" fill="#050608" opacity="0.45"/>
+  <polygon points="24,82 80,52 136,82 80,110" fill="#242a2f" stroke="#c2b071" stroke-width="4"/>
+  <path d="M42 85 L47 47 M64 88 L66 35 M87 91 L86 29 M110 87 L111 42 M126 84 L128 58" stroke="#252016" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="34" cy="59" r="23" fill="#4d5b46" stroke="#101510" stroke-width="4"/>
+  <circle cx="57" cy="43" r="27" fill="#4d5b46" stroke="#101510" stroke-width="4"/>
+  <circle cx="84" cy="37" r="30" fill="#4d5b46" stroke="#101510" stroke-width="4"/>
+  <circle cx="109" cy="48" r="27" fill="#4d5b46" stroke="#101510" stroke-width="4"/>
+  <circle cx="130" cy="64" r="22" fill="#4d5b46" stroke="#101510" stroke-width="4"/>
+  <circle cx="70" cy="68" r="28" fill="#4d5b46" stroke="#101510" stroke-width="4"/>
+  <circle cx="103" cy="70" r="27" fill="#4d5b46" stroke="#101510" stroke-width="4"/>
+  <path d="M22 84 C36 67 50 74 62 65 C75 55 87 72 99 63 C113 53 128 70 139 83 L132 94 L80 111 L28 94 Z" fill="#4d5b46" stroke="#c2b071" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M24 92 L80 110 L136 92" fill="none" stroke="#c2b071" stroke-width="3" stroke-linecap="round" opacity="0.75"/>
+  <path d="M36 96 L80 108 L124 96" fill="none" stroke="#000000" stroke-width="2" opacity="0.35"/>
+</svg>

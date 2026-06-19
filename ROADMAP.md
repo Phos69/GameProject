@@ -436,6 +436,11 @@ Attivita post-roadmap:
   `broken_street`, `ruined_house`, vegetazione densa impassabile, dettagli
   strada, fiume/bridge validato, summary seed/debug e asset manifest dedicati
   per `abandoned_car` e `dense_vegetation`.
+- Pass ISO-OBS-001 completato: manifest ambiente v9 con footprint slot-based,
+  nove formati piccoli `1x1`-`3x3`, case `4x4`/`5x3`/`6x6`, SVG nativi
+  footprint-specific, base visiva coincidente con collisione, record ostacolo
+  completo e overlay `F9`. Lo smoke dedicato valida anche assenza di collisioni
+  invisibili e distinzione fra ostacoli solidi e void/cliff.
 - asset definitivi e ulteriori pass di bilanciamento;
 - firma digitale della build pubblica.
 

@@ -46,7 +46,7 @@ assets/
 ## Ambiente isometrico (manifest)
 
 `environment/isometric/manifest.json` e la fonte di verita per gli oggetti
-ambientali del bioma (ostacoli, bordi, casse, cliff, passaggi). Dal manifest v7
+ambientali del bioma (ostacoli, bordi, casse, cliff, passaggi). Dal manifest v9
 contiene anche il contratto asset-driven per `tile_sets`, `tile_variants`,
 `terrain_tiles`, `edge_tiles`, `void_tiles`, `object_scenes`, `passage_tiles`,
 `biome_asset_sets` e `fallback_policy`.
@@ -62,7 +62,7 @@ Gli status ammessi sono `final`, `base_complete`, `needs_polish`,
   dalla Milestone 10.5, passa gli `object_scenes` a
   `IsometricEnvironmentObjectFactory`.
 - `visual_scene` che punta a uno script `.gd` resta il fallback tecnico legacy.
-  Nel contratto v7 il fallback normale e dichiarato da `fallback_path` e
+  Nel contratto v9 il fallback normale e dichiarato da `fallback_path` e
   `fallback_policy`; nessun file esterno e obbligatorio per il bootstrap.
 - Lo smoke `tests/isometric_environment_manifest_smoke_test.gd` verifica che ogni
   `obstacle_id` dei biomi sia descritto, che nessun oggetto richieda asset
@@ -78,7 +78,7 @@ Gli status ammessi sono `final`, `base_complete`, `needs_polish`,
 ## Ambiente isometrico (asset generati)
 
 `tools/generate_isometric_environment_assets.gd` genera SVG testuali interni
-dai contratti v7. Il tool lavora in modo conservativo:
+dai contratti v9. Il tool lavora in modo conservativo:
 
 ```text
 godot --headless --path . --script res://tools/generate_isometric_environment_assets.gd -- --dry-run
@@ -92,8 +92,8 @@ godot --headless --path . --script res://tools/generate_isometric_environment_as
 - `--overwrite-generated`: rigenera asset esistenti non marcati `final`;
 - gli asset con `status: final` non vengono mai sovrascritti dal tool.
 
-Gli SVG generati includono metadata `data-generated-by`,
-`data-section` e `data-id` per rendere il controllo manifest/file system
+Gli SVG generati includono metadata `data-generated-by`, `data-section`,
+`data-id` e `data-footprint-slots` per rendere il controllo manifest/file system
 ripetibile. Gli asset base sono originali del progetto: i terrain/passaggi
 espongono silhouette isometriche di route, mentre gli `object_scenes` usano
 sprite trasparenti distinti per case, barriere, barili, relitti, tronchi, ponti
@@ -120,7 +120,7 @@ vivono in `environment/isometric/tiles/forest/` e nelle cartelle `edges/`.
 
 `game/modes/zombie/biome_tile_layer.gd` e il ground primario asset-driven per
 `TerrainGenerator`: cache-a tutte le 250.000 celle della regione `500x500`, le
-divide in chunk e usa il manifest v7 come contratto per gli asset. I vecchi
+divide in chunk e usa il manifest v9 come contratto per gli asset. I vecchi
 `BiomeRegionGround` e `BiomeTerrainPatch` restano fallback tecnici solo quando
 la modalita asset viene disattivata.
 
@@ -135,6 +135,12 @@ base slot-based: uno `StaticBody2D` con collisione dal manifest, `Sprite2D`,
 ombra a terra, anchor al pavimento, `sort_offset` e footprint debug opzionale.
 `BiomeObstacle` resta il fallback tecnico quando il manifest dichiara un
 fallback procedurale esplicito.
+
+Gli slot ostacolo misurano `4x4` celle logiche. I formati piccoli vivono in
+cartelle per categoria (`rocks/`, `fences/`, `debris/`, `trees/`, `wrecks/`) e
+riportano la dimensione nel filename; le case vivono in `objects/houses/`.
+`visual_height_tiles` aggiunge altezza solo sopra la base. La procedura completa
+e la checklist sono in `docs/obstacle_rendering.md`.
 
 Gli asset correnti sono SVG generati in-repo. In runtime headless Godot puo non
 avere la cache import editor per caricarli direttamente come `Texture2D`; per

@@ -4,6 +4,15 @@
 
 ### Added
 
+- Aggiunto il contratto ostacoli isometrici v9 con slot `4x4` celle,
+  `footprint_slots`, celle occupate, altezza visiva e record runtime completo.
+- Aggiunti 17 SVG footprint-specific per oggetti `1x1`-`3x3`, case `4x3`/
+  `4x4`/`5x3`/`6x6`, vegetazione densa e varianti di bioma; aggiunto il toggle
+  debug `F9` per base e contorno degli ostacoli attivi.
+- Aggiunti `docs/obstacle_rendering.md`,
+  `tests/obstacle_rendering_contract_smoke_test.gd` e
+  `tests/obstacle_asset_visual_qa.gd` con mapping, pipeline, raster QA,
+  collisione/rendering, void distinto e checklist manuale.
 - Aggiunto `EntityVoidFallComponent`, condiviso da player e zombie, con stato
   `falling`, lock del movimento e animazione di discesa, scala e alpha prima
   dell'impatto.
@@ -60,6 +69,10 @@
 
 ### Changed
 
+- `ObstacleLayoutGenerator` normalizza gli oggetti non-border al footprint del
+  manifest prima delle query di spazio; collisione, posizione, base visiva e
+  dimensione SVG derivano ora dallo stesso rettangolo logico, senza scale
+  casuali. Rimossi gli SVG legacy sostituiti dalle varianti footprint-specific.
 - `HazardSystem` risolve ora `walkable`, `hazard`, `fall_zone` e `void` dalla
   classificazione della cella world-space; oltrepassare un semplice border non
   causa piu danno se la cella sotto l'entita non e void.
