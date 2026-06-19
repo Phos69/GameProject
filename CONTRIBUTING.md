@@ -19,6 +19,17 @@ Questo repository e pensato per essere gestito principalmente da agenti IA, ma l
 - I sistemi condivisi devono restare modulari.
 - Le modalita non devono duplicare codice comune.
 
+## Helper condivisi
+
+- Query sui player: usare [PlayerQuery](game/core/player_query.gd)
+  (`all/alive/downed/nearest/by_slot`, ecc.) invece di iterare a mano
+  `get_nodes_in_group("players")` e rileggere il `HealthComponent`.
+- Collision layer: usare le costanti `GameConstants.LAYER_*` invece dei bit
+  grezzi (`1`, `2`, `1 | 32`, ...).
+- Logging: usare [GameLog](game/core/game_log.gd) (`debug/info/warn/error` con
+  categoria) invece di `print`/`push_warning`/`push_error` grezzi, cosi il
+  rumore di debug e filtrabile per livello (`GameLog.min_level`).
+
 ## Test automatici
 
 La suite vive in `tests/`. Ogni test e uno script `extends SceneTree` con
