@@ -106,7 +106,7 @@ func stop_run(clear_wave: bool = false) -> void:
 		_clear_wave_runtime()
 
 func should_spawn_boss(wave_index: int) -> bool:
-	return boss_wave_interval > 0 and wave_index > 0 and wave_index % boss_wave_interval == 0
+	return WaveCycle.should_spawn_boss(wave_index, boss_wave_interval)
 
 func get_enemies_remaining() -> int:
 	_prune_wave_enemies()
@@ -271,13 +271,7 @@ func _clear_wave_runtime() -> void:
 	active_boss = null
 
 func _prune_wave_enemies() -> void:
-	for enemy in wave_enemies.duplicate():
-		if not is_instance_valid(enemy) or enemy.is_queued_for_deletion():
-			wave_enemies.erase(enemy)
+	WaveCycle.prune_nodes(wave_enemies)
 
 func _prune_boss() -> void:
-	if active_boss != null and (
-		not is_instance_valid(active_boss)
-		or active_boss.is_queued_for_deletion()
-	):
-		active_boss = null
+	active_boss = WaveCycle.prune_node(active_boss)
