@@ -62,7 +62,7 @@ func evaluate_ammo_pressure() -> bool:
 		_resolve_wave_manager()
 	if (
 		wave_manager == null
-		or wave_manager.state not in [&"spawning", &"combat"]
+		or wave_manager.state not in [WaveManager.State.SPAWNING, WaveManager.State.COMBAT]
 		or spawn_cooldown_timer > 0.0
 		or active_crates.size() >= max_active_crates
 		or not _has_low_special_ammo_player()

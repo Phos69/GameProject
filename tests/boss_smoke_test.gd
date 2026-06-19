@@ -181,7 +181,7 @@ func _run() -> void:
 			player_one_weapon.weapon_data.weapon_id == &"wave_cannon",
 			"collecting the special drop equips the Wave Cannon"
 		)
-	_expect(wave_manager.state == &"intermission", "survival continues after the boss reward")
+	_expect(wave_manager.state == WaveManager.State.INTERMISSION, "survival continues after the boss reward")
 
 	survival_mode.stop_mode()
 	_finish()
@@ -190,7 +190,7 @@ func _wait_for_boss_wave(wave_manager: WaveManager) -> bool:
 	for _frame in range(180):
 		if (
 			wave_manager.current_wave == 5
-			and wave_manager.state == &"combat"
+			and wave_manager.state == WaveManager.State.COMBAT
 			and wave_manager.get_active_boss() != null
 		):
 			return true

@@ -39,10 +39,12 @@ signal enemy_spawned(enemy: Node, spawn_position: Vector2, spawn_index: int)
 	Vector2(-390.0, -230.0)
 ]
 
+enum State { IDLE, INTERMISSION, SPAWNING, COMBAT, REWARD }
+
 var current_wave: int = 0
 var wave_running: bool = false
 var run_active: bool = false
-var state: StringName = &"idle"
+var state: State = State.IDLE
 var state_timer: float = 0.0
 var spawn_timer: float = 0.0
 var pending_spawn_count: int = 0
@@ -68,13 +70,13 @@ func _process(delta: float) -> void:
 		return
 
 	match state:
-		&"intermission":
+		State.INTERMISSION:
 			state_timer = maxf(state_timer - delta, 0.0)
 			if state_timer <= 0.0:
 				_start_next_wave()
-		&"spawning":
+		State.SPAWNING:
 			_process_spawning(delta)
-		&"combat":
+		State.COMBAT:
 			_check_wave_completion()
 
 func start_run() -> void:
@@ -88,7 +90,7 @@ func start_run() -> void:
 	current_wave = 0
 	wave_running = false
 	run_active = true
-	state = &"idle"
+	state = State.IDLE
 	last_reward = {}
 	wave_enemies.clear()
 	wave_boss = null
@@ -100,12 +102,12 @@ func start_run() -> void:
 	_begin_intermission(initial_delay)
 
 func stop_run(clear_wave_enemies: bool = false) -> void:
-	if not run_active and state == &"idle":
+	if not run_active and state == State.IDLE:
 		return
 
 	run_active = false
 	wave_running = false
-	state = &"idle"
+	state = State.IDLE
 	state_timer = 0.0
 	spawn_timer = 0.0
 	pending_spawn_count = 0
@@ -191,7 +193,7 @@ func register_wave_boss(boss: Node) -> void:
 	_check_wave_completion()
 
 func get_intermission_time_left() -> float:
-	return state_timer if state == &"intermission" else 0.0
+	return state_timer if state == State.INTERMISSION else 0.0
 
 func _resolve_enemy_system() -> bool:
 	if enemy_system == null:
@@ -217,7 +219,7 @@ func _resolve_zombie_spawner() -> void:
 		)
 
 func _begin_intermission(duration: float) -> void:
-	state = &"intermission"
+	state = State.INTERMISSION
 	state_timer = maxf(duration, 0.0)
 	intermission_started.emit(current_wave + 1, state_timer)
 
@@ -251,7 +253,7 @@ func _start_next_wave() -> void:
 	wave_enemies.clear()
 	wave_boss = null
 	boss_spawn_pending = current_wave_is_boss
-	state = &"spawning"
+	state = State.SPAWNING
 	spawn_timer = 0.0
 	wave_started.emit(current_wave)
 	wave_configured.emit(current_wave, current_wave_enemy_total, current_wave_is_boss)
@@ -261,7 +263,7 @@ func _start_next_wave() -> void:
 			boss_spawn_pending = false
 	wave_progress_changed.emit(current_wave, get_enemies_remaining())
 	if pending_spawn_count <= 0:
-		state = &"combat"
+		state = State.COMBAT
 		_check_wave_completion()
 
 func _process_spawning(delta: float) -> void:
@@ -274,7 +276,7 @@ func _process_spawning(delta: float) -> void:
 	spawn_timer = maxf(spawn_interval / active_spawn_rate_multiplier, 0.0)
 	wave_progress_changed.emit(current_wave, get_enemies_remaining())
 	if pending_spawn_count <= 0:
-		state = &"combat"
+		state = State.COMBAT
 		_check_wave_completion()
 
 func _spawn_wave_enemy(spawn_index: int) -> void:
@@ -384,7 +386,7 @@ func _complete_current_wave() -> void:
 		return
 
 	wave_running = false
-	state = &"reward"
+	state = State.REWARD
 	last_reward = _grant_wave_reward()
 	wave_reward_granted.emit(current_wave, last_reward.duplicate(true))
 	wave_completed.emit(current_wave)

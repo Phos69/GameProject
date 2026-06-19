@@ -39,7 +39,7 @@ func _run() -> void:
 	local_multiplayer.activate_slot(2)
 	game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL)
 	for _frame in range(180):
-		if wave_manager.state == &"combat":
+		if wave_manager.state == WaveManager.State.COMBAT:
 			break
 		await physics_frame
 	await process_frame
