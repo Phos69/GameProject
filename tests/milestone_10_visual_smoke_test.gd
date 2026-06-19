@@ -69,6 +69,8 @@ func _run() -> void:
 		return
 	var player_visual := player.get_node_or_null("Visual") as PlayerVisual
 	_expect(player_visual != null, "player uses the modular survivor visual")
+	var player_world_hud := player.get_node_or_null("WorldHud")
+	_expect(player_world_hud != null, "player uses the world-space HUD package")
 	_expect(
 		playground.concrete_color.get_luminance() < 0.30,
 		"arena background remains muted behind actors"
@@ -100,8 +102,9 @@ func _run() -> void:
 		)
 		_expect(
 			not player_card.health_bar.is_visible_in_tree()
-			and not player_card.reload_bar.is_visible_in_tree(),
-			"HP and reload are no longer duplicated in the corner card"
+			and player_card.reload_bar == null
+			and player_card.ammo_pips.is_empty(),
+			"HP, reload and magazine ammo are no longer duplicated in the corner card"
 		)
 		_expect(
 			player_card.get_global_rect().position.x <= 24.0
@@ -113,13 +116,22 @@ func _run() -> void:
 			"player card shows weapon identity"
 		)
 
+	if player_world_hud != null:
+		_expect(
+			is_equal_approx(player_world_hud.get_health_ratio(), 1.0),
+			"world HUD exposes full player health"
+		)
+		var player_weapon := player.get_node("WeaponSystem") as WeaponSystem
+		player_weapon.current_ammo = 0
+		_expect(player_weapon.start_reload(), "weapon reload can be started for world HUD")
+		_expect(player_world_hud.is_showing_reload(), "world HUD switches to reload bar")
+		_expect(player_world_hud.get_reload_ratio() >= 0.0, "world HUD exposes reload progress")
+
 	if player_visual != null:
 		_expect(
 			not player_visual.has_method("_draw_slot_marker"),
 			"survivor visual no longer exposes the standalone overhead marker"
 		)
-		player_visual.play_reload(1.0)
-		_expect(player_visual.reload_timer > 0.0, "survivor visual exposes reload feedback")
 		player_visual.play_fire()
 		_expect(player_visual.fire_flash_timer > 0.0, "survivor visual exposes fire feedback")
 

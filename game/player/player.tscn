@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://game/player/player_controller.gd" id="1_player_controller"]
 [ext_resource type="Script" path="res://game/weapons/weapon_system.gd" id="2_weapon_system"]
@@ -7,6 +7,7 @@
 [ext_resource type="Script" path="res://game/player/revive_indicator_visual.gd" id="5_revive_indicator"]
 [ext_resource type="Script" path="res://game/rpg/rpg_player_component.gd" id="6_rpg_player_component"]
 [ext_resource type="Script" path="res://game/player/player_dodge_component.gd" id="7_player_dodge"]
+[ext_resource type="Script" path="res://game/ui/player_world_hud_visual.gd" id="8_world_hud"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_player"]
 radius = 14.0
@@ -27,6 +28,9 @@ end_cap_mode = 2
 [node name="ReviveIndicator" type="Node2D" parent="."]
 z_index = 4
 script = ExtResource("5_revive_indicator")
+
+[node name="WorldHud" type="Control" parent="."]
+script = ExtResource("8_world_hud")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_player")

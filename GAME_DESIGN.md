@@ -378,10 +378,11 @@ Statistiche attive:
 - difesa sottratta al danno in ingresso;
 - livello per-run con `+10 HP`, `+2 attacco` e `+1 difesa`.
 
-Le schede HUD player mostrano ritratto classe, livello, classe, icona arma,
-ammo, riga ATK/DEF/SPD, XP, adrenalina, icona super e il buff passivo attivo.
-HP e reload/cooldown leggibile sono invece nel mini HUD world-space sopra il
-player.
+Il pacchetto HUD world-space sopra ogni player mostra P1/P2/P3/P4, HP, livello
+con gauge EXP circolare, barra caricatore/reload nello stesso slot e una barra
+super verticale a destra. Le schede HUD player negli angoli restano per
+ritratto classe, classe/arma, riserva o stato speciale, riga ATK/DEF/SPD,
+passive e status temporanei.
 
 Armi base RPG attive:
 
@@ -400,9 +401,11 @@ decide il runtime: le armi ranged creano projectile, mentre ascia, spada e
 artigli creano una hitbox melee temporanea ruotata nella direzione di mira, con
 wind-up, finestra attiva, recovery, knockback, hitstop percepito, trail e
 anti-multihit per singolo swing.
-L'HUD mostra pips ammo per caricatore nelle schede angolo e una barra reload
-compatta sopra il player quando serve; il profilo RPG puo accelerare o
-rallentare la ricarica tramite `reload_speed`.
+L'HUD sopra-player alterna nello stesso spazio la barra reload, quando
+`WeaponSystem.is_reloading` e attivo, e la barra del caricatore corrente quando
+il player puo sparare. Il caricatore quasi vuoto evidenzia lo stato low/empty,
+mentre il profilo RPG puo accelerare o rallentare la ricarica tramite
+`reload_speed`.
 
 XP RPG:
 
@@ -637,8 +640,9 @@ L'HUD mostra:
 
 - annunci temporanei per preparazione ondata, inizio ondata, reward e boss,
   senza riquadro persistente con countdown, indice ondata o nemici rimasti;
-- vita/reload sopra ogni player e munizioni nelle schede angolo;
-- stato low ammo, reload e fallback;
+- pacchetto sopra ogni player con vita, P1/P2/P3/P4, livello/EXP, ammo/reload e
+  super verticale;
+- stato low ammo, reload, empty magazine e fallback;
 - conferma temporanea dei pickup ammo condivisi;
 - dati bioma e status ambientali restano nel runtime, senza riquadro HUD
   persistente;

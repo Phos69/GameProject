@@ -62,7 +62,10 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
    e limite framerate.
 40. `VisualSettingsManager` distribuisce solo impostazioni presentazionali e le persiste nel save.
 41. `IsometricCameraController` segue il gruppo e applica shake solo tramite offset.
-42. `HUDManager` mostra slot negli angoli, munizioni, boss e mappa esplorazione; il riquadro status persistente non e mostrato durante il gameplay e vita/reload compatti restano world-space sul player.
+42. `HUDManager` mostra schede slot leggere negli angoli, boss e mappa
+    esplorazione; il riquadro status persistente non e mostrato durante il
+    gameplay e `PlayerWorldHudVisual` mantiene sopra ogni player vita,
+    ammo/reload, livello, EXP e super.
 43. I componenti visuali ricevono stato e profilo senza possedere logica gameplay.
 44. `BossTelegraphVisual` riceve pattern, direzione e durata senza possedere danno.
 45. `WaveWardenVisual` e `RiftArchitectVisual` ricevono solo stato presentazionale.
@@ -257,12 +260,15 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `PauseMenu`: overlay durante le run; usa `SceneTree.paused` e resta attivo
   insieme alla propria UI.
 - `HUDManager`: UI prototipo per HUD gameplay, boss, annunci e mappa
-  esplorazione; ancora le schede player ai quattro angoli senza occupare il
-  centro world-space.
+  esplorazione; ancora le schede player ai quattro angoli senza duplicare le
+  informazioni immediate del pacchetto world-space.
 - `ExplorationMapPanel`: pannello consultabile che disegna grafo, fog/unknown, regioni discovered/visited/cleared, connessioni note tematizzate per `passage_type`, marker per le active/loaded regions e regione corrente; consuma `apply_visual_settings` per il high contrast.
 - `PlayerVisual`: presentazione procedurale data-driven del player, con
-  silhouette e palette derivate dal profilo RPG; disegna anche il mini HUD
-  world-space per vita, marker slot e reload attivo.
+  silhouette e palette derivate dal profilo RPG; non possiede piu il mini HUD.
+- `PlayerWorldHudVisual`: pacchetto UI world-space child del player; legge
+  `HealthComponent`, `WeaponSystem` e `RpgPlayerComponent` e disegna P1-P4,
+  HP, livello con gauge EXP circolare, barra ammo/reload condivisa nello stesso
+  slot e super verticale pronta/non pronta.
 - `ZombieVisual`: presentazione animata procedurale degli zombie.
 - `DropPickupVisual` e `SupplyCrateVisual`: icone world-space sostituibili;
   la supply crate usa `object_scenes/supply_crate` come sprite asset-backed e
@@ -270,7 +276,9 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `BossTelegraphVisual`: warning world-space per pattern aimed, radial e cambio fase.
 - `WaveWardenVisual`: silhouette, animazione e stato visuale delle due fasi del boss.
 - `PlayerHudCard`: scheda HUD riusabile per ogni slot locale, pensata come
-  pannello statistiche angolo con arma, ammo, XP, adrenalina, super e passive.
+  pannello statistiche angolo con ritratto, arma, riserva/stato speciale,
+  statistiche, passive e status; caricatore, reload, EXP e super restano nel
+  `PlayerWorldHudVisual`.
 - `CharacterSelectCard`, `CharacterDetailPanel` e `CharacterGameplayPreview`: controlli presentazionali della selezione RPG, senza autorita su context survival o applicazione profili.
 - `RpgHudIcon`: icona procedurale leggera per ritratto classe, passive e super RPG.
 - `BriciolaCompanion`: companion alleato leggero della Domatrice con follow,

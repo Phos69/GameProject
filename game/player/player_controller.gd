@@ -18,6 +18,7 @@ const STARTER_WEAPON: WeaponData = preload("res://game/weapons/starter_pistol.tr
 
 @onready var visual := $Visual as PlayerVisual
 @onready var aim_line := $AimLine as Line2D
+@onready var world_hud = $WorldHud
 @onready var weapon_system = $WeaponSystem
 @onready var rpg_component := $RpgPlayerComponent as RpgPlayerComponent
 @onready var dodge_component := $PlayerDodgeComponent as PlayerDodgeComponent
@@ -57,6 +58,8 @@ func _ready() -> void:
 	base_move_speed = move_speed
 	_apply_slot_color()
 	visual.set_player_slot(player_slot)
+	if world_hud != null:
+		world_hud.set_player_slot(player_slot)
 	visual.set_weapon_data(weapon_system.weapon_data)
 	_update_aim_line()
 	_create_weapon_feedback_label()
@@ -142,6 +145,8 @@ func _apply_slot_color() -> void:
 		return
 	var index := clampi(player_slot - 1, 0, slot_colors.size() - 1)
 	visual.set_slot_color(slot_colors[index])
+	if world_hud != null:
+		world_hud.set_slot_color(slot_colors[index])
 	revive_indicator.set_slot_color(slot_colors[index])
 
 func _handle_weapon_input() -> void:
@@ -274,6 +279,8 @@ func _on_weapon_switch_feedback(text: String, definition: WeaponData) -> void:
 
 func _on_rpg_character_changed(_character_id: StringName, profile: Dictionary) -> void:
 	visual.set_character_profile(profile)
+	if world_hud != null:
+		world_hud.set_character_profile(profile)
 
 func _apply_rpg_runtime_stats(refill_health: bool) -> void:
 	var resolved_max_health := base_max_health + current_run_health_bonus

@@ -43,6 +43,9 @@
   angoli interni/esterni e due raccordi diagonali. Il nuovo
   `IsometricCliffMeshBuilder` pre-bake-a faccia verticale, creste, fenditure,
   gradiente profondo sfumato nel void senza creare nodi per-tile.
+- Aggiunto `PlayerWorldHudVisual`, pacchetto HUD world-space child del player
+  con P1-P4, HP, livello con gauge EXP circolare, slot condiviso ammo/reload e
+  barra super verticale ready/non-ready.
 
 ### Changed
 
@@ -63,8 +66,10 @@
   wrapping su card valide e avvio survival tramite `Start`/`pause` solo quando
   gli slot attivi hanno una selezione completa; lo `Start` di controller non
   attivi continua a servire il join locale.
-- L'HUD gameplay separa vita/reload, ora compatti sopra il survivor, dalle
-  statistiche slot nelle schede P1-P4 ancorate ai quattro angoli schermo.
+- L'HUD gameplay sposta caricatore, reload, livello/EXP e super nel pacchetto
+  sopra-player; le schede P1-P4 agli angoli restano per ritratto, arma,
+  riserva/stato speciale, statistiche, passive e status senza duplicare il
+  caricatore.
 - Rimosso dal gameplay il riquadro status persistente, inclusi progresso party,
   stato ondata survival e riepilogo bioma; gli annunci temporanei restano nel
   canale HUD esistente.

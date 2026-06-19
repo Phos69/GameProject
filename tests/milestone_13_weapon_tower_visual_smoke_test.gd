@@ -112,6 +112,13 @@ func _run() -> void:
 	if player_one == null or player_two == null or player_three == null:
 		_finish()
 		return
+	for player_slot in range(1, 5):
+		var active_player := player_manager.players.get(player_slot) as PlayerController
+		_expect(
+			active_player != null
+			and active_player.get_node_or_null("WorldHud") != null,
+			"player %d has a world-space HUD package" % player_slot
+		)
 	var weapon_one := player_one.get_node("WeaponSystem") as WeaponSystem
 	var weapon_two := player_two.get_node("WeaponSystem") as WeaponSystem
 	var weapon_three := player_three.get_node("WeaponSystem") as WeaponSystem
