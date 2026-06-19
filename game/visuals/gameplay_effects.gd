@@ -83,7 +83,7 @@ func _connect_systems() -> void:
 			player_spawned_callback
 		):
 			player_manager.player_spawned.connect(player_spawned_callback)
-	for player in get_tree().get_nodes_in_group("players"):
+	for player in PlayerQuery.all(get_tree()):
 		_connect_weapon_feedback(player)
 		_connect_rpg_feedback(player)
 

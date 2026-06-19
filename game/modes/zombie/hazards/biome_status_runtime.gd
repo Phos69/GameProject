@@ -87,12 +87,12 @@ func get_status_snapshots(player: Node) -> Array[Dictionary]:
 	return result
 
 func clear_runtime(tree: SceneTree) -> void:
-	for player in tree.get_nodes_in_group("players"):
+	for player in PlayerQuery.all(tree):
 		_set_player_environment_multiplier(player, 1.0)
 	hazard_damage_timers.clear(); timed_statuses.clear(); last_status_signatures.clear()
 
 func _update_environment_effects(tree: SceneTree, active_hazards: Array[Node2D]) -> void:
-	for player in tree.get_nodes_in_group("players"):
+	for player in PlayerQuery.all(tree):
 		if not player is Node2D: continue
 		var health_component := player.get_node_or_null("HealthComponent") as HealthComponent
 		if health_component == null or health_component.is_incapacitated():

@@ -33,7 +33,7 @@ func _connect_sources() -> void:
 		var callback := Callable(self, "_on_player_spawned")
 		if not player_manager.player_spawned.is_connected(callback):
 			player_manager.player_spawned.connect(callback)
-	for player in get_tree().get_nodes_in_group("players"):
+	for player in PlayerQuery.all(get_tree()):
 		_connect_weapon_system(player)
 		_connect_player_health(player)
 		_connect_rpg_feedback(player)

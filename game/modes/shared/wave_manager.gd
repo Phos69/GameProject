@@ -404,10 +404,7 @@ func _grant_wave_reward() -> Dictionary:
 		progression.add_money(int(reward["money"]))
 
 	var health_system = get_tree().get_first_node_in_group("health_system")
-	for player in get_tree().get_nodes_in_group("players"):
-		var health_component := player.get_node_or_null("HealthComponent") as HealthComponent
-		if health_component == null or not health_component.is_alive():
-			continue
+	for player in PlayerQuery.alive(get_tree()):
 		var weapon_system := player.get_node_or_null("WeaponSystem") as WeaponSystem
 		if weapon_system != null:
 			weapon_system.add_reserve_ammo(int(reward["ammo"]))

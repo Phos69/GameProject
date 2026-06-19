@@ -36,6 +36,17 @@ static func is_downed(player: Node) -> bool:
 	var health := health_component(player)
 	return health != null and health.is_downed
 
+static func is_incapacitated(player: Node) -> bool:
+	var health := health_component(player)
+	return health != null and health.is_incapacitated()
+
+## True se almeno un player e vivo (short-circuit, senza allocare un array).
+static func any_alive(tree: SceneTree) -> bool:
+	for player in all(tree):
+		if is_alive(player):
+			return true
+	return false
+
 ## Player vivi (HealthComponent.is_alive()).
 static func alive(tree: SceneTree) -> Array[Node]:
 	var result: Array[Node] = []

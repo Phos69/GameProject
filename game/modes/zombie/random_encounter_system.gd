@@ -562,14 +562,11 @@ func _is_encounter_position_valid(position: Vector2, biome: BiomeDefinition) -> 
 	return true
 
 func _players_can_handle_encounter() -> bool:
-	var players := get_tree().get_nodes_in_group("players")
+	var players := PlayerQuery.all(get_tree())
 	if players.is_empty():
 		return true
 	for player in players:
-		var health_component := player.get_node_or_null(
-			"HealthComponent"
-		) as HealthComponent
-		if health_component == null or not health_component.is_incapacitated():
+		if not PlayerQuery.is_incapacitated(player):
 			return true
 	return false
 
@@ -671,11 +668,8 @@ func _threat_score(encounter_id: StringName, wave_index: int) -> int:
 
 func _get_active_party_size() -> int:
 	var count := 0
-	for player in get_tree().get_nodes_in_group("players"):
-		var health_component := player.get_node_or_null(
-			"HealthComponent"
-		) as HealthComponent
-		if health_component == null or not health_component.is_incapacitated():
+	for player in PlayerQuery.all(get_tree()):
+		if not PlayerQuery.is_incapacitated(player):
 			count += 1
 	return maxi(count, 1)
 

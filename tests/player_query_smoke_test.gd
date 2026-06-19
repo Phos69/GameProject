@@ -26,6 +26,10 @@ func _run() -> void:
 	_expect(not PlayerQuery.is_alive(p_dead), "player morto non e vivo")
 	_expect(PlayerQuery.is_downed(p_downed), "player downed riconosciuto")
 	_expect(not PlayerQuery.is_downed(p_alive), "player vivo non e downed")
+	_expect(PlayerQuery.is_incapacitated(p_downed), "downed e incapacitato")
+	_expect(PlayerQuery.is_incapacitated(p_dead), "morto e incapacitato")
+	_expect(not PlayerQuery.is_incapacitated(p_alive), "vivo non e incapacitato")
+	_expect(PlayerQuery.any_alive(self), "any_alive vero con un vivo")
 
 	# Collezioni filtrate.
 	var alive := PlayerQuery.alive(self)

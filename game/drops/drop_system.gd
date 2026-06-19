@@ -159,10 +159,7 @@ func _add_ammo(collector: Node, amount: int) -> bool:
 	if amount <= 0:
 		return false
 	var applied_to_players := 0
-	for player in get_tree().get_nodes_in_group("players"):
-		var health_component := player.get_node_or_null("HealthComponent") as HealthComponent
-		if health_component == null or not health_component.is_alive():
-			continue
+	for player in PlayerQuery.alive(get_tree()):
 		var weapon_system := player.get_node_or_null("WeaponSystem") as WeaponSystem
 		if weapon_system != null and weapon_system.add_reserve_ammo(amount) > 0:
 			applied_to_players += 1

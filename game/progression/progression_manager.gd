@@ -92,7 +92,7 @@ func get_unlock_status_text() -> String:
 	return "Next unlock: Field Kit at party Lv %d" % FIELD_KIT_UNLOCK_LEVEL
 
 func prepare_players_for_run() -> void:
-	for player in get_tree().get_nodes_in_group("players"):
+	for player in PlayerQuery.all(get_tree()):
 		_prepare_player_for_run(player)
 
 func _initialize() -> void:

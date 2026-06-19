@@ -128,13 +128,7 @@ func _legacy_enemy_id_for_spawn(
 	return &"survival_zombie"
 
 func _get_pressure_multipliers(biome: BiomeDefinition) -> Dictionary:
-	var living_players := 0
-	for player in get_tree().get_nodes_in_group("players"):
-		var health_component := player.get_node_or_null(
-			"HealthComponent"
-		) as HealthComponent
-		if health_component != null and health_component.is_alive():
-			living_players += 1
+	var living_players := PlayerQuery.alive(get_tree()).size()
 	return {
 		"party": 1.0 + float(maxi(living_players - 1, 0)) * 0.12,
 		"time": 1.0 + minf(
