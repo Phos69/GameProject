@@ -78,7 +78,7 @@ func configure(
 func _ready() -> void:
 	z_index = 3
 	collision_layer = 0
-	collision_mask = 2
+	collision_mask = GameConstants.LAYER_DAMAGEABLE
 	monitorable = false
 	monitoring = false
 	body_entered.connect(_on_body_entered)

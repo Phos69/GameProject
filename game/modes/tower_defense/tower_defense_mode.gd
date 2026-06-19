@@ -222,7 +222,7 @@ func _connect_build_slots() -> void:
 func _move_players_to_spawn() -> void:
 	if active_arena == null:
 		return
-	var players := get_tree().get_nodes_in_group("players")
+	var players := PlayerQuery.all(get_tree())
 	for index in range(players.size()):
 		var player := players[index] as Node2D
 		if player == null:

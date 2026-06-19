@@ -88,7 +88,7 @@ func _create_exit(at_position: Vector2, target_index: int) -> Dictionary:
 	area.name = "ExitArea%d" % target_index
 	area.position = at_position
 	area.collision_layer = 0
-	area.collision_mask = 1
+	area.collision_mask = GameConstants.LAYER_BODIES
 	var shape := CollisionShape2D.new()
 	var circle := CircleShape2D.new()
 	circle.radius = 34.0

@@ -145,7 +145,7 @@ func _move_party_to_entry(direction_id: StringName) -> void:
 			entry_position = Vector2(0.0, -party_entry_offset)
 		_:
 			entry_position = Vector2(-party_entry_offset, 0.0)
-	var players := get_tree().get_nodes_in_group("players")
+	var players := PlayerQuery.all(get_tree())
 	players.sort_custom(func(a: Node, b: Node) -> bool:
 		return int(a.get("player_slot")) < int(b.get("player_slot"))
 	)

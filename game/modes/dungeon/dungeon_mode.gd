@@ -416,7 +416,7 @@ func _create_shop_marker(offer_index: int, offer: Dictionary) -> Area2D:
 	marker.name = "ShopOffer%d" % offer_index
 	marker.position = Vector2(40.0, -120.0 + float(offer_index) * 120.0)
 	marker.collision_layer = 0
-	marker.collision_mask = 1
+	marker.collision_mask = GameConstants.LAYER_BODIES
 	var shape := CollisionShape2D.new()
 	var circle := CircleShape2D.new()
 	circle.radius = 30.0
@@ -469,7 +469,7 @@ func _resolve_systems() -> bool:
 func _move_players_to_room_spawn() -> void:
 	if active_room == null:
 		return
-	var players := get_tree().get_nodes_in_group("players")
+	var players := PlayerQuery.all(get_tree())
 	for index in range(players.size()):
 		var player := players[index] as Node2D
 		if player == null:

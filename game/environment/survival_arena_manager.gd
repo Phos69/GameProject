@@ -158,7 +158,7 @@ func _spawn_interactive_props() -> void:
 func _move_players_to_spawns() -> void:
 	if active_profile == null or active_profile.player_spawn_points.is_empty():
 		return
-	var players := get_tree().get_nodes_in_group("players")
+	var players := PlayerQuery.all(get_tree())
 	players.sort_custom(func(a: Node, b: Node) -> bool:
 		return int(a.get("player_slot")) < int(b.get("player_slot"))
 	)
