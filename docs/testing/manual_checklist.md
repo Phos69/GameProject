@@ -70,13 +70,14 @@ godot --headless --path . --script res://tests/pause_settings_smoke_test.gd
 
 ## Regressione combat
 
-- Il mini HUD sopra ogni player mostra HP e reload/cooldown utile, mentre la
-  scheda angolo del relativo slot mostra arma, ammo e statistiche RPG.
+- Il pacchetto sopra ogni player mostra P1/P2/P3/P4, HP, livello con gauge EXP,
+  super verticale e lo slot ammo/reload; la scheda angolo mostra arma, riserva
+  o stato speciale e statistiche RPG senza duplicare il caricatore.
 - Sparare riduce il caricatore di una unita per colpo valido.
 - Le munizioni di un player non modificano quelle degli altri player.
 - Tenere premuto fire rispetta il fire rate della pistola.
-- `R` o pulsante `X` avvia la ricarica e il feedback `RELOAD` resta leggibile
-  tra scheda slot e mini HUD world-space.
+- `R` o pulsante `X` avvia la ricarica e lo slot sopra-player passa da ammo a
+  `RELOAD`, riempiendosi fino alla fine della ricarica.
 - Dopo un secondo il caricatore viene riempito senza consumare una riserva finita.
 - Equipaggiare una speciale mantiene disponibile la `Starter Pistol`.
 - Con speciale a 0/0, premere fire spara nello stesso input con la fallback.
@@ -1200,8 +1201,9 @@ Esito QA del 15 giugno 2026:
 - XP, denaro, ammo, cura e arma hanno icone world-space diverse.
 - Nessun pickup usa label `XP`, `$`, `A`, `+` o `W`.
 - La supply crate e riconoscibile senza la label `SUP`.
-- Le schede HUD mostrano arma, munizioni e statistiche di ogni player attivo,
-  mentre vita e reload restano sul mini HUD sopra il survivor.
+- Le schede HUD mostrano arma, riserva/stato speciale e statistiche di ogni
+  player attivo, mentre vita, ammo/reload, livello/EXP e super restano nel
+  pacchetto sopra il survivor.
 - Sparo, hit valido, morte nemico e raccolta generano effetti visuali.
 - Con 2-4 player, schede e colori restano distinguibili a 1280x720.
 - Dungeon e tower defense continuano ad avviarsi e a tornare alla survival.

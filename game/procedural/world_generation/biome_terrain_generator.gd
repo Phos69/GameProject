@@ -40,6 +40,7 @@ func generate_layout_for_cell(
 		layout.rebuild_terrain_classification(cell)
 		report = validation_system.validate_layout(cell, layout)
 
+	obstacle_layout_generator.refresh_generation_summary(layout, biome)
 	layout.validation_report = report
 	cell.generated_layout = layout
 	cell.validation_report = report

@@ -102,20 +102,24 @@ func refresh(player: Node) -> void:
 		"RpgPlayerComponent"
 	) as RpgPlayerComponent
 	portrait_icon.set_icon(&"survivor", slot_color)
-	super_icon.set_icon(&"super", Color(0.38, 1.0, 0.72, 1.0))
+	if super_icon != null:
+		super_icon.set_icon(&"super", Color(0.38, 1.0, 0.72, 1.0))
 	slot_label.text = "P%d" % player_slot
 	class_label.text = "Survivor"
 	stats_label.text = "ATK 0  DEF 0  SPD 1.00"
-	super_label.text = "SUPER"
-	adrenaline_bar.max_value = 1.0
-	adrenaline_bar.value = 0.0
+	if super_label != null:
+		super_label.text = "SUPER"
+	if adrenaline_bar != null:
+		adrenaline_bar.max_value = 1.0
+		adrenaline_bar.value = 0.0
 	passive_label.text = ""
 	passive_label.hide()
 	_refresh_status_widgets(player)
-	xp_bar.max_value = 1.0
-	xp_bar.value = 0.0
+	if xp_bar != null:
+		xp_bar.max_value = 1.0
+		xp_bar.value = 0.0
 	if rpg_component != null and rpg_component.has_character():
-		slot_label.text = "P%d  LV %d" % [player_slot, rpg_component.level]
+		slot_label.text = "P%d" % player_slot
 		class_label.text = "%s  %s · %s" % [
 			rpg_component.get_hero_name(),
 			rpg_component.get_class_name(),
@@ -126,25 +130,29 @@ func refresh(player: Node) -> void:
 			rpg_component.character_id,
 			Color(rpg_component.character_profile.get("palette_accent", slot_color))
 		)
-		adrenaline_bar.max_value = float(RpgPlayerComponent.ADRENALINE_MAX)
-		adrenaline_bar.value = float(rpg_component.adrenaline)
-		super_icon.set_icon(
-			rpg_component.get_super_id(),
-			Color(rpg_component.character_profile.get("palette_accent", Color(0.38, 1.0, 0.72, 1.0))),
-			rpg_component.is_super_ready()
-		)
-		super_label.text = rpg_component.get_super_status_text()
-		super_label.modulate = (
-			Color(0.54, 1.0, 0.74, 1.0)
-			if rpg_component.is_super_ready()
-			else Color(0.70, 0.88, 0.96, 1.0)
-		)
+		if adrenaline_bar != null:
+			adrenaline_bar.max_value = float(RpgPlayerComponent.ADRENALINE_MAX)
+			adrenaline_bar.value = float(rpg_component.adrenaline)
+		if super_icon != null:
+			super_icon.set_icon(
+				rpg_component.get_super_id(),
+				Color(rpg_component.character_profile.get("palette_accent", Color(0.38, 1.0, 0.72, 1.0))),
+				rpg_component.is_super_ready()
+			)
+		if super_label != null:
+			super_label.text = rpg_component.get_super_status_text()
+			super_label.modulate = (
+				Color(0.54, 1.0, 0.74, 1.0)
+				if rpg_component.is_super_ready()
+				else Color(0.70, 0.88, 0.96, 1.0)
+			)
 		var passive_text := rpg_component.get_active_passive_text()
 		if not passive_text.is_empty():
 			passive_label.text = passive_text
 			passive_label.show()
-		xp_bar.max_value = float(rpg_component.experience_to_next_level)
-		xp_bar.value = float(rpg_component.experience)
+		if xp_bar != null:
+			xp_bar.max_value = float(rpg_component.experience_to_next_level)
+			xp_bar.value = float(rpg_component.experience)
 	if health_component != null:
 		health_bar.max_value = float(health_component.max_health)
 		health_bar.value = float(health_component.current_health)
@@ -245,16 +253,13 @@ func _build_ui() -> void:
 	ammo_row.add_theme_constant_override("separation", 7)
 	content.add_child(ammo_row)
 	var ammo_icon := Label.new()
-	ammo_icon.text = "||"
-	ammo_icon.custom_minimum_size = Vector2(28.0, 20.0)
+	ammo_icon.text = "RES"
+	ammo_icon.custom_minimum_size = Vector2(34.0, 20.0)
 	ammo_icon.modulate = Color(1.0, 0.70, 0.24, 1.0)
 	ammo_row.add_child(ammo_icon)
-	ammo_pips_container = HBoxContainer.new()
-	ammo_pips_container.add_theme_constant_override("separation", 3)
-	ammo_pips_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	ammo_row.add_child(ammo_pips_container)
 	ammo_label = Label.new()
-	ammo_label.custom_minimum_size = Vector2(64.0, 20.0)
+	ammo_label.custom_minimum_size = Vector2(190.0, 20.0)
+	ammo_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	ammo_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	ammo_label.add_theme_font_size_override("font_size", 17)
 	ammo_row.add_child(ammo_label)
@@ -289,30 +294,13 @@ func _build_ui() -> void:
 	xp_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	xp_bar.show_percentage = false
 	xp_row.add_child(xp_bar)
+
 	stats_label = Label.new()
-	stats_label.custom_minimum_size = Vector2(120.0, 17.0)
-	stats_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	stats_label.custom_minimum_size = Vector2(250.0, 17.0)
+	stats_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	stats_label.add_theme_font_size_override("font_size", 12)
 	stats_label.modulate = Color(0.74, 0.84, 0.92, 1.0)
-	xp_row.add_child(stats_label)
-
-	var adrenaline_row := HBoxContainer.new()
-	adrenaline_row.add_theme_constant_override("separation", 8)
-	content.add_child(adrenaline_row)
-	super_icon = RpgHudIcon.new()
-	super_icon.custom_minimum_size = Vector2(28.0, 20.0)
-	adrenaline_row.add_child(super_icon)
-	adrenaline_bar = ProgressBar.new()
-	adrenaline_bar.custom_minimum_size = Vector2(126.0, 12.0)
-	adrenaline_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	adrenaline_bar.show_percentage = false
-	adrenaline_row.add_child(adrenaline_bar)
-	super_label = Label.new()
-	super_label.custom_minimum_size = Vector2(120.0, 17.0)
-	super_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	super_label.add_theme_font_size_override("font_size", 12)
-	super_label.modulate = Color(0.70, 0.88, 0.96, 1.0)
-	adrenaline_row.add_child(super_label)
+	content.add_child(stats_label)
 
 	passive_label = Label.new()
 	passive_label.custom_minimum_size = Vector2(250.0, 16.0)
@@ -480,23 +468,9 @@ func _apply_style() -> void:
 
 func _refresh_ammo_widgets(weapon_system: WeaponSystem) -> void:
 	if weapon_system == null or weapon_system.weapon_data == null:
-		_ensure_ammo_pips(0)
-		if reload_bar != null:
-			reload_bar.value = 0.0
+		_clear_ammo_pips()
 		return
-
-	var magazine_size := clampi(weapon_system.weapon_data.magazine_size, 1, 12)
-	_ensure_ammo_pips(magazine_size)
-	var active_color := Color(1.0, 0.70, 0.24, 1.0)
-	if weapon_system.weapon_data.visual_data != null:
-		active_color = weapon_system.weapon_data.visual_data.projectile_color
-	var inactive_color := Color(0.13, 0.15, 0.17, 1.0)
-	for index in range(ammo_pips.size()):
-		ammo_pips[index].color = (
-			active_color
-			if index < weapon_system.current_ammo
-			else inactive_color
-		)
+	_clear_ammo_pips()
 	if weapon_system.weapon_data.infinite_reserve_ammo:
 		ammo_label.text = _format_corner_ammo_text(weapon_system)
 	if reload_bar != null:
@@ -529,6 +503,9 @@ func _format_corner_ammo_text(weapon_system: WeaponSystem) -> String:
 	return "RES %d%s" % [weapon_system.reserve_ammo, suffix]
 
 func _ensure_ammo_pips(target_count: int) -> void:
+	if ammo_pips_container == null:
+		ammo_pips.clear()
+		return
 	target_count = clampi(target_count, 0, 12)
 	while ammo_pips.size() < target_count:
 		var pip := ColorRect.new()
@@ -540,3 +517,6 @@ func _ensure_ammo_pips(target_count: int) -> void:
 		var pip := ammo_pips.pop_back() as ColorRect
 		ammo_pips_container.remove_child(pip)
 		pip.queue_free()
+
+func _clear_ammo_pips() -> void:
+	_ensure_ammo_pips(0)

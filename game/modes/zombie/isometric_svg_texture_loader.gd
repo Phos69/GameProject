@@ -208,6 +208,8 @@ static func _build_object_texture(
 			_draw_barrel_object(image, asset_id, primary, secondary, accent)
 		&"wreck":
 			_draw_wreck_object(image, asset_id, primary, secondary, accent)
+		&"dense_vegetation":
+			_draw_dense_vegetation_object(image, asset_id, primary, secondary, accent)
 		&"tree":
 			_draw_tree_object(image, asset_id, primary, secondary, accent)
 		&"log":
@@ -259,6 +261,8 @@ static func _object_category(asset_path: String, asset_id: StringName) -> String
 		return &"barrel"
 	if key.contains("wreck") or key.contains("car") or normalized_path.contains("/wrecks/"):
 		return &"wreck"
+	if key.contains("vegetation") or normalized_path.contains("/vegetation/"):
+		return &"dense_vegetation"
 	if key.contains("bridge") or key.contains("walkway") or normalized_path.contains("/bridges/"):
 		return &"bridge"
 	if key.contains("tree"):
@@ -545,6 +549,46 @@ static func _draw_wreck_object(
 		Vector2(width * 0.72, height * 0.58),
 		4.0,
 		accent.darkened(0.24)
+	)
+
+static func _draw_dense_vegetation_object(
+	image: Image,
+	asset_id: StringName,
+	primary: Color,
+	secondary: Color,
+	accent: Color
+) -> void:
+	var width := image.get_width()
+	var height := image.get_height()
+	var clumps: Array[Vector3] = [
+		Vector3(0.32, 0.60, 0.16),
+		Vector3(0.50, 0.51, 0.20),
+		Vector3(0.68, 0.60, 0.17),
+		Vector3(0.45, 0.70, 0.21),
+		Vector3(0.62, 0.71, 0.17)
+	]
+	for index in range(clumps.size()):
+		var clump := clumps[index]
+		_draw_ellipse(
+			image,
+			Vector2(width * clump.x, height * clump.y),
+			Vector2(width * clump.z, height * clump.z * 0.70),
+			primary.darkened(0.08 + float(index % 2) * 0.08)
+		)
+	for index in range(5):
+		var ratio := float(index) / 4.0
+		var start := Vector2(lerpf(width * 0.28, width * 0.72, ratio), height * 0.74)
+		var end := Vector2(
+			start.x + sin(float(index)) * width * 0.05,
+			height * lerpf(0.43, 0.58, float(index % 3) / 2.0)
+		)
+		_draw_line(image, start, end, 4.0, accent.darkened(0.12))
+	_draw_diamond(
+		image,
+		Vector2(width * 0.50, height * 0.78),
+		Vector2(width * 0.30, height * 0.08),
+		Color(secondary.darkened(0.10), 0.75),
+		accent.darkened(0.28)
 	)
 
 static func _draw_tree_object(

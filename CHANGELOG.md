@@ -39,10 +39,19 @@
 - Aggiunto `tests/forest_isometric_texture_transition_smoke_test.gd` per
   validare contratti manifest, asset SVG, transizioni emesse dal layout
   generato, tall grass walkable e dettaglio texture nel `BiomeTileLayer`.
+- Aggiunto `tests/starter_biome_vertical_slice_smoke_test.gd` per validare il
+  vertical slice del bioma base: strade edge-to-edge, sentieri, casa,
+  vegetazione densa impassabile, fiume con bridge, seed/debug summary e
+  contratti manifest non generici.
+- Aggiunti asset SVG base-complete per `abandoned_car` e `dense_vegetation`
+  nel set isometrico `infected_plains`.
 - Aggiunti 14 tile SVG dedicati per i cliff: bordi north/south/east/west,
   angoli interni/esterni e due raccordi diagonali. Il nuovo
   `IsometricCliffMeshBuilder` pre-bake-a faccia verticale, creste, fenditure,
   gradiente profondo sfumato nel void senza creare nodi per-tile.
+- Aggiunto `PlayerWorldHudVisual`, pacchetto HUD world-space child del player
+  con P1-P4, HP, livello con gauge EXP circolare, slot condiviso ammo/reload e
+  barra super verticale ready/non-ready.
 
 ### Changed
 
@@ -63,8 +72,10 @@
   wrapping su card valide e avvio survival tramite `Start`/`pause` solo quando
   gli slot attivi hanno una selezione completa; lo `Start` di controller non
   attivi continua a servire il join locale.
-- L'HUD gameplay separa vita/reload, ora compatti sopra il survivor, dalle
-  statistiche slot nelle schede P1-P4 ancorate ai quattro angoli schermo.
+- L'HUD gameplay sposta caricatore, reload, livello/EXP e super nel pacchetto
+  sopra-player; le schede P1-P4 agli angoli restano per ritratto, arma,
+  riserva/stato speciale, statistiche, passive e status senza duplicare il
+  caricatore.
 - Rimosso dal gameplay il riquadro status persistente, inclusi progresso party,
   stato ondata survival e riepilogo bioma; gli annunci temporanei restano nel
   canale HUD esistente.
@@ -80,9 +91,16 @@
 - `ObstacleLayoutGenerator` genera una rete orizzontale/verticale con strade
   principali larghe 40, sentieri bioma medi larghi 20, blocchi interni
   classificati e fall zone per void/partial void.
+- `ObstacleLayoutGenerator` garantisce nel bioma base una road network
+  edge-to-edge, almeno una `ruined_house`, vegetazione densa bloccante, dettagli
+  strada e un attraversamento acqua/ponte deterministico quando il seed lo
+  richiede; il layout espone `generation_summary` per debug.
 - `MapValidationSystem` blocca il void nel flood-fill e verifica che spawn e
   crate siano su terrain walkable; `ZombieSpawner` rifiuta le celle streamate
   non walkable.
+- `MapValidationSystem` tratta `deep_water` come bloccante salvo bridge,
+  valida strade principali edge-to-edge e attraversamenti d'acqua dichiarati
+  come fiume, senza rendere obbligatorio un ponte per le pozze tematiche locali.
 - `BiomeTransitionSystem` resta una API legacy/debug per `transition_to()`, ma
   non genera piu `BiomeTransitionGate` nella survival standard; gli smoke di
   open passage e transizione bioma validano ora il contratto senza gate runtime.

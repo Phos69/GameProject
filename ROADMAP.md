@@ -431,6 +431,11 @@ Attivita post-roadmap:
   varchi fisici senza portali e primo set texture forestale asset-driven per il
   bioma base `infected_plains`, con grass, tall grass, path, road, void, cliff,
   mountain wall e transizioni neighbor-aware.
+- Milestone R3.2 di `isometric_biome_generation_rewrite_roadmap.md`
+  completata come vertical slice starter: road network edge-to-edge, sentieri
+  `broken_street`, `ruined_house`, vegetazione densa impassabile, dettagli
+  strada, fiume/bridge validato, summary seed/debug e asset manifest dedicati
+  per `abandoned_car` e `dense_vegetation`.
 - asset definitivi e ulteriori pass di bilanciamento;
 - firma digitale della build pubblica.
 

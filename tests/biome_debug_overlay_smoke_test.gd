@@ -23,6 +23,17 @@ func _run() -> void:
 	layout.obstacle_rects.append(Rect2i(Vector2i(10, 10), Vector2i(4, 4)))
 	layout.hazard_rects.append(Rect2i(Vector2i(30, 30), Vector2i(5, 5)))
 	layout.crate_cells.append(Vector2i(50, 50))
+	layout.generation_summary = {
+		"main_road_count": 2,
+		"path_count": 2,
+		"house_count": 1,
+		"dense_vegetation_count": 1,
+		"bridge_count": 1,
+		"river_count": 1,
+		"water_segment_count": 3,
+		"car_count": 1,
+		"fence_count": 2
+	}
 	layout.rebuild_terrain_classification(cell)
 	cell.generated_layout = layout
 	var cells: Array[BiomeCell] = [cell]
@@ -34,6 +45,15 @@ func _run() -> void:
 	_assert(summary.get("obstacle_count") == 1, "overlay counts obstacles")
 	_assert(summary.get("hazard_count") == 1, "overlay counts hazards")
 	_assert(summary.get("crate_count") == 1, "overlay counts crates")
+	_assert(summary.get("main_road_count") == 2, "overlay counts main roads")
+	_assert(summary.get("path_count") == 2, "overlay counts paths")
+	_assert(summary.get("house_count") == 1, "overlay counts houses")
+	_assert(summary.get("dense_vegetation_count") == 1, "overlay counts dense vegetation")
+	_assert(summary.get("bridge_count") == 1, "overlay counts bridges")
+	_assert(summary.get("river_count") == 1, "overlay counts rivers")
+	_assert(summary.get("water_segment_count") == 3, "overlay counts water segments")
+	_assert(summary.get("car_count") == 1, "overlay counts cars")
+	_assert(summary.get("fence_count") == 2, "overlay counts fences")
 	_assert(
 		int(summary.get("terrain_classification_total", 0))
 		== layout.zone_size.x * layout.zone_size.y,

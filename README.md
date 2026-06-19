@@ -132,6 +132,7 @@ godot --headless --path . --script res://tests/milestone_10_object_asset_smoke_t
 godot --headless --path . --script res://tests/milestone_10_void_cliff_asset_smoke_test.gd
 godot --headless --path . --script res://tests/forest_isometric_texture_transition_smoke_test.gd
 godot --headless --path . --script res://tests/isometric_biome_generation_rewrite_smoke_test.gd
+godot --headless --path . --script res://tests/starter_biome_vertical_slice_smoke_test.gd
 godot --headless --path . --script res://tests/isometric_biome_terrain_coverage_smoke_test.gd
 godot --headless --path . --script res://tests/fall_boundary_visual_logic_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_10_no_portal_transition_smoke_test.gd
@@ -251,17 +252,18 @@ Completato:
   senza duplicati globali nella stessa run e con fallback ammo a pool esaurito;
 - menu principale mostrato all'avvio;
 - selezione personaggio prima della zombie survival con quattro profili iniziali;
-- statistiche classe RPG con HP, attacco, difesa, velocita, XP bar e level-up per-run;
+- statistiche classe RPG con HP, attacco, difesa, velocita, progressione XP e level-up per-run;
 - armi base RPG per arco, pistola, ascia e spada con range, scatter, ammo,
   reload e `attack_type` distinti;
 - hitbox arma configurabili e separate dal visual, con projectile per ranged e
   hitbox temporanee melee per ascia/spada/artigli;
-- pips ammo nelle schede angolo e barra reload compatta sopra il player per le
-  armi RPG;
+- pacchetto HUD sopra-player con P1/P2/P3/P4, HP, livello con gauge EXP
+  circolare, barra ammo/reload condivisa e super verticale per le armi RPG;
 - XP RPG assegnata al killer e a fine ondata senza pickup XP dagli zombie;
 - passive automatiche RPG per Ranger, Pistoliere, Berserker e Spadaccino con stato visibile nell'HUD;
 - adrenalina RPG da combat e fine ondata, con super attivabile a 100 per ogni classe;
-- HUD RPG con ritratto classe, icona arma, pips ammo, barre XP/adrenalina e icona super ready;
+- HUD RPG con ritratto classe e icona arma nelle schede angolo, piu ammo,
+  reload, EXP e super ready direttamente sopra il player;
 - primo pass di bilanciamento RPG per differenziare meglio range, accessibilita, rischio e difesa;
 - profili classe RPG data-driven tramite risorse `RpgCharacterData`;
 - feedback world-space e cue procedurali dedicati per level-up e super RPG;

@@ -20,8 +20,10 @@ func _run() -> void:
 	var rpg_component := player.get_node(
 		"RpgPlayerComponent"
 	) as RpgPlayerComponent
+	var world_hud := player.get_node("WorldHud")
 	_expect(rpg_component != null, "rpg component is available")
-	if rpg_component == null:
+	_expect(world_hud != null, "world-space player HUD is available")
+	if rpg_component == null or world_hud == null:
 		_finish()
 		return
 
@@ -38,16 +40,22 @@ func _run() -> void:
 	_expect(card.portrait_icon != null, "HUD card has a portrait icon")
 	_expect(card.portrait_icon.icon_id == &"ranger", "portrait follows selected class")
 	_expect(card.weapon_icon.get_profile_id() == &"rpg_bow", "weapon icon follows base weapon")
-	_expect(card.ammo_pips.size() == 1, "ammo remains graphical through pips")
-	_expect(card.xp_bar.value == 20.0, "XP bar exposes per-run XP")
+	_expect(card.ammo_pips.is_empty(), "corner card does not duplicate magazine pips")
+	_expect(card.xp_bar == null, "corner card no longer duplicates XP")
+	_expect(card.adrenaline_bar == null, "corner card no longer duplicates adrenaline")
+	_expect(card.slot_label.text == "P1", "corner card keeps the slot label compact")
+	_expect(world_hud.get_magazine_size() == 1, "world HUD exposes bow magazine")
+	_expect(world_hud.get_current_ammo() == 1, "world HUD exposes current ammo")
 	_expect(
-		card.adrenaline_bar.value == float(RpgPlayerComponent.ADRENALINE_MAX),
-		"adrenaline bar fills at super cap"
+		is_equal_approx(world_hud.get_exp_ratio(), 20.0 / 45.0),
+		"world HUD exposes per-run XP ratio"
 	)
-	_expect(card.super_icon != null, "HUD card has a super icon")
-	_expect(card.super_icon.icon_id == &"arrow_rain", "super icon follows profile")
-	_expect(card.super_icon.is_ready, "super icon exposes ready state")
-	_expect(card.super_label.text == "SUPER READY", "super label exposes ready state")
+	_expect(world_hud.get_level() == 1, "world HUD exposes current level")
+	_expect(
+		is_equal_approx(world_hud.get_super_ratio(), 1.0),
+		"world HUD fills super bar at cap"
+	)
+	_expect(world_hud.is_super_ready_display(), "world HUD exposes super ready state")
 
 	card.queue_free()
 	player.queue_free()

@@ -62,7 +62,10 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
    e limite framerate.
 40. `VisualSettingsManager` distribuisce solo impostazioni presentazionali e le persiste nel save.
 41. `IsometricCameraController` segue il gruppo e applica shake solo tramite offset.
-42. `HUDManager` mostra slot negli angoli, munizioni, boss e mappa esplorazione; il riquadro status persistente non e mostrato durante il gameplay e vita/reload compatti restano world-space sul player.
+42. `HUDManager` mostra schede slot leggere negli angoli, boss e mappa
+    esplorazione; il riquadro status persistente non e mostrato durante il
+    gameplay e `PlayerWorldHudVisual` mantiene sopra ogni player vita,
+    ammo/reload, livello, EXP e super.
 43. I componenti visuali ricevono stato e profilo senza possedere logica gameplay.
 44. `BossTelegraphVisual` riceve pattern, direzione e durata senza possedere danno.
 45. `WaveWardenVisual` e `RiftArchitectVisual` ricevono solo stato presentazionale.
@@ -162,10 +165,11 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `BiomePassageGenerator`: crea passaggi condivisi e allineati tra celle
   confinanti, con larghezza fisica standard di 40 celle, rettangoli
   local/global e tile entry/exit derivati dal `passage_type`.
-- `BiomeTerrainGenerator`: genera il layout interno del bioma attivo e collega ostacoli, casse, hazard e report di validazione.
+- `BiomeTerrainGenerator`: genera il layout interno del bioma attivo e collega
+  ostacoli, casse, hazard, summary deterministico e report di validazione.
 - `IsometricEnvironmentManifest`: legge `assets/environment/isometric/manifest.json`
   come inventario di ostacoli, draw mode oggetto, border tematici, fall zone
-  procedurali, tag terrain generati e contratto asset v7 (`tile_sets`,
+  procedurali, tag terrain generati e contratto asset v8 (`tile_sets`,
   `tile_variants`, `terrain_tiles`, `edge_tiles`, `void_tiles`, `object_scenes`,
   `passage_tiles`, `biome_asset_sets`, `fallback_policy`). Il loader normalizza
   path, status, footprint, anchor, collisione, blocchi e attribution senza
@@ -173,11 +177,21 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `ObstacleLayoutGenerator`: produce strade e sentieri isometrici con scala
   standard 40 celle per strade principali e 20 celle per sentieri medi,
   diramazioni verso i passaggi, case grandi, ostacoli secondari e muri/bordi
-  tematici sui lati connessi o bloccati.
+  tematici sui lati connessi o bloccati. Nel bioma starter garantisce anche
+  una `ruined_house`, vegetazione densa impassabile, auto abbandonate,
+  un fiume `deep_water` segmentato e bridge sui crossing.
 - `FallBoundaryGenerator`: trasforma i lati senza vicino in `fall_zone` data-driven con il contratto di danno ambientale esistente.
-- `MapValidationSystem`: valida con flood-fill spawn, corridoi, passaggi, casse raggiungibili, grafo connesso, passaggi non ostruiti, void non attraversabile e classificazione completa del `500x500`.
+- `MapValidationSystem`: valida con flood-fill spawn, corridoi, passaggi, casse
+  raggiungibili, grafo connesso, passaggi non ostruiti, void non attraversabile
+  e classificazione completa del `500x500`. `deep_water` blocca pathfinding
+  salvo celle bridge; i crossing d'acqua richiedono bridge solo nei layout che
+  dichiarano un fiume nello `generation_summary`.
 - `BiomeMapDebugOverlay`: espone seed corrente, riepilogo celle/passaggi,
-  classi terrain aggregate, il report di connettivita del grafo (`WorldGraph.get_connectivity_report()`), regione corrente e active regions caricate, con toggle `F8`, e richieste di rigenerazione per debug.
+  metriche di generazione (strade, sentieri, case, vegetazione densa, bridge,
+  fiumi, acqua, auto, fence), classi terrain aggregate, il report di
+  connettivita del grafo (`WorldGraph.get_connectivity_report()`), regione
+  corrente e active regions caricate, con toggle `F8`, e richieste di
+  rigenerazione per debug.
 - `BiomeDefinition`: risorsa dati con terreno, ostacoli, casse, zombie ammessi, pesi, palette e moltiplicatori.
 - `RegionSeamSystem`: tracker world-space della regione survival corrente.
   Converte la posizione del party in tile globali, verifica che il bordo
@@ -189,8 +203,9 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `BiomeTransitionGate`: classe storica mantenuta per compatibilita dei test di
   dimensionamento/span; non e piu creata dalla survival.
 - `BiomeEnvironmentLayout`: placement deterministico di floor scavati,
-  `road_cell_tags`, rettangoli di apertura, blocchi interni, ostacoli fisici,
-  casse e hazard per un bioma, con classificazione completa del `500x500`.
+  `road_cell_tags`, rettangoli di apertura, blocchi interni, bridge,
+  water/deep-water rects, ostacoli fisici, casse e hazard per un bioma, con
+  classificazione completa del `500x500` e `generation_summary` per debug.
 - `WaveDirector`: composizione wave e scaling basati sul bioma corrente.
 - `ZombieSpawner`: spawn dai bordi della camera con distanza minima dai player,
   validazione hazard/ostacoli e fallback arena; nella megamappa valida le
@@ -257,12 +272,15 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `PauseMenu`: overlay durante le run; usa `SceneTree.paused` e resta attivo
   insieme alla propria UI.
 - `HUDManager`: UI prototipo per HUD gameplay, boss, annunci e mappa
-  esplorazione; ancora le schede player ai quattro angoli senza occupare il
-  centro world-space.
+  esplorazione; ancora le schede player ai quattro angoli senza duplicare le
+  informazioni immediate del pacchetto world-space.
 - `ExplorationMapPanel`: pannello consultabile che disegna grafo, fog/unknown, regioni discovered/visited/cleared, connessioni note tematizzate per `passage_type`, marker per le active/loaded regions e regione corrente; consuma `apply_visual_settings` per il high contrast.
 - `PlayerVisual`: presentazione procedurale data-driven del player, con
-  silhouette e palette derivate dal profilo RPG; disegna anche il mini HUD
-  world-space per vita, marker slot e reload attivo.
+  silhouette e palette derivate dal profilo RPG; non possiede piu il mini HUD.
+- `PlayerWorldHudVisual`: pacchetto UI world-space child del player; legge
+  `HealthComponent`, `WeaponSystem` e `RpgPlayerComponent` e disegna P1-P4,
+  HP, livello con gauge EXP circolare, barra ammo/reload condivisa nello stesso
+  slot e super verticale pronta/non pronta.
 - `ZombieVisual`: presentazione animata procedurale degli zombie.
 - `DropPickupVisual` e `SupplyCrateVisual`: icone world-space sostituibili;
   la supply crate usa `object_scenes/supply_crate` come sprite asset-backed e
@@ -270,7 +288,9 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `BossTelegraphVisual`: warning world-space per pattern aimed, radial e cambio fase.
 - `WaveWardenVisual`: silhouette, animazione e stato visuale delle due fasi del boss.
 - `PlayerHudCard`: scheda HUD riusabile per ogni slot locale, pensata come
-  pannello statistiche angolo con arma, ammo, XP, adrenalina, super e passive.
+  pannello statistiche angolo con ritratto, arma, riserva/stato speciale,
+  statistiche, passive e status; caricatore, reload, EXP e super restano nel
+  `PlayerWorldHudVisual`.
 - `CharacterSelectCard`, `CharacterDetailPanel` e `CharacterGameplayPreview`: controlli presentazionali della selezione RPG, senza autorita su context survival o applicazione profili.
 - `RpgHudIcon`: icona procedurale leggera per ritratto classe, passive e super RPG.
 - `BriciolaCompanion`: companion alleato leggero della Domatrice con follow,
@@ -655,7 +675,7 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
   legacy in `object_visuals`, i contratti asset per tile, terrain, edge, void,
   object scenes, passage tiles e asset set di bioma, inclusi i 14 tile cliff
   orientati, `void_depth`, tile forestali, road connector e entry/exit
-  passaggio; i preset
+  passaggio, `abandoned_car` e `dense_vegetation`; i preset
   `performance`/`balanced`/`quality` restano disponibili per fallback ground e
   qualita del tile layer.
 - `WorldRegionConnection` serializza apertura locale, connector locale,

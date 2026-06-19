@@ -167,7 +167,7 @@ Regressioni rivalidate il 2026-06-18:
 
 ## Milestone R3 - Asset e blocchi interni finalizzati
 
-Stato: in corso (R3.1 props piccoli avviato).
+Stato: in corso (R3.1 props piccoli, R3.2 vertical slice starter completati).
 
 Obiettivo:
 
@@ -191,9 +191,27 @@ R3.1 implementato (props piccoli):
 - Nuovo `tests/isometric_block_props_smoke_test.gd` - PASS: verifica >=3 props
   dentro i blocchi per bioma, off-route/off-fall, layout ancora valido.
 
-Resta (R3.2+):
+R3.2 implementato (vertical slice `infected_plains`):
 
-- Art dedicata per cespugli/lampioni/casse decorative: richiede nuovi id con
+- Il bioma starter garantisce road network edge-to-edge: due `main_road`
+  larghe 40 celle e due sentieri `broken_street` larghi 20 celle.
+- `ObstacleLayoutGenerator` forza almeno una casa `ruined_house`, una massa
+  `dense_vegetation` impassabile, auto abbandonate e fence detail off-route.
+- Aggiunto un fiume `deep_water` deterministico a segmenti con bridge sui
+  crossing stradali; il bridge rende walkable solo le celle coperte.
+- `BiomeEnvironmentLayout` espone `bridge_rects`, `water_rects` e
+  `generation_summary` per seed/debug overlay.
+- `MapValidationSystem` blocca `deep_water` nel flood-fill, eccetto i bridge,
+  e valida strade principali edge-to-edge e crossing d'acqua solo quando il
+  layout dichiara un fiume.
+- Manifest e asset: `abandoned_car` e `dense_vegetation` hanno `object_scenes`,
+  draw mode dedicati, SVG e fallback procedurale in `BiomeObstacle`/
+  `IsometricSvgTextureLoader`.
+- Nuovo `tests/starter_biome_vertical_slice_smoke_test.gd` - PASS.
+
+Resta (R3.3+):
+
+- Art dedicata per lampioni/casse decorative e ulteriori props soft: richiede nuovi id con
   contratto `object_scenes` completo (asset SVG, source, license, attribution,
   biome_ids, footprint) + draw mode in `OBJECT_DRAW_MODES` + `_draw_*` in
   `biome_obstacle.gd`. Il test v7 impone il contratto, quindi va fatto in blocco.
