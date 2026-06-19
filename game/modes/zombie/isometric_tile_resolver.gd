@@ -250,6 +250,9 @@ func resolve_tile_data(
 			return forest_data
 	match terrain_class:
 		BiomeEnvironmentLayout.TERRAIN_VOID:
+			var void_cliff := _resolve_void_tile_data(layout, cell, biome_cell, TILE_VOID_DEPTH)
+			if StringName(void_cliff.get("tile_id", &"")) != TILE_VOID_DEPTH:
+				return void_cliff
 			return _tile_data(TILE_VOID_DEPTH, TILE_SECTION_VOID, &"void_depth")
 		BiomeEnvironmentLayout.TERRAIN_FALL_ZONE:
 			return _resolve_void_tile_data(layout, cell, biome_cell, TILE_VOID_DEPTH)
@@ -416,6 +419,9 @@ func _resolve_forest_tile_data(
 		BiomeEnvironmentLayout.TERRAIN_VOID:
 			if not _cell_inside_layout(layout, cell):
 				return _tile_data(TILE_VOID_DEPTH, TILE_SECTION_VOID, &"void_depth")
+			var void_cliff := _resolve_void_tile_data(layout, cell, biome_cell, TILE_FOREST_VOID)
+			if StringName(void_cliff.get("tile_id", &"")) != TILE_FOREST_VOID:
+				return void_cliff
 			return _tile_data(TILE_FOREST_VOID, TILE_SECTION_VOID, &"forest_void")
 		BiomeEnvironmentLayout.TERRAIN_FALL_ZONE:
 			return _resolve_void_tile_data(layout, cell, biome_cell, TILE_FOREST_VOID)
@@ -1050,10 +1056,12 @@ func _void_neighbor_is_ground(
 	biome_cell: BiomeCell
 ) -> bool:
 	var terrain_class := layout.get_terrain_class_at_cell(cell, biome_cell)
+	# TERRAIN_BORDER (perimeter wall) counts as solid ground so that fall_zone
+	# cells adjacent to a mountain-wall perimeter still resolve to an oriented
+	# cliff tile instead of falling back to the untextured void depth tile.
 	return (
 		terrain_class != BiomeEnvironmentLayout.TERRAIN_VOID
 		and terrain_class != BiomeEnvironmentLayout.TERRAIN_FALL_ZONE
-		and terrain_class != BiomeEnvironmentLayout.TERRAIN_BORDER
 	)
 
 func _tile_data(tile_id: StringName, section: StringName, role: StringName) -> Dictionary:

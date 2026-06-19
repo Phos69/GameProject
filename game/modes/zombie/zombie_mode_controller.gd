@@ -59,7 +59,7 @@ func _ready() -> void:
 func start_run(context: Dictionary = {}) -> void:
 	_resolve_components()
 	if biome_manager != null:
-		biome_manager.start_run(context)
+		biome_manager.start_run(_with_single_biome_arena(context))
 	if world_runtime != null and biome_manager != null:
 		world_runtime.start_run(biome_manager.active_world_data, biome_manager)
 	if region_seam_system != null and biome_manager != null:
@@ -76,6 +76,18 @@ func start_run(context: Dictionary = {}) -> void:
 	zombie_run_started.emit(
 		StringName(biome.get("biome_id")) if biome != null else &""
 	)
+
+# The survival world is a single self-contained biome arena: one biome cell with
+# no neighbours, so every map edge resolves to a void fall boundary (the player
+# falls off the rim) instead of a walled connection to an adjacent biome. A caller
+# that explicitly sizes the map (e.g. tests) keeps its own dimensions.
+func _with_single_biome_arena(context: Dictionary) -> Dictionary:
+	var resolved := context.duplicate(true)
+	if not resolved.has("biome_map_width"):
+		resolved["biome_map_width"] = 1
+	if not resolved.has("biome_map_height"):
+		resolved["biome_map_height"] = 1
+	return resolved
 
 func stop_run() -> void:
 	if terrain_generator != null:
