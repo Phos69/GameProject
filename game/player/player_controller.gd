@@ -1,7 +1,16 @@
 extends CharacterBody2D
 class_name PlayerController
 
+signal entity_state_changed(previous_state: StringName, current_state: StringName)
+
 const STARTER_WEAPON: WeaponData = preload("res://game/weapons/starter_pistol.tres")
+
+enum EntityState {
+	NORMAL,
+	DODGING,
+	FALLING,
+	DEAD
+}
 
 @export_range(1, 4) var player_slot: int = 1
 @export var move_speed: float = 260.0
@@ -22,6 +31,7 @@ const STARTER_WEAPON: WeaponData = preload("res://game/weapons/starter_pistol.tr
 @onready var weapon_system = $WeaponSystem
 @onready var rpg_component := $RpgPlayerComponent as RpgPlayerComponent
 @onready var dodge_component := $PlayerDodgeComponent as PlayerDodgeComponent
+@onready var void_fall_component := $VoidFallComponent as EntityVoidFallComponent
 @onready var health_component := $HealthComponent as HealthComponent
 @onready var revive_indicator := $ReviveIndicator as ReviveIndicatorVisual
 
@@ -35,6 +45,7 @@ var character_speed_multiplier: float = 1.0
 var environment_speed_multiplier: float = 1.0
 var weapon_feedback_label: Label
 var has_prepared_run: bool = false
+var current_entity_state: EntityState = EntityState.NORMAL
 
 func _ready() -> void:
 	add_to_group("players")
@@ -54,6 +65,9 @@ func _ready() -> void:
 	rpg_component.character_changed.connect(_on_rpg_character_changed)
 	rpg_component.stats_changed.connect(_on_rpg_stats_changed)
 	rpg_component.leveled_up.connect(_on_rpg_leveled_up)
+	dodge_component.dodge_started.connect(_on_dodge_started)
+	dodge_component.dodge_finished.connect(_on_dodge_finished)
+	void_fall_component.fall_finished.connect(_on_void_fall_finished)
 	base_max_health = health_component.max_health
 	base_move_speed = move_speed
 	_apply_slot_color()
@@ -66,6 +80,11 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	if health_component.is_incapacitated():
+		_set_entity_state(EntityState.DEAD)
+		velocity = Vector2.ZERO
+		visual.set_motion(velocity, move_speed)
+		return
+	if void_fall_component != null and void_fall_component.is_falling:
 		velocity = Vector2.ZERO
 		visual.set_motion(velocity, move_speed)
 		return
@@ -105,6 +124,42 @@ func _physics_process(delta: float) -> void:
 	_update_facing(move_input)
 	visual.set_motion(velocity, move_speed)
 	_handle_weapon_input()
+	_set_entity_state(EntityState.NORMAL)
+
+func get_entity_state_name() -> StringName:
+	match current_entity_state:
+		EntityState.DODGING:
+			return &"dodging"
+		EntityState.FALLING:
+			return &"falling"
+		EntityState.DEAD:
+			return &"dead"
+		_:
+			return &"normal"
+
+func try_start_void_fall() -> bool:
+	if (
+		current_entity_state == EntityState.DODGING
+		or current_entity_state == EntityState.FALLING
+		or health_component == null
+		or health_component.is_incapacitated()
+		or void_fall_component == null
+	):
+		return false
+	var hazard_system := get_tree().get_first_node_in_group("hazard_system")
+	if (
+		hazard_system == null
+		or not hazard_system.has_method("is_void_at_world_position")
+		or not bool(hazard_system.is_void_at_world_position(global_position))
+	):
+		return false
+	velocity = Vector2.ZERO
+	aim_line.hide()
+	visual.finish_dodge()
+	if not void_fall_component.begin_fall(global_position, visual):
+		return false
+	_set_entity_state(EntityState.FALLING)
+	return true
 
 func _handle_dodge_input(move_input: Vector2) -> bool:
 	if dodge_component == null or input_manager == null:
@@ -178,6 +233,9 @@ func prepare_for_run(max_health_bonus: int = 0) -> void:
 	velocity = Vector2.ZERO
 	if dodge_component != null:
 		dodge_component.reset_runtime()
+	if void_fall_component != null:
+		void_fall_component.reset_runtime()
+	_set_entity_state(EntityState.NORMAL)
 	visual.reset_visual()
 	revive_indicator.set_downed(false)
 	aim_line.show()
@@ -213,18 +271,21 @@ func get_environment_speed_multiplier() -> float:
 	return environment_speed_multiplier
 
 func _on_downed() -> void:
+	_set_entity_state(EntityState.DEAD)
 	velocity = Vector2.ZERO
 	visual.play_downed()
 	revive_indicator.set_downed(true)
 	aim_line.hide()
 
 func _on_revived(_current_health: int, _max_health: int) -> void:
+	_set_entity_state(EntityState.NORMAL)
 	velocity = Vector2.ZERO
 	visual.reset_visual()
 	revive_indicator.set_downed(false)
 	aim_line.show()
 
 func _on_died() -> void:
+	_set_entity_state(EntityState.DEAD)
 	velocity = Vector2.ZERO
 	visual.play_dead()
 	aim_line.hide()
@@ -317,3 +378,40 @@ func _on_rpg_leveled_up(_level: int) -> void:
 	_apply_rpg_runtime_stats(false)
 	if health_component != null and health_component.is_alive():
 		health_component.heal(roundi(float(health_component.max_health) * 0.25))
+
+func _on_dodge_started(
+	direction: Vector2,
+	_target_position: Vector2,
+	_crosses_gap: bool
+) -> void:
+	_set_entity_state(EntityState.DODGING)
+	visual.play_dodge(direction, dodge_component.dodge_duration)
+	aim_line.hide()
+
+func _on_dodge_finished() -> void:
+	visual.finish_dodge()
+	if try_start_void_fall():
+		return
+	_set_entity_state(EntityState.NORMAL)
+	if health_component != null and health_component.is_alive():
+		aim_line.show()
+
+func _on_void_fall_finished(fall_origin: Vector2) -> void:
+	var hazard_system := get_tree().get_first_node_in_group("hazard_system")
+	if (
+		hazard_system != null
+		and hazard_system.has_method("complete_player_fall")
+	):
+		hazard_system.complete_player_fall(self, fall_origin)
+	if health_component != null and health_component.is_alive():
+		_set_entity_state(EntityState.NORMAL)
+		aim_line.show()
+	else:
+		_set_entity_state(EntityState.DEAD)
+
+func _set_entity_state(next_state: EntityState) -> void:
+	if current_entity_state == next_state:
+		return
+	var previous_state := get_entity_state_name()
+	current_entity_state = next_state
+	entity_state_changed.emit(previous_state, get_entity_state_name())

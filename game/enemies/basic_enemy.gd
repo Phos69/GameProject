@@ -10,6 +10,7 @@ enum State {
 	IDLE,
 	CHASE,
 	ATTACK,
+	FALLING,
 	DEAD
 }
 
@@ -30,6 +31,7 @@ enum State {
 @onready var visual := $Visual as ZombieVisual
 @onready var health_bar := $HealthBar as Line2D
 @onready var health_component := $HealthComponent as HealthComponent
+@onready var void_fall_component := $VoidFallComponent as EntityVoidFallComponent
 
 var current_state: State = State.IDLE
 var target: Node2D
@@ -51,14 +53,17 @@ var death_hazard_duration: float = 0.0
 var death_hazard_radius: float = 68.0
 var emerge_timer: float = 0.0
 var active_collision_layer: int = 2
+var active_collision_mask: int = 1
 var spawn_region_id: StringName = &""
 var current_region_id: StringName = &""
 var last_seen_player_region_id: StringName = &""
+var death_reason: StringName = &"combat"
 
 func _ready() -> void:
 	add_to_group("enemies")
 	add_to_group("damageable_targets")
 	active_collision_layer = collision_layer
+	active_collision_mask = collision_mask
 	_apply_wave_scaling()
 	_apply_profile_visual()
 	if emerge_timer > 0.0:
@@ -67,10 +72,12 @@ func _ready() -> void:
 	health_component.damaged.connect(_on_health_changed)
 	health_component.healed.connect(_on_health_changed)
 	health_component.died.connect(_on_died)
+	void_fall_component.fall_finished.connect(_on_void_fall_finished)
 	_update_health_bar()
 
 func _physics_process(delta: float) -> void:
-	if current_state == State.DEAD:
+	if current_state == State.DEAD or current_state == State.FALLING:
+		velocity = Vector2.ZERO
 		return
 	if emerge_timer > 0.0:
 		emerge_timer = maxf(emerge_timer - delta, 0.0)
@@ -114,6 +121,8 @@ func get_state_name() -> StringName:
 			return &"chase"
 		State.ATTACK:
 			return &"attack"
+		State.FALLING:
+			return &"falling"
 		State.DEAD:
 			return &"dead"
 		_:
@@ -130,6 +139,7 @@ func configure_wave_scaling(config: Dictionary) -> void:
 	)
 
 func configure_spawn(config: Dictionary) -> void:
+	death_reason = &"combat"
 	enemy_id = StringName(config.get("enemy_id", enemy_id))
 	spawn_region_id = StringName(config.get("spawn_region_id", spawn_region_id))
 	current_region_id = StringName(config.get("current_region_id", spawn_region_id))
@@ -142,6 +152,8 @@ func modify_incoming_damage(
 	amount: int,
 	_source_id: StringName = &""
 ) -> int:
+	if current_state == State.FALLING:
+		return 0
 	return maxi(
 		1 if amount > 0 else 0,
 		roundi(float(maxi(amount, 0)) * incoming_damage_multiplier)
@@ -208,22 +220,88 @@ func _on_died() -> void:
 	collision_layer = 0
 	collision_mask = 0
 	health_bar.hide()
-	_grant_kill_experience()
+	var health_bar_background := get_node_or_null("HealthBarBackground") as Line2D
+	if health_bar_background != null:
+		health_bar_background.hide()
+	var grants_rewards := should_grant_death_rewards()
+	if grants_rewards:
+		_grant_kill_experience()
+	else:
+		_clear_last_damage_source()
 
-	var drop_system = get_tree().get_first_node_in_group("drop_system")
-	if drop_system != null and drop_system.has_method("spawn_drops_deferred"):
-		drop_system.spawn_drops_deferred(
-			self,
-			loot_table,
-			global_position,
-			null,
-			resource_drop_modifier
-		)
+	if grants_rewards:
+		var drop_system = get_tree().get_first_node_in_group("drop_system")
+		if drop_system != null and drop_system.has_method("spawn_drops_deferred"):
+			drop_system.spawn_drops_deferred(
+				self,
+				loot_table,
+				global_position,
+				null,
+				resource_drop_modifier
+			)
 
-	_spawn_death_hazard()
+	if grants_rewards:
+		_spawn_death_hazard()
 
 	died.emit(self)
 	queue_free()
+
+func get_death_reason() -> StringName:
+	return death_reason
+
+func should_grant_death_rewards() -> bool:
+	return death_reason != &"void" and death_reason != &"fall"
+
+func try_start_void_fall() -> bool:
+	if (
+		current_state == State.DEAD
+		or current_state == State.FALLING
+		or health_component == null
+		or not health_component.is_alive()
+		or void_fall_component == null
+	):
+		return false
+	var hazard_system := get_tree().get_first_node_in_group("hazard_system")
+	if (
+		hazard_system == null
+		or not hazard_system.has_method("is_void_at_world_position")
+		or not bool(hazard_system.is_void_at_world_position(global_position))
+	):
+		return false
+	death_reason = &"void"
+	_clear_last_damage_source()
+	velocity = Vector2.ZERO
+	target = null
+	if has_method("cancel_windup"):
+		call("cancel_windup")
+	collision_layer = 0
+	collision_mask = 0
+	health_bar.hide()
+	var health_bar_background := get_node_or_null("HealthBarBackground") as Line2D
+	if health_bar_background != null:
+		health_bar_background.hide()
+	if not void_fall_component.begin_fall(global_position, visual):
+		death_reason = &"combat"
+		collision_layer = active_collision_layer
+		collision_mask = active_collision_mask
+		health_bar.show()
+		if health_bar_background != null:
+			health_bar_background.show()
+		return false
+	_set_state(State.FALLING)
+	return true
+
+func _on_void_fall_finished(_fall_origin: Vector2) -> void:
+	if current_state != State.FALLING or health_component == null:
+		return
+	health_component.apply_damage(maxi(health_component.current_health, 1), true)
+
+func _clear_last_damage_source() -> void:
+	var health_system := get_tree().get_first_node_in_group(
+		"health_system"
+	) as HealthSystem
+	if health_system != null:
+		health_system.clear_last_damage_source(self)
 
 func _update_health_bar() -> void:
 	var ratio := health_component.get_health_ratio()

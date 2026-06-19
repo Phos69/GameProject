@@ -479,3 +479,14 @@ Stato: completata come prototipo integrato.
 - Generalizzati AOE, explosion, status, knockback, chain, pierce, cone, charge, delayed explosion e ground hazard.
 - HUD esteso con arma selezionata, lista inventario, reload, ammo ed effetto principale.
 - Smoke dedicato e regressioni combat/drop/RPG/survival verdi.
+
+## Pass Caduta Void e Dodge - completato
+
+- Query terrain world-space unica per celle `walkable`, `hazard`, `fall_zone`
+  e `void`, compatibile con regioni streamate e fallback mono-regione.
+- Stati player `normal/dodging/falling/dead`, verifica void differita a fine
+  dodge e danno singolo dopo l'animazione di caduta.
+- Caduta zombie condivisa con `death_reason = void` e reward completamente
+  disabilitate prima della notifica di morte alla wave.
+- Copertura automatica in `tests/zombie_fall_hazard_smoke_test.gd` e
+  regressioni combat, drop, wave, ranged enemy e terrain coverage verdi.

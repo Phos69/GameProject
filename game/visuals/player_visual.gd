@@ -23,9 +23,17 @@ var status_feedback_timer: float = 0.0
 var character_profile: Dictionary = {}
 var weapon_attack_type: StringName = &"projectile"
 var weapon_trail_style: StringName = &""
+var is_dodging: bool = false
+var dodge_direction: Vector2 = Vector2.RIGHT
+var dodge_elapsed: float = 0.0
+var dodge_duration: float = 0.0
+var dodge_rest_scale: Vector2 = Vector2.ONE
+var dodge_rest_rotation: float = 0.0
 
 func _ready() -> void:
 	add_to_group("visual_settings_consumers")
+	dodge_rest_scale = scale
+	dodge_rest_rotation = rotation
 	_sync_visual_settings()
 	queue_redraw()
 
@@ -36,6 +44,13 @@ func _process(delta: float) -> void:
 	reload_timer = maxf(reload_timer - delta, 0.0)
 	hurt_flash_timer = maxf(hurt_flash_timer - delta, 0.0)
 	status_feedback_timer = maxf(status_feedback_timer - delta, 0.0)
+	if is_dodging:
+		dodge_elapsed = minf(dodge_elapsed + delta, dodge_duration)
+		var ratio := dodge_elapsed / maxf(dodge_duration, 0.001)
+		var pulse := sin(clampf(ratio, 0.0, 1.0) * PI)
+		var lean_sign := 1.0 if dodge_direction.x >= 0.0 else -1.0
+		rotation = dodge_rest_rotation + lean_sign * 0.20 * pulse
+		scale = dodge_rest_scale * Vector2(1.0 + 0.14 * pulse, 1.0 - 0.18 * pulse)
 	queue_redraw()
 
 func apply_visual_settings(settings: Dictionary) -> void:
@@ -114,6 +129,24 @@ func play_reload(duration: float) -> void:
 func play_hurt() -> void:
 	hurt_flash_timer = 0.12
 
+func play_dodge(direction: Vector2, duration: float) -> void:
+	if not is_dodging:
+		dodge_rest_scale = scale
+		dodge_rest_rotation = rotation
+	is_dodging = true
+	dodge_direction = direction.normalized() if not direction.is_zero_approx() else Vector2.RIGHT
+	dodge_duration = maxf(duration, 0.05)
+	dodge_elapsed = 0.0
+	queue_redraw()
+
+func finish_dodge() -> void:
+	if is_dodging:
+		scale = dodge_rest_scale
+		rotation = dodge_rest_rotation
+	is_dodging = false
+	dodge_elapsed = 0.0
+	queue_redraw()
+
 func play_status_feedback(status_id: StringName) -> void:
 	status_feedback_id = BiomeStatusRuntime.canonical_status_id(status_id)
 	status_feedback_timer = 0.75 if not reduced_motion else 0.32
@@ -130,6 +163,7 @@ func play_downed() -> void:
 	queue_redraw()
 
 func reset_visual() -> void:
+	finish_dodge()
 	is_dead = false
 	is_downed = false
 	fire_flash_timer = 0.0
@@ -141,6 +175,7 @@ func reset_visual() -> void:
 
 func _draw() -> void:
 	_draw_status_feedback()
+	_draw_dodge_streak()
 	var display_color := accent_color
 	if hurt_flash_timer > 0.0:
 		display_color = display_color.lerp(
@@ -257,6 +292,25 @@ func _draw() -> void:
 	if rpg_component != null and rpg_component.is_beast_recovering():
 		_draw_beast_recovery_marker(visual_accent)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+func _draw_dodge_streak() -> void:
+	if not is_dodging:
+		return
+	var ratio := dodge_elapsed / maxf(dodge_duration, 0.001)
+	var alpha := sin(clampf(ratio, 0.0, 1.0) * PI)
+	var backward := -dodge_direction.normalized()
+	var side := backward.orthogonal()
+	for index in range(3):
+		var offset := side * (float(index) - 1.0) * 9.0
+		var start := offset + backward * (14.0 + float(index) * 4.0)
+		var finish := offset + backward * (44.0 + float(index) * 8.0)
+		draw_line(
+			start,
+			finish,
+			Color(accent_color, alpha * (0.52 - float(index) * 0.10)),
+			4.0 - float(index) * 0.7,
+			true
+		)
 
 func _draw_beast_recovery_marker(color: Color) -> void:
 	var alpha := 0.70 * flash_intensity * glow_intensity

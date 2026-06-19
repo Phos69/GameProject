@@ -1,8 +1,9 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://game/enemies/basic_enemy.gd" id="1_basic_enemy"]
 [ext_resource type="Script" path="res://game/health/health_component.gd" id="2_health_component"]
 [ext_resource type="Script" path="res://game/visuals/zombie_visual.gd" id="3_zombie_visual"]
+[ext_resource type="Script" path="res://game/core/entity_void_fall_component.gd" id="4_void_fall"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_enemy"]
 radius = 16.0
@@ -27,6 +28,9 @@ default_color = Color(0.2, 1, 0.18, 1)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_enemy")
+
+[node name="VoidFallComponent" type="Node" parent="."]
+script = ExtResource("4_void_fall")
 
 [node name="HealthComponent" type="Node" parent="."]
 script = ExtResource("2_health_component")
