@@ -219,7 +219,7 @@ func _run() -> void:
 	await process_frame
 	await process_frame
 	_expect(
-		defense_defeat_count == 1 and tower_mode.state == &"defeated",
+		defense_defeat_count == 1 and tower_mode.state == TowerDefenseWaveController.State.DEFEATED,
 		"tower defense also resolves an all-downed party"
 	)
 

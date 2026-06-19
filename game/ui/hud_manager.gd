@@ -144,7 +144,7 @@ func _refresh() -> void:
 	if not visible:
 		return
 
-	var players := get_tree().get_nodes_in_group("players")
+	var players := PlayerQuery.all(get_tree())
 	_refresh_player_cards(players)
 	var status_parts := PackedStringArray()
 	var biome_status := _format_biome_status()
@@ -292,7 +292,7 @@ func _format_environment_statuses() -> String:
 	if hazard_system == null:
 		return ""
 	var labels := PackedStringArray()
-	for player in get_tree().get_nodes_in_group("players"):
+	for player in PlayerQuery.all(get_tree()):
 		var player_slot := int(player.get("player_slot"))
 		var status_ids := hazard_system.get_player_status_ids(player)
 		if status_ids.is_empty():

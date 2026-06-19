@@ -62,7 +62,7 @@ func evaluate_ammo_pressure() -> bool:
 		_resolve_wave_manager()
 	if (
 		wave_manager == null
-		or wave_manager.state not in [&"spawning", &"combat"]
+		or wave_manager.state not in [WaveManager.State.SPAWNING, WaveManager.State.COMBAT]
 		or spawn_cooldown_timer > 0.0
 		or active_crates.size() >= max_active_crates
 		or not _has_low_special_ammo_player()
@@ -87,10 +87,7 @@ func _resolve_wave_manager() -> void:
 		wave_manager.wave_configured.connect(wave_callback)
 
 func _has_low_special_ammo_player() -> bool:
-	for player in get_tree().get_nodes_in_group("players"):
-		var health_component := player.get_node_or_null("HealthComponent") as HealthComponent
-		if health_component == null or not health_component.is_alive():
-			continue
+	for player in PlayerQuery.alive(get_tree()):
 		var weapon_system := player.get_node_or_null("WeaponSystem") as WeaponSystem
 		if (
 			weapon_system != null

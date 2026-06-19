@@ -505,7 +505,7 @@ func _apply_status_to_near_players(
 	var hazard_system := get_tree().get_first_node_in_group("hazard_system") as HazardSystem
 	if hazard_system == null:
 		return
-	for player in get_tree().get_nodes_in_group("players"):
+	for player in PlayerQuery.all(get_tree()):
 		if not player is Node2D:
 			continue
 		if (player as Node2D).global_position.distance_to(position) > radius:
@@ -524,13 +524,13 @@ func _find_valid_encounter_position(biome: BiomeDefinition) -> Vector2:
 	return anchor + Vector2.RIGHT * safe_distance
 
 func _find_player_anchor() -> Vector2:
-	for player in get_tree().get_nodes_in_group("players"):
+	for player in PlayerQuery.all(get_tree()):
 		if player is Node2D:
 			return (player as Node2D).global_position
 	return Vector2.ZERO
 
 func _is_encounter_position_valid(position: Vector2, biome: BiomeDefinition) -> bool:
-	for player in get_tree().get_nodes_in_group("players"):
+	for player in PlayerQuery.all(get_tree()):
 		if (
 			player is Node2D
 			and (player as Node2D).global_position.distance_to(position)
@@ -562,14 +562,11 @@ func _is_encounter_position_valid(position: Vector2, biome: BiomeDefinition) -> 
 	return true
 
 func _players_can_handle_encounter() -> bool:
-	var players := get_tree().get_nodes_in_group("players")
+	var players := PlayerQuery.all(get_tree())
 	if players.is_empty():
 		return true
 	for player in players:
-		var health_component := player.get_node_or_null(
-			"HealthComponent"
-		) as HealthComponent
-		if health_component == null or not health_component.is_incapacitated():
+		if not PlayerQuery.is_incapacitated(player):
 			return true
 	return false
 
@@ -671,11 +668,8 @@ func _threat_score(encounter_id: StringName, wave_index: int) -> int:
 
 func _get_active_party_size() -> int:
 	var count := 0
-	for player in get_tree().get_nodes_in_group("players"):
-		var health_component := player.get_node_or_null(
-			"HealthComponent"
-		) as HealthComponent
-		if health_component == null or not health_component.is_incapacitated():
+	for player in PlayerQuery.all(get_tree()):
+		if not PlayerQuery.is_incapacitated(player):
 			count += 1
 	return maxi(count, 1)
 

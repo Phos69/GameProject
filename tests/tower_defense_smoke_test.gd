@@ -136,7 +136,7 @@ func _run() -> void:
 
 	tower_defense_manager.damage_base(tower_defense_manager.base_health)
 	await process_frame
-	_expect(tower_defense_mode.state == &"defeated", "destroying the core defeats the run")
+	_expect(tower_defense_mode.state == TowerDefenseWaveController.State.DEFEATED, "destroying the core defeats the run")
 	_expect(
 		tower_defense_mode.get_enemies_remaining() == 0,
 		"defeat clears the active wave"

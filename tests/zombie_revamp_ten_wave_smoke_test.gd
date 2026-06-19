@@ -126,7 +126,7 @@ func _wait_for_wave_combat(
 	for _frame in range(900):
 		if (
 			wave_manager.current_wave == wave_index
-			and wave_manager.state == &"combat"
+			and wave_manager.state == WaveManager.State.COMBAT
 		):
 			return true
 		await physics_frame

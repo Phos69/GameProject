@@ -105,7 +105,7 @@ func _run() -> void:
 
 func _wait_for_wave_combat(wave_manager: WaveManager, wave_index: int) -> bool:
 	for _frame in range(240):
-		if wave_manager.current_wave == wave_index and wave_manager.state == &"combat":
+		if wave_manager.current_wave == wave_index and wave_manager.state == WaveManager.State.COMBAT:
 			return true
 		await physics_frame
 	return false

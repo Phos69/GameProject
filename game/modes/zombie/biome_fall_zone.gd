@@ -36,7 +36,7 @@ func configure(
 	rotation = rotation_radians
 	edge_color = warning_color
 	collision_layer = 0
-	collision_mask = 1
+	collision_mask = GameConstants.LAYER_BODIES
 	monitoring = true
 	monitorable = false
 	z_index = -1

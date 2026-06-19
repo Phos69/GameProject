@@ -26,9 +26,9 @@ var tower_defense_manager: TowerDefenseManager
 var enemy_system: EnemySystem
 var game_mode_manager: GameModeManager
 
-var state: StringName:
+var state: TowerDefenseWaveController.State:
 	get:
-		return wave_controller.state if wave_controller != null else &"idle"
+		return wave_controller.state if wave_controller != null else TowerDefenseWaveController.State.IDLE
 
 var current_wave: int:
 	get:
@@ -55,17 +55,12 @@ func _ready() -> void:
 		mode_manager.register_mode(self)
 
 func _process(_delta: float) -> void:
-	if not is_running or state == &"defeated":
+	if not is_running or state == TowerDefenseWaveController.State.DEFEATED:
 		return
-	var players := get_tree().get_nodes_in_group("players")
-	if players.is_empty():
+	if PlayerQuery.all(get_tree()).is_empty():
 		return
-	for player in players:
-		var health_component := player.get_node_or_null(
-			"HealthComponent"
-		) as HealthComponent
-		if health_component != null and health_component.is_alive():
-			return
+	if PlayerQuery.any_alive(get_tree()):
+		return
 	wave_controller.defeat_run()
 
 func start_mode(context: Dictionary = {}) -> void:
@@ -125,7 +120,7 @@ func get_status_text() -> String:
 		tower_defense_manager.credits
 	]
 	match state:
-		&"intermission":
+		TowerDefenseWaveController.State.INTERMISSION:
 			var reward_text := (
 				"  Last +%d C" % wave_controller.last_wave_reward
 				if wave_controller.last_wave_reward > 0
@@ -137,7 +132,7 @@ func get_status_text() -> String:
 				get_intermission_time_left(),
 				reward_text
 			]
-		&"spawning":
+		TowerDefenseWaveController.State.SPAWNING:
 			return "%s  Wave %d%s  Spawning %d/%d" % [
 				base_text,
 				current_wave,
@@ -145,7 +140,7 @@ func get_status_text() -> String:
 				get_enemies_remaining(),
 				wave_controller.current_wave_total
 			]
-		&"combat":
+		TowerDefenseWaveController.State.COMBAT:
 			return "%s  Wave %d%s  Enemies %d/%d" % [
 				base_text,
 				current_wave,
@@ -153,7 +148,7 @@ func get_status_text() -> String:
 				get_enemies_remaining(),
 				wave_controller.current_wave_total
 			]
-		&"defeated":
+		TowerDefenseWaveController.State.DEFEATED:
 			return "%s  DEFENSE FAILED at wave %d" % [base_text, current_wave]
 		_:
 			return base_text
@@ -162,7 +157,7 @@ func try_build_at_slot(slot_id: StringName) -> Node:
 	if (
 		active_arena == null
 		or tower_defense_manager == null
-		or state == &"defeated"
+		or state == TowerDefenseWaveController.State.DEFEATED
 	):
 		return null
 	for build_slot in active_arena.get_build_slots():
@@ -215,7 +210,7 @@ func _on_wave_completed(wave_index: int, reward_credits: int) -> void:
 	defense_wave_completed.emit(wave_index, reward_credits)
 
 func _on_build_requested(build_slot: TowerBuildSlot, _player: Node) -> void:
-	if state != &"defeated":
+	if state != TowerDefenseWaveController.State.DEFEATED:
 		tower_defense_manager.try_build_tower(build_slot, _get_tower_container())
 
 func _connect_build_slots() -> void:
@@ -227,7 +222,7 @@ func _connect_build_slots() -> void:
 func _move_players_to_spawn() -> void:
 	if active_arena == null:
 		return
-	var players := get_tree().get_nodes_in_group("players")
+	var players := PlayerQuery.all(get_tree())
 	for index in range(players.size()):
 		var player := players[index] as Node2D
 		if player == null:

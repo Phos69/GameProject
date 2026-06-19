@@ -22,8 +22,10 @@ signal wave_completed(wave_index: int, reward_credits: int)
 @export var wave_reward_base: int = 12
 @export var wave_reward_growth: int = 4
 
+enum State { IDLE, INTERMISSION, SPAWNING, COMBAT, DEFEATED }
+
 var run_active: bool = false
-var state: StringName = &"idle"
+var state: State = State.IDLE
 var current_wave: int = 0
 var current_wave_total: int = 0
 var current_wave_is_boss: bool = false
@@ -46,13 +48,13 @@ func _process(delta: float) -> void:
 	if not run_active:
 		return
 	match state:
-		&"intermission":
+		State.INTERMISSION:
 			state_timer = maxf(state_timer - delta, 0.0)
 			if state_timer <= 0.0:
 				_start_next_wave()
-		&"spawning":
+		State.SPAWNING:
 			_process_spawning(delta)
-		&"combat":
+		State.COMBAT:
 			_check_wave_completion()
 
 func start_run(
@@ -86,7 +88,7 @@ func start_run(
 		tower_defense_manager.base_destroyed.connect(base_callback)
 
 	run_active = true
-	state = &"idle"
+	state = State.IDLE
 	current_wave = 0
 	current_wave_total = 0
 	current_wave_is_boss = false
@@ -96,7 +98,7 @@ func start_run(
 
 func stop_run(clear_wave: bool = false) -> void:
 	run_active = false
-	state = &"idle"
+	state = State.IDLE
 	state_timer = 0.0
 	spawn_timer = 0.0
 	pending_spawn_count = 0
@@ -104,7 +106,7 @@ func stop_run(clear_wave: bool = false) -> void:
 		_clear_wave_runtime()
 
 func should_spawn_boss(wave_index: int) -> bool:
-	return boss_wave_interval > 0 and wave_index > 0 and wave_index % boss_wave_interval == 0
+	return WaveCycle.should_spawn_boss(wave_index, boss_wave_interval)
 
 func get_enemies_remaining() -> int:
 	_prune_wave_enemies()
@@ -112,17 +114,17 @@ func get_enemies_remaining() -> int:
 	return pending_spawn_count + wave_enemies.size() + (1 if active_boss != null else 0)
 
 func get_intermission_time_left() -> float:
-	return state_timer if state == &"intermission" else 0.0
+	return state_timer if state == State.INTERMISSION else 0.0
 
 func defeat_run() -> void:
 	_on_base_destroyed()
 
 func _begin_intermission(duration: float) -> void:
-	state = &"intermission"
+	state = State.INTERMISSION
 	state_timer = maxf(duration, 0.0)
 
 func _start_next_wave() -> void:
-	if active_arena == null or state == &"defeated":
+	if active_arena == null or state == State.DEFEATED:
 		return
 	current_wave += 1
 	current_wave_is_boss = should_spawn_boss(current_wave)
@@ -136,13 +138,13 @@ func _start_next_wave() -> void:
 	wave_enemies.clear()
 	active_boss = null
 	spawn_timer = 0.0
-	state = &"spawning"
+	state = State.SPAWNING
 	if current_wave_is_boss:
 		_spawn_boss()
 	wave_started.emit(current_wave, current_wave_total, current_wave_is_boss)
 	wave_progress_changed.emit(current_wave, get_enemies_remaining())
 	if pending_spawn_count <= 0:
-		state = &"combat"
+		state = State.COMBAT
 		_check_wave_completion()
 
 func _process_spawning(delta: float) -> void:
@@ -154,7 +156,7 @@ func _process_spawning(delta: float) -> void:
 	spawn_timer = maxf(spawn_interval, 0.0)
 	wave_progress_changed.emit(current_wave, get_enemies_remaining())
 	if pending_spawn_count <= 0:
-		state = &"combat"
+		state = State.COMBAT
 		_check_wave_completion()
 
 func _spawn_path_enemy() -> void:
@@ -237,7 +239,7 @@ func _on_boss_tree_exited(boss: Node) -> void:
 	_check_wave_completion()
 
 func _check_wave_completion() -> void:
-	if state != &"combat" or pending_spawn_count > 0:
+	if state != State.COMBAT or pending_spawn_count > 0:
 		return
 	_prune_wave_enemies()
 	_prune_boss()
@@ -251,9 +253,9 @@ func _complete_current_wave() -> void:
 	_begin_intermission(intermission_duration)
 
 func _on_base_destroyed() -> void:
-	if not run_active or state == &"defeated":
+	if not run_active or state == State.DEFEATED:
 		return
-	state = &"defeated"
+	state = State.DEFEATED
 	pending_spawn_count = 0
 	_clear_wave_runtime()
 	run_defeated.emit(current_wave)
@@ -269,13 +271,7 @@ func _clear_wave_runtime() -> void:
 	active_boss = null
 
 func _prune_wave_enemies() -> void:
-	for enemy in wave_enemies.duplicate():
-		if not is_instance_valid(enemy) or enemy.is_queued_for_deletion():
-			wave_enemies.erase(enemy)
+	WaveCycle.prune_nodes(wave_enemies)
 
 func _prune_boss() -> void:
-	if active_boss != null and (
-		not is_instance_valid(active_boss)
-		or active_boss.is_queued_for_deletion()
-	):
-		active_boss = null
+	active_boss = WaveCycle.prune_node(active_boss)

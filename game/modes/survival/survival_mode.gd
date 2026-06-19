@@ -32,13 +32,10 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if not is_running or wave_manager == null or not wave_manager.run_active:
 		return
-	var players := get_tree().get_nodes_in_group("players")
-	if players.is_empty():
+	if PlayerQuery.all(get_tree()).is_empty():
 		return
-	for player in players:
-		var health_component := player.get_node_or_null("HealthComponent") as HealthComponent
-		if health_component != null and health_component.is_alive():
-			return
+	if PlayerQuery.any_alive(get_tree()):
+		return
 	var defeated_wave := wave_manager.current_wave
 	survival_defeated.emit(defeated_wave)
 	stop_mode()
@@ -148,7 +145,7 @@ func _resolve_player_manager() -> void:
 		player_manager.player_spawned.connect(spawn_callback)
 
 func _apply_character_to_active_players() -> void:
-	for player in get_tree().get_nodes_in_group("players"):
+	for player in PlayerQuery.all(get_tree()):
 		_apply_character_to_player(player)
 
 func _apply_character_to_player(player: Node) -> void:

@@ -239,7 +239,7 @@ func _run() -> void:
 
 func _wait_for_wave_spawning(wave_manager: WaveManager, wave_index: int) -> bool:
 	for _frame in range(180):
-		if wave_manager.current_wave == wave_index and wave_manager.state == &"spawning":
+		if wave_manager.current_wave == wave_index and wave_manager.state == WaveManager.State.SPAWNING:
 			return true
 		await physics_frame
 	return false
@@ -260,7 +260,7 @@ func _wait_for_spawn_progress(
 
 func _wait_for_wave_combat(wave_manager: WaveManager, wave_index: int) -> bool:
 	for _frame in range(300):
-		if wave_manager.current_wave == wave_index and wave_manager.state == &"combat":
+		if wave_manager.current_wave == wave_index and wave_manager.state == WaveManager.State.COMBAT:
 			return true
 		await physics_frame
 	return false

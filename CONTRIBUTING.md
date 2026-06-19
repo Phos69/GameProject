@@ -19,6 +19,60 @@ Questo repository e pensato per essere gestito principalmente da agenti IA, ma l
 - I sistemi condivisi devono restare modulari.
 - Le modalita non devono duplicare codice comune.
 
+## Helper condivisi
+
+- Query sui player: usare [PlayerQuery](game/core/player_query.gd)
+  (`all/alive/downed/nearest/by_slot`, ecc.) invece di iterare a mano
+  `get_nodes_in_group("players")` e rileggere il `HealthComponent`.
+- Collision layer: usare le costanti `GameConstants.LAYER_*` invece dei bit
+  grezzi (`1`, `2`, `1 | 32`, ...).
+- Logging: usare [GameLog](game/core/game_log.gd) (`debug/info/warn/error` con
+  categoria) invece di `print`/`push_warning`/`push_error` grezzi, cosi il
+  rumore di debug e filtrabile per livello (`GameLog.min_level`).
+
+## Test automatici
+
+La suite vive in `tests/`. Ogni test e uno script `extends SceneTree` con
+`_initialize()` che termina con `quit(0)` (pass) o `quit(1)` (fail); l'exit code
+di Godot riflette quindi l'esito. Gli script `extends RefCounted` in `tests/`
+sono helper condivisi e non vengono eseguiti dal runner.
+
+Esecuzione dell'intera suite:
+
+```bash
+# Linux / macOS / Git Bash
+tools/run_tests.sh
+
+# Windows PowerShell
+./tools/run_tests.ps1
+```
+
+Eseguire un sottoinsieme (match sul nome file):
+
+```bash
+tools/run_tests.sh biome
+./tools/run_tests.ps1 -Filter biome
+```
+
+Singolo test:
+
+```bash
+godot --headless --path . --script tests/<nome_test>.gd
+```
+
+I test `*_visual_qa.gd` catturano screenshot e richiedono un contesto di
+rendering reale: il runner li **salta di default** perche non funzionano col
+driver dummy headless. Per includerli in un ambiente con GPU (o xvfb + GL
+software): `INCLUDE_VISUAL_QA=1 tools/run_tests.sh` oppure
+`./tools/run_tests.ps1 -IncludeVisualQa`.
+
+Variabili utili: `GODOT` (path del binario, default `godot`), `TEST_TIMEOUT`
+(secondi per test, default 180), `SKIP_IMPORT=1` (salta l'import iniziale quando
+la cache `.godot/` e gia popolata).
+
+La CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) esegue la stessa
+suite su ogni push e PR verso `master`.
+
 ## Test manuali
 
 Ogni modifica gameplay deve indicare:
@@ -27,4 +81,11 @@ Ogni modifica gameplay deve indicare:
 - input da usare;
 - comportamento atteso;
 - regressioni da controllare.
+
+## Policy file `.import`
+
+I file `*.import` accanto alle risorse **vanno versionati**: contengono la
+mappatura UID e i parametri di import che Godot richiede per aprire il progetto
+in modo deterministico (anche in CI). Va invece ignorata la sola cache
+`.godot/` (gia in `.gitignore`). Non rimuovere i `*.import` dal versionamento.
 

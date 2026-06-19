@@ -54,13 +54,10 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if not is_running or current_room_state == &"complete":
 		return
-	var players := get_tree().get_nodes_in_group("players")
-	if players.is_empty():
+	if PlayerQuery.all(get_tree()).is_empty():
 		return
-	for player in players:
-		var health_component := player.get_node_or_null("HealthComponent") as HealthComponent
-		if health_component != null and health_component.is_alive():
-			return
+	if PlayerQuery.any_alive(get_tree()):
+		return
 	current_room_state = &"defeated"
 	dungeon_defeated.emit(current_room_index)
 	stop_mode()
@@ -317,10 +314,8 @@ func _apply_rest_room() -> void:
 	var health_system := get_tree().get_first_node_in_group("health_system") as HealthSystem
 	if health_system == null:
 		return
-	for player in get_tree().get_nodes_in_group("players"):
-		var health_component := player.get_node_or_null("HealthComponent") as HealthComponent
-		if health_component != null and health_component.is_alive():
-			health_system.heal(player, rest_heal_amount)
+	for player in PlayerQuery.alive(get_tree()):
+		health_system.heal(player, rest_heal_amount)
 
 func _spawn_boss() -> void:
 	var game_mode_manager := get_tree().get_first_node_in_group("game_mode_manager") as GameModeManager
@@ -421,7 +416,7 @@ func _create_shop_marker(offer_index: int, offer: Dictionary) -> Area2D:
 	marker.name = "ShopOffer%d" % offer_index
 	marker.position = Vector2(40.0, -120.0 + float(offer_index) * 120.0)
 	marker.collision_layer = 0
-	marker.collision_mask = 1
+	marker.collision_mask = GameConstants.LAYER_BODIES
 	var shape := CollisionShape2D.new()
 	var circle := CircleShape2D.new()
 	circle.radius = 30.0
@@ -474,7 +469,7 @@ func _resolve_systems() -> bool:
 func _move_players_to_room_spawn() -> void:
 	if active_room == null:
 		return
-	var players := get_tree().get_nodes_in_group("players")
+	var players := PlayerQuery.all(get_tree())
 	for index in range(players.size()):
 		var player := players[index] as Node2D
 		if player == null:
