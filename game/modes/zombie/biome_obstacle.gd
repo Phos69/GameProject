@@ -201,6 +201,8 @@ func _draw() -> void:
 			_draw_wreck()
 		&"burned_car":
 			_draw_burned_car()
+		&"dense_vegetation":
+			_draw_dense_vegetation()
 		&"pipe_stack":
 			_draw_pipe_stack()
 		&"ice_block":
@@ -850,6 +852,42 @@ func _draw_burned_car() -> void:
 		Vector2(-half_size.x * 0.62, half_size.y * 0.06),
 		Vector2(half_size.x * 0.58, -half_size.y * 0.06),
 		accent_color.darkened(0.28),
+		3.0,
+		true
+	)
+
+func _draw_dense_vegetation() -> void:
+	var half_size := obstacle_size * 0.5
+	var clumps: Array[Vector3] = [
+		Vector3(-0.36, -0.08, 0.34),
+		Vector3(-0.08, -0.30, 0.42),
+		Vector3(0.26, -0.10, 0.36),
+		Vector3(-0.18, 0.20, 0.44),
+		Vector3(0.22, 0.22, 0.34)
+	]
+	for index in range(clumps.size()):
+		var clump := clumps[index]
+		var center := Vector2(half_size.x * clump.x, half_size.y * clump.y)
+		var radius := Vector2(
+			maxf(obstacle_size.x * clump.z, 10.0),
+			maxf(obstacle_size.y * clump.z * 0.72, 8.0)
+		)
+		var color := primary_color.darkened(0.08 + float(index % 2) * 0.10)
+		draw_colored_polygon(_ellipse_points(center, radius, 16), color)
+	for index in range(5):
+		var ratio := float(index) / 4.0
+		var x_position := lerpf(-half_size.x * 0.74, half_size.x * 0.74, ratio)
+		draw_line(
+			Vector2(x_position, half_size.y * 0.36),
+			Vector2(x_position + sin(float(index)) * 10.0, -half_size.y * 0.62),
+			accent_color.darkened(0.12),
+			3.0,
+			true
+		)
+	draw_line(
+		Vector2(-half_size.x * 0.74, half_size.y * 0.44),
+		Vector2(half_size.x * 0.74, half_size.y * 0.34),
+		primary_color.lightened(0.10),
 		3.0,
 		true
 	)

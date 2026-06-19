@@ -14,8 +14,12 @@ const PROP_BLOCK_MARGIN := 4
 const MIN_RECT_GAP := 2
 const BLOCK_INSET := 0
 const MIN_BLOCK_SIZE := 32
+const STARTER_RIVER_WIDTH := 22
+const STARTER_BRIDGE_EXTRA_WIDTH := 14
 
 const GENERATED_OBSTACLE_CATEGORIES: Dictionary = {
+	&"abandoned_car": &"wreck",
+	&"abandoned_house": &"building",
 	&"ash_barrier": &"barrier",
 	&"boundary_fence": &"border",
 	&"broken_fence": &"barrier",
@@ -24,6 +28,7 @@ const GENERATED_OBSTACLE_CATEGORIES: Dictionary = {
 	&"burned_house": &"building",
 	&"charred_wall": &"barrier",
 	&"dead_tree": &"tree",
+	&"dense_vegetation": &"dense_vegetation",
 	&"deep_water_boundary": &"border",
 	&"fallen_log": &"log",
 	&"ice_boundary": &"border",
@@ -70,12 +75,17 @@ func populate_layout(
 	_add_roads(layout, cell)
 	_add_biome_navigation_features(layout, biome, rng)
 	_add_internal_blocks(layout, biome, rng)
+	_add_starter_water_crossing(layout, biome, rng)
 	_add_large_obstacles(layout, biome, rng)
 	_add_secondary_obstacles(layout, biome, rng)
+	_add_starter_roadside_details(layout, biome, rng)
 	_add_connected_border_walls(layout, cell, biome)
 	_add_crates(layout, biome)
 	_add_theme_hazards(layout, biome)
 	_add_block_props(layout, biome, rng)
+	_ensure_starter_house_obstacle(layout, biome, rng)
+	_ensure_starter_dense_obstacle(layout, biome, rng)
+	_update_generation_summary(layout, biome)
 
 func repair_layout(layout: BiomeEnvironmentLayout) -> void:
 	for index in range(layout.obstacle_rects.size() - 1, -1, -1):
@@ -87,6 +97,12 @@ func repair_layout(layout: BiomeEnvironmentLayout) -> void:
 			layout.obstacle_sizes.remove_at(index)
 			layout.obstacle_rotations.remove_at(index)
 			layout.obstacle_shape_ids.remove_at(index)
+
+func refresh_generation_summary(
+	layout: BiomeEnvironmentLayout,
+	biome: BiomeDefinition
+) -> void:
+	_update_generation_summary(layout, biome)
 
 func _add_roads(layout: BiomeEnvironmentLayout, cell: BiomeCell) -> void:
 	var zone_size := layout.zone_size
@@ -144,6 +160,100 @@ func _add_biome_navigation_features(
 		_:
 			pass
 	_add_secondary_grid_paths(layout, path_tag, vertical_ratio, horizontal_ratio)
+
+func _add_starter_water_crossing(
+	layout: BiomeEnvironmentLayout,
+	biome: BiomeDefinition,
+	rng: RandomNumberGenerator
+) -> void:
+	if biome == null or biome.biome_id != &"infected_plains":
+		return
+	var river_y := _select_starter_river_y(layout, rng)
+	var river_band := Rect2i(
+		Vector2i(0, river_y - STARTER_RIVER_WIDTH / 2 - 6),
+		Vector2i(layout.zone_size.x, STARTER_RIVER_WIDTH + 12)
+	)
+	var segment_width := int(ceil(float(layout.zone_size.x) / 3.0))
+	var offsets: Array[int] = [0, -5, 4]
+	for index in range(3):
+		var start_x := clampi(index * segment_width - 4, 0, layout.zone_size.x)
+		var end_x := clampi((index + 1) * segment_width + 4, 0, layout.zone_size.x)
+		if end_x <= start_x:
+			continue
+		var offset_y := offsets[index % offsets.size()]
+		var water_rect := Rect2i(
+			Vector2i(start_x, river_y + offset_y - STARTER_RIVER_WIDTH / 2),
+			Vector2i(end_x - start_x, STARTER_RIVER_WIDTH)
+		)
+		layout.add_hazard_rect(water_rect, &"deep_water")
+	_add_bridge_rects_over_water(layout, river_band)
+
+func _select_starter_river_y(
+	layout: BiomeEnvironmentLayout,
+	rng: RandomNumberGenerator
+) -> int:
+	var candidates: Array[int] = [
+		int(float(layout.zone_size.y) * 0.29),
+		int(float(layout.zone_size.y) * 0.35),
+		int(float(layout.zone_size.y) * 0.59),
+		int(float(layout.zone_size.y) * 0.71)
+	]
+	var start_index := rng.randi_range(0, candidates.size() - 1)
+	for offset in range(candidates.size()):
+		var river_y := candidates[(start_index + offset) % candidates.size()]
+		var river_band := Rect2i(
+			Vector2i(0, river_y - STARTER_RIVER_WIDTH / 2 - 6),
+			Vector2i(layout.zone_size.x, STARTER_RIVER_WIDTH + 12)
+		)
+		if _starter_river_band_is_clear(layout, river_band):
+			return river_y
+	return int(float(layout.zone_size.y) * 0.35)
+
+func _starter_river_band_is_clear(
+	layout: BiomeEnvironmentLayout,
+	river_band: Rect2i
+) -> bool:
+	for index in range(layout.road_rects.size()):
+		var road_rect := layout.road_rects[index]
+		if not road_rect.intersects(river_band):
+			continue
+		if road_rect.size.x > road_rect.size.y:
+			return false
+	return true
+
+func _add_bridge_rects_over_water(
+	layout: BiomeEnvironmentLayout,
+	river_band: Rect2i
+) -> void:
+	var bridge_count := 0
+	for road_rect in layout.road_rects:
+		if road_rect.size.y <= road_rect.size.x:
+			continue
+		if not road_rect.intersects(river_band):
+			continue
+		var bridge_rect := Rect2i(
+			Vector2i(
+				road_rect.position.x - STARTER_BRIDGE_EXTRA_WIDTH / 2,
+				river_band.position.y - 3
+			),
+			Vector2i(
+				road_rect.size.x + STARTER_BRIDGE_EXTRA_WIDTH,
+				river_band.size.y + 6
+			)
+		)
+		_add_road_rect(layout, bridge_rect, &"bridge")
+		bridge_count += 1
+	if bridge_count > 0:
+		return
+	var center_x := layout.zone_size.x / 2
+	_add_road_rect(
+		layout,
+		Rect2i(
+			Vector2i(center_x - (ROAD_WIDTH + STARTER_BRIDGE_EXTRA_WIDTH) / 2, river_band.position.y - 3),
+			Vector2i(ROAD_WIDTH + STARTER_BRIDGE_EXTRA_WIDTH, river_band.size.y + 6)
+		),
+		&"bridge"
+	)
 
 func _add_cover_cluster(
 	layout: BiomeEnvironmentLayout,
@@ -265,6 +375,8 @@ func _add_internal_blocks(
 			layout.add_block_rect(block_rect, block_kind)
 			_apply_block_surface(layout, block_rect, block_kind, biome.biome_id)
 			block_index += 1
+	if biome != null and biome.biome_id == &"infected_plains":
+		_ensure_starter_block_mix(layout, biome.biome_id)
 	_ensure_internal_void_block(layout, biome.biome_id if biome != null else &"")
 
 func _ensure_internal_void_block(
@@ -280,6 +392,16 @@ func _ensure_internal_void_block(
 	var selected_area := 0
 	for index in range(layout.block_rects.size()):
 		var block_rect := layout.block_rects[index]
+		var block_kind := (
+			layout.block_kinds[index]
+			if index < layout.block_kinds.size()
+			else &"open"
+		)
+		if (
+			biome_id == &"infected_plains"
+			and (block_kind == &"building" or block_kind == &"dense_vegetation")
+		):
+			continue
 		if _rect_overlaps_passage_corridor(layout, block_rect):
 			continue
 		var area := block_rect.size.x * block_rect.size.y
@@ -296,6 +418,56 @@ func _ensure_internal_void_block(
 		&"partial_void",
 		biome_id
 	)
+
+func _ensure_starter_block_mix(
+	layout: BiomeEnvironmentLayout,
+	biome_id: StringName
+) -> void:
+	if not layout.block_kinds.has(&"building"):
+		var building_index := _largest_non_void_block_index(layout, [])
+		if building_index >= 0:
+			layout.block_kinds[building_index] = &"building"
+			_apply_block_surface(
+				layout,
+				layout.block_rects[building_index],
+				&"building",
+				biome_id
+			)
+	if not layout.block_kinds.has(&"dense_vegetation"):
+		var dense_index := _largest_non_void_block_index(layout, [&"building"])
+		if dense_index >= 0:
+			layout.block_kinds[dense_index] = &"dense_vegetation"
+			_apply_block_surface(
+				layout,
+				layout.block_rects[dense_index],
+				&"dense_vegetation",
+				biome_id
+			)
+
+func _largest_non_void_block_index(
+	layout: BiomeEnvironmentLayout,
+	excluded_kinds: Array
+) -> int:
+	var selected_index := -1
+	var selected_area := 0
+	for index in range(layout.block_rects.size()):
+		var kind := (
+			layout.block_kinds[index]
+			if index < layout.block_kinds.size()
+			else &"open"
+		)
+		if (
+			kind == &"full_void"
+			or kind == &"partial_void"
+			or excluded_kinds.has(kind)
+		):
+			continue
+		var area := layout.block_rects[index].size.x * layout.block_rects[index].size.y
+		if area <= selected_area:
+			continue
+		selected_area = area
+		selected_index = index
+	return selected_index
 
 func _rect_overlaps_passage_corridor(
 	layout: BiomeEnvironmentLayout,
@@ -325,6 +497,8 @@ func _apply_block_surface(
 				maxi(mini(block_rect.size.x, block_rect.size.y) / 4, 10)
 			)
 			layout.add_fall_zone_rect(pocket, &"internal")
+		&"dense_vegetation":
+			layout.add_floor_rect(block_rect, &"forest_tall_grass")
 		_:
 			var floor_tag := &"open_block"
 			if biome_id == &"infected_plains" and block_kind == &"forest":
@@ -355,10 +529,10 @@ func _resolve_block_kind(
 	var pattern: Array[StringName] = [
 		&"building",
 		&"open",
-		&"forest",
+		&"dense_vegetation",
 		&"partial_void",
+		&"forest",
 		&"ruins",
-		&"open",
 		&"large_obstacle",
 		&"full_void"
 	]
@@ -433,6 +607,8 @@ func _add_road_rect(
 		return
 	layout.road_rects.append(rect)
 	layout.road_rect_tags.append(tag)
+	if tag == &"bridge":
+		layout.add_bridge_rect(rect)
 	_add_route_metadata(layout, layout.rect_center_to_world(rect), maxf(float(maxi(rect.size.x, rect.size.y)) * layout.logical_tile_scale * 0.18, 28.0), tag)
 
 func _add_diagonal_road(
@@ -501,9 +677,12 @@ func _add_large_obstacles(
 			if index < layout.block_kinds.size()
 			else &"open"
 		)
-		if not [&"building", &"forest", &"ruins", &"large_obstacle"].has(block_kind):
+		if not [&"building", &"forest", &"ruins", &"large_obstacle", &"dense_vegetation"].has(block_kind):
 			continue
 		var block_rect := layout.block_rects[index]
+		if block_kind == &"dense_vegetation":
+			_add_dense_vegetation_cluster(layout, block_rect, rng)
+			continue
 		var size := Vector2i(
 			clampi(rng.randi_range(18, 34), 12, maxi(block_rect.size.x - 10, 12)),
 			clampi(rng.randi_range(14, 28), 10, maxi(block_rect.size.y - 10, 10))
@@ -516,6 +695,173 @@ func _add_large_obstacles(
 			&"rectangle",
 			rng.randf_range(-0.18, 0.18)
 		)
+
+func _add_dense_vegetation_cluster(
+	layout: BiomeEnvironmentLayout,
+	block_rect: Rect2i,
+	rng: RandomNumberGenerator
+) -> void:
+	var cluster_size := Vector2i(
+		clampi(
+			int(float(block_rect.size.x) * rng.randf_range(0.46, 0.64)),
+			18,
+			maxi(block_rect.size.x - 8, 18)
+		),
+		clampi(
+			int(float(block_rect.size.y) * rng.randf_range(0.46, 0.64)),
+			16,
+			maxi(block_rect.size.y - 8, 16)
+		)
+	)
+	var centered := _centered_rect(block_rect, cluster_size)
+	var offsets: Array[Vector2i] = [
+		Vector2i.ZERO,
+		Vector2i(0, -block_rect.size.y / 4),
+		Vector2i(0, block_rect.size.y / 4),
+		Vector2i(-block_rect.size.x / 5, 0),
+		Vector2i(block_rect.size.x / 5, 0)
+	]
+	for offset in offsets:
+		var cluster_rect := _fit_rect_inside(centered.position + offset, cluster_size, block_rect)
+		if _add_obstacle_if_clear(
+			layout,
+			&"dense_vegetation",
+			cluster_rect,
+			&"rectangle",
+			rng.randf_range(-0.12, 0.12)
+		):
+			return
+
+func _add_starter_roadside_details(
+	layout: BiomeEnvironmentLayout,
+	biome: BiomeDefinition,
+	rng: RandomNumberGenerator
+) -> void:
+	if biome == null or biome.biome_id != &"infected_plains":
+		return
+	var center := layout.zone_size / 2
+	var car_rects: Array[Rect2i] = [
+		Rect2i(center + Vector2i(-105, ROAD_WIDTH / 2 + 12), Vector2i(16, 8)),
+		Rect2i(center + Vector2i(82, -ROAD_WIDTH / 2 - 26), Vector2i(17, 8))
+	]
+	for index in range(car_rects.size()):
+		_add_obstacle_if_clear(
+			layout,
+			&"abandoned_car",
+			car_rects[index],
+			&"rectangle",
+			rng.randf_range(-0.24, 0.24)
+		)
+	for index in range(layout.block_rects.size()):
+		if index >= layout.block_kinds.size() or layout.block_kinds[index] != &"building":
+			continue
+		var block_rect := layout.block_rects[index]
+		var fence_rect := Rect2i(
+			block_rect.position + Vector2i(8, maxi(block_rect.size.y - 10, 8)),
+			Vector2i(maxi(mini(block_rect.size.x - 16, 22), 10), 4)
+		)
+		_add_obstacle_if_clear(
+			layout,
+			&"broken_fence",
+			fence_rect,
+			&"rectangle",
+			rng.randf_range(-0.08, 0.08)
+		)
+		return
+
+func _ensure_starter_dense_obstacle(
+	layout: BiomeEnvironmentLayout,
+	biome: BiomeDefinition,
+	rng: RandomNumberGenerator
+) -> void:
+	if biome == null or biome.biome_id != &"infected_plains":
+		return
+	if layout.obstacle_ids.has(&"dense_vegetation"):
+		return
+	var preferred_kinds: Array[StringName] = [&"dense_vegetation", &"forest", &"open"]
+	for preferred_kind in preferred_kinds:
+		for index in range(layout.block_rects.size()):
+			var block_kind := (
+				layout.block_kinds[index]
+				if index < layout.block_kinds.size()
+				else &"open"
+			)
+			if block_kind != preferred_kind:
+				continue
+			var block_rect := layout.block_rects[index]
+			var cluster_size := Vector2i(
+				clampi(int(float(block_rect.size.x) * 0.38), 16, maxi(block_rect.size.x - 10, 16)),
+				clampi(int(float(block_rect.size.y) * 0.34), 14, maxi(block_rect.size.y - 10, 14))
+			)
+			var centered := _centered_rect(block_rect, cluster_size)
+			var offsets: Array[Vector2i] = [
+				Vector2i.ZERO,
+				Vector2i(0, -block_rect.size.y / 4),
+				Vector2i(0, block_rect.size.y / 4),
+				Vector2i(-block_rect.size.x / 5, 0),
+				Vector2i(block_rect.size.x / 5, 0)
+			]
+			for offset in offsets:
+				var cluster_rect := _fit_rect_inside(
+					centered.position + offset,
+					cluster_size,
+					block_rect
+				)
+				if _add_obstacle_if_clear(
+					layout,
+					&"dense_vegetation",
+					cluster_rect,
+					&"rectangle",
+					rng.randf_range(-0.10, 0.10)
+				):
+					return
+
+func _ensure_starter_house_obstacle(
+	layout: BiomeEnvironmentLayout,
+	biome: BiomeDefinition,
+	rng: RandomNumberGenerator
+) -> void:
+	if biome == null or biome.biome_id != &"infected_plains":
+		return
+	if layout.obstacle_ids.has(&"ruined_house"):
+		return
+	var preferred_kinds: Array[StringName] = [&"building", &"open", &"ruins"]
+	for preferred_kind in preferred_kinds:
+		for index in range(layout.block_rects.size()):
+			var block_kind := (
+				layout.block_kinds[index]
+				if index < layout.block_kinds.size()
+				else &"open"
+			)
+			if block_kind != preferred_kind:
+				continue
+			var block_rect := layout.block_rects[index]
+			var house_size := Vector2i(
+				clampi(28, 18, maxi(block_rect.size.x - 12, 18)),
+				clampi(24, 16, maxi(block_rect.size.y - 12, 16))
+			)
+			var centered := _centered_rect(block_rect, house_size)
+			var offsets: Array[Vector2i] = [
+				Vector2i.ZERO,
+				Vector2i(-block_rect.size.x / 5, 0),
+				Vector2i(block_rect.size.x / 5, 0),
+				Vector2i(0, -block_rect.size.y / 5),
+				Vector2i(0, block_rect.size.y / 5)
+			]
+			for offset in offsets:
+				var house_rect := _fit_rect_inside(
+					centered.position + offset,
+					house_size,
+					block_rect
+				)
+				if _add_obstacle_if_clear(
+					layout,
+					&"ruined_house",
+					house_rect,
+					&"rectangle",
+					rng.randf_range(-0.08, 0.08)
+				):
+					return
 
 func _add_secondary_obstacles(
 	layout: BiomeEnvironmentLayout,
@@ -576,7 +922,7 @@ func _add_block_props(
 			if index < layout.block_kinds.size()
 			else &"open"
 		)
-		if kind == &"full_void":
+		if kind == &"full_void" or kind == &"dense_vegetation":
 			continue
 		var block_rect := layout.block_rects[index]
 		var attempts := _prop_attempts_for_kind(kind, block_rect)
@@ -608,6 +954,8 @@ func _prop_attempts_for_kind(kind: StringName, block_rect: Rect2i) -> int:
 			density = 2
 		_:
 			density = 2
+	if density <= 0:
+		return 0
 	return clampi(area_budget, 1, density)
 
 func _add_prop_if_clear(
@@ -699,6 +1047,7 @@ func _wall_gaps_for_side(
 	axis_limit: int
 ) -> Array[Vector2i]:
 	var gaps := _passage_gaps_for_side(cell, side, axis_limit)
+	gaps.append_array(_road_gaps_for_side(layout, side, axis_limit))
 	gaps.append_array(_void_gaps_for_side(layout, side, axis_limit))
 	gaps.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return a.x < b.x)
 	var merged: Array[Vector2i] = []
@@ -709,6 +1058,41 @@ func _wall_gaps_for_side(
 		var previous: Vector2i = merged.pop_back()
 		merged.append(Vector2i(previous.x, maxi(previous.y, gap.y)))
 	return merged
+
+func _road_gaps_for_side(
+	layout: BiomeEnvironmentLayout,
+	side: StringName,
+	axis_limit: int
+) -> Array[Vector2i]:
+	var gaps: Array[Vector2i] = []
+	for rect in layout.road_rects:
+		var touches_side := false
+		var start := 0
+		var finish := 0
+		match side:
+			&"north":
+				touches_side = rect.position.y <= BORDER_THICKNESS
+				start = rect.position.x
+				finish = rect.end.x
+			&"south":
+				touches_side = rect.end.y >= layout.zone_size.y - BORDER_THICKNESS
+				start = rect.position.x
+				finish = rect.end.x
+			&"west":
+				touches_side = rect.position.x <= BORDER_THICKNESS
+				start = rect.position.y
+				finish = rect.end.y
+			_:
+				touches_side = rect.end.x >= layout.zone_size.x - BORDER_THICKNESS
+				start = rect.position.y
+				finish = rect.end.y
+		if not touches_side:
+			continue
+		start = clampi(start - 2, 0, axis_limit)
+		finish = clampi(finish + 2, 0, axis_limit)
+		if finish > start:
+			gaps.append(Vector2i(start, finish))
+	return gaps
 
 func _void_gaps_for_side(
 	layout: BiomeEnvironmentLayout,
@@ -835,12 +1219,17 @@ func _add_obstacle_if_clear(
 	rect: Rect2i,
 	shape_id: StringName,
 	rotation_radians: float
-) -> void:
+) -> bool:
 	if _intersects_route(layout, _inflate_rect(rect, MIN_RECT_GAP)):
-		return
+		return false
 	if _intersects_any(_inflate_rect(rect, MIN_RECT_GAP), layout.obstacle_rects):
-		return
+		return false
+	if _intersects_any(rect, layout.fall_zone_rects):
+		return false
+	if _intersects_any(rect, layout.hazard_rects):
+		return false
 	_add_obstacle(layout, obstacle_id, rect, shape_id, rotation_radians)
+	return true
 
 func _add_crates(
 	layout: BiomeEnvironmentLayout,
@@ -910,15 +1299,7 @@ func _add_hazard(
 	hazard_id: StringName,
 	rect: Rect2i
 ) -> void:
-	rect = _clip_rect(rect, layout.zone_size)
-	if rect.size.x <= 0 or rect.size.y <= 0:
-		return
-	layout.hazard_rects.append(rect)
-	layout.hazard_ids.append(hazard_id)
-	layout.hazard_positions.append(layout.rect_center_to_world(rect))
-	layout.hazard_sizes.append(layout.rect_size_to_world(rect))
-	layout.hazard_rotations.append(0.0)
-	layout.hazard_sides.append(&"")
+	layout.add_hazard_rect(rect, hazard_id)
 
 func _add_hazard_at_ratio(
 	layout: BiomeEnvironmentLayout,
@@ -983,6 +1364,8 @@ func _block_obstacle_id(
 			var ids := _secondary_obstacle_ids(biome_id)
 			return ids[index % ids.size()]
 		_:
+			if biome_id == &"infected_plains" and index % 2 == 1:
+				return &"abandoned_house"
 			return _large_obstacle_id(biome_id)
 
 func _secondary_obstacle_ids(biome_id: StringName) -> Array[StringName]:
@@ -996,7 +1379,7 @@ func _secondary_obstacle_ids(biome_id: StringName) -> Array[StringName]:
 		&"drowned_marsh":
 			return [&"reed_wall", &"marsh_log", &"broken_walkway"]
 		_:
-			return [&"small_rock", &"broken_fence", &"wood_barrier"]
+			return [&"small_rock", &"broken_fence", &"wood_barrier", &"abandoned_car"]
 
 func _border_obstacle_id(biome_id: StringName) -> StringName:
 	match biome_id:
@@ -1023,6 +1406,95 @@ func _crate_ids(biome_id: StringName) -> Array[StringName]:
 			return [&"biome_marsh", &"common", &"medical"]
 		_:
 			return [&"common", &"medical", &"common"]
+
+func _update_generation_summary(
+	layout: BiomeEnvironmentLayout,
+	biome: BiomeDefinition
+) -> void:
+	var obstacle_counts: Dictionary = {}
+	for obstacle_id in layout.obstacle_ids:
+		obstacle_counts[obstacle_id] = int(obstacle_counts.get(obstacle_id, 0)) + 1
+
+	var block_counts: Dictionary = {}
+	for block_kind in layout.block_kinds:
+		block_counts[block_kind] = int(block_counts.get(block_kind, 0)) + 1
+
+	var main_road_count := 0
+	var path_count := 0
+	for tag_value in layout.road_rect_tags:
+		var tag := tag_value as StringName
+		if tag == &"main_road":
+			main_road_count += 1
+		elif tag != &"bridge" and not _is_passage_route_tag(tag):
+			path_count += 1
+
+	var house_count := _count_obstacle_ids(
+		obstacle_counts,
+		[
+			&"ruined_house",
+			&"abandoned_house",
+			&"lab_block",
+			&"burned_house",
+			&"snow_cabin",
+			&"sunken_house"
+		]
+	)
+	var car_count := _count_obstacle_ids(
+		obstacle_counts,
+		[&"abandoned_car", &"burned_car", &"metal_wreck", &"sunken_wreck"]
+	)
+	var fence_count := _count_obstacle_ids(
+		obstacle_counts,
+		[
+			&"broken_fence",
+			&"wood_barrier",
+			&"boundary_fence",
+			&"industrial_fence",
+			&"reed_wall",
+			&"snow_wall",
+			&"charred_wall"
+		]
+	)
+	var dense_count := (
+		int(block_counts.get(&"dense_vegetation", 0))
+		+ int(obstacle_counts.get(&"dense_vegetation", 0))
+	)
+	layout.generation_summary = {
+		"biome_id": String(biome.biome_id) if biome != null else "",
+		"seed": layout.generation_seed,
+		"main_road_count": main_road_count,
+		"path_count": path_count,
+		"house_count": house_count,
+		"dense_vegetation_count": dense_count,
+		"bridge_count": layout.bridge_rects.size(),
+		"river_count": (
+			1
+			if biome != null and biome.biome_id == &"infected_plains" and layout.water_rects.size() > 0
+			else 0
+		),
+		"water_segment_count": layout.water_rects.size(),
+		"car_count": car_count,
+		"fence_count": fence_count,
+		"obstacle_counts": obstacle_counts,
+		"block_counts": block_counts
+	}
+
+func _count_obstacle_ids(
+	obstacle_counts: Dictionary,
+	ids: Array[StringName]
+) -> int:
+	var total := 0
+	for id in ids:
+		total += int(obstacle_counts.get(id, 0))
+	return total
+
+func _is_passage_route_tag(tag: StringName) -> bool:
+	return (
+		tag == &"road"
+		or tag == &"snow_pass"
+		or tag == &"broken_gate"
+		or tag == &"burned_road"
+	)
 
 func _intersects_any(rect: Rect2i, others: Array[Rect2i]) -> bool:
 	for other in others:
@@ -1057,6 +1529,23 @@ func _centered_rect(container: Rect2i, size: Vector2i) -> Rect2i:
 	return Rect2i(
 		container.position + (container.size - clamped_size) / 2,
 		clamped_size
+	)
+
+func _fit_rect_inside(
+	position: Vector2i,
+	size: Vector2i,
+	container: Rect2i
+) -> Rect2i:
+	var min_x := container.position.x + 4
+	var min_y := container.position.y + 4
+	var max_x := maxi(container.end.x - size.x - 4, min_x)
+	var max_y := maxi(container.end.y - size.y - 4, min_y)
+	return Rect2i(
+		Vector2i(
+			clampi(position.x, min_x, max_x),
+			clampi(position.y, min_y, max_y)
+		),
+		size
 	)
 
 func _passage_inner_anchor(

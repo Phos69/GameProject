@@ -46,12 +46,15 @@ var wall_segment_rects: Array[Rect2i] = []
 var wall_segment_sides: Array[StringName] = []
 var passage_rects: Array[Rect2i] = []
 var passage_connector_rects: Array[Rect2i] = []
+var bridge_rects: Array[Rect2i] = []
 var obstacle_rects: Array[Rect2i] = []
+var water_rects: Array[Rect2i] = []
 var fall_zone_rects: Array[Rect2i] = []
 var hazard_rects: Array[Rect2i] = []
 var crate_cells: Array[Vector2i] = []
 var player_spawn_cell: Vector2i = DEFAULT_ZONE_SIZE / 2
 var validation_report: Dictionary = {}
+var generation_summary: Dictionary = {}
 var terrain_classification_counts: Dictionary = {}
 var terrain_classification_total: int = 0
 var terrain_classification_complete: bool = false
@@ -167,6 +170,12 @@ func add_wall_segment(rect: Rect2i, side: StringName) -> void:
 	wall_segment_rects.append(clipped)
 	wall_segment_sides.append(side)
 
+func add_bridge_rect(rect: Rect2i) -> void:
+	var clipped := _clip_rect(rect)
+	if clipped.size.x <= 0 or clipped.size.y <= 0:
+		return
+	bridge_rects.append(clipped)
+
 func get_wall_segments_for_side(side: StringName) -> Array[Rect2i]:
 	var result: Array[Rect2i] = []
 	for index in range(wall_segment_rects.size()):
@@ -186,8 +195,37 @@ func add_fall_zone_rect(rect: Rect2i, side: StringName = &"") -> void:
 	hazard_rotations.append(0.0)
 	hazard_sides.append(side)
 
+func add_hazard_rect(
+	rect: Rect2i,
+	hazard_id: StringName,
+	rotation_radians: float = 0.0,
+	side: StringName = &""
+) -> void:
+	var clipped := _clip_rect(rect)
+	if clipped.size.x <= 0 or clipped.size.y <= 0:
+		return
+	hazard_rects.append(clipped)
+	hazard_ids.append(hazard_id)
+	hazard_positions.append(rect_center_to_world(clipped))
+	hazard_sizes.append(rect_size_to_world(clipped))
+	hazard_rotations.append(rotation_radians)
+	hazard_sides.append(side)
+	if hazard_id == &"deep_water":
+		water_rects.append(clipped)
+
 func has_road_cell(cell: Vector2i) -> bool:
 	return road_cell_tags.has(_cell_key(cell))
+
+func is_bridge_cell(cell: Vector2i) -> bool:
+	if _cell_inside_any_rect(cell, bridge_rects):
+		return true
+	for index in range(road_rects.size()):
+		if index >= road_rect_tags.size():
+			continue
+		if road_rect_tags[index] == &"bridge" and road_rects[index].has_point(cell):
+			return true
+	var tags := get_road_tags_at_cell(cell)
+	return tags.has(&"bridge")
 
 func get_road_tags_at_cell(cell: Vector2i) -> Array[StringName]:
 	var result: Array[StringName] = []
@@ -239,6 +277,8 @@ func get_terrain_class_at_cell(
 		return TERRAIN_VOID
 	if _terrain_class_cache.size() == zone_size.x * zone_size.y:
 		return _terrain_class_from_code(_terrain_class_cache[_cell_key(cell)])
+	if is_bridge_cell(cell):
+		return TERRAIN_WALKABLE
 	if _cell_inside_any_rect(cell, fall_zone_rects):
 		return TERRAIN_FALL_ZONE
 	if _cell_inside_any_rect(cell, obstacle_rects):
@@ -312,6 +352,15 @@ func _rebuild_terrain_class_cache(biome_cell: BiomeCell = null) -> void:
 		_mark_rect_in_cache(rect, TERRAIN_CODE_OBSTACLE)
 	for rect in fall_zone_rects:
 		_mark_rect_in_cache(rect, TERRAIN_CODE_FALL_ZONE)
+	for rect in bridge_rects:
+		_mark_rect_in_cache(rect, TERRAIN_CODE_WALKABLE)
+	for key_value in road_cell_tags.keys():
+		var key := int(key_value)
+		if key < 0 or key >= total:
+			continue
+		var raw_tags: Array = road_cell_tags[key] as Array
+		if raw_tags.has(&"bridge") or raw_tags.has("bridge"):
+			_terrain_class_cache[key] = TERRAIN_CODE_WALKABLE
 
 func _mark_rect_in_cache(rect: Rect2i, terrain_code: int) -> void:
 	var clipped := _clip_rect(rect)

@@ -56,6 +56,15 @@ func get_debug_summary() -> Dictionary:
 	var obstacle_count := 0
 	var hazard_count := 0
 	var crate_count := 0
+	var main_road_count := 0
+	var path_count := 0
+	var house_count := 0
+	var dense_vegetation_count := 0
+	var bridge_count := 0
+	var river_count := 0
+	var water_segment_count := 0
+	var car_count := 0
+	var fence_count := 0
 	var terrain_class_counts := _empty_terrain_class_counts()
 	var terrain_classification_total := 0
 	var terrain_classification_complete := 0
@@ -68,6 +77,16 @@ func get_debug_summary() -> Dictionary:
 			hazard_count += cell.generated_layout.hazard_rects.size()
 			hazard_count += cell.generated_layout.fall_zone_rects.size()
 			crate_count += cell.generated_layout.crate_cells.size()
+			var generation_summary := cell.generated_layout.generation_summary
+			main_road_count += int(generation_summary.get("main_road_count", 0))
+			path_count += int(generation_summary.get("path_count", 0))
+			house_count += int(generation_summary.get("house_count", 0))
+			dense_vegetation_count += int(generation_summary.get("dense_vegetation_count", 0))
+			bridge_count += int(generation_summary.get("bridge_count", 0))
+			river_count += int(generation_summary.get("river_count", 0))
+			water_segment_count += int(generation_summary.get("water_segment_count", 0))
+			car_count += int(generation_summary.get("car_count", 0))
+			fence_count += int(generation_summary.get("fence_count", 0))
 			var report := cell.generated_layout.get_classification_report()
 			terrain_classification_total += int(report.get("total", 0))
 			if bool(report.get("is_complete", false)):
@@ -117,6 +136,15 @@ func get_debug_summary() -> Dictionary:
 		"obstacle_count": obstacle_count,
 		"hazard_count": hazard_count,
 		"crate_count": crate_count,
+		"main_road_count": main_road_count,
+		"path_count": path_count,
+		"house_count": house_count,
+		"dense_vegetation_count": dense_vegetation_count,
+		"bridge_count": bridge_count,
+		"river_count": river_count,
+		"water_segment_count": water_segment_count,
+		"car_count": car_count,
+		"fence_count": fence_count,
 		"terrain_class_counts": terrain_class_counts,
 		"terrain_classification_total": terrain_classification_total,
 		"terrain_classification_complete": terrain_classification_complete,
@@ -205,6 +233,19 @@ func _refresh_label() -> void:
 		int(summary.get("hazard_count", 0)),
 		int(summary.get("crate_count", 0)),
 		str(current_validation.get("is_valid", false))
+	])
+	lines.append("Roads:%d Paths:%d Houses:%d Dense:%d Bridges:%d Rivers:%d Water:%d" % [
+		int(summary.get("main_road_count", 0)),
+		int(summary.get("path_count", 0)),
+		int(summary.get("house_count", 0)),
+		int(summary.get("dense_vegetation_count", 0)),
+		int(summary.get("bridge_count", 0)),
+		int(summary.get("river_count", 0)),
+		int(summary.get("water_segment_count", 0))
+	])
+	lines.append("Cars:%d Fences:%d" % [
+		int(summary.get("car_count", 0)),
+		int(summary.get("fence_count", 0))
 	])
 	if bool(summary.get("show_terrain_classes", false)):
 		var terrain_counts := summary.get("terrain_class_counts", {}) as Dictionary

@@ -52,6 +52,7 @@ const OBJECT_DRAW_MODES: Array[String] = [
 	"charred_wall",
 	"dead_tree",
 	"deep_water_boundary",
+	"dense_vegetation",
 	"fence",
 	"forest_mountain_wall",
 	"generic_barrier",

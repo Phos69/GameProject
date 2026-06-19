@@ -122,6 +122,8 @@
     "lab_ruin": { "asset_path": "res://assets/environment/isometric/objects/buildings/toxic_lab_ruin.svg", "biome_ids": ["toxic_wastes"], "anchor": "bottom_center", "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
     "burned_house": { "asset_path": "res://assets/environment/isometric/objects/buildings/ash_burned_house.svg", "biome_ids": ["burning_fields"], "anchor": "bottom_center", "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
     "abandoned_house": { "asset_path": "res://assets/environment/isometric/objects/buildings/plains_abandoned_house.svg", "biome_ids": ["infected_plains"], "anchor": "bottom_center", "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "abandoned_car": { "asset_path": "res://assets/environment/isometric/objects/wrecks/plains_abandoned_car.svg", "biome_ids": ["infected_plains"], "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
+    "dense_vegetation": { "asset_path": "res://assets/environment/isometric/objects/vegetation/plains_dense_vegetation.svg", "biome_ids": ["infected_plains"], "anchor": "bottom_center", "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
     "chemical_barrel": { "asset_path": "res://assets/environment/isometric/objects/barrels/toxic_chemical_barrel.svg", "biome_ids": ["toxic_wastes"], "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
     "metal_wreck": { "asset_path": "res://assets/environment/isometric/objects/wrecks/shared_metal_wreck.svg", "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
     "sunken_wreck": { "asset_path": "res://assets/environment/isometric/objects/wrecks/marsh_sunken_wreck.svg", "biome_ids": ["drowned_marsh"], "fallback_path": "res://game/modes/zombie/biome_obstacle.gd" },
@@ -170,7 +172,7 @@
     "cliff_ramp": { "asset_path": "res://assets/environment/isometric/passages/cliff_ramp.svg", "fallback_path": "res://game/modes/zombie/biome_terrain_patch.gd" }
   },
   "biome_asset_sets": {
-    "infected_plains": { "asset_path": "res://assets/environment/isometric/previews/infected_plains_asset_set.svg", "biome_ids": ["infected_plains"], "fallback_path": "res://game/modes/zombie/biome_region_ground.gd", "tile_set": "infected_plains", "terrain_tiles": ["forest_grass", "forest_grass_variant_01", "forest_grass_variant_02", "forest_tall_grass", "forest_path", "forest_road", "grass_to_path", "grass_to_road", "grass_to_tall_grass", "path_to_road", "ground_to_void_cliff", "ground_to_mountain_wall", "main_road", "road", "broken_street", "road_intersection", "road_edge", "road_curve_north", "road_curve_east", "road_curve_south", "road_curve_west"], "object_scenes": ["small_rock", "broken_fence", "wood_barrier", "boundary_fence", "ruined_house", "abandoned_house"], "edge_tiles": ["boundary_fence", "forest_mountain_wall"], "void_tiles": ["fall_zone", "void_edge_near", "forest_void", "forest_cliff_edge", "cliff_lip_north", "cliff_lip_south", "cliff_lip_east", "cliff_lip_west", "void_depth", "void_vertical_lines"], "passage_tiles": ["road", "road_entry", "road_exit", "cliff_ramp"] },
+    "infected_plains": { "asset_path": "res://assets/environment/isometric/previews/infected_plains_asset_set.svg", "biome_ids": ["infected_plains"], "fallback_path": "res://game/modes/zombie/biome_region_ground.gd", "tile_set": "infected_plains", "terrain_tiles": ["forest_grass", "forest_grass_variant_01", "forest_grass_variant_02", "forest_tall_grass", "forest_path", "forest_road", "grass_to_path", "grass_to_road", "grass_to_tall_grass", "path_to_road", "ground_to_void_cliff", "ground_to_mountain_wall", "main_road", "road", "broken_street", "road_intersection", "road_edge", "road_curve_north", "road_curve_east", "road_curve_south", "road_curve_west"], "object_scenes": ["small_rock", "broken_fence", "wood_barrier", "boundary_fence", "ruined_house", "abandoned_house", "abandoned_car", "dense_vegetation"], "edge_tiles": ["boundary_fence", "forest_mountain_wall"], "void_tiles": ["fall_zone", "void_edge_near", "forest_void", "forest_cliff_edge", "cliff_lip_north", "cliff_lip_south", "cliff_lip_east", "cliff_lip_west", "void_depth", "void_vertical_lines"], "passage_tiles": ["road", "road_entry", "road_exit", "cliff_ramp"] },
     "toxic_wastes": { "asset_path": "res://assets/environment/isometric/previews/toxic_wastes_asset_set.svg", "biome_ids": ["toxic_wastes"], "fallback_path": "res://game/modes/zombie/biome_region_ground.gd", "tile_set": "toxic_wastes", "terrain_tiles": ["main_road", "road", "service_lane", "broken_gate", "road_intersection", "road_edge", "road_curve_north", "road_curve_east", "road_curve_south", "road_curve_west"], "object_scenes": ["corroded_barrier", "lab_ruin", "chemical_barrel", "pipe_stack", "lab_block", "industrial_fence", "toxic_barrel", "lab_wall", "toxic_boundary_wall"], "edge_tiles": ["toxic_boundary_wall"], "void_tiles": ["fall_zone", "void_edge_near", "cliff_lip_north", "cliff_lip_south", "cliff_lip_east", "cliff_lip_west", "void_depth", "void_vertical_lines"], "passage_tiles": ["broken_gate", "broken_gate_entry", "broken_gate_exit", "road", "road_entry", "road_exit", "cliff_ramp"] },
     "burning_fields": { "asset_path": "res://assets/environment/isometric/previews/burning_fields_asset_set.svg", "biome_ids": ["burning_fields"], "fallback_path": "res://game/modes/zombie/biome_region_ground.gd", "tile_set": "burning_fields", "terrain_tiles": ["main_road", "road", "ash_lane", "burned_road", "road_intersection", "road_edge", "road_curve_north", "road_curve_east", "road_curve_south", "road_curve_west"], "object_scenes": ["scorched_barricade", "burned_house", "burned_car", "charred_wall", "ash_barrier", "lava_boundary"], "edge_tiles": ["lava_boundary"], "void_tiles": ["fall_zone", "void_edge_near", "cliff_lip_north", "cliff_lip_south", "cliff_lip_east", "cliff_lip_west", "void_depth", "void_vertical_lines"], "passage_tiles": ["burned_road", "burned_road_entry", "burned_road_exit", "road", "road_entry", "road_exit", "cliff_ramp"] },
     "frozen_outskirts": { "asset_path": "res://assets/environment/isometric/previews/frozen_outskirts_asset_set.svg", "biome_ids": ["frozen_outskirts"], "fallback_path": "res://game/modes/zombie/biome_region_ground.gd", "tile_set": "frozen_outskirts", "terrain_tiles": ["main_road", "road", "packed_snow_path", "snow_pass", "road_intersection", "road_edge", "road_curve_north", "road_curve_east", "road_curve_south", "road_curve_west"], "object_scenes": ["ice_rock", "ice_block", "snow_cabin", "snow_wall", "ice_boundary"], "edge_tiles": ["ice_boundary"], "void_tiles": ["fall_zone", "void_edge_near", "cliff_lip_north", "cliff_lip_south", "cliff_lip_east", "cliff_lip_west", "void_depth", "void_vertical_lines"], "passage_tiles": ["snow_pass", "snow_pass_entry", "snow_pass_exit", "road", "road_entry", "road_exit", "cliff_ramp"] },
@@ -359,6 +361,8 @@
     "lab_ruin": { "draw_mode": "lab_block", "dedicated_draw": true, "fallback": "" },
     "burned_house": { "draw_mode": "burned_house", "dedicated_draw": true, "fallback": "" },
     "abandoned_house": { "draw_mode": "ruined_house", "dedicated_draw": true, "fallback": "" },
+    "abandoned_car": { "draw_mode": "wreck", "dedicated_draw": true, "fallback": "" },
+    "dense_vegetation": { "draw_mode": "dense_vegetation", "dedicated_draw": true, "fallback": "" },
     "chemical_barrel": { "draw_mode": "barrel", "dedicated_draw": true, "fallback": "" },
     "metal_wreck": { "draw_mode": "wreck", "dedicated_draw": true, "fallback": "" },
     "sunken_wreck": { "draw_mode": "wreck", "dedicated_draw": true, "fallback": "" },
@@ -528,6 +532,30 @@
       "blocks_projectiles": true,
       "is_jumpable_gap_anchor": false,
       "sort_offset": 30
+    },
+    {
+      "id": "abandoned_car",
+      "category": "wreck",
+      "status": "base_complete",
+      "visual_scene": "res://game/modes/zombie/biome_obstacle.gd",
+      "collision_shape": "rectangle",
+      "footprint_tiles": [15, 7],
+      "blocks_movement": true,
+      "blocks_projectiles": true,
+      "is_jumpable_gap_anchor": false,
+      "sort_offset": 10
+    },
+    {
+      "id": "dense_vegetation",
+      "category": "dense_vegetation",
+      "status": "base_complete",
+      "visual_scene": "res://game/modes/zombie/biome_obstacle.gd",
+      "collision_shape": "rectangle",
+      "footprint_tiles": [24, 16],
+      "blocks_movement": true,
+      "blocks_projectiles": true,
+      "is_jumpable_gap_anchor": false,
+      "sort_offset": 18
     },
     {
       "id": "chemical_barrel",

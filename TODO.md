@@ -201,7 +201,10 @@ evitare reimplementazioni e per indirizzare le regressioni.
   perimetrali isometriche, fall/void leggibili, varchi fisici senza portali e
   un set forestale asset-driven per `infected_plains` (`forest_grass`,
   `forest_tall_grass`, `forest_path`, `forest_road`, `forest_void`,
-  `forest_cliff_edge`, `forest_mountain_wall` e transizioni). Coperto da
+  `forest_cliff_edge`, `forest_mountain_wall` e transizioni). Il vertical slice
+  starter aggiunge road network edge-to-edge, casa, vegetazione densa
+  impassabile, fiume/bridge validato e summary debug deterministico. Coperto da
+  `tests/starter_biome_vertical_slice_smoke_test.gd`,
   `tests/forest_isometric_texture_transition_smoke_test.gd`,
   `tests/isometric_biome_generation_rewrite_smoke_test.gd`,
   `tests/isometric_perimeter_wall_smoke_test.gd`,

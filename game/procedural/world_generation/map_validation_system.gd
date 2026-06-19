@@ -23,6 +23,9 @@ func validate_layout(
 	var crate_failures := _find_unreachable_crates(layout, visited)
 	var placement_failures := _find_invalid_placements(cell, layout)
 	var fall_failures := _find_invalid_fall_boundaries(cell, layout)
+	var main_road_report := _validate_main_roads(layout)
+	var water_crossing_failures := _find_unbridged_water_crossings(layout)
+	var route_obstacle_failures := _find_route_obstacle_overlaps(layout)
 	var classification_report := layout.get_classification_report()
 	var is_valid := (
 		not visited.is_empty()
@@ -31,6 +34,9 @@ func validate_layout(
 		and crate_failures.is_empty()
 		and placement_failures.is_empty()
 		and fall_failures.is_empty()
+		and bool(main_road_report.get("is_valid", false))
+		and water_crossing_failures.is_empty()
+		and route_obstacle_failures.is_empty()
 		and bool(classification_report.get("is_complete", false))
 	)
 	return {
@@ -41,6 +47,9 @@ func validate_layout(
 		"unreachable_crates": crate_failures,
 		"placement_errors": placement_failures,
 		"fall_boundary_errors": fall_failures,
+		"main_road_report": main_road_report,
+		"water_crossing_errors": water_crossing_failures,
+		"route_obstacle_errors": route_obstacle_failures,
 		"terrain_classification": classification_report
 	}
 
@@ -72,6 +81,10 @@ func _build_blocked_lookup(
 				terrain_class == BiomeEnvironmentLayout.TERRAIN_VOID
 				or terrain_class == BiomeEnvironmentLayout.TERRAIN_FALL_ZONE
 				or terrain_class == BiomeEnvironmentLayout.TERRAIN_OBSTACLE
+				or (
+					_cell_inside_blocking_water(cell, layout)
+					and not layout.is_bridge_cell(cell)
+				)
 			):
 				blocked[cell] = true
 	return blocked
@@ -163,7 +176,7 @@ func _find_invalid_placements(
 		failures.append("player_spawn_inside_obstacle")
 	if _cell_inside_any_rect(spawn, layout.fall_zone_rects):
 		failures.append("player_spawn_inside_fall_zone")
-	if _cell_inside_any_rect(spawn, layout.hazard_rects):
+	if _cell_inside_non_bridge_hazard(spawn, layout):
 		failures.append("player_spawn_inside_hazard")
 	for crate_cell in layout.crate_cells:
 		var clamped_crate := _clamp_cell(crate_cell, layout.zone_size)
@@ -176,7 +189,7 @@ func _find_invalid_placements(
 			failures.append("crate_inside_obstacle:%s" % str(crate_cell))
 		if _cell_inside_any_rect(clamped_crate, layout.fall_zone_rects):
 			failures.append("crate_inside_fall_zone:%s" % str(crate_cell))
-		if _cell_inside_any_rect(clamped_crate, layout.hazard_rects):
+		if _cell_inside_non_bridge_hazard(clamped_crate, layout):
 			failures.append("crate_inside_hazard:%s" % str(crate_cell))
 	return failures
 
@@ -195,6 +208,96 @@ func _find_invalid_fall_boundaries(
 			failures.append(side)
 		if cell.get_border(side) == BiomeCell.BorderType.CONNECTED and has_fall_rect:
 			failures.append(side)
+	return failures
+
+func _validate_main_roads(layout: BiomeEnvironmentLayout) -> Dictionary:
+	var has_horizontal := false
+	var has_vertical := false
+	var passes_center := false
+	var edge_to_edge_count := 0
+	var center := layout.zone_size / 2
+	for index in range(layout.road_rects.size()):
+		if index >= layout.road_rect_tags.size() or layout.road_rect_tags[index] != &"main_road":
+			continue
+		var rect := layout.road_rects[index]
+		if rect.has_point(center):
+			passes_center = true
+		if (
+			rect.position.x <= 0
+			and rect.end.x >= layout.zone_size.x
+			and rect.size.y >= ObstacleLayoutGenerator.ROAD_WIDTH
+		):
+			has_horizontal = true
+			edge_to_edge_count += 1
+		if (
+			rect.position.y <= 0
+			and rect.end.y >= layout.zone_size.y
+			and rect.size.x >= ObstacleLayoutGenerator.ROAD_WIDTH
+		):
+			has_vertical = true
+			edge_to_edge_count += 1
+	var failures := PackedStringArray()
+	if not has_horizontal:
+		failures.append("missing_edge_to_edge_horizontal_main_road")
+	if not has_vertical:
+		failures.append("missing_edge_to_edge_vertical_main_road")
+	if not passes_center:
+		failures.append("main_road_does_not_pass_center")
+	return {
+		"is_valid": has_horizontal and has_vertical and passes_center,
+		"edge_to_edge_count": edge_to_edge_count,
+		"has_horizontal": has_horizontal,
+		"has_vertical": has_vertical,
+		"passes_center": passes_center,
+		"failures": failures
+	}
+
+func _find_unbridged_water_crossings(
+	layout: BiomeEnvironmentLayout
+) -> PackedStringArray:
+	var failures := PackedStringArray()
+	if int(layout.generation_summary.get("river_count", 0)) <= 0:
+		return failures
+	for water_index in range(layout.water_rects.size()):
+		var water_rect := layout.water_rects[water_index]
+		for road_index in range(layout.road_rects.size()):
+			var road_rect := layout.road_rects[road_index]
+			if not road_rect.intersects(water_rect):
+				continue
+			var road_tag := (
+				layout.road_rect_tags[road_index]
+				if road_index < layout.road_rect_tags.size()
+				else &""
+			)
+			if road_tag == &"bridge":
+				continue
+			if not _water_road_intersection_has_bridge(water_rect, road_rect, layout.bridge_rects):
+				failures.append(
+					"water_crossing_unbridged:%d:%d" % [water_index, road_index]
+				)
+	return failures
+
+func _water_road_intersection_has_bridge(
+	water_rect: Rect2i,
+	road_rect: Rect2i,
+	bridge_rects: Array[Rect2i]
+) -> bool:
+	for bridge_rect in bridge_rects:
+		if bridge_rect.intersects(water_rect) and bridge_rect.intersects(road_rect):
+			return true
+	return false
+
+func _find_route_obstacle_overlaps(
+	layout: BiomeEnvironmentLayout
+) -> PackedStringArray:
+	var failures := PackedStringArray()
+	for obstacle_index in range(layout.obstacle_rects.size()):
+		var obstacle_rect := layout.obstacle_rects[obstacle_index]
+		if _rect_intersects_any(obstacle_rect, layout.road_rects):
+			failures.append("obstacle_on_route:%d" % obstacle_index)
+			continue
+		if _rect_overlaps_road_cells(layout, obstacle_rect):
+			failures.append("obstacle_on_route_cell:%d" % obstacle_index)
 	return failures
 
 func _passage_probe_cell(
@@ -245,9 +348,54 @@ func _cell_inside_any_rect(cell: Vector2i, rects: Array[Rect2i]) -> bool:
 			return true
 	return false
 
+func _cell_inside_blocking_water(
+	cell: Vector2i,
+	layout: BiomeEnvironmentLayout
+) -> bool:
+	for index in range(layout.hazard_rects.size()):
+		if not layout.hazard_rects[index].has_point(cell):
+			continue
+		var hazard_id := (
+			layout.hazard_ids[index]
+			if index < layout.hazard_ids.size()
+			else &""
+		)
+		if hazard_id == &"deep_water":
+			return true
+	return false
+
+func _cell_inside_non_bridge_hazard(
+	cell: Vector2i,
+	layout: BiomeEnvironmentLayout
+) -> bool:
+	for index in range(layout.hazard_rects.size()):
+		if not layout.hazard_rects[index].has_point(cell):
+			continue
+		var hazard_id := (
+			layout.hazard_ids[index]
+			if index < layout.hazard_ids.size()
+			else &""
+		)
+		if hazard_id == &"deep_water" and layout.is_bridge_cell(cell):
+			continue
+		return true
+	return false
+
 func _rect_intersects_any(rect: Rect2i, rects: Array[Rect2i]) -> bool:
 	for other in rects:
 		if rect.intersects(other):
+			return true
+	return false
+
+func _rect_overlaps_road_cells(
+	layout: BiomeEnvironmentLayout,
+	rect: Rect2i
+) -> bool:
+	var clipped := _clip_rect(rect, layout.zone_size)
+	for key_value in layout.road_cell_tags.keys():
+		var key := int(key_value)
+		var cell := Vector2i(key % layout.zone_size.x, int(key / layout.zone_size.x))
+		if clipped.has_point(cell):
 			return true
 	return false
 
