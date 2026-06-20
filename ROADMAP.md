@@ -533,3 +533,18 @@ Stato: completata come prototipo integrato.
   disabilitate prima della notifica di morte alla wave.
 - Copertura automatica in `tests/zombie_fall_hazard_smoke_test.gd` e
   regressioni combat, drop, wave, ranged enemy e terrain coverage verdi.
+
+## Milestone Mercato Zombie Ricorrente - primo pass
+
+Stato: completata come feature integrata.
+
+- Boss wave confermate ogni cinque ondate.
+- Fase mercato separata da spawn/combat dopo le wave 5, 10, 15 e successive.
+- Wallet denaro party condiviso con spesa atomica e feedback di rifiuto.
+- Cura, refill arma attiva, refill tutte le armi e quattro offerte casuali dal
+  catalogo con prezzi configurabili per rarita.
+- Acquisto arma per-player non distruttivo sull'inventario a istanze.
+- Navigazione indipendente P1-P4, indicatori slot e ready unanime dei player
+  vivi prima della wave successiva.
+- Reset stato/offerte su nuova run e protezione da riaperture duplicate.
+- Contratto in `docs/zombie_market.md`, checklist manuale e smoke dedicato.

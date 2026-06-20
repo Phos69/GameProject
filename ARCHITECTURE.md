@@ -290,6 +290,13 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
   esplorazione; ancora le schede player ai quattro angoli senza duplicare le
   informazioni immediate del pacchetto world-space.
 - `ExplorationMapPanel`: pannello consultabile che disegna grafo, fog/unknown, regioni discovered/visited/cleared, connessioni note tematizzate per `passage_type`, marker per le active/loaded regions e regione corrente; consuma `apply_visual_settings` per il high contrast.
+- `OffscreenEnemyMarkers`: overlay HUD che converte i minion del gruppo
+  `enemies` fuori dalla visuale in frecce ancorate al bordo del viewport; deriva
+  colore dal `theme_id` del `BiomeEnemyProfile`, dimensione e opacita dalla
+  distanza dal party, esclude i nemici on-screen e i boss, limita il numero di
+  marker e rispetta high contrast e reduced motion. La logica di calcolo vive in
+  `compute_markers()` separata dal `_draw` per essere testabile in headless; non
+  possiede ne modifica stato gameplay.
 - `PlayerVisual`: presentazione procedurale data-driven del player, con
   silhouette e palette derivate dal profilo RPG; disegna l'arma equipaggiata
   tramite `WeaponVisualRenderer` e non possiede piu il mini HUD.
@@ -847,6 +854,25 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - Ogni quinta ondata emette `boss_wave_requested` e `SurvivalMode` la inoltra a `BossSystem`.
 - La boss wave usa due zombie di scorta e un boss registrato separatamente.
 - `WaveManager` include il boss nel conteggio e aspetta il suo segnale `died`.
+- Dopo una boss wave completata, `SurvivalMarketController` imposta il blocco
+  generico `WaveManager.set_next_wave_blocked(true)`: il manager resta in
+  `reward` e non avvia intermission, spawn o combat finche il mercato non lo
+  rilascia.
+- `SurvivalMarketController` possiede stato mercato, offerte e ready;
+  `SurvivalMarketPurchaseService` valida/applica gli acquisti;
+  `SurvivalMarketUI` possiede rendering e polling input per slot. Nessuno crea
+  zombie o modifica l'indice wave.
+- Il wallet mercato e il denaro party autoritativo di `ProgressionManager`;
+  `try_spend_money()` scala il saldo una sola volta e notifica tutti i consumer.
+- Le offerte arma sono ID unici estratti con peso rarita dal `WeaponCatalog`.
+  L'acquisto chiama `WeaponSystem.add_weapon()` sul player che compra, quindi
+  conserva tutte le altre `WeaponInstance` e il loro stato runtime.
+- Cura e ammo validano prima l'effetto: HP pieni, ammo pieni, duplicati e fondi
+  insufficienti non consumano denaro. Il refill puo agire sull'arma attiva o
+  su tutte le istanze del player.
+- Durante il mercato i player hanno combat input bloccato e invulnerabilita
+  temporanea. La chiusura richiede ready da tutti i player vivi e ripristina la
+  progressione dalla wave successiva.
 - Se tutti i player attivi sono morti, `SurvivalMode` arresta la run.
 
 ## Contratto boss

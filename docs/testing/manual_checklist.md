@@ -532,6 +532,21 @@ godot --headless --path . --script res://tests/milestone_21_visual_settings_perf
 godot --path . --rendering-method gl_compatibility --script res://tests/visual_accessibility_qa.gd
 ```
 
+## Marker minion fuori visuale
+
+- Avviare survival e allontanare la camera dagli spawn: i minion fuori schermo
+  mostrano una freccia al bordo nella loro direzione.
+- Avvicinandosi, il marker scompare appena il minion entra nella visuale.
+- I marker dei minion piu vicini al party appaiono piu grandi e opachi.
+- Il colore del marker segue il tema del bioma (tossico, fuoco, gelo, palude).
+- Il boss non genera un marker ai bordi (mantiene solo la barra dedicata).
+- Aprendo la mappa esplorazione (`M`) i marker spariscono e tornano alla chiusura.
+- Con reduced motion i marker non pulsano; con high contrast hanno bordo bianco.
+
+```text
+godot --headless --path . --script res://tests/offscreen_enemy_markers_smoke_test.gd
+```
+
 ## Regressione architettura
 
 - I sistemi non sono duplicati in cartelle diverse.
@@ -1234,6 +1249,35 @@ La cattura QA viene salvata in:
 
 ```text
 build/qa/milestone_10_survival.png
+```
+
+## Regressione mercato zombie
+
+- Giocare wave 1-4: nessun mercato deve aprirsi.
+- Eliminare boss e scorte della wave 5: il mercato si apre una sola volta e non
+  compaiono nuovi zombie.
+- Verificare a 1280x720, 1024x768 e 960x540 che wallet, otto opzioni, costi,
+  stats e pannelli P1-P4 siano leggibili senza tagli.
+- Con 2-4 player, usare stick/WASD o D-pad per selezioni indipendenti; il marker
+  P1/P2/P3/P4 deve seguire il relativo slot.
+- Comprare cura con un player ferito e provarla a HP pieni: il secondo tentativo
+  deve essere negato senza spendere.
+- Scaricare un'arma, comprare refill attivo e poi refill completo; ammo degli
+  altri player e stato delle altre armi non devono essere alterati dal refill
+  attivo.
+- Comprare la stessa offerta con due player: ciascuno riceve la propria
+  `WeaponInstance`; le armi precedenti conservano ammo/reload/cooldown.
+- Provare un saldo insufficiente: feedback rosso/sonoro, wallet invariato e
+  nessun oggetto assegnato.
+- Marcare ready un solo player: il mercato resta aperto. Marcare ready tutti i
+  player vivi: parte wave 6.
+- Ripetere a wave 10 e verificare una nuova offerta senza duplicati interni.
+- Morire tutti durante la boss wave: il mercato non deve aprirsi.
+- Tornare al menu e avviare una nuova run: nessun ready/offerta/stato mercato
+  della run precedente deve sopravvivere.
+
+```text
+godot --headless --path . --script res://tests/zombie_market_smoke_test.gd
 ```
 
 ## Regressione inventario armi e catalogo

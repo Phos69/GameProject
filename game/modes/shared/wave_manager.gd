@@ -11,6 +11,7 @@ signal wave_completed(wave_index: int)
 signal wave_reward_granted(wave_index: int, reward: Dictionary)
 signal boss_wave_requested(wave_index: int)
 signal enemy_spawned(enemy: Node, spawn_position: Vector2, spawn_index: int)
+signal next_wave_block_changed(blocked: bool)
 
 @export var boss_wave_interval: int = GameConstants.DEFAULT_BOSS_WAVE_INTERVAL
 @export var initial_delay: float = 3.0
@@ -57,6 +58,7 @@ var boss_spawn_pending: bool = false
 var last_reward: Dictionary = {}
 var current_wave_biome_id: StringName = &""
 var active_spawn_rate_multiplier: float = 1.0
+var next_wave_blocked: bool = false
 
 var enemy_system: EnemySystem
 var wave_director
@@ -98,6 +100,7 @@ func start_run() -> void:
 	pending_spawn_count = 0
 	current_wave_biome_id = &""
 	active_spawn_rate_multiplier = 1.0
+	next_wave_blocked = false
 	run_started.emit()
 	_begin_intermission(initial_delay)
 
@@ -120,6 +123,7 @@ func stop_run(clear_wave_enemies: bool = false) -> void:
 	wave_enemies.clear()
 	wave_boss = null
 	boss_spawn_pending = false
+	next_wave_blocked = false
 	run_stopped.emit(current_wave)
 
 func start_next_wave() -> void:
@@ -132,6 +136,17 @@ func start_next_wave() -> void:
 func complete_current_wave() -> void:
 	if wave_running:
 		_complete_current_wave()
+
+func set_next_wave_blocked(blocked: bool) -> void:
+	if next_wave_blocked == blocked:
+		return
+	next_wave_blocked = blocked
+	next_wave_block_changed.emit(next_wave_blocked)
+	if not next_wave_blocked and run_active and state == State.REWARD:
+		_begin_intermission(intermission_duration)
+
+func is_next_wave_blocked() -> bool:
+	return next_wave_blocked
 
 func should_spawn_boss(wave_index: int) -> bool:
 	return WaveCycle.should_spawn_boss(wave_index, boss_wave_interval)
@@ -224,7 +239,7 @@ func _begin_intermission(duration: float) -> void:
 	intermission_started.emit(current_wave + 1, state_timer)
 
 func _start_next_wave() -> void:
-	if not run_active or not _resolve_enemy_system():
+	if next_wave_blocked or not run_active or not _resolve_enemy_system():
 		return
 	_resolve_wave_director()
 	_resolve_zombie_spawner()
@@ -390,7 +405,7 @@ func _complete_current_wave() -> void:
 	last_reward = _grant_wave_reward()
 	wave_reward_granted.emit(current_wave, last_reward.duplicate(true))
 	wave_completed.emit(current_wave)
-	if run_active:
+	if run_active and not next_wave_blocked:
 		_begin_intermission(intermission_duration)
 
 func _grant_wave_reward() -> Dictionary:

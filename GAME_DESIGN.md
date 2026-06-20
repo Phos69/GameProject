@@ -581,6 +581,24 @@ selezione dal menu. I profili attuali sono:
 - il barile e colpibile, mostra area e countdown, poi danneggia tutti gli
   attori nell'area tramite `HealthSystem`.
 
+Mercato ricorrente:
+
+- le ondate 5, 10, 15 e successive sono boss wave;
+- eliminati boss e scorte, la run entra nel mercato prima della wave seguente;
+- durante il mercato non partono spawn e combat input/danno ai player sono
+  sospesi;
+- il denaro e un wallet comune: ogni acquisto di P1-P4 usa lo stesso saldo;
+- ogni player compra per se cura, refill arma attiva, refill completo o una
+  delle quattro armi casuali del catalogo;
+- le armi acquistate si aggiungono all'inventario personale senza distruggere
+  ammo, reload, cooldown o stato delle armi gia possedute;
+- l'offerta mostra categoria, rarita, prezzo e statistiche principali e cambia
+  a ogni mercato senza duplicati interni;
+- tutti i player vivi devono essere `READY` per avviare la wave successiva.
+
+Prezzi iniziali configurabili: cura 25/55 HP a 8/14, refill attivo a 10,
+refill completo a 22, armi common/uncommon/rare/epic a 18/28/42/60.
+
 Il revamp zombie e completo come prima versione giocabile:
 
 - a inizio run viene generata una megamappa globale seed-based con territori

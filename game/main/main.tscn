@@ -1,4 +1,4 @@
-[gd_scene load_steps=46 format=3]
+[gd_scene load_steps=48 format=3]
 
 [ext_resource type="Script" path="res://game/main/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://game/input/input_manager.gd" id="2_input_manager"]
@@ -45,6 +45,8 @@
 [ext_resource type="Script" path="res://game/settings/video_settings_manager.gd" id="43_video_settings"]
 [ext_resource type="Script" path="res://game/ui/pause_menu.gd" id="44_pause_menu"]
 [ext_resource type="Script" path="res://game/world/world_runtime.gd" id="45_world_runtime"]
+[ext_resource type="Script" path="res://game/modes/survival/survival_market_controller.gd" id="46_survival_market"]
+[ext_resource type="Script" path="res://game/ui/survival_market_ui.gd" id="47_survival_market_ui"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -65,6 +67,9 @@ script = ExtResource("19_survival_mode")
 
 [node name="AmmoDirector" type="Node" parent="Modes/SurvivalMode"]
 script = ExtResource("26_ammo_director")
+
+[node name="MarketController" type="Node" parent="Modes/SurvivalMode"]
+script = ExtResource("46_survival_market")
 
 [node name="ZombieModeController" type="Node" parent="Modes/SurvivalMode"]
 script = ExtResource("33_zombie_controller")
@@ -216,6 +221,9 @@ position_smoothing_speed = 7.0
 
 [node name="HUD" type="CanvasLayer" parent="."]
 script = ExtResource("15_hud_manager")
+
+[node name="SurvivalMarketUI" type="CanvasLayer" parent="."]
+script = ExtResource("47_survival_market_ui")
 
 [node name="MainMenu" type="CanvasLayer" parent="."]
 script = ExtResource("25_main_menu")

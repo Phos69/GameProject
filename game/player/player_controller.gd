@@ -46,6 +46,7 @@ var environment_speed_multiplier: float = 1.0
 var weapon_feedback_label: Label
 var has_prepared_run: bool = false
 var current_entity_state: EntityState = EntityState.NORMAL
+var gameplay_input_enabled: bool = true
 
 func _ready() -> void:
 	add_to_group("players")
@@ -96,6 +97,10 @@ func _physics_process(delta: float) -> void:
 		velocity = Vector2.ZERO
 		visual.set_motion(velocity, move_speed)
 		return
+	if not gameplay_input_enabled:
+		velocity = Vector2.ZERO
+		visual.set_motion(velocity, move_speed)
+		return
 	if input_manager == null:
 		input_manager = get_tree().get_first_node_in_group("input_manager")
 		if input_manager == null:
@@ -136,6 +141,11 @@ func get_entity_state_name() -> StringName:
 			return &"dead"
 		_:
 			return &"normal"
+
+func set_gameplay_input_enabled(enabled: bool) -> void:
+	gameplay_input_enabled = enabled
+	if not gameplay_input_enabled:
+		velocity = Vector2.ZERO
 
 func try_start_void_fall() -> bool:
 	if (

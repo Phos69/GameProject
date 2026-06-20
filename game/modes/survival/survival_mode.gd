@@ -10,6 +10,7 @@ signal survival_defeated(wave_index: int)
 
 var wave_manager: WaveManager
 var ammo_director: SurvivalAmmoDirector
+var market_controller: SurvivalMarketController
 var arena_manager: SurvivalArenaManager
 var zombie_mode_controller
 var player_manager: PlayerManager
@@ -21,6 +22,7 @@ func _ready() -> void:
 	add_to_group("survival_mode")
 	_resolve_wave_manager()
 	_resolve_ammo_director()
+	_resolve_market_controller()
 	_resolve_arena_manager()
 	_resolve_zombie_mode_controller()
 	_resolve_player_manager()
@@ -46,6 +48,7 @@ func start_mode(context: Dictionary = {}) -> void:
 	super.start_mode(context)
 	_resolve_wave_manager()
 	_resolve_ammo_director()
+	_resolve_market_controller()
 	_resolve_arena_manager()
 	_resolve_zombie_mode_controller()
 	_resolve_player_manager()
@@ -67,6 +70,8 @@ func start_mode(context: Dictionary = {}) -> void:
 		zombie_mode_controller.start_run(context)
 	if ammo_director != null:
 		ammo_director.start_run()
+	if market_controller != null:
+		market_controller.start_run()
 	if wave_manager != null:
 		wave_manager.start_run()
 
@@ -77,6 +82,8 @@ func stop_mode() -> void:
 		ammo_director.stop_run(true)
 	if wave_manager != null:
 		wave_manager.stop_run(true)
+	if market_controller != null:
+		market_controller.stop_run()
 	if zombie_mode_controller != null:
 		zombie_mode_controller.stop_run()
 	if arena_manager != null:
@@ -120,6 +127,12 @@ func _resolve_wave_manager() -> void:
 func _resolve_ammo_director() -> void:
 	if ammo_director == null:
 		ammo_director = get_node_or_null("AmmoDirector") as SurvivalAmmoDirector
+
+func _resolve_market_controller() -> void:
+	if market_controller == null:
+		market_controller = get_node_or_null(
+			"MarketController"
+		) as SurvivalMarketController
 
 func _resolve_arena_manager() -> void:
 	if arena_manager == null:

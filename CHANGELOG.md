@@ -4,6 +4,17 @@
 
 ### Added
 
+- Aggiunti i marker direzionali ai bordi schermo per i minion fuori dalla
+  visuale (`OffscreenEnemyMarkers`): frecce ancorate al bordo del viewport con
+  colore tematico per bioma, dimensione e opacita derivate dalla distanza dal
+  party, esclusione dei nemici on-screen e dei boss, cap sul numero di marker e
+  rispetto di high contrast e reduced motion. Incluso
+  `tests/offscreen_enemy_markers_smoke_test.gd`.
+- Aggiunto il mercato ricorrente della zombie survival dopo le boss wave 5,
+  10, 15 e successive, con blocco spawn, wallet party condiviso, offerte
+  casuali dal catalogo, cura, refill ammo, acquisti arma per-player e ready
+  multiplayer. Inclusi `docs/zombie_market.md` e
+  `tests/zombie_market_smoke_test.gd`.
 - Aggiunti gli ostacoli `forest_tree` e `large_rock` con asset PNG trasparenti
   originali, footprint manifest `3x3`, collisione rettangolare completa e
   piazzamento garantito nella `infected_plains` generata.
@@ -106,6 +117,9 @@
 
 ### Changed
 
+- `WaveManager` espone un blocco generico tra reward e intermission;
+  `ProgressionManager` espone la spesa atomica del denaro comune e
+  `WeaponSystem` refill mirati che preservano le istanze inventario.
 - Separata l'arma base dall'inventario equipaggiabile: `RB`/`Spazio` attacca
   con la base, `LB`/`F` usa l'arma raccolta selezionata e il D-pad cicla solo
   le armi raccolte. Una speciale vuota non forza piu il fallback o lo switch

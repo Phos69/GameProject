@@ -1,148 +1,147 @@
-GOAL: fare un passaggio completo sulla grafica delle armi appena create, in modo che ogni arma sia immediatamente riconoscibile sia quando è equipaggiata/usata, sia quando è droppata a terra, sia attraverso i suoi proiettili o effetti visivi.
+Obiettivo: modifica la modalità zombie introducendo un mercato ricorrente dopo le ondate boss.
 
-Contesto:
-Abbiamo appena introdotto un sistema con molte nuove armi (da fuoco, melee, elementali). Ora bisogna migliorare la loro identità visiva. Al momento non voglio placeholder generici o pickup indistinguibili: ogni arma deve avere una grafica propria e leggibile in gameplay.
+Analizza prima lo stato attuale della modalità zombie, del sistema ondate, boss, valuta/soldi, armi, ammo, HP, input multiplayer e GUI. Poi implementa la feature in modo integrato, senza workaround e senza placeholder.
 
-Obiettivi principali:
-1. Ogni arma deve avere una grafica unica e riconoscibile.
-2. Quando un’arma viene droppata a terra, il pickup deve già mostrare chiaramente la forma reale dell’arma, non un’icona generica.
-3. Quando l’arma viene utilizzata, la sua resa visiva deve essere coerente con quella del drop.
-4. Anche i proiettili / hitbox / slash / effetti devono essere temizzati in base all’arma.
-5. Il risultato deve essere coerente con lo stile del progetto e con la visuale isometrica/top-down attuale.
+REQUISITI GAMEPLAY
 
-REQUISITI
+* Ogni 5 ondate deve esserci una ondata boss.
+* Dopo aver sconfitto completamente l’ondata boss, prima dell’avvio dell’ondata successiva deve aprirsi il mercato.
+* Esempio:
 
-1. Identità visiva unica per ogni arma
-- Ogni arma deve avere una silhouette distinta.
-- Non basta cambiare colore ad asset quasi uguali: servono forme riconoscibili.
-- Le armi devono essere distinguibili a colpo d’occhio anche in scene affollate.
-- Differenziare chiaramente:
-  - pistole leggere
-  - shotgun
-  - rifle
-  - heavy weapon
-  - armi melee leggere
-  - armi melee pesanti
-  - armi elementali / arcane
+  * Wave 1-4 normali
+  * Wave 5 boss
+  * Boss sconfitto → mercato
+  * Uscita dal mercato → Wave 6
+  * Wave 10 boss → mercato
+  * ecc.
 
-2. Coerenza tra drop ed arma equipaggiata
-- Quando l’arma è a terra come pickup, deve già avere l’aspetto dell’arma vera.
-- Il pickup non deve essere un box, un’icona generica o un placeholder non leggibile.
-- L’arma droppata può essere una versione semplificata, ma deve mantenere:
-  - forma generale
-  - colori principali
-  - eventuali dettagli iconici
-- Quando il player la impugna, deve risultare chiaramente la stessa arma.
+MERCATO
 
-3. Proiettili ed effetti temizzati
-Ogni arma deve avere anche una sua identità nei colpi/effetti:
-- armi da fuoco:
-  - bullet sprite coerente
-  - muzzle flash coerente
-  - trail se necessario
-  - impatto coerente
-- melee:
-  - slash arc / swing effect coerente con dimensione e tipo arma
-  - hit effect coerente
-  - eventuale scia del colpo
-- elementali:
-  - proiettili/onde/aree con colori, forma e VFX specifici
-  - effetti leggibili: fuoco, ghiaccio, fulmine, veleno, vuoto, ecc.
+* Il mercato deve essere una fase di gioco separata dallo spawn/combat.
+* Durante il mercato non devono spawnare zombie.
+* I giocatori devono poter acquistare usando i soldi comuni della run.
+* La valuta è condivisa: ogni acquisto di un giocatore scala dal wallet comune.
+* Se i soldi comuni non bastano, l’acquisto viene negato con feedback visivo/sonoro chiaro.
+* Ogni giocatore deve poter comprare per sé:
 
-Esempi:
-- shotgun: pallettoni visibili o spread corto con flash ampio.
-- revolver: colpo secco, bullet pesante, flash compatto.
-- lanciagranate: proiettile grosso ad arco + esplosione riconoscibile.
-- katana: slash pulito e veloce.
-- martello: impatto pesante con shockwave corta.
-- arma ghiaccio: proiettile freddo, chiaro/azzurro, impatto gelido.
-- fulmine: arco elettrico o bolt con chain visiva.
-- veleno: nube, goccia tossica, o residuo verde persistente.
+  * HP / cura
+  * Ammo / refill munizioni
+  * Armi generate casualmente a ogni mercato
 
-4. Asset pipeline pulita
-- Analizza come sono gestiti oggi sprite, animazioni, proiettili, pickup e rendering delle armi.
-- Centralizza la definizione visiva delle armi in modo pulito.
-- Ogni WeaponDefinition dovrebbe avere riferimenti a:
-  - sprite pickup / world sprite
-  - sprite equipaggiata / held sprite
-  - projectile sprite o VFX profile
-  - swing/slash effect
-  - impact effect
-  - eventuale animation profile
-- Evita hardcode sparso in più punti.
+SHOP RANDOM
 
-5. Armi già create: passaggio completo
-Fai un passaggio su tutte le armi nuove già introdotte.
-Per ciascuna arma:
-- assicurati che abbia:
-  - nome chiaro
-  - silhouette unica
-  - palette riconoscibile
-  - drop sprite coerente
-  - held sprite coerente
-  - projectile/effect theme coerente
+* A ogni apertura del mercato deve essere generata una nuova selezione casuale di armi acquistabili.
+* Le armi devono essere pescate dal sistema armi esistente, rispettando rarità, categorie e vincoli già presenti se esistono.
+* La selezione deve cambiare da mercato a mercato.
+* Evita duplicati inutili nella stessa offerta.
+* Il mercato deve mostrare chiaramente:
 
-6. Linee guida stilistiche
-- Mantieni coerenza col gioco.
-- Niente asset realistici fotobashed.
-- Preferire uno stile game-ready leggibile:
-  - pulito
-  - contrastato
-  - leggibile da camera di gioco
-  - compatibile con visuale isometrica/top-down
-- Le armi devono essere leggibili anche a dimensioni piccole.
-- Se necessario, exaggera un po’ le proporzioni per migliorare la riconoscibilità.
+  * nome arma
+  * tipo/categoria
+  * costo
+  * stats principali leggibili
+  * eventuale rarità
+  * se il player può permettersela o no
 
-7. Distinzione per categoria
-Assicurati che visivamente si capisca subito se un’arma è:
-- da fuoco
-- melee
-- elementale
+INTEGRAZIONE CON INVENTARIO ARMI
 
-Le 3 famiglie devono avere linguaggi visivi differenti:
-- da fuoco: metallo, canne, tamburi, caricatori, bocche da fuoco, componenti meccaniche
-- melee: lame, impugnature, aste, teste contundenti, profili d’attacco
-- elementali: focus, cristalli, rune, energia, contenitori magici, forme non convenzionali
+* Se esiste già un inventario armi per giocatore, l’arma comprata deve essere aggiunta all’inventario del giocatore che acquista.
+* Non deve sovrascrivere l’arma attuale perdendo ammo/stato.
+* Ogni arma deve mantenere il proprio stato: ammo, caricatore, cooldown, eventuali effetti.
+* Se l’inventario è pieno, gestisci il caso in modo esplicito:
 
-8. Feedback a terra
-Quando un’arma è a terra:
-- deve essere immediatamente riconoscibile
-- può avere:
-  - piccolo outline
-  - ombra
-  - lieve bobbing
-  - highlight
-- ma senza perdere la forma dell’arma
-- opzionale: una piccola glow solo per rarità/elementali, senza confondere la silhouette
+  * o impedisci l’acquisto con messaggio
+  * o permetti la sostituzione/drop tramite UI, ma solo se coerente col codice esistente.
+* Non introdurre bug dove un giocatore compra un’arma e viene assegnata a un altro.
 
-9. Priorità tecnica
-Ordine di lavoro:
-1. analizza stato attuale del rendering di armi/drop/proiettili
-2. fai un piano sintetico
-3. implementa un sistema visivo pulito per arma/drop/projectile
-4. aggiorna tutte le armi già create
-5. verifica in gioco che siano distinguibili davvero
+HP E AMMO
 
-10. Verifiche richieste
-Controlla almeno:
-- due armi diverse a terra sono distinguibili a colpo d’occhio
-- due armi equipaggiate diverse si vedono chiaramente diverse in mano al player
-- i proiettili di armi diverse non sembrano tutti uguali
-- gli effetti melee non sembrano identici per tutte le armi
-- gli effetti elementali comunicano davvero l’elemento
-- nessun pickup usa placeholder generici se l’arma è già implementata
-- il sistema resta estensibile per future armi
+* Acquisto HP:
 
-Deliverable finale:
-- codice implementato
-- elenco file modificati
-- spiegazione sintetica del sistema visivo armi
-- lista delle armi aggiornate con breve nota sulla loro identità visiva
-- eventuali asset nuovi creati
-- eventuali TODO residui, ma senza lasciare incompleto il passaggio principale
+  * Cura il player che acquista.
+  * Non deve superare l’HP massimo, salvo esista già una meccanica di aumento max HP.
+  * Se il player è già full HP, mostra feedback e non sprecare soldi, oppure rendi chiaro che sta comprando max HP se scegli quella variante.
+* Acquisto Ammo:
 
-Importante:
-La priorità non è “mettere un’immagine qualsiasi”, ma dare ad ogni arma una identità visiva forte e coerente:
-- stessa arma = stesso linguaggio visivo tra drop, uso e proiettile
-- armi diverse = silhouette ed effetti diversi
-- niente placeholder indistinguibili
+  * Ricarica le munizioni del player che acquista.
+  * Deve rispettare il sistema ammo esistente.
+  * Se ci sono più armi, chiarisci se ricarica:
+
+    * arma equipaggiata
+    * tutte le armi
+    * oppure un pacchetto ammo generico
+  * Preferenza: implementa almeno un’opzione base “refill ammo arma equipaggiata” e, se semplice, una più costosa “refill ammo tutte le armi”.
+
+GUI / UX MULTIPLAYER
+
+* Il mercato deve essere navigabile da ogni giocatore.
+* Ogni player deve avere una selezione/slot UI riconoscibile con il proprio colore o indicatore P1/P2/P3/P4.
+* Deve essere chiaro chi sta acquistando cosa.
+* Deve essere sempre visibile il totale dei soldi comuni.
+* Deve essere possibile uscire dal mercato e continuare la run.
+* Evita che un solo player chiuda il mercato accidentalmente per tutti senza conferma.
+* Implementa una logica semplice tipo:
+
+  * ogni player può segnarsi “ready”
+  * quando tutti i player vivi/attivi sono ready, parte la wave successiva
+  * oppure un pulsante “continua” con conferma chiara, se il sistema attuale non supporta ready multiplayer.
+
+BILANCIAMENTO INIZIALE
+
+* Definisci prezzi sensati e facili da modificare:
+
+  * cura piccola/media
+  * refill ammo
+  * armi comuni/non comuni/rare
+* I prezzi devono stare in una configurazione o costanti ben nominate, non hardcoded sparse nel codice.
+* Il sistema deve poter essere esteso in futuro con perk, upgrade, revive, armor, reroll shop.
+
+ROBUSTEZZA
+
+* Il mercato deve aprirsi una sola volta dopo ogni boss wave completata.
+* Non deve riaprirsi se la wave è già stata processata.
+* Se tutti i player muoiono durante la boss wave, non deve aprirsi il mercato.
+* Se il gioco viene resettato/nuova run, lo stato del mercato e delle offerte deve essere resettato.
+* Il sistema deve funzionare anche se c’è un solo giocatore.
+* Non rompere il normale avanzamento delle ondate.
+
+IMPLEMENTAZIONE TECNICA
+
+* Mantieni separati:
+
+  * wave progression
+  * shop/market state
+  * shared currency
+  * player purchase logic
+  * UI rendering/input
+* Evita duplicazione di codice.
+* Se trovi codice già esistente per shop, upgrade, loot, armi random o valuta, riusalo e consolidalo.
+* Se il codice attuale è confuso, fai un refactor minimo e mirato prima di implementare.
+* Aggiungi commenti solo dove aiutano davvero a capire la logica.
+
+OUTPUT RICHIESTO
+
+Alla fine:
+
+1. Implementa la feature.
+2. Aggiungi o aggiorna test automatici dove possibile.
+3. Esegui i test/build/lint disponibili nel progetto.
+4. Crea o aggiorna un breve file di documentazione, ad esempio `docs/zombie_market.md` o sezione equivalente, spiegando:
+
+   * quando appare il mercato
+   * come funziona il wallet comune
+   * cosa possono comprare i player
+   * come viene generata l’offerta random
+   * punti futuri di estensione
+
+CRITERI DI ACCETTAZIONE
+
+* Dopo la wave 5 boss, sconfitto il boss, si apre il mercato.
+* Durante il mercato non spawnano zombie.
+* I soldi comuni sono visibili e vengono scalati correttamente.
+* Ogni player può comprare HP, ammo e armi per sé.
+* Le armi offerte sono random e cambiano a ogni mercato.
+* L’acquisto arma non sovrascrive in modo distruttivo l’arma attuale.
+* Uscendo dal mercato la run continua dalla wave successiva.
+* Il mercato riappare dopo le wave 10, 15, 20, ecc.
+* Nessuna regressione evidente su combat, spawn, boss wave, inventario armi, input multiplayer e HUD.
