@@ -3,6 +3,8 @@ class_name Projectile
 
 signal impacted(target: Node, applied_damage: int)
 
+const WEAPON_VISUAL_RENDERER := preload("res://game/weapons/weapon_visual_renderer.gd")
+
 @export var damage: int = 10
 @export var lifetime: float = 1.25
 
@@ -96,6 +98,24 @@ func get_muzzle_color() -> Color:
 func get_muzzle_size() -> float:
 	return visual_data.muzzle_size if visual_data != null else 7.0
 
+func get_muzzle_effect_kind() -> StringName:
+	return WEAPON_VISUAL_RENDERER.get_muzzle_effect_kind(visual_data)
+
+func get_impact_effect_kind() -> StringName:
+	return WEAPON_VISUAL_RENDERER.get_impact_effect_kind(visual_data)
+
+func get_impact_color() -> Color:
+	return WEAPON_VISUAL_RENDERER.get_impact_color(visual_data)
+
+func get_impact_size() -> float:
+	return WEAPON_VISUAL_RENDERER.get_impact_size(visual_data)
+
+func get_impact_shake_strength() -> float:
+	return WEAPON_VISUAL_RENDERER.get_impact_shake_strength(visual_data)
+
+func get_impact_shake_duration() -> float:
+	return WEAPON_VISUAL_RENDERER.get_impact_shake_duration(visual_data)
+
 func set_arc_height(value: float) -> void:
 	arc_height = maxf(value, 0.0)
 	arc_elapsed = 0.0
@@ -176,13 +196,25 @@ func _apply_visual_data() -> void:
 	if visual != null:
 		if visual_data != null:
 			visual.color = visual_data.projectile_color
-			visual.scale = visual_data.projectile_scale
-			visual.polygon = _projectile_polygon(visual_data.profile_id)
+			visual.scale = WEAPON_VISUAL_RENDERER.get_scale(
+				visual_data,
+				WEAPON_VISUAL_RENDERER.TARGET_PROJECTILE
+			)
+			visual.polygon = WEAPON_VISUAL_RENDERER.get_projectile_polygon(
+				visual_data
+			)
 	if glow != null:
 		if visual_data != null:
 			base_glow_color = visual_data.projectile_glow_color
-			glow.scale = visual_data.projectile_scale
-			glow.polygon = _glow_polygon(visual_data.profile_id)
+			glow.scale = WEAPON_VISUAL_RENDERER.get_scale(
+				visual_data,
+				WEAPON_VISUAL_RENDERER.TARGET_PROJECTILE
+			)
+			glow.polygon = (
+				WEAPON_VISUAL_RENDERER.get_projectile_glow_polygon(
+					visual_data
+				)
+			)
 		glow.color = Color(
 			base_glow_color,
 			base_glow_color.a * glow_intensity
@@ -203,121 +235,6 @@ func _apply_visual_data() -> void:
 			base_trail_color.a * trail_intensity
 		)
 		trail.visible = trail_intensity > 0.01
-
-func _projectile_polygon(profile_id: StringName) -> PackedVector2Array:
-	match profile_id:
-		&"prototype_blaster":
-			return PackedVector2Array([
-				Vector2(-8.0, 0.0),
-				Vector2(-2.0, -5.0),
-				Vector2(10.0, 0.0),
-				Vector2(-2.0, 5.0)
-			])
-		&"wave_cannon":
-			return PackedVector2Array([
-				Vector2(-10.0, -5.5),
-				Vector2(4.0, -4.0),
-				Vector2(12.0, 0.0),
-				Vector2(4.0, 4.0),
-				Vector2(-10.0, 5.5),
-				Vector2(-5.0, 0.0)
-			])
-		&"defense_tower":
-			return PackedVector2Array([
-				Vector2(-7.0, -4.0),
-				Vector2(9.0, -2.5),
-				Vector2(12.0, 0.0),
-				Vector2(9.0, 2.5),
-				Vector2(-7.0, 4.0)
-			])
-		&"boss_aimed":
-			return PackedVector2Array([
-				Vector2(-10.0, -5.0),
-				Vector2(2.0, -5.0),
-				Vector2(12.0, 0.0),
-				Vector2(2.0, 5.0),
-				Vector2(-10.0, 5.0),
-				Vector2(-5.0, 0.0)
-			])
-		&"boss_radial":
-			return PackedVector2Array([
-				Vector2(-8.0, 0.0),
-				Vector2(-3.0, -6.0),
-				Vector2(5.0, -5.0),
-				Vector2(10.0, 0.0),
-				Vector2(5.0, 5.0),
-				Vector2(-3.0, 6.0)
-			])
-		&"enemy_shooter":
-			return PackedVector2Array([
-				Vector2(-8.0, -3.0),
-				Vector2(-2.0, -5.0),
-				Vector2(9.0, 0.0),
-				Vector2(-2.0, 5.0),
-				Vector2(-8.0, 3.0)
-			])
-		&"rpg_bow":
-			return PackedVector2Array([
-				Vector2(-13.0, -2.0),
-				Vector2(12.0, 0.0),
-				Vector2(-13.0, 2.0),
-				Vector2(-8.0, 0.0)
-			])
-		&"rpg_pistol":
-			return PackedVector2Array([
-				Vector2(-4.5, -3.5),
-				Vector2(5.5, -3.5),
-				Vector2(7.0, 0.0),
-				Vector2(5.5, 3.5),
-				Vector2(-4.5, 3.5)
-			])
-		&"rpg_axe":
-			return PackedVector2Array([
-				Vector2(-10.0, -8.0),
-				Vector2(8.0, -10.0),
-				Vector2(13.0, 0.0),
-				Vector2(8.0, 10.0),
-				Vector2(-10.0, 8.0),
-				Vector2(-4.0, 0.0)
-			])
-		&"rpg_sword":
-			return PackedVector2Array([
-				Vector2(-8.0, -5.0),
-				Vector2(10.0, -4.0),
-				Vector2(15.0, 0.0),
-				Vector2(10.0, 4.0),
-				Vector2(-8.0, 5.0)
-			])
-		&"rift_lane", &"rift_repeater":
-			return PackedVector2Array([
-				Vector2(-9.0, -3.5),
-				Vector2(4.0, -3.0),
-				Vector2(11.0, 0.0),
-				Vector2(4.0, 3.0),
-				Vector2(-9.0, 3.5),
-				Vector2(-4.0, 0.0)
-			])
-		&"rift_cross":
-			return PackedVector2Array([
-				Vector2(-7.0, -5.0),
-				Vector2(0.0, -3.0),
-				Vector2(9.0, 0.0),
-				Vector2(0.0, 3.0),
-				Vector2(-7.0, 5.0),
-				Vector2(-3.0, 0.0)
-			])
-		_:
-			return PackedVector2Array([
-				Vector2(-6.0, -3.0),
-				Vector2(8.0, 0.0),
-				Vector2(-6.0, 3.0)
-			])
-
-func _glow_polygon(profile_id: StringName) -> PackedVector2Array:
-	var points := _projectile_polygon(profile_id)
-	for index in range(points.size()):
-		points[index] *= 1.65
-	return points
 
 func _apply_hitbox_data() -> void:
 	if collision_shape == null:

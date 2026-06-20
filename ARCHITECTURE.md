@@ -124,13 +124,18 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `WeaponCatalog`: registry centralizzato di 30 armi drop con ID stabili.
 - `WeaponEffectResolver`: risoluzione condivisa di AOE, status, chain,
   knockback, delayed explosion e ground hazard.
-- `WeaponVisualData`: palette, dimensioni e profilo condivisi da arma, HUD, proiettile e flash.
+- `WeaponVisualData`: palette, dimensioni, profilo legacy, ID visuali opzionali
+  per target, family, outline/glow, scale e sprite path condivisi da arma, HUD,
+  proiettile e flash.
+- `WeaponVisualRenderer`: helper condiviso che risolve fallback, silhouette e
+  asset opzionali da `WeaponVisualData`, inclusi projectile, muzzle, slash e
+  impact, senza spostare regole di combat nei consumer visuali.
 - `WeaponSystem`: inventario runtime per-player, compatibilita fallback,
   switch circolare e dispatch tra projectile e melee.
 - `MeleeAttack`: hitbox temporanea world-space per swing melee con wind-up,
   active time, recovery tramite cooldown, anti-multihit per bersaglio e
-  feedback trail; applica anche knockback e hitstop configurati in
-  `WeaponData`.
+  feedback trail derivato dal profilo visuale; applica anche knockback e
+  hitstop configurati in `WeaponData`.
 - `ProjectileSystem` e `Projectile`: spawn, movimento, collisione e consegna del danno.
 - `HealthSystem` e `HealthComponent`: richieste globali di danno/cura, stato vita locale e invulnerabilita componibile per sorgente; il danno ambientale puo ignorarla esplicitamente.
 - `EnemySystem`: registro di scene nemico per ID, spawn, contenitore, registro runtime e notifica morte. In survival assegna `spawn_region_id` dalla posizione world-space tramite `RegionSeamSystem`.
@@ -281,15 +286,18 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
   informazioni immediate del pacchetto world-space.
 - `ExplorationMapPanel`: pannello consultabile che disegna grafo, fog/unknown, regioni discovered/visited/cleared, connessioni note tematizzate per `passage_type`, marker per le active/loaded regions e regione corrente; consuma `apply_visual_settings` per il high contrast.
 - `PlayerVisual`: presentazione procedurale data-driven del player, con
-  silhouette e palette derivate dal profilo RPG; non possiede piu il mini HUD.
+  silhouette e palette derivate dal profilo RPG; disegna l'arma equipaggiata
+  tramite `WeaponVisualRenderer` e non possiede piu il mini HUD.
 - `PlayerWorldHudVisual`: pacchetto UI world-space child del player; legge
   `HealthComponent`, `WeaponSystem` e `RpgPlayerComponent` e disegna P1-P4,
   HP, livello con gauge EXP circolare, barra ammo/reload condivisa nello stesso
   slot e super verticale pronta/non pronta.
 - `ZombieVisual`: presentazione animata procedurale degli zombie.
-- `DropPickupVisual` e `SupplyCrateVisual`: icone world-space sostituibili;
-  la supply crate usa `object_scenes/supply_crate` come sprite asset-backed e
-  conserva il draw procedurale solo come fallback tecnico.
+- `DropPickupVisual` e `SupplyCrateVisual`: icone world-space sostituibili; i
+  drop arma ricevono `WeaponData.visual_data` e disegnano la silhouette pickup
+  tramite `WeaponVisualRenderer`, mentre XP, money, ammo e health mantengono le
+  icone dedicate. La supply crate usa `object_scenes/supply_crate` come sprite
+  asset-backed e conserva il draw procedurale solo come fallback tecnico.
 - `BossTelegraphVisual`: warning world-space per pattern aimed, radial e cambio fase.
 - `WaveWardenVisual`: silhouette, animazione e stato visuale delle due fasi del boss.
 - `PlayerHudCard`: scheda HUD riusabile per ogni slot locale, pensata come
@@ -302,10 +310,12 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
   target acquire, dash attack, recover e frenzy super bounded; e `Node2D`
   visuale/assistivo, senza collisione fisica con Nina.
 - `ReviveIndicatorVisual`: anello world-space con colore slot e progresso.
-- `WeaponIcon`: icona HUD generata dal profilo dell'arma attiva.
+- `WeaponIcon`: icona HUD generata dal profilo dell'arma attiva tramite
+  `WeaponVisualRenderer`, allineata alla silhouette pickup/held.
 - `CombatAnnouncement`: banner temporaneo e riusabile per transizioni gameplay.
-- `GameplayEffects`: feedback visuale event-driven, inclusi level-up e super
-  RPG tipizzate per starter e classi avanzate, senza dipendenze dai controller.
+- `GameplayEffects`: feedback visuale event-driven, inclusi muzzle/impact
+  temizzati, level-up e super RPG tipizzate per starter e classi avanzate,
+  senza dipendenze dai controller.
 
 ## Contratto fine run
 
@@ -368,10 +378,19 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - Lo sfondo survival usa colori meno saturi e meno luminosi degli attori.
 - Il colore slot resta il primo identificatore del player nel multiplayer locale.
 - Pickup e supply crate devono essere riconoscibili dalla forma e dal colore senza dipendere da label world-space.
+- I pickup arma usano `WeaponVisualData.pickup_shape_id`; se il profilo manca,
+  `DropPickupVisual` mostra un marker `missing_weapon_visual` esplicito.
 - I telegraph boss mostrano direzione, area e durata prima del danno e non possiedono collisioni.
 - `WaveWardenVisual` riceve solo stato presentazionale da `BasicBoss`.
 - Gli annunci HUD reagiscono ai segnali pubblici e non pilotano wave o boss.
-- Arma world-space, icona HUD, proiettile e muzzle flash leggono lo stesso `WeaponVisualData`.
+- Pickup arma, arma world-space, icona HUD, proiettile e muzzle flash leggono
+  lo stesso `WeaponVisualData`.
+- Gli impact projectile leggono kind, colore, size e shake da
+  `WeaponVisualData`/`WeaponVisualRenderer`; questi valori sono
+  presentazionali e non modificano danno, collisioni o timing.
+- Gli slash e gli hit effect melee leggono `slash_shape_id`, `impact_shape_id`
+  e `impact_vfx_id` tramite `WeaponVisualRenderer`; la hitbox resta definita da
+  `WeaponData.attack_type`, `melee_*` e `hitbox_*`.
 - Ritratto classe e icona super RPG sono disegnati da `RpgHudIcon` e non alterano stats, input o cooldown.
 - `DefenseTowerVisual` riceve mira e feedback ma non sceglie target, range, danno o fire rate.
 - `GameplayEffects` reagisce a segnali pubblici e non applica danno, cura o ricompense.
@@ -403,14 +422,22 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
   `windup_time`, `active_time`, `recovery_time`, `knockback`, `hitstop`,
   `trail_style`, `effect_key` e `sound_key` rifiniscono i colpi melee senza
   duplicare il sistema danni.
+- Per le armi melee, `trail_style` puo indicare lo slash style visuale ma non
+  modifica la collisione; `MeleeAttack` continua a creare la shape da
+  `WeaponData.get_resolved_melee_shape()`.
 - `WeaponSystem.get_reload_ratio()` espone il progresso reload; il moltiplicatore `reload_speed` RPG riduce la durata.
 - `WeaponSystem` legge il moltiplicatore fire rate RPG solo dal componente del proprio player, usato dalla passiva `Mano Veloce`.
 - Le passive RPG modificano danno, cadenza o mitigazione attraverso `RpgPlayerComponent`, senza duplicare collisioni o logica proiettile.
 - Le super RPG consumano 100 adrenalina e delegano proiettili/danni ai sistemi condivisi, senza creare un combat path separato.
 - L'adrenalina arriva da danno applicato, danno subito, kill confermate e reward wave survival.
-- Palette, silhouette e trail vivono in `WeaponVisualData` e non modificano il bilanciamento.
+- Palette, silhouette, trail, ID shape e sprite opzionali vivono in
+  `WeaponVisualData` e non modificano il bilanciamento.
 - `ProjectileSystem` riceve i dati dello sparo e configura il proiettile prima di aggiungerlo alla scena.
 - Il parametro visuale di `ProjectileSystem` e opzionale per mantenere compatibili boss e chiamanti esistenti.
+- `Projectile` usa `WeaponVisualRenderer` per risolvere poligono e glow,
+  mantenendo i fallback legacy basati su `profile_id`.
+- `Projectile` espone getter presentazionali per muzzle e impact usati da
+  `GameplayEffects`; il movimento, la collisione e il danno restano invariati.
 - Il proiettile non conosce classi nemico specifiche: colpisce body o area damageable e inoltra il danno a `HealthSystem`.
 - `Projectile` emette l'impatto risolto e `ProjectileSystem` lo espone ai sistemi di feedback.
 - `HealthSystem` cerca un figlio `HealthComponent` sul target; player, nemici, boss e bersagli debug possono condividere lo stesso contratto.

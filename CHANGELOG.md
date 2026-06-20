@@ -4,15 +4,33 @@
 
 ### Added
 
-- Aggiunto il contratto ostacoli isometrici v9 con slot `4x4` celle,
-  `footprint_slots`, celle occupate, altezza visiva e record runtime completo.
-- Aggiunti 17 SVG footprint-specific per oggetti `1x1`-`3x3`, case `4x3`/
-  `4x4`/`5x3`/`6x6`, vegetazione densa e varianti di bioma; aggiunto il toggle
-  debug `F9` per base e contorno degli ostacoli attivi.
-- Aggiunti `docs/obstacle_rendering.md`,
-  `tests/obstacle_rendering_contract_smoke_test.gd` e
-  `tests/obstacle_asset_visual_qa.gd` con mapping, pipeline, raster QA,
-  collisione/rendering, void distinto e checklist manuale.
+- Aggiunto `WeaponVisualRenderer` per centralizzare fallback, shape target e
+  silhouette proiettile derivate da `WeaponVisualData`.
+- Aggiunte silhouette pickup per le 30 armi del catalogo drop tramite
+  `pickup_shape_id` e geometrie condivise in `WeaponVisualRenderer`.
+- Aggiunto `tests/weapon_pickup_visual_identity_smoke_test.gd` per verificare
+  pickup arma distinti, fallback missing, high contrast e reduced motion.
+- Aggiunto `tests/weapon_visual_identity_qa.gd` con screenshot QA della griglia
+  pickup W2 in `build/qa/weapon_visual_identity_pickup_grid.png`.
+- Aggiunto `tests/weapon_held_hud_visual_identity_smoke_test.gd` per verificare
+  shape held/HUD condivise, campione di 12 armi e fallback legacy.
+- Aggiunto `tests/weapon_projectile_vfx_identity_smoke_test.gd` per verificare
+  profili projectile/muzzle/impact non nulli, shape projectile distinte e
+  consumo runtime da `Projectile`/`GameplayEffects`.
+- Aggiunto `tests/weapon_melee_visual_identity_smoke_test.gd` per verificare
+  slash shape, hit effect tematici, separazione hitbox/visual e fallback legacy
+  delle armi melee RPG.
+- Aggiunti profili projectile procedurali per le 20 armi firearm/elemental del
+  catalogo, inclusi bullet pesante, pellet shotgun, granata, rail beam,
+  fireball, ice lance, lightning bolt, acid flask, spore cloud, seismic pulse e
+  void orb.
+- Aggiunti profili slash e hit effect procedurali per le 10 armi melee del
+  catalogo: quick stab, machete cleave, heavy axe cleave, broad sweep, hammer
+  shockwave, spear thrust, katana dash cut, spiked impact, scythe crescent e
+  shield bash.
+- Esteso `WeaponVisualData` con ID visuali opzionali per pickup, held, HUD,
+  projectile, slash, impact e muzzle, piu family, outline/glow, scale e percorsi
+  sprite non obbligatori.
 - Aggiunto `EntityVoidFallComponent`, condiviso da player e zombie, con stato
   `falling`, lock del movimento e animazione di discesa, scala e alpha prima
   dell'impatto.
@@ -69,6 +87,30 @@
 
 ### Changed
 
+- `Projectile` delega poligono e glow al renderer visuale condiviso mantenendo
+  invariati i profili legacy quando i nuovi campi sono vuoti.
+- `DropPickup` passa `WeaponData.visual_data` a `DropPickupVisual` per i drop
+  arma; i pickup non-arma mantengono le icone dedicate esistenti.
+- `WeaponCatalog` genera un profilo visuale runtime per ogni arma catalogo con
+  shape pickup e glow rarita senza cambiare il profilo projectile legacy.
+- `WeaponCatalog` assegna anche `held_shape_id`, `hud_shape_id` e dimensioni
+  visuali per differenziare massa/lunghezza delle 30 armi catalogo.
+- `PlayerVisual` e `WeaponIcon` delegano silhouette arma e HUD a
+  `WeaponVisualRenderer`, eliminando i match locali sui profili visuali.
+- `WeaponCatalog` assegna ora profili projectile/muzzle/impact specifici alle
+  armi firearm/elemental del catalogo senza cambiare valori di bilanciamento.
+- `GameplayEffects` legge muzzle kind, impact kind, colore, size e shake dal
+  profilo visuale del proiettile invece di usare sempre il feedback `hit`
+  generico.
+- `WeaponEffectResolver` mantiene invariato il ground hazard runtime ma
+  differenzia il disegno di ampolla acida e spore tossiche.
+- `MeleeAttack` risolve lo slash style dal profilo visuale condiviso e disegna
+  slash distinti senza cambiare shape collisione, danno o timing.
+- `GameplayEffects` legge ora kind, colore, size e shake degli hit melee da
+  `WeaponVisualRenderer`, rimuovendo le eccezioni specifiche per `rpg_axe` e
+  `rpg_sword`.
+- `tests/weapon_visual_identity_qa.gd` produce anche
+  `build/qa/weapon_visual_identity_held_hud_grid.png`.
 - `ObstacleLayoutGenerator` normalizza gli oggetti non-border al footprint del
   manifest prima delle query di spazio; collisione, posizione, base visiva e
   dimensione SVG derivano ora dallo stesso rettangolo logico, senza scale
@@ -195,6 +237,26 @@
 
 ### Documentation
 
+- Aggiunto `weapon_visual_identity_roadmap.md`, roadmap operativa derivata da
+  `prompt.md` per il pass completo di identita visuale delle 30 armi del
+  catalogo, con milestone su contratto visuale, pickup reali, held/HUD,
+  projectile/VFX, melee slash, QA e regressioni. Tracciato il backlog come
+  `WVIS-001` in `TODO.md`.
+- Chiusa la Milestone W0 di `weapon_visual_identity_roadmap.md` con inventario
+  visuale delle 30 armi, mapping dei tre profili generici correnti, reference
+  da preservare e checklist manuale in
+  `docs/testing/weapon_visual_identity_checklist.md`.
+- Chiusa la Milestone W1 di `weapon_visual_identity_roadmap.md` con contratto
+  visuale condiviso esteso e renderer proiettili centralizzato.
+- Chiusa la Milestone W2 di `weapon_visual_identity_roadmap.md` con pickup arma
+  riconoscibili a terra e smoke dedicato.
+- Chiusa la Milestone W3 di `weapon_visual_identity_roadmap.md` con held weapon
+  e HUD allineati al renderer condiviso.
+- Chiusa la Milestone W4 di `weapon_visual_identity_roadmap.md` con
+  proiettili, muzzle, impact e ground hazard temizzati per le armi
+  firearm/elemental.
+- Chiusa la Milestone W5 di `weapon_visual_identity_roadmap.md` con slash e hit
+  effect melee temizzati e smoke dedicato.
 - Consolidato il backlog operativo in `TODO.md`, separando backlog aperto,
   follow-up e reference storiche completate senza riaprire milestone concluse.
 - Aggiornato `docs/latest_commit_validation_report.md` con audit documentale

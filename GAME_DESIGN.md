@@ -113,7 +113,20 @@ Identita visuale delle armi:
 - `Starter Pistol`: corpo compatto scuro, accento arancio e proiettile piccolo;
 - `Prototype Blaster`: doppia forcella blu/ciano e trail energetico medio;
 - `Wave Cannon`: corpo lungo viola, nucleo magenta e proiettile pesante;
-- arma in mano, icona HUD, flash di volata e proiettile condividono lo stesso profilo;
+- pickup arma, arma in mano, icona HUD, flash di volata e proiettile
+  condividono lo stesso profilo;
+- i pickup delle 30 armi catalogo usano sagome specifiche per `weapon_id`
+  invece dell'icona arma generica;
+- held weapon e icona HUD delle 30 armi catalogo usano la stessa shape
+  specifica del pickup, scalata per mano e UI compatta;
+- le armi da fuoco ed elementali del catalogo usano proiettili, muzzle flash e
+  impact distinti: revolver compatto, shotgun ampio, minigun rotore, railgun
+  caricato, fuoco/ghiaccio/fulmine/acido-spute/sismico/vuoto riconoscibili;
+- ampolla acida e spore tossiche mantengono lo stesso comportamento poison ma
+  disegnano ground hazard diversi per leggibilita;
+- le armi melee del catalogo hanno slash e hit feedback specifici: stab rapido,
+  cleave machete, ascia pesante, sweep spadone, shockwave martello, thrust
+  lancia, dash cut katana, impatto chiodato, crescent falce e bash scudo;
 - forma e colore aiutano il riconoscimento, ma non sostituiscono i valori di bilanciamento;
 - il colore slot del player resta separato dal colore energetico dell'arma.
 

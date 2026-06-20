@@ -101,6 +101,15 @@ static func _make_definition(spec: Dictionary) -> WeaponData:
 	definition.active_time = float(spec.get("active_time", 0.1))
 	definition.recovery_time = float(spec.get("recovery_time", 0.0))
 	definition.knockback = float(spec.get("knockback", 0.0))
+	definition.trail_style = StringName(
+		spec.get(
+			"trail_style",
+			_melee_impact_vfx_for(definition.weapon_id)
+			if definition.category == &"melee"
+			else &""
+		)
+	)
+	definition.effect_key = StringName(spec.get("effect_key", &""))
 	definition.magazine_size = int(spec.get("magazine_size", 8))
 	definition.starting_reserve_ammo = int(spec.get("starting_reserve_ammo", 0))
 	definition.reload_duration = float(spec.get("reload_duration", 1.0))
@@ -121,8 +130,431 @@ static func _make_definition(spec: Dictionary) -> WeaponData:
 	definition.effect_duration = float(spec.get("effect_duration", 0.0))
 	definition.effect_strength = float(spec.get("effect_strength", 0.0))
 	definition.projectile_scene = PROJECTILE_SCENE if definition.category != &"melee" else null
+	var base_visual := FIREARM_VISUAL
 	match definition.category:
-		&"melee": definition.visual_data = MELEE_VISUAL
-		&"elemental": definition.visual_data = ELEMENTAL_VISUAL
-		_: definition.visual_data = FIREARM_VISUAL
+		&"melee":
+			base_visual = MELEE_VISUAL
+		&"elemental":
+			base_visual = ELEMENTAL_VISUAL
+	definition.visual_data = _make_visual_data(definition, base_visual)
 	return definition
+
+static func _make_visual_data(
+	definition: WeaponData,
+	base_visual: WeaponVisualData
+) -> WeaponVisualData:
+	var visual := WeaponVisualData.new()
+	if base_visual != null:
+		visual.profile_id = base_visual.profile_id
+		visual.primary_color = base_visual.primary_color
+		visual.secondary_color = base_visual.secondary_color
+		visual.glow_color = base_visual.glow_color
+		visual.muzzle_color = base_visual.muzzle_color
+		visual.projectile_color = base_visual.projectile_color
+		visual.projectile_glow_color = base_visual.projectile_glow_color
+		visual.projectile_scale = base_visual.projectile_scale
+		visual.held_shape_id = base_visual.held_shape_id
+		visual.hud_shape_id = base_visual.hud_shape_id
+		visual.projectile_shape_id = base_visual.projectile_shape_id
+		visual.slash_shape_id = base_visual.slash_shape_id
+		visual.impact_shape_id = base_visual.impact_shape_id
+		visual.muzzle_shape_id = base_visual.muzzle_shape_id
+		visual.impact_vfx_id = base_visual.impact_vfx_id
+		visual.outline_color = base_visual.outline_color
+		visual.pickup_scale = base_visual.pickup_scale
+		visual.held_scale = base_visual.held_scale
+		visual.pickup_sprite_path = base_visual.pickup_sprite_path
+		visual.held_sprite_path = base_visual.held_sprite_path
+		visual.projectile_sprite_path = base_visual.projectile_sprite_path
+		visual.slash_sprite_path = base_visual.slash_sprite_path
+		visual.weapon_length = base_visual.weapon_length
+		visual.weapon_width = base_visual.weapon_width
+		visual.muzzle_size = base_visual.muzzle_size
+		visual.trail_length = base_visual.trail_length
+		visual.trail_width = base_visual.trail_width
+	visual.family_id = definition.category
+	visual.pickup_shape_id = definition.weapon_id
+	visual.held_shape_id = definition.weapon_id
+	visual.hud_shape_id = definition.weapon_id
+	if definition.category != &"melee":
+		visual.projectile_shape_id = definition.weapon_id
+		visual.impact_shape_id = definition.weapon_id
+		visual.muzzle_shape_id = definition.weapon_id
+		visual.impact_vfx_id = _impact_vfx_for(definition.weapon_id)
+		visual.projectile_color = _projectile_color_for(definition.weapon_id)
+		visual.projectile_glow_color = _projectile_glow_color_for(definition.weapon_id)
+		visual.muzzle_color = _muzzle_color_for(definition.weapon_id)
+		visual.projectile_scale = _projectile_scale_for(definition.weapon_id)
+		visual.trail_length = _trail_length_for(definition.weapon_id)
+		visual.trail_width = _trail_width_for(definition.weapon_id)
+		visual.muzzle_size = _muzzle_size_for(definition.weapon_id)
+	else:
+		visual.slash_shape_id = definition.weapon_id
+		visual.impact_shape_id = definition.weapon_id
+		visual.impact_vfx_id = _melee_impact_vfx_for(definition.weapon_id)
+		visual.projectile_color = _melee_slash_color_for(definition.weapon_id)
+		visual.projectile_glow_color = _melee_slash_glow_for(definition.weapon_id)
+		visual.trail_width = _melee_trail_width_for(definition.weapon_id)
+	visual.rarity_glow = _rarity_glow_for(definition.rarity)
+	visual.outline_color = _rarity_outline_for(definition.rarity)
+	var visual_size := _visual_size_for(definition.weapon_id)
+	visual.weapon_length = visual_size.x
+	visual.weapon_width = visual_size.y
+	visual.pickup_scale = _pickup_scale_for(definition.weapon_id)
+	return visual
+
+static func _visual_size_for(weapon_id: StringName) -> Vector2:
+	match weapon_id:
+		&"heavy_revolver":
+			return Vector2(22.0, 7.0)
+		&"unstable_smg":
+			return Vector2(28.0, 7.0)
+		&"pump_shotgun":
+			return Vector2(36.0, 8.0)
+		&"tactical_carbine":
+			return Vector2(34.0, 6.0)
+		&"improvised_sniper":
+			return Vector2(44.0, 5.0)
+		&"grenade_launcher":
+			return Vector2(36.0, 12.0)
+		&"sawed_off_double":
+			return Vector2(28.0, 9.0)
+		&"burst_pistol":
+			return Vector2(23.0, 6.0)
+		&"rusty_minigun":
+			return Vector2(38.0, 13.0)
+		&"scrap_railgun":
+			return Vector2(46.0, 8.0)
+		&"quick_knife":
+			return Vector2(18.0, 4.0)
+		&"machete":
+			return Vector2(28.0, 7.0)
+		&"heavy_axe":
+			return Vector2(34.0, 12.0)
+		&"greatsword":
+			return Vector2(38.0, 7.0)
+		&"demolition_hammer":
+			return Vector2(34.0, 14.0)
+		&"spear":
+			return Vector2(44.0, 4.0)
+		&"ruined_katana":
+			return Vector2(35.0, 5.0)
+		&"spiked_mace":
+			return Vector2(30.0, 12.0)
+		&"scythe":
+			return Vector2(40.0, 13.0)
+		&"offensive_shield":
+			return Vector2(24.0, 14.0)
+		&"fire_wand":
+			return Vector2(26.0, 5.0)
+		&"fireball":
+			return Vector2(20.0, 14.0)
+		&"ice_lance":
+			return Vector2(36.0, 7.0)
+		&"frost_nova":
+			return Vector2(24.0, 14.0)
+		&"chain_lightning":
+			return Vector2(30.0, 10.0)
+		&"arcane_taser":
+			return Vector2(24.0, 7.0)
+		&"acid_flask":
+			return Vector2(22.0, 12.0)
+		&"toxic_spores":
+			return Vector2(23.0, 13.0)
+		&"seismic_crystal":
+			return Vector2(26.0, 14.0)
+		&"unstable_void":
+			return Vector2(25.0, 14.0)
+		_:
+			return Vector2(26.0, 7.0)
+
+static func _pickup_scale_for(weapon_id: StringName) -> Vector2:
+	var visual_size := _visual_size_for(weapon_id)
+	return Vector2(
+		clampf(visual_size.x / 30.0, 0.75, 1.22),
+		clampf(visual_size.y / 9.0, 0.72, 1.24)
+	)
+
+static func _melee_impact_vfx_for(weapon_id: StringName) -> StringName:
+	match weapon_id:
+		&"quick_knife":
+			return &"quick_stab"
+		&"machete":
+			return &"machete_cleave"
+		&"heavy_axe":
+			return &"heavy_cleave"
+		&"greatsword":
+			return &"broad_sweep"
+		&"demolition_hammer":
+			return &"hammer_shockwave"
+		&"spear":
+			return &"spear_thrust"
+		&"ruined_katana":
+			return &"katana_dash_cut"
+		&"spiked_mace":
+			return &"spiked_impact"
+		&"scythe":
+			return &"scythe_crescent"
+		&"offensive_shield":
+			return &"shield_bash"
+		_:
+			return &"melee_hit"
+
+static func _melee_slash_color_for(weapon_id: StringName) -> Color:
+	match weapon_id:
+		&"quick_knife":
+			return Color(0.92, 0.96, 1.0, 1.0)
+		&"machete":
+			return Color(0.70, 0.88, 0.64, 1.0)
+		&"heavy_axe":
+			return Color(1.0, 0.48, 0.26, 1.0)
+		&"greatsword":
+			return Color(0.76, 0.90, 1.0, 1.0)
+		&"demolition_hammer":
+			return Color(1.0, 0.72, 0.32, 1.0)
+		&"spear":
+			return Color(0.68, 0.94, 1.0, 1.0)
+		&"ruined_katana":
+			return Color(0.96, 0.86, 1.0, 1.0)
+		&"spiked_mace":
+			return Color(1.0, 0.42, 0.38, 1.0)
+		&"scythe":
+			return Color(0.56, 1.0, 0.78, 1.0)
+		&"offensive_shield":
+			return Color(0.78, 0.88, 1.0, 1.0)
+		_:
+			return Color(0.92, 0.96, 1.0, 1.0)
+
+static func _melee_slash_glow_for(weapon_id: StringName) -> Color:
+	var color := _melee_slash_color_for(weapon_id)
+	match weapon_id:
+		&"heavy_axe", &"demolition_hammer", &"spiked_mace":
+			return Color(color.lightened(0.10), 0.82)
+		&"scythe":
+			return Color(0.46, 1.0, 0.66, 0.78)
+		&"ruined_katana":
+			return Color(0.90, 0.66, 1.0, 0.74)
+		&"offensive_shield":
+			return Color(0.62, 0.78, 1.0, 0.72)
+		_:
+			return Color(color.lightened(0.18), 0.68)
+
+static func _melee_trail_width_for(weapon_id: StringName) -> float:
+	match weapon_id:
+		&"quick_knife", &"spear", &"ruined_katana":
+			return 3.0
+		&"machete", &"spiked_mace", &"offensive_shield":
+			return 4.5
+		&"heavy_axe", &"greatsword", &"demolition_hammer", &"scythe":
+			return 6.0
+		_:
+			return 4.0
+
+static func _impact_vfx_for(weapon_id: StringName) -> StringName:
+	match weapon_id:
+		&"grenade_launcher", &"fireball":
+			return &"explosive"
+		&"scrap_railgun":
+			return &"rail"
+		&"fire_wand":
+			return &"fire"
+		&"ice_lance", &"frost_nova":
+			return &"ice"
+		&"chain_lightning", &"arcane_taser":
+			return &"lightning"
+		&"acid_flask", &"toxic_spores":
+			return &"toxic"
+		&"seismic_crystal":
+			return &"seismic"
+		&"unstable_void":
+			return &"void"
+		_:
+			return &"ballistic"
+
+static func _projectile_color_for(weapon_id: StringName) -> Color:
+	match weapon_id:
+		&"heavy_revolver":
+			return Color(0.98, 0.78, 0.36, 1.0)
+		&"unstable_smg":
+			return Color(0.72, 0.93, 1.0, 1.0)
+		&"pump_shotgun", &"sawed_off_double":
+			return Color(1.0, 0.66, 0.30, 1.0)
+		&"tactical_carbine", &"burst_pistol":
+			return Color(0.92, 0.82, 0.54, 1.0)
+		&"improvised_sniper":
+			return Color(0.92, 0.96, 1.0, 1.0)
+		&"grenade_launcher":
+			return Color(0.82, 0.78, 0.58, 1.0)
+		&"rusty_minigun":
+			return Color(1.0, 0.86, 0.42, 1.0)
+		&"scrap_railgun":
+			return Color(0.42, 0.96, 1.0, 1.0)
+		&"fire_wand", &"fireball":
+			return Color(1.0, 0.34, 0.12, 1.0)
+		&"ice_lance", &"frost_nova":
+			return Color(0.48, 0.92, 1.0, 1.0)
+		&"chain_lightning", &"arcane_taser":
+			return Color(1.0, 0.95, 0.24, 1.0)
+		&"acid_flask", &"toxic_spores":
+			return Color(0.46, 1.0, 0.30, 1.0)
+		&"seismic_crystal":
+			return Color(0.84, 0.62, 1.0, 1.0)
+		&"unstable_void":
+			return Color(0.64, 0.28, 1.0, 1.0)
+		_:
+			return Color(1.0, 0.72, 0.24, 1.0)
+
+static func _projectile_glow_color_for(weapon_id: StringName) -> Color:
+	var color := _projectile_color_for(weapon_id)
+	match _impact_vfx_for(weapon_id):
+		&"void":
+			return Color(0.78, 0.38, 1.0, 0.80)
+		&"toxic":
+			return Color(0.54, 1.0, 0.36, 0.78)
+		&"ice":
+			return Color(0.62, 0.96, 1.0, 0.74)
+		&"rail":
+			return Color(0.46, 1.0, 1.0, 0.88)
+		_:
+			return Color(color.lightened(0.18), 0.72)
+
+static func _muzzle_color_for(weapon_id: StringName) -> Color:
+	match _impact_vfx_for(weapon_id):
+		&"fire", &"explosive":
+			return Color(1.0, 0.50, 0.16, 1.0)
+		&"ice":
+			return Color(0.70, 0.96, 1.0, 1.0)
+		&"lightning":
+			return Color(1.0, 0.98, 0.36, 1.0)
+		&"toxic":
+			return Color(0.56, 1.0, 0.32, 1.0)
+		&"seismic":
+			return Color(0.92, 0.70, 1.0, 1.0)
+		&"void":
+			return Color(0.74, 0.34, 1.0, 1.0)
+		&"rail":
+			return Color(0.48, 1.0, 1.0, 1.0)
+		_:
+			return Color(1.0, 0.78, 0.26, 1.0)
+
+static func _projectile_scale_for(weapon_id: StringName) -> Vector2:
+	match weapon_id:
+		&"heavy_revolver":
+			return Vector2(1.08, 0.88)
+		&"unstable_smg":
+			return Vector2(0.62, 0.50)
+		&"pump_shotgun":
+			return Vector2(0.55, 0.55)
+		&"tactical_carbine":
+			return Vector2(0.92, 0.62)
+		&"improvised_sniper":
+			return Vector2(1.34, 0.46)
+		&"grenade_launcher":
+			return Vector2(1.05, 1.05)
+		&"sawed_off_double":
+			return Vector2(0.58, 0.68)
+		&"burst_pistol":
+			return Vector2(0.74, 0.56)
+		&"rusty_minigun":
+			return Vector2(0.54, 0.42)
+		&"scrap_railgun":
+			return Vector2(1.62, 0.52)
+		&"fire_wand":
+			return Vector2(0.92, 0.72)
+		&"fireball":
+			return Vector2(1.18, 1.18)
+		&"ice_lance":
+			return Vector2(1.28, 0.58)
+		&"frost_nova":
+			return Vector2(1.04, 1.04)
+		&"chain_lightning":
+			return Vector2(1.18, 0.70)
+		&"arcane_taser":
+			return Vector2(0.86, 0.62)
+		&"acid_flask":
+			return Vector2(0.96, 0.96)
+		&"toxic_spores":
+			return Vector2(1.22, 1.08)
+		&"seismic_crystal":
+			return Vector2(1.16, 1.04)
+		&"unstable_void":
+			return Vector2(1.24, 1.24)
+		_:
+			return Vector2.ONE
+
+static func _trail_length_for(weapon_id: StringName) -> float:
+	match weapon_id:
+		&"unstable_smg", &"pump_shotgun", &"sawed_off_double", &"burst_pistol":
+			return 9.0
+		&"heavy_revolver", &"tactical_carbine", &"rusty_minigun":
+			return 15.0
+		&"improvised_sniper":
+			return 28.0
+		&"scrap_railgun":
+			return 36.0
+		&"fireball", &"toxic_spores", &"unstable_void":
+			return 24.0
+		&"chain_lightning", &"ice_lance":
+			return 20.0
+		_:
+			return 16.0
+
+static func _trail_width_for(weapon_id: StringName) -> float:
+	match weapon_id:
+		&"unstable_smg", &"rusty_minigun", &"pump_shotgun", &"sawed_off_double":
+			return 2.4
+		&"improvised_sniper", &"scrap_railgun":
+			return 5.2
+		&"grenade_launcher", &"fireball", &"toxic_spores", &"unstable_void":
+			return 6.0
+		&"seismic_crystal", &"frost_nova":
+			return 5.4
+		_:
+			return 3.8
+
+static func _muzzle_size_for(weapon_id: StringName) -> float:
+	match weapon_id:
+		&"unstable_smg":
+			return 5.0
+		&"heavy_revolver", &"burst_pistol":
+			return 7.0
+		&"pump_shotgun":
+			return 13.0
+		&"sawed_off_double":
+			return 15.0
+		&"tactical_carbine", &"ice_lance", &"acid_flask":
+			return 9.0
+		&"improvised_sniper", &"rusty_minigun":
+			return 10.0
+		&"grenade_launcher", &"chain_lightning", &"toxic_spores":
+			return 12.0
+		&"scrap_railgun", &"unstable_void":
+			return 14.0
+		&"fire_wand", &"arcane_taser":
+			return 8.0
+		&"fireball", &"frost_nova", &"seismic_crystal":
+			return 13.0
+		_:
+			return 7.0
+
+static func _rarity_glow_for(rarity: StringName) -> float:
+	match rarity:
+		&"uncommon":
+			return 0.18
+		&"rare":
+			return 0.32
+		&"epic":
+			return 0.46
+		_:
+			return 0.08
+
+static func _rarity_outline_for(rarity: StringName) -> Color:
+	match rarity:
+		&"uncommon":
+			return Color(0.42, 0.90, 1.0, 0.92)
+		&"rare":
+			return Color(0.70, 0.48, 1.0, 0.95)
+		&"epic":
+			return Color(1.0, 0.62, 0.16, 0.98)
+		_:
+			return Color(0.86, 0.92, 0.98, 0.78)

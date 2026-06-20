@@ -1,6 +1,8 @@
 extends Node2D
 class_name PlayerVisual
 
+const WEAPON_VISUAL_RENDERER := preload("res://game/weapons/weapon_visual_renderer.gd")
+
 @export var accent_color: Color = Color(0.18, 0.74, 0.95, 1.0)
 
 var facing_direction: Vector2 = Vector2.RIGHT
@@ -106,6 +108,18 @@ func get_weapon_profile_id() -> StringName:
 		weapon_visual_data.profile_id
 		if weapon_visual_data != null
 		else &"weapon"
+	)
+
+func get_weapon_held_shape_id() -> StringName:
+	return WEAPON_VISUAL_RENDERER.get_shape_id(
+		weapon_visual_data,
+		WEAPON_VISUAL_RENDERER.TARGET_HELD
+	)
+
+func get_weapon_held_body_polygon() -> PackedVector2Array:
+	return WEAPON_VISUAL_RENDERER.get_weapon_body_polygon(
+		weapon_visual_data,
+		WEAPON_VISUAL_RENDERER.TARGET_HELD
 	)
 
 func set_motion(current_velocity: Vector2, max_speed: float) -> void:
@@ -337,185 +351,69 @@ func _draw_weapon(
 	direction: Vector2,
 	fallback_color: Color
 ) -> Vector2:
-	var profile_id := get_weapon_profile_id()
 	var primary := Color(0.10, 0.13, 0.16, 1.0)
 	var secondary := fallback_color.lightened(0.1)
 	var glow := Color(secondary, 0.35)
 	var length := 24.0
 	var width := 6.0
+	var rarity_glow := 0.0
+	var outline := primary.darkened(0.55)
 	if weapon_visual_data != null:
 		primary = weapon_visual_data.primary_color
 		secondary = weapon_visual_data.secondary_color
 		glow = weapon_visual_data.glow_color
 		length = weapon_visual_data.weapon_length
 		width = weapon_visual_data.weapon_width
+		rarity_glow = weapon_visual_data.rarity_glow
+		outline = WEAPON_VISUAL_RENDERER.get_outline_color(weapon_visual_data)
+		if outline.a <= 0.01:
+			outline = primary.darkened(0.55)
+	if high_contrast:
+		secondary = Color.WHITE
+		outline = Color.WHITE
 
-	var perpendicular := direction.orthogonal()
 	var muzzle := hand + direction * length
-	match profile_id:
-		&"rpg_bow":
-			var bow_center := hand + direction * length * 0.42
-			draw_line(
-				bow_center - perpendicular * width * 2.4,
-				bow_center + perpendicular * width * 2.4,
-				primary,
-				width,
-				true
-			)
-			draw_arc(
-				bow_center,
-				width * 3.3,
-				direction.angle() - 0.95,
-				direction.angle() + 0.95,
-				18,
-				secondary,
-				2.0,
-				true
-			)
-			draw_line(
-				hand,
-				muzzle,
-				secondary,
-				1.6,
-				true
-			)
-		&"rpg_axe":
-			draw_line(
-				hand - direction * 3.0,
-				muzzle,
-				primary,
-				width * 0.55,
-				true
-			)
-			draw_colored_polygon(
-				PackedVector2Array([
-					muzzle - direction * 8.0 + perpendicular * width * 1.10,
-					muzzle + perpendicular * width * 0.40,
-					muzzle - direction * 4.0 - perpendicular * width * 1.15,
-					muzzle - direction * 14.0 - perpendicular * width * 0.45,
-					muzzle - direction * 10.0 + perpendicular * width * 0.30
-				]),
-				secondary
-			)
-		&"rpg_staff":
-			draw_line(hand - direction * 4.0, muzzle + direction * 6.0, primary, width * 0.55, true)
-			draw_circle(muzzle + direction * 5.0, width * 1.1, glow)
-			draw_arc(muzzle + direction * 5.0, width * 1.5, 0.0, TAU, 18, secondary, 2.0, true)
-		&"rpg_slingshot":
-			var fork := hand + direction * length * 0.55
-			draw_line(hand, fork, primary, width * 0.7, true)
-			draw_line(fork, muzzle + perpendicular * width, primary, width * 0.45, true)
-			draw_line(fork, muzzle - perpendicular * width, primary, width * 0.45, true)
-			draw_line(muzzle + perpendicular * width, muzzle - perpendicular * width, secondary, 1.8, true)
-		&"rpg_claws":
-			for claw_index in range(3):
-				var offset := (float(claw_index) - 1.0) * width * 0.45
-				draw_line(hand + perpendicular * offset, muzzle + perpendicular * offset + direction * 3.0, secondary, 2.4, true)
-		&"rpg_sword":
-			draw_line(
-				hand - direction * 3.0,
-				hand + direction * 7.0,
-				primary,
-				width * 1.4,
-				true
-			)
-			draw_colored_polygon(
-				PackedVector2Array([
-					hand + direction * 5.0 + perpendicular * width * 0.34,
-					muzzle + perpendicular * width * 0.20,
-					muzzle + direction * 5.0,
-					muzzle - perpendicular * width * 0.20,
-					hand + direction * 5.0 - perpendicular * width * 0.34
-				]),
-				secondary
-			)
-		&"prototype_blaster", &"rift_repeater":
-			var rear := hand - direction * 3.0
-			draw_colored_polygon(
-				PackedVector2Array([
-					rear + perpendicular * width * 0.65,
-					hand + direction * (length * 0.72) + perpendicular * width,
-					muzzle + perpendicular * width * 0.42,
-					muzzle - perpendicular * width * 0.42,
-					hand + direction * (length * 0.72) - perpendicular * width,
-					rear - perpendicular * width * 0.65
-				]),
-				primary
-			)
-			draw_line(
-				hand + perpendicular * width * 0.58,
-				muzzle + perpendicular * width * 0.38,
-				secondary,
-				3.0,
-				true
-			)
-			draw_line(
-				hand - perpendicular * width * 0.58,
-				muzzle - perpendicular * width * 0.38,
-				secondary,
-				3.0,
-				true
-			)
-			draw_circle(
-				hand + direction * length * 0.45,
-				width * 0.42,
-				glow
-			)
-		&"wave_cannon":
-			draw_colored_polygon(
-				PackedVector2Array([
-					hand - direction * 5.0 + perpendicular * width * 0.52,
-					hand + direction * length * 0.56 + perpendicular * width,
-					muzzle + perpendicular * width * 0.48,
-					muzzle - perpendicular * width * 0.48,
-					hand + direction * length * 0.56 - perpendicular * width,
-					hand - direction * 5.0 - perpendicular * width * 0.52
-				]),
-				primary
-			)
-			var core := hand + direction * length * 0.48
-			draw_circle(core, width * 0.62, glow)
-			draw_arc(
-				core,
-				width * 0.56,
-				0.0,
-				TAU,
-				16,
-				secondary,
-				3.0,
-				true
-			)
-			draw_line(
-				hand + direction * length * 0.66,
-				muzzle,
-				secondary,
-				5.0,
-				true
-			)
-		_:
-			draw_colored_polygon(
-				PackedVector2Array([
-					hand + perpendicular * width * 0.5,
-					muzzle + perpendicular * width * 0.42,
-					muzzle - perpendicular * width * 0.42,
-					hand - perpendicular * width * 0.5
-				]),
-				primary
-			)
-			draw_line(
-				hand + direction * 2.0,
-				muzzle - direction * 2.0,
-				secondary,
-				2.5,
-				true
-			)
-			draw_line(
-				hand + direction * 3.0,
-				hand - direction * 2.0 - perpendicular * 7.0,
-				primary.darkened(0.2),
-				4.0,
-				true
-			)
+	var origin := hand + direction * length * 0.45
+	var scale_factor := Vector2(
+		maxf(length / 34.0, 0.42),
+		maxf(width / 9.0, 0.42)
+	)
+	var body := WEAPON_VISUAL_RENDERER.get_oriented_weapon_body_polygon(
+		weapon_visual_data,
+		WEAPON_VISUAL_RENDERER.TARGET_HELD,
+		origin,
+		direction,
+		scale_factor
+	)
+	if body.size() < 3:
+		return muzzle
+
+	if glow.a > 0.01 or rarity_glow > 0.0:
+		draw_circle(
+			origin,
+			maxf(width * 1.35, 5.0),
+			Color(glow, clampf(0.10 + rarity_glow * 0.28, 0.08, 0.32) * glow_intensity)
+		)
+	draw_colored_polygon(body, primary)
+	draw_polyline(
+		_closed_polygon(body),
+		outline,
+		2.4 if high_contrast else 1.7,
+		true
+	)
+	for line in WEAPON_VISUAL_RENDERER.get_oriented_weapon_detail_lines(
+		weapon_visual_data,
+		WEAPON_VISUAL_RENDERER.TARGET_HELD,
+		origin,
+		direction,
+		scale_factor
+	):
+		draw_polyline(
+			line,
+			secondary,
+			2.7 if high_contrast else 1.9,
+			true
+		)
 	return muzzle
 
 func _draw_melee_fire_feedback(
@@ -623,6 +521,12 @@ func _ellipse_points(center: Vector2, radius: Vector2, segments: int) -> PackedV
 		var angle := TAU * float(index) / float(segments)
 		points.append(center + Vector2(cos(angle) * radius.x, sin(angle) * radius.y))
 	return points
+
+func _closed_polygon(points: PackedVector2Array) -> PackedVector2Array:
+	var closed := PackedVector2Array(points)
+	if not closed.is_empty():
+		closed.append(closed[0])
+	return closed
 
 func _draw_character_silhouette_details(
 	character_id: StringName,
