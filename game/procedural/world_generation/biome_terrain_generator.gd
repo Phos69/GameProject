@@ -31,7 +31,12 @@ func generate_layout_for_cell(
 	layout.central_corridor_width = 220.0
 	layout.player_spawn_cell = layout.zone_size / 2
 
-	obstacle_layout_generator.populate_layout(layout, cell, biome)
+	# infected_plains uses the new void-first generation (rocks -> forests -> roads
+	# -> tree borders -> void lottery); other biomes keep the legacy block layout.
+	if biome.biome_id == &"infected_plains":
+		obstacle_layout_generator.populate_layout_voidfirst(layout, cell, biome)
+	else:
+		obstacle_layout_generator.populate_layout(layout, cell, biome)
 	fall_boundary_generator.apply_fall_boundaries(cell, layout)
 	layout.rebuild_terrain_classification(cell)
 	var report := validation_system.validate_layout(cell, layout)

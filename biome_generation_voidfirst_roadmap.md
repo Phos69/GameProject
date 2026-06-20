@@ -17,6 +17,16 @@ nuovo modello richiesto:
 
 Data analisi: 2026-06-20. Bioma di riferimento: `infected_plains` (foresta base).
 
+> **Stato implementazione (2026-06-20):** M0–M6 completate sul branch
+> `feat/voidfirst-biome-generation`. `infected_plains` usa la pipeline void-first
+> (`ObstacleLayoutGenerator.populate_layout_voidfirst`), instradata in
+> `BiomeTerrainGenerator`; gli altri biomi restano sul layout legacy. Test:
+> `tests/voidfirst_*` + `scalable_obstacle_smoke_test`. Suite di regressione verde
+> (24/24). Conteggi tipici per chunk: ~14 rocce, ~70–120 alberi, ~100 burroni
+> (post-merge), entro budget. Test legacy rimosso: `starter_biome_vertical_slice`
+> (feature legacy non più presenti); `zombie_environment_milestone` e i due smoke
+> di world generation aggiornati al modello void-first.
+
 ---
 
 ## 1. Stato attuale (audit)

@@ -236,6 +236,13 @@ func _validate_main_roads(layout: BiomeEnvironmentLayout) -> Dictionary:
 		):
 			has_vertical = true
 			edge_to_edge_count += 1
+	# Void-first roads are carved as road cells (A* around rocks), not full-width
+	# rects. Fall back to a cell-based edge-to-edge check when no rect qualifies.
+	if not (has_horizontal and has_vertical and passes_center):
+		var cell_report := _validate_main_road_cells(layout)
+		has_horizontal = has_horizontal or bool(cell_report.get("horizontal", false))
+		has_vertical = has_vertical or bool(cell_report.get("vertical", false))
+		passes_center = passes_center or bool(cell_report.get("center", false))
 	var failures := PackedStringArray()
 	if not has_horizontal:
 		failures.append("missing_edge_to_edge_horizontal_main_road")
@@ -250,6 +257,39 @@ func _validate_main_roads(layout: BiomeEnvironmentLayout) -> Dictionary:
 		"has_vertical": has_vertical,
 		"passes_center": passes_center,
 		"failures": failures
+	}
+
+func _validate_main_road_cells(layout: BiomeEnvironmentLayout) -> Dictionary:
+	var z := layout.zone_size
+	var west := false
+	var east := false
+	var north := false
+	var south := false
+	var center_road := false
+	var center := z / 2
+	for dy in range(-2, 3):
+		for dx in range(-2, 3):
+			var probe := center + Vector2i(dx, dy)
+			if layout.get_road_tags_at_cell(probe).has(&"main_road"):
+				center_road = true
+	for key_value in layout.road_cell_tags.keys():
+		var key := int(key_value)
+		var cell := Vector2i(key % z.x, int(key / z.x))
+		var raw_tags: Array = layout.road_cell_tags[key] as Array
+		if not (raw_tags.has(&"main_road") or raw_tags.has("main_road")):
+			continue
+		if cell.x <= 2:
+			west = true
+		if cell.x >= z.x - 3:
+			east = true
+		if cell.y <= 2:
+			north = true
+		if cell.y >= z.y - 3:
+			south = true
+	return {
+		"horizontal": west and east,
+		"vertical": north and south,
+		"center": center_road
 	}
 
 func _find_unbridged_water_crossings(

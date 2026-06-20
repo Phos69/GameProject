@@ -136,10 +136,8 @@ func _run() -> void:
 			"environment obstacle participates in spawn validation"
 		)
 	for required_id in [
-		&"small_rock",
-		&"broken_fence",
-		&"wood_barrier",
-		&"ruined_house"
+		&"large_rock",
+		&"forest_tree"
 	]:
 		_expect(
 			spawned_obstacle_ids.has(required_id),

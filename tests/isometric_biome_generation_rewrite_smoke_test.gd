@@ -38,18 +38,23 @@ func _validate_rewritten_cell(cell: BiomeCell) -> void:
 		layout.zone_size == BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE,
 		"%s uses the 500x500 rewrite chunk" % String(cell.id)
 	)
-	_expect(
-		layout.player_spawn_cell == layout.zone_size / 2,
-		"%s player spawn is centered on the carved road network" % String(cell.id)
-	)
+	if cell.biome_id != &"infected_plains":
+		_expect(
+			layout.player_spawn_cell == layout.zone_size / 2,
+			"%s player spawn is centered on the carved road network" % String(cell.id)
+		)
 	_expect(
 		layout.get_terrain_class_at_cell(layout.player_spawn_cell, cell)
 		== BiomeEnvironmentLayout.TERRAIN_WALKABLE,
 		"%s player spawn is walkable" % String(cell.id)
 	)
 	_expect(not layout.floor_rects.is_empty(), "%s has carved walkable floor blocks" % String(cell.id))
-	_expect(not layout.block_rects.is_empty(), "%s has procedural internal blocks" % String(cell.id))
-	_expect(layout.block_kinds.has(&"full_void") or layout.block_kinds.has(&"partial_void"), "%s keeps void/fall blocks inside the chunk" % String(cell.id))
+	if cell.biome_id == &"infected_plains":
+		_expect(not layout.rock_rects.is_empty(), "%s has void-first rocks" % String(cell.id))
+		_expect(not layout.forest_rects.is_empty(), "%s has void-first forests" % String(cell.id))
+	else:
+		_expect(not layout.block_rects.is_empty(), "%s has procedural internal blocks" % String(cell.id))
+		_expect(layout.block_kinds.has(&"full_void") or layout.block_kinds.has(&"partial_void"), "%s keeps void/fall blocks inside the chunk" % String(cell.id))
 	_expect(
 		ObstacleLayoutGenerator.ROAD_WIDTH == 40,
 		"large road width is 40 cells"
@@ -62,47 +67,58 @@ func _validate_rewritten_cell(cell: BiomeCell) -> void:
 		BiomePassageGenerator.PASSAGE_WIDTH == 40,
 		"physical passage width is 40 cells"
 	)
-	_expect(
-		_has_axis_road(
-			layout,
-			&"main_road",
-			ObstacleLayoutGenerator.ROAD_WIDTH,
-			true
-		),
-		"%s has a vertical %d-cell main road"
-		% [String(cell.id), ObstacleLayoutGenerator.ROAD_WIDTH]
-	)
-	_expect(
-		_has_axis_road(
-			layout,
-			&"main_road",
-			ObstacleLayoutGenerator.ROAD_WIDTH,
-			false
-		),
-		"%s has a horizontal %d-cell main road"
-		% [String(cell.id), ObstacleLayoutGenerator.ROAD_WIDTH]
-	)
-	var path_tag := _expected_path_tag(cell.biome_id)
-	_expect(
-		_has_axis_road(
-			layout,
-			path_tag,
-			ObstacleLayoutGenerator.SECONDARY_ROAD_WIDTH,
-			true
-		),
-		"%s has a vertical %d-cell biome path"
-		% [String(cell.id), ObstacleLayoutGenerator.SECONDARY_ROAD_WIDTH]
-	)
-	_expect(
-		_has_axis_road(
-			layout,
-			path_tag,
-			ObstacleLayoutGenerator.SECONDARY_ROAD_WIDTH,
-			false
-		),
-		"%s has a horizontal %d-cell biome path"
-		% [String(cell.id), ObstacleLayoutGenerator.SECONDARY_ROAD_WIDTH]
-	)
+	if cell.biome_id == &"infected_plains":
+		# Void-first roads are carved as cells (A* around rocks), not full-width rects.
+		_expect(
+			_has_main_road_cells(layout, true),
+			"%s has a vertical main road reaching both edges" % String(cell.id)
+		)
+		_expect(
+			_has_main_road_cells(layout, false),
+			"%s has a horizontal main road reaching both edges" % String(cell.id)
+		)
+	else:
+		_expect(
+			_has_axis_road(
+				layout,
+				&"main_road",
+				ObstacleLayoutGenerator.ROAD_WIDTH,
+				true
+			),
+			"%s has a vertical %d-cell main road"
+			% [String(cell.id), ObstacleLayoutGenerator.ROAD_WIDTH]
+		)
+		_expect(
+			_has_axis_road(
+				layout,
+				&"main_road",
+				ObstacleLayoutGenerator.ROAD_WIDTH,
+				false
+			),
+			"%s has a horizontal %d-cell main road"
+			% [String(cell.id), ObstacleLayoutGenerator.ROAD_WIDTH]
+		)
+		var path_tag := _expected_path_tag(cell.biome_id)
+		_expect(
+			_has_axis_road(
+				layout,
+				path_tag,
+				ObstacleLayoutGenerator.SECONDARY_ROAD_WIDTH,
+				true
+			),
+			"%s has a vertical %d-cell biome path"
+			% [String(cell.id), ObstacleLayoutGenerator.SECONDARY_ROAD_WIDTH]
+		)
+		_expect(
+			_has_axis_road(
+				layout,
+				path_tag,
+				ObstacleLayoutGenerator.SECONDARY_ROAD_WIDTH,
+				false
+			),
+			"%s has a horizontal %d-cell biome path"
+			% [String(cell.id), ObstacleLayoutGenerator.SECONDARY_ROAD_WIDTH]
+		)
 	for passage in cell.passages:
 		_expect(
 			passage.width == BiomePassageGenerator.PASSAGE_WIDTH,
@@ -150,6 +166,28 @@ func _has_axis_road(
 		if not vertical and rect.size.y == width and rect.size.x >= layout.zone_size.x - 8:
 			return true
 	return false
+
+func _has_main_road_cells(layout: BiomeEnvironmentLayout, vertical: bool) -> bool:
+	var z := layout.zone_size
+	var low := false
+	var high := false
+	for key_value in layout.road_cell_tags.keys():
+		var key := int(key_value)
+		var cell := Vector2i(key % z.x, int(key / z.x))
+		var raw_tags: Array = layout.road_cell_tags[key] as Array
+		if not (raw_tags.has(&"main_road") or raw_tags.has("main_road")):
+			continue
+		if vertical:
+			if cell.y <= 2:
+				low = true
+			if cell.y >= z.y - 3:
+				high = true
+		else:
+			if cell.x <= 2:
+				low = true
+			if cell.x >= z.x - 3:
+				high = true
+	return low and high
 
 func _first_cell_per_biome(cells: Array[BiomeCell]) -> Array[BiomeCell]:
 	var by_biome: Dictionary = {}

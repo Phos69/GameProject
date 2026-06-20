@@ -144,11 +144,68 @@ func populate_layout_voidfirst(
 	_place_rocks(layout, biome, rng)
 	_place_forests(layout, biome, rng)
 	_add_voidfirst_roads(layout, rng)
+	_connect_passages_to_roads(layout, cell)
+	_choose_voidfirst_spawn(layout)
 	_add_voidfirst_paths(layout, rng)
 	_clear_trees_on_routes(layout)
+	_add_connected_border_walls(layout, cell, biome)
 	_line_roads_with_trees(layout)
 	_resolve_void_lottery(layout, rng)
+	_add_voidfirst_crates(layout, biome)
 	_update_generation_summary(layout, biome)
+
+# Place crates on the road cross around the spawn so they are always walkable and
+# comfortably reachable from the party start.
+func _add_voidfirst_crates(
+	layout: BiomeEnvironmentLayout,
+	biome: BiomeDefinition
+) -> void:
+	var crate_ids := _crate_ids(biome.biome_id)
+	var anchor := layout.player_spawn_cell
+	var offsets: Array[Vector2i] = [
+		Vector2i(-28, 0), Vector2i(28, 0), Vector2i(0, -28), Vector2i(0, 28)
+	]
+	for index in range(offsets.size()):
+		_add_crate(layout, crate_ids[index % crate_ids.size()], anchor + offsets[index])
+
+func _voidfirst_center_reserved(layout: BiomeEnvironmentLayout) -> Rect2i:
+	# Keep the chunk centre clear of rocks so the main-road cross, player spawn and
+	# crates always sit on walkable road.
+	var center := layout.zone_size / 2
+	var half := 38
+	return Rect2i(center - Vector2i(half, half), Vector2i(half * 2, half * 2))
+
+# Connect every passage to the central road network with an A* route around rocks,
+# so each passage is reachable from spawn regardless of the void lottery.
+func _connect_passages_to_roads(
+	layout: BiomeEnvironmentLayout,
+	cell: BiomeCell
+) -> void:
+	if cell.passages.is_empty():
+		return
+	var astar := _build_road_astar(layout)
+	var center := layout.zone_size / 2
+	for passage in cell.passages:
+		var anchor := _passage_inner_anchor(passage, layout.zone_size)
+		_carve_astar_road(layout, astar, anchor, center, &"broken_street")
+
+# Pick a guaranteed-walkable spawn: the centre if it is road, else the nearest
+# road cell to the centre.
+func _choose_voidfirst_spawn(layout: BiomeEnvironmentLayout) -> void:
+	var center := layout.zone_size / 2
+	if layout.has_road_cell(center):
+		layout.player_spawn_cell = center
+		return
+	var limit := maxi(layout.zone_size.x, layout.zone_size.y)
+	for radius in range(1, limit):
+		for dy in range(-radius, radius + 1):
+			for dx in range(-radius, radius + 1):
+				if absi(dx) != radius and absi(dy) != radius:
+					continue
+				var candidate := center + Vector2i(dx, dy)
+				if layout.has_road_cell(candidate):
+					layout.player_spawn_cell = candidate
+					return
 
 # Carve the mandatory inter-biome passage corridors as walkable connectors so the
 # later rock/forest passes avoid them and the road router can hook onto them.
@@ -205,6 +262,8 @@ func _try_place_rocks(
 			Vector2i(side, side)
 		)
 		var padded := _inflate_rect(rect, gap)
+		if padded.intersects(_voidfirst_center_reserved(layout)):
+			continue
 		if _rect_overlaps_passage_corridor(layout, padded):
 			continue
 		if _intersects_any(padded, layout.rock_rects):
@@ -280,6 +339,8 @@ func _fill_forests_with_trees(
 # A tree may be placed only on a clear cell: never overlapping an existing
 # obstacle (rocks win, and trees never stack) nor a passage corridor.
 func _can_place_tree(layout: BiomeEnvironmentLayout, rect: Rect2i) -> bool:
+	if rect.intersects(_voidfirst_center_reserved(layout)):
+		return false
 	if _intersects_any(rect, layout.obstacle_rects):
 		return false
 	if _rect_overlaps_passage_corridor(layout, rect):
@@ -1686,6 +1747,7 @@ func _wall_gaps_for_side(
 ) -> Array[Vector2i]:
 	var gaps := _passage_gaps_for_side(cell, side, axis_limit)
 	gaps.append_array(_road_gaps_for_side(layout, side, axis_limit))
+	gaps.append_array(_road_cell_gaps_for_side(layout, side, axis_limit))
 	gaps.append_array(_void_gaps_for_side(layout, side, axis_limit))
 	gaps.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return a.x < b.x)
 	var merged: Array[Vector2i] = []
@@ -1730,6 +1792,40 @@ func _road_gaps_for_side(
 		finish = clampi(finish + 2, 0, axis_limit)
 		if finish > start:
 			gaps.append(Vector2i(start, finish))
+	return gaps
+
+# Void-first roads are carved as road cells (not rects), so the wall must also open
+# where road cells reach the side. Scans the inner-edge line and groups contiguous
+# road-cell runs into gaps.
+func _road_cell_gaps_for_side(
+	layout: BiomeEnvironmentLayout,
+	side: StringName,
+	axis_limit: int
+) -> Array[Vector2i]:
+	var gaps: Array[Vector2i] = []
+	if layout.road_cell_tags.is_empty():
+		return gaps
+	var probe := BORDER_THICKNESS
+	var run_start := -1
+	for axis in range(axis_limit):
+		var cell: Vector2i
+		match side:
+			&"north":
+				cell = Vector2i(axis, probe)
+			&"south":
+				cell = Vector2i(axis, layout.zone_size.y - 1 - probe)
+			&"west":
+				cell = Vector2i(probe, axis)
+			_:
+				cell = Vector2i(layout.zone_size.x - 1 - probe, axis)
+		if layout.has_road_cell(cell):
+			if run_start < 0:
+				run_start = axis
+		elif run_start >= 0:
+			gaps.append(Vector2i(clampi(run_start - 2, 0, axis_limit), clampi(axis + 2, 0, axis_limit)))
+			run_start = -1
+	if run_start >= 0:
+		gaps.append(Vector2i(clampi(run_start - 2, 0, axis_limit), axis_limit))
 	return gaps
 
 func _void_gaps_for_side(

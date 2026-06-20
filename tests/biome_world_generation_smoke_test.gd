@@ -112,8 +112,8 @@ func _run() -> void:
 			"starting biome is generated as 500x500 logical cells"
 		)
 		_expect(
-			_has_large_house(base_layout),
-			"base biome contains large blocking houses"
+			not base_layout.rock_rects.is_empty() and not base_layout.forest_rects.is_empty(),
+			"base biome (void-first) contains rocks and forests"
 		)
 		_expect(
 			(not base_layout.road_rects.is_empty() or not base_layout.get_road_cells().is_empty())
