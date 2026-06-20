@@ -436,14 +436,15 @@ func _resolve_forest_tile_data(
 	var route_data := _resolve_route_tile_data(layout, cell, FOREST_BIOME_ID, biome_cell)
 	if not route_data.is_empty():
 		return route_data
-	if terrain_class == BiomeEnvironmentLayout.TERRAIN_WALKABLE:
+	# Obstacle-occupied cells render with the exact same floor logic as the
+	# walkable ground around them (block floor tag, tall-grass transitions, …) so
+	# the footprint never reads as a distinct "hitbox" patch. The solid asset on
+	# top is what marks the obstacle; the ground beneath it stays uniform.
+	if (
+		terrain_class == BiomeEnvironmentLayout.TERRAIN_WALKABLE
+		or terrain_class == BiomeEnvironmentLayout.TERRAIN_OBSTACLE
+	):
 		return _resolve_forest_floor_tile_data(layout, cell, quality_preset, biome_cell)
-	if terrain_class == BiomeEnvironmentLayout.TERRAIN_OBSTACLE:
-		return _tile_data(
-			_resolve_forest_grass_variant(layout, cell, quality_preset),
-			TILE_SECTION_TERRAIN,
-			&"forest_grass"
-		)
 	return {}
 
 func _resolve_forest_floor_tile_data(

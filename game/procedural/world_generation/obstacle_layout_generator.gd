@@ -31,12 +31,14 @@ const GENERATED_OBSTACLE_CATEGORIES: Dictionary = {
 	&"dense_vegetation": &"dense_vegetation",
 	&"deep_water_boundary": &"border",
 	&"fallen_log": &"log",
+	&"forest_tree": &"tree",
 	&"ice_boundary": &"border",
 	&"ice_block": &"rock",
 	&"ice_rock": &"rock",
 	&"industrial_fence": &"barrier",
 	&"lab_block": &"building",
 	&"lab_wall": &"barrier",
+	&"large_rock": &"rock",
 	&"lava_boundary": &"border",
 	&"marsh_log": &"log",
 	&"pipe_stack": &"barrier",
@@ -85,6 +87,7 @@ func populate_layout(
 	_add_block_props(layout, biome, rng)
 	_ensure_starter_house_obstacle(layout, biome, rng)
 	_ensure_starter_dense_obstacle(layout, biome, rng)
+	_ensure_starter_3x3_obstacles(layout, biome)
 	_update_generation_summary(layout, biome)
 
 func repair_layout(layout: BiomeEnvironmentLayout) -> void:
@@ -815,6 +818,111 @@ func _ensure_starter_dense_obstacle(
 					rng.randf_range(-0.10, 0.10)
 				):
 					return
+
+func _ensure_starter_3x3_obstacles(
+	layout: BiomeEnvironmentLayout,
+	biome: BiomeDefinition
+) -> void:
+	if biome == null or biome.biome_id != &"infected_plains":
+		return
+	var preferred_kinds: Dictionary = {
+		&"forest_tree": [&"forest", &"dense_vegetation", &"open", &"ruins"],
+		&"large_rock": [&"large_obstacle", &"ruins", &"open", &"forest"]
+	}
+	for obstacle_id_value in [&"forest_tree", &"large_rock"]:
+		var obstacle_id := obstacle_id_value as StringName
+		if layout.obstacle_ids.has(obstacle_id):
+			continue
+		var placed := false
+		for preferred_kind_value in preferred_kinds[obstacle_id] as Array:
+			var preferred_kind := preferred_kind_value as StringName
+			for index in range(layout.block_rects.size()):
+				var block_kind := (
+					layout.block_kinds[index]
+					if index < layout.block_kinds.size()
+					else &"open"
+				)
+				if block_kind != preferred_kind:
+					continue
+				if _place_feature_obstacle_in_block(
+					layout,
+					obstacle_id,
+					layout.block_rects[index]
+				):
+					placed = true
+					break
+			if placed:
+				break
+		if placed:
+			continue
+		_place_feature_obstacle_at_fallback(layout, obstacle_id)
+
+func _place_feature_obstacle_in_block(
+	layout: BiomeEnvironmentLayout,
+	obstacle_id: StringName,
+	block_rect: Rect2i
+) -> bool:
+	var footprint := IsometricEnvironmentManifest.get_shared().get_footprint_tiles(
+		obstacle_id
+	)
+	var margin := 6
+	if block_rect.size.x < footprint.x + margin * 2 or block_rect.size.y < footprint.y + margin * 2:
+		return false
+	var max_position := block_rect.position + block_rect.size - footprint - Vector2i.ONE * margin
+	var center_position := block_rect.position + (block_rect.size - footprint) / 2
+	var candidates: Array[Vector2i] = [
+		block_rect.position + Vector2i.ONE * margin,
+		Vector2i(max_position.x, block_rect.position.y + margin),
+		Vector2i(block_rect.position.x + margin, max_position.y),
+		max_position,
+		center_position
+	]
+	for position in candidates:
+		var rect := Rect2i(position, footprint)
+		if not _rect_is_walkable(layout, rect):
+			continue
+		if _add_obstacle_if_clear(layout, obstacle_id, rect, &"rectangle", 0.0):
+			return true
+	return false
+
+func _place_feature_obstacle_at_fallback(
+	layout: BiomeEnvironmentLayout,
+	obstacle_id: StringName
+) -> bool:
+	var footprint := IsometricEnvironmentManifest.get_shared().get_footprint_tiles(
+		obstacle_id
+	)
+	var ratios: Array[Vector2] = [
+		Vector2(0.16, 0.16),
+		Vector2(0.84, 0.16),
+		Vector2(0.16, 0.84),
+		Vector2(0.84, 0.84),
+		Vector2(0.50, 0.16),
+		Vector2(0.16, 0.50),
+		Vector2(0.84, 0.50),
+		Vector2(0.50, 0.84)
+	]
+	for ratio in ratios:
+		var center := Vector2i(
+			roundi(float(layout.zone_size.x) * ratio.x),
+			roundi(float(layout.zone_size.y) * ratio.y)
+		)
+		var rect := Rect2i(center - footprint / 2, footprint)
+		if not _rect_is_walkable(layout, rect):
+			continue
+		if _add_obstacle_if_clear(layout, obstacle_id, rect, &"rectangle", 0.0):
+			return true
+	return false
+
+func _rect_is_walkable(layout: BiomeEnvironmentLayout, rect: Rect2i) -> bool:
+	for y in range(rect.position.y, rect.end.y):
+		for x in range(rect.position.x, rect.end.x):
+			if (
+				layout.get_terrain_class_at_cell(Vector2i(x, y))
+				!= BiomeEnvironmentLayout.TERRAIN_WALKABLE
+			):
+				return false
+	return true
 
 func _ensure_starter_house_obstacle(
 	layout: BiomeEnvironmentLayout,

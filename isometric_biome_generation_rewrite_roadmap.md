@@ -167,7 +167,8 @@ Regressioni rivalidate il 2026-06-18:
 
 ## Milestone R3 - Asset e blocchi interni finalizzati
 
-Stato: in corso (R3.1 props piccoli, R3.2 vertical slice starter completati).
+Stato: in corso (R3.1 props piccoli, R3.2 vertical slice starter e R3.3
+ostacoli 3x3 completati).
 
 Obiettivo:
 
@@ -209,7 +210,20 @@ R3.2 implementato (vertical slice `infected_plains`):
   `IsometricSvgTextureLoader`.
 - Nuovo `tests/starter_biome_vertical_slice_smoke_test.gd` - PASS.
 
-Resta (R3.3+):
+R3.3 implementato (albero e roccia 3x3):
+
+- Aggiunti `forest_tree` e `large_rock` come asset PNG trasparenti originali,
+  entrambi con `footprint_slots = 3x3` e `footprint_tiles = 12x12` nel manifest.
+- Entrambi usano collisione rettangolare sull'intero footprint, bloccano
+  movimento e proiettili e mantengono anchor `bottom_center` per Y-sort.
+- `ObstacleLayoutGenerator` garantisce un esemplare di ciascun ID nella
+  `infected_plains`, posizionato solo su terreno walkable e fuori da strade,
+  altri ostacoli, hazard, fall zone e crate.
+- Aggiunti `tests/obstacle_3x3_smoke_test.gd` e
+  `tests/obstacle_3x3_visual_qa.gd`; gli screenshot pulito e footprint sono in
+  `build/qa/obstacle_3x3/`.
+
+Resta (R3.4+):
 
 - Art dedicata per lampioni/casse decorative e ulteriori props soft: richiede nuovi id con
   contratto `object_scenes` completo (asset SVG, source, license, attribution,

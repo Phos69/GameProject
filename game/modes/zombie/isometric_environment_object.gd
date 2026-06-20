@@ -15,12 +15,21 @@ const MISSING_ASSET_FALLBACK_STATUSES: Array[String] = [
 	"deprecated"
 ]
 
+const CONTENT_ALPHA_THRESHOLD := 0.08
+
 var asset_path: String = ""
 var anchor_id: StringName = &"iso_floor_center"
 var asset_status: String = ""
 var asset_sprite: Sprite2D
 var damage_overlay: Sprite2D
 var procedural_fallback_active: bool = false
+
+# Opaque-content metrics (bounds + width profile, texture pixels) keyed by
+# asset_path. The same asset always loads at one deterministic size, so it is
+# scanned once and reused across every instance instead of re-reading the image
+# per object. The profile is the cumulative-max opaque half-width measured from
+# the art's bottom upward, used to seat the footprint-wide row on the tile.
+static var _content_metrics_cache: Dictionary = {}
 
 func configure(
 	next_obstacle_id: StringName,
@@ -190,19 +199,156 @@ func _position_asset_sprite() -> void:
 	# Scaling is deterministic and comes from the manifest footprint/visual
 	# height contract. Generator randomness never changes the sprite dimensions.
 	asset_sprite.scale = Vector2.ONE * clampf(scale_factor, 0.25, 4.0)
-	var visual_size := texture_size * asset_sprite.scale
+	# Plant the *visible* art on the floor, not the raw canvas. High-res source
+	# PNGs (and SVGs) carry transparent padding, so resting the canvas bottom on
+	# floor_y would float the art above its tile. Anchoring on the opaque bounds
+	# keeps every asset seated on iso_floor_center regardless of that padding.
+	var metrics := _get_content_metrics(asset_sprite.texture)
+	var content_rect := metrics.get("bounds", Rect2(Vector2.ZERO, texture_size)) as Rect2
+	var canvas_center := texture_size * 0.5
+	var content_center_x := content_rect.position.x + content_rect.size.x * 0.5
+	var content_bottom := content_rect.position.y + content_rect.size.y
+	var anchor_x := -(content_center_x - canvas_center.x) * asset_sprite.scale.x
+	var content_bottom_local := (content_bottom - canvas_center.y) * asset_sprite.scale.y
+	var content_height_local := content_rect.size.y * asset_sprite.scale.y
 	var floor_y := clampf(sort_offset, 0.0, obstacle_size.y * 0.5 + 12.0)
+	# Seat the asset so the row where the art first spans the footprint width sits
+	# on the collision front edge (obstacle_size.y * 0.5 — the square rect built in
+	# BiomeObstacle._rebuild_collision). The narrow "skirt" below that row (tree
+	# roots, rock base) spills past the edge, so the art blankets the whole
+	# occupied tile and the obstacle-terrain "hitbox" patch never peeks out. Wide
+	# assets (no skirt) just rest on the front edge.
+	var skirt_height := _content_skirt_height(metrics, obstacle_size.x * 0.5, asset_sprite.scale.x)
+	var skirt_local := minf(skirt_height * asset_sprite.scale.y, obstacle_size.y * 0.35)
+	var base_y := maxf(
+		obstacle_size.y * 0.5 + skirt_local,
+		floor_y + maxf(obstacle_size.y * 0.25, 6.0)
+	)
 	match anchor_id:
 		&"bottom_center", &"iso_floor_center":
-			asset_sprite.position = Vector2(0.0, floor_y - visual_size.y * 0.5)
+			asset_sprite.position = Vector2(anchor_x, base_y - content_bottom_local)
 		&"edge_aligned":
-			asset_sprite.position = Vector2(0.0, floor_y - visual_size.y * 0.42)
+			asset_sprite.position = Vector2(
+				anchor_x, base_y - content_bottom_local - content_height_local * 0.08
+			)
 		_:
-			asset_sprite.position = Vector2(0.0, floor_y - visual_size.y * 0.34)
+			asset_sprite.position = Vector2(
+				anchor_x, base_y - content_bottom_local - content_height_local * 0.16
+			)
 	if damage_overlay != null:
 		damage_overlay.texture = asset_sprite.texture
 		damage_overlay.scale = asset_sprite.scale
 		damage_overlay.position = asset_sprite.position
+
+func _get_content_metrics(texture: Texture2D) -> Dictionary:
+	var texture_size := texture.get_size()
+	var full := {
+		"bounds": Rect2(Vector2.ZERO, texture_size),
+		"profile": PackedFloat32Array(),
+		"step": 1
+	}
+	if texture_size.x <= 0.0 or texture_size.y <= 0.0:
+		return full
+	if not asset_path.is_empty() and _content_metrics_cache.has(asset_path):
+		return _content_metrics_cache[asset_path] as Dictionary
+	var image := texture.get_image()
+	var metrics := full
+	if image != null and image.get_width() > 0 and image.get_height() > 0:
+		var scanned := _scan_content_metrics(image)
+		var bounds := scanned.get("bounds", Rect2()) as Rect2
+		if bounds.size.x > 0.0 and bounds.size.y > 0.0:
+			metrics = scanned
+	if not asset_path.is_empty():
+		_content_metrics_cache[asset_path] = metrics
+	return metrics
+
+# Texture-pixel height of the tapered "skirt" below the lowest row that already
+# spans the footprint width. `target_half_width` is the on-screen half-width the
+# art must cover; dividing by the sprite scale converts it to texture pixels.
+func _content_skirt_height(
+	metrics: Dictionary,
+	target_half_width: float,
+	scale_x: float
+) -> float:
+	var profile := metrics.get("profile", PackedFloat32Array()) as PackedFloat32Array
+	var step := int(metrics.get("step", 1))
+	if profile.is_empty() or step <= 0 or scale_x <= 0.0:
+		return 0.0
+	var needed := target_half_width / scale_x
+	for index in range(profile.size()):
+		if profile[index] >= needed:
+			return float(index * step)
+	return float((profile.size() - 1) * step)
+
+func _scan_content_metrics(image: Image) -> Dictionary:
+	if image.is_compressed():
+		image = image.duplicate()
+		image.decompress()
+	var width := image.get_width()
+	var height := image.get_height()
+	# Sub-sample very large source art so the one-time scan stays cheap; the
+	# resulting bounds are padded by one step to absorb stride undershoot.
+	var step := maxi(1, int(round(maxf(float(width), float(height)) / 256.0)))
+	var row_min := PackedInt32Array()
+	var row_max := PackedInt32Array()
+	var min_x := width
+	var min_y := height
+	var max_x := -1
+	var max_y := -1
+	var y := 0
+	while y < height:
+		var rmin := width
+		var rmax := -1
+		var x := 0
+		while x < width:
+			if image.get_pixel(x, y).a > CONTENT_ALPHA_THRESHOLD:
+				rmin = mini(rmin, x)
+				rmax = maxi(rmax, x)
+			x += step
+		row_min.append(rmin)
+		row_max.append(rmax)
+		if rmax >= 0:
+			min_x = mini(min_x, rmin)
+			max_x = maxi(max_x, rmax)
+			min_y = mini(min_y, y)
+			max_y = maxi(max_y, y)
+		y += step
+	if max_x < min_x or max_y < min_y:
+		return {
+			"bounds": Rect2(Vector2.ZERO, Vector2(float(width), float(height))),
+			"profile": PackedFloat32Array(),
+			"step": step
+		}
+	var b_min_x := maxi(0, min_x - step)
+	var b_min_y := maxi(0, min_y - step)
+	var b_max_x := mini(width - 1, max_x + step)
+	var b_max_y := mini(height - 1, max_y + step)
+	var bounds := Rect2(
+		Vector2(float(b_min_x), float(b_min_y)),
+		Vector2(float(b_max_x - b_min_x + 1), float(b_max_y - b_min_y + 1))
+	)
+	var center_x := (float(b_min_x) + float(b_max_x)) * 0.5
+	# Cumulative-max half-width from the opaque bottom upward (one bucket per
+	# scan step). Monotonic by construction, so a single forward search finds the
+	# first row that spans a requested width.
+	var bucket_count := int((max_y - min_y) / step) + 1
+	var profile := PackedFloat32Array()
+	profile.resize(bucket_count)
+	var running := 0.0
+	var row_index := row_min.size() - 1
+	while row_index >= 0:
+		var scan_y := row_index * step
+		if row_max[row_index] >= 0 and scan_y <= max_y:
+			var half := maxf(center_x - float(row_min[row_index]), float(row_max[row_index]) - center_x)
+			running = maxf(running, half)
+			var bucket := clampi(int((max_y - scan_y) / step), 0, bucket_count - 1)
+			profile[bucket] = maxf(profile[bucket], running)
+		row_index -= 1
+	var carry := 0.0
+	for index in range(bucket_count):
+		carry = maxf(carry, profile[index])
+		profile[index] = carry
+	return { "bounds": bounds, "profile": profile, "step": step }
 
 func _update_damage_overlay() -> void:
 	if damage_overlay == null:

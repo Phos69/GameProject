@@ -27,13 +27,16 @@ allargare la collisione.
 
 ## Asset e anchor
 
-Gli SVG sono organizzati per categoria e riportano il footprint nel filename e
-nel metadata `data-footprint-slots`, per esempio:
+Gli asset sono organizzati per categoria e riportano il footprint nel filename.
+Gli SVG dichiarano anche il metadata `data-footprint-slots`; i PNG finali
+mantengono sorgente, licenza e attribuzione nel manifest. Esempi:
 
 - `objects/rocks/rock_1x1.svg`;
 - `objects/fences/fence_2x1.svg`;
 - `objects/trees/log_3x1.svg`;
 - `objects/trees/dense_forest_3x3.svg`;
+- `objects/trees/forest_tree_3x3.png`;
+- `objects/rocks/large_rock_3x3.png`;
 - `objects/houses/ruined_house_4x4.svg`;
 - `objects/houses/lab_block_6x6.svg`.
 
@@ -45,6 +48,12 @@ world-space restano in Y-sort con `z_index = 0` e posizione derivata dal centro
 del rettangolo logico; `sort_offset` ancora lo sprite al pavimento. Tetti e chiome
 possono cosi coprire gli attori dietro senza cambiare ordine durante il movimento.
 
+`forest_tree` e `large_rock` sono i riferimenti finali per ostacoli singoli
+`3x3`: occupano nove slot (dodici per dodici celle logiche), usano collisione
+rettangolare sull'intero footprint e bloccano sia movimento sia proiettili. Il
+generatore starter li colloca solo su terreno walkable libero e ne garantisce
+almeno uno per tipo nella Pianura Infetta.
+
 Void/fall zone usano contratti `void_tiles`/cliff separati e non sono ostacoli
 solidi. Pareti, case, vegetazione e rocce usano invece `object_scenes` e dichiarano
 esplicitamente `blocks_movement` e `blocks_projectiles`.
@@ -53,7 +62,7 @@ esplicitamente `blocks_movement` e `blocks_projectiles`.
 
 1. Aggiungere l'ID a `objects`, con categoria, `footprint_tiles`,
    `footprint_slots`, `visual_height_tiles`, collisione e blocchi.
-2. Aggiungere lo stesso ID a `object_scenes`, con SVG, anchor e biomi ammessi.
+2. Aggiungere lo stesso ID a `object_scenes`, con SVG/PNG, anchor e biomi ammessi.
 3. Usare un filename `snake_case` con suffisso `<larghezza>x<altezza>`.
 4. Generare l'asset mancante:
 
@@ -64,6 +73,11 @@ esplicitamente `blocks_movement` e `blocks_projectiles`.
 5. Aggiungere l'ID al catalogo del generatore/bioma solo se deve essere piazzato.
    Il generatore verifica lo spazio usando gia il footprint canonico.
 6. Eseguire lo smoke del contratto e quello della pipeline asset.
+
+Per un PNG, il canvas sorgente puo essere piu grande della dimensione nativa:
+`IsometricEnvironmentObject` applica il downscale deterministico derivato da
+footprint e `visual_height_tiles`; corner trasparenti e copertura minima restano
+obbligatori.
 
 ## Debug e verifica
 
@@ -85,7 +99,9 @@ Smoke automatici:
 
 ```text
 godot --headless --path . --script res://tests/obstacle_rendering_contract_smoke_test.gd
+godot --headless --path . --script res://tests/obstacle_3x3_smoke_test.gd
 godot --headless --path . --script res://tests/obstacle_asset_visual_qa.gd
+godot --path . --rendering-method gl_compatibility --script res://tests/obstacle_3x3_visual_qa.gd
 godot --headless --path . --script res://tests/isometric_environment_manifest_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_10_object_asset_smoke_test.gd
 godot --headless --path . --script res://tests/starter_biome_vertical_slice_smoke_test.gd

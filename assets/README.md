@@ -57,6 +57,11 @@ Per ogni contratto il loader normalizza `asset_path`, `status`, `biome_ids`,
 Gli status ammessi sono `final`, `base_complete`, `needs_polish`,
 `procedural_fallback`, `needs_asset` e `deprecated`.
 
+Gli `object_scenes` possono usare SVG generati oppure PNG/WebP finali. Il tool
+SVG non riscrive i raster autorati: in `--check` ne verifica comunque la
+presenza, mentre trasparenza e copertura sono validate da
+`tests/obstacle_asset_visual_qa.gd`.
+
 - Il loader `game/modes/zombie/isometric_environment_manifest.gd` legge e valida
   il manifest; `ObstacleSystem` lo usa per `sort_offset` e flag di blocco e,
   dalla Milestone 10.5, passa gli `object_scenes` a

@@ -1095,6 +1095,12 @@ QA visuale e runtime da eseguire dopo modifiche a `ObstacleSystem`,
 - Confermare che case, cabine, laboratori, recinti, muri, barili, relitti,
   tronchi, ponti e crate abbiano silhouette diverse e non usino piu la stessa
   casetta placeholder generica.
+- Nella Pianura Infetta individuare `forest_tree` e `large_rock`: ciascuno deve
+  coprire una base isometrica `3x3`, restare nitido e non mostrare aloni del
+  chroma key.
+- Attivare `F9` e verificare che i nove slot evidenziati coincidano con la base;
+  provare tutti i lati con player e proiettili, senza passaggi attraverso angoli
+  o collisioni esterne alla grafica.
 - Confermare che `tests/milestone_10_object_asset_smoke_test.gd` passi anche il
   confronto alpha tra `ruined_house` e `toxic_barrel`, inclusa la regressione
   sul fallback SVG temporaneo.
@@ -1110,6 +1116,8 @@ QA visuale e runtime da eseguire dopo modifiche a `ObstacleSystem`,
 
 ```text
 godot --headless --path . --script res://tests/milestone_10_object_asset_smoke_test.gd
+godot --headless --path . --script res://tests/obstacle_3x3_smoke_test.gd
+godot --path . --rendering-method gl_compatibility --script res://tests/obstacle_3x3_visual_qa.gd
 godot --headless --path . --script res://tests/biome_obstacle_generation_smoke_test.gd
 godot --headless --path . --script res://tests/isometric_environment_manifest_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_4_obstacle_collision_smoke_test.gd

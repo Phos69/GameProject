@@ -53,6 +53,12 @@ func _run() -> void:
 			if not exists:
 				_fail("missing generated asset: %s" % asset_path)
 			continue
+		if not asset_path.ends_with(".svg"):
+			if not exists:
+				_fail("missing authored raster asset: %s" % asset_path)
+			else:
+				skipped_final += 1
+			continue
 		if exists and (not overwrite or status == "final"):
 			if status == "final":
 				skipped_final += 1
@@ -93,8 +99,10 @@ func _collect_asset_targets(manifest: IsometricEnvironmentManifest) -> Array[Dic
 			var asset_path := String(contract.get("asset_path", ""))
 			if asset_path.ends_with(".svg"):
 				result.append(contract)
+			elif asset_path.ends_with(".png") or asset_path.ends_with(".webp"):
+				result.append(contract)
 			elif not asset_path.is_empty():
-				_fail("%s/%s asset_path is not an SVG: %s" % [String(section), String(asset_id), asset_path])
+				_fail("%s/%s asset_path has an unsupported format: %s" % [String(section), String(asset_id), asset_path])
 	return result
 
 func _ensure_parent_dir(absolute_path: String) -> void:

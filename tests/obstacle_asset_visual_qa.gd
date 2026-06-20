@@ -3,6 +3,7 @@ extends SceneTree
 const OUTPUT_DIR := "res://build/qa/obstacle_assets"
 const ASSET_IDS: Array[StringName] = [
 	&"small_rock",
+	&"large_rock",
 	&"broken_fence",
 	&"ice_block",
 	&"metal_wreck",
@@ -11,6 +12,7 @@ const ASSET_IDS: Array[StringName] = [
 	&"abandoned_car",
 	&"burned_car",
 	&"ice_rock",
+	&"forest_tree",
 	&"dense_vegetation",
 	&"ruined_house",
 	&"abandoned_house",
@@ -42,23 +44,36 @@ func _validate_asset(
 ) -> void:
 	var contract := manifest.get_object_asset_contract(obstacle_id)
 	var asset_path := String(contract.get("asset_path", ""))
-	var file := FileAccess.open(asset_path, FileAccess.READ)
-	_expect(file != null, "%s SVG opens" % String(obstacle_id))
-	if file == null:
+	_expect(FileAccess.file_exists(asset_path), "%s asset exists" % String(obstacle_id))
+	if not FileAccess.file_exists(asset_path):
 		return
-	var source := file.get_as_text()
-	file.close()
 	var image := Image.new()
-	var load_error := int(image.call("load_svg_from_string", source, 1.0))
-	_expect(load_error == OK, "%s SVG rasterizes" % String(obstacle_id))
+	var load_error := ERR_FILE_UNRECOGNIZED
+	if asset_path.ends_with(".svg"):
+		var file := FileAccess.open(asset_path, FileAccess.READ)
+		_expect(file != null, "%s SVG opens" % String(obstacle_id))
+		if file == null:
+			return
+		var source := file.get_as_text()
+		file.close()
+		load_error = int(image.call("load_svg_from_string", source, 1.0))
+	else:
+		load_error = image.load(ProjectSettings.globalize_path(asset_path))
+	_expect(load_error == OK, "%s asset rasterizes" % String(obstacle_id))
 	if load_error != OK:
 		return
 	var native_size := manifest.get_native_visual_size(obstacle_id)
 	var expected_size := Vector2i(roundi(native_size.x), roundi(native_size.y))
-	_expect(
-		image.get_size() == expected_size,
-		"%s native SVG dimensions match footprint and visual height" % String(obstacle_id)
-	)
+	if asset_path.ends_with(".svg"):
+		_expect(
+			image.get_size() == expected_size,
+			"%s native SVG dimensions match footprint and visual height" % String(obstacle_id)
+		)
+	else:
+		_expect(
+			image.get_width() >= expected_size.x and image.get_height() >= expected_size.y,
+			"%s source PNG supports deterministic runtime downscaling" % String(obstacle_id)
+		)
 	_expect(_has_transparent_corners(image), "%s keeps a transparent canvas" % String(obstacle_id))
 	_expect(_opaque_coverage(image) >= 0.06, "%s has a substantial finished silhouette" % String(obstacle_id))
 	var output_path := output_absolute.path_join("%s.png" % String(obstacle_id))

@@ -701,6 +701,10 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
   `asset_path` `object_scenes`, ancorato al pavimento e ordinato con
   `sort_offset`. `BiomeObstacle` resta adapter/fallback quando il contratto
   dichiara esplicitamente un fallback procedurale.
+- Il loader accetta SVG e texture raster importate. `forest_tree` e
+  `large_rock` usano PNG trasparenti originali; la dimensione sorgente non
+  cambia il gameplay perche il runtime scala sempre al target deterministico
+  prodotto da footprint e `visual_height_tiles`.
 - In streaming multi-regione, `ObstacleSystem` registra gli ostacoli creati da
   `WorldRegionStreamer`; le query `is_position_blocked` leggono tutti i nodi
   attivi nei gruppi `environment_obstacles`/`spawn_blockers`, inclusi i vicini.
@@ -728,6 +732,11 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
   celle realmente occupate. `ObstacleLayoutGenerator` normalizza ogni oggetto
   non-border al footprint manifest prima delle query di spazio; posizione,
   collisione e base visiva derivano poi dallo stesso rettangolo.
+- Gli ostacoli `forest_tree` e `large_rock` dichiarano entrambi slot `3x3`
+  (`12x12` celle), collisione `rectangle` e blocchi movimento/proiettili. Il
+  generatore starter garantisce un'istanza per ID su terreno walkable libero;
+  le nove celle-slot sono quindi interamente non attraversabili, non solo il
+  centro della sprite.
 - `BiomeEnvironmentLayout.get_obstacle_record()` espone tipo, categoria,
   footprint, celle, asset/variante, altezza e blocchi. La validazione rifiuta
   mismatch o ostacoli solidi privi di asset; `ObstacleSystem` propaga il record
@@ -754,7 +763,8 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
   legacy in `object_visuals`, i contratti asset per tile, terrain, edge, void,
   object scenes, passage tiles e asset set di bioma, inclusi i 14 tile cliff
   orientati, `void_depth`, tile forestali, road connector e entry/exit
-  passaggio, `abandoned_car` e `dense_vegetation`; i preset
+  passaggio, `abandoned_car`, `dense_vegetation`, `forest_tree` e
+  `large_rock`; i preset
   `performance`/`balanced`/`quality` restano disponibili per fallback ground e
   qualita del tile layer.
 - `WorldRegionConnection` serializza apertura locale, connector locale,

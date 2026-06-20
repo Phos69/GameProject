@@ -468,6 +468,10 @@ Attivita post-roadmap:
   footprint-specific, base visiva coincidente con collisione, record ostacolo
   completo e overlay `F9`. Lo smoke dedicato valida anche assenza di collisioni
   invisibili e distinzione fra ostacoli solidi e void/cliff.
+- Pass ISO-OBS-002 completato: `forest_tree` e `large_rock` introducono art PNG
+  trasparente per due ostacoli singoli `3x3`, piazzamento garantito nella
+  Pianura Infetta, collisione rettangolare su tutti i nove slot e screenshot QA
+  gameplay/footprint in `build/qa/obstacle_3x3/`.
 - asset definitivi e ulteriori pass di bilanciamento;
 - firma digitale della build pubblica.
 

@@ -139,7 +139,9 @@ godot --headless --path . --script res://tests/persistent_world_generation_smoke
 godot --headless --path . --script res://tests/open_passage_transition_smoke_test.gd
 godot --headless --path . --script res://tests/isometric_environment_manifest_smoke_test.gd
 godot --headless --path . --script res://tests/obstacle_rendering_contract_smoke_test.gd
+godot --headless --path . --script res://tests/obstacle_3x3_smoke_test.gd
 godot --headless --path . --script res://tests/obstacle_asset_visual_qa.gd
+godot --path . --rendering-method gl_compatibility --script res://tests/obstacle_3x3_visual_qa.gd
 godot --headless --path . --script res://tests/milestone_10_asset_manifest_v7_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_10_asset_pipeline_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_10_tile_layer_smoke_test.gd

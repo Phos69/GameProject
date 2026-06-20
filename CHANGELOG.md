@@ -4,6 +4,12 @@
 
 ### Added
 
+- Aggiunti gli ostacoli `forest_tree` e `large_rock` con asset PNG trasparenti
+  originali, footprint manifest `3x3`, collisione rettangolare completa e
+  piazzamento garantito nella `infected_plains` generata.
+- Aggiunti `tests/obstacle_3x3_smoke_test.gd` e
+  `tests/obstacle_3x3_visual_qa.gd`, con screenshot gameplay/footprint in
+  `build/qa/obstacle_3x3/`.
 - Aggiunto `WeaponVisualRenderer` per centralizzare fallback, shape target e
   silhouette proiettile derivate da `WeaponVisualData`.
 - Aggiunte silhouette pickup per le 30 armi del catalogo drop tramite
@@ -97,6 +103,8 @@
 
 ### Changed
 
+- Estesa la QA asset ostacoli a sorgenti PNG oltre agli SVG, mantenendo i check
+  su trasparenza, copertura della silhouette e downscale runtime deterministico.
 - `Projectile` delega poligono e glow al renderer visuale condiviso mantenendo
   invariati i profili legacy quando i nuovi campi sono vuoti.
 - `DropPickup` passa `WeaponData.visual_data` a `DropPickupVisual` per i drop
