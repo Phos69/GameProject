@@ -44,6 +44,16 @@ func add_money(amount: int) -> void:
 	money += amount
 	money_changed.emit(money)
 
+func can_afford(amount: int) -> bool:
+	return amount >= 0 and money >= amount
+
+func try_spend_money(amount: int) -> bool:
+	if amount <= 0 or not can_afford(amount):
+		return false
+	money -= amount
+	money_changed.emit(money)
+	return true
+
 func get_save_data() -> Dictionary:
 	var serialized_unlocks: Array[String] = []
 	for unlock_id in unlocked_ids:

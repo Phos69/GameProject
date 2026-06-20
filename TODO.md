@@ -47,6 +47,7 @@ Regole per nuove voci:
 | Dungeon ramificato/shop | PASS nella validazione Milestone 5 | `tests/dungeon_graph_smoke_test.gd`, `tests/dungeon_smoke_test.gd`, `docs/latest_commit_validation_report.md` | UI shop dedicata e arte bioma dungeon restano follow-up; screenshot tre seed nel playtest Milestone 11 |
 | Asset/pipeline personaggi RPG | PASS nella validazione Milestone 6 | `tests/rpg_character_asset_manifest_smoke_test.gd`, `assets/characters/index.json` v2, `docs/latest_commit_validation_report.md` | Arte definitiva per-personaggio (`final_quality`) resta follow-up manuale; screenshot QA nel playtest Milestone 11 |
 | Tuning melee, super e classi RPG avanzate | PASS nella validazione Milestone 7 | `tests/rpg_melee_attack_resolution_smoke_test.gd`, `tests/milestone_rpg_8_adrenaline_super_smoke_test.gd`, `tests/milestone_rpg_12_feedback_smoke_test.gd`, `tests/milestone_rpg_13_new_classes_smoke_test.gd` | QA manuale multi-risoluzione/five-wave/due-player resta follow-up nel playtest Milestone 11 |
+| Mercato zombie ricorrente | PASS il 2026-06-20 | `SurvivalMarketController`, `SurvivalMarketPurchaseService`, `SurvivalMarketUI`, `tests/zombie_market_smoke_test.gd`, `docs/zombie_market.md` | Bilanciamento prezzi e QA visuale 1-4 player confluiscono in `BAL-001`/`UIUX-001` |
 | Roadmap storiche | Completate come primo pass o reference | `ROADMAP.md`, `roadmap_*.md`, `docs/milestones/` | Non usarle come backlog attivo se una voce e gia chiusa qui sotto |
 
 Test eseguiti per questo audit: nessun test gameplay. La Milestone 0 richiede
@@ -289,6 +290,11 @@ evitare reimplementazioni e per indirizzare le regressioni.
   base, `LB` l'equipaggiata e il D-pad cicla solo le armi raccolte. Follow-up
   ammessi solo per tuning, asset finali e playtest visuale dentro `BAL-001` o
   `UIUX-001`, non per parti core.
+- ZMARKET-001 mercato zombie ricorrente: completato il 2026-06-20; boss wave
+  ogni cinque, fase senza spawn, wallet comune, acquisti per-player, offerte
+  catalogo pesate per rarita e ready multiplayer sono coperti dallo smoke
+  dedicato. Follow-up ammessi solo per tuning e QA visuale in `BAL-001` e
+  `UIUX-001`.
 - WVIS-001 identita visuale completa delle armi: completato il 2026-06-20 con
   Milestone W0-W8 chiuse. Le 30 armi hanno profili, palette, pickup/held/HUD e
   projectile oppure melee specifici; smoke, QA su otto screenshot e performance

@@ -267,6 +267,37 @@ func add_reserve_ammo(amount: int) -> int:
 	_refresh_low_ammo_state()
 	return amount
 
+func get_active_ammo_refill_amount() -> int:
+	_store_active_state()
+	return _get_instance_refill_amount(inventory.get_active())
+
+func get_all_ammo_refill_amount() -> int:
+	_store_active_state()
+	var total := _get_instance_refill_amount(inventory.get_base())
+	for instance in inventory.instances:
+		total += _get_instance_refill_amount(instance)
+	return total
+
+func refill_active_ammo() -> int:
+	_store_active_state()
+	var applied := _refill_instance(inventory.get_active())
+	_sync_from_active()
+	if applied > 0:
+		ammo_changed.emit(current_ammo, reserve_ammo)
+		_refresh_low_ammo_state()
+	return applied
+
+func refill_all_ammo() -> int:
+	_store_active_state()
+	var applied := _refill_instance(inventory.get_base())
+	for instance in inventory.instances:
+		applied += _refill_instance(instance)
+	_sync_from_active()
+	if applied > 0:
+		ammo_changed.emit(current_ammo, reserve_ammo)
+		_refresh_low_ammo_state()
+	return applied
+
 func add_ammo_to_weapon(weapon_id: StringName, amount: int) -> int:
 	if amount <= 0:
 		return 0
@@ -470,6 +501,35 @@ func _refresh_low_ammo_state() -> void:
 		return
 	low_ammo_active = is_low
 	low_ammo_changed.emit(low_ammo_active, maxi(get_special_ammo_total(), 0))
+
+func _get_instance_refill_amount(instance: WeaponInstance) -> int:
+	if instance == null or instance.definition == null:
+		return 0
+	if instance.definition.infinite_reserve_ammo:
+		return 0
+	return (
+		maxi(instance.definition.magazine_size - instance.current_ammo, 0)
+		+ maxi(
+			instance.definition.starting_reserve_ammo - instance.reserve_ammo,
+			0
+		)
+	)
+
+func _refill_instance(instance: WeaponInstance) -> int:
+	var applied := _get_instance_refill_amount(instance)
+	if applied <= 0:
+		return 0
+	instance.current_ammo = maxi(
+		instance.current_ammo,
+		instance.definition.magazine_size
+	)
+	instance.reserve_ammo = maxi(
+		instance.reserve_ammo,
+		instance.definition.starting_reserve_ammo
+	)
+	instance.is_reloading = false
+	instance.reload_timer = 0.0
+	return applied
 
 func _apply_weapon_scatter(
 	direction: Vector2,

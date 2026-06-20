@@ -35,6 +35,9 @@ func _run() -> void:
 	var ammo_director := get_first_node_in_group(
 		"survival_ammo_director"
 	) as SurvivalAmmoDirector
+	var market := get_first_node_in_group(
+		"survival_market_controller"
+	) as SurvivalMarketController
 	_expect(wave_manager != null, "wave manager is available")
 	_expect(game_mode_manager != null, "game mode manager is available")
 	_expect(survival_mode != null, "survival mode is available")
@@ -45,6 +48,7 @@ func _run() -> void:
 	_expect(projectile_system != null, "projectile system is available")
 	_expect(hud != null, "HUD manager is available")
 	_expect(ammo_director != null, "survival ammo director is available")
+	_expect(market != null, "survival market controller is available")
 	if (
 		wave_manager == null
 		or game_mode_manager == null
@@ -56,6 +60,7 @@ func _run() -> void:
 		or projectile_system == null
 		or hud == null
 		or ammo_director == null
+		or market == null
 	):
 		_finish()
 		return
@@ -181,7 +186,19 @@ func _run() -> void:
 			player_one_weapon.weapon_data.weapon_id == &"wave_cannon",
 			"collecting the special drop equips the Wave Cannon"
 		)
-	_expect(wave_manager.state == WaveManager.State.INTERMISSION, "survival continues after the boss reward")
+	_expect(
+		market.is_market_open
+		and wave_manager.state == WaveManager.State.REWARD
+		and wave_manager.is_next_wave_blocked(),
+		"boss reward opens the market before survival continues"
+	)
+	market.set_player_ready(1, true)
+	market.set_player_ready(2, true)
+	_expect(
+		not market.is_market_open
+		and wave_manager.state == WaveManager.State.INTERMISSION,
+		"all living players ready resume survival after the boss reward"
+	)
 
 	survival_mode.stop_mode()
 	_finish()

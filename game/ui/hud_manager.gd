@@ -11,6 +11,7 @@ var boss_health_fill_style: StyleBoxFlat
 var boss_warning_label: Label
 var combat_announcement: CombatAnnouncement
 var exploration_map_panel: ExplorationMapPanel
+var offscreen_enemy_markers: OffscreenEnemyMarkers
 var player_cards_container: Control
 var player_cards: Dictionary = {}
 var pickup_feedback_text: String = ""
@@ -34,6 +35,7 @@ func _ready() -> void:
 	add_to_group("hud_manager")
 	add_to_group("visual_settings_consumers")
 	_create_status_hud()
+	_create_offscreen_markers()
 	_create_player_hud()
 	_create_boss_hud()
 	_create_combat_announcement()
@@ -116,8 +118,11 @@ func _process(delta: float) -> void:
 	if pickup_feedback_timer <= 0.0:
 		pickup_feedback_text = ""
 	boss_warning_timer = maxf(boss_warning_timer - delta, 0.0)
-	if exploration_map_panel != null and exploration_map_panel.visible:
+	var map_open := exploration_map_panel != null and exploration_map_panel.visible
+	if map_open:
 		_refresh_exploration_map()
+	if offscreen_enemy_markers != null:
+		offscreen_enemy_markers.visible = not map_open
 	_refresh()
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -440,6 +445,11 @@ func _create_boss_hud() -> void:
 	boss_warning_label.modulate = Color(1.0, 0.44, 0.24, 1.0)
 	boss_warning_label.hide()
 	content.add_child(boss_warning_label)
+
+func _create_offscreen_markers() -> void:
+	offscreen_enemy_markers = OffscreenEnemyMarkers.new()
+	offscreen_enemy_markers.name = "OffscreenEnemyMarkers"
+	add_child(offscreen_enemy_markers)
 
 func _create_combat_announcement() -> void:
 	combat_announcement = CombatAnnouncement.new()

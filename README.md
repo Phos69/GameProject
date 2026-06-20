@@ -146,6 +146,7 @@ godot --headless --path . --script res://tests/headless_shutdown_loop_test.gd
 godot --headless --path . --script res://tests/combat_smoke_test.gd
 godot --headless --path . --script res://tests/enemy_drop_smoke_test.gd
 godot --headless --path . --script res://tests/survival_wave_smoke_test.gd
+godot --headless --path . --script res://tests/zombie_market_smoke_test.gd
 godot --headless --path . --script res://tests/zombie_revamp_foundation_smoke_test.gd
 godot --headless --path . --script res://tests/zombie_spawner_edge_smoke_test.gd
 godot --headless --path . --script res://tests/zombie_biome_wave_director_smoke_test.gd
