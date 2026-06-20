@@ -103,7 +103,9 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `CharacterSelectCard`: card RPG selezionabile con portrait menu dedicato,
   fallback gameplay/procedurale, icone classe/arma, stat bar compatte e
   indicatori slot.
-- `CharacterDetailPanel`: dossier laterale della Character Select con descrizione stile, stat leggibili, range arma e preview.
+- `CharacterDetailPanel`: dossier scrollabile della Character Select con
+  descrizione stile, stat leggibili, range arma e preview, aggiornato dal focus
+  della card roster corrente.
 - `CharacterGameplayPreview`: preview procedurale isometrica del personaggio selezionato, con silhouette, palette e arma derivate dal profilo.
 - `RpgCharacterRegistry`: catalogo centralizzato dei personaggi RPG iniziali.
 - `RpgCharacterData`: risorsa dati per un profilo classe RPG selezionabile, inclusi nome proprio, descrizione stile, palette e riferimenti asset opzionali per portrait, preview gameplay, sprite, arma e icone.
@@ -323,6 +325,17 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `GameplayEffects`: feedback visuale event-driven, inclusi muzzle/impact
   temizzati, level-up e super RPG tipizzate per starter e classi avanzate,
   senza dipendenze dai controller.
+
+### Ownership HUD gameplay
+
+| Dato | Owner UI | Note |
+| --- | --- | --- |
+| Slot player, ritratto, classe, arma equipaggiata | `PlayerHudCard` | Riepilogo stabile ai quattro angoli. |
+| Riserva ammo, stato speciale, inventario arma | `PlayerHudCard` | Non rappresenta caricatore o reload in tempo reale. |
+| Statistiche RPG, passive e status temporanei | `PlayerHudCard` | Sintesi compatta; i dettagli immediati restano vicino al player. |
+| HP, caricatore, reload, livello, EXP e super | `PlayerWorldHudVisual` | Feedback reattivo sopra il player, leggibile nel punto di azione. |
+| Boss, annunci, mappa esplorazione e aggregazione modalita | `HUDManager` | Non duplica la telemetria per-player gia mostrata nei componenti dedicati. |
+| Status panel persistente | `HUDManager` | Istanza legacy nascosta durante il gameplay standard. |
 
 ## Contratto fine run
 
@@ -570,11 +583,21 @@ Ogni modalita deriva da `BaseGameMode` e fornisce:
 
 Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arresta la modalita corrente; i player restano istanziati ma il loro input gameplay viene sospeso.
 
+`Infinite Arena` e la modalita gameplay di default (`MODE_INFINITE_ARENA`):
+riusa il runtime combat/survival condiviso, ma passa un context arena `1x1`
+`500x500` con `arena_boundary_mode = "walled"` e disabilita `WorldRuntime`,
+region seam, streaming multi-regione e mappa esplorazione. `Zombie Survival`
+resta un mode id separato (`MODE_SURVIVAL`) e mantiene il contratto megamappa
+multi-bioma.
+
 ## Contratto salvataggi
 
 - Il file predefinito e `user://savegame.json`.
 - Il formato v6 contiene progressione, ultima modalita, audio, impostazioni
   visuali, video, controlli joypad e stato mondo/esplorazione.
+- Il default di `last_mode` per nuovi save e save non validi e
+  `MODE_INFINITE_ARENA`; i save esistenti con `MODE_SURVIVAL` restano validi e
+  continuano a puntare a `Zombie Survival`.
 - I save v1-v3 restano caricabili; i campi assenti ricevono default validati.
 - I save v4-v5 restano caricabili e ricevono uno stato mondo vuoto inizializzato dal seed della run successiva.
 - `ProgressionManager` espone dati serializzabili e applica valori validati.
@@ -588,10 +611,19 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 ## Contratto megamappa persistente
 
 - `WorldGenerationSeed` resta la sorgente deterministica; il layout fisico viene rigenerato dal seed, non salvato integralmente.
+- Il contratto megamappa appartiene a `Zombie Survival`; `Infinite Arena` usa
+  solo una cella `500x500` murata e non avvia runtime/esplorazione mondo.
 - `BiomeMapGenerator` produce una griglia default `3x3` di territori `500x500`
   con grafo connesso: uno spanning tree garantisce raggiungibilita e edge extra
   aggiungono loop. La dimensione e il numero regioni restano override di debug
   tramite context.
+- `ZombieModeController` non sovrascrive questi default nella survival
+  standard. Il profilo compatto `1x1` esiste solo con context
+  `single_biome_arena = true` e non prevale su `biome_map_width` /
+  `biome_map_height` espliciti.
+- Il context `arena_boundary_mode = "walled"` converte i lati senza vicino in
+  `BLOCKED`, genera segmenti di muro perimetrali e disabilita i void/fall pocket
+  interni del layout arena.
 - Ogni `WorldRegionConnection` deve corrispondere a un passaggio fisico aperto su entrambi i lati confinanti.
 - Due regioni adiacenti senza edge navigazionale hanno bordo bloccato; un lato senza regione vicina diventa fall boundary.
 - `BiomeEnvironmentLayout` deve classificare tutto il `500x500` come walkable,
@@ -650,7 +682,12 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - `BiomeManager` e il punto unico per leggere il bioma corrente della survival.
 - `BiomeManager.stop_run()` ripristina i layout base dei biomi e libera i dati
   world generati, evitando che celle, grafi e report restino vivi tra test.
-- Ogni run survival genera o rigenera una megamappa persistente seed-based; in assenza di seed manuale usa un seed default stabile, mentre un context `world_seed` permette riproduzione e debug.
+- Ogni run survival genera o rigenera una megamappa persistente seed-based
+  `3x3`; in assenza di seed manuale usa un seed default stabile, mentre un
+  context `world_seed` permette riproduzione e debug.
+- Il context `single_biome_arena = true` e riservato a quick test/debug e genera
+  una sola cella `infected_plains` con bordi esterni fall-to-void, salvo
+  dimensioni mappa esplicite nel context.
 - La megamappa contiene territori `500x500`, seed locali, vicini, bordi, grafo connesso, passaggi fisici, fall boundary e layout ambientali validati prima di essere assegnati alle `BiomeDefinition`.
 - Ogni nuova run survival riparte dalla `Pianura Infetta`.
 - `WorldRuntime` marca la regione iniziale come visited, scopre i vicini collegati e conserva lo stato esplorazione.
@@ -885,7 +922,8 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - La loot room usa una `LootTable` e `DropSystem`; i pickup non raccolti vengono rimossi al cambio stanza.
 - Il boss finale viene richiesto tramite `GameModeManager` e `BossSystem`.
 - La sostituzione di una stanza richiesta da un trigger fisico avviene in modo differito.
-- Il menu principale seleziona dungeon; `F5` e `F1` restano scorciatoie debug.
+- Il menu principale seleziona dungeon; `F5` resta scorciatoia debug per dungeon,
+  mentre `F1` avvia Infinite Arena e `F7` Zombie Survival.
 - Diramazioni, shop, biomi e persistenza della run non fanno parte del prototipo minimo.
 
 ## Contratto tower defense

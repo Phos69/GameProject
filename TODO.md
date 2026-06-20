@@ -4,6 +4,22 @@ Questo file contiene solo backlog operativo, follow-up tracciati e reference
 storiche consolidate. I dettagli completi delle milestone gia chiuse restano in
 `ROADMAP.md`, `CHANGELOG.md`, `docs/milestones/`, nelle roadmap dedicate e nel
 report `docs/latest_commit_validation_report.md`.
+L'audit operativo del 2026-06-20 e tracciato in `repo_status_report.md` e
+`repo_fix_roadmap.md`.
+La Milestone 1 di `repo_fix_roadmap.md` e completata: runner PowerShell,
+categorie test e log persistenti sono il workflow corrente.
+La Milestone 2 di `repo_fix_roadmap.md` e completata: il contratto
+`Zombie Survival` usa il default `3x3` multi-bioma e l'arena `1x1` e solo un
+profilo context esplicito.
+La Milestone 3 di `repo_fix_roadmap.md` e completata con validazione mirata:
+`Infinite Arena` e il default `1x1` murato, mentre `Zombie Survival` resta la
+modalita `3x3` multi-bioma.
+La Milestone 4 di `repo_fix_roadmap.md` e completata: il contratto HUD separa
+corner card, world-space HUD e aggregazione, con reload/caricatore/XP/super
+unicamente nel pacchetto sopra-player.
+La Milestone 5 di `repo_fix_roadmap.md` e completata: Character Select espone
+di nuovo il dossier personaggio, i test non restano appesi su errori e la
+navigazione tastiera/joypad e coperta da smoke.
 
 Regole per nuove voci:
 
@@ -22,6 +38,8 @@ Regole per nuove voci:
 | Build/export Windows | PASS nell'ultima validazione completa disponibile | `docs/latest_commit_validation_report.md` | Rieseguire in Milestone 12 o se cambia packaging |
 | Shutdown headless | Risolto nella Milestone 1 | Loop 100 avvii main scene e smoke prioritari senza cleanup warning noti | Monitorare solo come regressione futura |
 | Mini-eventi bioma | PASS nella validazione Milestone 2 | `tests/biome_mini_events_smoke_test.gd`, `tests/random_encounter_smoke_test.gd`, `docs/latest_commit_validation_report.md` | Riprendere solo dentro playtest/bilanciamento Milestone 11 |
+| Default Infinite Arena | PASS nella validazione Milestone 3 repo-fix | `tests/infinite_arena_default_mode_smoke_test.gd`, `tests/zombie_survival_world_contract_smoke_test.gd`, `tests/milestone_9_smoke_test.gd`, `tests/milestone_17_run_results_smoke_test.gd` | Playtest manuale dei bordi murati e di `Zombie Survival` multi-bioma nella prossima iterazione |
+| Character Select e menu navigation | PASS nella validazione Milestone 5 repo-fix | `tests/milestone_rpg_1_character_select_smoke_test.gd`, `tests/character_select_ui_smoke_test.gd`, `tests/menu_visual_qa.gd` | Monitorare solo come regressione UI o nel playtest `UIUX-001` |
 | Megamappa e streaming regioni | PASS nella validazione Milestone 3 | `tests/region_streaming_smoke_test.gd`, world graph, persistent world, open passage, exploration map, `docs/latest_commit_validation_report.md` | Riprendere in Milestone 4 (asset isometrici) o nel bilanciamento Milestone 11 |
 | Caduta void e dodge | PASS nel pass runtime 2026-06-19 | `EntityVoidFallComponent`, query terrain di `HazardSystem`, `tests/zombie_fall_hazard_smoke_test.gd`, regressioni combat/drop/wave/ranged/terrain | QA manuale multiplayer locale e leggibilita animazione nel playtest Milestone 11 |
 | Asset isometrici ambiente | PASS; contratto footprint v9 e primo pass albero/roccia 3x3 completati il 2026-06-20 | `tests/obstacle_rendering_contract_smoke_test.gd`, `tests/obstacle_3x3_smoke_test.gd`, `tests/obstacle_asset_visual_qa.gd`, `tests/obstacle_3x3_visual_qa.gd`, screenshot `build/qa/obstacle_3x3/`, `docs/obstacle_rendering.md`, manifest v9 | QA manuale player davanti/dietro e verifica `F9` nel playtest Milestone 11 |

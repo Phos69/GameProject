@@ -12,17 +12,19 @@ func _ready() -> void:
 
 func generate_layouts_for_cells(
 	cells: Array[BiomeCell],
-	biome_definitions: Dictionary
+	biome_definitions: Dictionary,
+	context: Dictionary = {}
 ) -> void:
 	for cell in cells:
 		var definition := biome_definitions.get(cell.biome_id, null) as BiomeDefinition
 		if definition == null:
 			continue
-		generate_layout_for_cell(cell, definition)
+		generate_layout_for_cell(cell, definition, context)
 
 func generate_layout_for_cell(
 	cell: BiomeCell,
-	biome: BiomeDefinition
+	biome: BiomeDefinition,
+	context: Dictionary = {}
 ) -> BiomeEnvironmentLayout:
 	var layout := BiomeEnvironmentLayout.new()
 	layout.zone_size = biome.get_biome_size()
@@ -36,7 +38,7 @@ func generate_layout_for_cell(
 	if biome.biome_id == &"infected_plains":
 		obstacle_layout_generator.populate_layout_voidfirst(layout, cell, biome)
 	else:
-		obstacle_layout_generator.populate_layout(layout, cell, biome)
+		obstacle_layout_generator.populate_layout(layout, cell, biome, context)
 	fall_boundary_generator.apply_fall_boundaries(cell, layout)
 	layout.rebuild_terrain_classification(cell)
 	var report := validation_system.validate_layout(cell, layout)

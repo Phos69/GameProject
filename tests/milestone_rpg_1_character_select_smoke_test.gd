@@ -1,8 +1,13 @@
 extends SceneTree
 
+const TEST_TIMEOUT_SECONDS: float = 120.0
+
 var failures: PackedStringArray = []
+var finished: bool = false
 
 func _initialize() -> void:
+	var timeout := create_timer(TEST_TIMEOUT_SECONDS)
+	timeout.timeout.connect(_on_timeout)
 	call_deferred("_run")
 
 func _run() -> void:
@@ -71,6 +76,13 @@ func _run() -> void:
 		main_menu.character_detail_panel != null,
 		"character select exposes the gameplay preview detail panel"
 	)
+	main_menu._preview_character(&"ranger")
+	await process_frame
+	if main_menu.character_detail_panel != null:
+		_expect(
+			main_menu.character_detail_panel.current_profile.get("id", &"") == &"ranger",
+			"character detail panel follows focused character data"
+		)
 
 	main_menu._assign_character_to_slot(1, &"ranger")
 	main_menu._assign_character_to_slot(2, &"berserker")
@@ -130,6 +142,13 @@ func _run() -> void:
 
 	_finish()
 
+func _on_timeout() -> void:
+	if finished:
+		return
+	failures.append("test timed out before cleanup")
+	push_error("FAIL: test timed out before cleanup")
+	_finish()
+
 func _expect(condition: bool, message: String) -> void:
 	if condition:
 		print("PASS: ", message)
@@ -138,6 +157,9 @@ func _expect(condition: bool, message: String) -> void:
 	push_error("FAIL: " + message)
 
 func _finish() -> void:
+	if finished:
+		return
+	finished = true
 	if failures.is_empty():
 		print("MILESTONE_RPG_1_CHARACTER_SELECT_SMOKE_TEST: PASS")
 		quit(0)

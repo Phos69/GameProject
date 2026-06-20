@@ -348,13 +348,15 @@ Attivita post-roadmap:
   blu con glow e testi HP/ammo ingranditi; la milestone UI/UX resta aperta per il polish
   trasversale e la QA multi-risoluzione;
 - polish Character Select RPG completato come pass post-roadmap: card grafiche,
-  dossier laterale, preview gameplay procedurale, stat bar e supporto
-  `Esc`/joypad `B`;
+  dossier aggiornato dal focus, preview gameplay procedurale, stat bar e
+  supporto `Esc`/joypad `B`;
 - menu pausa e pagina Settings condivisa completati come feature post-roadmap:
   tab Audio, Video e Controls, save v5 e rimappatura joypad persistente;
 - navigazione menu gamepad completata come polish post-roadmap: focus
   circolare, Back coerente, D-pad/stick con cooldown, LB/RB nei Settings e
-  Character Select responsive con fallback asset coerente;
+  Character Select responsive con fallback asset coerente; la validazione
+  repo-fix del 2026-06-20 copre anche navigazione tastiera e guardrail timeout
+  dello smoke Character Select;
 - Milestone 1 di `todo_roadmap.md` completata: shutdown headless stabilizzato,
   loop da 100 avvii della scena principale e smoke prioritari senza cleanup
   warning noti; i QA visuali screenshot restano fuori scope per limite del
@@ -500,6 +502,12 @@ Stato: completata come prototipo integrato.
 
 - Aggiunto `game/world/` con `WorldGraph`, `WorldRegion`, `WorldRegionConnection`, `WorldExplorationState`, `PersistentWorldState` e `WorldRuntime`.
 - La survival genera una griglia default `3x3` di territori `500x500` tramite seed, spanning tree e edge extra per avere connessione garantita e loop.
+- Il controller zombie lascia il `3x3` come default runtime della survival
+  standard; il profilo `1x1` resta disponibile solo con context
+  `single_biome_arena` per quick test/debug.
+- Dopo il riallineamento repo-fix del 2026-06-20, questo contratto `3x3`
+  appartiene a `Zombie Survival`; il default/quick play e `Infinite Arena`, una
+  singola cella `500x500` con muri perimetrali e senza runtime esplorazione.
 - I passaggi tra regioni confinanti sono aperture fisiche aperte e non teletrasporti; i lati senza regione vicina restano fall boundary validati.
 - Il layout di ogni territorio produce classificazione completa del `500x500` per walkable, obstacle, hazard, border, void e fall zone.
 - Il save v6 conserva stato mondo/esplorazione e posizione di riferimento del party.
@@ -521,6 +529,9 @@ Stato: completata come prototipo integrato.
 - Aggiunte 30 armi data-driven: 10 firearm, 10 melee e 10 elemental.
 - Generalizzati AOE, explosion, status, knockback, chain, pierce, cone, charge, delayed explosion e ground hazard.
 - HUD esteso con arma selezionata, lista inventario, reload, ammo ed effetto principale.
+- Dopo la ripulitura repo-fix del 2026-06-20, reload, caricatore, EXP e super
+  sono owner del `PlayerWorldHudVisual`; `PlayerHudCard` resta riepilogo slot
+  con ritratto, arma, riserva, inventario, statistiche, passive e status.
 - Smoke dedicato e regressioni combat/drop/RPG/survival verdi.
 
 ## Pass Caduta Void e Dodge - completato

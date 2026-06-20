@@ -27,6 +27,10 @@ func _run() -> void:
 		main_menu.character_slot_views.get(1, {}).get("preview") != null,
 		"player slots embed a gameplay preview control"
 	)
+	_expect(
+		main_menu.character_detail_panel != null,
+		"character select exposes a focused-character detail panel"
+	)
 	var viewport_rect := Rect2(Vector2.ZERO, root.get_visible_rect().size)
 	var panel_rect := main_menu.character_select_panel.get_global_rect()
 	_expect(
@@ -105,6 +109,11 @@ func _run() -> void:
 		main_menu.focused_character_id == &"ranger",
 		"focusing a card updates the preview profile"
 	)
+	_expect(
+		main_menu.character_detail_panel != null
+			and main_menu.character_detail_panel.current_profile.get("id", &"") == &"ranger",
+		"focused card updates the detail panel profile"
+	)
 	var slot_preview: Control = main_menu.character_slot_views.get(1, {}).get("preview")
 	_expect(
 		slot_preview != null
@@ -165,8 +174,42 @@ func _run() -> void:
 		and main_menu.primary_panel.visible,
 		"Back closes character select and restores the main menu"
 	)
+	main_menu._open_character_select()
+	await process_frame
+	await _wait_navigation_cooldown()
+	main_menu.character_card_buttons[0].grab_focus()
+	await _press_key(KEY_RIGHT)
+	await _wait_navigation_cooldown()
+	_expect(
+		root.gui_get_focus_owner() == main_menu.character_card_buttons[1],
+		"keyboard right moves focus to the next roster card"
+	)
+	await _press_key(KEY_LEFT)
+	await _wait_navigation_cooldown()
+	_expect(
+		root.gui_get_focus_owner() == main_menu.character_card_buttons[0],
+		"keyboard left moves focus back to the previous roster card"
+	)
+	await _press_key(KEY_ESCAPE)
+	await process_frame
+	_expect(
+		not main_menu.character_select_panel.visible
+			and main_menu.primary_panel.visible,
+		"keyboard Escape closes character select and restores the main menu"
+	)
 	main_menu.queue_free()
 	_finish()
+
+func _press_key(keycode: Key) -> void:
+	var pressed := InputEventKey.new()
+	pressed.keycode = keycode
+	pressed.pressed = true
+	Input.parse_input_event(pressed)
+	await process_frame
+	var released := pressed.duplicate() as InputEventKey
+	released.pressed = false
+	Input.parse_input_event(released)
+	await process_frame
 
 func _press_joypad_button(button_index: JoyButton) -> void:
 	var pressed := InputEventJoypadButton.new()

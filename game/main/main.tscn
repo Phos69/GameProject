@@ -1,4 +1,4 @@
-[gd_scene load_steps=46 format=3]
+[gd_scene load_steps=47 format=3]
 
 [ext_resource type="Script" path="res://game/main/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://game/input/input_manager.gd" id="2_input_manager"]
@@ -19,6 +19,7 @@
 [ext_resource type="Script" path="res://game/health/health_system.gd" id="17_health_system"]
 [ext_resource type="PackedScene" path="res://game/debug/combat_target.tscn" id="18_combat_target"]
 [ext_resource type="Script" path="res://game/modes/survival/survival_mode.gd" id="19_survival_mode"]
+[ext_resource type="Script" path="res://game/modes/survival/infinite_arena_mode.gd" id="46_infinite_arena_mode"]
 [ext_resource type="Script" path="res://game/modes/dungeon/dungeon_mode.gd" id="20_dungeon_mode"]
 [ext_resource type="Script" path="res://game/modes/tower_defense/tower_defense_mode.gd" id="21_tower_defense_mode"]
 [ext_resource type="Script" path="res://game/modes/tower_defense/tower_defense_wave_controller.gd" id="22_tower_defense_wave_controller"]
@@ -98,6 +99,10 @@ script = ExtResource("42_random_encounter")
 
 [node name="WorldRuntime" type="Node" parent="Modes/SurvivalMode/ZombieModeController"]
 script = ExtResource("45_world_runtime")
+
+[node name="InfiniteArenaMode" type="Node" parent="Modes"]
+script = ExtResource("46_infinite_arena_mode")
+survival_mode_path = NodePath("../SurvivalMode")
 
 [node name="DungeonMode" type="Node" parent="Modes"]
 script = ExtResource("20_dungeon_mode")

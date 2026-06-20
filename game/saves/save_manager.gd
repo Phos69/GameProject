@@ -22,7 +22,7 @@ var video_settings_manager: VideoSettingsManager
 var input_manager: InputManager
 var local_multiplayer_manager: LocalMultiplayerManager
 var world_runtime: WorldRuntime
-var last_mode: StringName = GameConstants.MODE_SURVIVAL
+var last_mode: StringName = GameConstants.MODE_INFINITE_ARENA
 var save_pending: bool = false
 var is_loading: bool = false
 
@@ -42,7 +42,7 @@ func create_empty_save() -> Dictionary:
 			"unlocks": []
 		},
 		"settings": {
-			"last_mode": String(GameConstants.MODE_SURVIVAL),
+			"last_mode": String(GameConstants.MODE_INFINITE_ARENA),
 			"audio": {
 				"master": 1.0,
 				"music": 0.8,
@@ -177,7 +177,7 @@ func load_game() -> bool:
 	var settings := data.get("settings", {}) as Dictionary
 	last_mode = _sanitize_mode(StringName(settings.get(
 		"last_mode",
-		GameConstants.MODE_SURVIVAL
+		GameConstants.MODE_INFINITE_ARENA
 	)))
 	_resolve_audio_manager()
 	if audio_manager != null:
@@ -396,7 +396,7 @@ func _is_valid_save(data: Dictionary) -> bool:
 
 func _sanitize_mode(mode_id: StringName) -> StringName:
 	match mode_id:
-		GameConstants.MODE_DUNGEON, GameConstants.MODE_TOWER_DEFENSE:
+		GameConstants.MODE_INFINITE_ARENA, GameConstants.MODE_SURVIVAL, GameConstants.MODE_DUNGEON, GameConstants.MODE_TOWER_DEFENSE:
 			return mode_id
 		_:
-			return GameConstants.MODE_SURVIVAL
+			return GameConstants.MODE_INFINITE_ARENA

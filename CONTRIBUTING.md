@@ -54,21 +54,45 @@ tools/run_tests.sh biome
 ./tools/run_tests.ps1 -Filter biome
 ```
 
+Categorie supportate:
+
+```bash
+# Test rapidi: esclude visual QA, soak/stress e smoke ultra-lenti.
+tools/run_tests.sh "" fast
+./tools/run_tests.ps1 -Category fast
+
+# Solo test lenti headless.
+tools/run_tests.sh "" slow
+./tools/run_tests.ps1 -Category slow
+
+# Solo soak/stress.
+tools/run_tests.sh "" soak
+./tools/run_tests.ps1 -Category soak
+
+# Solo visual QA, da usare con rendering reale/GPU.
+tools/run_tests.sh "" visual
+./tools/run_tests.ps1 -Category visual
+```
+
 Singolo test:
 
 ```bash
 godot --headless --path . --script tests/<nome_test>.gd
 ```
 
-I test `*_visual_qa.gd` catturano screenshot e richiedono un contesto di
-rendering reale: il runner li **salta di default** perche non funzionano col
-driver dummy headless. Per includerli in un ambiente con GPU (o xvfb + GL
-software): `INCLUDE_VISUAL_QA=1 tools/run_tests.sh` oppure
+I test visual QA (`*_visual_qa.gd` e `*_qa.gd`) catturano screenshot e
+richiedono un contesto di rendering reale: il runner li **salta di default**
+perche non funzionano col driver dummy headless. Per includerli nella categoria
+`all` in un ambiente con GPU (o xvfb + GL software):
+`INCLUDE_VISUAL_QA=1 tools/run_tests.sh` oppure
 `./tools/run_tests.ps1 -IncludeVisualQa`.
 
 Variabili utili: `GODOT` (path del binario, default `godot`), `TEST_TIMEOUT`
-(secondi per test, default 180), `SKIP_IMPORT=1` (salta l'import iniziale quando
-la cache `.godot/` e gia popolata).
+(secondi per test, default 180), `TEST_CATEGORY` (`all`, `fast`, `slow`,
+`soak`, `visual`), `TEST_LOG_DIR` (default `build/test_logs`) e
+`SKIP_IMPORT=1` (salta l'import iniziale quando la cache `.godot/` e gia
+popolata). Ogni test eseguito scrive un log persistente in `build/test_logs/`;
+un filtro senza match restituisce exit code non zero per evitare false green.
 
 La CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) esegue la stessa
 suite su ogni push e PR verso `master`.
@@ -88,4 +112,3 @@ I file `*.import` accanto alle risorse **vanno versionati**: contengono la
 mappatura UID e i parametri di import che Godot richiede per aprire il progetto
 in modo deterministico (anche in CI). Va invece ignorata la sola cache
 `.godot/` (gia in `.gitignore`). Non rimuovere i `*.import` dal versionamento.
-

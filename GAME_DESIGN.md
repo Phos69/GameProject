@@ -353,13 +353,19 @@ Ogni nuova run ripristina la vita dei player attivi. Un player che entra durante
 - Survival e dungeon terminano quando tutti gli slot sono downed o morti.
 - Tower defense termina anche per party all-downed, oltre alla distruzione del core.
 
-Il gioco parte dal menu principale. La selezione avvia survival, dungeon o tower defense; `Esc` interrompe la run corrente e torna al menu. Durante una partita `Start` su joypad o `P` apre il menu pausa con resume, settings, ritorno al menu e quit. Il menu mostra livello, XP, denaro, ultima modalita salvata e un pulsante Settings.
+Il gioco parte dal menu principale. La selezione default avvia `Infinite Arena`;
+`Zombie Survival`, dungeon e tower defense restano scelte separate. `Esc`
+interrompe la run corrente e torna al menu. Durante una partita `Start` su
+joypad o `P` apre il menu pausa con resume, settings, ritorno al menu e quit.
+Il menu mostra livello, XP, denaro, ultima modalita salvata e un pulsante
+Settings.
 
 Ogni fine run mostra un riepilogo condiviso con tempo, XP, denaro e nuovi
 unlock. Survival usa `RUN OVER`, il completamento dungeon usa
 `DUNGEON COMPLETE` e la sconfitta tower defense usa `DEFENSE FAILED`.
 Retry riparte con lo stesso context senza accumulare bonus; cambio modalita
-avanza al modo successivo e menu salva prima del ritorno.
+avanza in ordine `Infinite Arena` -> `Zombie Survival` -> dungeon -> tower
+defense e menu salva prima del ritorno.
 
 Il feedback audio usa toni procedurali placeholder senza asset esterni obbligatori:
 
@@ -392,7 +398,7 @@ menu precedente quando esiste; nel menu principale non devono rompere lo stato
 corrente.
 Nei Settings, `LB` e `RB` cambiano tab in modo circolare e portano il focus al
 contenuto valido della tab attiva. `M` o joypad `Back/Select/View` apre la
-mappa dei territori esplorati durante la survival. Il tab Video contiene
+mappa dei territori esplorati solo durante `Zombie Survival`. Il tab Video contiene
 fullscreen, borderless, risoluzione, VSync, limite framerate e opzioni
 visual/accessibilita. Il tab Controls permette di riassegnare movimento, mira,
 attacco base, attacco equipaggiato, reload, super, interact, dodge, world map,
@@ -432,8 +438,9 @@ arma, passiva, super, barre HP/ATK/DEF/SPD/RNG e indicatori slot. La card usa
 `portrait_hud_path`/`portrait_full_path` se disponibili, poi
 `gameplay_sprite_path` e infine un fallback procedurale controllato da palette
 e arma.
-Il pannello dossier laterale mostra descrizione di stile, range derivato da
-`WeaponData` e una preview gameplay isometrica procedurale con arma/stance idle.
+Il dossier scrollabile della Character Select segue il focus della card roster
+e mostra descrizione di stile, range derivato da `WeaponData` e una preview
+gameplay isometrica procedurale con arma/stance idle.
 `style_description` e `gameplay_sprite_path` completano il profilo dati per
 supportare testo di stile e future preview/sprite definitivi senza cambiare il
 menu o il contratto survival.
@@ -454,6 +461,9 @@ Quando la super e pronta, l'intero faceplate emette un glow blu. Le schede HUD
 player negli angoli restano per
 ritratto classe, classe/arma, riserva o stato speciale, riga ATK/DEF/SPD,
 passive e status temporanei.
+Le schede d'angolo non duplicano barre di caricatore, reload, XP, adrenalina o
+super: quei feedback devono restare vicino al player per ridurre rumore visivo
+e overlap nelle risoluzioni basse.
 
 Armi base RPG attive:
 
@@ -568,10 +578,25 @@ Regole del prototipo:
 
 Il prototipo e lineare. Diramazioni, shop room, biomi, mappa e scelta del percorso restano futuri.
 
+## Infinite Arena
+
+`Infinite Arena` e il quick play di default. Usa lo stesso loop combat di base
+di survival, ma con un profilo compatto:
+
+- una sola cella `500x500`;
+- quattro lati `BLOCKED` con segmenti di muro fisici;
+- nessuna megamappa, region seam, mappa esplorazione o streaming regioni;
+- nessun fall boundary o void pocket interno nel profilo arena;
+- ondate infinite, supply crate, boss wave e sistemi condivisi invariati.
+
+La modalita parte direttamente dal menu/Continue senza Character Select. `F1`
+la avvia come scorciatoia debug.
+
 ## Zombie survival
 
-La modalita survival usa un profilo arena selezionabile e parte dopo la
-selezione dal menu. I profili attuali sono:
+`Zombie Survival` e la modalita zombie esplorativa con mappa e biomi connessi.
+Parte dal menu dedicato e passa dalla selezione personaggi. I profili arena
+legacy restano disponibili come fallback/debug, ma non definiscono il default:
 
 - `Industrial Crossroads`: otto ingressi, corsie incrociate e due barili;
 - `Rift Foundry`: sei ingressi radiali, anelli di lettura e tre barili;
@@ -585,6 +610,9 @@ Il revamp zombie e completo come prima versione giocabile:
 
 - a inizio run viene generata una megamappa globale seed-based con territori
   default `3x3` da `500x500`;
+- il default `3x3` e il contratto di `Zombie Survival`; l'arena `1x1`
+  esiste solo come profilo debug/test tramite `single_biome_arena`, mentre
+  `Infinite Arena` usa un mode id separato e context `arena_boundary_mode`;
 - lo stesso seed ricrea biomi, confini, passaggi, strade, ostacoli, casse e
   fall zone;
 - ogni run parte dalla `Pianura Infetta`, il bioma iniziale semplice;
@@ -604,7 +632,7 @@ Il revamp zombie e completo come prima versione giocabile:
 - lo spawn reale degli zombie viene richiesto a `ZombieSpawner` sui bordi della camera;
 - i vecchi punti arena restano fallback di spawn/debug e non rappresentano piu
   il cambio bioma.
-- il flusso survival standard non usa piu visual legacy per comunicare la
+- il flusso `Zombie Survival` non usa piu visual legacy per comunicare la
   megamappa: niente gate di transizione, ground vicino placeholder o patch
   ovali sopra il tile layer asset-driven.
 

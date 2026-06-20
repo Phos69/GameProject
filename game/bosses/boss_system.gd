@@ -33,6 +33,7 @@ func _ready() -> void:
 		&"wave_warden",
 		boss_scene,
 		[
+			GameConstants.MODE_INFINITE_ARENA,
 			GameConstants.MODE_SURVIVAL,
 			GameConstants.MODE_DUNGEON,
 			GameConstants.MODE_TOWER_DEFENSE
@@ -42,6 +43,7 @@ func _ready() -> void:
 		&"rift_architect",
 		rift_architect_scene,
 		[
+			GameConstants.MODE_INFINITE_ARENA,
 			GameConstants.MODE_SURVIVAL,
 			GameConstants.MODE_DUNGEON
 		]

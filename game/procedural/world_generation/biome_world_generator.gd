@@ -27,7 +27,11 @@ func generate_world(
 	var biome_ids := _get_biome_ids(biome_definitions)
 	active_cells = map_generator.generate_map(active_seed, biome_ids, context)
 	active_graph = map_generator.get_world_graph()
-	terrain_generator.generate_layouts_for_cells(active_cells, biome_definitions)
+	terrain_generator.generate_layouts_for_cells(
+		active_cells,
+		biome_definitions,
+		context
+	)
 	if active_graph != null:
 		active_graph.configure_from_biome_cells(active_cells, active_seed)
 	if debug_overlay != null:

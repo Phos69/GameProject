@@ -173,7 +173,7 @@ func show_result(result: Dictionary) -> void:
 	var next_mode := (
 		game_mode_manager.get_next_mode_id()
 		if game_mode_manager != null
-		else GameConstants.MODE_SURVIVAL
+		else GameConstants.MODE_INFINITE_ARENA
 	)
 	change_mode_button.text = "CHANGE MODE: %s" % _mode_label(next_mode)
 	show()
@@ -218,12 +218,16 @@ func _format_duration(seconds: float) -> String:
 
 func _mode_label(mode_id: StringName) -> String:
 	match mode_id:
+		GameConstants.MODE_INFINITE_ARENA:
+			return "ARENA"
+		GameConstants.MODE_SURVIVAL:
+			return "SURVIVAL"
 		GameConstants.MODE_DUNGEON:
 			return "DUNGEON"
 		GameConstants.MODE_TOWER_DEFENSE:
 			return "DEFENSE"
 		_:
-			return "SURVIVAL"
+			return "ARENA"
 
 func _play_focus() -> void:
 	var audio_manager := get_tree().get_first_node_in_group(

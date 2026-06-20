@@ -35,6 +35,7 @@ var character_back_button: Button
 var character_slots_grid: GridContainer
 var character_roster_grid: GridContainer
 var character_roster_scroll: ScrollContainer
+var character_detail_panel: CharacterDetailPanel
 var main_menu_navigation
 var character_navigation
 var character_profiles: Array[Dictionary] = []
@@ -204,7 +205,7 @@ func _create_ui() -> void:
 
 	primary_panel = PanelContainer.new()
 	primary_panel.name = "MenuPanel"
-	primary_panel.custom_minimum_size = Vector2(540.0, 640.0)
+	primary_panel.custom_minimum_size = Vector2(540.0, 700.0)
 	center.add_child(primary_panel)
 
 	var content := VBoxContainer.new()
@@ -235,10 +236,14 @@ func _create_ui() -> void:
 	content.add_child(continue_button)
 
 	first_mode_button = _create_button(
-		"Zombie Survival",
-		Callable(self, "_select_mode").bind(GameConstants.MODE_SURVIVAL)
+		"Infinite Arena",
+		Callable(self, "_select_mode").bind(GameConstants.MODE_INFINITE_ARENA)
 	)
 	content.add_child(first_mode_button)
+	content.add_child(_create_button(
+		"Zombie Survival",
+		Callable(self, "_select_mode").bind(GameConstants.MODE_SURVIVAL)
+	))
 	content.add_child(_create_button(
 		"Procedural Dungeon",
 		Callable(self, "_select_mode").bind(GameConstants.MODE_DUNGEON)
@@ -350,12 +355,18 @@ func _create_character_select_panel(parent: Control) -> void:
 	character_roster_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	content.add_child(character_roster_scroll)
 
+	var roster_content := VBoxContainer.new()
+	roster_content.name = "CharacterRosterContent"
+	roster_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	roster_content.add_theme_constant_override("separation", 8)
+	character_roster_scroll.add_child(roster_content)
+
 	character_roster_grid = GridContainer.new()
 	character_roster_grid.columns = 4
 	character_roster_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	character_roster_grid.add_theme_constant_override("h_separation", 8)
 	character_roster_grid.add_theme_constant_override("v_separation", 8)
-	character_roster_scroll.add_child(character_roster_grid)
+	roster_content.add_child(character_roster_grid)
 
 	for profile in character_profiles:
 		var character_id := StringName(profile.get("id", &""))
@@ -374,6 +385,11 @@ func _create_character_select_panel(parent: Control) -> void:
 		character_roster_grid.add_child(button)
 		character_card_buttons.append(button)
 		character_card_by_id[character_id] = button
+
+	character_detail_panel = CharacterDetailPanel.new()
+	character_detail_panel.name = "CharacterDetailPanel"
+	character_detail_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	roster_content.add_child(character_detail_panel)
 
 	var action_row := HBoxContainer.new()
 	action_row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -543,7 +559,7 @@ func _continue_game() -> void:
 	var mode_id := (
 		save_manager.get_last_mode()
 		if save_manager != null
-		else GameConstants.MODE_SURVIVAL
+		else GameConstants.MODE_INFINITE_ARENA
 	)
 	if mode_id == GameConstants.MODE_SURVIVAL:
 		_open_character_select()
@@ -593,7 +609,7 @@ func _refresh_save_status() -> void:
 	var last_mode := (
 		save_manager.get_last_mode()
 		if save_manager != null
-		else GameConstants.MODE_SURVIVAL
+		else GameConstants.MODE_INFINITE_ARENA
 	)
 	save_status_label.text = (
 		"Party Lv %d  XP %d  Money %d\n%s\nContinue: %s"
@@ -607,12 +623,16 @@ func _refresh_save_status() -> void:
 
 func _mode_label(mode_id: StringName) -> String:
 	match mode_id:
+		GameConstants.MODE_INFINITE_ARENA:
+			return "Infinite Arena"
+		GameConstants.MODE_SURVIVAL:
+			return "Zombie Survival"
 		GameConstants.MODE_DUNGEON:
 			return "Procedural Dungeon"
 		GameConstants.MODE_TOWER_DEFENSE:
 			return "Tower Defense"
 		_:
-			return "Zombie Survival"
+			return "Infinite Arena"
 
 func _format_character_icon_label(profile: Dictionary) -> String:
 	return "%s\n%s" % [
@@ -773,6 +793,7 @@ func _refresh_character_selection_ui() -> void:
 			_slot_preview_profile(player_slot, profile)
 		)
 	_refresh_character_card_states()
+	_refresh_character_detail_panel()
 	if character_start_button != null:
 		character_start_button.disabled = not _all_active_character_slots_selected()
 	_refresh_character_navigation_controls()
@@ -986,6 +1007,21 @@ func _refresh_character_preview() -> void:
 		active,
 		profile,
 		_slot_preview_profile(player_slot, profile)
+	)
+	_refresh_character_detail_panel()
+
+func _refresh_character_detail_panel() -> void:
+	if character_detail_panel == null or not character_detail_panel.is_node_ready():
+		return
+	var profile := _get_character_profile(focused_character_id)
+	if profile.is_empty() and not character_profiles.is_empty():
+		profile = character_profiles[0].duplicate(true)
+	if profile.is_empty():
+		character_detail_panel.set_profile({})
+		return
+	character_detail_panel.set_profile(
+		profile,
+		_load_character_weapon_data(profile)
 	)
 
 func _slot_preview_profile(

@@ -13,6 +13,17 @@
 - Aggiunti `tests/player_world_hud_layout_smoke_test.gd` e
   `tests/player_world_hud_visual_qa.gd` per verificare il contratto del nuovo
   layout e confrontare quattro stati di vita, carica super e glow ready.
+- Aggiunta la modalita `Infinite Arena` come default/quick play con mode id
+  dedicato, menu entry, Continue/save default, hotkey `F1`, status HUD e ciclo
+  risultati.
+- Aggiunto `tests/infinite_arena_default_mode_smoke_test.gd` per verificare
+  arena unica `500x500`, perimetro murato, assenza di WorldRuntime/streaming,
+  assenza di Character Select e cleanup al ritorno menu.
+- Aggiunto `tests/zombie_survival_world_contract_smoke_test.gd` per bloccare il
+  contratto survival standard `3x3`, profilo arena `1x1` esplicito e override
+  dimensioni mappa.
+- Aggiunti `repo_status_report.md` e `repo_fix_roadmap.md` con analisi dello
+  stato repo, fallimenti test confermati e roadmap operativa di stabilizzazione.
 - Aggiunto `WeaponVisualRenderer` per centralizzare fallback, shape target e
   silhouette proiettile derivate da `WeaponVisualData`.
 - Aggiunte silhouette pickup per le 30 armi del catalogo drop tramite
@@ -106,6 +117,7 @@
 
 ### Changed
 
+<<<<<<< HEAD
 - Separata l'arma base dall'inventario equipaggiabile: `RB`/`Spazio` attacca
   con la base, `LB`/`F` usa l'arma raccolta selezionata e il D-pad cicla solo
   le armi raccolte. Una speciale vuota non forza piu il fallback o lo switch
@@ -118,6 +130,19 @@
   etichette HP, ammo e reload.
 - Estesa la QA asset ostacoli a sorgenti PNG oltre agli SVG, mantenendo i check
   su trasparenza, copertura della silhouette e downscale runtime deterministico.
+=======
+- `Zombie Survival` resta una modalita separata con megamappa `3x3`, biomi
+  connessi e mappa esplorazione; `F7` e il menu dedicato la avviano passando da
+  Character Select.
+- Il context `arena_boundary_mode = "walled"` converte i bordi senza vicino in
+  muri fisici e disabilita i void/fall pocket interni del profilo arena.
+- `ZombieModeController` non forza piu la survival standard a `1x1`: usa il
+  default `3x3` multi-bioma di `BiomeMapGenerator` e riserva l'arena compatta
+  al context `single_biome_arena`.
+- `tools/run_tests.ps1` e `tools/run_tests.sh` supportano categorie
+  `all`/`fast`/`slow`/`soak`/`visual`, log in `build/test_logs/` e filtro senza
+  match con exit code non zero.
+>>>>>>> roadmap/stabilization-workflow-biomes
 - `Projectile` delega poligono e glow al renderer visuale condiviso mantenendo
   invariati i profili legacy quando i nuovi campi sono vuoti.
 - `DropPickup` passa `WeaponData.visual_data` a `DropPickupVisual` per i drop
@@ -244,6 +269,14 @@
 
 ### Fixed
 
+- Corretto il flusso Character Select del menu: `MainMenu` espone di nuovo un
+  `CharacterDetailPanel` aggiornato dal focus della card roster, e lo smoke
+  Milestone RPG 1 ha un timeout di guardrail per non restare appeso su errori.
+- Corretto `PlayerHudCard`: la card d'angolo non crea piu barre reload o XP
+  duplicate; caricatore, reload, EXP e super restano nel world-space HUD sopra
+  il player.
+- Corretto `tools/run_tests.ps1`: il runner PowerShell cattura ora exit code
+  reale, stdout/stderr, timeout e log persistenti senza false-fail su test PASS.
 - Corretto il QA visuale isometrico: le catture sui biomi remoti ora spostano
   il player su una cella sicura adiacente al focus e azzerano lo smoothing
   camera; una verifica di dettaglio world-space impedisce ai frame neri di
