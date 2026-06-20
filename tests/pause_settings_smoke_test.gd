@@ -123,18 +123,18 @@ func _run() -> void:
 	video_settings.set_borderless(true)
 	video_settings.set_vsync(false)
 
-	var fire_event := InputEventJoypadButton.new()
-	fire_event.device = 0
-	fire_event.button_index = JOY_BUTTON_B
-	fire_event.pressed = true
+	var attack_event := InputEventJoypadButton.new()
+	attack_event.device = 0
+	attack_event.button_index = JOY_BUTTON_B
+	attack_event.pressed = true
 	_expect(
-		input_manager.rebind_joystick_action(&"fire", fire_event),
-		"fire can be rebound to a joypad button"
+		input_manager.rebind_joystick_action(&"base_attack", attack_event),
+		"base attack can be rebound to a joypad button"
 	)
 	_expect(
-		_action_has_button(&"p1_fire", 0, JOY_BUTTON_B)
-		and _action_has_button(&"p2_fire", 1, JOY_BUTTON_B),
-		"rebinding a player action updates every local player slot"
+		_action_has_button(&"p1_base_attack", 0, JOY_BUTTON_B)
+		and _action_has_button(&"p2_base_attack", 1, JOY_BUTTON_B),
+		"rebinding base attack updates every local player slot"
 	)
 	var join_event := InputEventJoypadButton.new()
 	join_event.device = 0
@@ -167,8 +167,8 @@ func _run() -> void:
 	video_settings.restore_settings_data({})
 	_expect(save_manager.load_game(), "save v5 reload succeeds")
 	_expect(
-		_action_has_button(&"p1_fire", 0, JOY_BUTTON_B),
-		"rebound fire survives save/load"
+		_action_has_button(&"p1_base_attack", 0, JOY_BUTTON_B),
+		"rebound base attack survives save/load"
 	)
 	_expect(
 		local_multiplayer.join_button == JOY_BUTTON_LEFT_SHOULDER,

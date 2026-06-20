@@ -61,14 +61,18 @@ Controlli debug:
   personaggio allo slot attivo, `Start` joypad o `P` avvia la run quando tutti
   gli slot attivi hanno una selezione valida, `Esc`/joypad `B` torna al menu.
 - Partita: joypad `Start` o `P` apre/chiude la pausa; `Esc` torna al menu principale arrestando la run.
-- Tastiera: `WASD` per movimento, frecce per mira, `Spazio` per sparare, `R` per ricaricare e `Q` per la super RPG.
+- Tastiera: `WASD` per movimento, frecce per mira, `Spazio` per l'arma base,
+  `F` per l'arma equipaggiata, `R` per ricaricare e `Q` per la super RPG.
 - Tastiera: `Shift`/`Ctrl` esegue dodge/roll, `M` apre o chiude la mappa dei territori esplorati.
 - Tastiera debug multiplayer: `F2`, `F3`, `F4` attivano/disattivano gli slot player 2, 3 e 4.
 - Modalita debug: `F1` avvia survival, `F5` avvia una run dungeon e `F6` avvia tower defense.
 - Debug ambiente: `F8` mostra il riepilogo biomi e `F9` evidenzia footprint e celle bloccate degli ostacoli.
-- Joypad: stick sinistro per movimento, stick destro per mira, trigger/spalla destra per sparare, pulsante `X` per ricaricare e pulsante `Y` per la super RPG.
+- Joypad: stick sinistro per movimento, stick destro per mira, `RB` per l'arma
+  base, `LB` per l'arma equipaggiata, pulsante `X` per ricaricare e pulsante `Y`
+  per la super RPG.
 - Joypad: pulsante `B` per dodge/roll, `Back/Select/View` apre o chiude la mappa dei territori esplorati.
-- Joypad gameplay: D-pad su/giu seleziona ciclicamente arma precedente/successiva per il relativo player; tastiera debug `[`/`]` per player 1.
+- Joypad gameplay: D-pad su/giu seleziona ciclicamente l'arma raccolta
+  precedente/successiva per il relativo player; tastiera debug `[`/`]` per player 1.
 - Joypad multiplayer: nel menu `Start` attiva lo slot del controller, `Back/Select` lascia lo slot se non e player 1.
 - Dungeon: attraversare il portale verde a destra; nelle stanze combat e boss diventa verde solo dopo aver eliminato tutti i bersagli.
 - Tower defense: entrare in uno slot azzurro e premere `E` o pulsante joypad `A` per costruire una torre se ci sono crediti sufficienti.
@@ -260,8 +264,9 @@ Completato:
 - `Starter Pistol` configurata tramite `WeaponData` con riserva infinita;
 - inventario armi per-player con `WeaponInstance` persistenti per ammo, reload,
   cooldown, carica e stato temporaneo;
-- arma base permanente inclusa nel ciclo circolare D-pad su/giu;
-- fallback automatico quando una speciale esaurisce caricatore e riserva;
+- arma base permanente separata dall'inventario delle armi raccolte;
+- attacchi indipendenti: `RB` usa sempre la base e `LB` l'arma equipaggiata,
+  senza switch automatico quando la speciale esaurisce le munizioni;
 - proiettili con collisione e danno tramite `HealthSystem`;
 - bersagli statici con vita nella scena principale;
 - HUD per-player con vita e reload sopra il survivor e statistiche slot negli
@@ -365,7 +370,7 @@ Completato:
 - reset idempotente della salute a ogni nuova run e sui player che entrano durante il gameplay;
 - feedback audio procedurale per focus e conferma menu;
 - feedback audio procedurale per sparo, impatto valido e pickup;
-- feedback HUD/audio per low ammo, reload, fallback e ammo condivisa;
+- feedback HUD/audio per low ammo, reload e ammo condivisa;
 - arena survival desaturata con dettagli post-apocalittici;
 - survivor e zombie con visuali modulari animate proceduralmente;
 - pickup e supply crate grafici senza etichette testuali;

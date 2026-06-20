@@ -256,12 +256,6 @@ func _connect_weapon_system(player: Node) -> void:
 	).bind(weapon_system)
 	if not weapon_system.low_ammo_changed.is_connected(low_ammo_callback):
 		weapon_system.low_ammo_changed.connect(low_ammo_callback)
-	var fallback_callback := Callable(
-		self,
-		"_on_fallback_activated"
-	).bind(weapon_system)
-	if not weapon_system.fallback_activated.is_connected(fallback_callback):
-		weapon_system.fallback_activated.connect(fallback_callback)
 	var melee_started_callback := Callable(
 		self,
 		"_on_melee_attack_started"
@@ -294,16 +288,6 @@ func _on_low_ammo_changed(
 	if is_low:
 		audio_manager.play_weapon_status(
 			&"low_ammo",
-			_get_weapon_source_id(weapon_system)
-		)
-
-func _on_fallback_activated(
-	_weapon_data: WeaponData,
-	weapon_system: WeaponSystem
-) -> void:
-	if weapon_system.has_special_weapon():
-		audio_manager.play_weapon_status(
-			&"fallback",
 			_get_weapon_source_id(weapon_system)
 		)
 

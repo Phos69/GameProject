@@ -106,6 +106,11 @@
 
 ### Changed
 
+- Separata l'arma base dall'inventario equipaggiabile: `RB`/`Spazio` attacca
+  con la base, `LB`/`F` usa l'arma raccolta selezionata e il D-pad cicla solo
+  le armi raccolte. Una speciale vuota non forza piu il fallback o lo switch
+  dell'arma attiva; ammo, reload e cooldown delle due sorgenti restano
+  indipendenti.
 - Ridisegnato il `PlayerWorldHudVisual`: il livello con gauge EXP sostituisce
   P1-P4, la vita occupa le due righe superiori con soglie
   verde/arancio/rosso, la super e una barra verticale blu sul bordo destro e il

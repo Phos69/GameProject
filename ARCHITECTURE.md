@@ -22,9 +22,9 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 9. `PlayerController` legge input solo quando una modalita gameplay e attiva.
 10. `PauseMenu` intercetta l'azione `pause`, mette in pausa il tree e consente
    resume, settings, ritorno al menu o quit.
-11. `WeaponSystem` gestisce un `PlayerWeaponInventory` per-player; ogni
-    `WeaponInstance` conserva ammo, reload, cooldown, carica e stato temporaneo,
-    mentre l'arma selezionata e solo un indice.
+11. `WeaponSystem` gestisce un `PlayerWeaponInventory` per-player: l'istanza
+    base e separata dalla collezione, mentre ogni arma raccolta conserva ammo,
+    reload, cooldown, carica e stato temporaneo e la selezione resta un indice.
 12. `WeaponData` inoltra l'eventuale `WeaponVisualData` a player, HUD,
     proiettile o hitbox melee temporanea.
 13. `ProjectileSystem` spawna proiettili ranged; `MeleeAttack` copre i colpi
@@ -82,7 +82,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
   movimento custom quando una schermata deve interpretare le quattro direzioni.
 - `LocalMultiplayerManager`: mantiene gli slot locali attivi, gestisce join/leave e usa mapping deterministico `device joypad + 1 = player_slot`.
 - `PlayerManager`: spawna/despawna player in base agli slot attivi e tiene il registro degli slot.
-- `PlayerController`: movimento, mira, fire action, dodge/roll, stato entity
+- `PlayerController`: movimento, mira, attacchi base/equipaggiato, dodge/roll, stato entity
   `normal/dodging/falling/dead` e colore visuale per slot.
 - `PlayerDodgeComponent`: roll con cooldown, invulnerabilita breve, blocco
   del fuoco durante la schivata e validazione di landing/gap/ostacoli; solo le
@@ -120,7 +120,8 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `WeaponData`: risorsa immutabile con statistiche gameplay, `attack_type`,
   timing melee, metadati catalogo/effetti e riferimento visuale opzionale.
 - `WeaponInstance`: stato runtime persistente di una singola definizione.
-- `PlayerWeaponInventory`: collezione ordinata per-player, base weapon e indice selezionato.
+- `PlayerWeaponInventory`: istanza base separata, collezione ordinata delle
+  armi raccolte e indice equipaggiato.
 - `WeaponCatalog`: registry centralizzato di 30 armi drop con ID stabili.
 - `WeaponCatalogVisualPalette`: tabella presentazionale separata dal catalogo
   gameplay; assegna body, accent e glow per `weapon_id` e rende esplicito un
@@ -133,8 +134,9 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `WeaponVisualRenderer`: helper condiviso che risolve fallback, silhouette e
   asset opzionali da `WeaponVisualData`, inclusi projectile, muzzle, slash e
   impact, senza spostare regole di combat nei consumer visuali.
-- `WeaponSystem`: inventario runtime per-player, compatibilita fallback,
-  switch circolare e dispatch tra projectile e melee.
+- `WeaponSystem`: loadout runtime per-player, attacchi indipendenti base/
+  equipaggiato, switch circolare delle sole armi raccolte e dispatch tra
+  projectile e melee.
 - `MeleeAttack`: hitbox temporanea world-space per swing melee con wind-up,
   active time, recovery tramite cooldown, anti-multihit per bersaglio e
   feedback trail derivato dal profilo visuale; applica anche knockback e
@@ -440,12 +442,20 @@ ID negli smoke catalogo/pickup/projectile o melee e nella QA screenshot.
 ## Contratto combat
 
 - Ogni istanza player possiede il proprio `WeaponSystem`; inventario, caricatore, riserva e cooldown non sono condivisi.
-- Ogni `WeaponSystem` conserva sempre l'arma base e un numero arbitrario di armi raccolte.
+- Ogni `WeaponSystem` conserva sempre un'istanza base separata e un numero
+  arbitrario di armi raccolte nell'inventario equipaggiabile.
 - `WeaponData` resta definizione statica; ogni stato mutabile vive in `WeaponInstance`.
-- Lo switch D-pad su/giu e circolare e non cancella reload, cooldown o ammo.
-- Esaurire caricatore e riserva della speciale attiva la fallback e tenta lo sparo nello stesso input.
-- La fallback infinita conserva caricatore e reload; solo la riserva e virtualmente infinita.
-- Un nuovo rifornimento della speciale la riattiva e avvia il reload.
+- Lo switch D-pad su/giu e circolare solo tra le armi raccolte e non cancella
+  reload, cooldown o ammo.
+- `base_attack` usa l'istanza base senza cambiare l'arma equipaggiata;
+  `equipped_attack` usa esclusivamente l'arma raccolta selezionata.
+- Con i binding default `RB` attiva `base_attack` e `LB` attiva
+  `equipped_attack`; player 1 mantiene `Spazio` e `F` come fallback tastiera.
+- Esaurire caricatore e riserva dell'arma equipaggiata non attiva uno switch
+  implicito: l'arma base resta disponibile dal proprio input.
+- L'arma base infinita conserva caricatore e reload; solo la riserva e
+  virtualmente infinita.
+- Un rifornimento della speciale vuota avvia il reload senza cambiare slot.
 - Le statistiche di bilanciamento vivono in risorse `WeaponData`, non nel controller player.
 - Le armi RPG di base sono `WeaponData` dedicate e vengono equipaggiate dal profilo `RpgPlayerComponent`.
 - `WeaponData.max_range` limita la vita del proiettile o definisce la portata
@@ -544,8 +554,8 @@ ID negli smoke catalogo/pickup/projectile o melee e nella QA screenshot.
 - Ogni slot possiede l'azione `dodge`: joypad `B`, con fallback tastiera `Shift`/`Ctrl` per player 1.
 - La mappa esplorazione usa l'azione globale `world_map`: `M` e joypad `Back/Select/View`.
 - `InputManager` garantisce che `ui_accept` includa joypad `A` con device globale, cosi ogni controller puo navigare e confermare il menu.
-- `InputManager` espone la rimappatura joypad di movimento, mira, fire,
-  reload, super, interact, dodge, pause e world map.
+- `InputManager` espone la rimappatura joypad di movimento, mira, attacco base,
+  attacco equipaggiato, reload, super, interact, dodge, pause e world map.
 - `active_slots_changed` e il segnale autoritativo: i sistemi interessati devono ascoltare questo segnale invece di duplicare lo stato multiplayer.
 
 ## Contratti per modalita
@@ -622,7 +632,8 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - `ProjectileSystem.projectile_spawned` genera il feedback di sparo.
 - Solo un impatto con danno applicato genera il feedback di colpo.
 - `DropSystem.drop_collected` genera il feedback pickup in base al tipo raccolto.
-- `WeaponSystem` genera feedback per low ammo, reload e fallback.
+- `WeaponSystem` genera feedback per low ammo e reload; l'uso della base non e
+  piu un evento fallback perche possiede un input dedicato.
 - I toni procedurali restano placeholder e non richiedono asset esterni.
 - Spawn boss, telegraph e cambio fase usano cue distinti esposti da `gameplay_feedback_generated`.
 
@@ -827,7 +838,7 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - Solo le morti dei nemici registrati nella wave contribuiscono al completamento.
 - Le ricompense tra ondate aggiungono denaro party e munizioni/cura ai player attivi vivi.
 - Le ricompense tra ondate aggiungono anche XP RPG uguale ai player vivi con profilo attivo.
-- Le ricompense ammo alimentano solo lo slot speciale; la fallback non necessita drop.
+- Le ricompense ammo alimentano solo lo slot equipaggiato; l'arma base non necessita drop.
 - `SurvivalAmmoDirector` valuta ogni secondo i player vivi con speciale.
 - Sotto la soglia configurata di 8 colpi totali puo generare una supply crate, con cooldown di 12 secondi.
 - Ogni boss wave riceve una supply crate garantita prima dell'avvio o all'inizio della wave.

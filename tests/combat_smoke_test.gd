@@ -104,30 +104,42 @@ func _run() -> void:
 	)
 	weapon_one.cooldown = 0.0
 	_expect(
-		weapon_one.try_fire(player_one.global_position, Vector2.RIGHT, player_one),
-		"empty special weapon fires through the infinite fallback"
-	)
-	_expect(weapon_one.is_fallback_active(), "fallback weapon becomes active")
-	_expect(
-		weapon_one.weapon_data.weapon_id == &"starter_pistol",
-		"Starter Pistol remains the fallback weapon"
-	)
-	_expect(weapon_one.current_ammo == 11, "fallback shot consumes its magazine")
-	_expect(
-		"FALLBACK" in weapon_one.get_ammo_text(),
-		"HUD ammo text exposes fallback state"
+		not weapon_one.try_fire_equipped(
+			player_one.global_position,
+			Vector2.RIGHT,
+			player_one
+		),
+		"empty equipped weapon does not redirect its attack to the base weapon"
 	)
 	_expect(
-		gameplay_feedback_events.has(&"fallback"),
-		"fallback activation emits gameplay feedback"
+		weapon_one.weapon_data.weapon_id == &"prototype_blaster",
+		"empty equipped weapon remains selected"
+	)
+	var base_ammo_before := weapon_one.fallback_current_ammo
+	_expect(
+		weapon_one.try_fire_base(
+			player_one.global_position,
+			Vector2.RIGHT,
+			player_one
+		),
+		"base weapon remains independently available"
+	)
+	_expect(
+		weapon_one.fallback_current_ammo == base_ammo_before - 1,
+		"base attack consumes only the base magazine"
+	)
+	_expect(
+		weapon_one.weapon_data.weapon_id == &"prototype_blaster",
+		"base attack does not change the equipped weapon"
 	)
 	_expect(
 		weapon_one.add_reserve_ammo(5) == 5,
-		"special ammo can be restored while fallback is active"
+		"equipped weapon ammo can be restored while its magazine is empty"
 	)
 	_expect(
-		not weapon_one.is_fallback_active() and weapon_one.is_reloading,
-		"restored special weapon becomes active and starts reloading"
+		weapon_one.weapon_data.weapon_id == &"prototype_blaster"
+		and weapon_one.is_reloading,
+		"restored ammo reloads the equipped weapon without switching slots"
 	)
 
 	_finish()

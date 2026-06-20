@@ -76,21 +76,22 @@ Arma prototipo implementata:
 - caricatore da 12;
 - riserva infinita;
 - ricarica da 1 secondo;
-- resta sempre disponibile come fallback;
+- resta sempre disponibile tramite il proprio comando di attacco;
 - munizioni, caricatore e ricarica separate per ogni player.
 
-Regole inventario e fallback:
+Regole loadout e inventario:
 
 - ogni player possiede un `PlayerWeaponInventory` di `WeaponInstance`;
 - ogni istanza conserva caricatore, riserva, reload, cooldown, carica e stato temporaneo;
-- l'arma base del personaggio resta sempre nel ciclo circolare;
-- D-pad su/giu cambia arma in direzioni opposte, separatamente per slot locale;
+- l'arma base del personaggio e separata dalla collezione equipaggiabile;
+- `RB` usa sempre l'arma base e `LB` usa l'arma raccolta equipaggiata;
+- D-pad su/giu cambia solo arma raccolta in direzioni opposte, separatamente per slot locale;
 - raccogliere una nuova arma la aggiunge e la seleziona senza cancellare le precedenti;
 - raccogliere un ID gia posseduto converte il pickup in ammo o denaro se l'arma e infinita;
-- se una speciale non puo ricaricare, lo stesso input fire attiva e spara la `Starter Pistol`;
+- una speciale vuota resta equipaggiata e non devia il proprio input verso la base;
 - la pistola infinita deve comunque ricaricare il caricatore;
-- un pickup ammo ripristina la riserva della speciale, la riattiva e avvia il reload;
-- la fallback e affidabile ma resta meno efficace delle speciali.
+- un pickup ammo ripristina la riserva della speciale e avvia il reload;
+- base ed equipaggiata mantengono stato runtime indipendente.
 
 Seconda arma prototipo:
 
@@ -366,7 +367,7 @@ Il feedback audio usa toni procedurali placeholder senza asset esterni obbligato
 - sparo per armi player, boss e torri;
 - impatto solo quando viene applicato danno;
 - pickup con tono differenziato per ammo, cura, denaro e arma;
-- low ammo, reload e attivazione fallback con toni distinti.
+- low ammo e reload con toni distinti.
 
 Il mix usa bus separati per UI, armi, nemici, boss, ambiente e musica.
 Ogni cue puo ricevere uno stream licenziato opzionale mantenendo il tono
@@ -374,7 +375,7 @@ procedurale come fallback. Gli eventi downed, revive, wave e fine run hanno
 priorita maggiore degli spari ripetuti. Master, Music e SFX sono regolabili
 dal tab Audio della pagina Settings e persistiti.
 
-L'HUD aggiunge `LOW`, `RELOAD` e `FALLBACK` allo stato ammo e mostra per 1,75
+L'HUD aggiunge `LOW` e `RELOAD` allo stato ammo e mostra per 1,75
 secondi la quantita di ammo condivisa raccolta. Vita e reload/cooldown utile
 sono compatti sopra il survivor; le statistiche rimanenti stanno nelle schede
 dei quattro angoli per gli slot attivi. Il riquadro di progresso party
@@ -394,7 +395,8 @@ contenuto valido della tab attiva. `M` o joypad `Back/Select/View` apre la
 mappa dei territori esplorati durante la survival. Il tab Video contiene
 fullscreen, borderless, risoluzione, VSync, limite framerate e opzioni
 visual/accessibilita. Il tab Controls permette di riassegnare movimento, mira,
-fire, reload, super, interact, dodge, world map, pausa, join e leave per
+attacco base, attacco equipaggiato, reload, super, interact, dodge, world map,
+pausa, join e leave per
 joypad. Mix avanzato e asset audio definitivi restano futuri.
 
 ## RPG Mode
@@ -714,7 +716,7 @@ I drop individuali dei nemici restano attivi durante le ondate e sono separati d
 
 Ammo director survival:
 
-- ignora i player che possiedono solo la fallback infinita;
+- ignora i player che non possiedono armi raccolte con riserva finita;
 - se almeno un player vivo con speciale scende a 8 colpi totali o meno, puo generare una supply crate;
 - usa un cooldown di 12 secondi per evitare sovrabbondanza;
 - genera una fonte supply garantita durante l'intermissione prima della boss wave;
@@ -727,7 +729,7 @@ L'HUD mostra:
 - pacchetto sopra ogni player con livello/EXP circolare, vita cromatica sulle
   due righe superiori, ammo/reload in basso e super verticale blu con glow di
   stato ready;
-- stato low ammo, reload, empty magazine e fallback;
+- stato low ammo, reload ed empty magazine;
 - conferma temporanea dei pickup ammo condivisi;
 - dati bioma e status ambientali restano nel runtime, senza riquadro HUD
   persistente;

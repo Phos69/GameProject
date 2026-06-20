@@ -220,8 +220,21 @@ func _handle_weapon_input() -> void:
 		)
 		if super_activated:
 			visual.play_fire()
-	if not super_activated and input_manager.is_player_fire_pressed(player_slot):
-		weapon_system.try_fire(global_position + facing_direction * 22.0, facing_direction, self)
+	if super_activated:
+		return
+	var attack_origin := global_position + facing_direction * 22.0
+	if input_manager.is_player_base_attack_pressed(player_slot):
+		weapon_system.try_fire_base(
+			attack_origin,
+			facing_direction,
+			self
+		)
+	if input_manager.is_player_equipped_attack_pressed(player_slot):
+		weapon_system.try_fire_equipped(
+			attack_origin,
+			facing_direction,
+			self
+		)
 
 func prepare_for_run(max_health_bonus: int = 0) -> void:
 	current_run_health_bonus = maxi(max_health_bonus, 0)

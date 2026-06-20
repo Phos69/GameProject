@@ -20,8 +20,9 @@ func _run() -> void:
 	owner.add_child(weapon_system)
 	await process_frame
 
-	_expect(weapon_system.get_weapon_count() == 1, "base weapon starts in the inventory")
-	_expect(weapon_system.has_weapon(&"starter_pistol"), "base weapon is always addressable")
+	_expect(weapon_system.get_weapon_count() == 0, "base weapon is separate from the collected inventory")
+	_expect(weapon_system.has_base_weapon(&"starter_pistol"), "base weapon is always addressable")
+	_expect(not weapon_system.has_weapon(&"starter_pistol"), "base weapon is not reported as a collected weapon")
 	var revolver := WeaponCatalog.get_definition(&"heavy_revolver")
 	var smg := WeaponCatalog.get_definition(&"unstable_smg")
 	_expect(weapon_system.add_weapon(revolver), "second weapon is added instead of replacing the base")
@@ -40,9 +41,9 @@ func _run() -> void:
 	for _index in range(weapon_system.get_weapon_count()):
 		weapon_system.switch_weapon(1)
 	_expect(weapon_system.weapon_data.weapon_id == starting_id, "weapon cycling wraps circularly")
-	_expect(weapon_system.has_weapon(&"starter_pistol"), "base weapon remains in the switch cycle")
+	_expect(not weapon_system.has_weapon(&"starter_pistol"), "base weapon stays outside the switch cycle")
 	weapon_system.reset_for_run()
-	_expect(weapon_system.get_weapon_count() == 1 and weapon_system.has_weapon(&"starter_pistol"), "new run clears collected weapons but keeps the base")
+	_expect(weapon_system.get_weapon_count() == 0 and weapon_system.has_base_weapon(&"starter_pistol"), "new run clears collected weapons but keeps the separate base")
 
 	var definitions := WeaponCatalog.get_all()
 	_expect(definitions.size() == 30, "catalog exposes exactly thirty new weapons")
@@ -60,7 +61,7 @@ func _run() -> void:
 	weapon_system.add_weapon(revolver)
 	var duplicate_reserve_before := weapon_system.reserve_ammo
 	_expect(drop_system.collect_drop({"type": GameConstants.DROP_WEAPON, "amount": 1, "weapon_data": revolver}, owner), "duplicate pickup is consumed as a fallback reward")
-	_expect(weapon_system.get_weapon_count() == 2 and weapon_system.reserve_ammo > duplicate_reserve_before, "duplicate pickup adds ammo without creating another instance")
+	_expect(weapon_system.get_weapon_count() == 1 and weapon_system.reserve_ammo > duplicate_reserve_before, "duplicate pickup adds ammo without creating another instance")
 	var catalog_entry := DropEntry.new()
 	catalog_entry.drop_type = GameConstants.DROP_WEAPON
 	catalog_entry.chance = 1.0
@@ -80,6 +81,8 @@ func _run() -> void:
 	var input_manager := InputManager.new()
 	world.add_child(input_manager)
 	await process_frame
+	_expect(_has_joy_button(&"p1_base_attack", 0, JOY_BUTTON_RIGHT_SHOULDER), "P1 RB maps to the base weapon")
+	_expect(_has_joy_button(&"p1_equipped_attack", 0, JOY_BUTTON_LEFT_SHOULDER), "P1 LB maps to the equipped weapon")
 	_expect(_has_joy_button(&"p1_weapon_previous", 0, JOY_BUTTON_DPAD_UP), "P1 D-pad up maps to previous weapon")
 	_expect(_has_joy_button(&"p2_weapon_next", 1, JOY_BUTTON_DPAD_DOWN), "P2 D-pad down maps independently to next weapon")
 

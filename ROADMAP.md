@@ -306,7 +306,8 @@ Attivita post-roadmap:
 - roadmap motore generazione mappe e biomi completata come primo pass storico; il rewrite corrente usa seed globale, mappa biomi default `3x3`, chunk `500x500`, confini, passaggi, fall zone, layout interni, validazione flood-fill e integrazione zombie;
 - roadmap megamappa persistente isometrica completata come primo pass storico; il rewrite corrente mantiene grafo seed-based connesso, territori `500x500`, passaggi fisici aperti, fall boundary sui lati esterni, terreno classificato su tutta la regione, mappa esplorazione persistente, dodge/roll e manifest asset isometrici;
 - roadmap revamp modalita zombie completata fino alla Milestone Z12: cinque biomi attraversabili, spawn camera-edge, wave contestuali, layout, loot, hazard, zombie tematici, HUD e test di durata;
-- sistema ammo survival robusto con fallback infinita, pickup condivisi, supply crate e director anti-frustrazione completato;
+- sistema ammo survival robusto con arma base infinita separata, pickup
+  condivisi, supply crate e director anti-frustrazione completato;
 - visual gameplay pass della zombie survival completato;
 - zombie ranged con telegraph e pressione a distanza completato;
 - downed e revive multiplayer completati;
@@ -512,7 +513,9 @@ Stato: completata come prototipo integrato.
 Stato: completata come prototipo integrato.
 
 - Separati dati statici `WeaponData` e stato runtime `WeaponInstance`.
-- Aggiunto inventario ordinato per ogni player con arma base permanente e switch circolare D-pad su/giu.
+- Aggiunto inventario ordinato per ogni player; il pass input del 2026-06-20
+  separa l'istanza base dalla collezione, assegna `RB` alla base e `LB` all'arma
+  equipaggiata e limita lo switch circolare D-pad alle sole armi raccolte.
 - Pickup non distruttivi, duplicati convertiti e stato ammo/reload/cooldown persistente.
 - Registry globale di run impedisce allo stesso `weapon_id` di apparire due volte; fallback ammo a pool esaurito.
 - Aggiunte 30 armi data-driven: 10 firearm, 10 melee e 10 elemental.

@@ -4,38 +4,38 @@ class_name PlayerWeaponInventory
 var instances: Array[WeaponInstance] = []
 var selected_index: int = -1
 var base_weapon_id: StringName = &""
+var base_instance: WeaponInstance
 
 func set_base_weapon(definition: WeaponData) -> WeaponInstance:
 	if definition == null:
 		return null
-	var existing := get_instance(definition.weapon_id)
-	if existing != null:
+	if base_instance != null and base_instance.get_weapon_id() == definition.weapon_id:
 		base_weapon_id = definition.weapon_id
-		selected_index = instances.find(existing)
-		return existing
+		return base_instance
 	var instance := WeaponInstance.new(definition)
-	instances.push_front(instance)
+	base_instance = instance
 	base_weapon_id = definition.weapon_id
-	selected_index = 0
 	return instance
 
 func replace_base_weapon(definition: WeaponData) -> WeaponInstance:
 	if definition == null:
 		return null
-	if not base_weapon_id.is_empty():
-		var old_base := get_instance(base_weapon_id)
-		if old_base != null:
-			instances.erase(old_base)
+	base_instance = null
 	base_weapon_id = &""
-	selected_index = clampi(selected_index, -1, instances.size() - 1)
 	return set_base_weapon(definition)
+
+func clear() -> void:
+	instances.clear()
+	selected_index = -1
+	base_instance = null
+	base_weapon_id = &""
 
 func add_weapon(definition: WeaponData, select_new: bool = true) -> WeaponInstance:
 	if definition == null or has_weapon(definition.weapon_id):
 		return null
 	var instance := WeaponInstance.new(definition)
 	instances.append(instance)
-	if selected_index < 0 or select_new:
+	if select_new:
 		selected_index = instances.size() - 1
 	return instance
 
@@ -48,10 +48,22 @@ func get_instance(weapon_id: StringName) -> WeaponInstance:
 			return instance
 	return null
 
+func get_instance_or_base(weapon_id: StringName) -> WeaponInstance:
+	if base_instance != null and base_instance.get_weapon_id() == weapon_id:
+		return base_instance
+	return get_instance(weapon_id)
+
+func get_base() -> WeaponInstance:
+	return base_instance
+
 func get_selected() -> WeaponInstance:
 	if selected_index < 0 or selected_index >= instances.size():
 		return null
 	return instances[selected_index]
+
+func get_active() -> WeaponInstance:
+	var selected := get_selected()
+	return selected if selected != null else base_instance
 
 func select_weapon(weapon_id: StringName) -> WeaponInstance:
 	for index in range(instances.size()):

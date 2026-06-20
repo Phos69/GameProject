@@ -495,9 +495,6 @@ func _format_corner_ammo_text(weapon_system: WeaponSystem) -> String:
 	if weapon_system == null or weapon_system.weapon_data == null:
 		return "-"
 	if weapon_system.weapon_data.infinite_reserve_ammo:
-		if weapon_system.has_special_weapon() and weapon_system.is_fallback_active():
-			var special_total := maxi(weapon_system.get_special_ammo_total(), 0)
-			return "SP %d" % special_total
 		return "RES INF"
 	var suffix := " LOW" if weapon_system.low_ammo_active else ""
 	return "RES %d%s" % [weapon_system.reserve_ammo, suffix]

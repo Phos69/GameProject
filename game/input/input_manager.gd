@@ -14,7 +14,8 @@ const PLAYER_JOYSTICK_ACTIONS: Array[StringName] = [
 	&"aim_right",
 	&"aim_up",
 	&"aim_down",
-	&"fire",
+	&"base_attack",
+	&"equipped_attack",
 	&"reload",
 	&"super",
 	&"interact",
@@ -31,7 +32,8 @@ const ALL_JOYSTICK_ACTIONS: Array[StringName] = [
 	&"aim_right",
 	&"aim_up",
 	&"aim_down",
-	&"fire",
+	&"base_attack",
+	&"equipped_attack",
 	&"reload",
 	&"super",
 	&"interact",
@@ -49,7 +51,8 @@ const ACTION_LABELS: Dictionary = {
 	&"aim_right": "Aim right",
 	&"aim_up": "Aim up",
 	&"aim_down": "Aim down",
-	&"fire": "Fire",
+	&"base_attack": "Base weapon attack",
+	&"equipped_attack": "Equipped weapon attack",
 	&"reload": "Reload",
 	&"super": "Super",
 	&"interact": "Interact",
@@ -99,9 +102,13 @@ const DEFAULT_JOYSTICK_BINDINGS: Dictionary = {
 		"axis": JOY_AXIS_RIGHT_Y,
 		"axis_value": 1.0
 	},
-	&"fire": {
+	&"base_attack": {
 		"type": "button",
 		"button_index": JOY_BUTTON_RIGHT_SHOULDER
+	},
+	&"equipped_attack": {
+		"type": "button",
+		"button_index": JOY_BUTTON_LEFT_SHOULDER
 	},
 	&"reload": {
 		"type": "button",
@@ -155,8 +162,14 @@ func get_player_aim_vector(player_slot: int) -> Vector2:
 		_action(player_slot, "aim_down")
 	)
 
+func is_player_base_attack_pressed(player_slot: int) -> bool:
+	return Input.is_action_pressed(_action(player_slot, "base_attack"))
+
+func is_player_equipped_attack_pressed(player_slot: int) -> bool:
+	return Input.is_action_pressed(_action(player_slot, "equipped_attack"))
+
 func is_player_fire_pressed(player_slot: int) -> bool:
-	return Input.is_action_pressed(_action(player_slot, "fire"))
+	return is_player_base_attack_pressed(player_slot)
 
 func is_player_reload_just_pressed(player_slot: int) -> bool:
 	return Input.is_action_just_pressed(_action(player_slot, "reload"))
@@ -292,7 +305,8 @@ func _add_keyboard_debug_actions() -> void:
 	InputMap.action_add_event(_action(1, "aim_right"), _key(KEY_RIGHT))
 	InputMap.action_add_event(_action(1, "aim_up"), _key(KEY_UP))
 	InputMap.action_add_event(_action(1, "aim_down"), _key(KEY_DOWN))
-	InputMap.action_add_event(_action(1, "fire"), _key(KEY_SPACE))
+	InputMap.action_add_event(_action(1, "base_attack"), _key(KEY_SPACE))
+	InputMap.action_add_event(_action(1, "equipped_attack"), _key(KEY_F))
 	InputMap.action_add_event(_action(1, "reload"), _key(KEY_R))
 	InputMap.action_add_event(_action(1, "super"), _key(KEY_Q))
 	InputMap.action_add_event(_action(1, "interact"), _key(KEY_E))
@@ -320,14 +334,6 @@ func get_joystick_binding_label(action_id: StringName) -> String:
 	if spec.is_empty():
 		return "Unassigned"
 	var label := _binding_label(spec)
-	if (
-		action_id == &"fire"
-		and _binding_specs_equal(
-			spec,
-			DEFAULT_JOYSTICK_BINDINGS[&"fire"] as Dictionary
-		)
-	):
-		label += " / Right Trigger"
 	return label
 
 func rebind_joystick_action(
@@ -458,17 +464,6 @@ func _apply_binding_to_action(
 	var event := _binding_to_event(spec, device_id)
 	if event != null:
 		InputMap.action_add_event(action_name, event)
-	if (
-		String(action_name).ends_with("_fire")
-		and _binding_specs_equal(
-			spec,
-			DEFAULT_JOYSTICK_BINDINGS[&"fire"] as Dictionary
-		)
-	):
-		InputMap.action_add_event(
-			action_name,
-			_joy_motion_device(device_id, JOY_AXIS_TRIGGER_RIGHT, 1.0)
-		)
 
 func _clear_joy_events(action_name: StringName) -> void:
 	for event in InputMap.action_get_events(action_name):

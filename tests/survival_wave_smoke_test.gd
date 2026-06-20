@@ -220,17 +220,27 @@ func _run() -> void:
 	player_two_weapon.current_ammo = 0
 	player_two_weapon.reserve_ammo = 0
 	_expect(
-		player_one_weapon.try_fire(player_one.global_position, Vector2.RIGHT, player_one),
-		"player one can still fire through the fallback at zero special ammo"
+		player_one_weapon.try_fire_base(
+			player_one.global_position,
+			Vector2.RIGHT,
+			player_one
+		),
+		"player one can still use the separate base weapon at zero equipped ammo"
 	)
 	_expect(
-		player_two_weapon.try_fire(player_two.global_position, Vector2.LEFT, player_two),
-		"player two can still fire through the fallback at zero special ammo"
+		player_two_weapon.try_fire_base(
+			player_two.global_position,
+			Vector2.LEFT,
+			player_two
+		),
+		"player two can still use the separate base weapon at zero equipped ammo"
 	)
 	_expect(
-		player_one_weapon.is_fallback_active()
-		and player_two_weapon.is_fallback_active(),
-		"survival cannot leave all living players without a firing option"
+		player_one_weapon.get_base_weapon_data() != null
+		and player_two_weapon.get_base_weapon_data() != null
+		and not player_one_weapon.is_base_weapon_active()
+		and not player_two_weapon.is_base_weapon_active(),
+		"base attacks do not replace the equipped weapon selection"
 	)
 
 	survival_mode.stop_mode()

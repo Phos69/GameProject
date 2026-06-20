@@ -266,7 +266,9 @@ evitare reimplementazioni e per indirizzare le regressioni.
   `tests/headless_shutdown_loop_test.gd` e smoke prioritari.
 - WPN-001 inventario armi e catalogo: completato il 2026-06-19; stato runtime
   per istanza, switch per-player, unicita drop di run, 30 armi e resolver
-  effetti coperti da `tests/weapon_inventory_catalog_smoke_test.gd`. Follow-up
+  effetti coperti da `tests/weapon_inventory_catalog_smoke_test.gd`. Il pass
+  input del 2026-06-20 separa inoltre l'arma base dalla collezione: `RB` usa la
+  base, `LB` l'equipaggiata e il D-pad cicla solo le armi raccolte. Follow-up
   ammessi solo per tuning, asset finali e playtest visuale dentro `BAL-001` o
   `UIUX-001`, non per parti core.
 - WVIS-001 identita visuale completa delle armi: completato il 2026-06-20 con

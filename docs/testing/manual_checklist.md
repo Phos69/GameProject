@@ -58,7 +58,8 @@
 - Master, Music e SFX sono nel tab Audio e non nella pagina principale.
 - Il tab Video permette di selezionare finestra/fullscreen, borderless, risoluzione, VSync e limite framerate.
 - Il tab Video conserva anche preset e slider visual/accessibilita.
-- Il tab Controls permette di riassegnare movimento, mira, fire, reload, super, interact, pause, join e leave joypad.
+- Il tab Controls permette di riassegnare movimento, mira, attacco base,
+  attacco equipaggiato, reload, super, interact, pause, join e leave joypad.
 - Un binding gameplay joypad modificato viene applicato a tutti gli slot locali.
 - Salvare e riavviare ripristina audio, video e controlli joypad.
 - Durante una run, `Start` apre la pausa senza attivare nuovi slot.
@@ -80,14 +81,14 @@ godot --headless --path . --script res://tests/pause_settings_smoke_test.gd
   senza duplicare il caricatore.
 - Sparare riduce il caricatore di una unita per colpo valido.
 - Le munizioni di un player non modificano quelle degli altri player.
-- Tenere premuto fire rispetta il fire rate della pistola.
+- Tenere premuto `RB` rispetta il fire rate dell'arma base.
 - `R` o pulsante `X` avvia la ricarica e lo slot sopra-player passa da ammo a
   `RELOAD`, riempiendosi fino alla fine della ricarica.
 - Dopo un secondo il caricatore viene riempito senza consumare una riserva finita.
-- Equipaggiare una speciale mantiene disponibile la `Starter Pistol`.
-- Con speciale a 0/0, premere fire spara nello stesso input con la fallback.
-- L'HUD mostra `FALLBACK` e il feedback audio dedicato.
-- Un pickup ammo riattiva la speciale e avvia il reload.
+- Equipaggiare una speciale mantiene disponibile la `Starter Pistol` su `RB`.
+- `LB` usa la speciale equipaggiata e `RB` usa la base senza cambiare selezione.
+- Con speciale a 0/0, `LB` non spara; `RB` continua a usare la base.
+- Un pickup ammo avvia il reload della speciale senza cambiare slot.
 - Un proiettile che colpisce un bersaglio rosso riduce la sua barra vita.
 - Quattro colpi della pistola distruggono un bersaglio da 40 HP.
 - I proiettili non collidono con il player che li ha sparati.
@@ -100,7 +101,8 @@ Eseguire con Godot 4.x disponibile nel PATH:
 godot --headless --path . --script res://tests/combat_smoke_test.gd
 ```
 
-Il test verifica scena principale, due player locali, sparo, collisione, danno, reload infinito e fallback da speciale esaurita.
+Il test verifica scena principale, due player locali, sparo, collisione, danno,
+reload infinito e indipendenza tra arma base e arma equipaggiata esaurita.
 
 ## Regressione RPG Milestone 7
 
