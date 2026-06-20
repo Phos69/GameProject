@@ -26,6 +26,17 @@ const VOIDFIRST_ROCK_MAX_COUNT := 16
 const VOIDFIRST_ROCK_GAP := 3
 const VOIDFIRST_ROCK_MARGIN := 6
 const VOIDFIRST_ROCK_ATTEMPTS := 600
+const VOIDFIRST_FOREST_MIN_SIZE := 9
+const VOIDFIRST_FOREST_MAX_SIZE := 60
+const VOIDFIRST_FOREST_MIN_COUNT := 4
+const VOIDFIRST_FOREST_MAX_COUNT := 7
+const VOIDFIRST_FOREST_ATTEMPTS := 120
+const VOIDFIRST_FOREST_EDGE_MARGIN := 4
+# Trees fill a forest on a jittered grid; spacing > footprint keeps walkable gaps
+# between trunks so roads/paths can cross and zombies can navigate the interior.
+const VOIDFIRST_TREE_SPACING := 17
+const VOIDFIRST_TREE_JITTER := 4
+const VOIDFIRST_MAX_TREES := 240
 
 const GENERATED_OBSTACLE_CATEGORIES: Dictionary = {
 	&"abandoned_car": &"wreck",
@@ -113,6 +124,7 @@ func populate_layout_voidfirst(
 	rng.seed = maxi(cell.seed, 1)
 	_carve_passages(layout, cell)
 	_place_rocks(layout, biome, rng)
+	_place_forests(layout, biome, rng)
 	_update_generation_summary(layout, biome)
 
 # Carve the mandatory inter-biome passage corridors as walkable connectors so the
@@ -178,6 +190,78 @@ func _try_place_rocks(
 		_add_obstacle(layout, &"large_rock", rect, &"rectangle", 0.0)
 		placed += 1
 	return placed
+
+# M2 — place square forests (side 9..60). Each forest is a walkable floor patch
+# (forest_tall_grass) filled with natural-size forest_tree obstacles on a jittered
+# grid. Trees never land on a rock (rock wins) and spacing leaves walkable gaps so
+# the interior stays traversable.
+func _place_forests(
+	layout: BiomeEnvironmentLayout,
+	_biome: BiomeDefinition,
+	rng: RandomNumberGenerator
+) -> int:
+	var count := rng.randi_range(VOIDFIRST_FOREST_MIN_COUNT, VOIDFIRST_FOREST_MAX_COUNT)
+	var placed := 0
+	var attempts := 0
+	var lo := BORDER_THICKNESS + VOIDFIRST_FOREST_EDGE_MARGIN
+	while placed < count and attempts < VOIDFIRST_FOREST_ATTEMPTS:
+		attempts += 1
+		var side := rng.randi_range(VOIDFIRST_FOREST_MIN_SIZE, VOIDFIRST_FOREST_MAX_SIZE)
+		var hi_x := layout.zone_size.x - lo - side
+		var hi_y := layout.zone_size.y - lo - side
+		if hi_x <= lo or hi_y <= lo:
+			continue
+		var rect := Rect2i(
+			Vector2i(rng.randi_range(lo, hi_x), rng.randi_range(lo, hi_y)),
+			Vector2i(side, side)
+		)
+		layout.forest_rects.append(rect)
+		layout.add_floor_rect(rect, &"forest_tall_grass")
+		placed += 1
+	_fill_forests_with_trees(layout, rng)
+	return placed
+
+func _fill_forests_with_trees(
+	layout: BiomeEnvironmentLayout,
+	rng: RandomNumberGenerator
+) -> int:
+	var footprint := IsometricEnvironmentManifest.get_shared().get_footprint_tiles(
+		&"forest_tree"
+	)
+	var tree_count := 0
+	for forest_rect in layout.forest_rects:
+		if tree_count >= VOIDFIRST_MAX_TREES:
+			break
+		var max_x := forest_rect.end.x - footprint.x - VOIDFIRST_FOREST_EDGE_MARGIN
+		var max_y := forest_rect.end.y - footprint.y - VOIDFIRST_FOREST_EDGE_MARGIN
+		var min_x := forest_rect.position.x + VOIDFIRST_FOREST_EDGE_MARGIN
+		var min_y := forest_rect.position.y + VOIDFIRST_FOREST_EDGE_MARGIN
+		var y := min_y
+		while y <= max_y:
+			var x := min_x
+			while x <= max_x:
+				if tree_count >= VOIDFIRST_MAX_TREES:
+					break
+				var pos := Vector2i(
+					clampi(x + rng.randi_range(-VOIDFIRST_TREE_JITTER, VOIDFIRST_TREE_JITTER), min_x, max_x),
+					clampi(y + rng.randi_range(-VOIDFIRST_TREE_JITTER, VOIDFIRST_TREE_JITTER), min_y, max_y)
+				)
+				var rect := Rect2i(pos, footprint)
+				if _can_place_tree(layout, rect):
+					_add_obstacle(layout, &"forest_tree", rect, &"rectangle", 0.0)
+					tree_count += 1
+				x += VOIDFIRST_TREE_SPACING
+			y += VOIDFIRST_TREE_SPACING
+	return tree_count
+
+# A tree may be placed only on a clear cell: never overlapping an existing
+# obstacle (rocks win, and trees never stack) nor a passage corridor.
+func _can_place_tree(layout: BiomeEnvironmentLayout, rect: Rect2i) -> bool:
+	if _intersects_any(rect, layout.obstacle_rects):
+		return false
+	if _rect_overlaps_passage_corridor(layout, rect):
+		return false
+	return true
 
 func repair_layout(layout: BiomeEnvironmentLayout) -> void:
 	for index in range(layout.obstacle_rects.size() - 1, -1, -1):
