@@ -94,7 +94,7 @@ func _on_projectile_spawned(projectile: Node) -> void:
 	var color := typed_projectile.get_muzzle_color()
 	var angle := typed_projectile.velocity.angle()
 	_spawn_effect(
-		&"muzzle",
+		typed_projectile.get_muzzle_effect_kind(),
 		typed_projectile.global_position,
 		color,
 		typed_projectile.get_muzzle_size() * 2.2,
@@ -115,16 +115,28 @@ func _on_projectile_impacted(
 		position = (projectile as Node2D).global_position
 	elif target is Node2D:
 		position = (target as Node2D).global_position
+	var effect_kind := &"hit"
+	var effect_color := Color(1.0, 0.42, 0.24, 1.0)
+	var effect_size := 20.0
+	var shake_strength := 1.5
+	var shake_duration := 0.08
+	if projectile is Projectile:
+		var typed_projectile := projectile as Projectile
+		effect_kind = typed_projectile.get_impact_effect_kind()
+		effect_color = typed_projectile.get_impact_color()
+		effect_size = typed_projectile.get_impact_size()
+		shake_strength = typed_projectile.get_impact_shake_strength()
+		shake_duration = typed_projectile.get_impact_shake_duration()
 	_spawn_effect(
-		&"hit",
+		effect_kind,
 		position,
-		Color(1.0, 0.42, 0.24, 1.0),
-		20.0,
+		effect_color,
+		effect_size,
 		0.22,
 		0.0,
 		flash_intensity
 	)
-	_request_camera_shake(1.5, 0.08)
+	_request_camera_shake(shake_strength, shake_duration)
 
 func _on_melee_attack_hit(
 	attack: Node,
@@ -134,29 +146,44 @@ func _on_melee_attack_hit(
 ) -> void:
 	if applied_damage <= 0:
 		return
-	var color := Color(1.0, 0.80, 0.34, 1.0)
-	var size := 24.0
-	var shake_strength := 2.0
 	var attack_visual_data := (
 		attack.get("visual_data") as WeaponVisualData
 		if attack != null
 		else null
 	)
-	var source_id := (
-		StringName(attack.get("source_id"))
+	var attack_shape := (
+		StringName(attack.get("attack_shape"))
+		if attack != null
+		else &"rectangle"
+	)
+	var trail_style := (
+		StringName(attack.get("trail_style"))
 		if attack != null
 		else &""
 	)
-	if attack_visual_data != null:
-		color = attack_visual_data.projectile_glow_color
-	if source_id == &"rpg_axe":
-		size = 34.0
-		shake_strength = 3.8
-	elif source_id == &"rpg_sword":
-		size = 26.0
-		shake_strength = 2.4
+	var effect_kind := WeaponVisualRenderer.get_melee_impact_effect_kind(
+		attack_visual_data,
+		attack_shape,
+		trail_style
+	)
+	var color := WeaponVisualRenderer.get_melee_impact_color(attack_visual_data)
+	var size := WeaponVisualRenderer.get_melee_impact_size(
+		attack_visual_data,
+		attack_shape,
+		trail_style
+	)
+	var shake_strength := WeaponVisualRenderer.get_melee_impact_shake_strength(
+		attack_visual_data,
+		attack_shape,
+		trail_style
+	)
+	var shake_duration := WeaponVisualRenderer.get_melee_impact_shake_duration(
+		attack_visual_data,
+		attack_shape,
+		trail_style
+	)
 	_spawn_effect(
-		&"melee_hit",
+		effect_kind,
 		hit_position,
 		color,
 		size,
@@ -164,7 +191,7 @@ func _on_melee_attack_hit(
 		attack.rotation if attack != null else 0.0,
 		flash_intensity
 	)
-	_request_camera_shake(shake_strength, 0.10)
+	_request_camera_shake(shake_strength, shake_duration)
 
 func _on_enemy_died(enemy: Node) -> void:
 	if not enemy is Node2D:

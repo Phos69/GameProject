@@ -127,8 +127,29 @@ class GroundHazardRuntime extends Node2D:
 
 	func _draw() -> void:
 		var color := Color(0.45, 0.95, 0.24, 0.22) if effect_id == &"poison" else Color(1.0, 0.32, 0.12, 0.22)
+		if source_id == &"acid_flask":
+			color = Color(0.36, 1.0, 0.18, 0.24)
+		elif source_id == &"toxic_spores":
+			color = Color(0.52, 0.95, 0.28, 0.18)
 		draw_circle(Vector2.ZERO, radius, color)
 		draw_arc(Vector2.ZERO, radius, 0.0, TAU, 36, Color(color, 0.72), 2.0)
+		if source_id == &"acid_flask":
+			for index in range(8):
+				var direction := Vector2.RIGHT.rotated(TAU * float(index) / 8.0)
+				draw_circle(
+					direction * radius * 0.42,
+					radius * 0.08,
+					Color(color.lightened(0.20), 0.30)
+				)
+		elif source_id == &"toxic_spores":
+			for index in range(10):
+				var direction := Vector2.RIGHT.rotated(TAU * float(index) / 10.0)
+				var distance := radius * (0.22 + 0.055 * float(index % 4))
+				draw_circle(
+					direction * distance,
+					radius * 0.05,
+					Color(color.lightened(0.28), 0.34)
+				)
 
 static func resolve_impact(tree: SceneTree, definition: WeaponData, target: Node, position: Vector2, owner_ref: Node, applied_damage: int) -> void:
 	if tree == null or definition == null:

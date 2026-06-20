@@ -4,6 +4,8 @@ class_name MeleeAttack
 signal hit_target(target: Node, applied_damage: int, hit_position: Vector2)
 signal attack_finished()
 
+const WEAPON_VISUAL_RENDERER := preload("res://game/weapons/weapon_visual_renderer.gd")
+
 enum Phase {
 	WINDUP,
 	ACTIVE,
@@ -74,6 +76,16 @@ func configure(
 	visual_data = weapon_visual_data
 	trail_style = trail_style_value
 	effect_key = effect_key_value
+
+func get_slash_shape_id() -> StringName:
+	return WEAPON_VISUAL_RENDERER.get_slash_shape_id(visual_data)
+
+func get_slash_style_id() -> StringName:
+	return WEAPON_VISUAL_RENDERER.get_slash_style_id(
+		visual_data,
+		attack_shape,
+		trail_style
+	)
 
 func _ready() -> void:
 	z_index = 3
@@ -316,65 +328,253 @@ func _draw_attack_trail(
 	ratio: float
 ) -> void:
 	var alpha := 1.0 - ratio * 0.42
-	match attack_shape:
-		&"arc":
-			var half_angle := deg_to_rad(arc_degrees * 0.5)
-			var start_angle := lerpf(-half_angle, half_angle * 0.10, ratio)
-			var end_angle := lerpf(half_angle * 0.10, half_angle, ratio)
-			if trail_style == &"heavy_arc":
-				draw_arc(
-					Vector2.ZERO,
-					attack_range * 0.68,
-					-half_angle,
-					half_angle,
-					28,
-					Color(glow_color, 0.14 * alpha),
-					attack_width * 0.24,
-					true
-				)
-			draw_arc(
-				Vector2.ZERO,
-				attack_range * 0.86,
-				start_angle,
-				end_angle,
-				28,
-				Color(blade_color, 0.84 * alpha),
-				maxf(attack_width * 0.08, 5.0),
-				true
-			)
-			for index in range(3):
-				var angle := lerpf(-half_angle, half_angle, float(index) / 2.0)
-				draw_line(
-					Vector2.RIGHT.rotated(angle) * attack_range * 0.28,
-					Vector2.RIGHT.rotated(angle) * attack_range,
-					Color(glow_color, 0.28 * alpha),
-					2.0,
-					true
-				)
+	match get_slash_style_id():
+		&"quick_stab":
+			_draw_thrust_slash(blade_color, glow_color, ratio, alpha, 0.48)
+		&"spear_thrust":
+			_draw_thrust_slash(blade_color, glow_color, ratio, alpha, 0.86)
+		&"katana_dash_cut":
+			_draw_katana_slash(blade_color, glow_color, ratio, alpha)
+		&"shield_bash":
+			_draw_shield_bash(blade_color, glow_color, ratio, alpha)
+		&"hammer_shockwave":
+			_draw_hammer_shockwave(blade_color, glow_color, ratio, alpha)
+		&"spiked_impact":
+			_draw_spiked_impact(blade_color, glow_color, ratio, alpha)
+		&"scythe_crescent":
+			_draw_arc_slash(blade_color, glow_color, ratio, alpha, 1.20, 0.72)
+		&"heavy_cleave":
+			_draw_arc_slash(blade_color, glow_color, ratio, alpha, 0.88, 0.62)
+		&"broad_sweep":
+			_draw_arc_slash(blade_color, glow_color, ratio, alpha, 1.04, 0.48)
+		&"machete_cleave":
+			_draw_arc_slash(blade_color, glow_color, ratio, alpha, 0.74, 0.30)
+		&"claw_arc":
+			_draw_claw_slash(blade_color, glow_color, ratio, alpha)
 		_:
-			var y := lerpf(-attack_width * 0.48, attack_width * 0.48, ratio)
-			draw_rect(
-				Rect2(
-					Vector2(0.0, -attack_width * 0.5),
-					Vector2(attack_range, attack_width)
-				),
-				Color(glow_color, 0.10 * alpha),
-				true
-			)
-			draw_line(
-				Vector2(8.0, -attack_width * 0.45),
-				Vector2(attack_range, y),
-				Color(blade_color, 0.90 * alpha),
-				maxf(attack_width * 0.12, 4.0),
-				true
-			)
-			draw_line(
-				Vector2(attack_range * 0.26, attack_width * 0.36),
-				Vector2(attack_range * 0.92, -attack_width * 0.28),
-				Color(glow_color, 0.34 * alpha),
-				2.0,
-				true
-			)
+			_draw_default_slash(blade_color, glow_color, ratio, alpha)
+
+func _draw_arc_slash(
+	blade_color: Color,
+	glow_color: Color,
+	ratio: float,
+	alpha: float,
+	radius_scale: float,
+	weight_scale: float
+) -> void:
+	var half_angle := deg_to_rad(arc_degrees * 0.5)
+	if attack_shape != &"arc":
+		half_angle = atan2(attack_width * 0.62, maxf(attack_range, 1.0))
+		half_angle *= 1.40
+	var start_angle := lerpf(-half_angle, half_angle * 0.10, ratio)
+	var end_angle := lerpf(half_angle * 0.10, half_angle, ratio)
+	var radius := attack_range * clampf(radius_scale, 0.45, 1.30)
+	draw_arc(
+		Vector2.ZERO,
+		radius * 0.72,
+		-half_angle,
+		half_angle,
+		30,
+		Color(glow_color, 0.12 * alpha),
+		maxf(attack_width * 0.18 * weight_scale, 4.0),
+		true
+	)
+	draw_arc(
+		Vector2.ZERO,
+		radius,
+		start_angle,
+		end_angle,
+		32,
+		Color(blade_color, 0.88 * alpha),
+		maxf(attack_width * 0.09 * (1.0 + weight_scale), 5.0),
+		true
+	)
+	for index in range(3):
+		var angle := lerpf(-half_angle, half_angle, float(index) / 2.0)
+		draw_line(
+			Vector2.RIGHT.rotated(angle) * radius * 0.28,
+			Vector2.RIGHT.rotated(angle) * radius,
+			Color(glow_color, 0.26 * alpha),
+			2.0,
+			true
+		)
+
+func _draw_thrust_slash(
+	blade_color: Color,
+	glow_color: Color,
+	ratio: float,
+	alpha: float,
+	length_scale: float
+) -> void:
+	var length := attack_range * clampf(length_scale, 0.30, 1.0)
+	var start_x := attack_range * 0.10 + ratio * attack_range * 0.18
+	var finish_x := maxf(length, start_x + 8.0)
+	draw_line(
+		Vector2(start_x, 0.0),
+		Vector2(finish_x, 0.0),
+		Color(blade_color, 0.95 * alpha),
+		maxf(attack_width * 0.10, 3.0),
+		true
+	)
+	draw_line(
+		Vector2(start_x, -attack_width * 0.18),
+		Vector2(finish_x * 0.92, -attack_width * 0.04),
+		Color(glow_color, 0.35 * alpha),
+		2.0,
+		true
+	)
+	draw_circle(
+		Vector2(finish_x, 0.0),
+		maxf(attack_width * 0.10, 2.0),
+		Color(glow_color, 0.35 * alpha)
+	)
+
+func _draw_katana_slash(
+	blade_color: Color,
+	glow_color: Color,
+	ratio: float,
+	alpha: float
+) -> void:
+	var y := lerpf(-attack_width * 0.52, attack_width * 0.38, ratio)
+	draw_line(
+		Vector2(attack_range * 0.08, -attack_width * 0.38),
+		Vector2(attack_range, y),
+		Color(blade_color, 0.92 * alpha),
+		3.0,
+		true
+	)
+	draw_line(
+		Vector2(attack_range * 0.22, attack_width * 0.34),
+		Vector2(attack_range * 0.92, -attack_width * 0.30),
+		Color(glow_color, 0.42 * alpha),
+		2.2,
+		true
+	)
+
+func _draw_shield_bash(
+	blade_color: Color,
+	glow_color: Color,
+	ratio: float,
+	alpha: float
+) -> void:
+	var front_x := attack_range * (0.58 + ratio * 0.18)
+	var rect := Rect2(
+		Vector2(front_x - attack_range * 0.20, -attack_width * 0.50),
+		Vector2(attack_range * 0.28, attack_width)
+	)
+	draw_rect(rect, Color(glow_color, 0.18 * alpha), true)
+	draw_rect(rect, Color(blade_color, 0.84 * alpha), false, 3.0)
+	draw_line(
+		Vector2(front_x, -attack_width * 0.54),
+		Vector2(front_x + attack_range * 0.16, -attack_width * 0.25),
+		Color(glow_color, 0.45 * alpha),
+		2.5,
+		true
+	)
+	draw_line(
+		Vector2(front_x, attack_width * 0.54),
+		Vector2(front_x + attack_range * 0.16, attack_width * 0.25),
+		Color(glow_color, 0.45 * alpha),
+		2.5,
+		true
+	)
+
+func _draw_hammer_shockwave(
+	blade_color: Color,
+	glow_color: Color,
+	ratio: float,
+	alpha: float
+) -> void:
+	_draw_arc_slash(blade_color, glow_color, ratio, alpha, 0.68, 0.72)
+	var center := Vector2(attack_range * (0.62 + ratio * 0.16), 0.0)
+	for ring_index in range(2):
+		draw_arc(
+			center,
+			attack_width * (0.22 + float(ring_index) * 0.20 + ratio * 0.24),
+			0.0,
+			TAU,
+			28,
+			Color(glow_color, alpha * (0.50 - float(ring_index) * 0.16)),
+			3.0,
+			true
+		)
+
+func _draw_spiked_impact(
+	blade_color: Color,
+	glow_color: Color,
+	ratio: float,
+	alpha: float
+) -> void:
+	_draw_arc_slash(blade_color, glow_color, ratio, alpha, 0.66, 0.42)
+	var center := Vector2(attack_range * 0.70, 0.0)
+	for index in range(8):
+		var direction := Vector2.RIGHT.rotated(TAU * float(index) / 8.0)
+		draw_line(
+			center + direction * attack_width * 0.10,
+			center + direction * attack_width * (0.26 + ratio * 0.16),
+			Color(glow_color, 0.44 * alpha),
+			2.0,
+			true
+		)
+
+func _draw_claw_slash(
+	blade_color: Color,
+	glow_color: Color,
+	ratio: float,
+	alpha: float
+) -> void:
+	for index in range(3):
+		var y := lerpf(-attack_width * 0.32, attack_width * 0.32, float(index) / 2.0)
+		draw_line(
+			Vector2(attack_range * 0.14, y - attack_width * 0.18),
+			Vector2(attack_range * (0.78 + ratio * 0.10), y + attack_width * 0.06),
+			Color(blade_color, 0.86 * alpha),
+			3.0,
+			true
+		)
+	draw_arc(
+		Vector2.ZERO,
+		attack_range * 0.72,
+		-0.70,
+		0.70,
+		22,
+		Color(glow_color, 0.20 * alpha),
+		2.0,
+		true
+	)
+
+func _draw_default_slash(
+	blade_color: Color,
+	glow_color: Color,
+	ratio: float,
+	alpha: float
+) -> void:
+	if attack_shape == &"arc":
+		_draw_arc_slash(blade_color, glow_color, ratio, alpha, 0.86, 0.30)
+		return
+	var y := lerpf(-attack_width * 0.48, attack_width * 0.48, ratio)
+	draw_rect(
+		Rect2(
+			Vector2(0.0, -attack_width * 0.5),
+			Vector2(attack_range, attack_width)
+		),
+		Color(glow_color, 0.10 * alpha),
+		true
+	)
+	draw_line(
+		Vector2(8.0, -attack_width * 0.45),
+		Vector2(attack_range, y),
+		Color(blade_color, 0.90 * alpha),
+		maxf(attack_width * 0.12, 4.0),
+		true
+	)
+	draw_line(
+		Vector2(attack_range * 0.26, attack_width * 0.36),
+		Vector2(attack_range * 0.92, -attack_width * 0.28),
+		Color(glow_color, 0.34 * alpha),
+		2.0,
+		true
+	)
 
 func _arc_points() -> PackedVector2Array:
 	var points := PackedVector2Array([Vector2.ZERO])

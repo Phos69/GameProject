@@ -1,112 +1,148 @@
-Analizza lo stato attuale della repo e implementa un passaggio completo su caduta nel vuoto e animazione di schivata.
+GOAL: fare un passaggio completo sulla grafica delle armi appena create, in modo che ogni arma sia immediatamente riconoscibile sia quando è equipaggiata/usata, sia quando è droppata a terra, sia attraverso i suoi proiettili o effetti visivi.
 
-OBIETTIVO
-Voglio che player e zombie interagiscano correttamente con le celle void della mappa isometrica:
-- non deve più bastare varcare una soglia/border per prendere danno;
-- il trigger reale deve essere il calpestare una qualsiasi tile/cella void;
-- se un personaggio supera il border o attraversa un vuoto tramite schivata, non deve subire danno durante il movimento della schivata;
-- quando la schivata finisce, se il personaggio si trova ancora sopra una cella void, deve cadere.
+Contesto:
+Abbiamo appena introdotto un sistema con molte nuove armi (da fuoco, melee, elementali). Ora bisogna migliorare la loro identità visiva. Al momento non voglio placeholder generici o pickup indistinguibili: ogni arma deve avere una grafica propria e leggibile in gameplay.
 
-REQUISITI PLAYER
-1. Crea uno stato/animazione di caduta nel vuoto valido per tutti i player.
-2. Quando un player finisce sopra una cella void:
-   - blocca input/movimento normale;
-   - avvia animazione di caduta;
-   - applica il danno solo al momento effettivo della caduta, non al primo superamento del bordo;
-   - dopo la caduta, riposiziona il player in una posizione sicura recente, oppure usa la logica di respawn/danno già presente se esiste.
-3. Mantieni una memoria dell’ultima posizione sicura calpestabile per ogni player.
-4. Se il player muore per caduta, usa la normale logica di morte del player.
-5. Evita trigger ripetuti: durante lo stato falling il player non deve ricevere danni multipli frame-by-frame.
+Obiettivi principali:
+1. Ogni arma deve avere una grafica unica e riconoscibile.
+2. Quando un’arma viene droppata a terra, il pickup deve già mostrare chiaramente la forma reale dell’arma, non un’icona generica.
+3. Quando l’arma viene utilizzata, la sua resa visiva deve essere coerente con quella del drop.
+4. Anche i proiettili / hitbox / slash / effetti devono essere temizzati in base all’arma.
+5. Il risultato deve essere coerente con lo stile del progetto e con la visuale isometrica/top-down attuale.
 
-REQUISITI ZOMBIE
-1. Crea una animazione di caduta nel vuoto anche per gli zombie.
-2. Gli zombie devono poter cadere nel void se finiscono sopra una cella void.
-3. Quando uno zombie cade:
-   - muore dopo l’animazione;
-   - non rilascia drop;
-   - non dà exp;
-   - non dà denaro/risorse;
-   - non conta come kill premiata al player, salvo che il sistema abbia già una distinzione tecnica necessaria.
-4. Evita che la morte da void passi dalla stessa pipeline delle morti causate dal player, oppure aggiungi un deathReason chiaro tipo "void", "fall", "environment".
-5. Se esiste già un sistema di drop/exp/score, centralizza il controllo in modo che deathReason === void/fall disabiliti ogni reward.
+REQUISITI
 
-REQUISITI SCHIVATA
-1. Crea o completa una animazione di schivata valida per tutti i personaggi giocabili.
-2. La schivata deve avere uno stato dedicato, ad esempio dodging, con:
-   - durata definita;
-   - direzione coerente con input corrente o facing direction;
-   - movimento rapido;
-   - animazione dedicata;
-   - cooldown se già presente o da introdurre in modo semplice.
-3. Durante la schivata il controllo void non deve interrompere subito il movimento.
-4. Alla fine della schivata:
-   - controlla la tile sotto il player;
-   - se è calpestabile, torna allo stato normale;
-   - se è void, avvia la caduta.
-5. La schivata deve funzionare per tutti i PG, senza duplicare codice per ogni personaggio.
+1. Identità visiva unica per ogni arma
+- Ogni arma deve avere una silhouette distinta.
+- Non basta cambiare colore ad asset quasi uguali: servono forme riconoscibili.
+- Le armi devono essere distinguibili a colpo d’occhio anche in scene affollate.
+- Differenziare chiaramente:
+  - pistole leggere
+  - shotgun
+  - rifle
+  - heavy weapon
+  - armi melee leggere
+  - armi melee pesanti
+  - armi elementali / arcane
 
-IMPLEMENTAZIONE TECNICA ATTESA
-1. Prima analizza dove sono gestiti:
-   - movimento player;
-   - movimento zombie;
-   - collisioni;
-   - tile/terrain/void;
-   - danno da caduta o danno ambientale;
-   - morte zombie, drop ed exp;
-   - animazioni/stati player.
-2. Introduci una funzione unica e riusabile per capire se una entity sta calpestando void, ad esempio:
-   - isVoidAtWorldPosition(x, y)
-   - isWalkableAtWorldPosition(x, y)
-   - getTerrainAtWorldPosition(x, y)
-   Scegli il nome coerente con il codice esistente.
-3. Il controllo deve basarsi sulla posizione reale dell’entità sul terreno, non solo sul bounding box che supera il bordo.
-4. Crea uno stato entity coerente:
-   - normal / moving
-   - dodging
-   - falling
-   - dead
-5. Evita duplicazione tra player e zombie: se possibile crea helper condivisi per falling/void detection.
-6. Mantieni compatibilità con multiplayer locale: ogni player deve avere stato di dodge/fall indipendente.
-7. Non introdurre placeholder visivi se esiste già una pipeline grafica/animazioni. Se mancano asset definitivi, crea animazioni semplici ma pulite usando sprite/shape coerenti con lo stile attuale e lascia TODO tecnici chiari solo dove inevitabile.
-8. Non rompere la generazione isometrica esistente.
+2. Coerenza tra drop ed arma equipaggiata
+- Quando l’arma è a terra come pickup, deve già avere l’aspetto dell’arma vera.
+- Il pickup non deve essere un box, un’icona generica o un placeholder non leggibile.
+- L’arma droppata può essere una versione semplificata, ma deve mantenere:
+  - forma generale
+  - colori principali
+  - eventuali dettagli iconici
+- Quando il player la impugna, deve risultare chiaramente la stessa arma.
 
-ANIMAZIONE CADUTA
-La caduta deve essere leggibile:
-- entity che scivola/precipita verso il basso;
-- riduzione progressiva di scala o alpha;
-- eventuale ombra che si separa o si riduce;
-- breve lock dello stato;
-- rimozione zombie solo a fine animazione;
-- applicazione danno player solo una volta durante/fine animazione.
+3. Proiettili ed effetti temizzati
+Ogni arma deve avere anche una sua identità nei colpi/effetti:
+- armi da fuoco:
+  - bullet sprite coerente
+  - muzzle flash coerente
+  - trail se necessario
+  - impatto coerente
+- melee:
+  - slash arc / swing effect coerente con dimensione e tipo arma
+  - hit effect coerente
+  - eventuale scia del colpo
+- elementali:
+  - proiettili/onde/aree con colori, forma e VFX specifici
+  - effetti leggibili: fuoco, ghiaccio, fulmine, veleno, vuoto, ecc.
 
-ANIMAZIONE SCHIVATA
-La schivata deve essere visibile:
-- piccolo dash nella direzione;
-- frame/pose inclinata o effetto streak;
-- durata breve;
-- ritorno fluido allo stato idle/move;
-- nessun blocco se il player attraversa momentaneamente void durante il dash.
+Esempi:
+- shotgun: pallettoni visibili o spread corto con flash ampio.
+- revolver: colpo secco, bullet pesante, flash compatto.
+- lanciagranate: proiettile grosso ad arco + esplosione riconoscibile.
+- katana: slash pulito e veloce.
+- martello: impatto pesante con shockwave corta.
+- arma ghiaccio: proiettile freddo, chiaro/azzurro, impatto gelido.
+- fulmine: arco elettrico o bolt con chain visiva.
+- veleno: nube, goccia tossica, o residuo verde persistente.
 
-ACCETTAZIONE
-Alla fine verifica manualmente e/o con test mirati che:
-1. Un player fermo su terreno normale non cade.
-2. Un player che cammina su una cella void cade e prende danno una sola volta.
-3. Un player che supera un border con schivata non prende danno durante la schivata.
-4. Se alla fine della schivata è ancora sopra void, cade.
-5. Se alla fine della schivata arriva su terreno valido, non cade.
-6. Uno zombie che finisce su void fa animazione di caduta e poi sparisce.
-7. Uno zombie morto per void non genera drop, exp, denaro o reward.
-8. La logica funziona con più player contemporaneamente.
-9. Non ci sono errori console.
-10. Non vengono introdotte regressioni su movimento, collisioni e combattimento.
+4. Asset pipeline pulita
+- Analizza come sono gestiti oggi sprite, animazioni, proiettili, pickup e rendering delle armi.
+- Centralizza la definizione visiva delle armi in modo pulito.
+- Ogni WeaponDefinition dovrebbe avere riferimenti a:
+  - sprite pickup / world sprite
+  - sprite equipaggiata / held sprite
+  - projectile sprite o VFX profile
+  - swing/slash effect
+  - impact effect
+  - eventuale animation profile
+- Evita hardcode sparso in più punti.
 
-OUTPUT RICHIESTO
-- Implementa le modifiche direttamente nel codice.
-- Aggiorna eventuali documenti tecnici/TODO se esistono.
-- Alla fine produci un report sintetico con:
-  - file modificati;
-  - nuova architettura degli stati dodge/fall;
-  - come viene rilevato il void;
-  - come viene impedito drop/exp per zombie caduti;
-  - test eseguiti;
-  - eventuali follow-up consigliati.
+5. Armi già create: passaggio completo
+Fai un passaggio su tutte le armi nuove già introdotte.
+Per ciascuna arma:
+- assicurati che abbia:
+  - nome chiaro
+  - silhouette unica
+  - palette riconoscibile
+  - drop sprite coerente
+  - held sprite coerente
+  - projectile/effect theme coerente
+
+6. Linee guida stilistiche
+- Mantieni coerenza col gioco.
+- Niente asset realistici fotobashed.
+- Preferire uno stile game-ready leggibile:
+  - pulito
+  - contrastato
+  - leggibile da camera di gioco
+  - compatibile con visuale isometrica/top-down
+- Le armi devono essere leggibili anche a dimensioni piccole.
+- Se necessario, exaggera un po’ le proporzioni per migliorare la riconoscibilità.
+
+7. Distinzione per categoria
+Assicurati che visivamente si capisca subito se un’arma è:
+- da fuoco
+- melee
+- elementale
+
+Le 3 famiglie devono avere linguaggi visivi differenti:
+- da fuoco: metallo, canne, tamburi, caricatori, bocche da fuoco, componenti meccaniche
+- melee: lame, impugnature, aste, teste contundenti, profili d’attacco
+- elementali: focus, cristalli, rune, energia, contenitori magici, forme non convenzionali
+
+8. Feedback a terra
+Quando un’arma è a terra:
+- deve essere immediatamente riconoscibile
+- può avere:
+  - piccolo outline
+  - ombra
+  - lieve bobbing
+  - highlight
+- ma senza perdere la forma dell’arma
+- opzionale: una piccola glow solo per rarità/elementali, senza confondere la silhouette
+
+9. Priorità tecnica
+Ordine di lavoro:
+1. analizza stato attuale del rendering di armi/drop/proiettili
+2. fai un piano sintetico
+3. implementa un sistema visivo pulito per arma/drop/projectile
+4. aggiorna tutte le armi già create
+5. verifica in gioco che siano distinguibili davvero
+
+10. Verifiche richieste
+Controlla almeno:
+- due armi diverse a terra sono distinguibili a colpo d’occhio
+- due armi equipaggiate diverse si vedono chiaramente diverse in mano al player
+- i proiettili di armi diverse non sembrano tutti uguali
+- gli effetti melee non sembrano identici per tutte le armi
+- gli effetti elementali comunicano davvero l’elemento
+- nessun pickup usa placeholder generici se l’arma è già implementata
+- il sistema resta estensibile per future armi
+
+Deliverable finale:
+- codice implementato
+- elenco file modificati
+- spiegazione sintetica del sistema visivo armi
+- lista delle armi aggiornate con breve nota sulla loro identità visiva
+- eventuali asset nuovi creati
+- eventuali TODO residui, ma senza lasciare incompleto il passaggio principale
+
+Importante:
+La priorità non è “mettere un’immagine qualsiasi”, ma dare ad ogni arma una identità visiva forte e coerente:
+- stessa arma = stesso linguaggio visivo tra drop, uso e proiettile
+- armi diverse = silhouette ed effetti diversi
+- niente placeholder indistinguibili

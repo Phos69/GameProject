@@ -316,6 +316,21 @@ Attivita post-roadmap:
 - arena survival, biomi e props interattivi completati;
 - accessibilita, profiling e pipeline asset completati;
 - roadmap RPG Mode M1-M12 completata fino al polish feedback RPG;
+- roadmap identita visuale armi completata fino alla Milestone W1: contratto
+  condiviso esteso in `WeaponVisualData`, helper `WeaponVisualRenderer` e
+  proiettili collegati al renderer con fallback legacy;
+- roadmap identita visuale armi completata fino alla Milestone W2: pickup arma
+  alimentati da `WeaponData.visual_data`, shape specifiche per le 30 armi
+  catalogo e fallback `missing_weapon_visual` esplicito;
+- roadmap identita visuale armi completata fino alla Milestone W3: held weapon
+  e icone HUD leggono le stesse shape del renderer condiviso, con 12 armi
+  rappresentative coperte da smoke e QA screenshot;
+- roadmap identita visuale armi completata fino alla Milestone W4: proiettili,
+  muzzle flash, impact e ground hazard delle armi firearm/elemental leggono
+  profili visuali specifici senza cambiare danno, collisioni o timing;
+- roadmap identita visuale armi completata fino alla Milestone W5: le armi
+  melee del catalogo hanno slash, hit effect, size e shake specifici separati
+  da hitbox, danno, knockback e hitstop;
 - pass RPG leggibilita combat completato: `WeaponData.attack_type`,
   hitbox melee temporanee per ascia/spada/artigli, feedback slash e Character
   Select con indicazione projectile/melee;
@@ -436,6 +451,10 @@ Attivita post-roadmap:
   `broken_street`, `ruined_house`, vegetazione densa impassabile, dettagli
   strada, fiume/bridge validato, summary seed/debug e asset manifest dedicati
   per `abandoned_car` e `dense_vegetation`.
+- Milestone W0 di `weapon_visual_identity_roadmap.md` completata: baseline
+  visuale delle 30 armi catalogo, conferma dei tre profili generici correnti,
+  reference da preservare e checklist manuale per pickup, held, HUD,
+  projectile, melee, elemental e scene affollate.
 - asset definitivi e ulteriori pass di bilanciamento;
 - firma digitale della build pubblica.
 

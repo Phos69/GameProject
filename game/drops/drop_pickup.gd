@@ -34,4 +34,11 @@ func _on_body_entered(body: Node2D) -> void:
 
 func _apply_visual() -> void:
 	var drop_type := StringName(drop_data.get("type", &"unknown"))
-	visual.configure(drop_type)
+	var weapon_visual_data: WeaponVisualData = null
+	if drop_type == GameConstants.DROP_WEAPON:
+		var weapon_data := drop_data.get("weapon_data") as WeaponData
+		if weapon_data != null:
+			weapon_visual_data = weapon_data.visual_data
+		else:
+			weapon_visual_data = drop_data.get("weapon_visual_data") as WeaponVisualData
+	visual.configure(drop_type, weapon_visual_data)
