@@ -5,6 +5,7 @@ const PROJECTILE_SCENE: PackedScene = preload("res://game/projectiles/projectile
 const FIREARM_VISUAL: WeaponVisualData = preload("res://game/weapons/prototype_blaster_visual.tres")
 const MELEE_VISUAL: WeaponVisualData = preload("res://game/weapons/rpg_sword_visual.tres")
 const ELEMENTAL_VISUAL: WeaponVisualData = preload("res://game/weapons/wave_cannon_visual.tres")
+const CATALOG_VISUAL_PALETTE := preload("res://game/weapons/weapon_catalog_visual_palette.gd")
 
 static var _definitions: Dictionary = {}
 
@@ -195,6 +196,10 @@ static func _make_visual_data(
 		visual.projectile_color = _melee_slash_color_for(definition.weapon_id)
 		visual.projectile_glow_color = _melee_slash_glow_for(definition.weapon_id)
 		visual.trail_width = _melee_trail_width_for(definition.weapon_id)
+	visual.profile_id = definition.weapon_id
+	visual.primary_color = CATALOG_VISUAL_PALETTE.get_primary_color(definition.weapon_id)
+	visual.secondary_color = CATALOG_VISUAL_PALETTE.get_secondary_color(definition.weapon_id)
+	visual.glow_color = CATALOG_VISUAL_PALETTE.get_glow_color(definition.weapon_id)
 	visual.rarity_glow = _rarity_glow_for(definition.rarity)
 	visual.outline_color = _rarity_outline_for(definition.rarity)
 	var visual_size := _visual_size_for(definition.weapon_id)

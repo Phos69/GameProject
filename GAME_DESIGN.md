@@ -117,6 +117,9 @@ Identita visuale delle armi:
   condividono lo stesso profilo;
 - i pickup delle 30 armi catalogo usano sagome specifiche per `weapon_id`
   invece dell'icona arma generica;
+- tutte le 30 armi catalogo usano un `profile_id` e una palette body/accent/glow
+  specifici per `weapon_id`: firearm privilegia metallo e canne, melee lame,
+  aste e teste, elemental cristalli, rune ed energia;
 - held weapon e icona HUD delle 30 armi catalogo usano la stessa shape
   specifica del pickup, scalata per mano e UI compatta;
 - le armi da fuoco ed elementali del catalogo usano proiettili, muzzle flash e
@@ -129,6 +132,41 @@ Identita visuale delle armi:
   lancia, dash cut katana, impatto chiodato, crescent falce e bash scudo;
 - forma e colore aiutano il riconoscimento, ma non sostituiscono i valori di bilanciamento;
 - il colore slot del player resta separato dal colore energetico dell'arma.
+
+Catalogo visuale completo:
+
+| Famiglia | Weapon ID | Identita leggibile |
+| --- | --- | --- |
+| Firearm | `heavy_revolver` | Revolver corto, tamburo grande, bullet pesante e flash compatto. |
+| Firearm | `unstable_smg` | Corpo piccolo, caricatore lungo e stream sottile instabile. |
+| Firearm | `pump_shotgun` | Canna larga, pump visibile, flash ampio e pellet corti. |
+| Firearm | `tactical_carbine` | Rifle medio pulito, stock lungo e colpo preciso. |
+| Firearm | `improvised_sniper` | Profilo molto lungo, scope e slug perforante stretto. |
+| Firearm | `grenade_launcher` | Tubo massiccio, granata rotonda e impatto esplosivo. |
+| Firearm | `sawed_off_double` | Due canne corte parallele e doppio burst ravvicinato. |
+| Firearm | `burst_pistol` | Pistola compatta con linguaggio da raffica controllata. |
+| Firearm | `rusty_minigun` | Corpo pesante arrugginito, rotore multiplo e muzzle circolare. |
+| Firearm | `scrap_railgun` | Binario lungo, bobine ciano e slug/beam perforante. |
+| Melee | `quick_knife` | Lama corta chiara con stab piccolo e rapido. |
+| Melee | `machete` | Lama curva media e cleave frontale. |
+| Melee | `heavy_axe` | Testa larga asimmetrica e trail pesante. |
+| Melee | `greatsword` | Lama enorme e sweep ampio a cuneo. |
+| Melee | `demolition_hammer` | Testa contundente massiccia e shockwave concentrica. |
+| Melee | `spear` | Asta lunga e affondo lineare stretto. |
+| Melee | `ruined_katana` | Lama sottile rovinata e dash cut pulito. |
+| Melee | `spiked_mace` | Testa chiodata e impatto radiale aggressivo. |
+| Melee | `scythe` | Lama a mezzaluna e arco verde molto largo. |
+| Melee | `offensive_shield` | Sagoma a scudo e bash rettangolare difensivo. |
+| Elemental | `fire_wand` | Bacchetta con focus rosso e dardo incendiario. |
+| Elemental | `fireball` | Nucleo caldo, sfera lenta e impatto esplosivo arancio. |
+| Elemental | `ice_lance` | Cristallo azzurro, shard lungo e impatto gelido. |
+| Elemental | `frost_nova` | Focus circolare freddo e burst radiale vicino. |
+| Elemental | `chain_lightning` | Conduttore biforcato, bolt giallo e chain arc. |
+| Elemental | `arcane_taser` | Focus corto viola/giallo e scarica ravvicinata. |
+| Elemental | `acid_flask` | Ampolla verde, proiettile liquido e splash corrosivo. |
+| Elemental | `toxic_spores` | Sacchetto organico e nube persistente di spore. |
+| Elemental | `seismic_crystal` | Cristallo pesante e onda d'urto con frammenti. |
+| Elemental | `unstable_void` | Focus scuro viola, orb e implosione ad anelli. |
 
 Controlli ricarica:
 

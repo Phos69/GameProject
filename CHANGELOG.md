@@ -20,6 +20,16 @@
 - Aggiunto `tests/weapon_melee_visual_identity_smoke_test.gd` per verificare
   slash shape, hit effect tematici, separazione hitbox/visual e fallback legacy
   delle armi melee RPG.
+- Aggiunto `tests/weapon_visual_catalog_smoke_test.gd` per verificare sulle 30
+  armi profili unici, palette esplicite e shape pickup/held/HUD/projectile o
+  slash risolte senza fallback generici.
+- Aggiunto `weapon_catalog_visual_palette.gd` come tabella presentazionale
+  dedicata per le palette body, accent e glow delle 30 armi catalogo.
+- Aggiunti `weapon_visual_identity_qa_board.gd` e
+  `weapon_visual_identity_survival_qa.gd` per comporre tavole QA isolate e uno
+  scenario survival affollato senza concentrare il test in un mega-file.
+- Aggiunto `docs/weapon_visual_identity_validation_report.md` con architettura,
+  lista armi, file coinvolti, test, screenshot, asset e debiti residui W0-W8.
 - Aggiunti profili projectile procedurali per le 20 armi firearm/elemental del
   catalogo, inclusi bullet pesante, pellet shotgun, granata, rail beam,
   fireball, ice lance, lightning bolt, acid flask, spore cloud, seismic pulse e
@@ -95,6 +105,8 @@
   shape pickup e glow rarita senza cambiare il profilo projectile legacy.
 - `WeaponCatalog` assegna anche `held_shape_id`, `hud_shape_id` e dimensioni
   visuali per differenziare massa/lunghezza delle 30 armi catalogo.
+- `WeaponCatalog` assegna `profile_id` e palette specifici per `weapon_id` a
+  tutte le 30 armi, mantenendo i dati colore fuori dalla factory catalogo.
 - `PlayerVisual` e `WeaponIcon` delegano silhouette arma e HUD a
   `WeaponVisualRenderer`, eliminando i match locali sui profili visuali.
 - `WeaponCatalog` assegna ora profili projectile/muzzle/impact specifici alle
@@ -111,6 +123,9 @@
   `rpg_sword`.
 - `tests/weapon_visual_identity_qa.gd` produce anche
   `build/qa/weapon_visual_identity_held_hud_grid.png`.
+- `tests/weapon_visual_identity_qa.gd` produce ora cinque tavole isolate e tre
+  screenshot survival per default, reduced motion e high contrast, con controlli
+  pixel su contenuto, separazione e firme colore/forma.
 - `ObstacleLayoutGenerator` normalizza gli oggetti non-border al footprint del
   manifest prima delle query di spazio; collisione, posizione, base visiva e
   dimensione SVG derivano ora dallo stesso rettangolo logico, senza scale
@@ -257,6 +272,12 @@
   firearm/elemental.
 - Chiusa la Milestone W5 di `weapon_visual_identity_roadmap.md` con slash e hit
   effect melee temizzati e smoke dedicato.
+- Chiusa la Milestone W6 di `weapon_visual_identity_roadmap.md` con profili e
+  palette specifici per tutte le 30 armi e smoke catalogo completo.
+- Chiusa la Milestone W7 di `weapon_visual_identity_roadmap.md` con QA visuale
+  end-to-end, preset accessibilita e regressione performance verdi.
+- Chiusa la Milestone W8 e il backlog `WVIS-001`: contratto, game design,
+  README, report finale e reference storica sono allineati allo stato runtime.
 - Consolidato il backlog operativo in `TODO.md`, separando backlog aperto,
   follow-up e reference storiche completate senza riaprire milestone concluse.
 - Aggiornato `docs/latest_commit_validation_report.md` con audit documentale

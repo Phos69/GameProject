@@ -36,26 +36,6 @@ revisione manuale, baseline e consolidamento TODO.
 
 ## Backlog aperto prioritizzato
 
-### WVIS-001 - Identita visuale completa delle armi del catalogo
-
-- Obiettivo: completare il pass visuale richiesto in `prompt.md` per le 30 armi
-  nuove, rendendo riconoscibili pickup, arma equipaggiata, HUD, proiettili,
-  slash, impatti e VFX senza placeholder generici.
-- Milestone collegata: `weapon_visual_identity_roadmap.md` Milestone W0-W8.
-- Stato: W5 completata; prossimo passo W6, pass completo sulle 30 armi del catalogo.
-- File/sistemi coinvolti: `game/weapons/`, `game/drops/`,
-  `game/projectiles/`, `game/visuals/`, `game/ui/`, `tests/`,
-  `docs/testing/`.
-- Criterio di accettazione: ogni `weapon_id` del catalogo ha un profilo visuale
-  unico e condiviso tra drop/held/HUD/projectile o melee; nessun pickup arma
-  gia implementata usa l'icona generica; firearm, melee ed elemental hanno
-  silhouette e VFX distinguibili in gameplay.
-- Test richiesto: nuovi smoke `weapon_visual_catalog`,
-  `weapon_pickup_visual_identity`, `weapon_projectile_vfx_identity`,
-  `weapon_melee_visual_identity`, QA screenshot `weapon_visual_identity_qa` e
-  regressioni `weapon_inventory_catalog`, `combat`, `enemy_drop`,
-  `survival_wave`, `milestone_13_weapon_tower_visual` e performance visuale M21.
-
 ### UIUX-001 - UI, HUD, audio e polish UX trasversale
 
 - Obiettivo: rifinire menu, HUD, Character Select, status, mappa, boss, feedback
@@ -285,6 +265,13 @@ evitare reimplementazioni e per indirizzare le regressioni.
   effetti coperti da `tests/weapon_inventory_catalog_smoke_test.gd`. Follow-up
   ammessi solo per tuning, asset finali e playtest visuale dentro `BAL-001` o
   `UIUX-001`, non per parti core.
+- WVIS-001 identita visuale completa delle armi: completato il 2026-06-20 con
+  Milestone W0-W8 chiuse. Le 30 armi hanno profili, palette, pickup/held/HUD e
+  projectile oppure melee specifici; smoke, QA su otto screenshot e performance
+  M21 sono verdi. Evidenza in
+  `docs/weapon_visual_identity_validation_report.md`. Arte finale opzionale e
+  tuning secondario restano rispettivamente in `UIUX-001` e `BAL-001`; nuove
+  armi seguono il contratto di `ARCHITECTURE.md` senza riaprire questo task.
 
 ## Mappatura dalle vecchie sezioni TODO
 

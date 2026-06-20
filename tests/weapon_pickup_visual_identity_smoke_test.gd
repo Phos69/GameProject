@@ -104,9 +104,12 @@ func _validate_sample_pickups(pickup_scene: PackedScene) -> void:
 		pickup.queue_free()
 		await process_frame
 	_expect(
-		heavy_revolver_color == pump_shotgun_color
-		and heavy_revolver_signature != pump_shotgun_signature,
-		"two firearm pickups are distinguishable by silhouette, not only color"
+		heavy_revolver_signature != pump_shotgun_signature,
+		"two firearm pickups are distinguishable by silhouette"
+	)
+	_expect(
+		heavy_revolver_color != pump_shotgun_color,
+		"two firearm pickups are distinguishable by color (W6 per-weapon palette)"
 	)
 
 func _validate_non_weapon_pickup(pickup_scene: PackedScene) -> void:

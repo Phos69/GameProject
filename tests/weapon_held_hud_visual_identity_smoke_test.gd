@@ -100,10 +100,13 @@ func _run() -> void:
 		await process_frame
 
 	_expect(
-		revolver_color == shotgun_color
-		and revolver_held_signature != shotgun_held_signature
+		revolver_held_signature != shotgun_held_signature
 		and revolver_hud_signature != shotgun_hud_signature,
-		"same-color firearm samples differ by held and HUD silhouette"
+		"firearm samples differ by held and HUD silhouette"
+	)
+	_expect(
+		revolver_color != shotgun_color,
+		"firearm samples differ by color (W6 per-weapon palette)"
 	)
 	_validate_legacy_weapons()
 	_finish()

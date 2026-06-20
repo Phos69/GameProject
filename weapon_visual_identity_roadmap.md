@@ -455,7 +455,7 @@ Verifica eseguita:
 
 ## Milestone W6 - Pass completo sulle 30 armi del catalogo
 
-Stato: pianificata.
+Stato: completata.
 
 Obiettivo:
 
@@ -524,6 +524,27 @@ Criterio di accettazione:
   lame/aste/teste per melee, cristalli/rune/energia per elemental.
 - Le differenze sono leggibili in gameplay affollato e a dimensioni piccole.
 
+Implementato:
+
+- `WeaponCatalog._make_visual_data()` assegna `profile_id = weapon_id` per ogni
+  arma del catalogo, eliminando la dipendenza dal profilo generico di categoria.
+- Aggiunto `weapon_catalog_visual_palette.gd`, tabella dati compatta separata
+  dal catalogo con palette distinte per tutte le 30 armi: toni metallo/polimero
+  per firearm, toni lama/materiale per melee, toni cristallo/energia/organico
+  per elemental.
+- Il contratto visuale `WeaponVisualData` è ora completamente weapon-specific:
+  `profile_id`, `primary_color`, `secondary_color`, `glow_color`,
+  `pickup_shape_id`, `held_shape_id`, `hud_shape_id` e i campi pertinenti tra
+  `projectile_shape_id`/`slash_shape_id`, `impact_shape_id` e
+  `muzzle_shape_id` coincidono col `weapon_id`.
+- Aggiunto `tests/weapon_visual_catalog_smoke_test.gd` con 30 armi verificate
+  per profilo unico, silhouette pickup/held/HUD distinte, palette esplicita e
+  non generica e shape projectile/slash risolte.
+- Aggiornate le asserzioni in `weapon_pickup_visual_identity_smoke_test.gd` e
+  `weapon_held_hud_visual_identity_smoke_test.gd`: la verifica "stesso colore
+  ma silhouette diversa" è stata aggiornata a "colore e silhouette entrambi
+  distinti", riflettendo la garanzia palette W6.
+
 Test richiesto:
 
 ```text
@@ -531,9 +552,21 @@ godot --headless --path . --script res://tests/weapon_visual_catalog_smoke_test.
 godot --headless --path . --script res://tests/weapon_inventory_catalog_smoke_test.gd
 ```
 
+Verifica eseguita:
+
+- `godot --headless --path . --script res://tests/weapon_visual_catalog_smoke_test.gd`: PASS.
+- `godot --headless --path . --script res://tests/weapon_inventory_catalog_smoke_test.gd`: PASS.
+- `godot --headless --path . --script res://tests/weapon_pickup_visual_identity_smoke_test.gd`: PASS.
+- `godot --headless --path . --script res://tests/weapon_held_hud_visual_identity_smoke_test.gd`: PASS.
+- `godot --headless --path . --script res://tests/weapon_projectile_vfx_identity_smoke_test.gd`: PASS.
+- `godot --headless --path . --script res://tests/weapon_melee_visual_identity_smoke_test.gd`: PASS.
+- `godot --headless --path . --script res://tests/combat_smoke_test.gd`: PASS.
+- `godot --headless --path . --script res://tests/enemy_drop_smoke_test.gd`: PASS.
+- `godot --headless --path . --script res://tests/milestone_13_weapon_tower_visual_smoke_test.gd`: PASS.
+
 ## Milestone W7 - QA visuale e regressioni end-to-end
 
-Stato: pianificata.
+Stato: completata.
 
 Obiettivo:
 
@@ -558,6 +591,24 @@ Criterio di accettazione:
 - La suite prioritaria resta verde.
 - Il costo visuale non rompe il budget gia monitorato da Milestone 21.
 
+Implementato:
+
+- Estesa `tests/weapon_visual_identity_qa.gd` con cinque tavole isolate:
+  pickup, held/HUD, projectile+muzzle+impact, slash+hit melee e projectile+
+  impact elemental.
+- Aggiunti `weapon_visual_identity_qa_board.gd` per il layout dei campioni e
+  `weapon_visual_identity_survival_qa.gd` per lo scenario survival con quattro
+  player, otto zombie, sei pickup arma e cinque proiettili simultanei.
+- Ogni tavola verifica salvataggio, frame non vuoto, presenza di pixel foreground,
+  separazione spaziale dei campioni e un numero minimo di firme colore/forma
+  distinte.
+- Lo scenario survival produce screenshot per `default`, `reduced_motion` e
+  `high_contrast`, verifica la propagazione dei preset a held weapon e pickup e
+  controlla che i frame dei preset siano misurabilmente diversi.
+- Ispezionate manualmente le otto immagini in `build/qa/`: i sei controlli W7
+  risultano leggibili e il placeholder missing resta esplicito, non usato dalle
+  armi valide.
+
 Test richiesto:
 
 ```text
@@ -574,6 +625,17 @@ godot --headless --path . --script res://tests/milestone_21_visual_settings_perf
 godot --path . --rendering-method gl_compatibility --script res://tests/weapon_visual_identity_qa.gd
 ```
 
+Verifica eseguita:
+
+- Tutti i nove smoke/regressioni funzionali elencati sopra: PASS.
+- `milestone_21_visual_settings_performance_smoke_test.gd`: PASS sul budget
+  affollato da 35 ms.
+- `weapon_visual_identity_qa.gd`: PASS con otto PNG generati e controlli pixel
+  superati.
+- QA manuale: pickup firearm/melee/elemental distinguibili; held e HUD coerenti;
+  proiettili, slash e impatti elementali separati; scena survival leggibile nei
+  tre preset.
+
 Manual QA minimo:
 
 - Due firearm a terra: revolver vs shotgun.
@@ -586,7 +648,7 @@ Manual QA minimo:
 
 ## Milestone W8 - Documentazione e chiusura backlog
 
-Stato: pianificata.
+Stato: completata.
 
 Obiettivo:
 
@@ -610,7 +672,31 @@ Criterio di accettazione:
 - I TODO residui non bloccano il pass principale: solo arte finale opzionale,
   tuning secondario o future armi.
 
+Implementato:
+
+- Consolidato in `ARCHITECTURE.md` il flusso `WeaponData.visual_data` verso
+  pickup, held, HUD, projectile, effects e melee, inclusa la procedura per
+  aggiungere armi future senza hardcode nei consumer.
+- Aggiunta a `GAME_DESIGN.md` la lista delle 30 armi con una nota sintetica su
+  silhouette, palette e linguaggio di attacco.
+- Aggiornato `README.md` con sintesi WVIS, riferimenti normativi e comandi smoke
+  e QA consigliati.
+- Creato `docs/weapon_visual_identity_validation_report.md` con sistema,
+  componenti coinvolti, lista armi, test, otto screenshot, asset e debiti
+  residui non bloccanti.
+- Spostato `WVIS-001` dal backlog aperto alle reference completate in `TODO.md`.
+
+Verifica eseguita:
+
+- Tutti i file runtime, i runner e i documenti del deliverable esistono nel
+  repository; i percorsi futuri sono marcati come opzionali.
+- `git diff --check`: PASS.
+- W8 non modifica il runtime; eredita la suite W7 completa e la QA visuale PASS
+  registrate nel report dedicato.
+
 ## Definition of done complessiva
+
+Stato: soddisfatta il 2026-06-20.
 
 - Tutte le 30 armi del catalogo hanno un profilo visuale unico.
 - Pickup, held, HUD e projectile/melee leggono la stessa identita visuale.

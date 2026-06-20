@@ -78,11 +78,14 @@ Checklist manuale per il pass WVIS-001 derivato da `prompt.md`.
 
 ## Scene Affollate
 
-- Verificare almeno quattro player con armi diverse in survival.
-- Verificare pickup arma vicino a pickup ammo/health/money senza confusione.
-- Verificare tre proiettili diversi nello stesso frame.
-- Verificare almeno tre slash melee nello stesso scenario debug.
-- Verificare che il background isometrico non assorba silhouette o glow.
+- W7 verificata con quattro player equipaggiati con firearm, shotgun, melee ed
+  elemental nello stesso scenario survival.
+- Sei pickup arma restano separati sul background isometrico e il placeholder
+  missing compare solo nel campione negativo dedicato.
+- Cinque proiettili diversi restano leggibili nello stesso frame con otto zombie.
+- La tavola melee mostra sei slash/hit profile distinti nello stesso scenario.
+- Default, reduced motion e high contrast producono frame validi e raggiungono
+  held weapon e pickup senza cambiare il gameplay.
 
 ## Comandi di Regressione Previsti
 
@@ -97,6 +100,7 @@ godot --headless --path . --script res://tests/enemy_drop_smoke_test.gd
 godot --headless --path . --script res://tests/survival_wave_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_13_weapon_tower_visual_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_21_visual_settings_performance_smoke_test.gd
+godot --path . --rendering-method gl_compatibility --script res://tests/weapon_visual_identity_qa.gd
 ```
 
 ## Evidenza Finale Richiesta
@@ -105,5 +109,7 @@ godot --headless --path . --script res://tests/milestone_21_visual_settings_perf
 - Screenshot held weapon grid.
 - Screenshot projectile/effect grid.
 - Screenshot melee slash grid.
+- Screenshot elemental impact grid.
+- Tre screenshot survival: default, reduced motion e high contrast.
 - Note sui preset default, reduced motion e high contrast.
 - Lista delle armi ancora da rifinire, se restano solo debiti opzionali.

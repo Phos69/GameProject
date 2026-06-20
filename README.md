@@ -104,7 +104,20 @@ fionda restano `projectile`, mentre ascia, spada e artigli usano hitbox melee
 temporanee con wind-up, finestra attiva, recovery, trail e niente nodo
 projectile.
 
-Smoke test headless:
+## Weapon visual identity
+
+Le 30 armi del catalogo drop hanno profili visuali specifici condivisi tra
+pickup, held weapon, HUD, projectile oppure slash e impact. Le famiglie firearm,
+melee ed elemental usano silhouette, palette e linguaggi VFX distinti; un
+profilo pickup mancante mostra sempre il marker esplicito
+`missing_weapon_visual`.
+
+Il contratto estensibile e documentato in [ARCHITECTURE.md](ARCHITECTURE.md),
+la lista completa arma-per-arma in [GAME_DESIGN.md](GAME_DESIGN.md) e gli esiti
+W0-W8 nel
+[report di validazione](docs/weapon_visual_identity_validation_report.md).
+
+Smoke test headless e QA visuale:
 
 ```text
 godot --headless --path . --script res://tests/headless_shutdown_loop_test.gd
@@ -172,6 +185,12 @@ godot --headless --path . --script res://tests/milestone_rpg_12_feedback_smoke_t
 godot --headless --path . --script res://tests/milestone_rpg_13_new_classes_smoke_test.gd
 godot --headless --path . --script res://tests/rpg_melee_attack_resolution_smoke_test.gd
 godot --headless --path . --script res://tests/weapon_inventory_catalog_smoke_test.gd
+godot --headless --path . --script res://tests/weapon_visual_catalog_smoke_test.gd
+godot --headless --path . --script res://tests/weapon_pickup_visual_identity_smoke_test.gd
+godot --headless --path . --script res://tests/weapon_held_hud_visual_identity_smoke_test.gd
+godot --headless --path . --script res://tests/weapon_projectile_vfx_identity_smoke_test.gd
+godot --headless --path . --script res://tests/weapon_melee_visual_identity_smoke_test.gd
+godot --path . --rendering-method gl_compatibility --script res://tests/weapon_visual_identity_qa.gd
 ```
 
 Export Windows:
@@ -253,6 +272,9 @@ Completato:
 - cura e nuova arma applicate solo al player che raccoglie;
 - catalogo centralizzato di 30 drop (10 firearm, 10 melee, 10 elemental),
   senza duplicati globali nella stessa run e con fallback ammo a pool esaurito;
+- pass WVIS-001 W0-W8 completato: le 30 armi catalogo condividono una identita
+  specifica tra pickup, held/HUD, projectile oppure slash e impact, verificata
+  anche nei preset visuali e nello scenario survival affollato;
 - menu principale mostrato all'avvio;
 - selezione personaggio prima della zombie survival con quattro profili iniziali;
 - statistiche classe RPG con HP, attacco, difesa, velocita, progressione XP e level-up per-run;

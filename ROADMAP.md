@@ -331,6 +331,14 @@ Attivita post-roadmap:
 - roadmap identita visuale armi completata fino alla Milestone W5: le armi
   melee del catalogo hanno slash, hit effect, size e shake specifici separati
   da hitbox, danno, knockback e hitstop;
+- roadmap identita visuale armi completata fino alla Milestone W6: tutte le 30
+  armi catalogo hanno `profile_id`, palette e shape target specifici per
+  `weapon_id`, coperti dallo smoke catalogo completo;
+- roadmap identita visuale armi completata fino alla Milestone W7: cinque
+  tavole isolate e tre screenshot survival verificano leggibilita, preset
+  visuali e budget performance in uno scenario affollato;
+- roadmap identita visuale armi W0-W8 completata: contratto estensibile,
+  catalogo visuale arma-per-arma, report finale e backlog `WVIS-001` chiuso;
 - pass RPG leggibilita combat completato: `WeaponData.attack_type`,
   hitbox melee temporanee per ascia/spada/artigli, feedback slash e Character
   Select con indicazione projectile/melee;

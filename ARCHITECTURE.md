@@ -122,6 +122,9 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `WeaponInstance`: stato runtime persistente di una singola definizione.
 - `PlayerWeaponInventory`: collezione ordinata per-player, base weapon e indice selezionato.
 - `WeaponCatalog`: registry centralizzato di 30 armi drop con ID stabili.
+- `WeaponCatalogVisualPalette`: tabella presentazionale separata dal catalogo
+  gameplay; assegna body, accent e glow per `weapon_id` e rende esplicito un
+  profilo mancante durante lo sviluppo.
 - `WeaponEffectResolver`: risoluzione condivisa di AOE, status, chain,
   knockback, delayed explosion e ground hazard.
 - `WeaponVisualData`: palette, dimensioni, profilo legacy, ID visuali opzionali
@@ -396,6 +399,41 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `GameplayEffects` reagisce a segnali pubblici e non applica danno, cura o ricompense.
 - Level-up e super RPG emettono segnali dal `RpgPlayerComponent`; feedback visuale e audio li consumano senza modificare stats o cooldown.
 - I bersagli combat debug restano istanziati ma invisibili e senza collisione nel gameplay normale; lo smoke test combat abilita la fixture usata.
+
+### Contratto visuale delle armi
+
+`WeaponData.visual_data` e l'unica sorgente visuale passata ai consumer:
+
+```text
+WeaponData.visual_data
+  -> DropPickupVisual        pickup_shape_id
+  -> PlayerVisual            held_shape_id
+  -> WeaponIcon              hud_shape_id
+  -> Projectile              projectile_shape_id, trail e glow
+  -> GameplayEffects         muzzle_shape_id, impact_shape_id, impact_vfx_id
+  -> MeleeAttack             slash_shape_id e hit feedback
+```
+
+- `profile_id` identifica il profilo stabile; per le 30 armi catalogo coincide
+  con `weapon_id`. `family_id` resta `firearm`, `melee` o `elemental`.
+- `primary_color`, `secondary_color` e `glow_color` descrivono corpo, accento e
+  aura. Le palette catalogo vivono in `weapon_catalog_visual_palette.gd`, non
+  nel controller né nel renderer.
+- Gli ID target selezionano geometrie procedurali specifiche. Gli sprite path
+  opzionali permettono di sostituirle con arte finale senza cambiare i consumer.
+- `WeaponVisualRenderer` risolve shape, scale, colori ed effect kind; i consumer
+  non aggiungono eccezioni per singolo `weapon_id`.
+- Il fallback legacy basato su `profile_id` resta disponibile per armi storiche,
+  boss e torri. Un pickup arma privo di profilo usa invece il marker esplicito
+  `missing_weapon_visual`, mai un placeholder silenzioso.
+- Hitbox, danno, timing, status e knockback restano in `WeaponData`,
+  `Projectile`, `MeleeAttack` e `WeaponEffectResolver`: nessun campo visuale
+  modifica il combat.
+
+Per aggiungere una futura arma: registrare il `WeaponData`, assegnare un
+`profile_id` stabile e una famiglia, definire palette e ID target pertinenti,
+aggiungere la geometria o gli sprite opzionali al renderer e coprire il nuovo
+ID negli smoke catalogo/pickup/projectile o melee e nella QA screenshot.
 
 ## Contratto combat
 
