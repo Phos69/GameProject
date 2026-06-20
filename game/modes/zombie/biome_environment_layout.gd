@@ -152,6 +152,7 @@ func validate_obstacle_records(
 			continue
 		if (
 			source_manifest.get_category(obstacle_id) != &"border"
+			and not source_manifest.is_scalable(obstacle_id)
 			and rect.size != source_manifest.get_footprint_tiles(obstacle_id)
 		):
 			failures.append(

@@ -1,6 +1,9 @@
 extends SceneTree
 
-const FEATURE_IDS: Array[StringName] = [&"forest_tree", &"large_rock"]
+# large_rock moved to the scalable-obstacle contract (variable footprint); it is
+# now covered by tests/scalable_obstacle_smoke_test.gd. forest_tree stays a fixed
+# 3x3 natural-size fill unit.
+const FEATURE_IDS: Array[StringName] = [&"forest_tree"]
 const EXPECTED_SLOTS := Vector2i(3, 3)
 const EXPECTED_CELLS := Vector2i(12, 12)
 const LOGICAL_TILE_SCALE := 8.0

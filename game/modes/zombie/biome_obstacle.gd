@@ -124,8 +124,12 @@ func get_visual_base_size() -> Vector2:
 	return obstacle_size
 
 func is_footprint_contract_aligned(logical_tile_scale: float = 8.0) -> bool:
+	# Scalable obstacles (rocks) intentionally use a per-instance footprint, so the
+	# fixed manifest footprint check does not apply to them.
+	if is_perimeter_wall() or IsometricEnvironmentManifest.get_shared().is_scalable(obstacle_id):
+		return true
 	var expected := Vector2(footprint_tiles) * logical_tile_scale
-	return obstacle_size.is_equal_approx(expected) or is_perimeter_wall()
+	return obstacle_size.is_equal_approx(expected)
 
 func get_draw_mode() -> StringName:
 	return draw_mode

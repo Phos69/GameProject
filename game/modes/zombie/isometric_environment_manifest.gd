@@ -355,6 +355,14 @@ func is_jumpable_gap_anchor(object_id: StringName) -> bool:
 		return bool((objects[object_id] as Dictionary).get("is_jumpable_gap_anchor", false))
 	return false
 
+func is_scalable(object_id: StringName) -> bool:
+	# Scalable objects (e.g. rocks) are placed at a per-instance square footprint
+	# instead of the fixed manifest footprint, so their art and collision adapt to
+	# the instance size. They are exempt from the slot-size footprint rule.
+	if objects.has(object_id):
+		return bool((objects[object_id] as Dictionary).get("scalable", false))
+	return false
+
 func requires_external_asset(object_id: StringName) -> bool:
 	if not objects.has(object_id):
 		return false
@@ -387,6 +395,7 @@ func validate() -> Dictionary:
 		if (
 			version >= 9
 			and StringName(entry.get("category", &"obstacle")) not in [&"border", &"cliff", &"passage"]
+			and not bool(entry.get("scalable", false))
 			and footprint != Vector2i(
 				footprint_slots.x * footprint_slot_size_cells.x,
 				footprint_slots.y * footprint_slot_size_cells.y
@@ -776,6 +785,7 @@ func _normalize_object(entry: Dictionary) -> Dictionary:
 		"blocks_movement": bool(entry.get("blocks_movement", true)),
 		"blocks_projectiles": bool(entry.get("blocks_projectiles", true)),
 		"is_jumpable_gap_anchor": bool(entry.get("is_jumpable_gap_anchor", false)),
+		"scalable": bool(entry.get("scalable", false)),
 		"sort_offset": float(entry.get("sort_offset", 0.0))
 	}
 

@@ -16,6 +16,7 @@ const MISSING_ASSET_FALLBACK_STATUSES: Array[String] = [
 ]
 
 const CONTENT_ALPHA_THRESHOLD := 0.08
+const LOGICAL_TILE_SCALE := 8.0
 
 var asset_path: String = ""
 var anchor_id: StringName = &"iso_floor_center"
@@ -189,16 +190,24 @@ func _position_asset_sprite() -> void:
 		asset_sprite.scale = Vector2.ONE
 		asset_sprite.position = Vector2.ZERO
 		return
-	var target_size := IsometricEnvironmentManifest.get_shared().get_native_visual_size(
-		obstacle_id
-	)
+	var manifest := IsometricEnvironmentManifest.get_shared()
+	var target_size := manifest.get_native_visual_size(obstacle_id)
+	# Scalable obstacles (e.g. rocks) are placed at a per-instance square footprint,
+	# so the art must follow the instance size instead of the fixed manifest visual
+	# size. Scale the native visual size by the instance/base footprint ratio.
+	if manifest.is_scalable(obstacle_id):
+		target_size = _scalable_target_size(manifest, target_size)
 	var scale_factor := minf(
 		target_size.x / texture_size.x,
 		target_size.y / texture_size.y
 	)
 	# Scaling is deterministic and comes from the manifest footprint/visual
-	# height contract. Generator randomness never changes the sprite dimensions.
-	asset_sprite.scale = Vector2.ONE * clampf(scale_factor, 0.25, 4.0)
+	# height contract (or, for scalable objects, the instance footprint).
+	# Generator randomness never changes the sprite dimensions.
+	# Scalable objects use a lower floor so a small instance does not clamp to the
+	# same scale as a large one: the art tracks the instance footprint linearly.
+	var min_scale := 0.04 if manifest.is_scalable(obstacle_id) else 0.25
+	asset_sprite.scale = Vector2.ONE * clampf(scale_factor, min_scale, 4.0)
 	# Plant the *visible* art on the floor, not the raw canvas. High-res source
 	# PNGs (and SVGs) carry transparent padding, so resting the canvas bottom on
 	# floor_y would float the art above its tile. Anchoring on the opaque bounds
@@ -239,6 +248,24 @@ func _position_asset_sprite() -> void:
 		damage_overlay.texture = asset_sprite.texture
 		damage_overlay.scale = asset_sprite.scale
 		damage_overlay.position = asset_sprite.position
+
+func _scalable_target_size(
+	manifest: IsometricEnvironmentManifest,
+	base_target: Vector2
+) -> Vector2:
+	# The base footprint defines the manifest native visual size; an instance can be
+	# larger or smaller, so scale the native size by the instance/base ratio. The
+	# logical tile scale cancels in the ratio (both terms use the same scale).
+	var base_footprint := manifest.get_footprint_tiles(obstacle_id)
+	if base_footprint.x <= 0:
+		return base_target
+	var base_width_px := float(base_footprint.x) * LOGICAL_TILE_SCALE
+	if base_width_px <= 0.0:
+		return base_target
+	var ratio := obstacle_size.x / base_width_px
+	if ratio <= 0.0:
+		return base_target
+	return base_target * ratio
 
 func _get_content_metrics(texture: Texture2D) -> Dictionary:
 	var texture_size := texture.get_size()
