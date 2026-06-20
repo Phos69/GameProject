@@ -264,8 +264,8 @@ func _draw() -> void:
 	var hand := weapon_direction * 15.0 + Vector2(0.0, -4.0)
 	if _is_melee_weapon_attack() and fire_flash_timer > 0.0:
 		hand += weapon_direction * 5.0
-	draw_line(shoulder, hand, Color(0.82, 0.61, 0.44, 1.0), 5.0, true)
-	draw_line(-shoulder, hand * 0.72, Color(0.82, 0.61, 0.44, 1.0), 4.0, true)
+	draw_line(shoulder, hand, accent_color, 5.0, true)
+	draw_line(-shoulder, hand * 0.72, accent_color.darkened(0.12), 4.0, true)
 	var muzzle := _draw_weapon(hand, weapon_direction, display_color)
 
 	if fire_flash_timer > 0.0:
@@ -546,8 +546,6 @@ func _draw_character_silhouette_details(
 			draw_line(Vector2(10.0, -7.0), Vector2(20.0, 2.0), outline, 3.0, true)
 			draw_circle(Vector2(-8.0, -26.0), 2.0, accent)
 		&"licantropo":
-			draw_line(Vector2(-16.0, -4.0), Vector2(-25.0, 9.0), accent, 4.0, true)
-			draw_line(Vector2(16.0, -4.0), Vector2(25.0, 9.0), accent, 4.0, true)
 			draw_arc(Vector2(0.0, -21.0), 10.0, PI * 0.1, PI * 0.9, 12, secondary.lightened(0.35), 2.0, true)
 			draw_circle(Vector2(3.0, -21.0), 2.0, accent)
 		&"ranger":

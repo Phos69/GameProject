@@ -176,8 +176,7 @@ func _handle_dodge_input(move_input: Vector2) -> bool:
 func _movement_to_isometric(input_vector: Vector2) -> Vector2:
 	if input_vector.length_squared() <= 0.01:
 		return Vector2.ZERO
-	var iso_vector := Vector2(input_vector.x - input_vector.y, (input_vector.x + input_vector.y) * iso_y_scale)
-	return iso_vector.normalized() * minf(input_vector.length(), 1.0)
+	return input_vector.normalized() * minf(input_vector.length(), 1.0)
 
 func _update_facing(move_input: Vector2) -> void:
 	var aim_input: Vector2 = input_manager.get_player_aim_vector(player_slot)
@@ -238,7 +237,6 @@ func prepare_for_run(max_health_bonus: int = 0) -> void:
 	_set_entity_state(EntityState.NORMAL)
 	visual.reset_visual()
 	revive_indicator.set_downed(false)
-	aim_line.show()
 
 func apply_rpg_character(character_id: StringName) -> bool:
 	if rpg_component == null:
@@ -282,7 +280,6 @@ func _on_revived(_current_health: int, _max_health: int) -> void:
 	velocity = Vector2.ZERO
 	visual.reset_visual()
 	revive_indicator.set_downed(false)
-	aim_line.show()
 
 func _on_died() -> void:
 	_set_entity_state(EntityState.DEAD)
@@ -393,8 +390,6 @@ func _on_dodge_finished() -> void:
 	if try_start_void_fall():
 		return
 	_set_entity_state(EntityState.NORMAL)
-	if health_component != null and health_component.is_alive():
-		aim_line.show()
 
 func _on_void_fall_finished(fall_origin: Vector2) -> void:
 	var hazard_system := get_tree().get_first_node_in_group("hazard_system")
@@ -405,7 +400,6 @@ func _on_void_fall_finished(fall_origin: Vector2) -> void:
 		hazard_system.complete_player_fall(self, fall_origin)
 	if health_component != null and health_component.is_alive():
 		_set_entity_state(EntityState.NORMAL)
-		aim_line.show()
 	else:
 		_set_entity_state(EntityState.DEAD)
 
