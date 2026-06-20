@@ -113,9 +113,11 @@ func _build_svg(contract: Dictionary) -> String:
 	var accent := _resolve_accent_color(contract)
 	var title := "%s %s" % [section, asset_id]
 	var shape := _section_shape(section, asset_id, primary, secondary, accent)
+	var native_size := _native_svg_size(contract)
+	var footprint := contract.get("footprint_slots", Vector2i.ONE) as Vector2i
 	var lines := PackedStringArray([
 		'<?xml version="1.0" encoding="UTF-8"?>',
-		'<svg xmlns="http://www.w3.org/2000/svg" width="160" height="120" viewBox="0 0 160 120" data-generated-by="%s" data-section="%s" data-id="%s">' % [GENERATED_BY, _xml_escape(section), _xml_escape(asset_id)],
+		'<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 160 120" data-generated-by="%s" data-section="%s" data-id="%s" data-footprint-slots="%dx%d">' % [native_size.x, native_size.y, GENERATED_BY, _xml_escape(section), _xml_escape(asset_id), footprint.x, footprint.y],
 		'  <title>%s</title>' % _xml_escape(title),
 		'  <ellipse cx="80" cy="82" rx="58" ry="18" fill="#050608" opacity="0.45"/>',
 		shape,
@@ -236,6 +238,10 @@ func _object_scene_shape(asset_id: String, primary: String, secondary: String, a
 		return _log_shape(primary, accent)
 	if asset_id.contains("bridge") or asset_id.contains("walkway"):
 		return _bridge_object_shape(primary, secondary, accent)
+	if asset_id.contains("dense_vegetation") or asset_id.contains("forest"):
+		return _dense_vegetation_shape(primary, secondary, accent)
+	if asset_id.contains("debris"):
+		return _debris_shape(primary, secondary, accent)
 	if asset_id.contains("rock") or asset_id.contains("ice_block"):
 		return _rock_shape(asset_id, primary, accent)
 	if asset_id.contains("fence") or asset_id.contains("wall") or asset_id.contains("barrier"):
@@ -243,6 +249,16 @@ func _object_scene_shape(asset_id: String, primary: String, secondary: String, a
 	if asset_id.contains("crate"):
 		return _crate_shape(primary, secondary, accent)
 	return _rock_shape(asset_id, primary, accent)
+
+func _native_svg_size(contract: Dictionary) -> Vector2i:
+	if String(contract.get("section", "")) != "object_scenes":
+		return Vector2i(160, 120)
+	var footprint := contract.get("footprint_tiles", Vector2i.ONE) as Vector2i
+	var visual_height := int(contract.get("visual_height_tiles", 0))
+	return Vector2i(
+		maxi(roundi(float(footprint.x) * 8.0 * 1.55), 56),
+		maxi((footprint.y + visual_height) * 8, 56)
+	)
 
 func _building_shape(asset_id: String, primary: String, secondary: String, accent: String) -> String:
 	var lines := PackedStringArray([
@@ -322,6 +338,27 @@ func _rock_shape(asset_id: String, primary: String, accent: String) -> String:
 		'  <polygon points="42,78 62,45 91,35 124,62 112,90 72,99" fill="%s" stroke="%s" stroke-width="4"/>' % [primary, accent],
 		'  <polygon points="62,45 91,35 84,66 42,78" fill="%s" opacity="0.45"/>' % highlight,
 		'  <path d="M84 66 L112 90 M84 66 L124 62 M72 99 L84 66" stroke="#0b0b0b" stroke-width="2" opacity="0.45"/>'
+	]))
+
+func _dense_vegetation_shape(primary: String, secondary: String, accent: String) -> String:
+	return "\n".join(PackedStringArray([
+		'  <polygon points="24,82 80,52 136,82 80,110" fill="%s" stroke="%s" stroke-width="4"/>' % [secondary, accent],
+		'  <path d="M42 85 L47 47 M64 88 L66 35 M87 91 L86 29 M110 87 L111 42 M126 84 L128 58" stroke="#252016" stroke-width="8" stroke-linecap="round"/>',
+		'  <circle cx="34" cy="59" r="23" fill="%s" stroke="#101510" stroke-width="4"/>' % primary,
+		'  <circle cx="57" cy="43" r="27" fill="%s" stroke="#101510" stroke-width="4"/>' % primary,
+		'  <circle cx="84" cy="37" r="30" fill="%s" stroke="#101510" stroke-width="4"/>' % primary,
+		'  <circle cx="109" cy="48" r="27" fill="%s" stroke="#101510" stroke-width="4"/>' % primary,
+		'  <circle cx="130" cy="64" r="22" fill="%s" stroke="#101510" stroke-width="4"/>' % primary,
+		'  <circle cx="70" cy="68" r="28" fill="%s" stroke="#101510" stroke-width="4"/>' % primary,
+		'  <circle cx="103" cy="70" r="27" fill="%s" stroke="#101510" stroke-width="4"/>' % primary,
+		'  <path d="M22 84 C36 67 50 74 62 65 C75 55 87 72 99 63 C113 53 128 70 139 83 L132 94 L80 111 L28 94 Z" fill="%s" stroke="%s" stroke-width="5" stroke-linejoin="round"/>' % [primary, accent]
+	]))
+
+func _debris_shape(primary: String, secondary: String, accent: String) -> String:
+	return "\n".join(PackedStringArray([
+		'  <polygon points="34,78 77,53 127,73 84,101" fill="%s" stroke="%s" stroke-width="4"/>' % [secondary, accent],
+		'  <path d="M43 73 L76 48 L91 67 L119 56 L128 79 L96 91 L72 83 L50 94 Z" fill="%s" stroke="#0b0d0e" stroke-width="4"/>' % primary,
+		'  <path d="M56 67 L106 85 M80 54 L72 88 M101 62 L114 77" stroke="%s" stroke-width="4" stroke-linecap="round"/>' % accent
 	]))
 
 func _dead_tree_shape(primary: String, accent: String) -> String:

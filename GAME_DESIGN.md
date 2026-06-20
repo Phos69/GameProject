@@ -13,6 +13,19 @@ Un action sandbox locale dove 1-4 giocatori affrontano arene, dungeon e difese a
 - Le animazioni privilegiano anticipazione e risposta gameplay rispetto al realismo.
 - I placeholder visuali sono componenti modulari sostituibili con asset definitivi.
 
+### Leggibilita ostacoli e terreno
+
+- Ogni area non attraversabile deve avere una base o un bordo visivo coincidente
+  con le celle bloccate; collisioni invisibili non sono ammesse.
+- Case, vegetazione densa, rocce, recinzioni e cliff devono restare distinguibili
+  per silhouette, volume e rapporto con il terreno anche senza overlay debug.
+- Gli oggetti piccoli usano footprint discreti da `1x1` a `3x3`; tetti, chiome
+  e parti verticali possono estendersi solo verso l'alto rispetto alla base.
+- Case e vegetazione folta sono ostacoli ambientali reali, non decorazioni:
+  bloccano movimento e proiettili secondo il manifest e partecipano allo Y-sort.
+- Void/fall zone comunica una caduta tramite lip e faccia cliff; non deve essere
+  confuso con una parete o con terreno normale.
+
 ## Giocatori
 
 - 1-4 player locali implementati come prototipo minimo.

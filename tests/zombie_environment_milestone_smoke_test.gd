@@ -139,12 +139,22 @@ func _run() -> void:
 		&"small_rock",
 		&"broken_fence",
 		&"wood_barrier",
-		&"ruined_house",
-		&"boundary_fence"
+		&"ruined_house"
 	]:
 		_expect(
 			spawned_obstacle_ids.has(required_id),
-			"%s is present in the starting biome" % String(required_id)
+			"%s is present in the starting biome (%s)"
+			% [String(required_id), str(spawned_obstacle_ids)]
+		)
+	if layout.obstacle_ids.has(&"boundary_fence"):
+		_expect(
+			spawned_obstacle_ids.has(&"boundary_fence"),
+			"generated solid boundary is represented at runtime"
+		)
+	else:
+		_expect(
+			not layout.fall_zone_rects.is_empty(),
+			"fall/cliff boundary replaces a solid fence when the generated edge is void"
 		)
 
 	for safe_point in [
@@ -174,10 +184,26 @@ func _run() -> void:
 
 	var crates: Array = resource_crate_system.get_active_crates()
 	var crate_ids: Array[StringName] = resource_crate_system.get_active_crate_ids()
+	var active_crate_positions: Array[Vector2] = []
+	for active_crate in crates:
+		if active_crate is Node2D:
+			active_crate_positions.append((active_crate as Node2D).global_position)
+	var configured_crate_blockers: Array[String] = []
+	for configured_position in layout.crate_positions:
+		configured_crate_blockers.append(
+			"%s:obstacle=%s,hazard=%s" % [
+				str(configured_position),
+				str(obstacle_system.is_position_blocked(configured_position)),
+				str(hazard_system.is_position_hazardous(configured_position))
+			]
+		)
 	_expect(
 		crates.size() == layout.crate_positions.size(),
-		"resource crate system creates every valid configured crate"
+		"resource crate system creates every valid configured crate (%d/%d configured=%s active=%s)"
+		% [crates.size(), layout.crate_positions.size(), str(layout.crate_positions), str(active_crate_positions)]
 	)
+	if crates.size() != layout.crate_positions.size():
+		push_error("crate blockers: " + str(configured_crate_blockers))
 	_expect(
 		crate_ids.has(&"common") and crate_ids.has(&"medical"),
 		"starting biome provides common and medical resources"

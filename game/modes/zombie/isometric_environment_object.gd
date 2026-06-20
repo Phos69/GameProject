@@ -85,6 +85,7 @@ func _draw() -> void:
 		super._draw()
 		return
 	_draw_ground_shadow()
+	_draw_occupied_base()
 	if show_debug_footprint:
 		_draw_iso_debug_footprint()
 
@@ -179,13 +180,16 @@ func _position_asset_sprite() -> void:
 		asset_sprite.scale = Vector2.ONE
 		asset_sprite.position = Vector2.ZERO
 		return
-	var target_width := maxf(obstacle_size.x * 1.55, 56.0)
-	var target_height := maxf(obstacle_size.y + absf(sort_offset) + 48.0, 56.0)
-	var scale_factor := minf(
-		target_width / texture_size.x,
-		target_height / texture_size.y
+	var target_size := IsometricEnvironmentManifest.get_shared().get_native_visual_size(
+		obstacle_id
 	)
-	asset_sprite.scale = Vector2.ONE * clampf(scale_factor, 0.35, 2.25)
+	var scale_factor := minf(
+		target_size.x / texture_size.x,
+		target_size.y / texture_size.y
+	)
+	# Scaling is deterministic and comes from the manifest footprint/visual
+	# height contract. Generator randomness never changes the sprite dimensions.
+	asset_sprite.scale = Vector2.ONE * clampf(scale_factor, 0.25, 4.0)
 	var visual_size := texture_size * asset_sprite.scale
 	var floor_y := clampf(sort_offset, 0.0, obstacle_size.y * 0.5 + 12.0)
 	match anchor_id:
@@ -228,3 +232,22 @@ func _draw_iso_debug_footprint() -> void:
 	var outline := points.duplicate()
 	outline.append(points[0])
 	draw_polyline(outline, Color(0.30, 0.80, 1.0, 0.68), 1.5, true)
+
+func _draw_occupied_base() -> void:
+	if not blocks_movement:
+		return
+	var half_width := maxf(obstacle_size.x * 0.5, 8.0)
+	var half_height := maxf(obstacle_size.y * 0.25, 6.0)
+	var floor_y := clampf(sort_offset, 0.0, obstacle_size.y * 0.5 + 12.0)
+	var points := PackedVector2Array([
+		Vector2(0.0, floor_y - half_height),
+		Vector2(half_width, floor_y),
+		Vector2(0.0, floor_y + half_height),
+		Vector2(-half_width, floor_y)
+	])
+	var base_color := primary_color.darkened(0.46)
+	base_color.a = 0.72 if obstacle_category in [&"building", &"dense_vegetation"] else 0.48
+	draw_colored_polygon(points, base_color)
+	var outline := points.duplicate()
+	outline.append(points[0])
+	draw_polyline(outline, accent_color.darkened(0.20), 1.5, true)

@@ -159,19 +159,25 @@ func _run_factory_obstacle_coverage(manifest: IsometricEnvironmentManifest) -> v
 			"%s uses IsometricEnvironmentObject scene path" % String(obstacle_id)
 		)
 		if obstacle.get_script() == ISOMETRIC_OBJECT_SCRIPT:
-			_expect(
-				bool(obstacle.call("has_asset_sprite")),
-				"%s has loaded sprite texture" % String(obstacle_id)
-			)
-			_expect(
-				not bool(obstacle.call("uses_procedural_fallback")),
-				"%s does not use procedural fallback" % String(obstacle_id)
-			)
-			_expect(
-				String(obstacle.call("get_asset_path"))
-				== String(manifest.get_object_asset_contract(obstacle_id).get("asset_path", "")),
-				"%s sprite path comes from manifest" % String(obstacle_id)
-			)
+			if obstacle.is_perimeter_wall():
+				_expect(
+					bool(obstacle.call("uses_procedural_fallback")),
+					"%s uses the explicit tileable wall renderer" % String(obstacle_id)
+				)
+			else:
+				_expect(
+					bool(obstacle.call("has_asset_sprite")),
+					"%s has loaded sprite texture" % String(obstacle_id)
+				)
+				_expect(
+					not bool(obstacle.call("uses_procedural_fallback")),
+					"%s does not use procedural fallback" % String(obstacle_id)
+				)
+				_expect(
+					String(obstacle.call("get_asset_path"))
+					== String(manifest.get_object_asset_contract(obstacle_id).get("asset_path", "")),
+					"%s sprite path comes from manifest" % String(obstacle_id)
+				)
 			_expect(
 				obstacle.has_ground_shadow(),
 				"%s keeps ground shadow contract" % String(obstacle_id)
@@ -220,16 +226,22 @@ func _run_obstacle_system_integration() -> void:
 			)
 			if obstacle.get_script() != ISOMETRIC_OBJECT_SCRIPT:
 				continue
-			_expect(
-				bool(obstacle.call("has_asset_sprite")),
-				"%s runtime obstacle has sprite"
-				% String(obstacle_id)
-			)
-			_expect(
-				not bool(obstacle.call("uses_procedural_fallback")),
-				"%s runtime obstacle avoids procedural fallback"
-				% String(obstacle_id)
-			)
+			if biome_obstacle != null and biome_obstacle.is_perimeter_wall():
+				_expect(
+					bool(obstacle.call("uses_procedural_fallback")),
+					"%s runtime wall uses its tileable renderer" % String(obstacle_id)
+				)
+			else:
+				_expect(
+					bool(obstacle.call("has_asset_sprite")),
+					"%s runtime obstacle has sprite"
+					% String(obstacle_id)
+				)
+				_expect(
+					not bool(obstacle.call("uses_procedural_fallback")),
+					"%s runtime obstacle avoids procedural fallback"
+					% String(obstacle_id)
+				)
 			_expect(
 				obstacle.is_in_group("environment_obstacles"),
 				"%s runtime obstacle keeps environment group"

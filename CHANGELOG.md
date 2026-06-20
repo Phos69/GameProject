@@ -111,6 +111,10 @@
   `rpg_sword`.
 - `tests/weapon_visual_identity_qa.gd` produce anche
   `build/qa/weapon_visual_identity_held_hud_grid.png`.
+- `ObstacleLayoutGenerator` normalizza gli oggetti non-border al footprint del
+  manifest prima delle query di spazio; collisione, posizione, base visiva e
+  dimensione SVG derivano ora dallo stesso rettangolo logico, senza scale
+  casuali. Rimossi gli SVG legacy sostituiti dalle varianti footprint-specific.
 - `HazardSystem` risolve ora `walkable`, `hazard`, `fall_zone` e `void` dalla
   classificazione della cella world-space; oltrepassare un semplice border non
   causa piu danno se la cella sotto l'entita non e void.

@@ -65,6 +65,7 @@ Controlli debug:
 - Tastiera: `Shift`/`Ctrl` esegue dodge/roll, `M` apre o chiude la mappa dei territori esplorati.
 - Tastiera debug multiplayer: `F2`, `F3`, `F4` attivano/disattivano gli slot player 2, 3 e 4.
 - Modalita debug: `F1` avvia survival, `F5` avvia una run dungeon e `F6` avvia tower defense.
+- Debug ambiente: `F8` mostra il riepilogo biomi e `F9` evidenzia footprint e celle bloccate degli ostacoli.
 - Joypad: stick sinistro per movimento, stick destro per mira, trigger/spalla destra per sparare, pulsante `X` per ricaricare e pulsante `Y` per la super RPG.
 - Joypad: pulsante `B` per dodge/roll, `Back/Select/View` apre o chiude la mappa dei territori esplorati.
 - Joypad gameplay: D-pad su/giu seleziona ciclicamente arma precedente/successiva per il relativo player; tastiera debug `[`/`]` per player 1.
@@ -124,6 +125,8 @@ godot --headless --path . --script res://tests/world_graph_connectivity_smoke_te
 godot --headless --path . --script res://tests/persistent_world_generation_smoke_test.gd
 godot --headless --path . --script res://tests/open_passage_transition_smoke_test.gd
 godot --headless --path . --script res://tests/isometric_environment_manifest_smoke_test.gd
+godot --headless --path . --script res://tests/obstacle_rendering_contract_smoke_test.gd
+godot --headless --path . --script res://tests/obstacle_asset_visual_qa.gd
 godot --headless --path . --script res://tests/milestone_10_asset_manifest_v7_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_10_asset_pipeline_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_10_tile_layer_smoke_test.gd
