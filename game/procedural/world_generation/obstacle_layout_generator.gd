@@ -37,6 +37,14 @@ const VOIDFIRST_FOREST_EDGE_MARGIN := 4
 const VOIDFIRST_TREE_SPACING := 17
 const VOIDFIRST_TREE_JITTER := 4
 const VOIDFIRST_MAX_TREES := 240
+# Roads route on a coarse grid (cell = step logical cells) that treats rocks as
+# solid, so the carved corridor goes around rocks and through forests.
+const VOIDFIRST_ROUTE_STEP := 5
+const VOIDFIRST_ROAD_ROCK_CLEARANCE := ROAD_WIDTH / 2 + VOIDFIRST_ROUTE_STEP + 2
+# Trails (sentieri) are narrow routes that cross forests but stop at the first rock.
+const VOIDFIRST_PATH_WIDTH := 7
+const VOIDFIRST_PATH_MAX_LEN := 240
+const VOIDFIRST_PATH_COUNT := 3
 
 const GENERATED_OBSTACLE_CATEGORIES: Dictionary = {
 	&"abandoned_car": &"wreck",
@@ -125,6 +133,9 @@ func populate_layout_voidfirst(
 	_carve_passages(layout, cell)
 	_place_rocks(layout, biome, rng)
 	_place_forests(layout, biome, rng)
+	_add_voidfirst_roads(layout, rng)
+	_add_voidfirst_paths(layout, rng)
+	_clear_trees_on_routes(layout)
 	_update_generation_summary(layout, biome)
 
 # Carve the mandatory inter-biome passage corridors as walkable connectors so the
@@ -262,6 +273,170 @@ func _can_place_tree(layout: BiomeEnvironmentLayout, rect: Rect2i) -> bool:
 	if _rect_overlaps_passage_corridor(layout, rect):
 		return false
 	return true
+
+# M3 — carve two main roads (horizontal + vertical) edge-to-edge. They route on a
+# coarse A* grid that treats rocks as solid, so roads go around rocks while still
+# crossing forests. Trees on the carved lane are removed later.
+func _add_voidfirst_roads(
+	layout: BiomeEnvironmentLayout,
+	_rng: RandomNumberGenerator
+) -> void:
+	var astar := _build_road_astar(layout)
+	var mid_y := layout.zone_size.y / 2
+	var mid_x := layout.zone_size.x / 2
+	_carve_astar_road(
+		layout,
+		astar,
+		Vector2i(BORDER_THICKNESS, mid_y),
+		Vector2i(layout.zone_size.x - BORDER_THICKNESS - 1, mid_y),
+		&"main_road"
+	)
+	_carve_astar_road(
+		layout,
+		astar,
+		Vector2i(mid_x, BORDER_THICKNESS),
+		Vector2i(mid_x, layout.zone_size.y - BORDER_THICKNESS - 1),
+		&"main_road"
+	)
+
+func _build_road_astar(layout: BiomeEnvironmentLayout) -> AStarGrid2D:
+	var step := VOIDFIRST_ROUTE_STEP
+	var w := int(ceil(float(layout.zone_size.x) / float(step)))
+	var h := int(ceil(float(layout.zone_size.y) / float(step)))
+	var astar := AStarGrid2D.new()
+	astar.region = Rect2i(0, 0, w, h)
+	astar.cell_size = Vector2.ONE
+	astar.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES
+	astar.default_compute_heuristic = AStarGrid2D.HEURISTIC_MANHATTAN
+	astar.update()
+	for rock in layout.rock_rects:
+		var inflated := _inflate_rect(rock, VOIDFIRST_ROAD_ROCK_CLEARANCE)
+		var c0 := _to_coarse_cell(inflated.position, step, w, h)
+		var c1 := _to_coarse_cell(inflated.end - Vector2i.ONE, step, w, h)
+		for cy in range(c0.y, c1.y + 1):
+			for cx in range(c0.x, c1.x + 1):
+				astar.set_point_solid(Vector2i(cx, cy), true)
+	return astar
+
+func _carve_astar_road(
+	layout: BiomeEnvironmentLayout,
+	astar: AStarGrid2D,
+	start_full: Vector2i,
+	end_full: Vector2i,
+	tag: StringName
+) -> void:
+	var step := VOIDFIRST_ROUTE_STEP
+	var region := astar.region
+	var start_c := _nearest_open_coarse(astar, _to_coarse_cell(start_full, step, region.size.x, region.size.y))
+	var end_c := _nearest_open_coarse(astar, _to_coarse_cell(end_full, step, region.size.x, region.size.y))
+	if start_c.x < 0 or end_c.x < 0:
+		_add_diagonal_road(layout, start_full, end_full, ROAD_WIDTH, tag)
+		return
+	var path := astar.get_id_path(start_c, end_c)
+	if path.is_empty():
+		_add_diagonal_road(layout, start_full, end_full, ROAD_WIDTH, tag)
+		return
+	var prev := start_full
+	for coarse_cell in path:
+		var center := Vector2i(
+			coarse_cell.x * step + step / 2,
+			coarse_cell.y * step + step / 2
+		)
+		_add_diagonal_road(layout, prev, center, ROAD_WIDTH, tag)
+		prev = center
+	_add_diagonal_road(layout, prev, end_full, ROAD_WIDTH, tag)
+
+func _to_coarse_cell(point: Vector2i, step: int, w: int, h: int) -> Vector2i:
+	return Vector2i(
+		clampi(int(floor(float(point.x) / float(step))), 0, w - 1),
+		clampi(int(floor(float(point.y) / float(step))), 0, h - 1)
+	)
+
+# Spiral outward from a coarse cell to the nearest non-solid cell so road
+# endpoints never start inside a rock clearance zone. Returns (-1,-1) if none.
+func _nearest_open_coarse(astar: AStarGrid2D, cell: Vector2i) -> Vector2i:
+	var region := astar.region
+	if not astar.is_point_solid(cell):
+		return cell
+	for radius in range(1, maxi(region.size.x, region.size.y)):
+		for dy in range(-radius, radius + 1):
+			for dx in range(-radius, radius + 1):
+				if absi(dx) != radius and absi(dy) != radius:
+					continue
+				var candidate := cell + Vector2i(dx, dy)
+				if not region.has_point(candidate):
+					continue
+				if not astar.is_point_solid(candidate):
+					return candidate
+	return Vector2i(-1, -1)
+
+# M3 — carve narrow trails (sentieri) starting at forest centers, crossing the
+# forest and stopping at the first rock (or border / max length).
+func _add_voidfirst_paths(
+	layout: BiomeEnvironmentLayout,
+	rng: RandomNumberGenerator
+) -> void:
+	if layout.forest_rects.is_empty():
+		return
+	var directions: Array[Vector2i] = [
+		Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)
+	]
+	var count := mini(VOIDFIRST_PATH_COUNT, layout.forest_rects.size())
+	for index in range(count):
+		var forest_rect := layout.forest_rects[index]
+		var start := forest_rect.position + forest_rect.size / 2
+		var direction: Vector2i = directions[rng.randi_range(0, directions.size() - 1)]
+		_carve_trail(layout, start, direction, VOIDFIRST_PATH_WIDTH, VOIDFIRST_PATH_MAX_LEN, &"broken_street")
+
+func _carve_trail(
+	layout: BiomeEnvironmentLayout,
+	start: Vector2i,
+	direction: Vector2i,
+	width: int,
+	max_len: int,
+	tag: StringName
+) -> int:
+	var carved := 0
+	var pos := start
+	for _step in range(max_len):
+		var next := pos + direction
+		var band := _trail_band_rect(next, direction, width)
+		if _intersects_any(band, layout.rock_rects):
+			break
+		if (
+			band.position.x < 0
+			or band.position.y < 0
+			or band.end.x > layout.zone_size.x
+			or band.end.y > layout.zone_size.y
+		):
+			break
+		for y in range(band.position.y, band.end.y):
+			for x in range(band.position.x, band.end.x):
+				layout.add_road_cell(Vector2i(x, y), tag)
+		carved += 1
+		pos = next
+	return carved
+
+func _trail_band_rect(center: Vector2i, direction: Vector2i, width: int) -> Rect2i:
+	var half := width / 2
+	if direction.x != 0:
+		return Rect2i(Vector2i(center.x, center.y - half), Vector2i(1, width))
+	return Rect2i(Vector2i(center.x - half, center.y), Vector2i(width, 1))
+
+# Remove forest trees whose footprint overlaps any carved route cell, so roads and
+# trails read as cleared lanes through the woods.
+func _clear_trees_on_routes(layout: BiomeEnvironmentLayout) -> void:
+	for index in range(layout.obstacle_ids.size() - 1, -1, -1):
+		if layout.obstacle_ids[index] != &"forest_tree":
+			continue
+		if not _rect_overlaps_road_cells(layout, layout.obstacle_rects[index]):
+			continue
+		layout.obstacle_rects.remove_at(index)
+		layout.obstacle_ids.remove_at(index)
+		layout.obstacle_positions.remove_at(index)
+		layout.obstacle_sizes.remove_at(index)
+		layout.obstacle_rotations.remove_at(index)
+		layout.obstacle_shape_ids.remove_at(index)
 
 func repair_layout(layout: BiomeEnvironmentLayout) -> void:
 	for index in range(layout.obstacle_rects.size() - 1, -1, -1):
