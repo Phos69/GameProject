@@ -48,6 +48,10 @@ var passage_rects: Array[Rect2i] = []
 var passage_connector_rects: Array[Rect2i] = []
 var bridge_rects: Array[Rect2i] = []
 var obstacle_rects: Array[Rect2i] = []
+# Void-first generation: square rock footprints (placed first) and square forest
+# regions (placed second). Forests skip rock cells; roads route around rocks.
+var rock_rects: Array[Rect2i] = []
+var forest_rects: Array[Rect2i] = []
 var water_rects: Array[Rect2i] = []
 var fall_zone_rects: Array[Rect2i] = []
 var hazard_rects: Array[Rect2i] = []

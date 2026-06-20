@@ -17,6 +17,16 @@ const MIN_BLOCK_SIZE := 32
 const STARTER_RIVER_WIDTH := 22
 const STARTER_BRIDGE_EXTRA_WIDTH := 14
 
+# --- Void-first generation (rocks -> forests -> roads -> tree borders -> void
+# lottery). The chunk starts as pure void and each pass carves into it. ---
+const VOIDFIRST_ROCK_MIN_SIZE := 15
+const VOIDFIRST_ROCK_MAX_SIZE := 30
+const VOIDFIRST_ROCK_MIN_COUNT := 10
+const VOIDFIRST_ROCK_MAX_COUNT := 16
+const VOIDFIRST_ROCK_GAP := 3
+const VOIDFIRST_ROCK_MARGIN := 6
+const VOIDFIRST_ROCK_ATTEMPTS := 600
+
 const GENERATED_OBSTACLE_CATEGORIES: Dictionary = {
 	&"abandoned_car": &"wreck",
 	&"abandoned_house": &"building",
@@ -89,6 +99,85 @@ func populate_layout(
 	_ensure_starter_dense_obstacle(layout, biome, rng)
 	_ensure_starter_3x3_obstacles(layout, biome)
 	_update_generation_summary(layout, biome)
+
+# Void-first pipeline orchestrator. Grown one milestone at a time; the chunk
+# starts as pure void and each pass carves into it:
+#   passages -> rocks -> forests -> roads/paths -> road tree borders -> void lottery
+# Currently implemented: passages reservation + rocks (M1).
+func populate_layout_voidfirst(
+	layout: BiomeEnvironmentLayout,
+	cell: BiomeCell,
+	biome: BiomeDefinition
+) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = maxi(cell.seed, 1)
+	_carve_passages(layout, cell)
+	_place_rocks(layout, biome, rng)
+	_update_generation_summary(layout, biome)
+
+# Carve the mandatory inter-biome passage corridors as walkable connectors so the
+# later rock/forest passes avoid them and the road router can hook onto them.
+func _carve_passages(layout: BiomeEnvironmentLayout, cell: BiomeCell) -> void:
+	var zone_size := layout.zone_size
+	for passage in cell.passages:
+		var passage_rect := passage.get_local_rect(zone_size)
+		layout.passage_rects.append(passage_rect)
+		var connector_rect := passage.get_connector_rect(zone_size)
+		layout.passage_connector_rects.append(connector_rect)
+		_add_road_rect(layout, passage_rect, passage.passage_type)
+		_add_road_rect(layout, connector_rect, passage.passage_type)
+
+# M1 — place at least VOIDFIRST_ROCK_MIN_COUNT square rocks (side 15..30) on the
+# void canvas, non-overlapping and clear of passage corridors. Deterministic from
+# the cell seed. Rocks are scalable obstacles so their art/collision match the
+# chosen side.
+func _place_rocks(
+	layout: BiomeEnvironmentLayout,
+	_biome: BiomeDefinition,
+	rng: RandomNumberGenerator
+) -> int:
+	var target := rng.randi_range(VOIDFIRST_ROCK_MIN_COUNT, VOIDFIRST_ROCK_MAX_COUNT)
+	var placed := _try_place_rocks(layout, rng, target, VOIDFIRST_ROCK_GAP)
+	# Guarantee the minimum even if rejection sampling was unlucky: relax the gap
+	# and keep trying until at least VOIDFIRST_ROCK_MIN_COUNT rocks exist.
+	if placed < VOIDFIRST_ROCK_MIN_COUNT:
+		placed += _try_place_rocks(
+			layout,
+			rng,
+			VOIDFIRST_ROCK_MIN_COUNT - placed,
+			1
+		)
+	return placed
+
+func _try_place_rocks(
+	layout: BiomeEnvironmentLayout,
+	rng: RandomNumberGenerator,
+	count: int,
+	gap: int
+) -> int:
+	var placed := 0
+	var attempts := 0
+	var lo := BORDER_THICKNESS + VOIDFIRST_ROCK_MARGIN
+	while placed < count and attempts < VOIDFIRST_ROCK_ATTEMPTS:
+		attempts += 1
+		var side := rng.randi_range(VOIDFIRST_ROCK_MIN_SIZE, VOIDFIRST_ROCK_MAX_SIZE)
+		var hi_x := layout.zone_size.x - lo - side
+		var hi_y := layout.zone_size.y - lo - side
+		if hi_x <= lo or hi_y <= lo:
+			continue
+		var rect := Rect2i(
+			Vector2i(rng.randi_range(lo, hi_x), rng.randi_range(lo, hi_y)),
+			Vector2i(side, side)
+		)
+		var padded := _inflate_rect(rect, gap)
+		if _rect_overlaps_passage_corridor(layout, padded):
+			continue
+		if _intersects_any(padded, layout.rock_rects):
+			continue
+		layout.rock_rects.append(rect)
+		_add_obstacle(layout, &"large_rock", rect, &"rectangle", 0.0)
+		placed += 1
+	return placed
 
 func repair_layout(layout: BiomeEnvironmentLayout) -> void:
 	for index in range(layout.obstacle_rects.size() - 1, -1, -1):
@@ -1355,10 +1444,11 @@ func _canonical_obstacle_rect(obstacle_id: StringName, requested: Rect2i) -> Rec
 	var manifest := IsometricEnvironmentManifest.get_shared()
 	if not manifest.has_object(obstacle_id):
 		return requested
-	# Border segments are intentionally variable-length tiles. Every other
-	# obstacle uses the exact manifest footprint so placement, collision and art
-	# share one size instead of inheriting generator randomness.
-	if manifest.get_category(obstacle_id) == &"border":
+	# Border segments are intentionally variable-length tiles, and scalable
+	# obstacles (rocks) own a per-instance square footprint. Every other obstacle
+	# uses the exact manifest footprint so placement, collision and art share one
+	# size instead of inheriting generator randomness.
+	if manifest.get_category(obstacle_id) == &"border" or manifest.is_scalable(obstacle_id):
 		return requested
 	var footprint := manifest.get_footprint_tiles(obstacle_id)
 	var center := requested.position + requested.size / 2
