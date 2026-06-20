@@ -38,6 +38,10 @@ revisione manuale, baseline e consolidamento TODO.
 
 ### UIUX-001 - UI, HUD, audio e polish UX trasversale
 
+- Avanzamento 2026-06-20: completato il pass del faceplate world-space con
+  livello/EXP al posto di P1-P4, vita cromatica sulle due righe superiori,
+  super verticale blu con glow e testi HP/ammo piu leggibili; restano menu, HUD
+  globale, audio e QA completa multi-risoluzione.
 - Obiettivo: rifinire menu, HUD, Character Select, status, mappa, boss, feedback
   audio e leggibilita senza cambiare regole di gioco.
 - Milestone collegata: `todo_roadmap.md` Milestone 8.

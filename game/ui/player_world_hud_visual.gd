@@ -7,18 +7,21 @@ const SLOT_COLORS: Array[Color] = [
 	Color(0.52, 0.86, 0.32, 1.0),
 	Color(0.94, 0.78, 0.28, 1.0)
 ]
-const HUD_OFFSET: Vector2 = Vector2(-66.0, -96.0)
-const HUD_SIZE: Vector2 = Vector2(132.0, 56.0)
+const HUD_OFFSET: Vector2 = Vector2(-76.0, -104.0)
+const HUD_SIZE: Vector2 = Vector2(152.0, 64.0)
 const PANEL_RECT: Rect2 = Rect2(Vector2.ZERO, HUD_SIZE)
-const PLAYER_BADGE_RECT: Rect2 = Rect2(Vector2(6.0, 7.0), Vector2(32.0, 20.0))
-const HEALTH_BAR_RECT: Rect2 = Rect2(Vector2(42.0, 9.0), Vector2(45.0, 8.0))
-const LEVEL_CENTER: Vector2 = Vector2(105.0, 18.0)
-const LEVEL_RING_RADIUS: float = 14.0
-const AMMO_BAR_RECT: Rect2 = Rect2(Vector2(8.0, 34.0), Vector2(98.0, 8.0))
-const SUPER_BAR_RECT: Rect2 = Rect2(Vector2(118.0, 5.0), Vector2(8.0, 42.0))
+const LEVEL_CENTER: Vector2 = Vector2(22.0, 21.0)
+const LEVEL_RING_RADIUS: float = 15.0
+const AMMO_BAR_RECT: Rect2 = Rect2(Vector2(44.0, 42.0), Vector2(92.0, 12.0))
+const HEALTH_BAR_RECT: Rect2 = Rect2(Vector2(44.0, 7.0), Vector2(92.0, 28.0))
+const SUPER_BAR_RECT: Rect2 = Rect2(Vector2(142.0, 5.0), Vector2(6.0, 54.0))
 const LOW_MAGAZINE_RATIO: float = 0.25
 const LEVEL_UP_FLASH_DURATION: float = 0.70
 const TEXT_OUTLINE: Color = Color(0.005, 0.008, 0.012, 0.96)
+const SUPER_COLOR: Color = Color(0.18, 0.58, 1.0, 1.0)
+const SUPER_READY_COLOR: Color = Color(0.42, 0.82, 1.0, 1.0)
+const STATUS_FONT_SIZE: int = 10
+const BAR_FONT_SIZE: int = 10
 
 var player_slot: int = 1
 var slot_color: Color = SLOT_COLORS[0]
@@ -145,36 +148,57 @@ func is_super_ready_display() -> bool:
 	var rpg_component := _get_rpg_component()
 	return rpg_component != null and rpg_component.is_super_ready()
 
+func get_layout_snapshot() -> Dictionary:
+	return {
+		"shows_player_label": false,
+		"level_center": LEVEL_CENTER,
+		"health_bar_rect": HEALTH_BAR_RECT,
+		"health_orientation": &"horizontal_two_rows",
+		"health_colors": [
+			_resolve_health_color(1.0, false),
+			_resolve_health_color(0.5, false),
+			_resolve_health_color(0.2, false)
+		],
+		"super_bar_rect": SUPER_BAR_RECT,
+		"super_orientation": &"vertical",
+		"super_color": SUPER_COLOR,
+		"ready_glows_faceplate": true,
+		"ammo_bar_rect": AMMO_BAR_RECT,
+		"status_font_size": STATUS_FONT_SIZE,
+		"bar_font_size": BAR_FONT_SIZE
+	}
+
 func _draw() -> void:
 	var accent := _resolve_accent_color()
 	_draw_panel(accent)
-	_draw_player_badge(accent)
-	_draw_health()
 	_draw_level_ring(accent)
+	_draw_health()
 	_draw_ammo_or_reload(accent)
-	_draw_super_bar(accent)
+	_draw_super_bar()
 
 func _draw_panel(accent: Color) -> void:
+	var ready := is_super_ready_display()
+	if ready:
+		var pulse := 1.0
+		if not reduced_motion:
+			pulse = 0.68 + 0.32 * (0.5 + 0.5 * sin(animation_time * 6.0))
+		draw_rect(
+			PANEL_RECT.grow(4.0),
+			Color(SUPER_READY_COLOR, 0.10 * pulse * glow_intensity),
+			true
+		)
+		draw_rect(
+			PANEL_RECT.grow(2.0),
+			Color(SUPER_READY_COLOR, 0.34 * pulse * glow_intensity),
+			false,
+			2.2
+		)
 	var border := Color.WHITE if high_contrast else Color(accent, 0.92)
+	if ready and not high_contrast:
+		border = accent.lerp(SUPER_READY_COLOR, 0.72)
 	draw_rect(PANEL_RECT.grow(1.0), Color(0.0, 0.0, 0.0, 0.48), true)
 	draw_rect(PANEL_RECT, Color(0.016, 0.024, 0.032, 0.88), true)
-	draw_rect(PANEL_RECT, border, false, 1.35)
-
-func _draw_player_badge(accent: Color) -> void:
-	var badge_fill := Color(0.025, 0.036, 0.046, 0.96)
-	var badge_border := Color.WHITE if high_contrast else slot_color.lightened(0.20)
-	draw_rect(PLAYER_BADGE_RECT, badge_fill, true)
-	draw_rect(PLAYER_BADGE_RECT, badge_border, false, 1.6)
-	_draw_text(
-		"P%d" % player_slot,
-		PLAYER_BADGE_RECT.position + Vector2(0.0, 15.0),
-		PLAYER_BADGE_RECT.size.x,
-		_scaled_font_size(14),
-		Color.WHITE if high_contrast else accent.lightened(0.36),
-		HORIZONTAL_ALIGNMENT_CENTER,
-		1.25,
-		true
-	)
+	draw_rect(PANEL_RECT, border, false, 1.65 if ready else 1.35)
 
 func _draw_health() -> void:
 	var health_component := _get_health_component()
@@ -187,19 +211,22 @@ func _draw_health() -> void:
 		label = (
 			"DOWN"
 			if downed
-			else "HP %d" % health_component.current_health
+			else "HP %d/%d" % [
+				health_component.current_health,
+				health_component.max_health
+			]
 		)
 	var fill_color := _resolve_health_color(ratio, downed)
 	_draw_bar(HEALTH_BAR_RECT, ratio, fill_color)
 	_draw_text(
 		label,
-		HEALTH_BAR_RECT.position + Vector2(0.0, 7.0),
+		HEALTH_BAR_RECT.position + Vector2(0.0, 19.0),
 		HEALTH_BAR_RECT.size.x,
-		_scaled_font_size(7),
+		_scaled_font_size(STATUS_FONT_SIZE),
 		Color.WHITE,
 		HORIZONTAL_ALIGNMENT_CENTER,
-		1.0,
-		false
+		1.25,
+		true
 	)
 
 func _draw_level_ring(accent: Color) -> void:
@@ -268,7 +295,7 @@ func _draw_ammo_or_reload(accent: Color) -> void:
 	var weapon_system := _get_weapon_system()
 	if weapon_system == null or weapon_system.weapon_data == null:
 		_draw_bar(AMMO_BAR_RECT, 0.0, Color(0.42, 0.48, 0.52, 1.0))
-		_draw_center_bar_text(AMMO_BAR_RECT, "NO WEAPON", Color(0.76, 0.82, 0.86, 1.0))
+		_draw_center_bar_text(AMMO_BAR_RECT, "AMMO --", Color(0.76, 0.82, 0.86, 1.0))
 		return
 	if weapon_system.is_reloading:
 		_draw_reload_bar(weapon_system)
@@ -286,7 +313,11 @@ func _draw_reload_bar(weapon_system: WeaponSystem) -> void:
 		1.2,
 		true
 	)
-	_draw_center_bar_text(AMMO_BAR_RECT, "RELOAD", Color(1.0, 0.92, 0.58, 1.0))
+	_draw_center_bar_text(
+		AMMO_BAR_RECT,
+		"RELOAD %d%%" % roundi(ratio * 100.0),
+		Color(1.0, 0.92, 0.58, 1.0)
+	)
 
 func _draw_ammo_bar(weapon_system: WeaponSystem, accent: Color) -> void:
 	var magazine_size := maxi(weapon_system.weapon_data.magazine_size, 1)
@@ -297,71 +328,30 @@ func _draw_ammo_bar(weapon_system: WeaponSystem, accent: Color) -> void:
 	_draw_ammo_segments(magazine_size)
 	if current_ammo == 0:
 		_draw_low_ammo_frame(Color(1.0, 0.20, 0.12, 1.0))
-		_draw_center_bar_text(AMMO_BAR_RECT, "RELOAD", Color(1.0, 0.72, 0.58, 1.0))
+		_draw_center_bar_text(
+			AMMO_BAR_RECT,
+			"AMMO 0/%d" % magazine_size,
+			Color(1.0, 0.72, 0.58, 1.0)
+		)
 	elif ratio <= LOW_MAGAZINE_RATIO:
 		_draw_low_ammo_frame(Color(1.0, 0.56, 0.16, 1.0))
 		_draw_center_bar_text(
 			AMMO_BAR_RECT,
-			"%d/%d" % [current_ammo, magazine_size],
+			"AMMO %d/%d" % [current_ammo, magazine_size],
 			Color(1.0, 0.90, 0.50, 1.0)
 		)
 	else:
 		_draw_center_bar_text(
 			AMMO_BAR_RECT,
-			"%d/%d" % [current_ammo, magazine_size],
+			"AMMO %d/%d" % [current_ammo, magazine_size],
 			Color(0.92, 0.98, 1.0, 1.0)
 		)
 
-func _draw_super_bar(accent: Color) -> void:
+func _draw_super_bar() -> void:
 	var super_ratio := get_super_ratio()
 	var ready := is_super_ready_display()
-	var bar_bg := Color(0.035, 0.075, 0.075, 0.95)
-	var border := Color.WHITE if high_contrast else Color(accent.lightened(0.08), 0.85)
-	var fill_color := (
-		Color(0.46, 1.0, 0.70, 1.0)
-		if ready
-		else Color(0.24, 0.82, 0.66, 1.0)
-	)
-	if ready and not reduced_motion:
-		var pulse := 0.55 + 0.45 * sin(animation_time * 6.0)
-		draw_rect(
-			SUPER_BAR_RECT.grow(2.0),
-			Color(fill_color, 0.10 + pulse * 0.22 * glow_intensity),
-			true
-		)
-	draw_rect(SUPER_BAR_RECT, bar_bg, true)
-	var fill_height := SUPER_BAR_RECT.size.y * clampf(super_ratio, 0.0, 1.0)
-	if fill_height > 0.0:
-		var fill_rect := Rect2(
-			Vector2(
-				SUPER_BAR_RECT.position.x,
-				SUPER_BAR_RECT.position.y + SUPER_BAR_RECT.size.y - fill_height
-			),
-			Vector2(SUPER_BAR_RECT.size.x, fill_height)
-		)
-		draw_rect(fill_rect, fill_color, true)
-	draw_rect(SUPER_BAR_RECT, border, false, 1.2)
-	_draw_text(
-		"S",
-		Vector2(SUPER_BAR_RECT.position.x - 1.0, SUPER_BAR_RECT.position.y - 1.0),
-		SUPER_BAR_RECT.size.x + 2.0,
-		_scaled_font_size(7),
-		Color.WHITE,
-		HORIZONTAL_ALIGNMENT_CENTER,
-		0.85,
-		false
-	)
-	if ready:
-		_draw_text(
-			"READY",
-			Vector2(SUPER_BAR_RECT.position.x - 24.0, SUPER_BAR_RECT.end.y + 8.0),
-			32.0,
-			_scaled_font_size(7),
-			Color(0.62, 1.0, 0.78, 1.0),
-			HORIZONTAL_ALIGNMENT_CENTER,
-			1.0,
-			true
-		)
+	var fill_color := SUPER_READY_COLOR if ready else SUPER_COLOR
+	_draw_vertical_bar(SUPER_BAR_RECT, super_ratio, fill_color)
 
 func _draw_bar(rect: Rect2, ratio: float, fill_color: Color) -> void:
 	var clamped_ratio := clampf(ratio, 0.0, 1.0)
@@ -369,6 +359,21 @@ func _draw_bar(rect: Rect2, ratio: float, fill_color: Color) -> void:
 	if clamped_ratio > 0.0:
 		draw_rect(
 			Rect2(rect.position, Vector2(rect.size.x * clamped_ratio, rect.size.y)),
+			fill_color,
+			true
+		)
+	draw_rect(rect, Color(0.0, 0.0, 0.0, 0.72), false, 1.0)
+
+func _draw_vertical_bar(rect: Rect2, ratio: float, fill_color: Color) -> void:
+	var clamped_ratio := clampf(ratio, 0.0, 1.0)
+	draw_rect(rect, Color(0.055, 0.065, 0.078, 0.96), true)
+	if clamped_ratio > 0.0:
+		var fill_height := rect.size.y * clamped_ratio
+		draw_rect(
+			Rect2(
+				Vector2(rect.position.x, rect.end.y - fill_height),
+				Vector2(rect.size.x, fill_height)
+			),
 			fill_color,
 			true
 		)
@@ -396,18 +401,16 @@ func _draw_low_ammo_frame(color: Color) -> void:
 func _draw_center_bar_text(rect: Rect2, text: String, color: Color) -> void:
 	_draw_text(
 		text,
-		rect.position + Vector2(0.0, 7.0),
+		rect.position + Vector2(0.0, 10.0),
 		rect.size.x,
-		_scaled_font_size(8),
+		_scaled_font_size(BAR_FONT_SIZE),
 		color,
 		HORIZONTAL_ALIGNMENT_CENTER,
-		1.0,
+		1.25,
 		true
 	)
 
 func _resolve_health_color(ratio: float, downed: bool) -> Color:
-	if high_contrast:
-		return Color.WHITE
 	if downed or ratio <= 0.30:
 		return Color(1.0, 0.28, 0.20, 1.0)
 	if ratio <= 0.60:

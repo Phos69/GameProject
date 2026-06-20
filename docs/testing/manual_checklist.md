@@ -70,9 +70,14 @@ godot --headless --path . --script res://tests/pause_settings_smoke_test.gd
 
 ## Regressione combat
 
-- Il pacchetto sopra ogni player mostra P1/P2/P3/P4, HP, livello con gauge EXP,
-  super verticale e lo slot ammo/reload; la scheda angolo mostra arma, riserva
-  o stato speciale e statistiche RPG senza duplicare il caricatore.
+- Il pacchetto sopra ogni player mostra il livello con gauge EXP al posto di
+  P1/P2/P3/P4, HP e AMMO leggibili, vita verde/arancio/rossa estesa sulle due
+  righe superiori e super verticale blu; a super carica il glow coinvolge
+  l'intero faceplate.
+- A 1280x720, 1024x768 e 960x540 il faceplate non si sovrappone al survivor e
+  i testi `HP`, `AMMO`, `RELOAD` e `SUPER READY` restano leggibili.
+- La scheda angolo mostra arma, riserva o stato speciale e statistiche RPG
+  senza duplicare il caricatore.
 - Sparare riduce il caricatore di una unita per colpo valido.
 - Le munizioni di un player non modificano quelle degli altri player.
 - Tenere premuto fire rispetta il fire rate della pistola.

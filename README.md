@@ -185,6 +185,8 @@ godot --headless --path . --script res://tests/milestone_rpg_10_balance_smoke_te
 godot --headless --path . --script res://tests/milestone_rpg_11_data_driven_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_rpg_12_feedback_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_rpg_13_new_classes_smoke_test.gd
+godot --headless --path . --script res://tests/player_world_hud_layout_smoke_test.gd
+godot --path . --rendering-method gl_compatibility --script res://tests/player_world_hud_visual_qa.gd
 godot --headless --path . --script res://tests/rpg_melee_attack_resolution_smoke_test.gd
 godot --headless --path . --script res://tests/weapon_inventory_catalog_smoke_test.gd
 godot --headless --path . --script res://tests/weapon_visual_catalog_smoke_test.gd
@@ -284,8 +286,9 @@ Completato:
   reload e `attack_type` distinti;
 - hitbox arma configurabili e separate dal visual, con projectile per ranged e
   hitbox temporanee melee per ascia/spada/artigli;
-- pacchetto HUD sopra-player con P1/P2/P3/P4, HP, livello con gauge EXP
-  circolare, barra ammo/reload condivisa e super verticale per le armi RPG;
+- pacchetto HUD sopra-player con livello e gauge EXP circolare al posto di
+  P1/P2/P3/P4, vita cromatica sulle due righe superiori, ammo/reload in basso e
+  super verticale blu con glow del faceplate quando pronta;
 - XP RPG assegnata al killer e a fine ondata senza pickup XP dagli zombie;
 - passive automatiche RPG per Ranger, Pistoliere, Berserker e Spadaccino con stato visibile nell'HUD;
 - adrenalina RPG da combat e fine ondata, con super attivabile a 100 per ogni classe;

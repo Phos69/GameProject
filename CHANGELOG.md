@@ -10,6 +10,9 @@
 - Aggiunti `tests/obstacle_3x3_smoke_test.gd` e
   `tests/obstacle_3x3_visual_qa.gd`, con screenshot gameplay/footprint in
   `build/qa/obstacle_3x3/`.
+- Aggiunti `tests/player_world_hud_layout_smoke_test.gd` e
+  `tests/player_world_hud_visual_qa.gd` per verificare il contratto del nuovo
+  layout e confrontare quattro stati di vita, carica super e glow ready.
 - Aggiunto `WeaponVisualRenderer` per centralizzare fallback, shape target e
   silhouette proiettile derivate da `WeaponVisualData`.
 - Aggiunte silhouette pickup per le 30 armi del catalogo drop tramite
@@ -103,6 +106,11 @@
 
 ### Changed
 
+- Ridisegnato il `PlayerWorldHudVisual`: il livello con gauge EXP sostituisce
+  P1-P4, la vita occupa le due righe superiori con soglie
+  verde/arancio/rosso, la super e una barra verticale blu sul bordo destro e il
+  faceplate emette glow quando e pronta; aumentata inoltre la leggibilita delle
+  etichette HP, ammo e reload.
 - Estesa la QA asset ostacoli a sorgenti PNG oltre agli SVG, mantenendo i check
   su trasparenza, copertura della silhouette e downscale runtime deterministico.
 - `Projectile` delega poligono e glow al renderer visuale condiviso mantenendo

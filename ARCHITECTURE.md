@@ -292,9 +292,11 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
   silhouette e palette derivate dal profilo RPG; disegna l'arma equipaggiata
   tramite `WeaponVisualRenderer` e non possiede piu il mini HUD.
 - `PlayerWorldHudVisual`: pacchetto UI world-space child del player; legge
-  `HealthComponent`, `WeaponSystem` e `RpgPlayerComponent` e disegna P1-P4,
-  HP, livello con gauge EXP circolare, barra ammo/reload condivisa nello stesso
-  slot e super verticale pronta/non pronta.
+  `HealthComponent`, `WeaponSystem` e `RpgPlayerComponent` e disegna il livello
+  con gauge EXP circolare, vita orizzontale su due righe a soglie
+  verde/arancio/rosso, ammo/reload in basso e super verticale. Quando la super
+  e pronta applica un glow blu
+  all'intero faceplate; il bordo mantiene il colore slot senza mostrare P1-P4.
 - `ZombieVisual`: presentazione animata procedurale degli zombie.
 - `DropPickupVisual` e `SupplyCrateVisual`: icone world-space sostituibili; i
   drop arma ricevono `WeaponData.visual_data` e disegnano la silhouette pickup

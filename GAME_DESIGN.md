@@ -444,9 +444,12 @@ Statistiche attive:
 - difesa sottratta al danno in ingresso;
 - livello per-run con `+10 HP`, `+2 attacco` e `+1 difesa`.
 
-Il pacchetto HUD world-space sopra ogni player mostra P1/P2/P3/P4, HP, livello
-con gauge EXP circolare, barra caricatore/reload nello stesso slot e una barra
-super verticale a destra. Le schede HUD player negli angoli restano per
+Il pacchetto HUD world-space sopra ogni player mostra il livello con gauge EXP
+circolare al posto dell'etichetta P1-P4, una barra vita orizzontale a soglie
+verde/arancio/rosso estesa sulle due righe superiori, lo slot caricatore/reload
+in basso e la barra super verticale blu sul bordo destro.
+Quando la super e pronta, l'intero faceplate emette un glow blu. Le schede HUD
+player negli angoli restano per
 ritratto classe, classe/arma, riserva o stato speciale, riga ATK/DEF/SPD,
 passive e status temporanei.
 
@@ -721,8 +724,9 @@ L'HUD mostra:
 
 - annunci temporanei per preparazione ondata, inizio ondata, reward e boss,
   senza riquadro persistente con countdown, indice ondata o nemici rimasti;
-- pacchetto sopra ogni player con vita, P1/P2/P3/P4, livello/EXP, ammo/reload e
-  super verticale;
+- pacchetto sopra ogni player con livello/EXP circolare, vita cromatica sulle
+  due righe superiori, ammo/reload in basso e super verticale blu con glow di
+  stato ready;
 - stato low ammo, reload, empty magazine e fallback;
 - conferma temporanea dei pickup ammo condivisi;
 - dati bioma e status ambientali restano nel runtime, senza riquadro HUD

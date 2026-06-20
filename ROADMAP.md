@@ -342,6 +342,10 @@ Attivita post-roadmap:
 - pass RPG leggibilita combat completato: `WeaponData.attack_type`,
   hitbox melee temporanee per ascia/spada/artigli, feedback slash e Character
   Select con indicazione projectile/melee;
+- pass faceplate world-space completato dentro UIUX-001: livello/EXP circolare
+  al posto di P1-P4, vita cromatica sulle due righe superiori, super verticale
+  blu con glow e testi HP/ammo ingranditi; la milestone UI/UX resta aperta per il polish
+  trasversale e la QA multi-risoluzione;
 - polish Character Select RPG completato come pass post-roadmap: card grafiche,
   dossier laterale, preview gameplay procedurale, stat bar e supporto
   `Esc`/joypad `B`;
