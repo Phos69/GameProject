@@ -45,6 +45,12 @@ const VOIDFIRST_ROAD_ROCK_CLEARANCE := ROAD_WIDTH / 2 + VOIDFIRST_ROUTE_STEP + 2
 const VOIDFIRST_PATH_WIDTH := 7
 const VOIDFIRST_PATH_MAX_LEN := 240
 const VOIDFIRST_PATH_COUNT := 3
+# Roads crossing open void get a tree lining where they are not already bounded by
+# a rock or forest ("confine").
+const VOIDFIRST_ROAD_LINE_SPACING := 12
+const VOIDFIRST_ROAD_LINE_NEAR := 3
+const VOIDFIRST_ROAD_LINE_CONFINE := 6
+const VOIDFIRST_MAX_LINE_TREES := 220
 
 const GENERATED_OBSTACLE_CATEGORIES: Dictionary = {
 	&"abandoned_car": &"wreck",
@@ -136,6 +142,7 @@ func populate_layout_voidfirst(
 	_add_voidfirst_roads(layout, rng)
 	_add_voidfirst_paths(layout, rng)
 	_clear_trees_on_routes(layout)
+	_line_roads_with_trees(layout)
 	_update_generation_summary(layout, biome)
 
 # Carve the mandatory inter-biome passage corridors as walkable connectors so the
@@ -437,6 +444,49 @@ func _clear_trees_on_routes(layout: BiomeEnvironmentLayout) -> void:
 		layout.obstacle_sizes.remove_at(index)
 		layout.obstacle_rotations.remove_at(index)
 		layout.obstacle_shape_ids.remove_at(index)
+
+# M4 — line roads with a layer of trees wherever the road runs through open void,
+# i.e. where it is not already bounded by a rock or forest ("confine"). Candidate
+# tree slots are scanned on a coarse grid; a tree is placed only if it sits beside
+# a road on a free cell with no existing border nearby.
+func _line_roads_with_trees(layout: BiomeEnvironmentLayout) -> int:
+	var footprint := IsometricEnvironmentManifest.get_shared().get_footprint_tiles(
+		&"forest_tree"
+	)
+	var added := 0
+	var lo := BORDER_THICKNESS
+	var max_x := layout.zone_size.x - lo - footprint.x
+	var max_y := layout.zone_size.y - lo - footprint.y
+	var y := lo
+	while y <= max_y:
+		var x := lo
+		while x <= max_x:
+			if added >= VOIDFIRST_MAX_LINE_TREES:
+				return added
+			var rect := Rect2i(Vector2i(x, y), footprint)
+			if _should_line_with_tree(layout, rect):
+				_add_obstacle(layout, &"forest_tree", rect, &"rectangle", 0.0)
+				added += 1
+			x += VOIDFIRST_ROAD_LINE_SPACING
+		y += VOIDFIRST_ROAD_LINE_SPACING
+	return added
+
+func _should_line_with_tree(layout: BiomeEnvironmentLayout, rect: Rect2i) -> bool:
+	# Free of obstacles and passage corridors, and not on the road itself.
+	if not _can_place_tree(layout, rect):
+		return false
+	if _rect_overlaps_road_cells(layout, rect):
+		return false
+	# Must sit beside a road to count as a lining.
+	if not _rect_overlaps_road_cells(layout, _inflate_rect(rect, VOIDFIRST_ROAD_LINE_NEAR)):
+		return false
+	# Skip if the road is already bounded here by a rock or forest.
+	var confine := _inflate_rect(rect, VOIDFIRST_ROAD_LINE_CONFINE)
+	if _intersects_any(confine, layout.rock_rects):
+		return false
+	if _intersects_any(confine, layout.forest_rects):
+		return false
+	return true
 
 func repair_layout(layout: BiomeEnvironmentLayout) -> void:
 	for index in range(layout.obstacle_rects.size() - 1, -1, -1):
