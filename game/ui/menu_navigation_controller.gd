@@ -13,6 +13,10 @@ var previous_tab_callback: Callable = Callable()
 var next_tab_callback: Callable = Callable()
 var move_callback: Callable = Callable()
 var input_blocked_callback: Callable = Callable()
+# Optional predicate `func(device: int) -> bool`. When set, the controller only
+# reacts to input from devices it accepts. Used by local multiplayer screens so
+# each player's pad drives only its own cursor. Unset = accept every device.
+var device_filter: Callable = Callable()
 
 var _cooldown: float = 0.0
 var _held_axis_by_device: Dictionary = {}
@@ -32,6 +36,8 @@ func _process(delta: float) -> void:
 
 func _input(event: InputEvent) -> void:
 	if not _can_navigate():
+		return
+	if not _device_allowed(event.device):
 		return
 	if _is_back_event(event):
 		if _invoke_callback(back_callback):
@@ -138,8 +144,15 @@ func _direction_from_motion(event: InputEventJoypadMotion) -> Vector2i:
 		return Vector2i.DOWN if state.y > 0.0 else Vector2i.UP
 	return Vector2i.ZERO
 
+func _device_allowed(device: int) -> bool:
+	if not device_filter.is_valid():
+		return true
+	return bool(device_filter.call(device))
+
 func _dominant_held_direction() -> Vector2i:
 	for device_id in _held_axis_by_device.keys():
+		if not _device_allowed(device_id):
+			continue
 		var state: Vector2 = _held_axis_by_device[device_id]
 		if absf(state.x) < AXIS_THRESHOLD and absf(state.y) < AXIS_THRESHOLD:
 			continue

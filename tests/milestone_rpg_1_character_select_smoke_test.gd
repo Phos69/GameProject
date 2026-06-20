@@ -73,8 +73,9 @@ func _run() -> void:
 			"character cards use the RPG visual card control"
 		)
 	_expect(
-		main_menu.character_detail_panel != null,
-		"character select exposes the gameplay preview detail panel"
+		main_menu.character_slot_views.get(1, {}).get("preview") != null
+			and main_menu.character_slot_views.get(2, {}).get("preview") != null,
+		"each active slot embeds its own gameplay preview"
 	)
 	main_menu._preview_character(&"ranger")
 	await process_frame

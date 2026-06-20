@@ -44,6 +44,13 @@ var character_texture_cache: Dictionary = {}
 var character_weapon_cache: Dictionary = {}
 var character_slot_views: Dictionary = {}
 var character_selection_by_slot: Dictionary = {}
+# Each active slot browses the roster with its own cursor (a roster index). Slot
+# 1 mirrors the keyboard/mouse focus; extra pads drive their own slot's cursor.
+var character_cursor_by_slot: Dictionary = {}
+# One MenuNavigationController per extra slot (2..max), so every pad navigates
+# the roster independently without stealing player one's focus.
+var character_navigation_by_slot: Dictionary = {}
+# Slot driven by keyboard/mouse/pad-0. Stays at player one in local co-op.
 var current_character_slot: int = 1
 var focused_character_id: StringName = &""
 
@@ -68,19 +75,31 @@ func _input(event: InputEvent) -> void:
 	var player_slot := _player_slot_from_input_event(event)
 	if player_slot <= 0:
 		return
+	if not _is_character_slot_active(player_slot):
+		return
+	# Any active player can launch once everyone is ready.
 	if _is_character_start_event(event):
-		if not _is_character_slot_active(player_slot):
-			return
-		_set_current_character_slot(player_slot)
 		if _all_active_character_slots_selected():
 			_start_survival_with_selected_characters()
 		else:
 			_refresh_character_selection_ui()
 		get_viewport().set_input_as_handled()
 		return
-	if not _is_character_slot_active(player_slot):
+	# Player one (keyboard / mouse / pad 0) keeps Godot's focus-driven flow:
+	# directional navigation and confirm are handled by the focus system and the
+	# card's pressed signal, so nothing extra is needed here.
+	if player_slot == 1:
 		return
-	_set_current_character_slot(player_slot)
+	# Extra pads confirm their own slot directly. Directional moves are handled by
+	# that slot's dedicated navigation controller. We consume the confirm so it can
+	# never leak into player one's focused button.
+	if _is_character_confirm_event(event):
+		var character_id := _character_id_at_index(
+			_character_cursor_index(player_slot)
+		)
+		if not character_id.is_empty():
+			_assign_character_to_slot(player_slot, character_id)
+		get_viewport().set_input_as_handled()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if (
@@ -420,6 +439,9 @@ func _create_character_navigation() -> void:
 	character_navigation = MENU_NAVIGATION_SCRIPT.new()
 	character_navigation.name = "CharacterSelectNavigation"
 	character_navigation.owner_control = character_select_panel
+	# Player one owns the keyboard/mouse and pad 0 (device <= 0); extra pads are
+	# routed to their own per-slot controllers instead of moving this focus.
+	character_navigation.device_filter = Callable(self, "_is_player_one_device")
 	character_navigation.back_callback = Callable(
 		self,
 		"_handle_character_select_back"
@@ -437,6 +459,32 @@ func _create_character_navigation() -> void:
 		controls.append(character_back_button)
 	character_navigation.set_focus_controls(controls)
 	add_child(character_navigation)
+	_create_extra_slot_navigation()
+
+func _create_extra_slot_navigation() -> void:
+	var max_slots := 4
+	if local_multiplayer_manager != null:
+		max_slots = local_multiplayer_manager.max_players
+	for player_slot in range(2, max_slots + 1):
+		var navigation = MENU_NAVIGATION_SCRIPT.new()
+		navigation.name = "CharacterSelectNavigationP%d" % player_slot
+		navigation.owner_control = character_select_panel
+		navigation.device_filter = Callable(
+			self,
+			"_is_slot_device"
+		).bind(player_slot)
+		navigation.move_callback = Callable(
+			self,
+			"_move_character_cursor"
+		).bind(player_slot)
+		add_child(navigation)
+		character_navigation_by_slot[player_slot] = navigation
+
+func _is_player_one_device(device: int) -> bool:
+	return device <= 0
+
+func _is_slot_device(device: int, player_slot: int) -> bool:
+	return device == player_slot - 1
 
 func _create_character_slot_panel(player_slot: int) -> Control:
 	var panel := PanelContainer.new()
@@ -668,6 +716,7 @@ func _open_character_select() -> void:
 	_ensure_current_character_slot()
 	if focused_character_id.is_empty() and not character_profiles.is_empty():
 		focused_character_id = StringName(character_profiles[0].get("id", &""))
+	_sync_character_cursors()
 	_refresh_character_select_layout()
 	_refresh_character_selection_ui()
 	character_select_panel.show()
@@ -701,11 +750,54 @@ func _assign_character_to_slot(
 		return
 	if not RpgCharacterRegistry.is_character_available(character_id):
 		return
-	current_character_slot = player_slot
 	character_selection_by_slot[player_slot] = character_id
-	focused_character_id = character_id
+	character_cursor_by_slot[player_slot] = _roster_index_of(character_id)
+	if player_slot == current_character_slot:
+		focused_character_id = character_id
 	_play_confirm()
 	_refresh_character_selection_ui()
+
+func _move_character_cursor(direction: Vector2i, player_slot: int) -> bool:
+	if not _is_character_slot_active(player_slot):
+		return false
+	if character_card_buttons.is_empty():
+		return false
+	var current_index := _character_cursor_index(player_slot)
+	var next_index := _resolve_character_grid_index(current_index, direction)
+	next_index = clampi(next_index, 0, character_card_buttons.size() - 1)
+	character_cursor_by_slot[player_slot] = next_index
+	_play_focus()
+	_refresh_character_selection_ui()
+	return true
+
+func _sync_character_cursors() -> void:
+	# Give every active slot a valid starting cursor: its committed pick if any,
+	# otherwise the first roster card. Player one stays aligned with its focus.
+	for player_slot in _get_active_character_slots():
+		if character_cursor_by_slot.has(player_slot):
+			continue
+		var committed := StringName(
+			character_selection_by_slot.get(player_slot, &"")
+		)
+		character_cursor_by_slot[player_slot] = (
+			_roster_index_of(committed)
+			if RpgCharacterRegistry.is_character_available(committed)
+			else 0
+		)
+
+func _character_cursor_index(player_slot: int) -> int:
+	var index := int(character_cursor_by_slot.get(player_slot, 0))
+	return clampi(index, 0, maxi(character_card_buttons.size() - 1, 0))
+
+func _roster_index_of(character_id: StringName) -> int:
+	var card := character_card_by_id.get(character_id) as Button
+	var index := character_card_buttons.find(card)
+	return index if index >= 0 else 0
+
+func _character_id_at_index(index: int) -> StringName:
+	if index < 0 or index >= character_profiles.size():
+		return &""
+	return StringName(character_profiles[index].get("id", &""))
 
 func _start_survival_with_selected_characters() -> void:
 	_resolve_managers()
@@ -758,6 +850,8 @@ func _ensure_current_character_slot() -> void:
 		current_character_slot = int(active_slots[0])
 
 func _set_current_character_slot(player_slot: int) -> void:
+	# Lets a solo keyboard/mouse player retarget which slot they are filling. Pad
+	# players keep their own independent cursors regardless of this value.
 	if current_character_slot == player_slot:
 		return
 	current_character_slot = player_slot
@@ -766,6 +860,9 @@ func _set_current_character_slot(player_slot: int) -> void:
 	)
 	if RpgCharacterRegistry.is_character_available(selected_id):
 		focused_character_id = selected_id
+		var card := character_card_by_id.get(selected_id) as Button
+		if card != null and card.is_inside_tree():
+			card.grab_focus()
 	_refresh_character_selection_ui()
 
 func _all_active_character_slots_selected() -> bool:
@@ -902,13 +999,15 @@ func _refresh_character_slot_view(
 	var selected := active and not profile.is_empty()
 	var panel := view.get("panel") as PanelContainer
 	if panel != null:
+		# Every active slot is independently in play, so the highlight comes from
+		# the slot's own colour/commit state rather than a single "current" slot.
 		panel.add_theme_stylebox_override(
 			"panel",
 			_make_character_slot_style(
 				player_slot,
 				active,
 				selected,
-				current_character_slot == player_slot
+				false
 			)
 		)
 	var player_label := view.get("player") as Label
@@ -961,27 +1060,23 @@ func _refresh_character_slot_view(
 	)
 
 func _refresh_character_card_states() -> void:
-	for profile in character_profiles:
-		var character_id := StringName(profile.get("id", &""))
+	var active_slots := _get_active_character_slots()
+	for index in range(character_profiles.size()):
+		var character_id := StringName(character_profiles[index].get("id", &""))
 		var card := character_card_by_id.get(character_id) as Button
 		if card == null:
 			continue
-		var assigned_slots_for_card: Array[int] = []
-		for player_slot in _get_active_character_slots():
+		var committed_slots: Array[int] = []
+		var hovering_slots: Array[int] = []
+		for player_slot in active_slots:
 			var selected_id := StringName(
 				character_selection_by_slot.get(player_slot, &"")
 			)
 			if selected_id == character_id:
-				assigned_slots_for_card.append(player_slot)
-		var current_selected_id := StringName(
-			character_selection_by_slot.get(current_character_slot, &"")
-		)
-		card.call(
-			"set_selection_state",
-			current_selected_id == character_id,
-			assigned_slots_for_card,
-			current_character_slot
-		)
+				committed_slots.append(player_slot)
+			if _character_cursor_index(player_slot) == index:
+				hovering_slots.append(player_slot)
+		card.call("set_selection_state", committed_slots, hovering_slots)
 
 func _on_character_card_focused(character_id: StringName) -> void:
 	_play_focus()
@@ -991,24 +1086,10 @@ func _preview_character(character_id: StringName) -> void:
 	if not RpgCharacterRegistry.is_character_available(character_id):
 		return
 	focused_character_id = character_id
-	_refresh_character_preview()
-
-func _refresh_character_preview() -> void:
-	# The live preview now lives in the player slot that is currently choosing,
-	# so refreshing the preview just updates that slot's view.
-	_ensure_current_character_slot()
-	var player_slot := current_character_slot
-	var active := _get_active_character_slots().has(player_slot)
-	var profile := _get_character_profile(
-		StringName(character_selection_by_slot.get(player_slot, &""))
-	)
-	_refresh_character_slot_view(
-		player_slot,
-		active,
-		profile,
-		_slot_preview_profile(player_slot, profile)
-	)
-	_refresh_character_detail_panel()
+	# The focus owner is player one's cursor: keep its slot aligned with it.
+	character_cursor_by_slot[current_character_slot] = _roster_index_of(character_id)
+	# _refresh_character_selection_ui also refreshes the shared detail panel.
+	_refresh_character_selection_ui()
 
 func _refresh_character_detail_panel() -> void:
 	if character_detail_panel == null or not character_detail_panel.is_node_ready():
@@ -1028,11 +1109,11 @@ func _slot_preview_profile(
 	player_slot: int,
 	committed_profile: Dictionary
 ) -> Dictionary:
-	# The slot being chosen mirrors the roster hover; the others keep whatever
-	# character is already committed to them.
-	if player_slot == current_character_slot \
-			and RpgCharacterRegistry.is_character_available(focused_character_id):
-		return _get_character_profile(focused_character_id)
+	# Each active slot previews the character its own cursor is browsing; the
+	# committed pick is the fallback when the cursor has nowhere valid to point.
+	var cursor_id := _character_id_at_index(_character_cursor_index(player_slot))
+	if RpgCharacterRegistry.is_character_available(cursor_id):
+		return _get_character_profile(cursor_id)
 	return committed_profile
 
 func _set_character_slot_text(
@@ -1335,7 +1416,15 @@ func _is_character_start_event(event: InputEvent) -> bool:
 			return false
 	return event.is_action_pressed(&"pause")
 
+func _is_character_confirm_event(event: InputEvent) -> bool:
+	if event is InputEventJoypadButton:
+		var button_event := event as InputEventJoypadButton
+		return button_event.pressed and button_event.button_index == JOY_BUTTON_A
+	return false
+
 func _on_active_slots_changed(_active_slots: Array[int]) -> void:
+	# Newly joined slots need a starting cursor before they can browse.
+	_sync_character_cursors()
 	if character_select_panel != null and character_select_panel.visible:
 		_refresh_character_selection_ui()
 

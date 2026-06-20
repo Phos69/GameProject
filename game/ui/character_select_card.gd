@@ -1,6 +1,15 @@
 extends Button
 class_name CharacterSelectCard
 
+# Per-player accent colours, mirrored from MainMenu.CHARACTER_SLOT_COLORS so the
+# card can paint each player's cursor and commitment markers independently.
+const SLOT_COLORS: Array[Color] = [
+	Color(0.18, 0.74, 0.95, 1.0),
+	Color(0.95, 0.42, 0.34, 1.0),
+	Color(0.52, 0.86, 0.32, 1.0),
+	Color(0.94, 0.78, 0.28, 1.0)
+]
+
 var character_profile: Dictionary = {}
 var portrait_texture: Texture2D
 var weapon_data: WeaponData
@@ -12,9 +21,10 @@ var class_label: Label
 var weapon_label: Label
 var passive_label: Label
 var super_label: Label
-var selected_for_current_slot: bool = false
-var assigned_slots: Array[int] = []
-var current_slot: int = 1
+# Slots whose cursor currently hovers this card (live browsing, per player).
+var hovering_slots: Array[int] = []
+# Slots that have committed their pick to this card (locked selection).
+var committed_slots: Array[int] = []
 var animation_time: float = 0.0
 var ui_built: bool = false
 
@@ -30,7 +40,12 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	animation_time += delta
-	if has_focus() or is_hovered() or selected_for_current_slot:
+	if (
+		has_focus()
+		or is_hovered()
+		or not hovering_slots.is_empty()
+		or not committed_slots.is_empty()
+	):
 		queue_redraw()
 
 func set_profile(
@@ -46,14 +61,16 @@ func set_profile(
 	queue_redraw()
 
 func set_selection_state(
-	is_selected_for_current_slot: bool,
-	next_assigned_slots: Array[int],
-	next_current_slot: int
+	next_committed_slots: Array[int],
+	next_hovering_slots: Array[int]
 ) -> void:
-	selected_for_current_slot = is_selected_for_current_slot
-	assigned_slots = next_assigned_slots.duplicate()
-	current_slot = next_current_slot
+	committed_slots = next_committed_slots.duplicate()
+	hovering_slots = next_hovering_slots.duplicate()
 	queue_redraw()
+
+func _slot_color(player_slot: int) -> Color:
+	var index := clampi(player_slot - 1, 0, SLOT_COLORS.size() - 1)
+	return SLOT_COLORS[index]
 
 func _build_ui() -> void:
 	var margin := MarginContainer.new()
@@ -191,31 +208,45 @@ func _draw() -> void:
 	var secondary := Color(character_profile.get("palette_secondary", Color(0.12, 0.16, 0.20, 1.0)))
 	var accent := Color(character_profile.get("palette_accent", Color(1.0, 0.78, 0.28, 1.0)))
 	var rect := Rect2(Vector2(1.0, 1.0), size - Vector2(2.0, 2.0))
-	var focus_ratio := 1.0 if has_focus() or is_hovered() else 0.0
-	var selected_ratio := 1.0 if selected_for_current_slot else 0.0
+	var hovered_ratio := 1.0 if has_focus() or is_hovered() or not hovering_slots.is_empty() else 0.0
+	var committed_ratio := 1.0 if not committed_slots.is_empty() else 0.0
 	var bg := Color(0.030, 0.040, 0.052, 0.98).lerp(secondary.darkened(0.32), 0.38)
-	if selected_for_current_slot:
+	if committed_ratio > 0.0:
 		bg = bg.lerp(primary.darkened(0.18), 0.34)
 	draw_rect(rect, bg, true)
 	draw_rect(Rect2(Vector2(8.0, 42.0), Vector2(size.x - 16.0, 62.0)), Color(0.0, 0.0, 0.0, 0.18), true)
-	var border := Color(0.18, 0.24, 0.30, 1.0).lerp(accent, maxf(focus_ratio, selected_ratio))
-	if selected_for_current_slot:
-		var pulse := 0.55 + 0.45 * sin(animation_time * 4.0)
-		border = border.lerp(Color.WHITE, pulse * 0.22)
-	draw_rect(rect, border, false, 2.0 + selected_ratio)
+	var border := Color(0.18, 0.24, 0.30, 1.0).lerp(accent, maxf(hovered_ratio, committed_ratio))
+	draw_rect(rect, border, false, 2.0)
+	# Each player browsing this card gets its own coloured ring, inset so several
+	# players hovering the same card stay individually visible.
+	_draw_hovering_rings(rect)
+	# Keyboard/mouse focus keeps an extra white inner ring for accessibility.
 	if has_focus():
 		draw_rect(rect.grow(-4.0), Color.WHITE, false, 1.4)
-	_draw_assignment_pips(accent)
+	_draw_commit_pips()
 	_draw_stats(accent)
 
-func _draw_assignment_pips(accent: Color) -> void:
-	if assigned_slots.is_empty():
+func _draw_hovering_rings(rect: Rect2) -> void:
+	if hovering_slots.is_empty():
 		return
-	for index in range(assigned_slots.size()):
-		var slot := assigned_slots[index]
+	var pulse := 0.55 + 0.45 * sin(animation_time * 4.0)
+	var sorted_slots := hovering_slots.duplicate()
+	sorted_slots.sort()
+	for index in range(sorted_slots.size()):
+		var slot: int = sorted_slots[index]
+		var ring_color := _slot_color(slot).lerp(Color.WHITE, pulse * 0.25)
+		draw_rect(rect.grow(-1.5 - float(index) * 2.4), ring_color, false, 2.4)
+
+func _draw_commit_pips() -> void:
+	if committed_slots.is_empty():
+		return
+	var sorted_slots := committed_slots.duplicate()
+	sorted_slots.sort()
+	for index in range(sorted_slots.size()):
+		var slot: int = sorted_slots[index]
 		var center := Vector2(size.x - 16.0 - float(index) * 18.0, 18.0)
 		draw_circle(center, 7.0, Color(0.0, 0.0, 0.0, 0.45))
-		draw_circle(center, 5.0, accent.lightened(0.15))
+		draw_circle(center, 5.0, _slot_color(slot).lightened(0.15))
 		var font := get_theme_font("font", "Label")
 		draw_string(
 			font,

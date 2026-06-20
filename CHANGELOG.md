@@ -4,6 +4,9 @@
 
 ### Added
 
+- Aggiunto `tests/character_select_independent_smoke_test.gd` che verifica la
+  selezione indipendente: il pad del Giocatore 2 muove e conferma il proprio
+  slot senza toccare focus, cursore e scelta del Giocatore 1.
 - Aggiunti i marker direzionali ai bordi schermo per i minion fuori dalla
   visuale (`OffscreenEnemyMarkers`): frecce ancorate al bordo del viewport con
   colore tematico per bioma, dimensione e opacita derivate dalla distanza dal
@@ -128,13 +131,16 @@
 
 ### Changed
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
+- La character selection passa da hot-seat a selezione indipendente per
+  giocatore: tastiera/mouse/pad 0 pilotano il Giocatore 1 col focus Godot,
+  mentre ogni pad aggiuntivo (device N) muove il cursore del proprio slot N+1 e
+  conferma in autonomia, senza rubare il cursore agli altri. Le card mostrano
+  un anello colorato per ciascun cursore in hover e i pip di commit per slot.
+  `MenuNavigationController` ha un `device_filter` opzionale per instradare
+  l'input di ogni pad al solo cursore di competenza.
 - `WaveManager` espone un blocco generico tra reward e intermission;
   `ProgressionManager` espone la spesa atomica del denaro comune e
   `WeaponSystem` refill mirati che preservano le istanze inventario.
->>>>>>> 2b3030689279098739a20cbf7fbf7e6dcac1f33d
 - Separata l'arma base dall'inventario equipaggiabile: `RB`/`Spazio` attacca
   con la base, `LB`/`F` usa l'arma raccolta selezionata e il D-pad cicla solo
   le armi raccolte. Una speciale vuota non forza piu il fallback o lo switch
@@ -147,7 +153,6 @@
   etichette HP, ammo e reload.
 - Estesa la QA asset ostacoli a sorgenti PNG oltre agli SVG, mantenendo i check
   su trasparenza, copertura della silhouette e downscale runtime deterministico.
-=======
 - `Zombie Survival` resta una modalita separata con megamappa `3x3`, biomi
   connessi e mappa esplorazione; `F7` e il menu dedicato la avviano passando da
   Character Select.
@@ -159,7 +164,6 @@
 - `tools/run_tests.ps1` e `tools/run_tests.sh` supportano categorie
   `all`/`fast`/`slow`/`soak`/`visual`, log in `build/test_logs/` e filtro senza
   match con exit code non zero.
->>>>>>> roadmap/stabilization-workflow-biomes
 - `Projectile` delega poligono e glow al renderer visuale condiviso mantenendo
   invariati i profili legacy quando i nuovi campi sono vuoti.
 - `DropPickup` passa `WeaponData.visual_data` a `DropPickupVisual` per i drop
