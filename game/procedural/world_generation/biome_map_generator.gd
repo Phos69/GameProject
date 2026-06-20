@@ -21,6 +21,9 @@ var passage_generator := BiomePassageGenerator.new()
 var last_cells: Array[BiomeCell] = []
 var last_graph: WorldGraph
 
+const ARENA_BOUNDARY_WALLED := "walled"
+const ARENA_BOUNDARY_BLOCKED := "blocked"
+
 func _ready() -> void:
 	add_to_group("biome_map_generator")
 
@@ -64,6 +67,7 @@ func generate_map(
 			index += 1
 
 	_configure_connected_topology(cells, seed_value, width, height, context)
+	_apply_outer_boundary_mode(cells, context)
 	passage_generator.generate_passages(cells, seed_value)
 	last_graph = WorldGraph.new()
 	last_graph.configure_from_biome_cells(cells, seed_value)
@@ -297,6 +301,21 @@ func _block_edge(edge: Dictionary) -> void:
 		BiomeCell.BorderType.BLOCKED
 	)
 
+func _apply_outer_boundary_mode(
+	cells: Array[BiomeCell],
+	context: Dictionary
+) -> void:
+	var boundary_mode := _get_context_string(context, "arena_boundary_mode", "")
+	if (
+		boundary_mode != ARENA_BOUNDARY_WALLED
+		and boundary_mode != ARENA_BOUNDARY_BLOCKED
+	):
+		return
+	for cell in cells:
+		for side in BiomeCell.SIDES:
+			if not cell.has_neighbor(side):
+				cell.set_border(side, BiomeCell.BorderType.BLOCKED)
+
 func _edge_key(edge: Dictionary) -> String:
 	var from_cell := edge["from"] as BiomeCell
 	var to_cell := edge["to"] as BiomeCell
@@ -313,6 +332,18 @@ func _context_has_explicit_seed(context: Dictionary) -> bool:
 		or context.has("global_seed")
 		or context.has("seed")
 	)
+
+func _get_context_string(
+	context: Dictionary,
+	key: String,
+	default_value: String
+) -> String:
+	if context.has(key):
+		return str(context.get(key))
+	var string_name_key := StringName(key)
+	if context.has(string_name_key):
+		return str(context.get(string_name_key))
+	return default_value
 
 func _resolve_cell_size(context: Dictionary) -> Vector2i:
 	var raw_size: Variant = context.get("biome_cell_size", cell_size)

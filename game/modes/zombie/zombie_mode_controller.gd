@@ -46,6 +46,11 @@ var _void_backdrop: ColorRect
 
 const VOID_BACKDROP_DARKEN := 0.68
 const SINGLE_BIOME_ARENA_KEY := "single_biome_arena"
+const DISABLE_WORLD_RUNTIME_KEY := "disable_world_runtime"
+const DISABLE_REGION_STREAMING_KEY := "disable_region_streaming"
+
+var world_runtime_enabled_for_run: bool = true
+var region_streaming_enabled_for_run: bool = true
 
 static func get_void_background_color(palette: BiomePalette) -> Color:
 	if palette == null:
@@ -59,11 +64,25 @@ func _ready() -> void:
 
 func start_run(context: Dictionary = {}) -> void:
 	_resolve_components()
+	var resolved_context := _resolve_survival_world_context(context)
+	world_runtime_enabled_for_run = not _get_context_bool(
+		resolved_context,
+		DISABLE_WORLD_RUNTIME_KEY,
+		false
+	)
+	region_streaming_enabled_for_run = (
+		enable_multi_region_render
+		and not _get_context_bool(
+			resolved_context,
+			DISABLE_REGION_STREAMING_KEY,
+			false
+		)
+	)
 	if biome_manager != null:
-		biome_manager.start_run(_resolve_survival_world_context(context))
-	if world_runtime != null and biome_manager != null:
+		biome_manager.start_run(resolved_context)
+	if world_runtime_enabled_for_run and world_runtime != null and biome_manager != null:
 		world_runtime.start_run(biome_manager.active_world_data, biome_manager)
-	if region_seam_system != null and biome_manager != null:
+	if world_runtime_enabled_for_run and region_seam_system != null and biome_manager != null:
 		region_seam_system.start_run(biome_manager, world_runtime)
 	var biome = get_current_biome()
 	is_active = true
@@ -71,7 +90,7 @@ func start_run(context: Dictionary = {}) -> void:
 		wave_director.start_run()
 	if random_encounter_system != null and random_encounter_system.has_method("configure_seed"):
 		random_encounter_system.configure_seed(
-			int(context.get("world_seed", context.get("run_seed", 0)))
+			int(resolved_context.get("world_seed", resolved_context.get("run_seed", 0)))
 		)
 	_apply_active_biome(biome)
 	zombie_run_started.emit(
@@ -132,6 +151,8 @@ func stop_run() -> void:
 	if biome_manager != null and biome_manager.has_method("stop_run"):
 		biome_manager.stop_run()
 	is_active = false
+	world_runtime_enabled_for_run = true
+	region_streaming_enabled_for_run = true
 	last_applied_region_id = &""
 	_clear_void_backdrop()
 	zombie_run_stopped.emit()
@@ -232,7 +253,7 @@ func _on_current_region_changed(
 	region_id: StringName,
 	_biome_id: StringName
 ) -> void:
-	if world_runtime != null:
+	if world_runtime_enabled_for_run and world_runtime != null:
 		world_runtime.set_current_region(region_id)
 	if is_active:
 		_apply_active_biome(get_current_biome())
@@ -299,7 +320,7 @@ func _apply_active_biome(biome: BiomeDefinition) -> void:
 
 func _stream_active_regions(region_id: StringName) -> bool:
 	if (
-		not enable_multi_region_render
+		not region_streaming_enabled_for_run
 		or world_region_streamer == null
 		or biome_manager == null
 		or region_id.is_empty()
@@ -327,7 +348,7 @@ func _stream_active_regions(region_id: StringName) -> bool:
 
 func _render_neighbor_regions(region_id: StringName) -> void:
 	if (
-		not enable_multi_region_render
+		not region_streaming_enabled_for_run
 		or biome_manager == null
 		or region_id.is_empty()
 	):

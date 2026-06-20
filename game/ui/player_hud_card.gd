@@ -115,9 +115,6 @@ func refresh(player: Node) -> void:
 	passive_label.text = ""
 	passive_label.hide()
 	_refresh_status_widgets(player)
-	if xp_bar != null:
-		xp_bar.max_value = 1.0
-		xp_bar.value = 0.0
 	if rpg_component != null and rpg_component.has_character():
 		slot_label.text = "P%d" % player_slot
 		class_label.text = "%s  %s · %s" % [
@@ -150,9 +147,6 @@ func refresh(player: Node) -> void:
 		if not passive_text.is_empty():
 			passive_label.text = passive_text
 			passive_label.show()
-		if xp_bar != null:
-			xp_bar.max_value = float(rpg_component.experience_to_next_level)
-			xp_bar.value = float(rpg_component.experience)
 	if health_component != null:
 		health_bar.max_value = float(health_component.max_health)
 		health_bar.value = float(health_component.current_health)
@@ -273,28 +267,6 @@ func _build_ui() -> void:
 	inventory_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	content.add_child(inventory_label)
 
-	reload_bar = ProgressBar.new()
-	reload_bar.custom_minimum_size = Vector2(250.0, 8.0)
-	reload_bar.max_value = 1.0
-	reload_bar.show_percentage = false
-	content.add_child(reload_bar)
-	reload_bar.hide()
-
-	var xp_row := HBoxContainer.new()
-	xp_row.add_theme_constant_override("separation", 8)
-	content.add_child(xp_row)
-	var xp_icon := Label.new()
-	xp_icon.text = "*"
-	xp_icon.custom_minimum_size = Vector2(28.0, 16.0)
-	xp_icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	xp_icon.modulate = Color(0.54, 0.78, 1.0, 1.0)
-	xp_row.add_child(xp_icon)
-	xp_bar = ProgressBar.new()
-	xp_bar.custom_minimum_size = Vector2(126.0, 12.0)
-	xp_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	xp_bar.show_percentage = false
-	xp_row.add_child(xp_bar)
-
 	stats_label = Label.new()
 	stats_label.custom_minimum_size = Vector2(250.0, 17.0)
 	stats_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -414,39 +386,6 @@ func _apply_style() -> void:
 		fill_style.corner_radius_bottom_left = 4
 		fill_style.corner_radius_bottom_right = 4
 		health_bar.add_theme_stylebox_override("fill", fill_style)
-	if xp_bar != null:
-		var xp_background_style := StyleBoxFlat.new()
-		xp_background_style.bg_color = Color(0.06, 0.08, 0.13, 1.0)
-		xp_background_style.corner_radius_top_left = 4
-		xp_background_style.corner_radius_top_right = 4
-		xp_background_style.corner_radius_bottom_left = 4
-		xp_background_style.corner_radius_bottom_right = 4
-		xp_bar.add_theme_stylebox_override("background", xp_background_style)
-		var xp_fill_style := StyleBoxFlat.new()
-		xp_fill_style.bg_color = Color(0.24, 0.58, 0.96, 1.0)
-		xp_fill_style.corner_radius_top_left = 4
-		xp_fill_style.corner_radius_top_right = 4
-		xp_fill_style.corner_radius_bottom_left = 4
-		xp_fill_style.corner_radius_bottom_right = 4
-		xp_bar.add_theme_stylebox_override("fill", xp_fill_style)
-	if reload_bar != null:
-		var reload_background_style := StyleBoxFlat.new()
-		reload_background_style.bg_color = Color(0.07, 0.065, 0.04, 1.0)
-		reload_background_style.corner_radius_top_left = 4
-		reload_background_style.corner_radius_top_right = 4
-		reload_background_style.corner_radius_bottom_left = 4
-		reload_background_style.corner_radius_bottom_right = 4
-		reload_bar.add_theme_stylebox_override(
-			"background",
-			reload_background_style
-		)
-		var reload_fill_style := StyleBoxFlat.new()
-		reload_fill_style.bg_color = Color(1.0, 0.70, 0.24, 1.0)
-		reload_fill_style.corner_radius_top_left = 4
-		reload_fill_style.corner_radius_top_right = 4
-		reload_fill_style.corner_radius_bottom_left = 4
-		reload_fill_style.corner_radius_bottom_right = 4
-		reload_bar.add_theme_stylebox_override("fill", reload_fill_style)
 	if adrenaline_bar != null:
 		var adrenaline_background_style := StyleBoxFlat.new()
 		adrenaline_background_style.bg_color = Color(0.04, 0.10, 0.09, 1.0)
@@ -473,14 +412,6 @@ func _refresh_ammo_widgets(weapon_system: WeaponSystem) -> void:
 	_clear_ammo_pips()
 	if weapon_system.weapon_data.infinite_reserve_ammo:
 		ammo_label.text = _format_corner_ammo_text(weapon_system)
-	if reload_bar != null:
-		reload_bar.value = weapon_system.get_reload_ratio()
-		reload_bar.visible = weapon_system.is_reloading
-		reload_bar.modulate = (
-			Color(1.0, 1.0, 1.0, 1.0)
-			if weapon_system.is_reloading
-			else Color(1.0, 1.0, 1.0, 0.22)
-		)
 
 func _format_inventory_text(weapon_system: WeaponSystem) -> String:
 	if weapon_system == null:

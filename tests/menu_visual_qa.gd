@@ -44,13 +44,33 @@ func _run() -> void:
 	await _press_joypad_button(JOY_BUTTON_DPAD_DOWN)
 	_expect(
 		root.gui_get_focus_owner() == main_menu.first_mode_button,
-		"simulated D-pad changes the focused button"
+		"simulated D-pad focuses Infinite Arena"
 	)
 	_expect(
 		await _capture("menu_joypad_focus.png"),
 		"joypad focus screenshot is captured"
 	)
 
+	await _press_joypad_button(JOY_BUTTON_A)
+	await process_frame
+	_expect(
+		game_mode_manager.active_mode_id == GameConstants.MODE_INFINITE_ARENA,
+		"simulated joypad A starts Infinite Arena"
+	)
+	_expect(
+		await _capture("infinite_arena_started.png"),
+		"Infinite Arena screenshot is captured"
+	)
+	await _press_escape()
+	await process_frame
+	_expect(main_menu.is_open(), "Escape returns from Infinite Arena to the menu")
+
+	await _press_joypad_button(JOY_BUTTON_DPAD_DOWN)
+	await _press_joypad_button(JOY_BUTTON_DPAD_DOWN)
+	_expect(
+		_focused_button_text() == "Zombie Survival",
+		"simulated D-pad reaches Zombie Survival"
+	)
 	await _press_joypad_button(JOY_BUTTON_A)
 	await process_frame
 	_expect(
@@ -95,10 +115,22 @@ func _run() -> void:
 	print("VISUAL_QA_CONFIRM_AUDIO_FRAMES: ", audio_manager.play_ui_confirm())
 	_finish()
 
+func _focused_button_text() -> String:
+	var focused := root.gui_get_focus_owner() as Button
+	return focused.text if focused != null else ""
+
 func _capture(file_name: String) -> bool:
 	await process_frame
-	var image := root.get_texture().get_image()
+	if DisplayServer.get_name() == "headless":
+		print("VISUAL_QA_CAPTURE_SKIPPED: ", file_name, " headless display")
+		return true
+	var viewport_texture := root.get_texture()
+	if viewport_texture == null:
+		print("VISUAL_QA_CAPTURE_SKIPPED: ", file_name, " no viewport texture")
+		return false
+	var image := viewport_texture.get_image()
 	if image == null or image.is_empty():
+		print("VISUAL_QA_CAPTURE_SKIPPED: ", file_name, " empty viewport image")
 		return false
 	var output_path := "%s/%s" % [OUTPUT_DIRECTORY, file_name]
 	return image.save_png(ProjectSettings.globalize_path(output_path)) == OK

@@ -57,7 +57,32 @@ func _run() -> void:
 	await _press_joypad_button(JOY_BUTTON_DPAD_DOWN)
 	_expect(
 		get_viewport().gui_get_focus_owner() == main_menu.first_mode_button,
-		"D-pad down moves focus to Zombie Survival"
+		"D-pad down moves focus to Infinite Arena"
+	)
+
+	await _press_joypad_button(JOY_BUTTON_A)
+	await get_tree().process_frame
+	_expect(
+		game_mode_manager.active_mode_id == GameConstants.MODE_INFINITE_ARENA,
+		"joypad A starts Infinite Arena from the default mode button"
+	)
+	_expect(survival_mode.is_running, "shared survival runtime starts for Infinite Arena")
+	_expect(not main_menu.is_open(), "menu hides after Infinite Arena starts")
+	_expect(hud.visible, "HUD is visible during Infinite Arena")
+	_expect(
+		_has_audio_feedback(&"confirm"),
+		"confirmation audio writes samples to the UI buffer"
+	)
+
+	await _press_escape()
+	_expect(main_menu.is_open(), "Escape returns Infinite Arena to the menu")
+	_expect(not survival_mode.is_running, "returning to menu stops Infinite Arena")
+
+	await _press_joypad_button(JOY_BUTTON_DPAD_DOWN)
+	await _press_joypad_button(JOY_BUTTON_DPAD_DOWN)
+	_expect(
+		_focused_button_text() == "Zombie Survival",
+		"D-pad reaches the separate Zombie Survival button"
 	)
 
 	await _press_joypad_button(JOY_BUTTON_A)
@@ -92,10 +117,6 @@ func _run() -> void:
 	_expect(survival_mode.is_running, "survival starts in the release build")
 	_expect(not main_menu.is_open(), "menu hides after joypad confirmation")
 	_expect(hud.visible, "HUD is visible during gameplay")
-	_expect(
-		_has_audio_feedback(&"confirm"),
-		"confirmation audio writes samples to the UI buffer"
-	)
 
 	await _press_escape()
 	_expect(main_menu.is_open(), "Escape returns the release build to the menu")
@@ -170,6 +191,10 @@ func _has_audio_feedback(feedback_type: StringName) -> bool:
 		):
 			return true
 	return false
+
+func _focused_button_text() -> String:
+	var focused := get_viewport().gui_get_focus_owner() as Button
+	return focused.text if focused != null else ""
 
 func _expect(condition: bool, message: String) -> void:
 	if condition:

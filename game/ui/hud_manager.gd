@@ -126,7 +126,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	var game_mode_manager := get_tree().get_first_node_in_group(
 		"game_mode_manager"
 	) as GameModeManager
-	if game_mode_manager != null and not game_mode_manager.is_gameplay_active():
+	if (
+		game_mode_manager != null
+		and (
+			not game_mode_manager.is_gameplay_active()
+			or game_mode_manager.active_mode_id != GameConstants.MODE_SURVIVAL
+		)
+	):
 		return
 	_toggle_exploration_map()
 	get_viewport().set_input_as_handled()
@@ -223,6 +229,8 @@ func _get_mode_title() -> String:
 	var game_mode_manager := get_tree().get_first_node_in_group("game_mode_manager") as GameModeManager
 	if game_mode_manager != null:
 		match game_mode_manager.active_mode_id:
+			GameConstants.MODE_INFINITE_ARENA:
+				return "Infinite Arena"
 			GameConstants.MODE_DUNGEON:
 				return "Procedural Dungeon"
 			GameConstants.MODE_TOWER_DEFENSE:
@@ -238,6 +246,8 @@ func _get_mode_title() -> String:
 func _format_mode_status() -> String:
 	var game_mode_manager := get_tree().get_first_node_in_group("game_mode_manager") as GameModeManager
 	if game_mode_manager != null:
+		if game_mode_manager.active_mode_id == GameConstants.MODE_INFINITE_ARENA:
+			return _format_infinite_arena_status()
 		if game_mode_manager.active_mode_id == GameConstants.MODE_DUNGEON:
 			var dungeon_mode := get_tree().get_first_node_in_group("dungeon_mode") as DungeonMode
 			if dungeon_mode == null:
@@ -256,6 +266,19 @@ func _format_mode_status() -> String:
 				return "Defense idle"
 			return tower_defense_mode.get_status_text()
 	return ""
+
+func _format_infinite_arena_status() -> String:
+	var wave_manager := get_tree().get_first_node_in_group(
+		"wave_manager"
+	) as WaveManager
+	if wave_manager == null or not wave_manager.run_active:
+		return "Infinite Arena\nPreparing arena"
+	if wave_manager.wave_running:
+		return "Infinite Arena\nWave %d  Enemies %d" % [
+			wave_manager.current_wave,
+			wave_manager.get_enemies_remaining()
+		]
+	return "Infinite Arena\nNext wave in %.1fs" % wave_manager.get_intermission_time_left()
 
 func _format_biome_status() -> String:
 	var game_mode_manager := get_tree().get_first_node_in_group(
@@ -624,6 +647,15 @@ func _refresh_exploration_map() -> void:
 	var world_runtime := get_tree().get_first_node_in_group(
 		"world_runtime"
 	) as WorldRuntime
+	var game_mode_manager := get_tree().get_first_node_in_group(
+		"game_mode_manager"
+	) as GameModeManager
+	if (
+		game_mode_manager != null
+		and game_mode_manager.active_mode_id != GameConstants.MODE_SURVIVAL
+	):
+		exploration_map_panel.hide_map()
+		return
 	if world_runtime == null:
 		exploration_map_panel.hide_map()
 		return

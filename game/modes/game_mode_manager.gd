@@ -28,6 +28,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	match key_event.keycode:
 		KEY_F1:
+			set_mode(GameConstants.MODE_INFINITE_ARENA)
+		KEY_F7:
 			set_mode(GameConstants.MODE_SURVIVAL)
 		KEY_F5:
 			set_mode(GameConstants.MODE_DUNGEON)
@@ -118,6 +120,7 @@ func retry_active_mode() -> bool:
 
 func change_to_next_mode() -> bool:
 	var modes: Array[StringName] = [
+		GameConstants.MODE_INFINITE_ARENA,
 		GameConstants.MODE_SURVIVAL,
 		GameConstants.MODE_DUNGEON,
 		GameConstants.MODE_TOWER_DEFENSE
@@ -136,12 +139,14 @@ func return_to_menu() -> bool:
 
 func get_next_mode_id() -> StringName:
 	match active_mode_id:
+		GameConstants.MODE_INFINITE_ARENA:
+			return GameConstants.MODE_SURVIVAL
 		GameConstants.MODE_SURVIVAL:
 			return GameConstants.MODE_DUNGEON
 		GameConstants.MODE_DUNGEON:
 			return GameConstants.MODE_TOWER_DEFENSE
 		_:
-			return GameConstants.MODE_SURVIVAL
+			return GameConstants.MODE_INFINITE_ARENA
 
 func request_boss(
 	reason: StringName,

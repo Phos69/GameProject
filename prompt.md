@@ -1,148 +1,179 @@
-GOAL: fare un passaggio completo sulla grafica delle armi appena create, in modo che ogni arma sia immediatamente riconoscibile sia quando è equipaggiata/usata, sia quando è droppata a terra, sia attraverso i suoi proiettili o effetti visivi.
+Agisci in modalità goal sulla repository.
 
-Contesto:
-Abbiamo appena introdotto un sistema con molte nuove armi (da fuoco, melee, elementali). Ora bisogna migliorare la loro identità visiva. Al momento non voglio placeholder generici o pickup indistinguibili: ogni arma deve avere una grafica propria e leggibile in gameplay.
+Obiettivo: analizzare lo stato attuale della repo e produrre un report tecnico completo, seguito da una roadmap operativa su file per risolvere i problemi principali.
 
-Obiettivi principali:
-1. Ogni arma deve avere una grafica unica e riconoscibile.
-2. Quando un’arma viene droppata a terra, il pickup deve già mostrare chiaramente la forma reale dell’arma, non un’icona generica.
-3. Quando l’arma viene utilizzata, la sua resa visiva deve essere coerente con quella del drop.
-4. Anche i proiettili / hitbox / slash / effetti devono essere temizzati in base all’arma.
-5. Il risultato deve essere coerente con lo stile del progetto e con la visuale isometrica/top-down attuale.
+Repository di riferimento:
+https://github.com/Phos69/GameProject
 
-REQUISITI
+Cosa devi fare:
 
-1. Identità visiva unica per ogni arma
-- Ogni arma deve avere una silhouette distinta.
-- Non basta cambiare colore ad asset quasi uguali: servono forme riconoscibili.
-- Le armi devono essere distinguibili a colpo d’occhio anche in scene affollate.
-- Differenziare chiaramente:
-  - pistole leggere
-  - shotgun
-  - rifle
-  - heavy weapon
-  - armi melee leggere
-  - armi melee pesanti
-  - armi elementali / arcane
+1. Analisi iniziale della repo
 
-2. Coerenza tra drop ed arma equipaggiata
-- Quando l’arma è a terra come pickup, deve già avere l’aspetto dell’arma vera.
-- Il pickup non deve essere un box, un’icona generica o un placeholder non leggibile.
-- L’arma droppata può essere una versione semplificata, ma deve mantenere:
-  - forma generale
-  - colori principali
-  - eventuali dettagli iconici
-- Quando il player la impugna, deve risultare chiaramente la stessa arma.
+* Esamina struttura delle cartelle, file principali, entrypoint, asset, moduli di gameplay, generazione mappa/biomi, rendering, GUI/HUD, input joypad, sistema armi, nemici, drop, progressione e modalità zombie.
+* Identifica quali parti sembrano consolidate, quali sono incomplete, quali sono duplicate e quali responsabilità sono sparse in troppi file.
+* Verifica se esistono TODO, roadmap precedenti, documentazione tecnica o file markdown già presenti, e usali come contesto.
+* Esegui i test disponibili, lint/typecheck/build se presenti, oppure documenta chiaramente che non esistono o che falliscono.
+* Non limitarti a leggere i nomi dei file: apri il codice e valuta lo stato reale dell’implementazione.
 
-3. Proiettili ed effetti temizzati
-Ogni arma deve avere anche una sua identità nei colpi/effetti:
-- armi da fuoco:
-  - bullet sprite coerente
-  - muzzle flash coerente
-  - trail se necessario
-  - impatto coerente
-- melee:
-  - slash arc / swing effect coerente con dimensione e tipo arma
-  - hit effect coerente
-  - eventuale scia del colpo
-- elementali:
-  - proiettili/onde/aree con colori, forma e VFX specifici
-  - effetti leggibili: fuoco, ghiaccio, fulmine, veleno, vuoto, ecc.
+2. Report tecnico
+   Crea un file `repo_status_report.md` nella root della repo con queste sezioni:
 
-Esempi:
-- shotgun: pallettoni visibili o spread corto con flash ampio.
-- revolver: colpo secco, bullet pesante, flash compatto.
-- lanciagranate: proiettile grosso ad arco + esplosione riconoscibile.
-- katana: slash pulito e veloce.
-- martello: impatto pesante con shockwave corta.
-- arma ghiaccio: proiettile freddo, chiaro/azzurro, impatto gelido.
-- fulmine: arco elettrico o bolt con chain visiva.
-- veleno: nube, goccia tossica, o residuo verde persistente.
+# Repo Status Report
 
-4. Asset pipeline pulita
-- Analizza come sono gestiti oggi sprite, animazioni, proiettili, pickup e rendering delle armi.
-- Centralizza la definizione visiva delle armi in modo pulito.
-- Ogni WeaponDefinition dovrebbe avere riferimenti a:
-  - sprite pickup / world sprite
-  - sprite equipaggiata / held sprite
-  - projectile sprite o VFX profile
-  - swing/slash effect
-  - impact effect
-  - eventuale animation profile
-- Evita hardcode sparso in più punti.
+## 1. Executive summary
 
-5. Armi già create: passaggio completo
-Fai un passaggio su tutte le armi nuove già introdotte.
-Per ciascuna arma:
-- assicurati che abbia:
-  - nome chiaro
-  - silhouette unica
-  - palette riconoscibile
-  - drop sprite coerente
-  - held sprite coerente
-  - projectile/effect theme coerente
+Sintesi chiara dello stato attuale del progetto: cosa funziona, cosa è fragile, cosa blocca l’evoluzione.
 
-6. Linee guida stilistiche
-- Mantieni coerenza col gioco.
-- Niente asset realistici fotobashed.
-- Preferire uno stile game-ready leggibile:
-  - pulito
-  - contrastato
-  - leggibile da camera di gioco
-  - compatibile con visuale isometrica/top-down
-- Le armi devono essere leggibili anche a dimensioni piccole.
-- Se necessario, exaggera un po’ le proporzioni per migliorare la riconoscibilità.
+## 2. Architettura attuale
 
-7. Distinzione per categoria
-Assicurati che visivamente si capisca subito se un’arma è:
-- da fuoco
-- melee
-- elementale
+Descrivi i principali sistemi del gioco:
 
-Le 3 famiglie devono avere linguaggi visivi differenti:
-- da fuoco: metallo, canne, tamburi, caricatori, bocche da fuoco, componenti meccaniche
-- melee: lame, impugnature, aste, teste contundenti, profili d’attacco
-- elementali: focus, cristalli, rune, energia, contenitori magici, forme non convenzionali
+* game loop
+* rendering/isometria
+* generazione biomi/mappa
+* player e controlli
+* armi e combattimento
+* zombie/nemici
+* HUD/GUI
+* asset grafici
+* drop/progressione
+* modalità di gioco
 
-8. Feedback a terra
-Quando un’arma è a terra:
-- deve essere immediatamente riconoscibile
-- può avere:
-  - piccolo outline
-  - ombra
-  - lieve bobbing
-  - highlight
-- ma senza perdere la forma dell’arma
-- opzionale: una piccola glow solo per rarità/elementali, senza confondere la silhouette
+## 3. Problemi principali
 
-9. Priorità tecnica
-Ordine di lavoro:
-1. analizza stato attuale del rendering di armi/drop/proiettili
-2. fai un piano sintetico
-3. implementa un sistema visivo pulito per arma/drop/projectile
-4. aggiorna tutte le armi già create
-5. verifica in gioco che siano distinguibili davvero
+Elenca i problemi più importanti ordinati per impatto:
 
-10. Verifiche richieste
-Controlla almeno:
-- due armi diverse a terra sono distinguibili a colpo d’occhio
-- due armi equipaggiate diverse si vedono chiaramente diverse in mano al player
-- i proiettili di armi diverse non sembrano tutti uguali
-- gli effetti melee non sembrano identici per tutte le armi
-- gli effetti elementali comunicano davvero l’elemento
-- nessun pickup usa placeholder generici se l’arma è già implementata
-- il sistema resta estensibile per future armi
+* bug bloccanti
+* codice duplicato
+* responsabilità confuse
+* asset placeholder o incoerenti
+* sistemi incompleti
+* problemi di performance
+* problemi di manutenibilità
+* mancanza di test o strumenti di validazione
 
-Deliverable finale:
-- codice implementato
-- elenco file modificati
-- spiegazione sintetica del sistema visivo armi
-- lista delle armi aggiornate con breve nota sulla loro identità visiva
-- eventuali asset nuovi creati
-- eventuali TODO residui, ma senza lasciare incompleto il passaggio principale
+Per ogni problema indica:
 
-Importante:
-La priorità non è “mettere un’immagine qualsiasi”, ma dare ad ogni arma una identità visiva forte e coerente:
-- stessa arma = stesso linguaggio visivo tra drop, uso e proiettile
-- armi diverse = silhouette ed effetti diversi
-- niente placeholder indistinguibili
+* file coinvolti
+* descrizione
+* impatto sul gioco
+* rischio tecnico
+* proposta di soluzione
+
+## 4. Debito tecnico
+
+Evidenzia refactor necessari, moduli da separare, classi/funzioni troppo grandi, codice morto, naming incoerente e punti dove conviene creare astrazioni più pulite.
+
+## 5. Stato gameplay
+
+Valuta quanto il gioco è effettivamente giocabile oggi, con focus su:
+
+* chiarezza visiva
+* feedback del giocatore
+* leggibilità HUD
+* progressione
+* varietà armi/nemici
+* qualità della generazione mappa
+* coerenza isometrica
+* stabilità della modalità zombie
+
+## 6. Stato asset grafici
+
+Valuta:
+
+* asset mancanti
+* placeholder
+* sprite non coerenti
+* asset non isometrici
+* elementi grafici poco leggibili
+* oggetti che non rispettano l’occupazione reale sulla griglia
+
+## 7. Test e validazione
+
+Riporta:
+
+* comandi eseguiti
+* esito
+* errori trovati
+* test mancanti consigliati
+* checklist manuale per verificare il gioco dopo ogni milestone
+
+## 8. Raccomandazioni prioritarie
+
+Chiudi il report con le 10 azioni più importanti da fare subito.
+
+3. Roadmap operativa
+   Crea un secondo file `repo_fix_roadmap.md` nella root della repo.
+
+La roadmap deve essere divisa in milestone ordinate, ognuna abbastanza piccola da essere eseguibile in modalità goal separata.
+
+Ogni milestone deve contenere:
+
+## Milestone N - Titolo
+
+### Obiettivo
+
+Descrizione sintetica del risultato atteso.
+
+### Problemi risolti
+
+Elenco dei problemi del report che questa milestone affronta.
+
+### Interventi tecnici
+
+Lista concreta delle modifiche da fare, con file o aree coinvolte.
+
+### Criteri di completamento
+
+Checklist verificabile. Una milestone è completata solo se tutti i criteri sono soddisfatti.
+
+### Test manuali
+
+Passi concreti per provare il gioco e verificare che il comportamento sia corretto.
+
+### Rischi
+
+Possibili regressioni o punti da controllare.
+
+La roadmap deve coprire almeno queste aree:
+
+1. Stabilizzazione build/test/dev workflow
+
+2. Pulizia architettura e riduzione duplicazioni
+
+3. Refactor generazione mappa/biomi
+
+4. Coerenza isometrica completa di terreno, ostacoli, void e cliff
+
+5. Sistema asset grafici più pulito e non placeholder
+
+6. Sistema armi/inventario/ammo/drop
+
+7. Zombie, nemici, spawn e bilanciamento modalità zombie
+
+8. HUD/GUI gameplay e character select
+
+9. Input joypad e navigazione menu
+
+10. Progressione, exp, drop, feedback visivo
+
+11. Test automatici e checklist manuale
+
+12. Documentazione per continuare lo sviluppo con Codex
+
+13. Output finale nella risposta
+    Alla fine del lavoro, rispondi con:
+
+* elenco dei file creati/modificati
+* sintesi dei problemi principali trovati
+* milestone consigliata da eseguire per prima
+* comandi eseguiti e relativo esito
+* eventuali limiti dell’analisi se qualcosa non è stato possibile verificare
+
+Regole importanti:
+
+* Non implementare ancora fix profondi: questo goal serve prima a capire lo stato reale della repo e creare una roadmap.
+* Puoi fare solo piccoli fix non invasivi se servono per eseguire test o leggere meglio il progetto, ma documentali.
+* Non inventare problemi: ogni criticità deve essere collegata a file o codice reale.
+* Non lasciare la roadmap generica: deve essere abbastanza concreta da poter essere eseguita milestone per milestone in goal successivi.
+* Mantieni tono tecnico, diretto e operativo.

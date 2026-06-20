@@ -6,6 +6,21 @@ Questa roadmap parte dai problemi osservati in `repo_status_report.md`. Ogni
 milestone e pensata per essere eseguibile come goal separato, con modifiche
 piccole e verificabili.
 
+## Decisione prodotto aggiornata - Modalita default
+
+Decisione del 2026-06-20 prima della vecchia Milestone 3:
+
+- La modalita gameplay di default diventa `Infinite Arena`: un unico blocco
+  `500x500`, senza mappa multi-regione, con mura fisiche intorno al perimetro e
+  ondate infinite.
+- `Zombie Survival` diventa la modalita dedicata alla mappa con biomi connessi:
+  megamappa seed-based, regioni `500x500`, passaggi fisici, streaming regioni,
+  esplorazione e biomi avanzati.
+- La Milestone 2 completata resta valida come fondazione tecnica del contratto
+  multi-bioma di `Zombie Survival`, ma non descrive piu la modalita default.
+- Prima di riprendere il lavoro HUD della vecchia Milestone 3, va implementata
+  la nuova Milestone 3 qui sotto.
+
 ## Milestone 1 - Stabilizzare workflow build/test
 
 Stato: completata il 2026-06-20.
@@ -68,9 +83,10 @@ visual QA.
 
 Stato: completata il 2026-06-20.
 
-Decisione: la survival standard usa la megamappa `3x3` multi-bioma. L'arena
-`1x1` resta disponibile solo con context esplicito `single_biome_arena = true`
-e non sovrascrive dimensioni mappa passate dal chiamante.
+Decisione storica: la survival standard e stata riallineata alla megamappa
+`3x3` multi-bioma. Dopo la decisione prodotto aggiornata, questo contratto viene
+assegnato a `Zombie Survival`, mentre la nuova modalita default sara
+`Infinite Arena` con un singolo blocco `500x500` murato.
 
 Evidenza:
 
@@ -83,20 +99,20 @@ Evidenza:
 
 ### Obiettivo
 
-Stabilire il contratto ufficiale della survival standard e renderlo coerente tra
+Stabilire il contratto multi-bioma di `Zombie Survival` e renderlo coerente tra
 codice, test e documenti.
 
 ### Problemi risolti
 
-- Divergenza tra arena `1x1` runtime e roadmap/documenti `3x3`.
+- Divergenza tra arena `1x1` runtime e roadmap/documenti `3x3` per la modalita
+  zombie multi-bioma.
 - Test `zombie_biome_transition_smoke_test.gd` fallito.
 - Varieta biomi non visibile nella run standard.
 
 ### Interventi tecnici
 
-- Decidere se la survival default e `3x3` multi-bioma o `1x1` arena compatta.
-- Raccomandazione: usare `3x3` come default survival e mantenere `1x1` come
-  profilo quick/test esplicito.
+- Usare `3x3` come contratto di `Zombie Survival` e mantenere i profili arena
+  compatti solo come base tecnica per la nuova `Infinite Arena`.
 - Modificare `game/modes/zombie/zombie_mode_controller.gd`, sostituendo il
   vecchio override implicito con `_resolve_survival_world_context()`.
 - Verificare `game/procedural/world_generation/biome_map_generator.gd`.
@@ -106,17 +122,15 @@ codice, test e documenti.
 
 ### Criteri di completamento
 
-- Il contratto default e scritto in docs e codice.
-- Se default e `3x3`, il graph contiene almeno `infected_plains`,
+- Il contratto `Zombie Survival` e scritto in docs e codice.
+- Il graph contiene almeno `infected_plains`,
   `toxic_wastes`, `burning_fields`, `frozen_outskirts` e `drowned_marsh`.
-- Se default resta `1x1`, i test e documenti non promettono multi-bioma nella
-  run standard.
 - `zombie_biome_transition_smoke_test.gd` passa o viene sostituito da due test
   espliciti: arena quick e survival multi-bioma.
 
 ### Test manuali
 
-1. Avviare survival dal menu.
+1. Avviare `Zombie Survival` dal menu.
 2. Verificare dimensione/biomi della run con overlay debug o log.
 3. Muoversi verso i confini regione.
 4. Confermare presenza di passaggi e assenza di teleport legacy.
@@ -124,10 +138,111 @@ codice, test e documenti.
 
 ### Rischi
 
-- Aumentare il default a `3x3` puo peggiorare tempi di bootstrap e performance.
+- Usare `3x3` per `Zombie Survival` puo peggiorare tempi di bootstrap e performance.
 - La correzione puo rompere test che assumono arena singola.
 
-## Milestone 3 - Ripulire contratto HUD gameplay
+## Milestone 3 - Separare Infinite Arena default e Zombie Survival
+
+Stato: completata il 2026-06-20 con validazione mirata.
+
+Evidenza:
+
+- `GameConstants.MODE_INFINITE_ARENA`, `InfiniteArenaMode`, menu, save/continue,
+  hotkey `F1`/`F7`, HUD e risultati run distinguono il default arena da
+  `Zombie Survival`.
+- `Infinite Arena` usa una singola cella `500x500` con
+  `arena_boundary_mode = "walled"`, mura fisiche, niente fall boundary,
+  niente `WorldRuntime`, region seam, exploration map o streaming multi-regione.
+- `Zombie Survival` resta su megamappa `3x3` multi-bioma con graph connesso,
+  passaggi fisici e biomi principali.
+- Test mirati passati: `tests/infinite_arena_default_mode_smoke_test.gd`,
+  `tests/zombie_survival_world_contract_smoke_test.gd`,
+  `tests/milestone_9_smoke_test.gd`, `tests/milestone_17_run_results_smoke_test.gd`
+  e `tests/menu_visual_qa.gd` in headless con capture screenshot saltati solo
+  per display dummy.
+
+### Obiettivo
+
+Introdurre un contratto esplicito per due modalita distinte:
+
+- `Infinite Arena`: modalita default/quick play, singola arena `500x500` con
+  mura perimetrali, wave infinite e nessuna esplorazione multi-bioma.
+- `Zombie Survival`: modalita avanzata con mappa, biomi connessi, streaming
+  regioni, passaggi fisici e progressione spaziale.
+
+### Problemi risolti
+
+- La modalita default e ancora semanticamente confusa con la survival
+  multi-bioma.
+- Il profilo arena `1x1` esistente usa bordi fall-to-void, mentre la nuova
+  `Infinite Arena` richiede mura intorno.
+- Menu, save/continue, hotkey debug, HUD status e test non distinguono ancora in
+  modo pulito quick arena e zombie survival multi-bioma.
+
+### Interventi tecnici
+
+- Introdurre o rendere esplicito un mode id `Infinite Arena` in `GameConstants`,
+  `GameModeManager`, `MainMenu`, `SaveManager` e `RunResultsScreen`.
+- Raccomandazione architetturale: usare un mode id distinto, riusando sistemi
+  condivisi (`WaveManager`, `EnemySystem`, `WeaponSystem`, `DropSystem`) invece
+  di duplicare la logica survival.
+- Configurare `Infinite Arena` con una sola cella `500x500`, niente
+  `WorldRuntime`/mappa esplorazione/region seam, e perimetro `walled` invece di
+  fall boundary.
+- Estendere la generazione mappa o il profilo arena con un context esplicito,
+  per esempio `arena_boundary_mode = "walled"`, senza cambiare il contratto
+  `Zombie Survival`.
+- Mantenere `Zombie Survival` sulla megamappa multi-bioma della Milestone 2:
+  graph connesso, region streaming, passaggi fisici e biomi avanzati.
+- Aggiornare menu label, default/continue, eventuali hotkey debug e status HUD
+  per rendere visibili entrambe le modalita.
+- Aggiungere test:
+  - `infinite_arena_default_mode_smoke_test.gd`;
+  - aggiornamento di `zombie_survival_world_contract_smoke_test.gd`;
+  - smoke menu/default/continue per assicurare che la scelta default non apra
+    la mappa multi-bioma.
+- Aggiornare `README.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`, `TODO.md` e
+  `CHANGELOG.md` solo durante l'implementazione, non in questa revisione di
+  roadmap.
+
+### Criteri di completamento
+
+- Dal menu/default si avvia `Infinite Arena`, non `Zombie Survival`.
+- `Infinite Arena` genera una sola arena `500x500`.
+- Tutti e quattro i lati dell'arena default sono mura fisiche o blocker
+  equivalenti, non fall-to-void.
+- `Infinite Arena` non crea regioni adiacenti, exploration map, seam transition
+  o streaming multi-regione.
+- `Zombie Survival` resta accessibile come modalita separata e genera il graph
+  multi-bioma con almeno i cinque biomi principali.
+- I test nuovi e quelli aggiornati passano nella validazione mirata; il runner
+  completo `tools/run_tests.ps1` resta da lanciare prima di merge/release.
+
+### Test manuali
+
+1. Avviare il gioco e scegliere l'azione default/quick play.
+2. Verificare che parta `Infinite Arena`, con una sola area `500x500` e mura
+   intorno.
+3. Provare a raggiungere tutti e quattro i bordi: il player non cade fuori e
+   non cambia regione.
+4. Avviare `Zombie Survival` dal menu dedicato.
+5. Verificare mappa/biomi connessi, passaggi fisici e cambio regione.
+6. Tornare al menu, usare continue/retry e verificare che il mode id salvato sia
+   coerente.
+
+### Rischi
+
+- Regressioni se `SurvivalMode` viene usato per entrambe le modalita senza un
+  confine di profilo chiaro.
+- Naming ambiguo tra `survival`, `zombie survival` e `infinite arena`.
+- La sostituzione dei fall boundary con mura puo impattare spawner, dodge, safe
+  positions e hazard.
+- Il menu potrebbe richiedere un pass extra su Character Select: va deciso se
+  `Infinite Arena` usa la stessa selezione personaggi o un profilo quick.
+
+## Milestone 4 - Ripulire contratto HUD gameplay
+
+Stato: completata il 2026-06-20.
 
 ### Obiettivo
 
@@ -136,9 +251,9 @@ feedback leggibile per health, ammo, reload, XP, adrenaline e modalita.
 
 ### Problemi risolti
 
-- `milestone_10_visual_smoke_test.gd` fallito.
-- `milestone_rpg_5_ammo_reload_smoke_test.gd` fallito.
-- `milestone_rpg_9_hud_smoke_test.gd` fallito.
+- `milestone_10_visual_smoke_test.gd` falliva nella baseline.
+- `milestone_rpg_5_ammo_reload_smoke_test.gd` falliva nella baseline.
+- `milestone_rpg_9_hud_smoke_test.gd` falliva nella baseline.
 - Responsabilita confuse tra `PlayerHudCard`, `PlayerWorldHudVisual` e
   `HUDManager`.
 
@@ -159,9 +274,17 @@ feedback leggibile per health, ammo, reload, XP, adrenaline e modalita.
 - Niente overlap evidente su 1280x720 e 1920x1080.
 - `CHANGELOG.md` e docs aggiornati.
 
+### Evidenza 2026-06-20
+
+- `tests/milestone_10_visual_smoke_test.gd`: PASS.
+- `tests/milestone_rpg_5_ammo_reload_smoke_test.gd`: PASS.
+- `tests/milestone_rpg_9_hud_smoke_test.gd`: PASS.
+- `PlayerHudCard` non istanzia piu `reload_bar` o `xp_bar`; il caricatore,
+  reload, EXP e super restano nel `PlayerWorldHudVisual`.
+
 ### Test manuali
 
-1. Avviare survival.
+1. Avviare `Infinite Arena` e poi `Zombie Survival`.
 2. Subire danno e verificare HP.
 3. Sparare, ricaricare e cambiare arma.
 4. Raccogliere XP/drop e verificare level progress.
@@ -172,7 +295,9 @@ feedback leggibile per health, ammo, reload, XP, adrenaline e modalita.
 - Rimuovere nodi usati da altri test o scene.
 - Perdere feedback durante reload o low ammo.
 
-## Milestone 4 - Riparare Character Select e menu navigation
+## Milestone 5 - Riparare Character Select e menu navigation
+
+Stato: completata il 2026-06-20.
 
 ### Obiettivo
 
@@ -201,7 +326,21 @@ del menu senza riscrivere tutto `MainMenu`.
 - `milestone_rpg_1_character_select_smoke_test.gd` passa e termina pulitamente.
 - Character select mostra dati personaggio coerenti.
 - Conferma/back funzionano con tastiera e joypad.
-- Nessuna regressione su avvio survival dal menu.
+- Nessuna regressione su avvio `Infinite Arena` e `Zombie Survival` dal menu.
+
+### Evidenza 2026-06-20
+
+- `MainMenu` espone di nuovo `character_detail_panel` come dossier
+  `CharacterDetailPanel` aggiornato dal focus della card roster.
+- `tests/milestone_rpg_1_character_select_smoke_test.gd` ha un timeout di
+  guardrail e passa senza lasciare processi appesi.
+- `tests/character_select_ui_smoke_test.gd` copre dossier, layout responsive,
+  D-pad, Back joypad, frecce tastiera ed Escape.
+- Test passati: `tests/milestone_rpg_1_character_select_smoke_test.gd`,
+  `tests/character_select_ui_smoke_test.gd`,
+  `tests/infinite_arena_default_mode_smoke_test.gd`,
+  `tests/milestone_9_smoke_test.gd` e `tests/menu_visual_qa.gd` in headless
+  con catture screenshot saltate solo per display dummy.
 
 ### Test manuali
 
@@ -209,14 +348,14 @@ del menu senza riscrivere tutto `MainMenu`.
 2. Navigare con frecce/D-pad.
 3. Cambiare personaggio/slot.
 4. Entrare e uscire da settings.
-5. Avviare survival e tornare al menu.
+5. Avviare `Infinite Arena`, poi `Zombie Survival`, e tornare al menu.
 
 ### Rischi
 
 - Refactor troppo ampio di `MainMenu`.
 - Perdita focus UI su joypad.
 
-## Milestone 5 - Stabilizzare spawn zombie fuori camera
+## Milestone 6 - Stabilizzare spawn zombie fuori camera
 
 ### Obiettivo
 
@@ -249,7 +388,7 @@ walkability, hazard e region streaming.
 
 ### Test manuali
 
-1. Avviare survival in una scena con camera standard.
+1. Avviare `Infinite Arena` e `Zombie Survival` in una scena con camera standard.
 2. Restare fermo durante la prima wave.
 3. Verificare che i nemici arrivino da fuori camera.
 4. Avvicinarsi a void/cliff e verificare che spawn non avvengano su celle
@@ -261,7 +400,7 @@ walkability, hazard e region streaming.
 - Candidati fuori camera ma non raggiungibili.
 - Spawn troppo lontani che rallentano il ritmo wave.
 
-## Milestone 6 - Stato modalita e Tower Defense HUD
+## Milestone 7 - Stato modalita e Tower Defense HUD
 
 ### Obiettivo
 
@@ -284,7 +423,7 @@ Rendere coerente il feedback HUD delle modalita, partendo da Tower Defense.
 ### Criteri di completamento
 
 - `tower_defense_smoke_test.gd` passa.
-- Survival non mostra stato Tower Defense.
+- `Infinite Arena` e `Zombie Survival` non mostrano stato Tower Defense.
 - Il panel non copre HUD critico.
 - Modalita future hanno un punto unico per aggiornare lo stato.
 
@@ -294,14 +433,14 @@ Rendere coerente il feedback HUD delle modalita, partendo da Tower Defense.
 2. Verificare nome modalita e wave/status.
 3. Piazzare torre, attendere wave, verificare credits/core.
 4. Tornare al menu o cambiare modalita.
-5. Avviare survival e verificare assenza di stato errato.
+5. Avviare `Infinite Arena` e `Zombie Survival` e verificare assenza di stato errato.
 
 ### Rischi
 
 - Riattivare un panel nascosto puo creare overlap.
 - Test e design potrebbero aspettarsi UI diverse.
 
-## Milestone 7 - Refactor architetturale mirato
+## Milestone 8 - Refactor architetturale mirato
 
 ### Obiettivo
 
@@ -348,7 +487,7 @@ Dipendono dal sistema refactorato. Per ogni estrazione eseguire almeno:
 - Refactor meccanici troppo ampi.
 - Rompere dipendenze Godot via scene/exported NodePath.
 
-## Milestone 8 - Ridurre lookup globali e dipendenze implicite
+## Milestone 9 - Ridurre lookup globali e dipendenze implicite
 
 ### Obiettivo
 
@@ -387,7 +526,7 @@ esplicite le dipendenze tra sistemi.
 - Spostare dipendenze implicite in configurazioni scene non testate.
 - Aumentare coupling se il registry diventa troppo generico.
 
-## Milestone 9 - Asset, isometria e fallback policy
+## Milestone 10 - Asset, isometria e fallback policy
 
 ### Obiettivo
 
@@ -421,7 +560,7 @@ verificabile.
 
 ### Test manuali
 
-1. Avviare survival in almeno due biomi.
+1. Avviare `Infinite Arena`, poi `Zombie Survival` in almeno due biomi.
 2. Verificare leggibilita terreno/ostacoli.
 3. Camminare vicino a cliff e void.
 4. Raccogliere armi e osservare pickup/projectile.
@@ -432,7 +571,7 @@ verificabile.
 - Test logici passano ma resa visiva resta scarsa.
 - Rimozione fallback puo causare asset mancanti.
 
-## Milestone 10 - Armi, drop, progressione e feedback
+## Milestone 11 - Armi, drop, progressione e feedback
 
 ### Obiettivo
 
@@ -467,7 +606,7 @@ nel gameplay reale, non solo nei test isolati.
 
 ### Test manuali
 
-1. Avviare survival.
+1. Avviare `Infinite Arena`.
 2. Raccogliere almeno 3 armi.
 3. Consumare ammo e ricaricare.
 4. Uccidere nemici e raccogliere XP/drop.
@@ -479,38 +618,42 @@ nel gameplay reale, non solo nei test isolati.
 - Bilanciamento troppo facile/difficile maschera bug di progressione.
 - Modifiche HUD possono rompere test ammo/reload.
 
-## Milestone 11 - Zombie, nemici e bilanciamento survival
+## Milestone 12 - Zombie, nemici e bilanciamento modalita
 
 ### Obiettivo
 
-Validare ritmo, spawn, boss, varianti e cross-bioma nella modalita zombie dopo
-il riallineamento mappa.
+Validare ritmo, spawn, boss, varianti e cross-bioma nelle due modalita zombie:
+`Infinite Arena` come loop infinito compatto e `Zombie Survival` come run
+multi-bioma.
 
 ### Problemi risolti
 
 - Spawn e biomi non coerenti.
-- Bilanciamento survival non verificato in run multi-bioma.
+- Bilanciamento `Infinite Arena` non verificato come default.
+- Bilanciamento `Zombie Survival` non verificato in run multi-bioma.
 - Rischio che test soak passino ma gameplay sia poco leggibile.
 
 ### Interventi tecnici
 
 - Rieseguire ten-wave, soak, boss e cross-biome test.
 - Aggiungere metriche leggere per wave duration, nemici vivi, drop e danni.
-- Verificare boss registry e varianti enemy nei biomi avanzati.
+- Verificare boss registry, loop infinito arena e varianti enemy nei biomi
+  avanzati.
 - Aggiornare `GAME_DESIGN.md` con pacing e criteri bilanciamento.
 
 ### Criteri di completamento
 
 - Test zombie principali passano.
-- Run manuale 20 minuti senza softlock.
+- Run manuale 20 minuti in `Infinite Arena` senza softlock.
+- Run manuale multi-bioma in `Zombie Survival` senza softlock.
 - Spawn restano fuori camera e raggiungibili.
 - Il player incontra varieta nemici/biomi prevista.
 
 ### Test manuali
 
-1. Avviare survival standard.
-2. Sopravvivere 10 wave.
-3. Attraversare regioni/biomi.
+1. Avviare `Infinite Arena`.
+2. Sopravvivere 10 wave senza lasciare il blocco `500x500`.
+3. Avviare `Zombie Survival` e attraversare regioni/biomi.
 4. Affrontare boss o evento equivalente.
 5. Annotare tempi wave, drop, difficolta e morti.
 
@@ -519,7 +662,7 @@ il riallineamento mappa.
 - Performance peggiora con multi-bioma.
 - Spawn troppo lontani o troppo vicini alterano il pacing.
 
-## Milestone 12 - Documentazione, release e continuita Codex
+## Milestone 13 - Documentazione, release e continuita Codex
 
 ### Obiettivo
 

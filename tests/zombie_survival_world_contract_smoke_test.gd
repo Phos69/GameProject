@@ -28,7 +28,14 @@ func _run() -> void:
 	controller.start_run({
 		"single_biome_arena": true
 	})
-	_expect_single_biome_arena(biome_manager)
+	_expect_single_biome_quick_arena(biome_manager)
+	controller.stop_run()
+
+	controller.start_run({
+		"single_biome_arena": true,
+		"arena_boundary_mode": "walled"
+	})
+	_expect_walled_infinite_arena_profile(biome_manager)
 	controller.stop_run()
 
 	controller.start_run({
@@ -71,25 +78,61 @@ func _expect_default_survival_world(biome_manager: BiomeManager) -> void:
 		start_cell != null and start_cell.biome_id == &"infected_plains",
 		"default survival starts from infected_plains"
 	)
+	var connected_border_count := 0
+	var outer_fall_count := 0
+	for cell in cells:
+		for side in BiomeCell.SIDES:
+			if cell.has_neighbor(side):
+				connected_border_count += 1
+			elif cell.get_border(side) == BiomeCell.BorderType.FALL:
+				outer_fall_count += 1
+	_expect(
+		connected_border_count > 0,
+		"default survival contains connected biome passages"
+	)
+	_expect(
+		outer_fall_count > 0,
+		"default survival keeps fall boundary on the outer world edge"
+	)
 
-func _expect_single_biome_arena(biome_manager: BiomeManager) -> void:
+func _expect_single_biome_quick_arena(biome_manager: BiomeManager) -> void:
 	var cells := biome_manager.get_generated_biome_map()
-	_expect(cells.size() == 1, "single-biome arena profile generates one cell")
+	_expect(cells.size() == 1, "quick arena profile generates one cell")
 	var start_cell := biome_manager.get_current_biome_cell()
 	_expect(
 		start_cell != null and start_cell.biome_id == &"infected_plains",
-		"single-biome arena starts from infected_plains"
+		"quick arena starts from infected_plains"
 	)
 	if start_cell == null:
 		return
 	_expect(
 		start_cell.passages.is_empty(),
-		"single-biome arena has no inter-region passages"
+		"quick arena has no inter-region passages"
 	)
 	for side in BiomeCell.SIDES:
 		_expect(
 			start_cell.get_border(side) == BiomeCell.BorderType.FALL,
-			"single-biome arena %s border falls to void" % String(side)
+			"quick arena %s border falls to void" % String(side)
+		)
+
+func _expect_walled_infinite_arena_profile(biome_manager: BiomeManager) -> void:
+	var cells := biome_manager.get_generated_biome_map()
+	_expect(cells.size() == 1, "walled arena profile generates one cell")
+	var start_cell := biome_manager.get_current_biome_cell()
+	_expect(
+		start_cell != null and start_cell.biome_id == &"infected_plains",
+		"walled arena starts from infected_plains"
+	)
+	if start_cell == null:
+		return
+	_expect(
+		start_cell.passages.is_empty(),
+		"walled arena has no inter-region passages"
+	)
+	for side in BiomeCell.SIDES:
+		_expect(
+			start_cell.get_border(side) == BiomeCell.BorderType.BLOCKED,
+			"walled arena %s border is blocked by walls" % String(side)
 		)
 
 func _expect(condition: bool, message: String) -> void:

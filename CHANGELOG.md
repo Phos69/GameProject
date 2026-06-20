@@ -4,6 +4,12 @@
 
 ### Added
 
+- Aggiunta la modalita `Infinite Arena` come default/quick play con mode id
+  dedicato, menu entry, Continue/save default, hotkey `F1`, status HUD e ciclo
+  risultati.
+- Aggiunto `tests/infinite_arena_default_mode_smoke_test.gd` per verificare
+  arena unica `500x500`, perimetro murato, assenza di WorldRuntime/streaming,
+  assenza di Character Select e cleanup al ritorno menu.
 - Aggiunto `tests/zombie_survival_world_contract_smoke_test.gd` per bloccare il
   contratto survival standard `3x3`, profilo arena `1x1` esplicito e override
   dimensioni mappa.
@@ -102,6 +108,11 @@
 
 ### Changed
 
+- `Zombie Survival` resta una modalita separata con megamappa `3x3`, biomi
+  connessi e mappa esplorazione; `F7` e il menu dedicato la avviano passando da
+  Character Select.
+- Il context `arena_boundary_mode = "walled"` converte i bordi senza vicino in
+  muri fisici e disabilita i void/fall pocket interni del profilo arena.
 - `ZombieModeController` non forza piu la survival standard a `1x1`: usa il
   default `3x3` multi-bioma di `BiomeMapGenerator` e riserva l'arena compatta
   al context `single_biome_arena`.
@@ -234,6 +245,12 @@
 
 ### Fixed
 
+- Corretto il flusso Character Select del menu: `MainMenu` espone di nuovo un
+  `CharacterDetailPanel` aggiornato dal focus della card roster, e lo smoke
+  Milestone RPG 1 ha un timeout di guardrail per non restare appeso su errori.
+- Corretto `PlayerHudCard`: la card d'angolo non crea piu barre reload o XP
+  duplicate; caricatore, reload, EXP e super restano nel world-space HUD sopra
+  il player.
 - Corretto `tools/run_tests.ps1`: il runner PowerShell cattura ora exit code
   reale, stdout/stderr, timeout e log persistenti senza false-fail su test PASS.
 - Corretto il QA visuale isometrico: le catture sui biomi remoti ora spostano

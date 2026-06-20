@@ -64,7 +64,7 @@ Controlli debug:
 - Tastiera: `WASD` per movimento, frecce per mira, `Spazio` per sparare, `R` per ricaricare e `Q` per la super RPG.
 - Tastiera: `Shift`/`Ctrl` esegue dodge/roll, `M` apre o chiude la mappa dei territori esplorati.
 - Tastiera debug multiplayer: `F2`, `F3`, `F4` attivano/disattivano gli slot player 2, 3 e 4.
-- Modalita debug: `F1` avvia survival, `F5` avvia una run dungeon e `F6` avvia tower defense.
+- Modalita debug: `F1` avvia Infinite Arena, `F7` avvia Zombie Survival, `F5` avvia una run dungeon e `F6` avvia tower defense.
 - Debug ambiente: `F8` mostra il riepilogo biomi e `F9` evidenzia footprint e celle bloccate degli ostacoli.
 - Joypad: stick sinistro per movimento, stick destro per mira, trigger/spalla destra per sparare, pulsante `X` per ricaricare e pulsante `Y` per la super RPG.
 - Joypad: pulsante `B` per dodge/roll, `Back/Select/View` apre o chiude la mappa dei territori esplorati.
@@ -240,7 +240,7 @@ game/
   bosses/            sistema boss
   drops/             drop e loot table
   progression/       XP, denaro e progressione
-  modes/             modalita survival, dungeon, tower defense
+  modes/             modalita infinite arena, zombie survival, dungeon, tower defense
   procedural/        generatori procedurali
   world/             grafo persistente, regioni e stato esplorazione
   ui/                HUD e interfaccia
@@ -294,6 +294,9 @@ Completato:
   specifica tra pickup, held/HUD, projectile oppure slash e impact, verificata
   anche nei preset visuali e nello scenario survival affollato;
 - menu principale mostrato all'avvio;
+- `Infinite Arena` come modalita default/quick play: una cella `500x500`
+  murata, ondate infinite, senza WorldRuntime, mappa esplorazione o streaming
+  multi-regione;
 - selezione personaggio prima della zombie survival con quattro profili iniziali;
 - statistiche classe RPG con HP, attacco, difesa, velocita, progressione XP e level-up per-run;
 - armi base RPG per arco, pistola, ascia e spada con range, scatter, ammo,
@@ -313,9 +316,10 @@ Completato:
 - revamp zombie completo con controller, biomi, wave director, spawner camera-edge, transizioni e sistemi ambientali modulari;
 - motore procedurale seed-based per mappa globale biomi, celle `500x500`, passaggi, fall boundary, layout interno e validazione pathfinding;
 - megamappa persistente seed-based con grafo connesso, regioni default `3x3` da `500x500`, passaggi fisici aperti, stato esplorazione salvabile e mappa consultabile;
-- la survival standard avviata da menu, hotkey o test senza override usa la
-  megamappa `3x3`; l'arena compatta `1x1` resta disponibile solo passando
-  `single_biome_arena = true` nel context di debug/test;
+- `Zombie Survival` avviata dal menu dedicato o da `F7` usa la megamappa `3x3`;
+  l'arena compatta `1x1` resta disponibile solo passando
+  `single_biome_arena = true` nel context di debug/test, mentre il profilo
+  default `Infinite Arena` usa `arena_boundary_mode = "walled"`;
 - classificazione completa del terreno `500x500` come walkable, obstacle, hazard, border, void o fall zone;
 - dodge/roll per player con cooldown, invulnerabilita breve e validazione per
   piccoli gap/fall zone attraversabili, lasciando gli hazard ambientali
@@ -365,7 +369,7 @@ Completato:
 - loot room con XP, denaro, munizioni e vita;
 - boss finale richiesto tramite il `BossSystem` condiviso;
 - HUD dungeon con seed, stanza corrente, stato uscita e nemici rimasti;
-- hotkey debug `F1`/`F5`/`F6` per passare tra survival, dungeon e tower defense;
+- hotkey debug `F1`/`F7`/`F5`/`F6` per passare tra Infinite Arena, Zombie Survival, dungeon e tower defense;
 - tower defense avviabile con `F6`;
 - arena dedicata con percorso a waypoint e core da 250 HP;
 - nemici da percorso che danneggiano il core se raggiungono la fine;
@@ -438,6 +442,8 @@ Non ancora completato:
 Smoke test aggiunti per l'iterazione biome survival:
 
 ```text
+godot --headless --path . --script res://tests/infinite_arena_default_mode_smoke_test.gd
+godot --headless --path . --script res://tests/zombie_survival_world_contract_smoke_test.gd
 godot --headless --path . --script res://tests/biome_status_effects_smoke_test.gd
 godot --headless --path . --script res://tests/biome_roster_smoke_test.gd
 godot --headless --path . --script res://tests/biome_obstacle_generation_smoke_test.gd

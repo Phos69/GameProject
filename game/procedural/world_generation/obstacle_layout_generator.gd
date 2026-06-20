@@ -68,13 +68,15 @@ static func get_generated_terrain_tag_categories() -> Dictionary:
 func populate_layout(
 	layout: BiomeEnvironmentLayout,
 	cell: BiomeCell,
-	biome: BiomeDefinition
+	biome: BiomeDefinition,
+	context: Dictionary = {}
 ) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = maxi(cell.seed, 1)
+	var allow_internal_void := not _is_walled_arena_context(context)
 	_add_roads(layout, cell)
 	_add_biome_navigation_features(layout, biome, rng)
-	_add_internal_blocks(layout, biome, rng)
+	_add_internal_blocks(layout, biome, rng, allow_internal_void)
 	_add_starter_water_crossing(layout, biome, rng)
 	_add_large_obstacles(layout, biome, rng)
 	_add_secondary_obstacles(layout, biome, rng)
@@ -341,7 +343,8 @@ func _add_choke_pair(
 func _add_internal_blocks(
 	layout: BiomeEnvironmentLayout,
 	biome: BiomeDefinition,
-	rng: RandomNumberGenerator
+	rng: RandomNumberGenerator,
+	allow_internal_void: bool = true
 ) -> void:
 	var vertical_bands := _collect_axis_bands(layout, true)
 	var horizontal_bands := _collect_axis_bands(layout, false)
@@ -367,17 +370,38 @@ func _add_internal_blocks(
 			# Never drop a void/fall block onto a passage corridor: the connector
 			# road must stay walkable and free of fall hazards so cross-biome
 			# passages remain reachable.
-			if (
-				(block_kind == &"full_void" or block_kind == &"partial_void")
-				and _rect_overlaps_passage_corridor(layout, block_rect)
-			):
+			if not allow_internal_void and _is_void_block_kind(block_kind):
+				block_kind = &"open"
+			if _is_void_block_kind(block_kind) and _rect_overlaps_passage_corridor(layout, block_rect):
 				block_kind = &"open"
 			layout.add_block_rect(block_rect, block_kind)
 			_apply_block_surface(layout, block_rect, block_kind, biome.biome_id)
 			block_index += 1
 	if biome != null and biome.biome_id == &"infected_plains":
 		_ensure_starter_block_mix(layout, biome.biome_id)
-	_ensure_internal_void_block(layout, biome.biome_id if biome != null else &"")
+	if allow_internal_void:
+		_ensure_internal_void_block(layout, biome.biome_id if biome != null else &"")
+
+func _is_void_block_kind(block_kind: StringName) -> bool:
+	return block_kind == &"full_void" or block_kind == &"partial_void"
+
+func _is_walled_arena_context(context: Dictionary) -> bool:
+	return (
+		_get_context_string(context, "arena_boundary_mode", "") == "walled"
+		or _get_context_string(context, "arena_boundary_mode", "") == "blocked"
+	)
+
+func _get_context_string(
+	context: Dictionary,
+	key: String,
+	default_value: String
+) -> String:
+	if context.has(key):
+		return str(context.get(key))
+	var string_name_key := StringName(key)
+	if context.has(string_name_key):
+		return str(context.get(string_name_key))
+	return default_value
 
 func _ensure_internal_void_block(
 	layout: BiomeEnvironmentLayout,
