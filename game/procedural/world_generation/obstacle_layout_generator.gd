@@ -51,6 +51,10 @@ const VOIDFIRST_ROAD_LINE_SPACING := 12
 const VOIDFIRST_ROAD_LINE_NEAR := 3
 const VOIDFIRST_ROAD_LINE_CONFINE := 6
 const VOIDFIRST_MAX_LINE_TREES := 220
+# Void lottery: the leftover void is split into floor / chasm patches at a fixed
+# ratio of 1 chasm : 3 walkable.
+const VOIDFIRST_VOID_PATCH := 16
+const VOIDFIRST_VOID_CHASM_DIVISOR := 4
 
 const GENERATED_OBSTACLE_CATEGORIES: Dictionary = {
 	&"abandoned_car": &"wreck",
@@ -143,6 +147,7 @@ func populate_layout_voidfirst(
 	_add_voidfirst_paths(layout, rng)
 	_clear_trees_on_routes(layout)
 	_line_roads_with_trees(layout)
+	_resolve_void_lottery(layout, rng)
 	_update_generation_summary(layout, biome)
 
 # Carve the mandatory inter-biome passage corridors as walkable connectors so the
@@ -487,6 +492,130 @@ func _should_line_with_tree(layout: BiomeEnvironmentLayout, rect: Rect2i) -> boo
 	if _intersects_any(confine, layout.forest_rects):
 		return false
 	return true
+
+# M5 — resolve the leftover void. The map is scanned in square patches: fully-void
+# patches enter a lottery (1 chasm : 3 walkable), partially-void patches are filled
+# with floor so no random void slivers remain. Chasms only ever land on fully-void
+# patches, so they never overwrite roads, obstacles or passages.
+func _resolve_void_lottery(
+	layout: BiomeEnvironmentLayout,
+	rng: RandomNumberGenerator
+) -> void:
+	var occ := _compute_occupancy(layout)
+	var patch := VOIDFIRST_VOID_PATCH
+	var full_void: Array[Rect2i] = []
+	var py := 0
+	while py < layout.zone_size.y:
+		var px := 0
+		while px < layout.zone_size.x:
+			var rect := Rect2i(
+				Vector2i(px, py),
+				Vector2i(
+					mini(patch, layout.zone_size.x - px),
+					mini(patch, layout.zone_size.y - py)
+				)
+			)
+			var void_cells := _count_void_cells(occ, rect, layout.zone_size.x)
+			var total_cells := rect.size.x * rect.size.y
+			if void_cells == total_cells and total_cells > 0:
+				full_void.append(rect)
+			elif void_cells > 0:
+				# Partial patch: fill the void slivers with walkable floor.
+				layout.add_floor_rect(rect, &"open_block")
+			px += patch
+		py += patch
+
+	_shuffle_rects(full_void, rng)
+	var chasm_count := full_void.size() / VOIDFIRST_VOID_CHASM_DIVISOR
+	var chasm_rects: Array[Rect2i] = []
+	for index in range(full_void.size()):
+		if index < chasm_count:
+			chasm_rects.append(full_void[index])
+		else:
+			layout.add_floor_rect(full_void[index], &"open_block")
+	for chasm_rect in _merge_row_runs(chasm_rects):
+		layout.add_fall_zone_rect(chasm_rect, &"internal")
+
+func _compute_occupancy(layout: BiomeEnvironmentLayout) -> PackedByteArray:
+	var total := layout.zone_size.x * layout.zone_size.y
+	var occ := PackedByteArray()
+	occ.resize(total)
+	occ.fill(0)
+	_occ_mark_rects(occ, layout.floor_rects, layout.zone_size)
+	_occ_mark_rects(occ, layout.passage_rects, layout.zone_size)
+	_occ_mark_rects(occ, layout.passage_connector_rects, layout.zone_size)
+	_occ_mark_rects(occ, layout.obstacle_rects, layout.zone_size)
+	_occ_mark_rects(occ, layout.hazard_rects, layout.zone_size)
+	_occ_mark_rects(occ, layout.road_rects, layout.zone_size)
+	for key_value in layout.road_cell_tags.keys():
+		var key := int(key_value)
+		if key >= 0 and key < total:
+			occ[key] = 1
+	# Reserve the border ring so the lottery stays inside the chunk body.
+	var z := layout.zone_size
+	for x in range(z.x):
+		for band in range(BORDER_THICKNESS):
+			occ[band * z.x + x] = 1
+			occ[(z.y - 1 - band) * z.x + x] = 1
+	for y in range(z.y):
+		for band in range(BORDER_THICKNESS):
+			occ[y * z.x + band] = 1
+			occ[y * z.x + (z.x - 1 - band)] = 1
+	return occ
+
+func _occ_mark_rects(
+	occ: PackedByteArray,
+	rects: Array[Rect2i],
+	zone_size: Vector2i
+) -> void:
+	for rect in rects:
+		var clipped := _clip_rect(rect, zone_size)
+		for y in range(clipped.position.y, clipped.end.y):
+			var row := y * zone_size.x
+			for x in range(clipped.position.x, clipped.end.x):
+				occ[row + x] = 1
+
+func _count_void_cells(occ: PackedByteArray, rect: Rect2i, width: int) -> int:
+	var count := 0
+	for y in range(rect.position.y, rect.end.y):
+		var row := y * width
+		for x in range(rect.position.x, rect.end.x):
+			if occ[row + x] == 0:
+				count += 1
+	return count
+
+func _shuffle_rects(rects: Array[Rect2i], rng: RandomNumberGenerator) -> void:
+	for i in range(rects.size() - 1, 0, -1):
+		var j := rng.randi_range(0, i)
+		var tmp := rects[i]
+		rects[i] = rects[j]
+		rects[j] = tmp
+
+# Merge chasm patches that are contiguous in the same patch row into single rects
+# so the runtime instantiates fewer fall zones.
+func _merge_row_runs(rects: Array[Rect2i]) -> Array[Rect2i]:
+	rects.sort_custom(
+		func(a: Rect2i, b: Rect2i) -> bool:
+			if a.position.y != b.position.y:
+				return a.position.y < b.position.y
+			return a.position.x < b.position.x
+	)
+	var merged: Array[Rect2i] = []
+	for rect in rects:
+		if not merged.is_empty():
+			var last: Rect2i = merged[merged.size() - 1]
+			if (
+				last.position.y == rect.position.y
+				and last.size.y == rect.size.y
+				and last.end.x == rect.position.x
+			):
+				merged[merged.size() - 1] = Rect2i(
+					last.position,
+					Vector2i(last.size.x + rect.size.x, last.size.y)
+				)
+				continue
+		merged.append(rect)
+	return merged
 
 func repair_layout(layout: BiomeEnvironmentLayout) -> void:
 	for index in range(layout.obstacle_rects.size() - 1, -1, -1):
