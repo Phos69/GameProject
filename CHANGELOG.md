@@ -4,6 +4,11 @@
 
 ### Added
 
+- Aggiunto `tests/zombie_survival_world_contract_smoke_test.gd` per bloccare il
+  contratto survival standard `3x3`, profilo arena `1x1` esplicito e override
+  dimensioni mappa.
+- Aggiunti `repo_status_report.md` e `repo_fix_roadmap.md` con analisi dello
+  stato repo, fallimenti test confermati e roadmap operativa di stabilizzazione.
 - Aggiunto `WeaponVisualRenderer` per centralizzare fallback, shape target e
   silhouette proiettile derivate da `WeaponVisualData`.
 - Aggiunte silhouette pickup per le 30 armi del catalogo drop tramite
@@ -97,6 +102,12 @@
 
 ### Changed
 
+- `ZombieModeController` non forza piu la survival standard a `1x1`: usa il
+  default `3x3` multi-bioma di `BiomeMapGenerator` e riserva l'arena compatta
+  al context `single_biome_arena`.
+- `tools/run_tests.ps1` e `tools/run_tests.sh` supportano categorie
+  `all`/`fast`/`slow`/`soak`/`visual`, log in `build/test_logs/` e filtro senza
+  match con exit code non zero.
 - `Projectile` delega poligono e glow al renderer visuale condiviso mantenendo
   invariati i profili legacy quando i nuovi campi sono vuoti.
 - `DropPickup` passa `WeaponData.visual_data` a `DropPickupVisual` per i drop
@@ -223,6 +234,8 @@
 
 ### Fixed
 
+- Corretto `tools/run_tests.ps1`: il runner PowerShell cattura ora exit code
+  reale, stdout/stderr, timeout e log persistenti senza false-fail su test PASS.
 - Corretto il QA visuale isometrico: le catture sui biomi remoti ora spostano
   il player su una cella sicura adiacente al focus e azzerano lo smoothing
   camera; una verifica di dettaglio world-space impedisce ai frame neri di

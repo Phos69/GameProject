@@ -491,6 +491,9 @@ Stato: completata come prototipo integrato.
 
 - Aggiunto `game/world/` con `WorldGraph`, `WorldRegion`, `WorldRegionConnection`, `WorldExplorationState`, `PersistentWorldState` e `WorldRuntime`.
 - La survival genera una griglia default `3x3` di territori `500x500` tramite seed, spanning tree e edge extra per avere connessione garantita e loop.
+- Il controller zombie lascia il `3x3` come default runtime della survival
+  standard; il profilo `1x1` resta disponibile solo con context
+  `single_biome_arena` per quick test/debug.
 - I passaggi tra regioni confinanti sono aperture fisiche aperte e non teletrasporti; i lati senza regione vicina restano fall boundary validati.
 - Il layout di ogni territorio produce classificazione completa del `500x500` per walkable, obstacle, hazard, border, void e fall zone.
 - Il save v6 conserva stato mondo/esplorazione e posizione di riferimento del party.

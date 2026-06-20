@@ -53,5 +53,15 @@ jobs:
         env:
           GODOT: godot
           SKIP_IMPORT: "1"
+          TEST_CATEGORY: "all"
+          TEST_LOG_DIR: "build/test_logs"
           TEST_TIMEOUT: "240"
-        run: bash tools/run_tests.sh
+        run: bash tools/run_tests.sh "" "$TEST_CATEGORY"
+
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-test-logs
+          path: build/test_logs
+          if-no-files-found: ignore

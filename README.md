@@ -120,6 +120,24 @@ W0-W8 nel
 Smoke test headless e QA visuale:
 
 ```text
+# Suite completa headless, visual QA esclusa.
+./tools/run_tests.ps1 -SkipImport
+tools/run_tests.sh
+
+# Suite rapida: esclude visual QA, soak/stress e smoke ultra-lenti.
+./tools/run_tests.ps1 -Category fast -SkipImport
+tools/run_tests.sh "" fast
+
+# Filtri per nome file.
+./tools/run_tests.ps1 -Filter biome -SkipImport
+tools/run_tests.sh biome
+```
+
+I log dei runner vengono scritti in `build/test_logs/`. Le categorie supportate
+sono `all`, `fast`, `slow`, `soak` e `visual`; i test visual QA sono esclusi di
+default e vanno eseguiti solo con rendering reale/GPU.
+
+```text
 godot --headless --path . --script res://tests/headless_shutdown_loop_test.gd
 godot --headless --path . --script res://tests/combat_smoke_test.gd
 godot --headless --path . --script res://tests/enemy_drop_smoke_test.gd
@@ -295,6 +313,9 @@ Completato:
 - revamp zombie completo con controller, biomi, wave director, spawner camera-edge, transizioni e sistemi ambientali modulari;
 - motore procedurale seed-based per mappa globale biomi, celle `500x500`, passaggi, fall boundary, layout interno e validazione pathfinding;
 - megamappa persistente seed-based con grafo connesso, regioni default `3x3` da `500x500`, passaggi fisici aperti, stato esplorazione salvabile e mappa consultabile;
+- la survival standard avviata da menu, hotkey o test senza override usa la
+  megamappa `3x3`; l'arena compatta `1x1` resta disponibile solo passando
+  `single_biome_arena = true` nel context di debug/test;
 - classificazione completa del terreno `500x500` come walkable, obstacle, hazard, border, void o fall zone;
 - dodge/roll per player con cooldown, invulnerabilita breve e validazione per
   piccoli gap/fall zone attraversabili, lasciando gli hazard ambientali

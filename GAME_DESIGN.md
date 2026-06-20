@@ -580,6 +580,8 @@ Il revamp zombie e completo come prima versione giocabile:
 
 - a inizio run viene generata una megamappa globale seed-based con territori
   default `3x3` da `500x500`;
+- il default `3x3` e il contratto della survival standard; l'arena `1x1`
+  esiste solo come profilo debug/test tramite `single_biome_arena`;
 - lo stesso seed ricrea biomi, confini, passaggi, strade, ostacoli, casse e
   fall zone;
 - ogni run parte dalla `Pianura Infetta`, il bioma iniziale semplice;

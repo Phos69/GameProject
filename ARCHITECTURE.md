@@ -580,6 +580,10 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
   con grafo connesso: uno spanning tree garantisce raggiungibilita e edge extra
   aggiungono loop. La dimensione e il numero regioni restano override di debug
   tramite context.
+- `ZombieModeController` non sovrascrive questi default nella survival
+  standard. Il profilo compatto `1x1` esiste solo con context
+  `single_biome_arena = true` e non prevale su `biome_map_width` /
+  `biome_map_height` espliciti.
 - Ogni `WorldRegionConnection` deve corrispondere a un passaggio fisico aperto su entrambi i lati confinanti.
 - Due regioni adiacenti senza edge navigazionale hanno bordo bloccato; un lato senza regione vicina diventa fall boundary.
 - `BiomeEnvironmentLayout` deve classificare tutto il `500x500` come walkable,
@@ -637,7 +641,12 @@ Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arrest
 - `BiomeManager` e il punto unico per leggere il bioma corrente della survival.
 - `BiomeManager.stop_run()` ripristina i layout base dei biomi e libera i dati
   world generati, evitando che celle, grafi e report restino vivi tra test.
-- Ogni run survival genera o rigenera una megamappa persistente seed-based; in assenza di seed manuale usa un seed default stabile, mentre un context `world_seed` permette riproduzione e debug.
+- Ogni run survival genera o rigenera una megamappa persistente seed-based
+  `3x3`; in assenza di seed manuale usa un seed default stabile, mentre un
+  context `world_seed` permette riproduzione e debug.
+- Il context `single_biome_arena = true` e riservato a quick test/debug e genera
+  una sola cella `infected_plains` con bordi esterni fall-to-void, salvo
+  dimensioni mappa esplicite nel context.
 - La megamappa contiene territori `500x500`, seed locali, vicini, bordi, grafo connesso, passaggi fisici, fall boundary e layout ambientali validati prima di essere assegnati alle `BiomeDefinition`.
 - Ogni nuova run survival riparte dalla `Pianura Infetta`.
 - `WorldRuntime` marca la regione iniziale come visited, scopre i vicini collegati e conserva lo stato esplorazione.

@@ -4,6 +4,13 @@ Questo file contiene solo backlog operativo, follow-up tracciati e reference
 storiche consolidate. I dettagli completi delle milestone gia chiuse restano in
 `ROADMAP.md`, `CHANGELOG.md`, `docs/milestones/`, nelle roadmap dedicate e nel
 report `docs/latest_commit_validation_report.md`.
+L'audit operativo del 2026-06-20 e tracciato in `repo_status_report.md` e
+`repo_fix_roadmap.md`.
+La Milestone 1 di `repo_fix_roadmap.md` e completata: runner PowerShell,
+categorie test e log persistenti sono il workflow corrente.
+La Milestone 2 di `repo_fix_roadmap.md` e completata: la survival standard usa
+il default `3x3` multi-bioma e l'arena `1x1` e solo un profilo context
+esplicito.
 
 Regole per nuove voci:
 

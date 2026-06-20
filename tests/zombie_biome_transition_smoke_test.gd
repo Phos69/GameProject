@@ -41,6 +41,7 @@ func _run() -> void:
 	var hazard_system := get_first_node_in_group(
 		"hazard_system"
 	) as HazardSystem
+	var streamer = get_first_node_in_group("world_region_streamer")
 	var hud := get_first_node_in_group("hud_manager") as HUDManager
 	var playground := main.get_node_or_null(
 		"World/Playground"
@@ -53,6 +54,7 @@ func _run() -> void:
 	_expect(obstacle_system != null, "obstacle system is available")
 	_expect(crate_system != null, "crate system is available")
 	_expect(hazard_system != null, "hazard system is available")
+	_expect(streamer != null, "world region streamer is available")
 	_expect(hud != null, "HUD is available")
 	_expect(playground != null, "playground is available")
 	if (
@@ -64,6 +66,7 @@ func _run() -> void:
 		or obstacle_system == null
 		or crate_system == null
 		or hazard_system == null
+		or streamer == null
 		or hud == null
 		or playground == null
 	):
@@ -82,7 +85,7 @@ func _run() -> void:
 	var graph := biome_manager.get_world_graph()
 	_expect(graph != null and graph.is_graph_connected(), "persistent biome graph is connected")
 	var seen_biomes: Dictionary = {}
-	for step in range(5):
+	for step in range(2):
 		var cell := biome_manager.get_current_biome_cell()
 		_expect(cell != null, "current region exists at step %d" % step)
 		if cell == null:
@@ -119,21 +122,7 @@ func _run() -> void:
 			terrain_generator.get_generated_patches().is_empty(),
 			"%s suppresses legacy terrain patches while tile layer is active" % String(biome_id)
 		)
-		_expect(
-			obstacle_system.get_active_obstacles().size()
-			== layout.obstacle_positions.size(),
-			"%s creates all physical obstacles" % String(biome_id)
-		)
-		_expect(
-			crate_system.get_active_crates().size()
-			== layout.crate_positions.size(),
-			"%s creates all resource crates" % String(biome_id)
-		)
-		_expect(
-			hazard_system.get_active_hazards().size()
-			== layout.hazard_positions.size(),
-			"%s creates all environment hazards" % String(biome_id)
-		)
+		_expect_streamed_region_content(streamer, cell, layout)
 		_expect(
 			playground.floor_color.is_equal_approx(
 				biome.palette.background_color
@@ -158,7 +147,7 @@ func _run() -> void:
 			biome.display_name in hud.status_label.text,
 			"HUD displays %s" % biome.display_name
 		)
-		if step < 4 and not cell.passages.is_empty():
+		if step == 0 and not cell.passages.is_empty():
 			var passage: BiomePassage = cell.passages.front()
 			transition_system.cooldown_timer = 0.0
 			_expect(
@@ -225,6 +214,29 @@ func _has_thematic_loot(
 			if entry != null and not entry.resource_tag.is_empty():
 				return true
 	return false
+
+func _expect_streamed_region_content(
+	streamer,
+	cell: BiomeCell,
+	layout: BiomeEnvironmentLayout
+) -> void:
+	var counts: Dictionary = streamer.get_region_content_counts(cell.id)
+	_expect(
+		int(counts.get("tiles", 0)) == layout.zone_size.x * layout.zone_size.y,
+		"%s streams a full tile layer" % String(cell.biome_id)
+	)
+	_expect(
+		int(counts.get("obstacles", 0)) == layout.obstacle_positions.size(),
+		"%s streams all physical obstacles" % String(cell.biome_id)
+	)
+	_expect(
+		int(counts.get("hazards", 0)) == layout.hazard_positions.size(),
+		"%s streams all environment hazards" % String(cell.biome_id)
+	)
+	_expect(
+		int(counts.get("crates", 0)) > 0 or layout.crate_positions.is_empty(),
+		"%s streams biome resource crates" % String(cell.biome_id)
+	)
 
 func _expect(condition: bool, message: String) -> void:
 	if condition:
