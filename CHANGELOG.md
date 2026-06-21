@@ -24,6 +24,9 @@
   perimetrali e delle boundary tematiche dal nodo runtime `BiomeObstacle`.
 - Aggiunto `IsometricTileResolverUtils` per hashing stabile, membership in
   rettangoli e verifica path asset usati dal resolver tile isometrico.
+- Aggiunto `tests/all_modes_character_system_smoke_test.gd` che verifica che
+  Dungeon e Tower Defense applichino il personaggio RPG scelto (come Zombie
+  Survival) e che senza roster il player torni al profilo generico.
 - Aggiunto `tests/character_select_independent_smoke_test.gd` che verifica la
   selezione indipendente: il pad del Giocatore 2 muove e conferma il proprio
   slot senza toccare focus, cursore e scelta del Giocatore 1.
@@ -171,6 +174,14 @@
 - La documentazione repo-fix M10 ora esplicita che la survival standard non
   deve usare `BiomeRegionGround`, `BiomeTerrainPatch`, `MultiRegionRenderer`,
   `NeighborGround_*`, `BiomeTransitionGate` o fallback generici non documentati.
+- Il sistema personaggi RPG e ora condiviso da tutte le modalita di gioco e non
+  solo da Zombie Survival. La logica di selezione/applicazione del roster
+  (`selected_character_id`, `selected_character_ids_by_slot`, applicazione su
+  spawn) e stata estratta da `SurvivalMode` a `BaseGameMode` (`modes/shared`),
+  cosi Infinite Arena, Dungeon e Tower Defense applicano stat, passiva e super
+  del personaggio scelto. Nel menu ogni modalita di gioco passa ora dalla
+  schermata di selezione personaggio (titolo e pulsante di avvio adattati alla
+  modalita) prima di partire.
 - Ridotti i lookup globali nei percorsi player/HUD/spawner: `HUDManager` usa
   NodePath/cache locali, `PlayerManager` inietta dipendenze nei
   `PlayerController` e `ZombieModeController` inietta obstacle/hazard/world

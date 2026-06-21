@@ -53,6 +53,11 @@ var character_navigation_by_slot: Dictionary = {}
 # Slot driven by keyboard/mouse/pad-0. Stays at player one in local co-op.
 var current_character_slot: int = 1
 var focused_character_id: StringName = &""
+# Modalita per cui la schermata di selezione personaggio e aperta: il roster
+# scelto avvia questa modalita, cosi il sistema personaggi vale per tutte e non
+# solo per la sopravvivenza.
+var pending_mode_id: StringName = GameConstants.MODE_SURVIVAL
+var character_select_subtitle: Label
 
 var game_mode_manager: GameModeManager
 var save_manager: SaveManager
@@ -80,7 +85,7 @@ func _input(event: InputEvent) -> void:
 	# Any active player can launch once everyone is ready.
 	if _is_character_start_event(event):
 		if _all_active_character_slots_selected():
-			_start_survival_with_selected_characters()
+			_start_selected_mode_with_characters()
 		else:
 			_refresh_character_selection_ui()
 		get_viewport().set_input_as_handled()
@@ -342,11 +347,12 @@ func _create_character_select_panel(parent: Control) -> void:
 	content.add_child(title)
 
 	var subtitle := Label.new()
-	subtitle.text = "Pick a survivor for each active slot, then start the zombie run"
+	subtitle.text = "Pick a survivor for each active slot, then start the run"
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle.add_theme_font_size_override("font_size", 13)
 	subtitle.modulate = Color(0.72, 0.80, 0.88, 1.0)
 	content.add_child(subtitle)
+	character_select_subtitle = subtitle
 
 	character_profiles = RpgCharacterRegistry.get_character_profiles()
 	character_profile_by_id.clear()
@@ -420,7 +426,7 @@ func _create_character_select_panel(parent: Control) -> void:
 	character_start_button.custom_minimum_size = Vector2(300.0, 46.0)
 	character_start_button.add_theme_font_size_override("font_size", 17)
 	character_start_button.disabled = true
-	character_start_button.pressed.connect(_start_survival_with_selected_characters)
+	character_start_button.pressed.connect(_start_selected_mode_with_characters)
 	character_start_button.focus_entered.connect(_play_focus)
 	action_row.add_child(character_start_button)
 
@@ -609,16 +615,23 @@ func _continue_game() -> void:
 		if save_manager != null
 		else GameConstants.MODE_INFINITE_ARENA
 	)
-	if mode_id == GameConstants.MODE_SURVIVAL:
-		_open_character_select()
+	_select_mode(mode_id)
+
+func _select_mode(mode_id: StringName) -> void:
+	# Ogni modalita di gioco passa dalla selezione personaggio cosi il roster
+	# scelto viene applicato ai player. Le modalita non di gioco partono dirette.
+	if _is_gameplay_mode(mode_id):
+		_open_character_select(mode_id)
 	else:
 		start_selected_mode(mode_id)
 
-func _select_mode(mode_id: StringName) -> void:
-	if mode_id == GameConstants.MODE_SURVIVAL:
-		_open_character_select()
-	else:
-		start_selected_mode(mode_id)
+func _is_gameplay_mode(mode_id: StringName) -> bool:
+	return mode_id in [
+		GameConstants.MODE_INFINITE_ARENA,
+		GameConstants.MODE_SURVIVAL,
+		GameConstants.MODE_DUNGEON,
+		GameConstants.MODE_TOWER_DEFENSE
+	]
 
 func _quit_game() -> void:
 	_play_confirm()
@@ -708,11 +721,15 @@ func _format_character_card(profile: Dictionary) -> String:
 		str(profile.get("difficulty", "Media"))
 	]
 
-func _open_character_select() -> void:
+func _open_character_select(
+	mode_id: StringName = GameConstants.MODE_SURVIVAL
+) -> void:
+	pending_mode_id = mode_id
 	_resolve_managers()
 	primary_panel.hide()
 	if settings_panel != null:
 		settings_panel.close(false)
+	_refresh_character_select_mode_labels()
 	_ensure_current_character_slot()
 	if focused_character_id.is_empty() and not character_profiles.is_empty():
 		focused_character_id = StringName(character_profiles[0].get("id", &""))
@@ -734,10 +751,21 @@ func _close_character_select(grab_focus: bool = true) -> void:
 	if grab_focus and first_mode_button != null:
 		first_mode_button.grab_focus()
 
+# Allinea testo del pulsante di avvio e sottotitolo alla modalita scelta, cosi la
+# stessa schermata serve tutte le modalita.
+func _refresh_character_select_mode_labels() -> void:
+	var mode_label := _mode_label(pending_mode_id)
+	if character_start_button != null:
+		character_start_button.text = "Start %s" % mode_label
+	if character_select_subtitle != null:
+		character_select_subtitle.text = (
+			"Pick a survivor for each active slot, then start %s" % mode_label
+		)
+
 func _select_survival_character(character_id: StringName) -> void:
 	for player_slot in _get_active_character_slots():
 		character_selection_by_slot[player_slot] = character_id
-	_start_survival_with_selected_characters()
+	_start_selected_mode_with_characters()
 
 func _assign_character_to_current_slot(character_id: StringName) -> void:
 	_assign_character_to_slot(current_character_slot, character_id)
@@ -799,21 +827,21 @@ func _character_id_at_index(index: int) -> StringName:
 		return &""
 	return StringName(character_profiles[index].get("id", &""))
 
-func _start_survival_with_selected_characters() -> void:
+func _start_selected_mode_with_characters() -> void:
 	_resolve_managers()
 	if game_mode_manager == null:
 		return
-	if not game_mode_manager.has_mode(GameConstants.MODE_SURVIVAL):
+	if not game_mode_manager.has_mode(pending_mode_id):
 		return
 	if not _all_active_character_slots_selected():
 		_refresh_character_selection_ui()
 		return
 	_play_confirm()
-	var context := _build_survival_character_context()
-	if game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL, context):
-		mode_selected.emit(GameConstants.MODE_SURVIVAL)
+	var context := _build_character_context()
+	if game_mode_manager.set_mode(pending_mode_id, context):
+		mode_selected.emit(pending_mode_id)
 
-func _build_survival_character_context() -> Dictionary:
+func _build_character_context() -> Dictionary:
 	var by_slot: Dictionary = {}
 	var active_slots := _get_active_character_slots()
 	for player_slot in active_slots:

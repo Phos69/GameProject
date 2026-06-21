@@ -60,11 +60,32 @@ func _run() -> void:
 		"D-pad down moves focus to Infinite Arena"
 	)
 
+	# Every gameplay mode now routes through Character Select so the shared RPG
+	# character system applies, Infinite Arena included.
 	await _press_joypad_button(JOY_BUTTON_A)
 	await get_tree().process_frame
 	_expect(
+		main_menu.character_select_panel != null
+		and main_menu.character_select_panel.visible,
+		"joypad A opens Character Select for Infinite Arena"
+	)
+	_expect(
+		not main_menu.character_card_buttons.is_empty()
+		and get_viewport().gui_get_focus_owner()
+		== main_menu.character_card_buttons[0],
+		"first character receives focus for Infinite Arena"
+	)
+	await _press_joypad_button(JOY_BUTTON_A)
+	await get_tree().process_frame
+	_expect(
+		not main_menu.character_start_button.disabled,
+		"joypad A assigns a character for Infinite Arena"
+	)
+	await _press_joypad_button(JOY_BUTTON_START)
+	await get_tree().process_frame
+	_expect(
 		game_mode_manager.active_mode_id == GameConstants.MODE_INFINITE_ARENA,
-		"joypad A starts Infinite Arena from the default mode button"
+		"joypad Start launches Infinite Arena with the selected roster"
 	)
 	_expect(survival_mode.is_running, "shared survival runtime starts for Infinite Arena")
 	_expect(not main_menu.is_open(), "menu hides after Infinite Arena starts")

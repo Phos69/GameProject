@@ -100,7 +100,7 @@ func _run() -> void:
 		StringName(main_menu.character_selection_by_slot.get(2, &"")) == &"berserker",
 		"player two slot stores Berserker"
 	)
-	main_menu._start_survival_with_selected_characters()
+	main_menu._start_selected_mode_with_characters()
 	await process_frame
 	await process_frame
 	_expect(

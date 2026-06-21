@@ -9,12 +9,13 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 1. `main.tscn` carica manager, world e `MainMenu`.
 2. `GameModeManager` entra nello stato `menu` senza avviare gameplay.
 3. `SaveManager` carica progressione party, unlock e ultima modalita da JSON.
-4. `MainMenu` seleziona una modalita registrata; per survival apre prima
-   `Character Select`, dove tastiera/mouse/pad 0 guidano il focus del Giocatore
-   1 e ogni pad aggiuntivo controlla lo slot corrispondente con cursore e
-   conferma indipendenti. La schermata accetta `Start`/`pause` solo dagli slot
-   attivi con selezione valida e passa `character_ids_by_slot` nel context, con
-   `character_id` come fallback legacy.
+4. `MainMenu` seleziona una modalita registrata; ogni modalita di gioco apre
+   prima `Character Select` (titolo e pulsante di avvio adattati alla modalita
+   tramite `pending_mode_id`), dove tastiera/mouse/pad 0 guidano il focus del
+   Giocatore 1 e ogni pad aggiuntivo controlla lo slot corrispondente con
+   cursore e conferma indipendenti. La schermata accetta `Start`/`pause` solo
+   dagli slot attivi con selezione valida e passa `character_ids_by_slot` nel
+   context, con `character_id` come fallback legacy.
 5. `SettingsPanel` e condiviso da main menu e pausa, con tab Audio, Video e
    Controls; LB/RB cambiano tab in modo circolare e rifocalizzano il contenuto.
 6. `InputManager` registra azioni tastiera/joypad e applica i binding joypad
@@ -609,6 +610,15 @@ Ogni modalita deriva da `BaseGameMode` e fornisce:
 - richiesta boss;
 - collegamento a spawn nemici, drop e progressione.
 
+`BaseGameMode` possiede il sistema personaggi RPG condiviso da tutte le
+modalita: legge `context.character_id` e `context.character_ids_by_slot`
+all'avvio (`start_mode`), applica il profilo scelto ai player presenti e a
+quelli che entrano dopo (segnale `player_spawned` del `PlayerManager`); senza
+roster nel context riporta i player al profilo generico (`clear_rpg_character`).
+Cosi Infinite Arena, Dungeon e Tower Defense applicano stat, passiva e super del
+personaggio esattamente come Zombie Survival. Nel menu ogni modalita di gioco
+passa dalla schermata `Character Select` prima di partire.
+
 Lo stato `menu` non e una modalita gameplay registrata. Entrare in `menu` arresta la modalita corrente; i player restano istanziati ma il loro input gameplay viene sospeso.
 
 `Infinite Arena` e la modalita gameplay di default (`MODE_INFINITE_ARENA`):
@@ -700,7 +710,10 @@ multi-bioma.
 ## Contratto survival e wave
 
 - `GameModeManager.register_mode()` avvia la modalita registrata se coincide con `default_mode`.
-- La survival avviata dal menu riceve `context.character_ids_by_slot` dalla schermata `Character Select`; `context.character_id` resta fallback per debug, hotkey e test.
+- Ogni modalita avviata dal menu riceve `context.character_ids_by_slot` dalla
+  schermata `Character Select`; `context.character_id` resta fallback per debug,
+  hotkey e test. L'applicazione del roster e gestita da `BaseGameMode`, comune a
+  tutte le modalita (vedi "Contratti per modalita").
 - In assenza di context, hotkey/debug e test mantengono il profilo sandbox generico precedente.
 - Il profilo selezionato per lo slot viene applicato al player locale corrispondente; i player senza selezione dedicata usano il fallback `character_id`.
 - I profili classe sono risorse `RpgCharacterData`; il registry mantiene solo path e funzioni di accesso.

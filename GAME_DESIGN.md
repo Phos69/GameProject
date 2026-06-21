@@ -31,7 +31,7 @@ Un action sandbox locale dove 1-4 giocatori affrontano arene, dungeon e difese a
 - 1-4 player locali implementati come prototipo minimo.
 - Player 1 e sempre presente.
 - Player 2-4 possono entrare/uscire durante la scena.
-- La zombie survival ora passa da una selezione personaggio per slot player prima della run.
+- Ogni modalita di gioco passa da una selezione personaggio per slot player prima della run: il sistema personaggi RPG e condiviso da Infinite Arena, Zombie Survival, dungeon e tower defense.
 - Ogni player avra vita, arma e munizioni proprie.
 - XP e denaro sono per default condivisi dal party per semplificare il multiplayer locale.
 - Ogni player usa un colore diverso per restare leggibile nella camera condivisa.
@@ -353,8 +353,10 @@ Ogni nuova run ripristina la vita dei player attivi. Un player che entra durante
 - Survival e dungeon terminano quando tutti gli slot sono downed o morti.
 - Tower defense termina anche per party all-downed, oltre alla distruzione del core.
 
-Il gioco parte dal menu principale. La selezione default avvia `Infinite Arena`;
-`Zombie Survival`, dungeon e tower defense restano scelte separate. `Esc`
+Il gioco parte dal menu principale. La selezione default e `Infinite Arena`;
+`Zombie Survival`, dungeon e tower defense restano scelte separate. Ogni
+modalita di gioco apre prima la Character Select, dove il roster scelto viene
+applicato ai player. `Esc`
 interrompe la run corrente e torna al menu. Durante una partita `Start` su
 joypad o `P` apre il menu pausa con resume, settings, ritorno al menu e quit.
 Il menu mostra livello, XP, denaro, ultima modalita salvata e un pulsante
@@ -410,9 +412,10 @@ joypad. Mix avanzato e asset audio definitivi restano futuri.
 
 ## RPG Mode
 
-La roadmap RPG Mode introduce personaggi selezionabili prima della zombie
-survival. Il primo pass include quattro profili iniziali nel catalogo
-centralizzato:
+La roadmap RPG Mode introduce personaggi selezionabili prima di ogni modalita
+di gioco (Infinite Arena, Zombie Survival, dungeon e tower defense condividono
+lo stesso sistema personaggi). Il primo pass include quattro profili iniziali
+nel catalogo centralizzato:
 
 - `Ranger` / `Mira Vento`: arco, precisione, critici e posizionamento a distanza.
 - `Pistoliere` / `Dante Ferraglia`: pistola, cadenza alta e mobilita accessibile.
@@ -425,9 +428,11 @@ centralizzato:
 Il menu mostra una griglia di icone per i profili selezionabili e quattro slot
 player con portrait, nome proprio, classe, arma base, statistiche iniziali,
 passiva, super e difficolta del personaggio scelto. Le scelte sono passate alla
-survival come `character_ids_by_slot`, con `character_id` come fallback legacy,
-e applicate ai player attivi tramite `RpgPlayerComponent`. I profili sono
-risorse `RpgCharacterData` in `game/rpg/characters/`, lette da
+modalita selezionata come `character_ids_by_slot`, con `character_id` come
+fallback legacy, e applicate ai player attivi tramite `RpgPlayerComponent`. La
+logica di applicazione vive in `BaseGameMode`, quindi vale per tutte le
+modalita. I profili sono risorse `RpgCharacterData` in
+`game/rpg/characters/`, lette da
 `RpgCharacterRegistry`. Il roster esteso include tre classi avanzate aggiunte
 come risorse data-driven senza sostituire i quattro starter. Il `display_name`
 resta la classe per compatibilita, mentre `hero_name` alimenta Character Select
@@ -598,8 +603,10 @@ di survival, ma con un profilo compatto:
 - nessun fall boundary o void pocket interno nel profilo arena;
 - ondate infinite, supply crate, boss wave e sistemi condivisi invariati.
 
-La modalita parte direttamente dal menu/Continue senza Character Select. `F1`
-la avvia come scorciatoia debug.
+Dal menu/Continue la modalita passa ora dalla Character Select come le altre,
+cosi il personaggio scelto si applica anche qui. La hotkey debug `F1` e l'avvio
+diretto (test/`start_selected_mode`) la lanciano senza Character Select,
+mantenendo il profilo sandbox generico.
 
 Guardrail M12: una run automatica accelerata deve coprire almeno cinque wave,
 includere una boss wave, generare drop e danni, mostrare runner/tank/shooter nel

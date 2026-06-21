@@ -51,11 +51,26 @@ func _run() -> void:
 		"joypad focus screenshot is captured"
 	)
 
+	# Every gameplay mode opens character select first so the RPG character system
+	# applies to all of them, Infinite Arena included.
+	await _press_joypad_button(JOY_BUTTON_A)
+	await process_frame
+	_expect(
+		main_menu.character_select_panel.visible,
+		"simulated joypad A opens character select for Infinite Arena"
+	)
+	await _press_joypad_button(JOY_BUTTON_A)
+	_expect(
+		not main_menu.character_start_button.disabled,
+		"simulated joypad A assigns a character for Infinite Arena"
+	)
+	main_menu.character_start_button.grab_focus()
+	await process_frame
 	await _press_joypad_button(JOY_BUTTON_A)
 	await process_frame
 	_expect(
 		game_mode_manager.active_mode_id == GameConstants.MODE_INFINITE_ARENA,
-		"simulated joypad A starts Infinite Arena"
+		"simulated joypad A starts Infinite Arena with the selected character"
 	)
 	_expect(
 		await _capture("infinite_arena_started.png"),
