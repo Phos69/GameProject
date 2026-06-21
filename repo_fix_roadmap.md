@@ -528,17 +528,38 @@ Evidenza:
   `isometric_environment_manifest_smoke_test.gd`.
 - Terzo hotspot trattato nella ripresa M8:
   `game/modes/zombie/isometric_tile_resolver.gd`.
-- `IsometricTileResolver` e stato ridotto da 1090 a 967 LOC mantenendo API,
-  costanti pubbliche e comportamento di risoluzione.
+- `IsometricTileResolver` e stato portato sotto soglia a 989 LOC mantenendo
+  API, costanti pubbliche e comportamento di risoluzione.
 - Il catalogo statico di tile, route e sezioni e stato estratto in
   `game/modes/zombie/isometric_tile_catalog.gd` (`IsometricTileCatalog`,
-  206 LOC), mentre il resolver conserva alias pubblici per i consumer
+  226 LOC), mentre il resolver conserva alias pubblici per i consumer
   esistenti.
+- Gli helper puramente statici per hashing stabile, lookup rettangoli e asset
+  path sono stati estratti in
+  `game/modes/zombie/isometric_tile_resolver_utils.gd`
+  (`IsometricTileResolverUtils`, 29 LOC).
 - Test smoke passati dopo questa estrazione:
   `milestone_10_tile_layer_smoke_test.gd`,
   `milestone_10_void_cliff_asset_smoke_test.gd`,
   `forest_isometric_texture_transition_smoke_test.gd` e
   `isometric_environment_manifest_smoke_test.gd`.
+- Quarto hotspot trattato nella ripresa finale M8:
+  `game/modes/zombie/biome_obstacle.gd`.
+- `BiomeObstacle` e stato ridotto da 1226 a 961 LOC mantenendo collisioni,
+  metadata manifest, gruppi runtime e dispatch dei draw mode.
+- Il disegno procedurale dei muri perimetrali e delle boundary tematiche e
+  stato estratto in `game/modes/zombie/biome_obstacle_painter.gd`
+  (`BiomeObstaclePainter`, 342 LOC), senza spostare regole di collisione,
+  footprint, spawn blocker o pathfinding.
+- Test smoke passati dopo questa estrazione:
+  `obstacle_rendering_contract_smoke_test.gd`,
+  `obstacle_3x3_smoke_test.gd`,
+  `milestone_10_object_asset_smoke_test.gd`,
+  `milestone_10_void_cliff_asset_smoke_test.gd`,
+  `forest_isometric_texture_transition_smoke_test.gd`,
+  `milestone_10_tile_layer_smoke_test.gd` e
+  `isometric_environment_manifest_smoke_test.gd`; QA visuali:
+  `obstacle_asset_visual_qa.gd` e `obstacle_3x3_visual_qa.gd`.
 - Nota QA: `milestone_10_passage_tile_smoke_test.gd` resta rosso su un caso
   generato `snow_pass`/`broken_street` di `biome_0_0`, tracciato come follow-up
   separato in `TODO.md`; il refactor non cambia quel ramo logico.

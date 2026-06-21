@@ -4,6 +4,10 @@
 
 ### Added
 
+- Aggiunto `BiomeObstaclePainter` per isolare il disegno procedurale dei muri
+  perimetrali e delle boundary tematiche dal nodo runtime `BiomeObstacle`.
+- Aggiunto `IsometricTileResolverUtils` per hashing stabile, membership in
+  rettangoli e verifica path asset usati dal resolver tile isometrico.
 - Aggiunto `tests/character_select_independent_smoke_test.gd` che verifica la
   selezione indipendente: il pad del Giocatore 2 muove e conferma il proprio
   slot senza toccare focus, cursore e scelta del Giocatore 1.
@@ -144,8 +148,12 @@
   `IsometricSvgFallbackTextureBuilder`, riducendo il loader a 136 LOC senza
   cambiare manifest o contratti asset runtime.
 - `IsometricTileResolver` mantiene API e costanti pubbliche ma sposta ID,
-  sezioni e liste statiche in `IsometricTileCatalog`, riducendo il resolver a
-  967 LOC senza cambiare la responsabilita di risoluzione per-cella.
+  sezioni e liste statiche in `IsometricTileCatalog` e helper puri in
+  `IsometricTileResolverUtils`, restando sotto 1000 LOC senza cambiare la
+  responsabilita di risoluzione per-cella.
+- `BiomeObstacle` mantiene collisione, metadata manifest e dispatch dei draw
+  mode, ma delega a `BiomeObstaclePainter` i blocchi presentazionali piu grandi
+  per muri perimetrali e boundary tematiche.
 - `HUDManager` ora mostra il `StatusPanel` persistente solo in Tower Defense,
   con titolo modalita, core, crediti, wave, nemici e reward recente; Survival e
   Infinite Arena mantengono nascosto il pannello standard.

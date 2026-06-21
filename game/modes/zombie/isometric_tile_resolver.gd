@@ -2,6 +2,7 @@ extends RefCounted
 class_name IsometricTileResolver
 
 const TILE_CATALOG := preload("res://game/modes/zombie/isometric_tile_catalog.gd")
+const RESOLVER_UTILS := preload("res://game/modes/zombie/isometric_tile_resolver_utils.gd")
 
 const TILE_FLOOR_BASE := TILE_CATALOG.TILE_FLOOR_BASE
 const TILE_FLOOR_VARIANT_01 := TILE_CATALOG.TILE_FLOOR_VARIANT_01
@@ -70,6 +71,7 @@ const TILE_VOID_CORNER_OUTER_SOUTH_WEST := TILE_CATALOG.TILE_VOID_CORNER_OUTER_S
 const TILE_VOID_CORNER_OUTER_NORTH_WEST := TILE_CATALOG.TILE_VOID_CORNER_OUTER_NORTH_WEST
 const TILE_VOID_DIAGONAL_NORTH_EAST_SOUTH_WEST := TILE_CATALOG.TILE_VOID_DIAGONAL_NORTH_EAST_SOUTH_WEST
 const TILE_VOID_DIAGONAL_NORTH_WEST_SOUTH_EAST := TILE_CATALOG.TILE_VOID_DIAGONAL_NORTH_WEST_SOUTH_EAST
+const VOID_TRANSITION_TILE_IDS := TILE_CATALOG.VOID_TRANSITION_TILE_IDS
 const TILE_SECTION_VARIANTS := TILE_CATALOG.TILE_SECTION_VARIANTS
 const TILE_SECTION_TERRAIN := TILE_CATALOG.TILE_SECTION_TERRAIN
 const TILE_SECTION_PASSAGE := TILE_CATALOG.TILE_SECTION_PASSAGE
@@ -213,29 +215,13 @@ func has_visual_tile(
 	biome_cell: BiomeCell = null
 ) -> bool:
 	var asset_path := resolve_asset_path(layout, cell, biome_id, quality_preset, biome_cell)
-	return _asset_path_exists(asset_path)
+	return RESOLVER_UTILS.asset_path_exists(asset_path)
 
 func get_required_tile_ids() -> Array[StringName]:
 	return REQUIRED_TILE_IDS.duplicate()
 
 func is_void_transition_tile_id(tile_id: StringName) -> bool:
-	return (
-		tile_id == TILE_VOID_EDGE_NEAR
-		or tile_id == TILE_VOID_EDGE_NORTH
-		or tile_id == TILE_VOID_EDGE_SOUTH
-		or tile_id == TILE_VOID_EDGE_EAST
-		or tile_id == TILE_VOID_EDGE_WEST
-		or tile_id == TILE_VOID_CORNER_INNER_NORTH_EAST
-		or tile_id == TILE_VOID_CORNER_INNER_SOUTH_EAST
-		or tile_id == TILE_VOID_CORNER_INNER_SOUTH_WEST
-		or tile_id == TILE_VOID_CORNER_INNER_NORTH_WEST
-		or tile_id == TILE_VOID_CORNER_OUTER_NORTH_EAST
-		or tile_id == TILE_VOID_CORNER_OUTER_SOUTH_EAST
-		or tile_id == TILE_VOID_CORNER_OUTER_SOUTH_WEST
-		or tile_id == TILE_VOID_CORNER_OUTER_NORTH_WEST
-		or tile_id == TILE_VOID_DIAGONAL_NORTH_EAST_SOUTH_WEST
-		or tile_id == TILE_VOID_DIAGONAL_NORTH_WEST_SOUTH_EAST
-	)
+	return VOID_TRANSITION_TILE_IDS.has(tile_id)
 
 func get_route_tile_ids() -> Array[StringName]:
 	var ids := TERRAIN_ROUTE_TILE_IDS.duplicate()
@@ -374,7 +360,7 @@ func _resolve_forest_cell_route_tile_data(
 ) -> Dictionary:
 	var passage_tag := _find_passage_tag(route_tags)
 	if not passage_tag.is_empty():
-		if _cell_inside_any_rect(cell, layout.passage_rects):
+		if RESOLVER_UTILS.cell_inside_any_rect(cell, layout.passage_rects):
 			var endpoint_tile := (
 				get_passage_exit_tile_id(passage_tag)
 				if _cell_on_outer_passage_edge(layout, cell)
@@ -429,7 +415,7 @@ func _resolve_forest_rect_route_tile_data(
 		has_path = has_path or _is_forest_path_tag(route_tag)
 		if not _is_passage_type(route_tag):
 			continue
-		if _cell_inside_any_rect(cell, layout.passage_rects):
+		if RESOLVER_UTILS.cell_inside_any_rect(cell, layout.passage_rects):
 			var endpoint_tile := (
 				get_passage_exit_tile_id(route_tag)
 				if _cell_on_outer_passage_edge(layout, cell)
@@ -517,7 +503,7 @@ func _resolve_route_tile_data(
 		var passage_tag := _road_tag_for_index(layout, index)
 		if not _is_passage_type(passage_tag):
 			continue
-		if _cell_inside_any_rect(cell, layout.passage_rects):
+		if RESOLVER_UTILS.cell_inside_any_rect(cell, layout.passage_rects):
 			var endpoint_tile := (
 				get_passage_exit_tile_id(passage_tag)
 				if _cell_on_outer_passage_edge(layout, cell)
@@ -562,7 +548,7 @@ func _resolve_cell_route_tile_data(
 ) -> Dictionary:
 	var passage_tag := _find_passage_tag(route_tags)
 	if not passage_tag.is_empty():
-		if _cell_inside_any_rect(cell, layout.passage_rects):
+		if RESOLVER_UTILS.cell_inside_any_rect(cell, layout.passage_rects):
 			var endpoint_tile := (
 				get_passage_exit_tile_id(passage_tag)
 				if _cell_on_outer_passage_edge(layout, cell)
@@ -656,7 +642,7 @@ func _resolve_forest_grass_variant(
 		_:
 			variants = [TILE_FOREST_GRASS, TILE_FOREST_GRASS_VARIANT_01, TILE_FOREST_GRASS_VARIANT_02]
 	var index := posmod(
-		_stable_cell_hash(layout.generation_seed, FOREST_BIOME_ID, cell),
+		RESOLVER_UTILS.stable_cell_hash(layout.generation_seed, FOREST_BIOME_ID, cell),
 		variants.size()
 	)
 	return variants[index]
@@ -693,7 +679,7 @@ func _route_cell_touches_non_route(
 		var neighbor := cell + offset
 		if not _cell_inside_layout(layout, neighbor):
 			return true
-		if not layout.has_road_cell(neighbor) and not _cell_inside_any_rect(neighbor, layout.road_rects):
+		if not layout.has_road_cell(neighbor) and not RESOLVER_UTILS.cell_inside_any_rect(neighbor, layout.road_rects):
 			return true
 	return false
 
@@ -768,7 +754,7 @@ func _cell_inside_wall_segments(
 	layout: BiomeEnvironmentLayout,
 	cell: Vector2i
 ) -> bool:
-	return _cell_inside_any_rect(cell, layout.wall_segment_rects)
+	return RESOLVER_UTILS.cell_inside_any_rect(cell, layout.wall_segment_rects)
 
 func _cell_inside_layout(layout: BiomeEnvironmentLayout, cell: Vector2i) -> bool:
 	return (
@@ -788,7 +774,7 @@ func _resolve_floor_variant(
 	if variants.is_empty():
 		return TILE_FLOOR_BASE
 	var seed := layout.generation_seed if layout != null else 0
-	var index := posmod(_stable_cell_hash(seed, biome_id, cell), variants.size())
+	var index := posmod(RESOLVER_UTILS.stable_cell_hash(seed, biome_id, cell), variants.size())
 	return variants[index]
 
 func _resolve_void_tile_data(
@@ -1001,29 +987,3 @@ func _cell_on_zone_touching_endpoint(
 		or (rect_end.y >= zone_size.y - 1 and cell.y == rect_end.y)
 	)
 
-func _cell_inside_any_rect(cell: Vector2i, rects: Array[Rect2i]) -> bool:
-	for rect in rects:
-		if rect.has_point(cell):
-			return true
-	return false
-
-func _stable_cell_hash(seed: int, biome_id: StringName, cell: Vector2i) -> int:
-	var biome_hash := _stable_string_hash(String(biome_id))
-	var value := seed * 1103515245
-	value += cell.x * 73856093
-	value += cell.y * 19349663
-	value += biome_hash * 83492791
-	return posmod(value, 2147483647)
-
-func _stable_string_hash(text: String) -> int:
-	var value := 17
-	for index in range(text.length()):
-		value = posmod(value * 31 + text.unicode_at(index), 2147483647)
-	return value
-
-func _asset_path_exists(asset_path: String) -> bool:
-	if asset_path.is_empty():
-		return false
-	if ResourceLoader.exists(asset_path):
-		return true
-	return FileAccess.file_exists(asset_path)

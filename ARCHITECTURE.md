@@ -266,6 +266,9 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `BiomeObstacle`: fallback compatibile che conserva draw mode procedurali
   data-driven dal manifest per distinguere gli ostacoli dei biomi senza cambiare
   collisioni o placement.
+- `BiomeObstaclePainter`: helper presentazionale usato da `BiomeObstacle` per
+  muri perimetrali e boundary tematiche; riceve solo canvas, colori, draw mode e
+  dimensioni, senza leggere manifest o modificare collisioni.
 - `ResourceCrateSystem`: genera casse ambientali raggiungibili riusando `SupplyCrate` e `DropSystem`.
 - `BiomeFallZone`: `Area2D` fisica e leggibile generata dai dati del bioma,
   con stile cliff/depth procedurale.
@@ -753,6 +756,9 @@ multi-bioma.
 - `IsometricTileCatalog` possiede solo ID statici, sezioni manifest e liste di
   route/tile richiesti. `IsometricTileResolver` mantiene alias pubblici per i
   consumer esistenti e resta l'unico responsabile della scelta per-cella.
+- `IsometricTileResolverUtils` contiene helper statici condivisi dal resolver
+  per hashing stabile, membership in rettangoli e verifica path asset; non
+  decide tile, sezioni o ruoli.
 - Per `infected_plains`, `IsometricTileResolver` usa il set forestale dedicato:
   `forest_grass`, `forest_tall_grass`, `forest_path`, `forest_road`,
   `forest_void`, `forest_cliff_edge`, `forest_mountain_wall` e le transizioni
@@ -799,6 +805,10 @@ multi-bioma.
 - `BiomeObstacle` legge `draw_mode` e `dedicated_draw` da
   `IsometricEnvironmentManifest`; se un ID ricade su `generic_barrier`, deve
   essere una scelta esplicita del manifest e non un fallback implicito.
+- `BiomeObstaclePainter` disegna i fallback procedurali piu pesanti
+  (perimeter wall e boundary tematiche) dietro il dispatch di `BiomeObstacle`;
+  il nodo ostacolo resta proprietario di collision layer, shape, footprint,
+  sort metadata e gruppi runtime.
 - Il manifest v9 vieta fallback impliciti: ogni ID generato da ostacoli,
   terrain, passaggi, bordi o fall zone deve avere un contratto asset-driven con
   `asset_path`, `status`, `biome_ids`, `anchor`, footprint/collisione, sorgente,

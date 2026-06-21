@@ -479,9 +479,10 @@ Attivita post-roadmap:
 - Milestone 8 di `repo_fix_roadmap.md` completata e ripresa con hotspot
   aggiuntivi: `WeaponVisualShapeLibrary` e stato estratto da
   `WeaponVisualRenderer`, `IsometricSvgFallbackTextureBuilder` da
-  `IsometricSvgTextureLoader` e `IsometricTileCatalog` da
-  `IsometricTileResolver`; gli entry point restano compatibili e scendono
-  rispettivamente a 460, 136 e 967 LOC, con smoke mirati passati.
+  `IsometricSvgTextureLoader`, `IsometricTileCatalog` e
+  `IsometricTileResolverUtils` da `IsometricTileResolver`, e
+  `BiomeObstaclePainter` da `BiomeObstacle`; gli entry point restano
+  compatibili e i nuovi confini sono coperti da smoke mirati.
 - Milestone 9 di `repo_fix_roadmap.md` completata come prima passata:
   dependency lookup ridotti da 216 a 184 in `game/`, con NodePath/cache locali
   in `HUDManager`, injection `PlayerManager -> PlayerController` e injection
