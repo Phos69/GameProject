@@ -139,6 +139,10 @@
   geometrie statiche di pickup, dettagli e projectile a
   `WeaponVisualShapeLibrary`, riducendo il file principale sotto 500 LOC senza
   cambiare combat, hitbox o bilanciamento.
+- `IsometricSvgTextureLoader` mantiene l'API `load_texture` ma delega i
+  fallback rasterizzati per SVG/object/void/slot a
+  `IsometricSvgFallbackTextureBuilder`, riducendo il loader a 136 LOC senza
+  cambiare manifest o contratti asset runtime.
 - `HUDManager` ora mostra il `StatusPanel` persistente solo in Tower Defense,
   con titolo modalita, core, crediti, wave, nemici e reward recente; Survival e
   Infinite Arena mantengono nascosto il pannello standard.

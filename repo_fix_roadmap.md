@@ -514,6 +514,18 @@ Evidenza:
   `weapon_held_hud_visual_identity_smoke_test.gd`,
   `weapon_projectile_vfx_identity_smoke_test.gd` e
   `weapon_melee_visual_identity_smoke_test.gd`.
+- Secondo hotspot trattato nella ripresa M8:
+  `game/modes/zombie/isometric_svg_texture_loader.gd`.
+- `IsometricSvgTextureLoader` e stato ridotto da 1022 a 136 LOC mantenendo il
+  contratto pubblico `load_texture`.
+- La rasterizzazione fallback per SVG/object/void/slot e stata estratta in
+  `game/modes/zombie/isometric_svg_fallback_texture_builder.gd`
+  (`IsometricSvgFallbackTextureBuilder`, 908 LOC), senza cambiare manifest,
+  path asset o contratti gameplay.
+- Test smoke passati prima e dopo questa estrazione:
+  `milestone_10_asset_pipeline_smoke_test.gd`,
+  `milestone_10_object_asset_smoke_test.gd` e
+  `isometric_environment_manifest_smoke_test.gd`.
 
 ### Obiettivo
 

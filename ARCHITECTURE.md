@@ -786,10 +786,13 @@ multi-bioma.
 - `IsometricSvgTextureLoader` evita che il runtime dipenda dall'import editor:
   rasterizza direttamente il contenuto SVG quando mantiene corner trasparenti,
   accetta la texture importata solo se non introduce un canvas opaco e, in
-  fallback, disegna una silhouette isometrica per categoria usando i metadata
-  `data-section`/`data-id`. Gli SVG ambiente interni restano trasparenti e
-  hanno silhouette specifiche per case, recinti, muri, barili, relitti, tronchi,
-  ponti e crate.
+  fallback, delega la silhouette isometrica categoriale al builder dedicato.
+- `IsometricSvgFallbackTextureBuilder` rasterizza i fallback per
+  `object_scenes`, `void_tiles` e slot generici usando i metadata
+  `data-section`/`data-id`; non legge manifest, non possiede path asset e non
+  cambia collisioni o regole gameplay. Gli SVG ambiente interni restano
+  trasparenti e hanno silhouette specifiche per case, recinti, muri, barili,
+  relitti, tronchi, ponti e crate.
 - `BiomeObstacle` legge `draw_mode` e `dedicated_draw` da
   `IsometricEnvironmentManifest`; se un ID ricade su `generic_barrier`, deve
   essere una scelta esplicita del manifest e non un fallback implicito.
