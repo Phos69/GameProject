@@ -138,10 +138,12 @@ func populate_layout(
 func populate_layout_voidfirst(
 	layout: BiomeEnvironmentLayout,
 	cell: BiomeCell,
-	biome: BiomeDefinition
+	biome: BiomeDefinition,
+	context: Dictionary = {}
 ) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = maxi(cell.seed, 1)
+	var allow_internal_void := not _is_walled_arena_context(context)
 	_carve_passages(layout, cell)
 	_place_rocks(layout, biome, rng)
 	_place_forests(layout, biome, rng)
@@ -152,7 +154,7 @@ func populate_layout_voidfirst(
 	_clear_trees_on_routes(layout)
 	_add_connected_border_walls(layout, cell, biome)
 	_line_roads_with_trees(layout)
-	_resolve_void_lottery(layout, rng)
+	_resolve_void_lottery(layout, rng, allow_internal_void)
 	_add_voidfirst_crates(layout, biome)
 	_update_generation_summary(layout, biome)
 
@@ -562,7 +564,8 @@ func _should_line_with_tree(layout: BiomeEnvironmentLayout, rect: Rect2i) -> boo
 # patches, so they never overwrite roads, obstacles or passages.
 func _resolve_void_lottery(
 	layout: BiomeEnvironmentLayout,
-	rng: RandomNumberGenerator
+	rng: RandomNumberGenerator,
+	allow_chasms: bool = true
 ) -> void:
 	var occ := _compute_occupancy(layout)
 	var patch := VOIDFIRST_VOID_PATCH
@@ -589,6 +592,10 @@ func _resolve_void_lottery(
 		py += patch
 
 	_shuffle_rects(full_void, rng)
+	if not allow_chasms:
+		for rect in full_void:
+			layout.add_floor_rect(rect, &"open_block")
+		return
 	var chasm_count := full_void.size() / VOIDFIRST_VOID_CHASM_DIVISOR
 	var chasm_rects: Array[Rect2i] = []
 	for index in range(full_void.size()):

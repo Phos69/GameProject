@@ -131,6 +131,17 @@
 
 ### Changed
 
+- `HUDManager` ora mostra il `StatusPanel` persistente solo in Tower Defense,
+  con titolo modalita, core, crediti, wave, nemici e reward recente; Survival e
+  Infinite Arena mantengono nascosto il pannello standard.
+- `ZombieSpawner` ora valida spawn preview e spawn effettivi con lo stesso
+  contratto camera-edge: motivo di scarto, report tentativi, walkable, hazard,
+  blocker, fallback stream-aware sulle regioni caricate e punti arena usati
+  solo se validi. La regressione 10 wave resta su spawn edge attraverso tutti e
+  cinque i biomi.
+- Allineati `README.md`, `repo_fix_roadmap.md`, `ROADMAP.md`, `TODO.md`,
+  `ARCHITECTURE.md` e `GAME_DESIGN.md` al contratto della Character Select con
+  selezione indipendente per giocatore.
 - La character selection passa da hot-seat a selezione indipendente per
   giocatore: tastiera/mouse/pad 0 pilotano il Giocatore 1 col focus Godot,
   mentre ogni pad aggiuntivo (device N) muove il cursore del proprio slot N+1 e
@@ -290,6 +301,9 @@
 
 ### Fixed
 
+- Corretto il profilo `Infinite Arena` murato: il context `walled` raggiunge
+  anche la pipeline starter void-first, che riempie il void residuo come floor
+  invece di generare chasm/fall zone interne.
 - Corretto il flusso Character Select del menu: `MainMenu` espone di nuovo un
   `CharacterDetailPanel` aggiornato dal focus della card roster, e lo smoke
   Milestone RPG 1 ha un timeout di guardrail per non restare appeso su errori.

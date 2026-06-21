@@ -348,15 +348,25 @@ Attivita post-roadmap:
   blu con glow e testi HP/ammo ingranditi; la milestone UI/UX resta aperta per il polish
   trasversale e la QA multi-risoluzione;
 - polish Character Select RPG completato come pass post-roadmap: card grafiche,
-  dossier aggiornato dal focus, preview gameplay procedurale, stat bar e
-  supporto `Esc`/joypad `B`;
+  dossier aggiornato dal focus, preview gameplay procedurale, stat bar,
+  selezione indipendente per-player con cursori/commit per slot e supporto
+  `Esc`/joypad `B`;
 - menu pausa e pagina Settings condivisa completati come feature post-roadmap:
   tab Audio, Video e Controls, save v5 e rimappatura joypad persistente;
 - navigazione menu gamepad completata come polish post-roadmap: focus
   circolare, Back coerente, D-pad/stick con cooldown, LB/RB nei Settings e
   Character Select responsive con fallback asset coerente; la validazione
-  repo-fix del 2026-06-20 copre anche navigazione tastiera e guardrail timeout
-  dello smoke Character Select;
+  repo-fix del 2026-06-20 copre anche navigazione tastiera, selezione
+  indipendente da pad aggiuntivi e guardrail timeout dello smoke Character
+  Select;
+- Milestone 6 di `repo_fix_roadmap.md` completata: `ZombieSpawner` mantiene
+  spawn preview e spawn effettivi fuori camera, espone motivi di scarto per
+  test/debug, valida walkable/hazard/blocker in regioni streamate e chiude la
+  regressione survival 10 wave su tutti e cinque i biomi;
+- Milestone 7 di `repo_fix_roadmap.md` completata: `HUDManager` mostra il
+  pannello status persistente solo in Tower Defense, nascondendolo in
+  Survival/Infinite Arena, e il profilo Infinite Arena murato non genera piu
+  fall zone interne dal void-first starter;
 - Milestone 1 di `todo_roadmap.md` completata: shutdown headless stabilizzato,
   loop da 100 avvii della scena principale e smoke prioritari senza cleanup
   warning noti; i QA visuali screenshot restano fuori scope per limite del

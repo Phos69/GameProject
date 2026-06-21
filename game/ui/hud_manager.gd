@@ -89,6 +89,14 @@ func _create_status_hud() -> void:
 	status_panel = PanelContainer.new()
 	status_panel.name = "StatusPanel"
 	status_panel.custom_minimum_size = Vector2(STATUS_PANEL_WIDTH, 0.0)
+	status_panel.anchor_left = 0.5
+	status_panel.anchor_top = 0.0
+	status_panel.anchor_right = 0.5
+	status_panel.anchor_bottom = 0.0
+	status_panel.offset_left = -STATUS_PANEL_WIDTH * 0.5
+	status_panel.offset_top = 112.0
+	status_panel.offset_right = STATUS_PANEL_WIDTH * 0.5
+	status_panel.offset_bottom = 0.0
 	status_panel_style = StyleBoxFlat.new()
 	status_panel_style.bg_color = Color(0.02, 0.032, 0.04, 0.90)
 	status_panel_style.border_color = Color(0.36, 0.48, 0.50, 0.78)
@@ -168,7 +176,10 @@ func _refresh() -> void:
 		status_parts.append(pickup_feedback_text)
 	status_label.text = "\n".join(status_parts)
 	if status_panel != null:
-		status_panel.hide()
+		status_panel.visible = (
+			_should_show_status_panel(game_mode_manager)
+			and not status_label.text.is_empty()
+		)
 	_refresh_boss_hud()
 
 func _create_player_hud() -> void:
@@ -268,9 +279,18 @@ func _format_mode_status() -> String:
 				"tower_defense_mode"
 			) as TowerDefenseMode
 			if tower_defense_mode == null:
-				return "Defense idle"
-			return tower_defense_mode.get_status_text()
+				return "Tower Defense\nDefense idle"
+			return "%s\n%s" % [
+				_get_mode_title(),
+				tower_defense_mode.get_status_text()
+			]
 	return ""
+
+func _should_show_status_panel(game_mode_manager: GameModeManager) -> bool:
+	return (
+		game_mode_manager != null
+		and game_mode_manager.active_mode_id == GameConstants.MODE_TOWER_DEFENSE
+	)
 
 func _format_infinite_arena_status() -> String:
 	var wave_manager := get_tree().get_first_node_in_group(

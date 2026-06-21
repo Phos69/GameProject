@@ -41,6 +41,13 @@ func _run() -> void:
 			and spawner.get_last_spawn_edge() == edge,
 			"%s edge spawns outside the camera" % String(edge)
 		)
+		var attempt_report: Array = spawner.get_last_spawn_attempt_report()
+		_expect(
+			not attempt_report.is_empty()
+			and StringName(attempt_report.back().get("reason", &"missing"))
+			== &"",
+			"%s edge exposes successful spawn diagnostics" % String(edge)
+		)
 
 	_expect(
 		not spawner.is_spawn_position_valid(player.global_position),
@@ -60,6 +67,10 @@ func _run() -> void:
 		not spawner.is_spawn_position_valid(blocked_position),
 		"spawner rejects fall zone positions"
 	)
+	_expect(
+		spawner.get_spawn_rejection_reason(blocked_position) == &"hazard",
+		"spawner reports fall zones as hazardous spawn rejection"
+	)
 	fall_zone.queue_free()
 	await process_frame
 
@@ -74,6 +85,10 @@ func _run() -> void:
 	_expect(
 		not spawner.is_spawn_position_valid(obstacle_position),
 		"spawner rejects spawn blocker positions"
+	)
+	_expect(
+		spawner.get_spawn_rejection_reason(obstacle_position) == &"blocked",
+		"spawner reports spawn blockers as blocked spawn rejection"
 	)
 	obstacle.queue_free()
 	await process_frame

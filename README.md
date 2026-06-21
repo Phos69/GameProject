@@ -57,9 +57,12 @@ Controlli debug:
 - Settings: `LB` e `RB` cambiano tab in modo circolare e spostano il focus su
   un controllo valido della tab corrente.
 - Character Select: frecce/D-pad/stick navigano la griglia in quattro
-  direzioni con wrapping solo su card valide, `Invio`/joypad `A` assegna il
-  personaggio allo slot attivo, `Start` joypad o `P` avvia la run quando tutti
-  gli slot attivi hanno una selezione valida, `Esc`/joypad `B` torna al menu.
+  direzioni con wrapping solo su card valide; tastiera/mouse/pad 0 controllano
+  il Giocatore 1, mentre i pad aggiuntivi muovono e confermano lo slot
+  corrispondente senza rubare il focus. `Invio`/joypad `A` assegna il
+  personaggio allo slot del controller attivo, `Start` joypad o `P` avvia la
+  run quando tutti gli slot attivi hanno una selezione valida, `Esc`/joypad `B`
+  torna al menu.
 - Partita: joypad `Start` o `P` apre/chiude la pausa; `Esc` torna al menu principale arrestando la run.
 - Tastiera: `WASD` per movimento, frecce per mira, `Spazio` per l'arma base,
   `F` per l'arma equipaggiata, `R` per ricaricare e `Q` per la super RPG.
@@ -347,7 +350,9 @@ Completato:
   fallback barriera generico implicito; il loader runtime evita canvas opachi e
   fallback placeholder generici;
 - cinque biomi giocabili nella stessa run, con partenza forzata dalla `Pianura Infetta`;
-- spawn zombie delegato a `ZombieSpawner` dai bordi della camera, con fallback ai punti arena esistenti;
+- spawn zombie delegato a `ZombieSpawner` dai bordi della camera, validato
+  contro camera, player, walkable, hazard, fall zone e blocker, con fallback
+  stream-aware e punti arena usati solo se validi;
 - layout ambientali data-driven per Pianura, Tossico, Infuocato, Neve e Palude;
 - casse comuni, mediche, militari e tematiche con loot dedicato tramite `SupplyCrate` e `DropSystem`;
 - zona di caduta data-driven con visuale cliff/depth, 20 HP di danno, respawn
@@ -387,7 +392,8 @@ Completato:
 - tre slot costruzione con crediti di run e input `E`/joypad `A`;
 - torre automatica con targeting e proiettili condivisi;
 - ondate crescenti, ricompense crediti e boss ogni cinque ondate;
-- HUD tower defense con vita core, crediti, ondata e nemici rimasti;
+- HUD tower defense con pannello status dedicato per vita core, crediti,
+  ondata, nemici rimasti e reward, visibile solo in questa modalita;
 - salvataggio JSON versionato di livello, XP, denaro e ultima modalita;
 - save v2 con migrazione automatica dei dati v1 e unlock persistenti;
 - autosave su variazioni della progressione;

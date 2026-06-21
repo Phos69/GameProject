@@ -332,12 +332,19 @@ del menu senza riscrivere tutto `MainMenu`.
 
 - `MainMenu` espone di nuovo `character_detail_panel` come dossier
   `CharacterDetailPanel` aggiornato dal focus della card roster.
+- La Character Select usa selezione indipendente per giocatore: tastiera,
+  mouse e pad 0 pilotano il focus del Giocatore 1, mentre ogni pad aggiuntivo
+  controlla il proprio slot con cursore e conferma autonomi.
 - `tests/milestone_rpg_1_character_select_smoke_test.gd` ha un timeout di
   guardrail e passa senza lasciare processi appesi.
 - `tests/character_select_ui_smoke_test.gd` copre dossier, layout responsive,
   D-pad, Back joypad, frecce tastiera ed Escape.
+- `tests/character_select_independent_smoke_test.gd` copre il pad del
+  Giocatore 2 che muove e conferma il proprio slot senza cambiare focus,
+  cursore o scelta del Giocatore 1.
 - Test passati: `tests/milestone_rpg_1_character_select_smoke_test.gd`,
   `tests/character_select_ui_smoke_test.gd`,
+  `tests/character_select_independent_smoke_test.gd`,
   `tests/infinite_arena_default_mode_smoke_test.gd`,
   `tests/milestone_9_smoke_test.gd` e `tests/menu_visual_qa.gd` in headless
   con catture screenshot saltate solo per display dummy.
@@ -357,34 +364,57 @@ del menu senza riscrivere tutto `MainMenu`.
 
 ## Milestone 6 - Stabilizzare spawn zombie fuori camera
 
+Stato: completata il 2026-06-20 con validazione mirata.
+
+Evidenza:
+
+- `ZombieSpawner` separa candidate camera-edge, motivo di scarto e fallback
+  validati, con report dell'ultimo tentativo per test/debug.
+- Il fallback prova prima bordi camera validi, poi celle walkable delle regioni
+  streamate, e usa i punti arena solo se superano camera, player distance,
+  hazard, fall zone e blocker.
+- Test mirati passati: `tests/zombie_spawner_edge_smoke_test.gd`,
+  `tests/zombie_revamp_foundation_smoke_test.gd`,
+  `tests/biome_world_generation_smoke_test.gd`,
+  `tests/milestone_10_cross_biome_chase_smoke_test.gd`,
+  `tests/zombie_fall_hazard_smoke_test.gd` e
+  `tests/zombie_revamp_ten_wave_smoke_test.gd`.
+
 ### Obiettivo
 
 Garantire spawn preview e spawn effettivi fuori camera, preservando vincoli di
-walkability, hazard e region streaming.
+walkability, hazard, blocker e region streaming.
 
 ### Problemi risolti
 
 - `zombie_spawner_edge_smoke_test.gd` fallito.
 - `zombie_revamp_foundation_smoke_test.gd` fallito.
 - Contratto ambiguo tra candidate edge e fallback validato.
+- Le wave avanzate potevano cadere su fallback generico quando la camera era
+  vicina a regioni non generate dal layout corrente.
 
 ### Interventi tecnici
 
-- Separare in `game/modes/zombie/zombie_spawner.gd`:
+- Separato in `game/modes/zombie/zombie_spawner.gd`:
   - generazione candidate edge;
   - validazione camera;
   - validazione walkable/hazard/blocker;
   - fallback.
-- Aggiungere logging/test helper per capire perche un candidato viene scartato.
-- Conservare rifiuto di player overlap, fall zone e blocker.
-- Aggiornare test se devono distinguere preview da spawn finale.
+- Aggiunti `get_spawn_rejection_reason()`,
+  `get_last_spawn_rejection_reason()` e `get_last_spawn_attempt_report()` per
+  capire perche un candidato viene scartato.
+- Conservato rifiuto di player overlap, fall zone e blocker.
+- Aggiornati gli smoke per distinguere spawn edge valido, hazard, blocker e
+  regressione multi-bioma a 10 wave.
 
 ### Criteri di completamento
 
 - `zombie_spawner_edge_smoke_test.gd` passa.
 - `zombie_revamp_foundation_smoke_test.gd` passa.
 - I nemici non spawnano su void o blocker.
-- Le wave continuano a spawnare in regioni streammate.
+- Le wave continuano a spawnare in regioni streamate.
+- La regressione 10 wave attraversa tutti e cinque i biomi senza spawn
+  `fallback` generici.
 
 ### Test manuali
 
@@ -402,6 +432,25 @@ walkability, hazard e region streaming.
 
 ## Milestone 7 - Stato modalita e Tower Defense HUD
 
+Stato: completata il 2026-06-20 con validazione mirata.
+
+Evidenza:
+
+- `HUDManager` mostra il pannello status persistente solo in
+  `TowerDefenseMode`, con titolo modalita, core, crediti, wave e nemici.
+- Il pannello e ancorato al centro alto sotto l'eventuale boss HUD e il test
+  verifica che non intersechi le card player agli angoli.
+- `Zombie Survival` e `Infinite Arena` continuano a nascondere il pannello
+  persistente; gli annunci/wave standard restano nel canale temporaneo.
+- Durante la validazione e stato corretto anche il profilo `Infinite Arena`
+  murato: la pipeline void-first non genera piu fall zone interne quando
+  `arena_boundary_mode = "walled"`.
+- Test mirati passati: `tests/tower_defense_smoke_test.gd`,
+  `tests/milestone_10_visual_smoke_test.gd`,
+  `tests/survival_wave_smoke_test.gd`, `tests/dungeon_smoke_test.gd`,
+  `tests/zombie_survival_world_contract_smoke_test.gd` e
+  `tests/infinite_arena_default_mode_smoke_test.gd`.
+
 ### Obiettivo
 
 Rendere coerente il feedback HUD delle modalita, partendo da Tower Defense.
@@ -409,16 +458,22 @@ Rendere coerente il feedback HUD delle modalita, partendo da Tower Defense.
 ### Problemi risolti
 
 - `tower_defense_smoke_test.gd` fallito sullo stato HUD.
-- `HUDManager._refresh()` nasconde sempre il panel status.
+- `HUDManager._refresh()` nascondeva sempre il panel status.
 - Contratto modalita/HUD poco esplicito.
+- Il profilo `Infinite Arena` murato poteva ancora ereditare chasm/fall zone
+  interne dal void-first starter.
 
 ### Interventi tecnici
 
-- Decidere dove appare lo stato modalita: `status_label`, banner temporaneo o
-  panel dedicato.
-- Aggiornare `game/ui/hud_manager.gd` e test coerentemente.
-- Verificare integrazione con survival, pause, run results e down/revive.
-- Documentare il contratto in `ARCHITECTURE.md`.
+- Deciso che lo stato Tower Defense appare nel `StatusPanel` persistente,
+  mentre Survival/Infinite Arena mantengono il pannello nascosto.
+- Aggiornati `game/ui/hud_manager.gd` e `tests/tower_defense_smoke_test.gd`.
+- Aggiornata la pipeline world generation per passare il context anche a
+  `populate_layout_voidfirst()` e disattivare la void lottery nel profilo
+  arena murata.
+- Verificata integrazione con survival, dungeon e Infinite Arena.
+- Documentato il contratto in `ARCHITECTURE.md`, `GAME_DESIGN.md`, `README.md`,
+  `TODO.md`, `ROADMAP.md` e `CHANGELOG.md`.
 
 ### Criteri di completamento
 
@@ -426,6 +481,7 @@ Rendere coerente il feedback HUD delle modalita, partendo da Tower Defense.
 - `Infinite Arena` e `Zombie Survival` non mostrano stato Tower Defense.
 - Il panel non copre HUD critico.
 - Modalita future hanno un punto unico per aggiornare lo stato.
+- `Infinite Arena` resta una cella `500x500` murata e senza fall zone interne.
 
 ### Test manuali
 

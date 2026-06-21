@@ -77,6 +77,14 @@ func _run() -> void:
 	_expect(tower_defense_manager.base_health == 250, "core starts at full health")
 	_expect(tower_defense_manager.credits == 75, "run starts with build credits")
 	_expect("Tower Defense" in hud.status_label.text, "HUD switches to tower defense")
+	_expect(
+		hud.status_panel != null and hud.status_panel.is_visible_in_tree(),
+		"HUD shows the tower defense status panel"
+	)
+	_expect(
+		_status_panel_avoids_player_cards(hud),
+		"tower defense status panel avoids critical corner HUD"
+	)
 
 	var path_enemy := await _wait_for_path_enemy(tower_defense_mode)
 	_expect(path_enemy != null, "wave one spawns a path enemy through EnemySystem")
@@ -146,6 +154,14 @@ func _run() -> void:
 	await process_frame
 	_expect(not tower_defense_mode.is_running, "leaving tower defense stops its runtime")
 	_expect(survival_mode.is_running, "survival restarts after tower defense")
+	_expect(
+		hud.status_label.text.find("Tower Defense") == -1,
+		"survival does not keep tower defense status text"
+	)
+	_expect(
+		hud.status_panel == null or not hud.status_panel.is_visible_in_tree(),
+		"survival hides the tower defense status panel"
+	)
 	_expect(get_nodes_in_group("defense_towers").is_empty(), "mode switch clears built towers")
 	_expect(
 		get_first_node_in_group("tower_build_slots") == null,
@@ -199,6 +215,18 @@ func _on_wave_completed(wave_index: int, _reward_credits: int) -> void:
 
 func _on_tower_fired(_target: Node, _projectile: Node) -> void:
 	tower_shots += 1
+
+func _status_panel_avoids_player_cards(hud: HUDManager) -> bool:
+	if hud.status_panel == null or not hud.status_panel.is_visible_in_tree():
+		return false
+	var status_rect := hud.status_panel.get_global_rect()
+	for card_value in hud.player_cards.values():
+		var card := card_value as Control
+		if card == null or not card.is_visible_in_tree():
+			continue
+		if status_rect.intersects(card.get_global_rect()):
+			return false
+	return true
 
 func _expect(condition: bool, message: String) -> void:
 	if condition:

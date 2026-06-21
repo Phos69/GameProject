@@ -10,9 +10,11 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 2. `GameModeManager` entra nello stato `menu` senza avviare gameplay.
 3. `SaveManager` carica progressione party, unlock e ultima modalita da JSON.
 4. `MainMenu` seleziona una modalita registrata; per survival apre prima
-   `Character Select`, naviga la griglia personaggi in quattro direzioni,
-   accetta `Start`/`pause` solo dagli slot attivi con selezione valida e passa
-   `character_ids_by_slot` nel context, con `character_id` come fallback legacy.
+   `Character Select`, dove tastiera/mouse/pad 0 guidano il focus del Giocatore
+   1 e ogni pad aggiuntivo controlla lo slot corrispondente con cursore e
+   conferma indipendenti. La schermata accetta `Start`/`pause` solo dagli slot
+   attivi con selezione valida e passa `character_ids_by_slot` nel context, con
+   `character_id` come fallback legacy.
 5. `SettingsPanel` e condiviso da main menu e pausa, con tab Audio, Video e
    Controls; LB/RB cambiano tab in modo circolare e rifocalizzano il contenuto.
 6. `InputManager` registra azioni tastiera/joypad e applica i binding joypad
@@ -62,10 +64,10 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
    e limite framerate.
 40. `VisualSettingsManager` distribuisce solo impostazioni presentazionali e le persiste nel save.
 41. `IsometricCameraController` segue il gruppo e applica shake solo tramite offset.
-42. `HUDManager` mostra schede slot leggere negli angoli, boss e mappa
-    esplorazione; il riquadro status persistente non e mostrato durante il
-    gameplay e `PlayerWorldHudVisual` mantiene sopra ogni player vita,
-    ammo/reload, livello, EXP e super.
+42. `HUDManager` mostra schede slot leggere negli angoli, boss, mappa
+    esplorazione e il pannello status persistente solo per Tower Defense;
+    Survival/Infinite Arena lo tengono nascosto e `PlayerWorldHudVisual`
+    mantiene sopra ogni player vita, ammo/reload, livello, EXP e super.
 43. I componenti visuali ricevono stato e profilo senza possedere logica gameplay.
 44. `BossTelegraphVisual` riceve pattern, direzione e durata senza possedere danno.
 45. `WaveWardenVisual` e `RiftArchitectVisual` ricevono solo stato presentazionale.
@@ -99,10 +101,11 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `MainMenu`: UI iniziale, selezione modalita, `Character Select` survival per
   slot player, continue e ritorno con `Esc`/joypad `B`; usa
   `MenuNavigationController` per focus/back coerenti, grid navigation della
-  roster e avvio con `Start`/`pause` solo quando gli slot attivi sono validi.
+  roster, cursori indipendenti dei pad aggiuntivi e avvio con `Start`/`pause`
+  solo quando gli slot attivi sono validi.
 - `CharacterSelectCard`: card RPG selezionabile con portrait menu dedicato,
   fallback gameplay/procedurale, icone classe/arma, stat bar compatte e
-  indicatori slot.
+  indicatori slot, inclusi anelli cursore e pip di commit per-player.
 - `CharacterDetailPanel`: dossier scrollabile della Character Select con
   descrizione stile, stat leggibili, range arma e preview, aggiornato dal focus
   della card roster corrente.
@@ -225,9 +228,10 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
   classificazione completa del `500x500` e `generation_summary` per debug.
 - `WaveDirector`: composizione wave e scaling basati sul bioma corrente.
 - `ZombieSpawner`: spawn dai bordi della camera con distanza minima dai player,
-  validazione hazard/ostacoli e fallback arena; nella megamappa valida le
-  posizioni contro regioni streamate world-space invece del solo layout locale
-  corrente.
+  validazione walkable/hazard/ostacoli/blocker e fallback arena solo se valido.
+  Espone motivo di scarto e report tentativi per test/debug; nella megamappa
+  valida le posizioni contro regioni streamate world-space invece del solo
+  layout locale corrente.
 - `TerrainGenerator`: applica la palette del bioma, genera il piano visuale
   `500x500` e legge gli stili terrain dal manifest. Nel percorso standard
   registra il tile layer streamato; patch e ground procedurali restano fallback
@@ -288,9 +292,11 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
   usa `MenuNavigationController` per focus circolare, Back e tab LB/RB.
 - `PauseMenu`: overlay durante le run; usa `SceneTree.paused` e resta attivo
   insieme alla propria UI.
-- `HUDManager`: UI prototipo per HUD gameplay, boss, annunci e mappa
-  esplorazione; ancora le schede player ai quattro angoli senza duplicare le
-  informazioni immediate del pacchetto world-space.
+- `HUDManager`: UI prototipo per HUD gameplay, boss, annunci, mappa
+  esplorazione e status Tower Defense; ancora le schede player ai quattro
+  angoli senza duplicare le informazioni immediate del pacchetto world-space.
+  Il `StatusPanel` persistente e owner della telemetria Tower Defense e resta
+  nascosto in Survival/Infinite Arena.
 - `ExplorationMapPanel`: pannello consultabile che disegna grafo, fog/unknown, regioni discovered/visited/cleared, connessioni note tematizzate per `passage_type`, marker per le active/loaded regions e regione corrente; consuma `apply_visual_settings` per il high contrast.
 - `OffscreenEnemyMarkers`: overlay HUD che converte i minion del gruppo
   `enemies` fuori dalla visuale in frecce ancorate al bordo del viewport; deriva
@@ -342,7 +348,8 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 | Statistiche RPG, passive e status temporanei | `PlayerHudCard` | Sintesi compatta; i dettagli immediati restano vicino al player. |
 | HP, caricatore, reload, livello, EXP e super | `PlayerWorldHudVisual` | Feedback reattivo sopra il player, leggibile nel punto di azione. |
 | Boss, annunci, mappa esplorazione e aggregazione modalita | `HUDManager` | Non duplica la telemetria per-player gia mostrata nei componenti dedicati. |
-| Status panel persistente | `HUDManager` | Istanza legacy nascosta durante il gameplay standard. |
+| Status panel Tower Defense | `HUDManager` | Visibile solo in `TowerDefenseMode`, ancorato al centro alto sotto il boss HUD e fuori dalle corner card. |
+| Status panel persistente in Survival/Infinite Arena | `HUDManager` | Nascosto durante il gameplay standard; wave e reward usano annunci temporanei o world HUD. |
 
 ## Contratto fine run
 
@@ -866,8 +873,10 @@ multi-bioma.
 - Gli stati runtime sono `idle`, `intermission`, `spawning`, `combat` e `reward`.
 - Gli zombie vengono creati esclusivamente tramite `EnemySystem.spawn_enemy()`.
 - `WaveManager.get_enemy_id_for_spawn()` delega a `WaveDirector` quando presente, con fallback deterministico legacy.
-- Le posizioni spawn reali vengono richieste a `ZombieSpawner`; `spawn_points`
-  resta fallback/debug di arena e non rappresenta il cambio bioma.
+- Le posizioni spawn reali vengono richieste a `ZombieSpawner`; lo spawner prova
+  candidate camera-edge, poi fallback su regioni streamate valide e infine
+  `spawn_points` solo come fallback/debug di arena validato. `spawn_points` non
+  rappresenta il cambio bioma.
 - Gli zombie gia vivi non vengono despawnati al cambio regione: mantengono
   target, health, status e loot, aggiornando solo metadata di regione mentre
   inseguono il player attraverso varchi aperti.
@@ -957,6 +966,9 @@ multi-bioma.
 - `F6` seleziona `TowerDefenseMode`; il cambio modalita arresta e ripulisce survival o dungeon.
 - La modalita istanzia una `TowerDefenseArena` e nasconde il playground prototipo.
 - `TowerDefenseWaveController` e autoritativo per stato, indice wave, spawn e bersagli tracciati.
+- `HUDManager` mostra il `StatusPanel` persistente solo durante Tower Defense:
+  titolo modalita, core, crediti, wave, nemici e reward recente. Il pannello e
+  ancorato al centro alto e non interseca le card player agli angoli.
 - Il percorso e un `PackedVector2Array` convertito in coordinate globali dall'arena.
 - `EnemySystem.register_enemy_scene()` associa l'ID `tower_defense_raider` alla scena dedicata.
 - `TowerDefenseEnemy` segue i waypoint senza selezionare player; alla fine chiama `TowerDefenseManager.damage_base()`.

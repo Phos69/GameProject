@@ -92,15 +92,16 @@ func _run() -> void:
 			"wave %d reaches combat" % wave_index
 		)
 		seen_biomes[wave_manager.current_wave_biome_id] = true
-		_expect(
-			zombie_spawner.get_last_spawn_edge() in [
-				&"north",
-				&"south",
-				&"east",
-				&"west"
-			],
-			"wave %d uses a camera-edge spawn" % wave_index
-		)
+		var edge_spawn_ok := zombie_spawner.get_last_spawn_edge() in [
+			&"north",
+			&"south",
+			&"east",
+			&"west"
+		]
+		var edge_spawn_message := "wave %d uses a camera-edge spawn" % wave_index
+		if not edge_spawn_ok:
+			edge_spawn_message += " (%s)" % _spawn_debug_summary(zombie_spawner)
+		_expect(edge_spawn_ok, edge_spawn_message)
 		for enemy in wave_manager.get_active_wave_enemies():
 			health_system.apply_damage(enemy, 99999)
 		_expect(
@@ -144,6 +145,24 @@ func _wait_for_wave_completed(
 			return true
 		await physics_frame
 	return false
+
+func _spawn_debug_summary(zombie_spawner: ZombieSpawner) -> String:
+	var edge := zombie_spawner.get_last_spawn_edge()
+	var reason := zombie_spawner.get_last_spawn_rejection_reason()
+	var report := zombie_spawner.get_last_spawn_attempt_report()
+	var recent: Array[String] = []
+	var start := maxi(report.size() - 4, 0)
+	for index in range(start, report.size()):
+		var entry := report[index] as Dictionary
+		recent.append("%s:%s" % [
+			String(entry.get("edge", &"")),
+			String(entry.get("reason", &""))
+		])
+	return "edge=%s reason=%s recent=[%s]" % [
+		String(edge),
+		String(reason),
+		", ".join(recent)
+	]
 
 func _expect(condition: bool, message: String) -> void:
 	if condition:

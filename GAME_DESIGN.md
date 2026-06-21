@@ -388,9 +388,12 @@ dei quattro angoli per gli slot attivi. Il riquadro di progresso party
 `Party Lv / XP / Money`, il riquadro persistente di ondata survival e il
 riquadro status bioma non vengono mostrati nel gameplay.
 
-D-pad/stick cambiano focus in modo circolare nei menu lineari; nella Character
-Select navigano la griglia in quattro direzioni con wrapping su card valide e
-senza fermarsi su celle mancanti. Joypad `A` conferma da qualunque controller.
+D-pad/stick cambiano focus in modo circolare nei menu lineari. Nella Character
+Select tastiera, mouse e pad 0 guidano il focus del Giocatore 1, mentre i pad
+aggiuntivi muovono un cursore dedicato sul proprio slot e confermano senza
+rubare focus o scelta agli altri player. La griglia naviga in quattro direzioni
+con wrapping su card valide e senza fermarsi su celle mancanti. Joypad `A`
+conferma per il controller che lo preme.
 In Character Select `Start` joypad o `P` avvia la run solo se gli slot attivi
 hanno selezioni valide; se lo slot controller non e ancora attivo, `Start`
 resta disponibile al join multiplayer. `Esc`, joypad `B` o `Back` tornano al
@@ -434,8 +437,8 @@ I campi artistici opzionali dei profili (`portrait_full_path`, `portrait_hud_pat
 
 Nel pass corrente la Character Select e stata rifinita come schermata RPG
 completa: ogni profilo compare in una card con preview coerente, nome, classe,
-arma, passiva, super, barre HP/ATK/DEF/SPD/RNG e indicatori slot. La card usa
-`portrait_hud_path`/`portrait_full_path` se disponibili, poi
+arma, passiva, super, barre HP/ATK/DEF/SPD/RNG, anelli cursore e pip di commit
+per-player. La card usa `portrait_hud_path`/`portrait_full_path` se disponibili, poi
 `gameplay_sprite_path` e infine un fallback procedurale controllato da palette
 e arma.
 Il dossier scrollabile della Character Select segue il focus della card roster
@@ -647,9 +650,13 @@ Il revamp zombie e completo come prima versione giocabile:
   senza despawn, reset di vita, perdita del target o cambio forzato di roster;
 - la mappa consultabile mostra solo territori unknown/discovered/visited/cleared e la posizione corrente del party;
 - le ondate leggono il bioma corrente tramite `WaveDirector`;
-- lo spawn reale degli zombie viene richiesto a `ZombieSpawner` sui bordi della camera;
-- i vecchi punti arena restano fallback di spawn/debug e non rappresentano piu
-  il cambio bioma.
+- lo spawn reale degli zombie viene richiesto a `ZombieSpawner` sui bordi della
+  camera, fuori dalla visuale corrente;
+- ogni spawn zombie deve restare su celle walkable e non puo usare player
+  overlap, void/fall zone, hazard o blocker;
+- i vecchi punti arena restano fallback di spawn/debug solo se validi; in
+  `Zombie Survival` lo spawner puo usare regioni streamate valide prima del
+  fallback arena e non rappresenta piu il cambio bioma.
 - il flusso `Zombie Survival` non usa piu visual legacy per comunicare la
   megamappa: niente gate di transizione, ground vicino placeholder o patch
   ovali sopra il tile layer asset-driven.
@@ -866,6 +873,15 @@ Regole ondate:
 - boss arrivato al core: 55 danni.
 
 I player possono continuare a muoversi e sparare direttamente ai nemici. Crediti, torri e core appartengono alla run tower defense; denaro e XP party restano separati. Percorsi multipli, tipi torre, upgrade, vendita e riparazione non sono ancora implementati.
+
+HUD Tower Defense:
+
+- il pannello status persistente e visibile solo in Tower Defense;
+- mostra titolo modalita, core, crediti, wave, nemici e reward recente;
+- resta centrato in alto sotto l'eventuale boss HUD e non copre le card player
+  agli angoli;
+- `Zombie Survival` e `Infinite Arena` non riusano questo pannello per wave o
+  biomi: quegli stati restano in annunci temporanei, mappa o world HUD.
 
 ## Iterazione survival biome-based: status, ostacoli, encounter
 

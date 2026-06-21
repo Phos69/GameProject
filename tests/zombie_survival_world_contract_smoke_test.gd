@@ -134,6 +134,18 @@ func _expect_walled_infinite_arena_profile(biome_manager: BiomeManager) -> void:
 			start_cell.get_border(side) == BiomeCell.BorderType.BLOCKED,
 			"walled arena %s border is blocked by walls" % String(side)
 		)
+	var layout := start_cell.generated_layout
+	_expect(layout != null, "walled arena generates terrain layout")
+	if layout == null:
+		return
+	_expect(
+		layout.wall_segment_rects.size() > 0,
+		"walled arena emits perimeter wall segments"
+	)
+	_expect(
+		layout.fall_zone_rects.is_empty(),
+		"walled arena has no fall zones"
+	)
 
 func _expect(condition: bool, message: String) -> void:
 	if condition:
