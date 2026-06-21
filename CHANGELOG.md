@@ -131,6 +131,10 @@
 
 ### Changed
 
+- `WeaponVisualRenderer` mantiene le API presentazionali pubbliche ma delega le
+  geometrie statiche di pickup, dettagli e projectile a
+  `WeaponVisualShapeLibrary`, riducendo il file principale sotto 500 LOC senza
+  cambiare combat, hitbox o bilanciamento.
 - `HUDManager` ora mostra il `StatusPanel` persistente solo in Tower Defense,
   con titolo modalita, core, crediti, wave, nemici e reward recente; Survival e
   Infinite Arena mantengono nascosto il pannello standard.

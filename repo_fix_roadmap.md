@@ -498,6 +498,23 @@ Rendere coerente il feedback HUD delle modalita, partendo da Tower Defense.
 
 ## Milestone 8 - Refactor architetturale mirato
 
+Stato: completata il 2026-06-21.
+
+Evidenza:
+
+- Primo hotspot trattato: `game/weapons/weapon_visual_renderer.gd`.
+- `WeaponVisualRenderer` e stato ridotto da 1235 a 460 LOC mantenendo le API
+  statiche pubbliche usate dai consumer visuali.
+- Le geometrie procedurali statiche sono state estratte in
+  `game/weapons/weapon_visual_shape_library.gd` (`WeaponVisualShapeLibrary`,
+  808 LOC), senza introdurre logica combat o nuovi consumer diretti.
+- Test smoke passati prima e dopo la refactor:
+  `weapon_visual_catalog_smoke_test.gd`,
+  `weapon_pickup_visual_identity_smoke_test.gd`,
+  `weapon_held_hud_visual_identity_smoke_test.gd`,
+  `weapon_projectile_vfx_identity_smoke_test.gd` e
+  `weapon_melee_visual_identity_smoke_test.gd`.
+
 ### Obiettivo
 
 Ridurre hotspot oltre 1000 LOC e duplicazioni senza riscrivere sistemi

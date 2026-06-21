@@ -476,6 +476,10 @@ Attivita post-roadmap:
   `broken_street`, `ruined_house`, vegetazione densa impassabile, dettagli
   strada, fiume/bridge validato, summary seed/debug e asset manifest dedicati
   per `abandoned_car` e `dense_vegetation`.
+- Milestone 8 di `repo_fix_roadmap.md` completata: primo hotspot refactorato
+  estraendo `WeaponVisualShapeLibrary` da `WeaponVisualRenderer`; il renderer
+  resta compatibile con i consumer visuali e scende a 460 LOC, con smoke
+  weapon visual passati prima e dopo.
 - Milestone W0 di `weapon_visual_identity_roadmap.md` completata: baseline
   visuale delle 30 armi catalogo, conferma dei tre profili generici correnti,
   reference da preservare e checklist manuale per pickup, held, HUD,

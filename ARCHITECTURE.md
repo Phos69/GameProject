@@ -138,7 +138,12 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
   proiettile e flash.
 - `WeaponVisualRenderer`: helper condiviso che risolve fallback, silhouette e
   asset opzionali da `WeaponVisualData`, inclusi projectile, muzzle, slash e
-  impact, senza spostare regole di combat nei consumer visuali.
+  impact, delegando le geometrie procedurali statiche a
+  `WeaponVisualShapeLibrary` senza spostare regole di combat nei consumer
+  visuali.
+- `WeaponVisualShapeLibrary`: libreria presentazionale delle shape statiche per
+  pickup, dettagli e projectile; non legge `WeaponData`, non applica danno e
+  resta dietro l'API pubblica di `WeaponVisualRenderer`.
 - `WeaponSystem`: loadout runtime per-player, attacchi indipendenti base/
   equipaggiato, switch circolare delle sole armi raccolte e dispatch tra
   projectile e melee.
