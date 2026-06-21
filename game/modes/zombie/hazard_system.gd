@@ -187,6 +187,7 @@ func get_terrain_at_world_position(position: Vector2) -> StringName:
 	if (
 		biome_manager != null
 		and seam_system != null
+		and bool(seam_system.get("is_active"))
 		and biome_manager.get_world_graph() != null
 		and seam_system.has_method("get_region_id_for_world_position")
 		and seam_system.has_method("world_position_to_logical_tile")

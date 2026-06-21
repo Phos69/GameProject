@@ -63,4 +63,7 @@ func _build_arena_context(context: Dictionary) -> Dictionary:
 	resolved["arena_boundary_mode"] = "walled"
 	resolved["disable_world_runtime"] = true
 	resolved["disable_region_streaming"] = true
+	# Build the 500x500 arena chunk on a worker thread behind a loading screen so the
+	# window never freezes while it generates and bakes.
+	resolved["async_world_build"] = true
 	return resolved

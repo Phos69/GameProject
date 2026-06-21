@@ -36,7 +36,11 @@ func generate_world(
 		active_graph.configure_from_biome_cells(active_cells, active_seed)
 	if debug_overlay != null:
 		debug_overlay.configure(active_seed, active_cells)
-	world_generated.emit(active_seed, active_cells)
+	# Generation may run on a worker thread; defer the emit when off the main thread.
+	if OS.get_thread_caller_id() == OS.get_main_thread_id():
+		world_generated.emit(active_seed, active_cells)
+	else:
+		call_deferred("emit_signal", &"world_generated", active_seed, active_cells)
 	return get_world_data()
 
 func regenerate_same_seed(biome_definitions: Dictionary) -> Dictionary:

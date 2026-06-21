@@ -786,7 +786,7 @@ func _cell_inside_wall_segments(
 	layout: BiomeEnvironmentLayout,
 	cell: Vector2i
 ) -> bool:
-	return RESOLVER_UTILS.cell_inside_any_rect(cell, layout.wall_segment_rects)
+	return layout.is_wall_segment_cell(cell)
 
 func _cell_inside_layout(layout: BiomeEnvironmentLayout, cell: Vector2i) -> bool:
 	return (

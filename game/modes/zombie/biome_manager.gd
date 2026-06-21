@@ -43,10 +43,28 @@ func _ready() -> void:
 	select_starting_biome()
 
 func start_run(context: Dictionary = {}) -> void:
+	begin_world_build()
+	apply_world_data(generate_world_data(context))
+
+# Main-thread reset of any previous world so a fresh generation can run. Must be
+# called before generate_world_data() when building asynchronously.
+func begin_world_build() -> void:
 	_ensure_world_generator()
 	_clear_generated_world()
 	current_biome_cell = null
-	active_world_data = world_generator.generate_world(context, biomes)
+
+# Pure-data world generation. This touches no scene-tree nodes and emits only
+# signals nobody listens to, so it is safe to run on a worker thread (after
+# begin_world_build() has run on the main thread).
+func generate_world_data(context: Dictionary = {}) -> Dictionary:
+	if world_generator == null:
+		return {}
+	return world_generator.generate_world(context, biomes)
+
+# Main-thread install of generated data; select_starting_biome() emits the region
+# /biome change signals that build the live world (terrain, hazards, tiles).
+func apply_world_data(world_data: Dictionary) -> void:
+	active_world_data = world_data
 	_apply_generated_layouts()
 	select_starting_biome()
 

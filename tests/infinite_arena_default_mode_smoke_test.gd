@@ -1,6 +1,7 @@
 extends SceneTree
 
 var failures: PackedStringArray = []
+var _async_world_ready: bool = false
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -83,6 +84,8 @@ func _run() -> void:
 		"new saves default Continue to Infinite Arena"
 	)
 
+	var zombie_controller := get_first_node_in_group("zombie_mode_controller")
+	_expect(zombie_controller != null, "zombie mode controller is available")
 	_expect(
 		main_menu.start_selected_mode(GameConstants.MODE_INFINITE_ARENA),
 		"main menu starts Infinite Arena"
@@ -90,6 +93,11 @@ func _run() -> void:
 	await process_frame
 	await process_frame
 	await physics_frame
+
+	# Infinite Arena builds the chunk asynchronously (worker thread + loading screen),
+	# so wait for the world to be ready before asserting on the generated world.
+	var world_is_ready := await _await_world_ready(zombie_controller)
+	_expect(world_is_ready, "Infinite Arena finishes its async world build")
 
 	_expect(
 		game_mode_manager.active_mode_id == GameConstants.MODE_INFINITE_ARENA,
@@ -129,6 +137,7 @@ func _run() -> void:
 		)
 
 	_expect_infinite_arena_world(biome_manager)
+	_expect_arena_terrain_is_solid()
 
 	main_menu.open_menu()
 	await process_frame
@@ -180,6 +189,44 @@ func _expect_infinite_arena_world(biome_manager: BiomeManager) -> void:
 		bool(layout.validation_report.get("is_valid", false)),
 		"Infinite Arena layout passes validation"
 	)
+
+# Regression: with WorldRuntime/region streaming disabled the RegionSeamSystem is
+# never started, so its graph stays null. The hazard terrain query must fall back
+# to the active biome layout instead of treating every position as void -- otherwise
+# the player takes continuous fall damage on solid arena ground.
+func _expect_arena_terrain_is_solid() -> void:
+	var hazard_system := get_first_node_in_group("hazard_system") as HazardSystem
+	_expect(hazard_system != null, "hazard system is available in Infinite Arena")
+	if hazard_system == null:
+		return
+	_expect(
+		not hazard_system.is_void_at_world_position(Vector2.ZERO),
+		"Infinite Arena spawn center is solid ground, not void"
+	)
+	var player := get_first_node_in_group("players") as Node2D
+	_expect(player != null, "Infinite Arena has an active player")
+	if player != null:
+		_expect(
+			not hazard_system.is_void_at_world_position(player.global_position),
+			"Infinite Arena player spawn is not classified as void"
+		)
+
+func _await_world_ready(zombie_controller: Node) -> bool:
+	if zombie_controller == null:
+		return false
+	# A member flag (not a lambda-captured local: GDScript lambdas capture locals by
+	# value, so mutating one inside the closure would not be visible here).
+	_async_world_ready = false
+	zombie_controller.world_ready.connect(_on_async_world_ready, CONNECT_ONE_SHOT)
+	# Wall-clock bounded: the worker-thread build takes real time even though headless
+	# frames are cheap, so poll on elapsed time rather than a frame count.
+	var deadline := Time.get_ticks_msec() + 150000
+	while not _async_world_ready and Time.get_ticks_msec() < deadline:
+		await process_frame
+	return _async_world_ready
+
+func _on_async_world_ready(_biome_id: StringName) -> void:
+	_async_world_ready = true
 
 func _find_menu_button(main_menu: MainMenu, label_text: String) -> Button:
 	for button in main_menu.menu_buttons:

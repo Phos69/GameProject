@@ -4,6 +4,10 @@ class_name ZombieModeController
 signal zombie_run_started(biome_id: StringName)
 signal zombie_run_stopped()
 signal active_biome_applied(biome_id: StringName)
+# Emitted once the world (generation + active-region terrain bake) is fully ready.
+# For the synchronous path this fires within start_run(); for the async path it
+# fires after the worker-thread build finishes.
+signal world_ready(biome_id: StringName)
 
 @export var biome_manager_path: NodePath = NodePath("BiomeManager")
 @export var wave_director_path: NodePath = NodePath("WaveDirector")
@@ -22,6 +26,9 @@ const REGION_SEAM_SYSTEM_SCRIPT = preload(
 )
 const WORLD_REGION_STREAMER_SCRIPT = preload(
 	"res://game/world/world_region_streamer.gd"
+)
+const WORLD_LOADING_SCREEN_SCRIPT = preload(
+	"res://game/ui/world_loading_screen.gd"
 )
 
 var biome_manager
@@ -48,9 +55,11 @@ const VOID_BACKDROP_DARKEN := 0.68
 const SINGLE_BIOME_ARENA_KEY := "single_biome_arena"
 const DISABLE_WORLD_RUNTIME_KEY := "disable_world_runtime"
 const DISABLE_REGION_STREAMING_KEY := "disable_region_streaming"
+const ASYNC_WORLD_BUILD_KEY := "async_world_build"
 
 var world_runtime_enabled_for_run: bool = true
 var region_streaming_enabled_for_run: bool = true
+var _loading_screen: CanvasLayer
 
 static func get_void_background_color(palette: BiomePalette) -> Color:
 	if palette == null:
@@ -78,8 +87,62 @@ func start_run(context: Dictionary = {}) -> void:
 			false
 		)
 	)
+	if _get_context_bool(resolved_context, ASYNC_WORLD_BUILD_KEY, false):
+		await _start_run_async(resolved_context)
+	else:
+		_start_run_sync(resolved_context)
+
+func _start_run_sync(resolved_context: Dictionary) -> void:
 	if biome_manager != null:
 		biome_manager.start_run(resolved_context)
+	_finish_start_run(resolved_context)
+	_emit_run_started()
+
+func _start_run_async(resolved_context: Dictionary) -> void:
+	_show_loading_screen("Generazione mondo")
+	# Pre-warm shared, lazily-loaded resources on the main thread so the worker
+	# thread only ever reads them.
+	IsometricEnvironmentManifest.get_shared()
+	if biome_manager != null:
+		biome_manager.begin_world_build()
+		var thread := Thread.new()
+		thread.start(_threaded_generate_world.bind(resolved_context))
+		# Yield each frame so the loading screen keeps animating while the worker
+		# thread generates the (CPU-heavy) world data.
+		while thread.is_alive():
+			await get_tree().process_frame
+		var world_data: Dictionary = thread.wait_to_finish()
+		biome_manager.apply_world_data(world_data)
+	_set_loading_message("Costruzione terreno")
+	if terrain_generator != null:
+		terrain_generator.async_tile_build = true
+	_finish_start_run(resolved_context)
+	if terrain_generator != null:
+		terrain_generator.async_tile_build = false
+	await _await_active_tile_build()
+	_hide_loading_screen()
+	_emit_run_started()
+
+func _threaded_generate_world(resolved_context: Dictionary) -> Dictionary:
+	if biome_manager == null:
+		return {}
+	return biome_manager.generate_world_data(resolved_context)
+
+func _await_active_tile_build() -> void:
+	if terrain_generator == null:
+		return
+	var tile_layer = terrain_generator.get_active_tile_layer()
+	# Poll (rather than awaiting the signal) to avoid a missed-signal race if the
+	# bake finishes between the check and the await.
+	while (
+		tile_layer != null
+		and is_instance_valid(tile_layer)
+		and tile_layer.has_method("is_building")
+		and bool(tile_layer.call("is_building"))
+	):
+		await get_tree().process_frame
+
+func _finish_start_run(resolved_context: Dictionary) -> void:
 	if world_runtime_enabled_for_run and world_runtime != null and biome_manager != null:
 		world_runtime.start_run(biome_manager.active_world_data, biome_manager)
 	if world_runtime_enabled_for_run and region_seam_system != null and biome_manager != null:
@@ -93,9 +156,33 @@ func start_run(context: Dictionary = {}) -> void:
 			int(resolved_context.get("world_seed", resolved_context.get("run_seed", 0)))
 		)
 	_apply_active_biome(biome)
-	zombie_run_started.emit(
-		StringName(biome.get("biome_id")) if biome != null else &""
-	)
+
+func _emit_run_started() -> void:
+	var biome_id := get_current_biome_id()
+	zombie_run_started.emit(biome_id)
+	world_ready.emit(biome_id)
+
+func _show_loading_screen(message: String) -> void:
+	if _loading_screen != null and is_instance_valid(_loading_screen):
+		_loading_screen.call("set_message", message)
+		return
+	_loading_screen = WORLD_LOADING_SCREEN_SCRIPT.new() as CanvasLayer
+	_loading_screen.name = "WorldLoadingScreen"
+	var scene := get_tree().current_scene
+	if scene != null:
+		scene.add_child(_loading_screen)
+	else:
+		add_child(_loading_screen)
+	_loading_screen.call("set_message", message)
+
+func _set_loading_message(message: String) -> void:
+	if _loading_screen != null and is_instance_valid(_loading_screen):
+		_loading_screen.call("set_message", message)
+
+func _hide_loading_screen() -> void:
+	if _loading_screen != null and is_instance_valid(_loading_screen):
+		_loading_screen.queue_free()
+	_loading_screen = null
 
 # Standard survival uses BiomeMapGenerator's default 3x3 multi-biome world. The
 # compact 1x1 arena is kept as an explicit quick/test profile and never overrides
@@ -126,7 +213,9 @@ func _get_context_bool(
 	return default_value
 
 func stop_run() -> void:
+	_hide_loading_screen()
 	if terrain_generator != null:
+		terrain_generator.async_tile_build = false
 		terrain_generator.stop_run()
 	if obstacle_system != null:
 		obstacle_system.stop_run()

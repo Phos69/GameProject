@@ -44,7 +44,9 @@ func configure(
 	seed_value = new_seed
 	cells = new_cells.duplicate()
 	if is_inside_tree():
-		_refresh_label()
+		# Deferred so this stays safe when world generation runs on a worker thread:
+		# the Label (a UI node) is then only touched on the main thread.
+		call_deferred("_refresh_label")
 
 func copy_seed_to_clipboard() -> void:
 	DisplayServer.clipboard_set(str(seed_value))

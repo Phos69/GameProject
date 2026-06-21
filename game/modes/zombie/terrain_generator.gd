@@ -22,6 +22,11 @@ const BIOME_TILE_LAYER_SCRIPT = preload(
 @export_range(0, 32, 1) var region_ground_sample_step_override: int = 0
 @export var use_asset_tile_layer: bool = true
 
+# When true the active-region tile layer bakes its geometry on a worker thread so
+# the main thread (and the loading screen) stay responsive. Set by the async build
+# coordinator only for the current region; streaming/tests keep the synchronous bake.
+var async_tile_build: bool = false
+
 var active_biome: BiomeDefinition
 var is_active: bool = false
 var generated_patches: Array[Node2D] = []
@@ -147,13 +152,17 @@ func _generate_region_ground() -> void:
 		if active_tile_layer == null:
 			return
 		active_tile_layer.name = "BiomeTileLayer"
+		container.add_child(active_tile_layer)
 		active_tile_layer.configure(
 			layout,
 			palette,
 			active_biome.biome_id,
-			StringName(region_ground_quality_preset)
+			StringName(region_ground_quality_preset),
+			0,
+			null,
+			null,
+			async_tile_build
 		)
-		container.add_child(active_tile_layer)
 		return
 	active_ground = REGION_GROUND_SCRIPT.new() as BiomeRegionGround
 	if active_ground == null:

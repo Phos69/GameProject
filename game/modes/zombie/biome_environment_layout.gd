@@ -77,6 +77,12 @@ const TERRAIN_CODE_BORDER := 4
 const TERRAIN_CODE_FALL_ZONE := 5
 
 var _terrain_class_cache: PackedByteArray = PackedByteArray()
+# Per-cell floor-rect index (rect_index + 1; 0 means no floor). Rebuilt alongside
+# the terrain classification so get_floor_tag_at_cell() is O(1).
+var _floor_tag_cache: PackedInt32Array = PackedInt32Array()
+# Per-cell wall-segment membership (1 inside a wall segment). Rebuilt with the
+# terrain classification so is_wall_segment_cell() is O(1).
+var _wall_segment_cache: PackedByteArray = PackedByteArray()
 
 func has_generated_map_data() -> bool:
 	return (
@@ -229,6 +235,25 @@ func add_floor_rect(rect: Rect2i, terrain_tag: StringName = &"floor_base") -> vo
 	floor_rect_tags.append(terrain_tag)
 
 func get_floor_tag_at_cell(cell: Vector2i) -> StringName:
+	# Fast path: a per-cell index cache (built with the terrain classification) turns
+	# this from an O(floor_rects) scan into an O(1) lookup. On a 500x500 chunk with
+	# hundreds of floor rects this is the difference between a multi-second tile-layer
+	# bake and an instant one, since the tile resolver calls it for every cell.
+	if _floor_tag_cache.size() == zone_size.x * zone_size.y:
+		if (
+			cell.x < 0
+			or cell.y < 0
+			or cell.x >= zone_size.x
+			or cell.y >= zone_size.y
+		):
+			return &""
+		var encoded := _floor_tag_cache[_cell_key(cell)]
+		if encoded == 0:
+			return &""
+		var cached_index := encoded - 1
+		if cached_index < floor_rect_tags.size():
+			return floor_rect_tags[cached_index]
+		return &"floor_base"
 	for index in range(floor_rects.size() - 1, -1, -1):
 		if not floor_rects[index].has_point(cell):
 			continue
@@ -335,6 +360,8 @@ func rebuild_terrain_classification(cell: BiomeCell = null) -> void:
 		TERRAIN_FALL_ZONE: 0
 	}
 	_rebuild_terrain_class_cache(cell)
+	_rebuild_floor_tag_cache()
+	_rebuild_wall_segment_cache()
 	terrain_classification_total = _terrain_class_cache.size()
 	for code in _terrain_class_cache:
 		var terrain_class := _terrain_class_from_code(int(code))
@@ -442,6 +469,50 @@ func _rebuild_terrain_class_cache(biome_cell: BiomeCell = null) -> void:
 		var raw_tags: Array = road_cell_tags[key] as Array
 		if raw_tags.has(&"bridge") or raw_tags.has("bridge"):
 			_terrain_class_cache[key] = TERRAIN_CODE_WALKABLE
+
+func _rebuild_floor_tag_cache() -> void:
+	var total := zone_size.x * zone_size.y
+	_floor_tag_cache = PackedInt32Array()
+	if total <= 0:
+		return
+	_floor_tag_cache.resize(total)
+	_floor_tag_cache.fill(0)
+	# Forward order so later rects overwrite earlier ones, matching the "last rect
+	# wins" semantics of the linear get_floor_tag_at_cell() scan.
+	for index in range(floor_rects.size()):
+		var clipped := _clip_rect(floor_rects[index])
+		var encoded := index + 1
+		for y in range(clipped.position.y, clipped.position.y + clipped.size.y):
+			var row_offset := y * zone_size.x
+			for x in range(clipped.position.x, clipped.position.x + clipped.size.x):
+				_floor_tag_cache[row_offset + x] = encoded
+
+func is_wall_segment_cell(cell: Vector2i) -> bool:
+	# O(1) via the per-cell cache; falls back to a rect scan before the cache exists.
+	if _wall_segment_cache.size() == zone_size.x * zone_size.y:
+		if (
+			cell.x < 0
+			or cell.y < 0
+			or cell.x >= zone_size.x
+			or cell.y >= zone_size.y
+		):
+			return false
+		return _wall_segment_cache[_cell_key(cell)] != 0
+	return _cell_inside_any_rect(cell, wall_segment_rects)
+
+func _rebuild_wall_segment_cache() -> void:
+	var total := zone_size.x * zone_size.y
+	_wall_segment_cache = PackedByteArray()
+	if total <= 0:
+		return
+	_wall_segment_cache.resize(total)
+	_wall_segment_cache.fill(0)
+	for rect in wall_segment_rects:
+		var clipped := _clip_rect(rect)
+		for y in range(clipped.position.y, clipped.position.y + clipped.size.y):
+			var row_offset := y * zone_size.x
+			for x in range(clipped.position.x, clipped.position.x + clipped.size.x):
+				_wall_segment_cache[row_offset + x] = 1
 
 func _mark_rect_in_cache(rect: Rect2i, terrain_code: int) -> void:
 	var clipped := _clip_rect(rect)

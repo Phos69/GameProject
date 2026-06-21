@@ -1,6 +1,8 @@
 extends Node2D
 class_name BiomeTileLayer
 
+signal build_completed
+
 const DEFAULT_CHUNK_SIZE := 20
 const PERFORMANCE_CHUNK_SIZE := 25
 const QUALITY_CHUNK_SIZE := 16
@@ -35,6 +37,10 @@ var _texture_light_lines: PackedVector2Array = PackedVector2Array()
 var _transition_lines: PackedVector2Array = PackedVector2Array()
 var _depth_lines: PackedVector2Array = PackedVector2Array()
 var _suppressed_void_texture_count: int = 0
+# Optional worker thread that bakes the (CPU-heavy) tile cache + ground geometry
+# off the main thread so the game does not freeze while a 500x500 chunk is built.
+var _build_thread: Thread
+var _is_building: bool = false
 
 func configure(
 	next_layout: BiomeEnvironmentLayout,
@@ -43,7 +49,8 @@ func configure(
 	next_quality_preset: StringName = &"balanced",
 	next_chunk_size: int = 0,
 	next_resolver: IsometricTileResolver = null,
-	next_manifest: IsometricEnvironmentManifest = null
+	next_manifest: IsometricEnvironmentManifest = null,
+	async_build: bool = false
 ) -> void:
 	layout = next_layout
 	palette = next_palette
@@ -57,9 +64,39 @@ func configure(
 	z_index = -9
 	add_to_group("biome_tile_layers")
 	_rebuild_chunks()
+	if async_build:
+		# The node is already in the tree but draws nothing until the bake finishes.
+		_is_building = true
+		_build_thread = Thread.new()
+		_build_thread.start(_threaded_build)
+		return
 	_rebuild_tile_cache()
 	_rebuild_ground_geometry()
 	queue_redraw()
+
+func is_building() -> bool:
+	return _is_building
+
+func _threaded_build() -> void:
+	# Runs on the worker thread: pure CPU work that fills the tile caches and bakes
+	# the ground geometry. The node is not drawn yet, so there is no render race.
+	_rebuild_tile_cache()
+	_rebuild_ground_geometry()
+	call_deferred("_finalize_threaded_build")
+
+func _finalize_threaded_build() -> void:
+	if _build_thread != null and _build_thread.is_started():
+		_build_thread.wait_to_finish()
+	_build_thread = null
+	_is_building = false
+	queue_redraw()
+	build_completed.emit()
+
+func _exit_tree() -> void:
+	if _build_thread != null and _build_thread.is_started():
+		_build_thread.wait_to_finish()
+	_build_thread = null
+	_is_building = false
 
 func get_chunk_count() -> int:
 	return _chunks.size()

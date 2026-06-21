@@ -67,7 +67,12 @@ func start_mode(context: Dictionary = {}) -> void:
 		)
 		arena_manager.activate_arena(arena_id)
 	if zombie_mode_controller != null:
-		zombie_mode_controller.start_run(context)
+		# Awaits the worker-thread world build when the context requests it
+		# (async_world_build); returns immediately for the synchronous path.
+		await zombie_mode_controller.start_run(context)
+	if not is_running:
+		# The run was stopped while the world was building (e.g. back to menu).
+		return
 	if ammo_director != null:
 		ammo_director.start_run()
 	if market_controller != null:

@@ -19,7 +19,12 @@ func start_run(context: Dictionary = {}) -> int:
 
 func set_seed(seed_value: int) -> void:
 	global_seed = maxi(absi(seed_value), 1)
-	seed_changed.emit(global_seed)
+	# World generation can run on a worker thread; Godot forbids emitting from a
+	# non-main thread on an in-tree node, so defer the emit in that case.
+	if OS.get_thread_caller_id() == OS.get_main_thread_id():
+		seed_changed.emit(global_seed)
+	else:
+		call_deferred("emit_signal", &"seed_changed", global_seed)
 
 func get_global_seed() -> int:
 	return global_seed

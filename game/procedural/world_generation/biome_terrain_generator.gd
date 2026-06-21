@@ -56,5 +56,9 @@ func generate_layout_for_cell(
 	layout.validation_report = report
 	cell.generated_layout = layout
 	cell.validation_report = report
-	biome_layout_generated.emit(cell, layout)
+	# Layout generation runs on the world-build worker thread; defer the emit there.
+	if OS.get_thread_caller_id() == OS.get_main_thread_id():
+		biome_layout_generated.emit(cell, layout)
+	else:
+		call_deferred("emit_signal", &"biome_layout_generated", cell, layout)
 	return layout
