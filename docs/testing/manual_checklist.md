@@ -991,6 +991,7 @@ QA documentale e smoke da eseguire prima di creare asset nuovi.
 
 ```text
 godot --headless --path . --import
+godot --headless --path . --script res://tests/milestone_10_asset_fallback_policy_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_10_asset_manifest_v7_smoke_test.gd
 godot --headless --path . --script res://tests/isometric_environment_manifest_smoke_test.gd
 godot --headless --path . --script res://tests/isometric_biome_terrain_coverage_smoke_test.gd
@@ -1015,6 +1016,7 @@ QA documentale e filesystem da eseguire dopo modifiche al manifest v8.
 ```text
 godot --headless --path . --script res://tools/generate_isometric_environment_assets.gd -- --dry-run
 godot --headless --path . --script res://tools/generate_isometric_environment_assets.gd -- --check
+godot --headless --path . --script res://tests/milestone_10_asset_fallback_policy_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_10_asset_pipeline_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_10_asset_manifest_v7_smoke_test.gd
 godot --headless --path . --script res://tests/isometric_environment_manifest_smoke_test.gd

@@ -488,6 +488,11 @@ Attivita post-roadmap:
   in `HUDManager`, injection `PlayerManager -> PlayerController` e injection
   `ZombieModeController -> ZombieSpawner`, senza introdurre service locator
   generici.
+- Milestone 10 di `repo_fix_roadmap.md` completata: asset/fallback policy
+  classificata in una nota QA dedicata, manifest standard senza status
+  temporanei, nuovo smoke contro placeholder/generic e survival standard
+  verificata su tile layer asset-driven, streamer `FULL`, ostacoli
+  asset-backed e assenza di visual legacy.
 - Milestone W0 di `weapon_visual_identity_roadmap.md` completata: baseline
   visuale delle 30 armi catalogo, conferma dei tre profili generici correnti,
   reference da preservare e checklist manuale per pickup, held, HUD,

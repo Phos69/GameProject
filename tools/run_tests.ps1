@@ -57,6 +57,7 @@ function Get-TestCategory {
 	$slowPatterns = @(
 		"biome_world_generation",
 		"forest_isometric_texture_transition",
+		"milestone_10_asset_fallback_policy",
 		"milestone_10_cross_biome_chase",
 		"milestone_10_full_region_streaming",
 		"milestone_10_isometric_performance",

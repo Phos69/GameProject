@@ -666,6 +666,35 @@ esplicite le dipendenze tra sistemi.
 
 ## Milestone 10 - Asset, isometria e fallback policy
 
+Stato: completata il 2026-06-21.
+
+Evidenza:
+
+- Fallback classificati in `docs/repo_fix_milestone_10_asset_fallback_policy.md`:
+  fallback tecnici necessari, temporanei ammessi solo con status esplicito e
+  percorsi standard vietati.
+- Aggiunto `tests/milestone_10_asset_fallback_policy_smoke_test.gd`: valida
+  `fallback_policy`, asset/fallback path, assenza di `placeholder`/`generic`
+  nei contratti standard e survival standard asset-driven senza visual legacy.
+- Il manifest ambiente v9 non contiene contratti standard con status
+  `needs_asset`, `procedural_fallback` o `deprecated`.
+- La survival standard mantiene `BiomeTileLayer` senza asset mancanti,
+  `WorldRegionStreamer` in contenuto `FULL`, ostacoli asset-backed e nessun
+  `BiomeRegionGround`, `BiomeTerrainPatch`, `MultiRegionRenderer`,
+  `NeighborGround_*` o `BiomeTransitionGate`.
+- `tools/run_tests.ps1` e `tools/run_tests.sh` classificano il nuovo smoke M10
+  come `slow`.
+- Validazione mirata eseguita: asset generator `--check`,
+  `milestone_10_asset_fallback_policy_smoke_test.gd`,
+  `milestone_10_asset_manifest_v7_smoke_test.gd`,
+  `milestone_10_legacy_cleanup_smoke_test.gd`,
+  `milestone_10_object_asset_smoke_test.gd`,
+  `obstacle_rendering_contract_smoke_test.gd`,
+  `milestone_10_void_cliff_asset_smoke_test.gd`,
+  `forest_isometric_texture_transition_smoke_test.gd`,
+  `milestone_10_tile_layer_smoke_test.gd` e QA visuale
+  `milestone_10_isometric_final_visual_qa.gd`.
+
 ### Obiettivo
 
 Portare asset, terreno, ostacoli, void, cliff e fallback a un contratto visuale

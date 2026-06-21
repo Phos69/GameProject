@@ -813,6 +813,12 @@ multi-bioma.
   terrain, passaggi, bordi o fall zone deve avere un contratto asset-driven con
   `asset_path`, `status`, `biome_ids`, `anchor`, footprint/collisione, sorgente,
   licenza, attribution e `fallback_path` quando l'asset e ancora assente.
+- La fallback policy M10 distingue fallback tecnici necessari da status
+  temporanei. Il percorso survival standard non puo usare path
+  `placeholder`/`generic`, `generic_barrier` implicito, `BiomeRegionGround`,
+  `BiomeTerrainPatch`, `MultiRegionRenderer`, `NeighborGround_*` o
+  `BiomeTransitionGate`; `tests/milestone_10_asset_fallback_policy_smoke_test.gd`
+  blocca queste regressioni insieme all'asset check.
 - `BiomeObstacle` costruisce la collisione dal manifest: `collision_shape`
   (`rectangle`/`circle`/`open`) guida lo shape runtime e `contains_global_position`,
   `blocks_movement` e `blocks_projectiles` guidano i bit di `collision_layer`,
