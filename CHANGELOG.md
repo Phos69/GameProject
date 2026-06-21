@@ -27,6 +27,26 @@
 - Aggiunto `tests/all_modes_character_system_smoke_test.gd` che verifica che
   Dungeon e Tower Defense applichino il personaggio RPG scelto (come Zombie
   Survival) e che senza roster il player torni al profilo generico.
+- Aggiunte le texture raster finali `cliff_face_texture` e
+  `cliff_lip_texture`, generate come materiali seamless condivisi dai cliff
+  void orientati.
+- Aggiunti `tests/void_cliff_generated_texture_smoke_test.gd` e
+  `tests/void_cliff_generated_visual_qa.gd`, con tavola delle 14 varianti in
+  `build/qa/void_cliffs/void_cliff_generated_variants.png`.
+- Aggiunto `tests/void_cliff_runtime_visual_qa.gd`, che avvia `main.tscn` in
+  Survival e salva `build/qa/void_cliffs/void_cliff_runtime_game.png`; il fronte
+  cliff v2 usa forme piu ampie e luminose per restare leggibile a scala gioco.
+- Aggiunti `forest_grass_generated.png` e `grass_cliff_edge_generated.png`:
+  `BiomeTileLayer` applica il prato seamless con UV world-space e usa il nuovo
+  raccordo prato-roccia sulle creste cliff; la mesh terreno e isolata in
+  `IsometricForestGroundMeshBuilder`. Incluso lo smoke
+  `tests/forest_grass_generated_texture_smoke_test.gd` e lo screenshot runtime
+  `build/qa/void_cliffs/forest_grass_cliff_runtime_game.png`.
+- Aggiunti i materiali raster seamless per `forest_path` (terra e sassi),
+  `forest_road` (asfalto) e le transizioni `grass_to_path`, `grass_to_road` e
+  `path_to_road`; la variante v2 terra-asfalto riduce la ripetizione nei
+  raccordi stretti. Aggiunta la tavola
+  `build/qa/forest_surfaces/forest_surface_materials.png` e tre catture runtime.
 - Aggiunto `tests/character_select_independent_smoke_test.gd` che verifica la
   selezione indipendente: il pad del Giocatore 2 muove e conferma il proprio
   slot senza toccare focus, cursore e scelta del Giocatore 1.
@@ -182,6 +202,10 @@
   del personaggio scelto. Nel menu ogni modalita di gioco passa ora dalla
   schermata di selezione personaggio (titolo e pulsante di avvio adattati alla
   modalita) prima di partire.
+- `IsometricCliffMeshBuilder` produce ora UV world-space e una mesh dedicata
+  per il lip: lati N/S/E/W, angoli interni/esterni e diagonali consumano gli
+  stessi materiali senza cuciture, dissolvendosi nel void uniforme. Collisione
+  e caduta restano in `BiomeFallZone`/`HazardSystem`.
 - Ridotti i lookup globali nei percorsi player/HUD/spawner: `HUDManager` usa
   NodePath/cache locali, `PlayerManager` inietta dipendenze nei
   `PlayerController` e `ZombieModeController` inietta obstacle/hazard/world

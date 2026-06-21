@@ -782,15 +782,24 @@ multi-bioma.
   hazard o spawn.
 - `BiomeTileLayer` cache-a tutti i 250.000 tile e li divide in chunk
   (`balanced` 20x20, `performance` 25x25, `quality` 16x16) senza creare nodi
-  per-tile. Il layer pre-bake-a anche linee di dettaglio per grass, tall grass,
+  per-tile. Nel bioma forestale pre-bake-a run rettangolari con UV world-space
+  per prato, sentiero in terra, strada asfaltata e le tre transizioni tra tali
+  materiali, evitando di ripetere un rombo completo per cella.
+  `IsometricForestGroundMeshBuilder` possiede la costruzione delle mesh; le
+  classi senza raster finale mantengono le proprie mesh colorate. Il
+  layer pre-bake-a anche linee di dettaglio per grass, tall grass,
   path, road, transizioni e cliff; le celle pure `void_depth`/`forest_void`
   restano escluse dalla mesh e dal reticolo, lasciando un fondale uniforme con
   lo stesso colore condiviso dal `VoidBackdrop` fuori-mappa.
-  `IsometricCliffMeshBuilder` costruisce
-  per le sole celle `fall_zone` di confine la faccia verticale con gradiente,
-  cresta chiara e fenditure; il gradiente della faccia termina direttamente nel
-  colore del void senza shadow mesh o secondo contorno. Collisioni e regole di
-  caduta restano in `BiomeFallZone`/`HazardSystem`.
+  `IsometricCliffMeshBuilder` costruisce per le sole celle `fall_zone` di
+  confine la faccia verticale e il lip come mesh UV: i 14 tile neighbor-aware
+  (lati N/S/E/W, angoli interni/esterni e diagonali) condividono
+  `cliff_face_texture` e `cliff_lip_texture` con coordinate world-space
+  continue; il lip usa il raccordo raster prato-roccia condiviso. Il colore
+  vertex mantiene la luce per orientamento e dissolve la
+  faccia raster nel void uniforme; cresta e fenditure procedurali restano come
+  dettaglio leggibile. Collisioni e regole di caduta restano esclusivamente in
+  `BiomeFallZone`/`HazardSystem`.
 - Gli ostacoli runtime sono `StaticBody2D` sul layer `1`, quindi player e zombie
   li trattano come impedimento fisico.
 - Gli ostacoli appartengono anche ai gruppi `environment_obstacles` e `spawn_blockers`.
@@ -873,7 +882,8 @@ multi-bioma.
 - `assets/environment/isometric/manifest.json` v9 contiene i draw mode oggetto
   legacy in `object_visuals`, i contratti asset per tile, terrain, edge, void,
   object scenes, passage tiles e asset set di bioma, inclusi i 14 tile cliff
-  orientati, `void_depth`, tile forestali, road connector e entry/exit
+  orientati, i materiali PNG `cliff_face_texture`/`cliff_lip_texture`,
+  `void_depth`, tile forestali, road connector e entry/exit
   passaggio, `abandoned_car`, `dense_vegetation`, `forest_tree` e
   `large_rock`; i preset
   `performance`/`balanced`/`quality` restano disponibili per fallback ground e

@@ -475,7 +475,8 @@ Attivita post-roadmap:
   completata: pareti perimetrali isometriche, bordo void/cliff leggibile,
   varchi fisici senza portali e primo set texture forestale asset-driven per il
   bioma base `infected_plains`, con grass, tall grass, path, road, void, cliff,
-  mountain wall e transizioni neighbor-aware.
+  mountain wall e transizioni neighbor-aware. Il pass raster 2026-06-21
+  aggiunge prato, sentiero in terra, asfalto e raccordi seamless world-space.
 - Milestone R3.2 di `isometric_biome_generation_rewrite_roadmap.md`
   completata come vertical slice starter: road network edge-to-edge, sentieri
   `broken_street`, `ruined_house`, vegetazione densa impassabile, dettagli
@@ -520,6 +521,10 @@ Attivita post-roadmap:
   trasparente per due ostacoli singoli `3x3`, piazzamento garantito nella
   Pianura Infetta, collisione rettangolare su tutti i nove slot e screenshot QA
   gameplay/footprint in `build/qa/obstacle_3x3/`.
+- Pass ISO-CLIFF-001 completato: due materiali PNG seamless generati per faccia
+  e lip alimentano via UV world-space tutte le 14 geometrie cliff del tile
+  layer; la dissolvenza termina nel void uniforme e gli smoke confermano
+  collisione/caduta e performance invariate.
 - asset definitivi e ulteriori pass di bilanciamento;
 - firma digitale della build pubblica.
 

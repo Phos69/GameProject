@@ -9,6 +9,36 @@ const QUALITY_CHUNK_SIZE := 16
 const CLIFF_MESH_BUILDER_SCRIPT = preload(
 	"res://game/modes/zombie/cliffs/isometric_cliff_mesh_builder.gd"
 )
+const FOREST_GROUND_MESH_BUILDER_SCRIPT = preload(
+	"res://game/modes/zombie/ground/isometric_forest_ground_mesh_builder.gd"
+)
+const SVG_TEXTURE_LOADER = preload(
+	"res://game/modes/zombie/isometric_svg_texture_loader.gd"
+)
+const CLIFF_FACE_TEXTURE_ID := &"cliff_face_texture"
+const CLIFF_LIP_TEXTURE_ID := &"cliff_lip_texture"
+const FOREST_GRASS_TEXTURE_ID := &"forest_grass"
+const FOREST_SURFACE_TEXTURE_WORLD_SIZE := 256.0
+const FOREST_SURFACE_TEXTURE_IDS: Array[StringName] = [
+	&"forest_grass",
+	&"forest_path",
+	&"forest_road",
+	&"grass_to_path",
+	&"grass_to_road",
+	&"path_to_road"
+]
+const FOREST_GRASS_SURFACE_TILE_IDS: Array[StringName] = [
+	&"forest_grass",
+	&"forest_grass_variant_01",
+	&"forest_grass_variant_02",
+	&"forest_tall_grass",
+	&"grass_to_tall_grass"
+]
+const FOREST_TRANSITION_TEXTURE_IDS: Array[StringName] = [
+	&"grass_to_path",
+	&"grass_to_road",
+	&"path_to_road"
+]
 
 var layout: BiomeEnvironmentLayout
 var palette: BiomePalette
@@ -30,7 +60,13 @@ var _missing_asset_count: int = 0
 # gl_compatibility.
 var _ground_mesh: ArrayMesh
 var _ground_underlay_mesh: ArrayMesh
+var _forest_surface_meshes: Dictionary = {}
 var _cliff_mesh_builder: IsometricCliffMeshBuilder
+var _cliff_face_texture: Texture2D
+var _cliff_lip_texture: Texture2D
+var _forest_surface_textures: Dictionary = {}
+var _forest_surface_art_asset_paths: Dictionary = {}
+var _cliff_art_asset_paths: Dictionary = {}
 var _grid_points: PackedVector2Array = PackedVector2Array()
 var _texture_dark_lines: PackedVector2Array = PackedVector2Array()
 var _texture_light_lines: PackedVector2Array = PackedVector2Array()
@@ -58,10 +94,17 @@ func configure(
 	quality_preset = next_quality_preset
 	manifest = next_manifest if next_manifest != null else IsometricEnvironmentManifest.get_shared()
 	resolver = next_resolver if next_resolver != null else IsometricTileResolver.new(manifest)
+	_load_cliff_art_textures()
+	_load_forest_surface_art_textures()
 	_cliff_mesh_builder = CLIFF_MESH_BUILDER_SCRIPT.new() as IsometricCliffMeshBuilder
-	_cliff_mesh_builder.configure(palette, layout.generation_seed if layout != null else 0)
+	_cliff_mesh_builder.configure(
+		palette,
+		layout.generation_seed if layout != null else 0,
+		has_cliff_art_textures()
+	)
 	chunk_size = _resolve_chunk_size(next_chunk_size, quality_preset)
 	z_index = -9
+	texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 	add_to_group("biome_tile_layers")
 	_rebuild_chunks()
 	if async_build:
@@ -127,6 +170,27 @@ func get_texture_detail_line_count() -> int:
 func get_cliff_transition_count() -> int:
 	return _cliff_mesh_builder.transition_count if _cliff_mesh_builder != null else 0
 
+func has_cliff_art_textures() -> bool:
+	return _cliff_face_texture != null and _cliff_lip_texture != null
+
+func get_cliff_art_asset_paths() -> Dictionary:
+	return _cliff_art_asset_paths.duplicate(true)
+
+func has_forest_ground_art_texture() -> bool:
+	return _forest_surface_textures.get(FOREST_GRASS_TEXTURE_ID) is Texture2D
+
+func get_forest_ground_art_asset_path() -> String:
+	return String(_forest_surface_art_asset_paths.get(FOREST_GRASS_TEXTURE_ID, ""))
+
+func has_forest_surface_art_textures() -> bool:
+	for texture_id in FOREST_SURFACE_TEXTURE_IDS:
+		if not (_forest_surface_textures.get(texture_id) is Texture2D):
+			return false
+	return true
+
+func get_forest_surface_art_asset_paths() -> Dictionary:
+	return _forest_surface_art_asset_paths.duplicate(true)
+
 func get_suppressed_void_texture_count() -> int:
 	return _suppressed_void_texture_count
 
@@ -181,10 +245,21 @@ func _draw() -> void:
 	# black gaps between playable tiles.
 	if _ground_underlay_mesh != null:
 		draw_mesh(_ground_underlay_mesh, null)
+	for texture_id in FOREST_SURFACE_TEXTURE_IDS:
+		var surface_mesh := _forest_surface_meshes.get(texture_id) as ArrayMesh
+		var surface_texture := _forest_surface_textures.get(texture_id) as Texture2D
+		if surface_mesh != null and surface_texture != null:
+			draw_mesh(surface_mesh, surface_texture)
 	if _ground_mesh != null:
 		draw_mesh(_ground_mesh, null)
 	if _cliff_mesh_builder != null and _cliff_mesh_builder.face_mesh != null:
-		draw_mesh(_cliff_mesh_builder.face_mesh, null)
+		draw_mesh(_cliff_mesh_builder.face_mesh, _cliff_face_texture)
+	if (
+		_cliff_mesh_builder != null
+		and _cliff_mesh_builder.lip_mesh != null
+		and _cliff_lip_texture != null
+	):
+		draw_mesh(_cliff_mesh_builder.lip_mesh, _cliff_lip_texture)
 	if _texture_dark_lines.size() >= 2:
 		draw_multiline(_texture_dark_lines, Color(0.09, 0.18, 0.075, 0.34), 1.0)
 	if _texture_light_lines.size() >= 2:
@@ -194,23 +269,70 @@ func _draw() -> void:
 	if _depth_lines.size() >= 2:
 		draw_multiline(_depth_lines, Color(0.12, 0.22, 0.14, 0.48), 1.4)
 	if _cliff_mesh_builder != null and _cliff_mesh_builder.fissure_lines.size() >= 2:
+		var fissure_alpha := 0.20 if has_cliff_art_textures() else 0.82
+		var fissure_width := 0.9 if has_cliff_art_textures() else 1.4
 		draw_multiline(
 			_cliff_mesh_builder.fissure_lines,
-			Color(palette.background_color.lightened(0.24), 0.82),
-			1.4
+			Color(palette.background_color.lightened(0.24), fissure_alpha),
+			fissure_width
 		)
 	if _cliff_mesh_builder != null and _cliff_mesh_builder.lip_lines.size() >= 2:
+		var lip_alpha := 0.68 if has_cliff_art_textures() else 0.96
+		var lip_width := 1.4 if has_cliff_art_textures() else 2.8
 		draw_multiline(
 			_cliff_mesh_builder.lip_lines,
-			Color(palette.floor_color.lightened(0.46), 0.96),
-			2.8
+			Color(palette.floor_color.lightened(0.46), lip_alpha),
+			lip_width
 		)
 	if _should_draw_grid() and _grid_points.size() >= 2:
 		draw_multiline(_grid_points, Color(palette.grid_color, 0.12))
 
+func _load_cliff_art_textures() -> void:
+	_cliff_face_texture = null
+	_cliff_lip_texture = null
+	_cliff_art_asset_paths.clear()
+	if manifest == null:
+		return
+	_cliff_face_texture = _load_cliff_art_texture(CLIFF_FACE_TEXTURE_ID)
+	_cliff_lip_texture = _load_cliff_art_texture(CLIFF_LIP_TEXTURE_ID)
+
+func _load_cliff_art_texture(asset_id: StringName) -> Texture2D:
+	var contract := manifest.get_void_asset_contract(asset_id)
+	var asset_path := String(contract.get("asset_path", ""))
+	_cliff_art_asset_paths[asset_id] = asset_path
+	if asset_path.is_empty():
+		return null
+	return SVG_TEXTURE_LOADER.load_texture(
+		asset_path,
+		palette.prop_color if palette != null else Color(0.32, 0.30, 0.27, 1.0),
+		palette.floor_color if palette != null else Color(0.44, 0.48, 0.31, 1.0),
+		Vector2i(512, 512)
+	)
+
+func _load_forest_surface_art_textures() -> void:
+	_forest_surface_textures.clear()
+	_forest_surface_art_asset_paths.clear()
+	if manifest == null or not _uses_forest_ground():
+		return
+	for texture_id in FOREST_SURFACE_TEXTURE_IDS:
+		var contract := manifest.get_terrain_asset_contract(texture_id)
+		var asset_path := String(contract.get("asset_path", ""))
+		_forest_surface_art_asset_paths[texture_id] = asset_path
+		if asset_path.is_empty():
+			continue
+		var texture := SVG_TEXTURE_LOADER.load_texture(
+			asset_path,
+			palette.floor_color if palette != null else Color(0.26, 0.40, 0.18, 1.0),
+			palette.alternate_floor_color if palette != null else Color(0.18, 0.30, 0.14, 1.0),
+			Vector2i(512, 512)
+		)
+		if texture != null:
+			_forest_surface_textures[texture_id] = texture
+
 func _rebuild_ground_geometry() -> void:
 	_ground_mesh = null
 	_ground_underlay_mesh = null
+	_forest_surface_meshes.clear()
 	_grid_points = PackedVector2Array()
 	_texture_dark_lines = PackedVector2Array()
 	_texture_light_lines = PackedVector2Array()
@@ -230,6 +352,12 @@ func _rebuild_ground_geometry() -> void:
 	var grid := PackedVector2Array()
 	if _uses_forest_ground():
 		_ground_underlay_mesh = _build_forest_underlay_mesh(scale)
+		for texture_id in FOREST_SURFACE_TEXTURE_IDS:
+			if not (_forest_surface_textures.get(texture_id) is Texture2D):
+				continue
+			var surface_mesh := _build_forest_surface_mesh(scale, texture_id)
+			if surface_mesh != null:
+				_forest_surface_meshes[texture_id] = surface_mesh
 	for chunk in _chunks:
 		for y in range(chunk.position.y, chunk.position.y + chunk.size.y):
 			for x in range(chunk.position.x, chunk.position.x + chunk.size.x):
@@ -241,6 +369,8 @@ func _rebuild_ground_geometry() -> void:
 					_suppressed_void_texture_count += 1
 					continue
 				var center := _cell_center_to_world(cell)
+				if _uses_generated_forest_surface(tile_id):
+					continue
 				var top := center + Vector2(0.0, -half_h)
 				var right := center + Vector2(half_w, 0.0)
 				var bottom := center + Vector2(0.0, half_h)
@@ -292,18 +422,41 @@ func _rebuild_ground_geometry() -> void:
 						scale
 					)
 	_grid_points = grid
-	if vertices.is_empty():
-		return
-	var arrays := []
-	arrays.resize(Mesh.ARRAY_MAX)
-	arrays[Mesh.ARRAY_VERTEX] = vertices
-	arrays[Mesh.ARRAY_COLOR] = colors
-	arrays[Mesh.ARRAY_INDEX] = indices
-	var mesh := ArrayMesh.new()
-	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-	_ground_mesh = mesh
+	if not vertices.is_empty():
+		var arrays := []
+		arrays.resize(Mesh.ARRAY_MAX)
+		arrays[Mesh.ARRAY_VERTEX] = vertices
+		arrays[Mesh.ARRAY_COLOR] = colors
+		arrays[Mesh.ARRAY_INDEX] = indices
+		var mesh := ArrayMesh.new()
+		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+		_ground_mesh = mesh
 	if _cliff_mesh_builder != null:
 		_cliff_mesh_builder.build_meshes()
+
+func _uses_generated_forest_surface(tile_id: StringName) -> bool:
+	var texture_id := _forest_surface_texture_id(tile_id)
+	return (
+		not texture_id.is_empty()
+		and _forest_surface_textures.get(texture_id) is Texture2D
+	)
+
+func _forest_surface_texture_id(tile_id: StringName) -> StringName:
+	if FOREST_GRASS_SURFACE_TILE_IDS.has(tile_id):
+		return FOREST_GRASS_TEXTURE_ID
+	match tile_id:
+		IsometricTileResolver.TILE_FOREST_PATH:
+			return &"forest_path"
+		IsometricTileResolver.TILE_FOREST_ROAD:
+			return &"forest_road"
+		IsometricTileResolver.TILE_GRASS_TO_PATH:
+			return &"grass_to_path"
+		IsometricTileResolver.TILE_GRASS_TO_ROAD:
+			return &"grass_to_road"
+		IsometricTileResolver.TILE_PATH_TO_ROAD:
+			return &"path_to_road"
+		_:
+			return &""
 
 func _get_southern_tile_ids(
 	cell: Vector2i,
@@ -343,6 +496,37 @@ func _build_forest_underlay_mesh(scale: float) -> ArrayMesh:
 	var mesh := ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	return mesh
+
+func _build_forest_surface_mesh(scale: float, texture_id: StringName) -> ArrayMesh:
+	var surface_runs: Array[Rect2i] = []
+	for y in range(layout.zone_size.y):
+		var run_start := -1
+		for x in range(layout.zone_size.x + 1):
+			var uses_texture := (
+				x < layout.zone_size.x
+				and _forest_surface_texture_id(
+					get_resolved_tile_id(Vector2i(x, y))
+				) == texture_id
+			)
+			if uses_texture and run_start < 0:
+				run_start = x
+			elif not uses_texture and run_start >= 0:
+				surface_runs.append(Rect2i(run_start, y, x - run_start, 1))
+				run_start = -1
+	return FOREST_GROUND_MESH_BUILDER_SCRIPT.build_mesh(
+		surface_runs,
+		layout.zone_size,
+		scale,
+		_forest_surface_texture_world_size(texture_id)
+	)
+
+func _forest_surface_texture_world_size(texture_id: StringName) -> float:
+	if FOREST_TRANSITION_TEXTURE_IDS.has(texture_id):
+		# Transition cells are one logical cell wide. A shorter repeat period makes
+		# both source materials survive mipmapped downscale without creating a
+		# checkerboard along long junction runs.
+		return 128.0
+	return FOREST_SURFACE_TEXTURE_WORLD_SIZE
 
 func _append_underlay_run(
 	vertices: PackedVector2Array,

@@ -189,6 +189,11 @@ godot --headless --path . --script res://tests/milestone_10_tile_layer_smoke_tes
 godot --headless --path . --script res://tests/milestone_10_passage_tile_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_10_object_asset_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_10_void_cliff_asset_smoke_test.gd
+godot --headless --path . --script res://tests/void_cliff_generated_texture_smoke_test.gd
+godot --headless --path . --script res://tests/forest_grass_generated_texture_smoke_test.gd
+godot --path . --rendering-method gl_compatibility --script res://tests/forest_surface_generated_visual_qa.gd
+godot --path . --rendering-method gl_compatibility --script res://tests/void_cliff_generated_visual_qa.gd
+godot --path . --rendering-method gl_compatibility --script res://tests/void_cliff_runtime_visual_qa.gd
 godot --headless --path . --script res://tests/forest_isometric_texture_transition_smoke_test.gd
 godot --headless --path . --script res://tests/isometric_biome_generation_rewrite_smoke_test.gd
 godot --headless --path . --script res://tests/starter_biome_vertical_slice_smoke_test.gd

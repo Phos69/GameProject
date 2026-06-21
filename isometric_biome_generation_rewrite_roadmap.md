@@ -300,7 +300,27 @@ R4.3 implementato (void = solo colore + confini, niente immagine):
 - Rimosso codice morto: `_draw_large_void`, `_draw_procedural_cliff`,
   `_jagged_outline`, `_draw_cliff_lip`, `_draw_depth_streaks`, ecc.
 
-Resta (R4.4+):
+R4.4 implementato (materiali raster cliff condivisi):
+
+- Generati `cliff_face_generated_v2.png` e `cliff_lip_generated.png` come texture
+  seamless finali con provenance/licenza nel manifest.
+- `IsometricCliffMeshBuilder` espone UV world-space su facce e lip: le quattro
+  direzioni, gli otto angoli e i due raccordi diagonali condividono gli stessi
+  materiali senza comprimere l'intera texture in ogni cella.
+- La faccia mantiene luminosita per orientamento e dissolve l'alpha nel void
+  uniforme; cresta e fenditure procedurali restano sopra la texture.
+- `BiomeFallZone` continua a possedere collisione e caduta e non ridisegna il
+  bordo quando il tile layer e presente.
+- Aggiunti smoke e tavola QA dedicati in `tests/void_cliff_generated_*` e
+  `build/qa/void_cliffs/`.
+- Aggiunti prato seamless `forest_grass_generated.png` e raccordo
+  `grass_cliff_edge_generated.png`, consumati con UV world-space dal tile layer;
+  smoke e cattura runtime coprono il pass prato/cliff integrato.
+- Completati asfalto, sentiero in terra/sassi e raccordi prato-terra,
+  prato-asfalto e terra-asfalto; tavola comparativa e catture runtime vivono in
+  `build/qa/forest_surfaces/`.
+
+Resta (R4.5+):
 
 - Le celle `TERRAIN_VOID` non coperte da una fall zone non hanno linea di
   confine: valutare se aggiungerla o se sono sempre adiacenti a fall zone.

@@ -746,6 +746,9 @@ Regole hazard:
   interni/esterni e raccordi diagonali; la faccia verticale, le linee di
   discesa e il gradiente della parete verso il nero devono rendere il vuoto non
   ambiguo senza affidarsi al nero o alla semplice assenza di tile;
+- tutti gli orientamenti cliff condividono una faccia rocciosa e un lip
+  pietra/terra/erba raster, ripetuti con UV world-space e dissolti verso il
+  colore uniforme del void; la grafica non modifica danno o attraversabilita;
 - il void profondo non mostra texture o reticoli ripetuti: resta uniforme e
   usa lo stesso colore del fuori-mappa e viene definito visivamente dal cliff
   dettagliato solo sul confine con terreno calpestabile;

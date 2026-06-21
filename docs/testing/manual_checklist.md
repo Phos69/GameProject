@@ -767,6 +767,9 @@ e `high_contrast`.
 - Inquadrare bordi north/south/east/west, un angolo interno, uno esterno e un
   raccordo diagonale: devono avere cresta continua, faccia verticale, linee di
   discesa, ombra profonda e foschia senza celle nere o transizioni ambigue.
+- Verificare che la faccia rocciosa generata non riparta visibilmente a ogni
+  cella: crepe e strati devono proseguire lungo segmenti adiacenti; il lip
+  pietra/terra/erba deve restare continuo anche sugli angoli.
 - Confermare che oltre il cliff il void sia uniforme, senza trama a rombi,
   reticolo o ripetizione della texture del terreno.
 - Confrontare void interno e fuori-mappa: il colore deve essere identico.
@@ -938,6 +941,9 @@ godot --headless --path . --script res://tests/milestone_10_tile_layer_smoke_tes
 godot --headless --path . --script res://tests/milestone_10_passage_tile_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_10_object_asset_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_10_void_cliff_asset_smoke_test.gd
+godot --headless --path . --script res://tests/void_cliff_generated_texture_smoke_test.gd
+godot --path . --rendering-method gl_compatibility --script res://tests/void_cliff_generated_visual_qa.gd
+godot --path . --rendering-method gl_compatibility --script res://tests/void_cliff_runtime_visual_qa.gd
 godot --headless --path . --script res://tests/milestone_10_no_portal_transition_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_10_full_region_streaming_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_10_cross_biome_chase_smoke_test.gd
@@ -1079,6 +1085,12 @@ QA visuale e runtime da eseguire dopo modifiche a `infected_plains`,
 - Avviare survival con seed `772031` e confermare che il bioma base mostri
   `forest_grass`, varianti, `forest_tall_grass`, `forest_path` e `forest_road`,
   non il floor generico.
+- Confermare che il prato raster sia continuo, senza mosaico di rombi o seam
+  evidenti, e che il raccordo prato-roccia segua lati e angoli delle fosse.
+- Confermare che il sentiero sia terra nuda con sassi, la strada asfalto senza
+  segnaletica e i raccordi prato/terra/asfalto non mostrino scacchi o ripetizioni
+  evidenti. Confrontare `build/qa/forest_surfaces/forest_surface_materials.png`
+  e le tre catture `*_runtime.png` nella stessa cartella.
 - Verificare che gli incroci path/road e i bordi path/grass o road/grass usino
   transizioni leggibili, senza rettangoli piatti o patch ovali legacy.
 - Camminare vicino a void/fall zone e confermare che `forest_cliff_edge`,
@@ -1096,6 +1108,8 @@ Dettagli del contratto: `docs/forest_isometric_texture_system.md`.
 
 ```text
 godot --headless --path . --script res://tests/forest_isometric_texture_transition_smoke_test.gd
+godot --headless --path . --script res://tests/forest_grass_generated_texture_smoke_test.gd
+godot --path . --rendering-method gl_compatibility --script res://tests/forest_surface_generated_visual_qa.gd
 godot --headless --path . --script res://tests/milestone_10_tile_layer_smoke_test.gd
 godot --headless --path . --script res://tools/generate_isometric_environment_assets.gd -- --check
 ```

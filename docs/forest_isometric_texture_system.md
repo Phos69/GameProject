@@ -32,6 +32,25 @@ I contratti vivono in `assets/environment/isometric/manifest.json`. Gli SVG
 sono in `assets/environment/isometric/tiles/forest/` e in
 `assets/environment/isometric/edges/{cliffs,void,walls}/`.
 
+Le facce di caduta usano inoltre i materiali PNG finali
+`cliff_face_texture` e `cliff_lip_texture`. Il resolver continua a scegliere le
+14 varianti geometriche; `IsometricCliffMeshBuilder` assegna UV world-space
+continue, luce per orientamento e dissolvenza verso il colore uniforme del
+void. Queste texture non entrano nella classificazione terrain.
+
+Il prato base usa il raster seamless finale
+`tiles/forest/textures/forest_grass_generated.png`; il lip usa
+`edges/cliffs/textures/grass_cliff_edge_generated.png` come raccordo
+prato-roccia. `BiomeTileLayer` applica il prato su run continue con UV
+world-space e mantiene path, road, wall, void e collisioni separati.
+
+Sentiero e strada usano rispettivamente
+`forest_dirt_path_generated.png` e `forest_asphalt_generated.png`. I contratti
+`grass_to_path`, `grass_to_road` e `path_to_road` puntano a materiali misti
+dedicati; la variante terra-asfalto v2 usa dettaglio piu omogeneo per evitare
+pattern ripetuti nelle fasce larghe un tile. Tutti i raster sono seamless,
+mipmapped e limitati a 512 px in import.
+
 ## Regole di risoluzione
 
 `IsometricTileResolver` controlla prima il caso forestale quando il bioma e
@@ -107,6 +126,8 @@ tile.
 
 ```text
 godot --headless --path . --script res://tests/forest_isometric_texture_transition_smoke_test.gd
+godot --headless --path . --script res://tests/forest_grass_generated_texture_smoke_test.gd
+godot --path . --rendering-method gl_compatibility --script res://tests/forest_surface_generated_visual_qa.gd
 godot --headless --path . --script res://tests/milestone_10_tile_layer_smoke_test.gd
 godot --headless --path . --script res://tools/generate_isometric_environment_assets.gd -- --check
 ```

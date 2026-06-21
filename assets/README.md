@@ -62,6 +62,23 @@ SVG non riscrive i raster autorati: in `--check` ne verifica comunque la
 presenza, mentre trasparenza e copertura sono validate da
 `tests/obstacle_asset_visual_qa.gd`.
 
+I cliff void usano due raster finali in `edges/cliffs/textures/`:
+`cliff_face_generated_v2.png` e `grass_cliff_edge_generated.png`. Le iterazioni
+`cliff_face_generated.png` e `cliff_lip_generated.png` restano conservate come
+sorgenti di confronto. Non rappresentano
+orientamenti separati: `IsometricCliffMeshBuilder` applica i materiali seamless
+con UV world-space alle 14 geometrie risolte dal tile layer. L'import limita il
+runtime a 512 px e genera mipmap; i sorgenti restano conservati per iterazioni.
+
+Il prato forestale finale usa
+`tiles/forest/textures/forest_grass_generated.png`. `BiomeTileLayer` lo stende
+su run continue con UV world-space. La stessa cartella contiene
+`forest_dirt_path_generated.png`, `forest_asphalt_generated.png`,
+`grass_to_path_generated.png`, `grass_to_road_generated.png` e
+`path_to_road_generated_v2.png`: il tile layer assegna una mesh distinta a ogni
+classe e usa un periodo UV piu corto per le fasce di transizione. Wall e void
+mantengono i rispettivi materiali e colori.
+
 - Il loader `game/modes/zombie/isometric_environment_manifest.gd` legge e valida
   il manifest; `ObstacleSystem` lo usa per `sort_offset` e flag di blocco e,
   dalla Milestone 10.5, passa gli `object_scenes` a

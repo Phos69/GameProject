@@ -8,35 +8,54 @@ const LATERAL_VOID_SLOPE := 0.5
 # Number of oblique "fall" stripes drawn per path segment on the lateral (east/west)
 # walls, so the side of the drop reads as a slanted cliff instead of a flat panel.
 const LATERAL_FALL_STRIPES := 3
-# The south wall faces the camera's near side: the player should fall the instant
-# they step off, so it gets a razor-thin drop (just a lip + shadow, no tall wall).
+# The south wall faces the camera's near side. Gameplay fall remains immediate,
+# but textured art needs a minimum visible face instead of collapsing to a line.
 const SOUTH_INSTANT_DEPTH := 5.0
+const SOUTH_TEXTURED_DEPTH := 14.0
 
 var palette: BiomePalette
 var generation_seed: int = 0
+var textured_art_enabled: bool = false
 
 var face_mesh: ArrayMesh
+var lip_mesh: ArrayMesh
 var lip_lines: PackedVector2Array = PackedVector2Array()
 var fissure_lines: PackedVector2Array = PackedVector2Array()
 var transition_count: int = 0
 
 var _face_vertices: PackedVector2Array = PackedVector2Array()
 var _face_colors: PackedColorArray = PackedColorArray()
+var _face_uvs: PackedVector2Array = PackedVector2Array()
 var _face_indices: PackedInt32Array = PackedInt32Array()
+var _lip_vertices: PackedVector2Array = PackedVector2Array()
+var _lip_colors: PackedColorArray = PackedColorArray()
+var _lip_uvs: PackedVector2Array = PackedVector2Array()
+var _lip_indices: PackedInt32Array = PackedInt32Array()
 
-func configure(next_palette: BiomePalette, next_generation_seed: int) -> void:
+func configure(
+	next_palette: BiomePalette,
+	next_generation_seed: int,
+	enable_textured_art: bool = false
+) -> void:
 	palette = next_palette
 	generation_seed = next_generation_seed
+	textured_art_enabled = enable_textured_art
 	reset()
 
 func reset() -> void:
 	face_mesh = null
+	lip_mesh = null
 	lip_lines = PackedVector2Array()
 	fissure_lines = PackedVector2Array()
 	transition_count = 0
 	_face_vertices = PackedVector2Array()
 	_face_colors = PackedColorArray()
+	_face_uvs = PackedVector2Array()
 	_face_indices = PackedInt32Array()
+	_lip_vertices = PackedVector2Array()
+	_lip_colors = PackedColorArray()
+	_lip_uvs = PackedVector2Array()
+	_lip_indices = PackedInt32Array()
 
 func append_transition(
 	tile_id: StringName,
@@ -80,15 +99,27 @@ func append_transition(
 		# produced overlapping per-tile bands that looked like a reflection below
 		# the real cliff ending.
 		var face_bottom := Color(void_color, 1.0)
+		if textured_art_enabled:
+			var texture_brightness := clampf(brightness * 1.55, 0.90, 1.35)
+			face_top = Color(
+				texture_brightness,
+				texture_brightness,
+				texture_brightness,
+				1.0
+			)
+			# Reveal the painted rock near the ledge, then dissolve it into the
+			# uniform void instead of ending on an opaque rectangular band.
+			face_bottom = Color(0.45, 0.45, 0.45, 0.12)
 		for point_index in range(path.size() - 1):
 			var start := path[point_index]
 			var end := path[point_index + 1]
 			var start_drop := drops[point_index] if drops.size() == path.size() else drop
 			var end_drop := drops[point_index + 1] if drops.size() == path.size() else drop
 			_append_gradient_quad(
-				_face_vertices, _face_colors, _face_indices,
+				_face_vertices, _face_colors, _face_uvs, _face_indices,
 				start, end, start_drop, end_drop, face_top, face_bottom
 			)
+			_append_lip_quad(start, end, brightness)
 			_append_line(lip_lines, start, end)
 			var stripes := int(face.get("fall_stripes", 0))
 			if stripes > 0:
@@ -119,11 +150,23 @@ func append_transition(
 					)
 				)
 func build_meshes() -> void:
-	face_mesh = _build_colored_mesh(_face_vertices, _face_colors, _face_indices)
+	face_mesh = _build_textured_mesh(
+		_face_vertices,
+		_face_colors,
+		_face_uvs,
+		_face_indices
+	)
+	lip_mesh = _build_textured_mesh(
+		_lip_vertices,
+		_lip_colors,
+		_lip_uvs,
+		_lip_indices
+	)
 
-func _build_colored_mesh(
+func _build_textured_mesh(
 	vertices: PackedVector2Array,
 	colors: PackedColorArray,
+	uvs: PackedVector2Array,
 	indices: PackedInt32Array
 ) -> ArrayMesh:
 	if vertices.is_empty() or indices.is_empty():
@@ -132,6 +175,7 @@ func _build_colored_mesh(
 	arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX] = vertices
 	arrays[Mesh.ARRAY_COLOR] = colors
+	arrays[Mesh.ARRAY_TEX_UV] = uvs
 	arrays[Mesh.ARRAY_INDEX] = indices
 	var mesh := ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
@@ -140,6 +184,7 @@ func _build_colored_mesh(
 func _append_gradient_quad(
 	vertices: PackedVector2Array,
 	colors: PackedColorArray,
+	uvs: PackedVector2Array,
 	indices: PackedInt32Array,
 	start: Vector2,
 	end: Vector2,
@@ -157,6 +202,12 @@ func _append_gradient_quad(
 	colors.append(top_color)
 	colors.append(bottom_color)
 	colors.append(bottom_color)
+	var start_u := _world_texture_u(start)
+	var end_u := _world_texture_u(end)
+	uvs.append(Vector2(start_u, 0.0))
+	uvs.append(Vector2(end_u, 0.0))
+	uvs.append(Vector2(end_u, 1.0))
+	uvs.append(Vector2(start_u, 1.0))
 	indices.append(base)
 	indices.append(base + 1)
 	indices.append(base + 2)
@@ -164,13 +215,44 @@ func _append_gradient_quad(
 	indices.append(base + 2)
 	indices.append(base + 3)
 
+func _append_lip_quad(start: Vector2, end: Vector2, brightness: float) -> void:
+	var segment := end - start
+	if segment.length_squared() <= 0.001:
+		return
+	var normal := Vector2(-segment.y, segment.x).normalized() * 4.8
+	var base := _lip_vertices.size()
+	_lip_vertices.append(start - normal)
+	_lip_vertices.append(end - normal)
+	_lip_vertices.append(end + normal)
+	_lip_vertices.append(start + normal)
+	var tint := Color(brightness, brightness, brightness, 1.0)
+	for _index in range(4):
+		_lip_colors.append(tint)
+	var start_u := _world_texture_u(start)
+	var end_u := _world_texture_u(end)
+	_lip_uvs.append(Vector2(start_u, 0.0))
+	_lip_uvs.append(Vector2(end_u, 0.0))
+	_lip_uvs.append(Vector2(end_u, 1.0))
+	_lip_uvs.append(Vector2(start_u, 1.0))
+	_lip_indices.append(base)
+	_lip_indices.append(base + 1)
+	_lip_indices.append(base + 2)
+	_lip_indices.append(base)
+	_lip_indices.append(base + 2)
+	_lip_indices.append(base + 3)
+
+func _world_texture_u(point: Vector2) -> float:
+	# World-space UVs keep adjacent cliff cells on the same seamless material
+	# instead of squeezing the complete source image into every five-pixel face.
+	return (point.x * 0.72 + point.y * 0.28) / 64.0
+
 # Returns Array of {path, drop, brightness, fall_stripes?}. Each void boundary
 # reads differently depending on where it sits relative to the camera:
 #   north — far interior wall: a tall wall descending straight into the void.
 #   east/west — lateral sides: walls that slope toward the void interior and carry
 #               oblique "fall" stripes (fall_stripes) down their slanted face.
-#   south — camera-facing near edge: an INSTANT drop (SOUTH_INSTANT_DEPTH), just a
-#           lip and a sliver of shadow, since the player falls the moment they step off.
+#   south — camera-facing near edge: immediate gameplay drop, with a minimum
+#           visible textured face when raster art is active.
 # Brightness differentiates the faces by light: south brightest, then east, north,
 # west (shadow side, darkest).
 func _cliff_faces(
@@ -188,7 +270,10 @@ func _cliff_faces(
 	var result: Array = []
 	var sides := _cliff_sides_for_tile_id(tile_id)
 	var north_drop := Vector2(0.0, depth)
-	var south_drop := Vector2(0.0, SOUTH_INSTANT_DEPTH)
+	var south_drop := Vector2(
+		0.0,
+		SOUTH_TEXTURED_DEPTH if textured_art_enabled else SOUTH_INSTANT_DEPTH
+	)
 	for side in sides:
 		match side:
 			&"north":
@@ -295,7 +380,11 @@ func _find_south_join_y(
 	if lateral_side.is_empty():
 		return INF
 	if sides.has(&"south"):
-		return center_y + SOUTH_INSTANT_DEPTH
+		return center_y + (
+			SOUTH_TEXTURED_DEPTH
+			if textured_art_enabled
+			else SOUTH_INSTANT_DEPTH
+		)
 	if tile_step_y <= 0.0:
 		return INF
 	for index in range(southern_tile_ids.size()):
@@ -304,7 +393,11 @@ func _find_south_join_y(
 			return (
 				center_y
 				+ float(index + 1) * tile_step_y
-				+ SOUTH_INSTANT_DEPTH
+				+ (
+					SOUTH_TEXTURED_DEPTH
+					if textured_art_enabled
+					else SOUTH_INSTANT_DEPTH
+				)
 			)
 		if not neighbor_sides.has(lateral_side):
 			break
