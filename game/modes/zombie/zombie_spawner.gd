@@ -19,9 +19,27 @@ class_name ZombieSpawner
 var last_spawn_edge: StringName = &""
 var last_spawn_rejection_reason: StringName = &""
 var last_spawn_attempt_report: Array[Dictionary] = []
+var obstacle_system: ObstacleSystem
+var hazard_system: HazardSystem
+var biome_manager: BiomeManager
+var region_seam_system: RegionSeamSystem
+var world_region_streamer: WorldRegionStreamer
 
 func _ready() -> void:
 	add_to_group("zombie_spawner")
+
+func configure_runtime_dependencies(
+	next_obstacle_system: ObstacleSystem,
+	next_hazard_system: HazardSystem,
+	next_biome_manager: BiomeManager,
+	next_region_seam_system: RegionSeamSystem,
+	next_world_region_streamer: WorldRegionStreamer
+) -> void:
+	obstacle_system = next_obstacle_system
+	hazard_system = next_hazard_system
+	biome_manager = next_biome_manager
+	region_seam_system = next_region_seam_system
+	world_region_streamer = next_world_region_streamer
 
 func configure_fallback_spawn_points(points: Array[Vector2]) -> void:
 	if points.is_empty():
@@ -287,10 +305,8 @@ func _edge_fallback_spawn_position(spawn_index: int, biome = null) -> Dictionary
 	}
 
 func _streamed_region_fallback_spawn_position(spawn_index: int, biome = null) -> Dictionary:
-	var streamer := get_tree().get_first_node_in_group("world_region_streamer")
-	var biome_manager := get_tree().get_first_node_in_group(
-		"biome_manager"
-	) as BiomeManager
+	_resolve_runtime_dependencies()
+	var streamer := world_region_streamer
 	if (
 		streamer == null
 		or biome_manager == null
@@ -357,7 +373,7 @@ func _distance_squared_to_nearest_player(position: Vector2) -> float:
 	return PlayerQuery.nearest_distance_squared(get_tree(), position)
 
 func _is_position_blocked_by_obstacles(position: Vector2) -> bool:
-	var obstacle_system := get_tree().get_first_node_in_group("obstacle_system")
+	_resolve_runtime_dependencies()
 	if (
 		obstacle_system != null
 		and obstacle_system.has_method("is_position_blocked")
@@ -391,7 +407,7 @@ func _is_position_blocked_by_obstacles(position: Vector2) -> bool:
 	return false
 
 func _is_position_hazardous(position: Vector2) -> bool:
-	var hazard_system := get_tree().get_first_node_in_group("hazard_system")
+	_resolve_runtime_dependencies()
 	return (
 		hazard_system != null
 		and hazard_system.has_method("is_position_hazardous")
@@ -399,7 +415,8 @@ func _is_position_hazardous(position: Vector2) -> bool:
 	)
 
 func _is_position_inside_generated_biome(position: Vector2, biome) -> bool:
-	var seam_system := get_tree().get_first_node_in_group("region_seam_system")
+	_resolve_runtime_dependencies()
+	var seam_system := region_seam_system
 	if (
 		seam_system != null
 		and bool(seam_system.get("is_active"))
@@ -410,7 +427,7 @@ func _is_position_inside_generated_biome(position: Vector2, biome) -> bool:
 		)
 		if region_id.is_empty():
 			return false
-		var streamer := get_tree().get_first_node_in_group("world_region_streamer")
+		var streamer := world_region_streamer
 		if (
 			streamer != null
 			and streamer.has_method("is_region_streamed")
@@ -437,7 +454,7 @@ func _is_position_on_streamed_walkable_terrain(
 	region_id: StringName,
 	seam_system: Node
 ) -> bool:
-	var biome_manager := get_tree().get_first_node_in_group("biome_manager") as BiomeManager
+	_resolve_runtime_dependencies()
 	if biome_manager == null or not seam_system.has_method("world_position_to_logical_tile"):
 		return true
 	var cell := biome_manager.get_cell_by_region_id(region_id) as BiomeCell
@@ -527,3 +544,25 @@ func _is_walkable_spawn_class(terrain_class: StringName) -> bool:
 func _unit_sample(spawn_index: int, attempt: int, salt: int) -> float:
 	var raw := absi(spawn_index * 110351 + attempt * 9176 + salt * 131)
 	return float(raw % 10000) / 9999.0
+
+func _resolve_runtime_dependencies() -> void:
+	if obstacle_system == null:
+		obstacle_system = _resolve_node(&"obstacle_system") as ObstacleSystem
+	if hazard_system == null:
+		hazard_system = _resolve_node(&"hazard_system") as HazardSystem
+	if biome_manager == null:
+		biome_manager = _resolve_node(&"biome_manager") as BiomeManager
+	if region_seam_system == null:
+		region_seam_system = _resolve_node(
+			&"region_seam_system"
+		) as RegionSeamSystem
+	if world_region_streamer == null:
+		world_region_streamer = _resolve_node(
+			&"world_region_streamer"
+		) as WorldRegionStreamer
+
+func _resolve_node(group_name: StringName) -> Node:
+	var tree := get_tree()
+	if tree == null:
+		return null
+	return tree.get_first_node_in_group(group_name)

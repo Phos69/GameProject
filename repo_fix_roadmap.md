@@ -562,6 +562,22 @@ Dipendono dal sistema refactorato. Per ogni estrazione eseguire almeno:
 
 ## Milestone 9 - Ridurre lookup globali e dipendenze implicite
 
+Stato: completata il 2026-06-21 come prima passata mirata.
+
+Evidenza:
+
+- Censimento `game/**/*.gd`: `get_first_node_in_group` ridotti da 216 a 184.
+- `HUDManager` passa da 22 lookup diretti a un resolver locale con NodePath
+  espliciti verso mode, wave, boss, drop, world runtime, bioma e hazard.
+- `PlayerManager` inietta `InputManager`, `GameModeManager` e `HazardSystem`
+  nei `PlayerController`; il fallback a gruppi resta solo per scene isolate.
+- `ZombieModeController` inietta obstacle, hazard, biome, seam e streamer in
+  `ZombieSpawner`, evitando lookup ripetuti durante validazione spawn/fallback.
+- Test mirati passati prima e dopo la refactor: `player_query_smoke_test.gd`,
+  `player_world_hud_layout_smoke_test.gd`,
+  `zombie_spawner_edge_smoke_test.gd`, `survival_wave_smoke_test.gd` e
+  `tower_defense_smoke_test.gd`.
+
 ### Obiettivo
 
 Ridurre l'uso di `get_first_node_in_group` nei percorsi critici e rendere piu

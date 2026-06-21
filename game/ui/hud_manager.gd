@@ -21,6 +21,40 @@ var last_boss_display_name: String = "BOSS"
 var hud_text_scale: float = 1.0
 var high_contrast: bool = false
 
+@export var game_mode_manager_path: NodePath = NodePath("../GameModeManager")
+@export var wave_manager_path: NodePath = NodePath("../Systems/WaveManager")
+@export var boss_system_path: NodePath = NodePath("../Systems/BossSystem")
+@export var drop_system_path: NodePath = NodePath("../Systems/DropSystem")
+@export var survival_mode_path: NodePath = NodePath("../Modes/SurvivalMode")
+@export var dungeon_mode_path: NodePath = NodePath("../Modes/DungeonMode")
+@export var tower_defense_mode_path: NodePath = NodePath(
+	"../Modes/TowerDefenseMode"
+)
+@export var survival_arena_manager_path: NodePath = NodePath(
+	"../Systems/SurvivalArenaManager"
+)
+@export var biome_manager_path: NodePath = NodePath(
+	"../Modes/SurvivalMode/ZombieModeController/BiomeManager"
+)
+@export var hazard_system_path: NodePath = NodePath(
+	"../Modes/SurvivalMode/ZombieModeController/HazardSystem"
+)
+@export var world_runtime_path: NodePath = NodePath(
+	"../Modes/SurvivalMode/ZombieModeController/WorldRuntime"
+)
+
+var game_mode_manager: GameModeManager
+var wave_manager: WaveManager
+var boss_system: BossSystem
+var drop_system: DropSystem
+var survival_mode: SurvivalMode
+var dungeon_mode: DungeonMode
+var tower_defense_mode: TowerDefenseMode
+var survival_arena_manager: SurvivalArenaManager
+var biome_manager: BiomeManager
+var hazard_system: HazardSystem
+var world_runtime: WorldRuntime
+
 const SLOT_COLORS: Array[Color] = [
 	Color(0.18, 0.74, 0.95, 1.0),
 	Color(0.95, 0.42, 0.34, 1.0),
@@ -34,6 +68,7 @@ const STATUS_PANEL_WIDTH: float = 340.0
 func _ready() -> void:
 	add_to_group("hud_manager")
 	add_to_group("visual_settings_consumers")
+	_resolve_runtime_dependencies()
 	_create_status_hud()
 	_create_offscreen_markers()
 	_create_player_hud()
@@ -136,9 +171,7 @@ func _process(delta: float) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not event.is_action_pressed(&"world_map"):
 		return
-	var game_mode_manager := get_tree().get_first_node_in_group(
-		"game_mode_manager"
-	) as GameModeManager
+	_resolve_runtime_dependencies()
 	if (
 		game_mode_manager != null
 		and (
@@ -153,9 +186,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func _refresh() -> void:
 	if status_label == null:
 		return
-	var game_mode_manager := get_tree().get_first_node_in_group(
-		"game_mode_manager"
-	) as GameModeManager
+	_resolve_runtime_dependencies()
 	visible = (
 		game_mode_manager == null
 		or game_mode_manager.active_mode_id != GameConstants.MODE_MENU
@@ -242,7 +273,7 @@ func _find_player_by_slot(players: Array[Node], player_slot: int) -> Node:
 	return null
 
 func _get_mode_title() -> String:
-	var game_mode_manager := get_tree().get_first_node_in_group("game_mode_manager") as GameModeManager
+	_resolve_runtime_dependencies()
 	if game_mode_manager != null:
 		match game_mode_manager.active_mode_id:
 			GameConstants.MODE_INFINITE_ARENA:
@@ -252,20 +283,16 @@ func _get_mode_title() -> String:
 			GameConstants.MODE_TOWER_DEFENSE:
 				return "Tower Defense"
 			GameConstants.MODE_SURVIVAL:
-				var arena_manager := get_tree().get_first_node_in_group(
-					"survival_arena_manager"
-				) as SurvivalArenaManager
-				if arena_manager != null:
-					return arena_manager.get_active_display_name()
+				if survival_arena_manager != null:
+					return survival_arena_manager.get_active_display_name()
 	return "Survival Arena"
 
 func _format_mode_status() -> String:
-	var game_mode_manager := get_tree().get_first_node_in_group("game_mode_manager") as GameModeManager
+	_resolve_runtime_dependencies()
 	if game_mode_manager != null:
 		if game_mode_manager.active_mode_id == GameConstants.MODE_INFINITE_ARENA:
 			return _format_infinite_arena_status()
 		if game_mode_manager.active_mode_id == GameConstants.MODE_DUNGEON:
-			var dungeon_mode := get_tree().get_first_node_in_group("dungeon_mode") as DungeonMode
 			if dungeon_mode == null:
 				return "Dungeon idle"
 			return "%s\n%s  Seed %d\nMap %s" % [
@@ -275,9 +302,6 @@ func _format_mode_status() -> String:
 				dungeon_mode.get_map_text()
 			]
 		if game_mode_manager.active_mode_id == GameConstants.MODE_TOWER_DEFENSE:
-			var tower_defense_mode := get_tree().get_first_node_in_group(
-				"tower_defense_mode"
-			) as TowerDefenseMode
 			if tower_defense_mode == null:
 				return "Tower Defense\nDefense idle"
 			return "%s\n%s" % [
@@ -293,9 +317,7 @@ func _should_show_status_panel(game_mode_manager: GameModeManager) -> bool:
 	)
 
 func _format_infinite_arena_status() -> String:
-	var wave_manager := get_tree().get_first_node_in_group(
-		"wave_manager"
-	) as WaveManager
+	_resolve_runtime_dependencies()
 	if wave_manager == null or not wave_manager.run_active:
 		return "Infinite Arena\nPreparing arena"
 	if wave_manager.wave_running:
@@ -306,17 +328,12 @@ func _format_infinite_arena_status() -> String:
 	return "Infinite Arena\nNext wave in %.1fs" % wave_manager.get_intermission_time_left()
 
 func _format_biome_status() -> String:
-	var game_mode_manager := get_tree().get_first_node_in_group(
-		"game_mode_manager"
-	) as GameModeManager
+	_resolve_runtime_dependencies()
 	if (
 		game_mode_manager != null
 		and game_mode_manager.active_mode_id != GameConstants.MODE_SURVIVAL
 	):
 		return ""
-	var biome_manager := get_tree().get_first_node_in_group(
-		"biome_manager"
-	) as BiomeManager
 	if biome_manager == null:
 		return ""
 	var biome := biome_manager.get_current_biome() as BiomeDefinition
@@ -334,9 +351,7 @@ func _format_biome_status() -> String:
 	return text
 
 func _format_environment_statuses() -> String:
-	var hazard_system := get_tree().get_first_node_in_group(
-		"hazard_system"
-	) as HazardSystem
+	_resolve_runtime_dependencies()
 	if hazard_system == null:
 		return ""
 	var labels := PackedStringArray()
@@ -490,7 +505,7 @@ func _refresh_boss_hud() -> void:
 		or boss_warning_label == null
 	):
 		return
-	var boss_system := get_tree().get_first_node_in_group("boss_system") as BossSystem
+	_resolve_runtime_dependencies()
 	var boss := boss_system.get_active_boss() if boss_system != null else null
 	if boss == null:
 		boss_panel.hide()
@@ -530,7 +545,7 @@ func _refresh_boss_hud() -> void:
 	boss_warning_label.visible = boss_warning_timer > 0.0
 
 func _connect_boss_system() -> void:
-	var boss_system := get_tree().get_first_node_in_group("boss_system") as BossSystem
+	_resolve_runtime_dependencies()
 	if boss_system == null:
 		return
 	var callback := Callable(self, "_on_boss_spawned")
@@ -614,9 +629,7 @@ func _on_boss_phase_changed(phase_index: int) -> void:
 		)
 
 func _connect_run_feedback() -> void:
-	var wave_manager := get_tree().get_first_node_in_group(
-		"wave_manager"
-	) as WaveManager
+	_resolve_runtime_dependencies()
 	if wave_manager != null:
 		var intermission_callback := Callable(
 			self,
@@ -633,16 +646,10 @@ func _connect_run_feedback() -> void:
 		if not wave_manager.wave_reward_granted.is_connected(reward_callback):
 			wave_manager.wave_reward_granted.connect(reward_callback)
 
-	var survival_mode := get_tree().get_first_node_in_group(
-		"survival_mode"
-	) as SurvivalMode
 	if survival_mode != null:
 		var defeat_callback := Callable(self, "_on_survival_defeated")
 		if not survival_mode.survival_defeated.is_connected(defeat_callback):
 			survival_mode.survival_defeated.connect(defeat_callback)
-	var biome_manager := get_tree().get_first_node_in_group(
-		"biome_manager"
-	) as BiomeManager
 	if biome_manager != null:
 		var biome_callback := Callable(self, "_on_current_biome_changed")
 		if not biome_manager.current_biome_changed.is_connected(
@@ -652,9 +659,7 @@ func _connect_run_feedback() -> void:
 		_apply_biome_hud_theme(biome_manager.get_current_biome())
 
 func _connect_world_runtime() -> void:
-	var world_runtime := get_tree().get_first_node_in_group(
-		"world_runtime"
-	) as WorldRuntime
+	_resolve_runtime_dependencies()
 	if world_runtime == null:
 		return
 	var callback := Callable(self, "_on_exploration_changed")
@@ -674,12 +679,7 @@ func _toggle_exploration_map() -> void:
 func _refresh_exploration_map() -> void:
 	if exploration_map_panel == null:
 		return
-	var world_runtime := get_tree().get_first_node_in_group(
-		"world_runtime"
-	) as WorldRuntime
-	var game_mode_manager := get_tree().get_first_node_in_group(
-		"game_mode_manager"
-	) as GameModeManager
+	_resolve_runtime_dependencies()
 	if (
 		game_mode_manager != null
 		and game_mode_manager.active_mode_id != GameConstants.MODE_SURVIVAL
@@ -722,9 +722,7 @@ func _on_intermission_started(
 func _on_wave_started(wave_index: int) -> void:
 	if combat_announcement == null:
 		return
-	var wave_manager := get_tree().get_first_node_in_group(
-		"wave_manager"
-	) as WaveManager
+	_resolve_runtime_dependencies()
 	var is_boss_wave := (
 		wave_manager != null
 		and wave_manager.current_wave_is_boss
@@ -777,9 +775,7 @@ func _on_current_biome_changed(
 	_biome_id: StringName,
 	display_name: String
 ) -> void:
-	var biome_manager := get_tree().get_first_node_in_group(
-		"biome_manager"
-	) as BiomeManager
+	_resolve_runtime_dependencies()
 	var biome: BiomeDefinition = (
 		biome_manager.get_current_biome()
 		if biome_manager != null
@@ -813,7 +809,7 @@ func _apply_biome_hud_theme(biome) -> void:
 	)
 
 func _connect_drop_feedback() -> void:
-	var drop_system := get_tree().get_first_node_in_group("drop_system") as DropSystem
+	_resolve_runtime_dependencies()
 	if drop_system == null:
 		return
 	var callback := Callable(self, "_on_drop_collected")
@@ -840,3 +836,55 @@ func _on_drop_collected(drop_data: Dictionary, _collector: Node) -> void:
 	else:
 		return
 	pickup_feedback_timer = 1.75
+
+func _resolve_runtime_dependencies() -> void:
+	if game_mode_manager == null:
+		game_mode_manager = _resolve_node(
+			game_mode_manager_path,
+			&"game_mode_manager"
+		) as GameModeManager
+	if wave_manager == null:
+		wave_manager = _resolve_node(wave_manager_path, &"wave_manager") as WaveManager
+	if boss_system == null:
+		boss_system = _resolve_node(boss_system_path, &"boss_system") as BossSystem
+	if drop_system == null:
+		drop_system = _resolve_node(drop_system_path, &"drop_system") as DropSystem
+	if survival_mode == null:
+		survival_mode = _resolve_node(
+			survival_mode_path,
+			&"survival_mode"
+		) as SurvivalMode
+	if dungeon_mode == null:
+		dungeon_mode = _resolve_node(dungeon_mode_path, &"dungeon_mode") as DungeonMode
+	if tower_defense_mode == null:
+		tower_defense_mode = _resolve_node(
+			tower_defense_mode_path,
+			&"tower_defense_mode"
+		) as TowerDefenseMode
+	if survival_arena_manager == null:
+		survival_arena_manager = _resolve_node(
+			survival_arena_manager_path,
+			&"survival_arena_manager"
+		) as SurvivalArenaManager
+	if biome_manager == null:
+		biome_manager = _resolve_node(
+			biome_manager_path,
+			&"biome_manager"
+		) as BiomeManager
+	if hazard_system == null:
+		hazard_system = _resolve_node(
+			hazard_system_path,
+			&"hazard_system"
+		) as HazardSystem
+	if world_runtime == null:
+		world_runtime = _resolve_node(
+			world_runtime_path,
+			&"world_runtime"
+		) as WorldRuntime
+
+func _resolve_node(path: NodePath, group_name: StringName) -> Node:
+	if not path.is_empty():
+		var node := get_node_or_null(path)
+		if node != null:
+			return node
+	return get_tree().get_first_node_in_group(group_name)

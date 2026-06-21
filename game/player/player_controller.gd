@@ -36,8 +36,9 @@ enum EntityState {
 @onready var revive_indicator := $ReviveIndicator as ReviveIndicatorVisual
 
 var facing_direction: Vector2 = Vector2.RIGHT
-var input_manager
+var input_manager: InputManager
 var game_mode_manager: GameModeManager
+var hazard_system: HazardSystem
 var base_max_health: int = 100
 var base_move_speed: float = 260.0
 var current_run_health_bonus: int = 0
@@ -50,10 +51,7 @@ var gameplay_input_enabled: bool = true
 
 func _ready() -> void:
 	add_to_group("players")
-	input_manager = get_tree().get_first_node_in_group("input_manager")
-	game_mode_manager = get_tree().get_first_node_in_group(
-		"game_mode_manager"
-	) as GameModeManager
+	_resolve_runtime_dependencies()
 	health_component.died.connect(_on_died)
 	health_component.downed.connect(_on_downed)
 	health_component.revived.connect(_on_revived)
@@ -79,6 +77,18 @@ func _ready() -> void:
 	_update_aim_line()
 	_create_weapon_feedback_label()
 
+func configure_runtime_dependencies(
+	next_input_manager: InputManager,
+	next_game_mode_manager: GameModeManager,
+	next_hazard_system: HazardSystem
+) -> void:
+	if next_input_manager != null:
+		input_manager = next_input_manager
+	if next_game_mode_manager != null:
+		game_mode_manager = next_game_mode_manager
+	if next_hazard_system != null:
+		hazard_system = next_hazard_system
+
 func _physics_process(delta: float) -> void:
 	if health_component.is_incapacitated():
 		_set_entity_state(EntityState.DEAD)
@@ -90,9 +100,7 @@ func _physics_process(delta: float) -> void:
 		visual.set_motion(velocity, move_speed)
 		return
 	if game_mode_manager == null:
-		game_mode_manager = get_tree().get_first_node_in_group(
-			"game_mode_manager"
-		) as GameModeManager
+		_resolve_runtime_dependencies()
 	if game_mode_manager != null and not game_mode_manager.is_gameplay_active():
 		velocity = Vector2.ZERO
 		visual.set_motion(velocity, move_speed)
@@ -102,7 +110,7 @@ func _physics_process(delta: float) -> void:
 		visual.set_motion(velocity, move_speed)
 		return
 	if input_manager == null:
-		input_manager = get_tree().get_first_node_in_group("input_manager")
+		_resolve_runtime_dependencies()
 		if input_manager == null:
 			return
 
@@ -156,7 +164,8 @@ func try_start_void_fall() -> bool:
 		or void_fall_component == null
 	):
 		return false
-	var hazard_system := get_tree().get_first_node_in_group("hazard_system")
+	if hazard_system == null:
+		_resolve_runtime_dependencies()
 	if (
 		hazard_system == null
 		or not hazard_system.has_method("is_void_at_world_position")
@@ -415,7 +424,8 @@ func _on_dodge_finished() -> void:
 	_set_entity_state(EntityState.NORMAL)
 
 func _on_void_fall_finished(fall_origin: Vector2) -> void:
-	var hazard_system := get_tree().get_first_node_in_group("hazard_system")
+	if hazard_system == null:
+		_resolve_runtime_dependencies()
 	if (
 		hazard_system != null
 		and hazard_system.has_method("complete_player_fall")
@@ -432,3 +442,17 @@ func _set_entity_state(next_state: EntityState) -> void:
 	var previous_state := get_entity_state_name()
 	current_entity_state = next_state
 	entity_state_changed.emit(previous_state, get_entity_state_name())
+
+func _resolve_runtime_dependencies() -> void:
+	if input_manager == null:
+		input_manager = _resolve_node(&"input_manager") as InputManager
+	if game_mode_manager == null:
+		game_mode_manager = _resolve_node(&"game_mode_manager") as GameModeManager
+	if hazard_system == null:
+		hazard_system = _resolve_node(&"hazard_system") as HazardSystem
+
+func _resolve_node(group_name: StringName) -> Node:
+	var tree := get_tree()
+	if tree == null:
+		return null
+	return tree.get_first_node_in_group(group_name)

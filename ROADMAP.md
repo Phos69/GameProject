@@ -480,6 +480,11 @@ Attivita post-roadmap:
   estraendo `WeaponVisualShapeLibrary` da `WeaponVisualRenderer`; il renderer
   resta compatibile con i consumer visuali e scende a 460 LOC, con smoke
   weapon visual passati prima e dopo.
+- Milestone 9 di `repo_fix_roadmap.md` completata come prima passata:
+  dependency lookup ridotti da 216 a 184 in `game/`, con NodePath/cache locali
+  in `HUDManager`, injection `PlayerManager -> PlayerController` e injection
+  `ZombieModeController -> ZombieSpawner`, senza introdurre service locator
+  generici.
 - Milestone W0 di `weapon_visual_identity_roadmap.md` completata: baseline
   visuale delle 30 armi catalogo, conferma dei tre profili generici correnti,
   reference da preservare e checklist manuale per pickup, held, HUD,

@@ -30,6 +30,9 @@ nascosto; il profilo Infinite Arena murato non genera fall zone interne.
 La Milestone 8 di `repo_fix_roadmap.md` e completata: `WeaponVisualRenderer`
 mantiene le API pubbliche ma delega le geometrie procedurali statiche a
 `WeaponVisualShapeLibrary`, riducendo il file principale a 460 LOC.
+La Milestone 9 di `repo_fix_roadmap.md` e completata come prima passata:
+lookup globali ridotti da 216 a 184 nel codice `game/`, con injection mirata
+per player, HUD e spawner.
 
 Regole per nuove voci:
 
@@ -53,6 +56,7 @@ Regole per nuove voci:
 | Spawn zombie fuori camera | PASS nella validazione Milestone 6 repo-fix | `tests/zombie_spawner_edge_smoke_test.gd`, `tests/zombie_revamp_foundation_smoke_test.gd`, `tests/biome_world_generation_smoke_test.gd`, `tests/milestone_10_cross_biome_chase_smoke_test.gd`, `tests/zombie_fall_hazard_smoke_test.gd`, `tests/zombie_revamp_ten_wave_smoke_test.gd` | Monitorare come regressione survival, soprattutto vicino a void, blocker e cambi regione |
 | HUD Tower Defense e arena murata | PASS nella validazione Milestone 7 repo-fix | `tests/tower_defense_smoke_test.gd`, `tests/milestone_10_visual_smoke_test.gd`, `tests/survival_wave_smoke_test.gd`, `tests/dungeon_smoke_test.gd`, `tests/zombie_survival_world_contract_smoke_test.gd`, `tests/infinite_arena_default_mode_smoke_test.gd` | Monitorare come regressione HUD modalita o world generation arena `walled` |
 | Refactor weapon visual renderer | PASS nella validazione Milestone 8 repo-fix | `WeaponVisualRenderer` 460 LOC, `WeaponVisualShapeLibrary` 808 LOC, `tests/weapon_visual_catalog_smoke_test.gd`, `tests/weapon_pickup_visual_identity_smoke_test.gd`, `tests/weapon_held_hud_visual_identity_smoke_test.gd`, `tests/weapon_projectile_vfx_identity_smoke_test.gd`, `tests/weapon_melee_visual_identity_smoke_test.gd` | Monitorare come regressione presentazionale armi; prossimi hotspot M8 richiedono goal separati |
+| Dependency lookup player/HUD/spawner | PASS nella validazione Milestone 9 repo-fix | `get_first_node_in_group` in `game/` 216 -> 184; `HUDManager` 22 -> 1, `PlayerController` 6 -> 1, `ZombieSpawner` 7 -> 1; `tests/player_query_smoke_test.gd`, `tests/player_world_hud_layout_smoke_test.gd`, `tests/zombie_spawner_edge_smoke_test.gd`, `tests/survival_wave_smoke_test.gd`, `tests/tower_defense_smoke_test.gd` | Proseguire solo con goal separati su altri hotspot come `AudioEventRouter`, `BasicEnemy`, `MainMenu` o mode controller |
 | Megamappa e streaming regioni | PASS nella validazione Milestone 3 | `tests/region_streaming_smoke_test.gd`, world graph, persistent world, open passage, exploration map, `docs/latest_commit_validation_report.md` | Riprendere in Milestone 4 (asset isometrici) o nel bilanciamento Milestone 11 |
 | Caduta void e dodge | PASS nel pass runtime 2026-06-19 | `EntityVoidFallComponent`, query terrain di `HazardSystem`, `tests/zombie_fall_hazard_smoke_test.gd`, regressioni combat/drop/wave/ranged/terrain | QA manuale multiplayer locale e leggibilita animazione nel playtest Milestone 11 |
 | Asset isometrici ambiente | PASS; contratto footprint v9 e primo pass albero/roccia 3x3 completati il 2026-06-20 | `tests/obstacle_rendering_contract_smoke_test.gd`, `tests/obstacle_3x3_smoke_test.gd`, `tests/obstacle_asset_visual_qa.gd`, `tests/obstacle_3x3_visual_qa.gd`, screenshot `build/qa/obstacle_3x3/`, `docs/obstacle_rendering.md`, manifest v9 | QA manuale player davanti/dietro e verifica `F9` nel playtest Milestone 11 |

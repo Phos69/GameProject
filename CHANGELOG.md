@@ -131,6 +131,10 @@
 
 ### Changed
 
+- Ridotti i lookup globali nei percorsi player/HUD/spawner: `HUDManager` usa
+  NodePath/cache locali, `PlayerManager` inietta dipendenze nei
+  `PlayerController` e `ZombieModeController` inietta obstacle/hazard/world
+  refs in `ZombieSpawner`; i fallback a gruppi restano per scene isolate.
 - `WeaponVisualRenderer` mantiene le API presentazionali pubbliche ma delega le
   geometrie statiche di pickup, dettagli e projectile a
   `WeaponVisualShapeLibrary`, riducendo il file principale sotto 500 LOC senza

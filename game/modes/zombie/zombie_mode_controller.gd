@@ -213,6 +213,17 @@ func _resolve_components() -> void:
 		multi_region_renderer = get_tree().get_first_node_in_group(
 			"multi_region_renderer"
 		) as MultiRegionRenderer
+	if (
+		zombie_spawner != null
+		and zombie_spawner.has_method("configure_runtime_dependencies")
+	):
+		zombie_spawner.configure_runtime_dependencies(
+			obstacle_system,
+			hazard_system,
+			biome_manager,
+			region_seam_system,
+			world_region_streamer
+		)
 	_connect_biome_manager()
 	_connect_wave_manager()
 

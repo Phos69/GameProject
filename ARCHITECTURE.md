@@ -67,7 +67,9 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 42. `HUDManager` mostra schede slot leggere negli angoli, boss, mappa
     esplorazione e il pannello status persistente solo per Tower Defense;
     Survival/Infinite Arena lo tengono nascosto e `PlayerWorldHudVisual`
-    mantiene sopra ogni player vita, ammo/reload, livello, EXP e super.
+    mantiene sopra ogni player vita, ammo/reload, livello, EXP e super. I suoi
+    riferimenti a mode, wave, boss, drop, world runtime, bioma e hazard sono
+    NodePath/cache locali, con fallback a gruppi solo per scene isolate.
 43. I componenti visuali ricevono stato e profilo senza possedere logica gameplay.
 44. `BossTelegraphVisual` riceve pattern, direzione e durata senza possedere danno.
 45. `WaveWardenVisual` e `RiftArchitectVisual` ricevono solo stato presentazionale.
@@ -83,9 +85,11 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
   Back/B, input D-pad/stick con cooldown, cambio tab LB/RB e callback di
   movimento custom quando una schermata deve interpretare le quattro direzioni.
 - `LocalMultiplayerManager`: mantiene gli slot locali attivi, gestisce join/leave e usa mapping deterministico `device joypad + 1 = player_slot`.
-- `PlayerManager`: spawna/despawna player in base agli slot attivi e tiene il registro degli slot.
+- `PlayerManager`: spawna/despawna player in base agli slot attivi e tiene il registro degli slot; risolve via NodePath le dipendenze runtime principali e le inietta nei `PlayerController` istanziati.
 - `PlayerController`: movimento, mira, attacchi base/equipaggiato, dodge/roll, stato entity
-  `normal/dodging/falling/dead` e colore visuale per slot.
+  `normal/dodging/falling/dead` e colore visuale per slot; riceve
+  `InputManager`, `GameModeManager` e `HazardSystem` da `PlayerManager`, con
+  fallback a gruppi solo per uso isolato della scena player.
 - `PlayerDodgeComponent`: roll con cooldown, invulnerabilita breve, blocco
   del fuoco durante la schivata e validazione di landing/gap/ostacoli; solo le
   fall zone sono trattate come gap attraversabili, mentre gli hazard
@@ -234,6 +238,8 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `WaveDirector`: composizione wave e scaling basati sul bioma corrente.
 - `ZombieSpawner`: spawn dai bordi della camera con distanza minima dai player,
   validazione walkable/hazard/ostacoli/blocker e fallback arena solo se valido.
+  Riceve obstacle, hazard, biome manager, seam system e world streamer da
+  `ZombieModeController`, evitando lookup globali ripetuti nel path spawn.
   Espone motivo di scarto e report tentativi per test/debug; nella megamappa
   valida le posizioni contro regioni streamate world-space invece del solo
   layout locale corrente.
