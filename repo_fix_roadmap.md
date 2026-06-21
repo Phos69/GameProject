@@ -526,6 +526,22 @@ Evidenza:
   `milestone_10_asset_pipeline_smoke_test.gd`,
   `milestone_10_object_asset_smoke_test.gd` e
   `isometric_environment_manifest_smoke_test.gd`.
+- Terzo hotspot trattato nella ripresa M8:
+  `game/modes/zombie/isometric_tile_resolver.gd`.
+- `IsometricTileResolver` e stato ridotto da 1090 a 967 LOC mantenendo API,
+  costanti pubbliche e comportamento di risoluzione.
+- Il catalogo statico di tile, route e sezioni e stato estratto in
+  `game/modes/zombie/isometric_tile_catalog.gd` (`IsometricTileCatalog`,
+  206 LOC), mentre il resolver conserva alias pubblici per i consumer
+  esistenti.
+- Test smoke passati dopo questa estrazione:
+  `milestone_10_tile_layer_smoke_test.gd`,
+  `milestone_10_void_cliff_asset_smoke_test.gd`,
+  `forest_isometric_texture_transition_smoke_test.gd` e
+  `isometric_environment_manifest_smoke_test.gd`.
+- Nota QA: `milestone_10_passage_tile_smoke_test.gd` resta rosso su un caso
+  generato `snow_pass`/`broken_street` di `biome_0_0`, tracciato come follow-up
+  separato in `TODO.md`; il refactor non cambia quel ramo logico.
 
 ### Obiettivo
 

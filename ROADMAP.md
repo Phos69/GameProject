@@ -476,12 +476,12 @@ Attivita post-roadmap:
   `broken_street`, `ruined_house`, vegetazione densa impassabile, dettagli
   strada, fiume/bridge validato, summary seed/debug e asset manifest dedicati
   per `abandoned_car` e `dense_vegetation`.
-- Milestone 8 di `repo_fix_roadmap.md` completata e ripresa con un secondo
-  hotspot: `WeaponVisualShapeLibrary` e stato estratto da
-  `WeaponVisualRenderer`, poi `IsometricSvgFallbackTextureBuilder` e stato
-  estratto da `IsometricSvgTextureLoader`; i due entry point restano
-  compatibili e scendono rispettivamente a 460 e 136 LOC, con smoke mirati
-  passati prima e dopo.
+- Milestone 8 di `repo_fix_roadmap.md` completata e ripresa con hotspot
+  aggiuntivi: `WeaponVisualShapeLibrary` e stato estratto da
+  `WeaponVisualRenderer`, `IsometricSvgFallbackTextureBuilder` da
+  `IsometricSvgTextureLoader` e `IsometricTileCatalog` da
+  `IsometricTileResolver`; gli entry point restano compatibili e scendono
+  rispettivamente a 460, 136 e 967 LOC, con smoke mirati passati.
 - Milestone 9 di `repo_fix_roadmap.md` completata come prima passata:
   dependency lookup ridotti da 216 a 184 in `game/`, con NodePath/cache locali
   in `HUDManager`, injection `PlayerManager -> PlayerController` e injection

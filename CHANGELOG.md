@@ -143,6 +143,9 @@
   fallback rasterizzati per SVG/object/void/slot a
   `IsometricSvgFallbackTextureBuilder`, riducendo il loader a 136 LOC senza
   cambiare manifest o contratti asset runtime.
+- `IsometricTileResolver` mantiene API e costanti pubbliche ma sposta ID,
+  sezioni e liste statiche in `IsometricTileCatalog`, riducendo il resolver a
+  967 LOC senza cambiare la responsabilita di risoluzione per-cella.
 - `HUDManager` ora mostra il `StatusPanel` persistente solo in Tower Defense,
   con titolo modalita, core, crediti, wave, nemici e reward recente; Survival e
   Infinite Arena mantengono nascosto il pannello standard.

@@ -750,6 +750,9 @@ multi-bioma.
   preferiscono `road_cell_tags` diagonali; i
   rettangoli restano per aperture/passaggi e compatibilita. I connector di
   passaggio hanno priorita sulle road decorative sovrapposte.
+- `IsometricTileCatalog` possiede solo ID statici, sezioni manifest e liste di
+  route/tile richiesti. `IsometricTileResolver` mantiene alias pubblici per i
+  consumer esistenti e resta l'unico responsabile della scelta per-cella.
 - Per `infected_plains`, `IsometricTileResolver` usa il set forestale dedicato:
   `forest_grass`, `forest_tall_grass`, `forest_path`, `forest_road`,
   `forest_void`, `forest_cliff_edge`, `forest_mountain_wall` e le transizioni
