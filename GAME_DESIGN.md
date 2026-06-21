@@ -554,6 +554,9 @@ data-driven e level-up/super generano feedback world-space dedicati
 - Ammo director: valutazione ogni 1 secondo, cooldown crate 12 secondi, massimo 1 crate anti-frustrazione attiva.
 - Supply crate: 10-14 ammo condivisa e 16-22 HP.
 - `Field Kit`: +20 HP, pari a circa due colpi boss base o due attacchi zombie aggiuntivi.
+- La validazione repo-fix M11 del 2026-06-21 conserva questi valori: il loop
+  pickup armi, switch, ammo/reload, kill zombie, drop fisico, XP RPG, level-up
+  e passiva passa senza introdurre nuove armi o tuning nascosto.
 - Lo scaling delle modalita resta invariato in questo primo pass e sara rivalutato con varianti nemico.
 
 ## Dungeon

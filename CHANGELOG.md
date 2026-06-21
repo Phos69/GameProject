@@ -4,6 +4,9 @@
 
 ### Added
 
+- Aggiunto `tests/milestone_11_weapon_drop_progression_smoke_test.gd` per
+  validare in un loop survival reale pickup armi, switch inventario,
+  ammo/reload, kill zombie, drop fisico, XP RPG, level-up, passiva e feedback.
 - Aggiunto `tests/milestone_10_asset_fallback_policy_smoke_test.gd` per
   verificare fallback policy, assenza di path `placeholder`/`generic`, asset
   path standard presenti e survival asset-driven senza visual legacy.
@@ -141,6 +144,8 @@
 
 ### Changed
 
+- `tools/run_tests.ps1` e `tools/run_tests.sh` classificano il nuovo guardrail
+  M11 weapon/drop/progressione come test `slow`.
 - `tools/run_tests.ps1` e `tools/run_tests.sh` classificano il nuovo guardrail
   asset/fallback M10 come test `slow`.
 - La documentazione repo-fix M10 ora esplicita che la survival standard non

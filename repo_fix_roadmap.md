@@ -740,6 +740,25 @@ verificabile.
 
 ## Milestone 11 - Armi, drop, progressione e feedback
 
+Stato: completata il 2026-06-21.
+
+Evidenza:
+
+- Aggiunto `tests/milestone_11_weapon_drop_progression_smoke_test.gd`, uno
+  smoke end-to-end su scena principale e runtime survival compatto.
+- Il test copre nello stesso loop: pickup di due armi, switch inventario,
+  ammo/reload della speciale con feedback nel world HUD, kill zombie tramite
+  `HealthSystem`, drop fisico money, XP RPG diretta al killer, level-up,
+  passiva Ranger e feedback audio/visuale.
+- I runner classificano il nuovo guardrail come `slow`, perche avvia il runtime
+  survival reale.
+- Il bilanciamento iniziale in `GAME_DESIGN.md` e stato verificato senza
+  introdurre nuove armi o tuning nascosto.
+- Validazione mirata eseguita: `milestone_11_weapon_drop_progression_smoke_test.gd`;
+  suite weapon fast con 8 smoke; suite RPG fast con 13 smoke;
+  `combat_smoke_test.gd`; `enemy_drop_smoke_test.gd`;
+  `survival_wave_smoke_test.gd`.
+
 ### Obiettivo
 
 Confermare che il sistema weapon/inventory/ammo/drop/progressione sia coerente

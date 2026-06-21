@@ -1295,9 +1295,13 @@ godot --headless --path . --script res://tests/zombie_market_smoke_test.gd
   il gioco genera ammo senza errori.
 - Provare almeno shotgun, martello, bacchetta fuoco, lancia ghiacciata,
   lanciagranate e taser per cono, melee, burn, freeze, AOE e stun.
+- Nel guardrail repo-fix M11, verificare nello stesso loop survival pickup di
+  due armi, cambio slot, ammo/reload, kill zombie, drop fisico, XP RPG,
+  level-up, passiva Ranger e feedback audio/visuale.
 
 ```text
 godot --headless --path . --script res://tests/weapon_inventory_catalog_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_11_weapon_drop_progression_smoke_test.gd
 godot --headless --path . --script res://tests/combat_smoke_test.gd
 godot --headless --path . --script res://tests/enemy_drop_smoke_test.gd
 godot --headless --path . --script res://tests/survival_wave_smoke_test.gd

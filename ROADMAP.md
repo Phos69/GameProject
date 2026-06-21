@@ -493,6 +493,10 @@ Attivita post-roadmap:
   temporanei, nuovo smoke contro placeholder/generic e survival standard
   verificata su tile layer asset-driven, streamer `FULL`, ostacoli
   asset-backed e assenza di visual legacy.
+- Milestone 11 di `repo_fix_roadmap.md` completata: nuovo smoke end-to-end sul
+  runtime survival compatto per pickup armi, switch inventario, ammo/reload,
+  kill zombie, drop fisico, XP RPG, level-up, passiva Ranger e feedback
+  audio/visuale, senza introdurre nuove armi o tuning nascosto.
 - Milestone W0 di `weapon_visual_identity_roadmap.md` completata: baseline
   visuale delle 30 armi catalogo, conferma dei tre profili generici correnti,
   reference da preservare e checklist manuale per pickup, held, HUD,

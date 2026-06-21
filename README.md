@@ -216,6 +216,7 @@ godot --headless --path . --script res://tests/player_world_hud_layout_smoke_tes
 godot --path . --rendering-method gl_compatibility --script res://tests/player_world_hud_visual_qa.gd
 godot --headless --path . --script res://tests/rpg_melee_attack_resolution_smoke_test.gd
 godot --headless --path . --script res://tests/weapon_inventory_catalog_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_11_weapon_drop_progression_smoke_test.gd
 godot --headless --path . --script res://tests/weapon_visual_catalog_smoke_test.gd
 godot --headless --path . --script res://tests/weapon_pickup_visual_identity_smoke_test.gd
 godot --headless --path . --script res://tests/weapon_held_hud_visual_identity_smoke_test.gd
