@@ -145,7 +145,7 @@ func _assert_runtime_obstacle_assets(scene: MainSceneFixture) -> void:
 		if obstacle.is_perimeter_wall():
 			continue
 		inspected_asset_objects += 1
-		assert_true(obstacle.has_asset_sprite(), "%s has an asset sprite" % String(obstacle.obstacle_id))
+		assert_true(obstacle.has_asset_visual(), "%s has an asset-backed visual" % String(obstacle.obstacle_id))
 		assert_false(obstacle.uses_procedural_fallback(), "%s avoids procedural fallback at runtime" % String(obstacle.obstacle_id))
 		assert_false(_path_has_generic_marker(obstacle.get_asset_path()), "%s runtime asset path is not placeholder/generic" % String(obstacle.obstacle_id))
 	assert_gt(checked_runtime_obstacles, 0, "standard survival runtime obstacles are checked")

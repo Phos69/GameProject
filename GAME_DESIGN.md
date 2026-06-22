@@ -696,7 +696,7 @@ Identita dei biomi:
   strada, cliff/void e pareti rocciose, piu transizioni tra grass/path/road,
   tall grass, cliff e mountain wall. La versione starter contiene anche una
   strada principale edge-to-edge, sentieri, almeno una casa, vegetazione densa
-  impassabile, un albero e una roccia `3x3`, auto abbandonate e un possibile
+  impassabile, alberi `3x3` e masse rocciose scalabili, auto abbandonate e un possibile
   fiume attraversabile solo sui bridge;
 - `Bioma Tossico`: pozze e gas, antidoti, zombie tossici ed esplosivi;
 - `Bioma Infuocato`: fiamme, lava, casse militari, runner ed esplosivi;
@@ -710,8 +710,12 @@ Identita dei biomi:
 - case, cabine, laboratori, barriere, barili, relitti, tronchi, ponti,
   vegetazione densa, auto e crate usano sprite trasparenti SVG/PNG con
   silhouette isometrica dedicata, non il placeholder generico unico;
-- `forest_tree` e `large_rock` occupano nove slot (`3x3`) e bloccano tutto il
-  relativo footprint per movimento e proiettili; non sono decorazioni soft;
+- `forest_tree` occupa nove slot (`3x3`); le `large_rock` void-first occupano
+  quadrati da `15x15` a `30x30` celle. Entrambi bloccano tutto il relativo
+  footprint per movimento e proiettili; non sono decorazioni soft. Il player
+  a nord della linea centrale della roccia viene coperto dal cliff, quello a
+  sud resta davanti; in co-op la relazione viene risolta per ogni player. Top
+  a lastre e tile cliff 3D estruse verso l'alto rendono leggibile il volume;
 - i lati collegati tra biomi hanno muri o barriere tematiche con almeno un
   passaggio raggiungibile; i lati senza vicino diventano fall zone con visuale
   cliff/depth;
@@ -925,7 +929,7 @@ Gli status temporanei ora usano cinque ID canonici: `poison`, `burn`, `bleed`, `
 
 | Bioma | Ostacoli leggibili | Hazard/status | Nemici tematici |
 | --- | --- | --- | --- |
-| Pianura Infetta | case diroccate, albero/roccia 3x3, muretti, auto, casse, corridoi larghi | pericolo basso | roster base onboarding |
+| Pianura Infetta | case diroccate, alberi 3x3, masse rocciose 15-30 celle, muretti, auto, casse, corridoi larghi | pericolo basso | roster base onboarding |
 | Tossico | cisterne, tubi, pozze, barili chimici | `poison` da pozze/gas | Toxic Zombie, Toxic Exploder |
 | Infuocato | lava, fiamme, auto bruciate, crateri | `burn` da fuoco/lava | Burned Zombie, Fire Runner, Fire Exploder |
 | Neve | ghiaccio, neve alta, rocce ghiacciate | `freeze`/slow | Frozen Zombie, Ice Armored Zombie, Heavy Slow Zombie |

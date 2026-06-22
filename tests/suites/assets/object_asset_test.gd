@@ -77,7 +77,7 @@ func test_factory_obstacle_coverage() -> void:
 			if obstacle.is_perimeter_wall():
 				assert_true(bool(obstacle.call("uses_procedural_fallback")), "%s uses the explicit tileable wall renderer" % String(obstacle_id))
 			else:
-				assert_true(bool(obstacle.call("has_asset_sprite")), "%s has loaded sprite texture" % String(obstacle_id))
+				assert_true(bool(obstacle.call("has_asset_visual")), "%s has loaded asset-backed visual" % String(obstacle_id))
 				assert_false(bool(obstacle.call("uses_procedural_fallback")), "%s does not use procedural fallback" % String(obstacle_id))
 				assert_eq(String(obstacle.call("get_asset_path")), String(_manifest.get_object_asset_contract(obstacle_id).get("asset_path", "")), "%s sprite path comes from manifest" % String(obstacle_id))
 			assert_true(obstacle.has_ground_shadow(), "%s keeps ground shadow contract" % String(obstacle_id))
@@ -112,7 +112,7 @@ func test_obstacle_system_integration() -> void:
 			if biome_obstacle != null and biome_obstacle.is_perimeter_wall():
 				assert_true(bool(obstacle.call("uses_procedural_fallback")), "%s runtime wall uses its tileable renderer" % String(obstacle_id))
 			else:
-				assert_true(bool(obstacle.call("has_asset_sprite")), "%s runtime obstacle has sprite" % String(obstacle_id))
+				assert_true(bool(obstacle.call("has_asset_visual")), "%s runtime obstacle has an asset-backed visual" % String(obstacle_id))
 				assert_false(bool(obstacle.call("uses_procedural_fallback")), "%s runtime obstacle avoids procedural fallback" % String(obstacle_id))
 			assert_true(obstacle.is_in_group("environment_obstacles"), "%s runtime obstacle keeps environment group" % String(obstacle_id))
 			assert_true(obstacle.is_in_group("spawn_blockers"), "%s runtime obstacle keeps spawn blocker group" % String(obstacle_id))

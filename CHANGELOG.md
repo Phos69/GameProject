@@ -4,6 +4,21 @@
 
 ### Added
 
+- Aggiunto `RectilinearRockAreaMeshBuilder`: le `large_rock` void-first da
+  `15x15` a `30x30` celle non scalano piu il PNG 3x3. `BiomeTileLayer` rende
+  l'intero `rock_rect` con top world-space, facce cliff e mesh separate per
+  bordi orizzontali/verticali; il nodo oggetto conserva solo collisione e debug
+  `F9`. Inclusa QA reale in `tests/rock_area_visual_qa.gd`.
+- Corretto l'orientamento delle aree rocciose: la faccia verticale occupa gli
+  ultimi 6 tile sul lato sud della collisione, mentre il top prosegue 8 tile a
+  nord. `RockAreaOccluderVisual` partecipa al Y-sort dell'ostacolo e usa la
+  linea centrale per distinguere separatamente ogni player dietro/davanti.
+- Aggiunto `rock_plateau_top_generated.png`, materiale top-down dedicato e
+  armonizzato con i cliff v2, e `rock_cliff_face_upward_generated.png` per le
+  pareti rialzate. `IsometricCliffMeshBuilder` supporta ora il mode `raise`:
+  riusa le stesse 14 geometrie N/S/E/W, corner e diagonali del void, ma estrude
+  facce, lip e fenditure verso l'alto. Le masse rocciose applicano il materiale
+  world-space a moduli 3D da 4 celle sul fronte sud.
 - Riscrittura test M7 — area A7 Characters, RPG & Progression migrata a GUT
   (12/12 file → 3 suite sotto `tests/suites/progression/`):
   `rpg_progression_test.gd` (stat di classe e formule di danno, XP da kill/wave,

@@ -167,6 +167,18 @@ ombra a terra, anchor al pavimento, `sort_offset` e footprint debug opzionale.
 `BiomeObstacle` resta il fallback tecnico quando il manifest dichiara un
 fallback procedurale esplicito.
 
+Le `large_rock` scalabili usano il render mode `tile_layer_rock_area`: il nodo
+oggetto conserva collisione e overlay `F9`, mentre `BiomeTileLayer` sostituisce
+lo sprite stirato con top continuo sull'intero `rock_rect`, facce cliff e mesh
+separate per bordi orizzontali/verticali. La faccia occupa il margine sud della
+collisione; il top si prolunga a nord e `RockAreaOccluderVisual` lo replica nel
+Y-sort per coprire soltanto i player dietro. Visual e collisione derivano dallo
+stesso rettangolo, ma l'estensione nord resta solo presentazionale. Il top usa
+`edges/cliffs/textures/rock_plateau_top_generated.png`; la faccia usa
+`rock_cliff_face_upward_generated.png`. Non e una fascia piatta: il mode
+`raise` di `IsometricCliffMeshBuilder` applica il materiale world-space alle
+stesse geometrie 3D del void, invertendo l'estrusione e portando il lip in cima.
+
 Gli slot ostacolo misurano `4x4` celle logiche. I formati piccoli vivono in
 cartelle per categoria (`rocks/`, `fences/`, `debris/`, `trees/`, `wrecks/`) e
 riportano la dimensione nel filename; le case vivono in `objects/houses/`.

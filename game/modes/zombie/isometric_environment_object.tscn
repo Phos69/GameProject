@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://game/modes/zombie/isometric_environment_object.gd" id="1_object"]
+[ext_resource type="Script" path="res://game/modes/zombie/rocks/rock_area_occluder_visual.gd" id="2_occluder"]
 
 [node name="IsometricEnvironmentObject" type="StaticBody2D"]
 script = ExtResource("1_object")
@@ -12,3 +13,7 @@ centered = true
 visible = false
 centered = true
 z_index = 1
+
+[node name="RockAreaOccluder" type="Node2D" parent="."]
+visible = false
+script = ExtResource("2_occluder")

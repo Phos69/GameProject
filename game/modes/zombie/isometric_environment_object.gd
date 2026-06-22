@@ -6,6 +6,15 @@ class_name IsometricEnvironmentObject
 
 const ASSET_SPRITE_NAME := "AssetSprite"
 const DAMAGE_OVERLAY_NAME := "DamageOverlay"
+const TILE_LAYER_ROCK_RENDER_MODE := &"tile_layer_rock_area"
+const ROCK_AREA_OCCLUDER_NAME := "RockAreaOccluder"
+const ROCK_AREA_OCCLUDER_SCRIPT = preload(
+	"res://game/modes/zombie/rocks/rock_area_occluder_visual.gd"
+)
+const OCCLUSION_HORIZONTAL_MARGIN := 8.0
+const CLIFF_RELATION_OUTSIDE := &"outside"
+const CLIFF_RELATION_BEHIND := &"behind"
+const CLIFF_RELATION_FRONT := &"front"
 const SVG_TEXTURE_LOADER = preload(
 	"res://game/modes/zombie/isometric_svg_texture_loader.gd"
 )
@@ -23,7 +32,9 @@ var anchor_id: StringName = &"iso_floor_center"
 var asset_status: String = ""
 var asset_sprite: Sprite2D
 var damage_overlay: Sprite2D
+var rock_area_occluder: RockAreaOccluderVisual
 var procedural_fallback_active: bool = false
+var render_mode: StringName = &"sprite"
 
 # Opaque-content metrics (bounds + width profile, texture pixels) keyed by
 # asset_path. The same asset always loads at one deterministic size, so it is
@@ -75,11 +86,52 @@ func has_asset_sprite() -> bool:
 		and asset_sprite.visible
 	)
 
+func has_asset_visual() -> bool:
+	return (
+		has_asset_sprite()
+		or (
+			uses_tile_layer_rock_visual()
+			and rock_area_occluder != null
+			and rock_area_occluder.has_texture()
+		)
+	)
+
+func get_render_mode() -> StringName:
+	return render_mode
+
+func uses_tile_layer_rock_visual() -> bool:
+	return render_mode == TILE_LAYER_ROCK_RENDER_MODE
+
+func is_world_position_behind_cliff(world_position: Vector2) -> bool:
+	return (
+		classify_world_position_relative_to_cliff(world_position)
+		== CLIFF_RELATION_BEHIND
+	)
+
+func is_world_position_in_front_of_cliff(world_position: Vector2) -> bool:
+	return (
+		classify_world_position_relative_to_cliff(world_position)
+		== CLIFF_RELATION_FRONT
+	)
+
+func classify_world_position_relative_to_cliff(
+	world_position: Vector2
+) -> StringName:
+	if not uses_tile_layer_rock_visual():
+		return CLIFF_RELATION_OUTSIDE
+	var local_position := to_local(world_position)
+	if absf(local_position.x) > obstacle_size.x * 0.5 + OCCLUSION_HORIZONTAL_MARGIN:
+		return CLIFF_RELATION_OUTSIDE
+	return CLIFF_RELATION_BEHIND if local_position.y < 0.0 else CLIFF_RELATION_FRONT
+
+func get_cliff_sort_line_y() -> float:
+	return global_position.y
+
 func uses_procedural_fallback() -> bool:
 	return procedural_fallback_active
 
 func uses_generic_fallback() -> bool:
-	if has_asset_sprite() and not procedural_fallback_active:
+	if has_asset_visual() and not procedural_fallback_active:
 		return false
 	return super.uses_generic_fallback()
 
@@ -91,6 +143,10 @@ func set_debug_footprint_visible(enabled: bool) -> void:
 	queue_redraw()
 
 func _draw() -> void:
+	if uses_tile_layer_rock_visual():
+		if show_debug_footprint:
+			_draw_rect_debug_footprint()
+		return
 	if is_perimeter_wall() or procedural_fallback_active:
 		super._draw()
 		return
@@ -103,6 +159,7 @@ func _apply_asset_contract() -> void:
 	var manifest := IsometricEnvironmentManifest.get_shared()
 	var contract := manifest.get_object_asset_contract(obstacle_id)
 	asset_path = String(contract.get("asset_path", ""))
+	render_mode = StringName(str(contract.get("render_mode", "sprite")))
 	anchor_id = StringName(str(contract.get("anchor", "iso_floor_center")))
 	asset_status = String(contract.get("status", ""))
 	if contract.has("sort_offset"):
@@ -151,12 +208,31 @@ func _ensure_visual_nodes() -> void:
 	damage_overlay.z_index = 1
 	damage_overlay.y_sort_enabled = false
 
+	rock_area_occluder = get_node_or_null(
+		ROCK_AREA_OCCLUDER_NAME
+	) as RockAreaOccluderVisual
+	if rock_area_occluder == null:
+		rock_area_occluder = (
+			ROCK_AREA_OCCLUDER_SCRIPT.new() as RockAreaOccluderVisual
+		)
+		rock_area_occluder.name = ROCK_AREA_OCCLUDER_NAME
+		add_child(rock_area_occluder)
+		rock_area_occluder.owner = owner
+	rock_area_occluder.z_index = 0
+	rock_area_occluder.y_sort_enabled = false
+
 func _load_asset_texture(contract: Dictionary) -> void:
 	procedural_fallback_active = false
 	if asset_sprite == null:
 		return
 	asset_sprite.texture = null
 	asset_sprite.visible = false
+	if rock_area_occluder != null:
+		rock_area_occluder.visible = false
+	if uses_tile_layer_rock_visual():
+		if rock_area_occluder != null:
+			rock_area_occluder.configure(obstacle_size, asset_path)
+		return
 	if asset_path.is_empty():
 		procedural_fallback_active = _contract_allows_procedural_fallback(contract)
 		return
@@ -405,6 +481,11 @@ func _draw_iso_debug_footprint() -> void:
 	var outline := points.duplicate()
 	outline.append(points[0])
 	draw_polyline(outline, Color(0.30, 0.80, 1.0, 0.68), 1.5, true)
+
+func _draw_rect_debug_footprint() -> void:
+	var footprint_rect := Rect2(-obstacle_size * 0.5, obstacle_size)
+	draw_rect(footprint_rect, Color(0.15, 0.60, 0.95, 0.12), true)
+	draw_rect(footprint_rect, Color(0.30, 0.80, 1.0, 0.88), false, 2.5)
 
 func _draw_occupied_base() -> void:
 	if not blocks_movement:
