@@ -54,6 +54,10 @@ func _run() -> void:
 	_finish()
 
 func _expect_default_survival_world(biome_manager: BiomeManager) -> void:
+	_expect(
+		biome_manager.get_generation_seed() == GameConstants.GOLDEN_WORLD_SEED,
+		"default survival run uses the golden world seed"
+	)
 	var cells := biome_manager.get_generated_biome_map()
 	_expect(cells.size() == 9, "default survival generates a 3x3 biome map")
 	var graph := biome_manager.get_world_graph()

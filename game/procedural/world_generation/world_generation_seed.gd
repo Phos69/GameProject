@@ -3,7 +3,8 @@ class_name WorldGenerationSeed
 
 signal seed_changed(seed_value: int)
 
-@export var default_seed: int = 20260615
+# Default condiviso con i test: la sorgente di verita e GameConstants.GOLDEN_WORLD_SEED.
+@export var default_seed: int = GameConstants.GOLDEN_WORLD_SEED
 
 var global_seed: int = 0
 
