@@ -77,7 +77,6 @@ func _run() -> void:
 		_run_connection_data_smoke(graph)
 		_run_saved_connection_smoke(graph)
 	_run_passage_layout_smoke(cells, resolver)
-	_run_transition_gate_visual_smoke()
 
 	biome_manager.queue_free()
 	_finish()
@@ -260,14 +259,6 @@ func _run_saved_connection_smoke(graph: WorldGraph) -> void:
 		_expect(after.exit_tile_id == before.exit_tile_id, "%s save keeps exit tile" % String(before.connection_id))
 		_expect(after.world_connector_rect == before.world_connector_rect, "%s save keeps source connector rect" % String(before.connection_id))
 		_expect(after.target_world_connector_rect == before.target_world_connector_rect, "%s save keeps target connector rect" % String(before.connection_id))
-
-func _run_transition_gate_visual_smoke() -> void:
-	var gate := BiomeTransitionGate.new()
-	_expect(not gate.show_debug_visual, "transition gates hide debug draw by default")
-	gate.free()
-	var source := _read_text("res://game/modes/zombie/biome_transition_gate.gd")
-	_expect(not source.contains("_draw_direction_arrow"), "transition gate no longer draws direction arrows")
-	_expect(not source.contains("_draw_passage_marks"), "transition gate no longer draws passage marks")
 
 func _passage_inner_probe_emits_entry(
 	cell: BiomeCell,

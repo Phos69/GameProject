@@ -64,7 +64,6 @@ func _run() -> void:
 	_expect(start_cell != null, "current region cell exists")
 	_expect(graph != null, "world graph exists")
 	_expect(world_runtime.get_current_region_id() == start_cell.id, "world runtime tracks current region")
-	_expect(transition_system.get_active_gates().is_empty(), "open passages use no runtime gates")
 	_expect(get_nodes_in_group("biome_transition_gates").is_empty(), "no biome transition gate nodes exist")
 	if start_cell == null or graph == null or start_cell.passages.is_empty():
 		_finish()

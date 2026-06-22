@@ -87,10 +87,6 @@ func _run() -> void:
 		get_nodes_in_group("biome_transition_gates").is_empty(),
 		"standard survival does not instantiate biome transition gate nodes"
 	)
-	_expect(
-		transition_system.get_active_gates().is_empty(),
-		"legacy transition command API has no active gates"
-	)
 
 	var survival_mode := get_first_node_in_group("survival_mode") as SurvivalMode
 	if survival_mode != null:

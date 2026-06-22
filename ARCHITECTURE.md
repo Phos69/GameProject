@@ -223,11 +223,11 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
   Converte la posizione del party in tile globali, verifica che il bordo
   attraversato appartenga a un `WorldRegionConnection` aperto e aggiorna
   `BiomeManager`/`WorldRuntime` senza creare `Area2D` o marker di transizione.
-- `BiomeTransitionSystem`: API legacy/debug per forzare `transition_to()` negli
-  smoke e nei tool esistenti; non istanzia piu `BiomeTransitionGate` nel
-  runtime survival standard.
-- `BiomeTransitionGate`: classe storica mantenuta per compatibilita dei test di
-  dimensionamento/span; non e piu creata dalla survival.
+- `BiomeTransitionSystem`: API imperativa di debug/test per forzare
+  `transition_to()` (cambio bioma/regione) da smoke e tool. Il runtime survival
+  standard non la usa per navigare: il cambio regione e rilevato da
+  `RegionSeamSystem`. I portali Area2D `BiomeTransitionGate` sono stati rimossi e
+  questo nodo non istanzia piu alcun gate.
 - `BiomeEnvironmentLayout`: placement deterministico di floor scavati,
   `road_cell_tags`, rettangoli di apertura, blocchi interni, bridge,
   water/deep-water rects, ostacoli fisici, casse e hazard per un bioma, con
@@ -722,7 +722,7 @@ multi-bioma.
 - La megamappa contiene territori `500x500`, seed locali, vicini, bordi, grafo connesso, passaggi fisici, fall boundary e layout ambientali validati prima di essere assegnati alle `BiomeDefinition`.
 - Ogni nuova run survival riparte dalla `Pianura Infetta`.
 - `WorldRuntime` marca la regione iniziale come visited, scopre i vicini collegati e conserva lo stato esplorazione.
-- `BiomeTransitionSystem` collega territori confinanti tramite passaggi aperti; il party condivide una sola regione corrente.
+- I territori confinanti sono collegati da passaggi aperti; `RegionSeamSystem` aggiorna la regione corrente e il party condivide una sola regione alla volta.
 - Quando il party attraversa un varco, `RegionSeamSystem` verifica posizione,
   regione target e connessione aperta usando coordinate globali; i lati senza
   edge non cambiano regione e restano muro, bordo o fall zone.
@@ -838,10 +838,10 @@ multi-bioma.
   licenza, attribution e `fallback_path` quando l'asset e ancora assente.
 - La fallback policy M10 distingue fallback tecnici necessari da status
   temporanei. Il percorso survival standard non puo usare path
-  `placeholder`/`generic`, `generic_barrier` implicito, `NeighborGround_*` o
-  `BiomeTransitionGate`; i vecchi renderer/ground procedurali (`BiomeRegionGround`,
-  `BiomeTerrainPatch`, `MultiRegionRenderer`) sono stati rimossi dal codice.
-  `tests/milestone_10_asset_fallback_policy_smoke_test.gd` blocca queste
+  `placeholder`/`generic`, `generic_barrier` implicito o `NeighborGround_*`; i
+  vecchi renderer/ground procedurali (`BiomeRegionGround`, `BiomeTerrainPatch`,
+  `MultiRegionRenderer`) e i portali `BiomeTransitionGate` sono stati rimossi dal
+  codice. `tests/milestone_10_asset_fallback_policy_smoke_test.gd` blocca queste
   regressioni insieme all'asset check.
 - `BiomeObstacle` costruisce la collisione dal manifest: `collision_shape`
   (`rectangle`/`circle`/`open`) guida lo shape runtime e `contains_global_position`,

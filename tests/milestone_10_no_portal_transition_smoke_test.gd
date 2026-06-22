@@ -61,10 +61,6 @@ func _run() -> void:
 		get_nodes_in_group("biome_transition_gates").is_empty(),
 		"survival creates no biome transition gate nodes"
 	)
-	_expect(
-		transition_system.get_active_gates().is_empty(),
-		"legacy transition system exposes no active runtime gates"
-	)
 
 	var start_cell := biome_manager.get_current_biome_cell()
 	var graph := biome_manager.get_world_graph()

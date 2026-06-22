@@ -135,8 +135,7 @@ func _run() -> void:
 			"%s retains a physical blocked boundary" % String(biome_id)
 		)
 		_expect(
-			transition_system.get_active_gates().is_empty()
-			and get_nodes_in_group("biome_transition_gates").is_empty(),
+			get_nodes_in_group("biome_transition_gates").is_empty(),
 			"%s exposes open passages without runtime gates" % String(biome_id)
 		)
 		_expect(

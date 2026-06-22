@@ -161,8 +161,7 @@ func _run() -> void:
 			"resource crate system renders at least the current-region generated crates"
 		)
 		_expect(
-			transition_system.get_active_gates().is_empty()
-			and get_nodes_in_group("biome_transition_gates").is_empty(),
+			get_nodes_in_group("biome_transition_gates").is_empty(),
 			"generated passages no longer instantiate transition gates"
 		)
 		if not active_layout.fall_zone_rects.is_empty():

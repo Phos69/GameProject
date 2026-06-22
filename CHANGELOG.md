@@ -4,6 +4,11 @@
 
 ### Removed
 
+- Rimossi i portali legacy `BiomeTransitionGate` e tutto il macchinario di spawn
+  gate da `BiomeTransitionSystem`, che resta solo come API imperativa
+  `transition_to()` per debug/smoke (il cambio regione nel runtime standard e di
+  `RegionSeamSystem`). Eliminato `tests/milestone_6_open_passage_smoke_test.gd` e
+  aggiornati i test che interrogavano `get_active_gates()`.
 - Rimossi i ground procedurali legacy `BiomeRegionGround` e `BiomeTerrainPatch`:
   `TerrainGenerator` costruisce sempre il `BiomeTileLayer` asset-driven (anche nel
   percorso mono-regione di Infinite Arena). I `fallback_path` del manifest sono
