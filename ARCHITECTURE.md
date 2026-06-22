@@ -791,14 +791,25 @@ multi-bioma.
   path, road, transizioni e cliff; le celle pure `void_depth`/`forest_void`
   restano escluse dalla mesh e dal reticolo, lasciando un fondale uniforme con
   lo stesso colore condiviso dal `VoidBackdrop` fuori-mappa.
-  `IsometricCliffMeshBuilder` costruisce per le sole celle `fall_zone` di
-  confine la faccia verticale e il lip come mesh UV: i 14 tile neighbor-aware
-  (lati N/S/E/W, angoli interni/esterni e diagonali) condividono
-  `cliff_face_texture` e `cliff_lip_texture` con coordinate world-space
-  continue; il lip usa il raccordo raster prato-roccia condiviso. Il colore
-  vertex mantiene la luce per orientamento e dissolve la
-  faccia raster nel void uniforme; cresta e fenditure procedurali restano come
-  dettaglio leggibile. Collisioni e regole di caduta restano esclusivamente in
+  `IsometricCliffMeshBuilder` mantiene le 14 geometrie neighbor-aware per il
+  fallback non forestale. Nel forestale `RectilinearCliffFaceMeshBuilder`
+  sostituisce le facce per-cell con quattro pannelli continui per ogni fall
+  interno: la parete lontana (nord) e quella vicina (sud) scendono dritte mentre
+  le pareti laterali (est/ovest) sono sghembate verso l'interno del void
+  (`LATERAL_VOID_SLOPE`) per rendere il burrone in finta prospettiva, come le
+  vecchie facce diamante EDGE E/W. Tutte campionano `cliff_face_texture` e la
+  dissolvono verso il void. `IsometricCliffBorderMeshBuilder` costruisce il
+  lip con bordi raster distinti: due orizzontali, due verticali e quattro join
+  geometrici; i fall perimetrali emettono solo il lato rivolto al terreno in
+  base a `hazard_sides`. Le celle geometriche di transizione
+  mantengono il prato fino alla cresta, evitando un underlay grigio rettangolare
+  e una linea a zig-zag sopra la faccia. Non esiste una mesh corner sovrapposta:
+  il bordo orizzontale possiede la giunzione e il verticale termina alla sua
+  profondita rocciosa. Entrambe le mesh edge escludono la porzione erba dei
+  propri raster e campionano solo roccia dentro la fall zone; il ground resta
+  unico owner del prato, evitando cap scuri, croci, quadrati e doppio
+  campionamento. Le linee e le facce inclinate legacy non vengono sovrapposte
+  nel forestale. Collisioni e regole di caduta restano esclusivamente in
   `BiomeFallZone`/`HazardSystem`.
 - Gli ostacoli runtime sono `StaticBody2D` sul layer `1`, quindi player e zombie
   li trattano come impedimento fisico.

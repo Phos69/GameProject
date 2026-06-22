@@ -119,7 +119,13 @@ func append_transition(
 				_face_vertices, _face_colors, _face_uvs, _face_indices,
 				start, end, start_drop, end_drop, face_top, face_bottom
 			)
-			_append_lip_quad(start, end, brightness)
+			_append_lip_quad(
+				start,
+				end,
+				start_drop,
+				end_drop,
+				brightness
+			)
 			_append_line(lip_lines, start, end)
 			var stripes := int(face.get("fall_stripes", 0))
 			if stripes > 0:
@@ -215,12 +221,24 @@ func _append_gradient_quad(
 	indices.append(base + 2)
 	indices.append(base + 3)
 
-func _append_lip_quad(start: Vector2, end: Vector2, brightness: float) -> void:
+func _append_lip_quad(
+	start: Vector2,
+	end: Vector2,
+	start_drop: Vector2,
+	end_drop: Vector2,
+	brightness: float
+) -> void:
 	var segment := end - start
 	if segment.length_squared() <= 0.001:
 		return
 	var normal := Vector2(-segment.y, segment.x).normalized() * 4.8
+	var void_direction := (start_drop + end_drop).normalized()
+	if normal.dot(void_direction) < 0.0:
+		normal = -normal
 	var base := _lip_vertices.size()
+	# V=0 is always the walkable side and V=1 the drop side. The directional
+	# grass-to-rock material can therefore keep one straight crest on every
+	# orientation instead of flipping randomly between adjacent cliff segments.
 	_lip_vertices.append(start - normal)
 	_lip_vertices.append(end - normal)
 	_lip_vertices.append(end + normal)

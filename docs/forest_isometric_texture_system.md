@@ -34,15 +34,34 @@ sono in `assets/environment/isometric/tiles/forest/` e in
 
 Le facce di caduta usano inoltre i materiali PNG finali
 `cliff_face_texture` e `cliff_lip_texture`. Il resolver continua a scegliere le
-14 varianti geometriche; `IsometricCliffMeshBuilder` assegna UV world-space
-continue, luce per orientamento e dissolvenza verso il colore uniforme del
-void. Queste texture non entrano nella classificazione terrain.
+14 varianti geometriche per classificazione e fallback, ma nel forestale
+`RectilinearCliffFaceMeshBuilder` sostituisce le facce inclinate per-cell con
+pannelli continui orizzontali e verticali, allineati ai `fall_zone_rects`. Le UV
+restano world-space e la faccia dissolve verso il colore uniforme del void.
+Queste texture non entrano nella classificazione terrain.
 
 Il prato base usa il raster seamless finale
 `tiles/forest/textures/forest_grass_generated.png`; il lip usa
-`edges/cliffs/textures/grass_cliff_edge_generated.png` come raccordo
-prato-roccia. `BiomeTileLayer` applica il prato su run continue con UV
-world-space e mantiene path, road, wall, void e collisioni separati.
+`edges/cliffs/textures/grass_cliff_edge_generated_v2.png` come raccordo lineare
+orizzontale (void verso il basso) e `grass_cliff_edge_vertical_generated.png`
+per i lati verticali, campionando solo la fascia rocciosa pura
+(`HORIZONTAL_ROCK_UV_START`/`VERTICAL_ROCK_UV_START`) per evitare il seam verde
+del muschio di transizione. Il
+`BiomeTileLayer` estende il prato sulle celle di transizione fino alla cresta;
+`IsometricCliffBorderMeshBuilder` costruisce due bordi orizzontali, due
+verticali e quattro corner per i buchi interni; sui rettangoli perimetrali
+disegna solo il lato a contatto con il terreno, evitando una doppia linea verso
+il fuori-mappa. Gli angoli non usano una texture sovrapposta: il bordo
+orizzontale possiede l'intera giunzione e quello verticale termina esattamente
+alla profondita della sua fascia rocciosa. In questo modo non compaiono croci,
+blocchi quadrati o doppio campionamento. Entrambi i lati campionano solo la
+porzione rocciosa interna al void: il prato esterno resta interamente del ground
+mesh e non mostra cap scuri agli estremi.
+`RectilinearCliffFaceMeshBuilder` tiene dritte le pareti lontana (nord) e vicina
+(sud) ma sghemba quelle laterali (est/ovest) verso l'interno del void
+(`LATERAL_VOID_SLOPE`), cosi i lati del fall mostrano il burrone in finta
+prospettiva invece di una striscia piatta; la mesh legacy a rombi resta fallback
+non forestale. Path, road, wall, void e collisioni restano separati.
 
 Sentiero e strada usano rispettivamente
 `forest_dirt_path_generated.png` e `forest_asphalt_generated.png`. I contratti
@@ -115,8 +134,9 @@ tile.
   o gate visibili, e le pareti laterali devono leggere come montagna/roccia.
 - Camminare vicino a void e fall zone: il bordo deve mostrare cliff/depth e
   non deve sembrare pavimento attraversabile.
-- Controllare un bordo per ciascuna direzione e almeno un angolo: nessuna
-  giunzione deve mostrare buchi neri, creste interrotte o raccordi ambigui.
+- Controllare un bordo orizzontale, uno verticale e i quattro angoli: nessuna
+  giunzione deve mostrare doppie linee, quadrati, creste interrotte o raccordi
+  ambigui.
 - Verificare che tall grass, path, road e grass non cambino collisioni: player,
   zombie, crate e spawn restano sulle stesse classi terrain.
 - In high contrast e reduced motion, controllare che player, zombie, pickup,

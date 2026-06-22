@@ -62,13 +62,22 @@ SVG non riscrive i raster autorati: in `--check` ne verifica comunque la
 presenza, mentre trasparenza e copertura sono validate da
 `tests/obstacle_asset_visual_qa.gd`.
 
-I cliff void usano due raster finali in `edges/cliffs/textures/`:
-`cliff_face_generated_v2.png` e `grass_cliff_edge_generated.png`. Le iterazioni
-`cliff_face_generated.png` e `cliff_lip_generated.png` restano conservate come
-sorgenti di confronto. Non rappresentano
-orientamenti separati: `IsometricCliffMeshBuilder` applica i materiali seamless
-con UV world-space alle 14 geometrie risolte dal tile layer. L'import limita il
-runtime a 512 px e genera mipmap; i sorgenti restano conservati per iterazioni.
+I cliff void usano raster finali in `edges/cliffs/textures/`:
+`cliff_face_generated_v2.png`, `grass_cliff_edge_generated_v2.png` per il
+raccordo orizzontale (void verso il basso) e
+`grass_cliff_edge_vertical_generated.png` per i lati verticali. I bordi
+campionano solo la fascia rocciosa pura di questi raster
+(`HORIZONTAL_ROCK_UV_START`/`VERTICAL_ROCK_UV_START` in
+`IsometricCliffBorderMeshBuilder`), saltando il muschio verde della transizione
+erba-roccia per non lasciare un seam verde sul perimetro. Le iterazioni
+`cliff_face_generated.png`, `cliff_lip_generated.png` e
+`grass_cliff_edge_generated.png` restano conservate come sorgenti di confronto. `RectilinearCliffFaceMeshBuilder` applica il materiale
+roccioso a pannelli continui orizzontali e verticali nel forestale; le 14
+geometrie di `IsometricCliffMeshBuilder` restano fallback non forestale. Il
+raccordo della cresta usa mesh e raster dedicati costruiti da
+`IsometricCliffBorderMeshBuilder`; gli angoli hanno ownership orizzontale e non
+usano un tile sovrapposto. L'import limita il runtime a 512 px e genera
+mipmap; i sorgenti restano conservati per iterazioni.
 
 Il prato forestale finale usa
 `tiles/forest/textures/forest_grass_generated.png`. `BiomeTileLayer` lo stende

@@ -400,6 +400,35 @@
   sovrapposte e restano coerenti con il `passage_type`.
 - Stabilizzati gli smoke M13 repo-fix per starter senza blocchi interni,
   ostacoli/crate in regioni streamate e recovery temporizzate RPG sotto carico.
+- Ripristinato il burrone in finta prospettiva sui lati verticali dei cliff
+  forestali: `RectilinearCliffFaceMeshBuilder` ora sghemba le pareti laterali
+  (est/ovest) verso l'interno del void (`LATERAL_VOID_SLOPE`) invece di disegnare
+  una striscia piatta axis-aligned, recuperando l'inclinazione delle vecchie
+  facce diamante EDGE E/W. Pareti lontana e vicina restano dritte.
+- Rimosse le barre verdi che tracciavano il perimetro dei cliff forestali, da
+  due cause distinte. (1) I bordi del `IsometricCliffBorderMeshBuilder` ora
+  campionano solo la fascia rocciosa pura dei raster
+  (`HORIZONTAL_ROCK_UV_START`/`VERTICAL_ROCK_UV_START`) invece di partire dal
+  rapporto geometrico erba-roccia, dove il muschio verde della transizione
+  restava visibile; la geometria delle strisce e invariata. (2) Le celle di
+  cresta `TILE_FOREST_CLIFF_EDGE`/`TILE_GROUND_TO_VOID_CLIFF` in `BiomeTileLayer`
+  sono ora coperte dal prato seamless invece di disegnare un rombo isometrico
+  verde del terreno fuori dal bordo roccioso: il prato arriva al bordo del void
+  e la roccia resta interamente di competenza delle mesh border/face dedicate.
+- Corretto il raccordo prato-cliff: il nuovo
+  `grass_cliff_edge_generated_v2.png` usa una separazione lineare erba-roccia,
+  affiancata da `grass_cliff_edge_vertical_generated.png`;
+  `IsometricCliffBorderMeshBuilder` applica realmente due bordi orizzontali e
+  due verticali ai fall interni, mentre quelli perimetrali mantengono solo il
+  lato rivolto al terreno. Negli angoli non viene sovrapposto un tile dedicato:
+  il bordo orizzontale possiede la giunzione e il verticale termina alla sua
+  profondita rocciosa; la mesh verticale campiona solo la parte rocciosa interna
+  al void. Anche quella orizzontale esclude la propria porzione erba: il ground
+  resta l'unico proprietario del prato e nessun edge puo lasciare cap scuri agli
+  estremi. `RectilinearCliffFaceMeshBuilder` sostituisce inoltre nel forestale
+  le facce inclinate per-cell con pannelli continui su/giu e destra/sinistra;
+  la geometria legacy resta fallback non forestale. Croci, quadrati e denti
+  angolari risultano eliminati. Collisioni e caduta restano invariate.
 - Corretto il profilo `Infinite Arena` murato: il context `walled` raggiunge
   anche la pipeline starter void-first, che riempie il void residuo come floor
   invece di generare chasm/fall zone interne.

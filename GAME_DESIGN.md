@@ -747,7 +747,12 @@ Regole hazard:
   discesa e il gradiente della parete verso il nero devono rendere il vuoto non
   ambiguo senza affidarsi al nero o alla semplice assenza di tile;
 - tutti gli orientamenti cliff condividono una faccia rocciosa e un lip
-  pietra/terra/erba raster, ripetuti con UV world-space e dissolti verso il
+  pietra/terra/erba raster: il prato arriva fino a una cresta continua con
+  bordi orizzontali e verticali rettilinei; negli angoli il bordo orizzontale
+  possiede la giunzione e quello verticale termina prima del raccordo, senza
+  aloni grigi, tile quadrati, zig-zag o edge che proseguono a croce. La faccia e
+  costruita con pannelli continui orizzontali e verticali, non con i lati
+  inclinati dei rombi per-cell; viene ripetuta con UV world-space e dissolta verso il
   colore uniforme del void; la grafica non modifica danno o attraversabilita;
 - il void profondo non mostra texture o reticoli ripetuti: resta uniforme e
   usa lo stesso colore del fuori-mappa e viene definito visivamente dal cliff

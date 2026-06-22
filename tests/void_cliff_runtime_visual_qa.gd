@@ -62,9 +62,21 @@ func _run() -> void:
 		if layer == null:
 			continue
 		_expect(layer.has_cliff_art_textures(), "runtime tile layer has generated cliff art")
+		_expect(
+			layer.has_forest_cliff_border_art(),
+			"runtime tile layer applies dedicated horizontal and vertical cliff art"
+		)
 		_expect(layer.has_forest_ground_art_texture(), "runtime tile layer has generated grass art")
 		_expect(layer.has_forest_surface_art_textures(), "runtime tile layer has every forest surface")
 		_expect(layer.get_cliff_transition_count() > 0, "runtime tile layer builds cliff transitions")
+		_expect(
+			int(layer.get_forest_cliff_border_counts().get("total", 0)) > 0,
+			"runtime fall zones build visible straight border segments"
+		)
+		_expect(
+			int(layer.get_forest_cliff_border_counts().get("faces", 0)) > 0,
+			"runtime forest cliffs replace angled per-cell faces with rectilinear faces"
+		)
 
 	var cells := biome_manager.get_generated_biome_map()
 	_expect(not cells.is_empty(), "runtime generated region exists")
