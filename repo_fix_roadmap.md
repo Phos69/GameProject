@@ -806,6 +806,9 @@ nel gameplay reale, non solo nei test isolati.
 
 ## Milestone 12 - Zombie, nemici e bilanciamento modalita
 
+Stato: completata il 2026-06-22 con guardrail automatici mirati; il playtest
+manuale lungo resta tracciato in `BAL-001`.
+
 ### Obiettivo
 
 Validare ritmo, spawn, boss, varianti e cross-bioma nelle due modalita zombie:
@@ -818,6 +821,25 @@ multi-bioma.
 - Bilanciamento `Infinite Arena` non verificato come default.
 - Bilanciamento `Zombie Survival` non verificato in run multi-bioma.
 - Rischio che test soak passino ma gameplay sia poco leggibile.
+
+### Evidenza 2026-06-22
+
+- Aggiunti `tests/milestone_12_balance_metrics_smoke_test.gd` e
+  `tests/milestone_12_zombie_balance_metrics_smoke_test.gd`: raccolgono
+  durata wave, nemici vivi, drop, danni, boss, biomi attivi e spawn edge.
+- I runner PowerShell/Bash classificano i nuovi guardrail M12 come `slow`.
+- La run `Infinite Arena` accelerata copre cinque wave, boss wave, drop,
+  danno, roster runner/tank/shooter e assenza di world runtime nel profilo
+  compatto.
+- La run `Zombie Survival` metrica copre world runtime standard `3x3`, spawn
+  fuori camera raggiungibili e varianti tematiche previste nei biomi avanzati.
+- I test ten-wave/soak usano `disable_region_streaming` per isolare stabilita
+  wave/director/biomi; i test transition/chase limitano il radius headless alla
+  regione corrente per rendere deterministica la validazione automatica.
+- Validazione mirata passata: `milestone_12`, `boss_smoke`,
+  `zombie_revamp_ten_wave`, `zombie_revamp_ten_minute_soak`,
+  `zombie_spawner_edge`, `zombie_biome_transition` e
+  `milestone_10_cross_biome_chase`.
 
 ### Interventi tecnici
 

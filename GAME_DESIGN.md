@@ -557,6 +557,9 @@ data-driven e level-up/super generano feedback world-space dedicati
 - La validazione repo-fix M11 del 2026-06-21 conserva questi valori: il loop
   pickup armi, switch, ammo/reload, kill zombie, drop fisico, XP RPG, level-up
   e passiva passa senza introdurre nuove armi o tuning nascosto.
+- La validazione repo-fix M12 del 2026-06-22 non cambia i valori numerici, ma
+  aggiunge guardrail metrici su durata wave, nemici vivi, drop, danni, boss,
+  spawn edge e varianti bioma in `Infinite Arena` e `Zombie Survival`.
 - Lo scaling delle modalita resta invariato in questo primo pass e sara rivalutato con varianti nemico.
 
 ## Dungeon
@@ -598,6 +601,11 @@ di survival, ma con un profilo compatto:
 La modalita parte direttamente dal menu/Continue senza Character Select. `F1`
 la avvia come scorciatoia debug.
 
+Guardrail M12: una run automatica accelerata deve coprire almeno cinque wave,
+includere una boss wave, generare drop e danni, mostrare runner/tank/shooter nel
+roster e non creare `WorldRuntime`, streaming regioni o nemici residui fuori
+dal profilo compatto.
+
 ## Zombie survival
 
 `Zombie Survival` e la modalita zombie esplorativa con mappa e biomi connessi.
@@ -629,6 +637,14 @@ Mercato ricorrente:
 
 Prezzi iniziali configurabili: cura 25/55 HP a 8/14, refill attivo a 10,
 refill completo a 22, armi common/uncommon/rare/epic a 18/28/42/60.
+
+Guardrail M12: la modalita standard usa world runtime `3x3`, spawn fuori
+camera validati dal terreno e varianti tematiche nei biomi avanzati. I test
+headless ten-wave/soak possono disabilitare lo streaming regioni per isolare
+wave, director e rotazione biomi; i test transition/chase limitano il radius
+alla regione corrente per restare deterministici. Il playtest manuale resta il
+controllo richiesto per full-radius visual streaming, performance e leggibilita
+su 20 minuti.
 
 Il revamp zombie e completo come prima versione giocabile:
 

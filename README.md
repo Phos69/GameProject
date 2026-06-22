@@ -159,6 +159,9 @@ godot --headless --path . --script res://tests/zombie_biome_transition_smoke_tes
 godot --headless --path . --script res://tests/zombie_biome_enemy_smoke_test.gd
 godot --headless --path . --script res://tests/zombie_revamp_ten_wave_smoke_test.gd
 godot --headless --path . --script res://tests/zombie_revamp_ten_minute_soak_test.gd
+godot --headless --path . --script res://tests/milestone_12_balance_metrics_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_12_zombie_balance_metrics_smoke_test.gd
+godot --headless --path . --script res://tests/milestone_12_enemy_variants_smoke_test.gd
 godot --headless --path . --script res://tests/biome_world_generation_smoke_test.gd
 godot --headless --path . --script res://tests/world_graph_connectivity_smoke_test.gd
 godot --headless --path . --script res://tests/persistent_world_generation_smoke_test.gd

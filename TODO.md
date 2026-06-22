@@ -49,6 +49,10 @@ protetta da guardrail contro placeholder/generic e visual legacy.
 La Milestone 11 di `repo_fix_roadmap.md` e completata: un guardrail
 end-to-end copre pickup armi, switch inventario, ammo/reload, kill zombie,
 drop fisico, XP RPG, level-up, passiva e feedback nel runtime survival reale.
+La Milestone 12 di `repo_fix_roadmap.md` e completata con guardrail metrici:
+`Infinite Arena` e `Zombie Survival` raccolgono durata wave, nemici vivi, drop,
+danni, boss, spawn edge e varianti bioma; il playtest manuale lungo resta in
+`BAL-001`.
 
 Regole per nuove voci:
 
@@ -78,6 +82,7 @@ Regole per nuove voci:
 | Dependency lookup player/HUD/spawner | PASS nella validazione Milestone 9 repo-fix | `get_first_node_in_group` in `game/` 216 -> 184; `HUDManager` 22 -> 1, `PlayerController` 6 -> 1, `ZombieSpawner` 7 -> 1; `tests/player_query_smoke_test.gd`, `tests/player_world_hud_layout_smoke_test.gd`, `tests/zombie_spawner_edge_smoke_test.gd`, `tests/survival_wave_smoke_test.gd`, `tests/tower_defense_smoke_test.gd` | Proseguire solo con goal separati su altri hotspot come `AudioEventRouter`, `BasicEnemy`, `MainMenu` o mode controller |
 | Asset fallback policy M10 | PASS nella validazione Milestone 10 repo-fix | `docs/repo_fix_milestone_10_asset_fallback_policy.md`, `tests/milestone_10_asset_fallback_policy_smoke_test.gd`, asset generator `--check`, smoke manifest/legacy/object/cliff/tile e QA visuale finale M10 | Monitorare come regressione asset/fallback; nuovi status `needs_asset`/`procedural_fallback`/`deprecated` richiedono fallback path esplicito e TODO collegata |
 | Weapon/drop/progressione M11 | PASS nella validazione Milestone 11 repo-fix | `tests/milestone_11_weapon_drop_progression_smoke_test.gd`, suite weapon fast 8 smoke, suite RPG fast 13 smoke, `tests/combat_smoke_test.gd`, `tests/enemy_drop_smoke_test.gd`, `tests/survival_wave_smoke_test.gd` | Monitorare come regressione integrata di inventario armi, ammo/reload, XP RPG, drop fisici e feedback; tuning futuro resta in `BAL-001` |
+| Zombie/bilanciamento M12 | PASS nella validazione Milestone 12 repo-fix | `tests/milestone_12_balance_metrics_smoke_test.gd`, `tests/milestone_12_zombie_balance_metrics_smoke_test.gd`, `tests/milestone_12_enemy_variants_smoke_test.gd`, `tests/zombie_revamp_ten_wave_smoke_test.gd`, `tests/zombie_revamp_ten_minute_soak_test.gd`, `tests/boss_smoke_test.gd`, `tests/zombie_spawner_edge_smoke_test.gd`, `tests/zombie_biome_transition_smoke_test.gd`, `tests/milestone_10_cross_biome_chase_smoke_test.gd` | Monitorare pacing, full-radius visual streaming e playtest manuale 20 minuti dentro `BAL-001` |
 | Megamappa e streaming regioni | PASS nella validazione Milestone 3 | `tests/region_streaming_smoke_test.gd`, world graph, persistent world, open passage, exploration map, `docs/latest_commit_validation_report.md` | Riprendere in Milestone 4 (asset isometrici) o nel bilanciamento Milestone 11 |
 | Caduta void e dodge | PASS nel pass runtime 2026-06-19 | `EntityVoidFallComponent`, query terrain di `HazardSystem`, `tests/zombie_fall_hazard_smoke_test.gd`, regressioni combat/drop/wave/ranged/terrain | QA manuale multiplayer locale e leggibilita animazione nel playtest Milestone 11 |
 | Asset isometrici ambiente | PASS; contratto footprint v9 e primo pass albero/roccia 3x3 completati il 2026-06-20 | `tests/obstacle_rendering_contract_smoke_test.gd`, `tests/obstacle_3x3_smoke_test.gd`, `tests/obstacle_asset_visual_qa.gd`, `tests/obstacle_3x3_visual_qa.gd`, screenshot `build/qa/obstacle_3x3/`, `docs/obstacle_rendering.md`, manifest v9 | QA manuale player davanti/dietro e verifica `F9` nel playtest Milestone 11 |
@@ -176,11 +181,13 @@ revisione manuale, baseline e consolidamento TODO.
   `game/enemies/`, `game/bosses/`, `game/visuals/`, `tests/`,
   `docs/testing/manual_checklist.md`.
 - Criterio di accettazione: survival 10 wave e soak 10 minuti restano stabili,
-  ogni classe RPG ha un motivo chiaro per essere scelta, i biomi avanzati sono
-  pericolosi ma non frustranti e il frame time resta nel target documentato o
-  viene tracciato come debito.
-- Test richiesto: playtest survival 20 minuti con 1-4 player, dungeon con tre
-  seed, tower defense 5 wave, profiling e regressione smoke principale.
+  i guardrail M12 restano verdi, ogni classe RPG ha un motivo chiaro per essere
+  scelta, i biomi avanzati sono pericolosi ma non frustranti e il frame time
+  resta nel target documentato o viene tracciato come debito.
+- Test richiesto: playtest `Infinite Arena` 20 minuti, playtest survival
+  multi-bioma 20 minuti con 1-4 player, dungeon con tre seed, tower defense
+  5 wave, profiling full-radius visual streaming e regressione smoke
+  principale.
 
 ### REL-001 - Packaging, firma digitale e release readiness
 

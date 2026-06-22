@@ -59,6 +59,8 @@ function Get-TestCategory {
 		"forest_isometric_texture_transition",
 		"milestone_10_asset_fallback_policy",
 		"milestone_11_weapon_drop_progression",
+		"milestone_12_balance_metrics",
+		"milestone_12_zombie_balance_metrics",
 		"milestone_10_cross_biome_chase",
 		"milestone_10_full_region_streaming",
 		"milestone_10_isometric_performance",

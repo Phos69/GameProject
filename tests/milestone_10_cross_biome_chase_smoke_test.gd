@@ -24,6 +24,8 @@ func _run() -> void:
 	var enemy_system := get_first_node_in_group("enemy_system") as EnemySystem
 	var seam_system = get_first_node_in_group("region_seam_system")
 	var zombie_spawner := get_first_node_in_group("zombie_spawner") as ZombieSpawner
+	var streamer = get_first_node_in_group("world_region_streamer")
+	var multi_region_renderer = get_first_node_in_group("multi_region_renderer")
 	_expect(game_mode_manager != null, "game mode manager is available")
 	_expect(wave_manager != null, "wave manager is available")
 	_expect(biome_manager != null, "biome manager is available")
@@ -44,6 +46,10 @@ func _run() -> void:
 		return
 
 	wave_manager.initial_delay = 100.0
+	if streamer != null:
+		streamer.set("active_radius", 0)
+	if multi_region_renderer != null:
+		multi_region_renderer.set("neighbor_radius", 0)
 	_expect(
 		game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL, {
 			"world_seed": 91919,

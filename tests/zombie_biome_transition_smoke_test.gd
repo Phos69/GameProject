@@ -42,6 +42,7 @@ func _run() -> void:
 		"hazard_system"
 	) as HazardSystem
 	var streamer = get_first_node_in_group("world_region_streamer")
+	var multi_region_renderer = get_first_node_in_group("multi_region_renderer")
 	var hud := get_first_node_in_group("hud_manager") as HUDManager
 	var playground := main.get_node_or_null(
 		"World/Playground"
@@ -75,6 +76,10 @@ func _run() -> void:
 
 	wave_manager.initial_delay = 100.0
 	transition_system.transition_cooldown = 0.01
+	if streamer != null:
+		streamer.set("active_radius", 0)
+	if multi_region_renderer != null:
+		multi_region_renderer.set("neighbor_radius", 0)
 	_expect(
 		game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL),
 		"survival starts with biome transitions"

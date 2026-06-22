@@ -4,6 +4,10 @@
 
 ### Added
 
+- Aggiunti `tests/milestone_12_balance_metrics_smoke_test.gd` e
+  `tests/milestone_12_zombie_balance_metrics_smoke_test.gd` per validare
+  durata wave, nemici vivi, drop, danni, boss, spawn edge e varianti bioma in
+  `Infinite Arena` e `Zombie Survival`.
 - Aggiunto `tests/milestone_11_weapon_drop_progression_smoke_test.gd` per
   validare in un loop survival reale pickup armi, switch inventario,
   ammo/reload, kill zombie, drop fisico, XP RPG, level-up, passiva e feedback.
@@ -144,6 +148,11 @@
 
 ### Changed
 
+- `tools/run_tests.ps1` e `tools/run_tests.sh` classificano i nuovi guardrail
+  metrici M12 come test `slow`.
+- I test M12/ten-wave/soak/cross-biome usano context o radius mirati per
+  mantenere deterministica la validazione headless di wave, boss, biomi e
+  streaming.
 - `tools/run_tests.ps1` e `tools/run_tests.sh` classificano il nuovo guardrail
   M11 weapon/drop/progressione come test `slow`.
 - `tools/run_tests.ps1` e `tools/run_tests.sh` classificano il nuovo guardrail

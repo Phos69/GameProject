@@ -69,7 +69,13 @@ func _run() -> void:
 	survival_mode.boss_wave_interval = 99
 	transition_system.transition_cooldown = 0.01
 	_expect(
-		game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL),
+		game_mode_manager.set_mode(
+			GameConstants.MODE_SURVIVAL,
+			{
+				"world_seed": 20260622,
+				"disable_region_streaming": true
+			}
+		),
 		"accelerated survival soak starts"
 	)
 

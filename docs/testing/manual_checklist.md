@@ -1306,3 +1306,29 @@ godot --headless --path . --script res://tests/combat_smoke_test.gd
 godot --headless --path . --script res://tests/enemy_drop_smoke_test.gd
 godot --headless --path . --script res://tests/survival_wave_smoke_test.gd
 ```
+
+## Regressione repo-fix Milestone 12 - bilanciamento zombie
+
+- In `Infinite Arena`, giocare almeno 20 minuti o 10 wave e verificare che il
+  blocco `500x500` resti chiuso, senza world runtime, seam o softlock.
+- Confermare che le boss wave partano, finiscano e lascino il loop pronto alla
+  wave successiva, con drop leggibili e danni attribuibili.
+- Verificare che runner, tank e shooter compaiano nel mix entro le prime wave
+  accelerate o in un playtest breve.
+- In `Zombie Survival`, attraversare piu regioni/biomi con streaming normale e
+  verificare che spawn e inseguimento restino fuori camera, raggiungibili e
+  senza teletrasporti visibili.
+- Confermare che i biomi avanzati mostrino varianti tematiche coerenti
+  (`toxic`, `burning`, `frozen`, `drowned`) senza bloccare il director.
+- Annotare durata wave percepita, picchi di nemici vivi, drop, morti, frame
+  time e qualsiasi rallentamento con full-radius visual streaming.
+
+```text
+./tools/run_tests.ps1 -Filter milestone_12 -SkipImport -TimeoutSec 180
+./tools/run_tests.ps1 -Filter zombie_revamp_ten_wave -SkipImport -TimeoutSec 180
+./tools/run_tests.ps1 -Filter zombie_revamp_ten_minute_soak -SkipImport -TimeoutSec 180
+./tools/run_tests.ps1 -Filter boss_smoke -SkipImport -TimeoutSec 180
+./tools/run_tests.ps1 -Filter zombie_spawner_edge -SkipImport -TimeoutSec 120
+./tools/run_tests.ps1 -Filter zombie_biome_transition -SkipImport -TimeoutSec 180
+./tools/run_tests.ps1 -Filter milestone_10_cross_biome_chase -SkipImport -TimeoutSec 180
+```

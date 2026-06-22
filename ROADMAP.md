@@ -497,6 +497,11 @@ Attivita post-roadmap:
   runtime survival compatto per pickup armi, switch inventario, ammo/reload,
   kill zombie, drop fisico, XP RPG, level-up, passiva Ranger e feedback
   audio/visuale, senza introdurre nuove armi o tuning nascosto.
+- Milestone 12 di `repo_fix_roadmap.md` completata: guardrail metrici per
+  `Infinite Arena` e `Zombie Survival` coprono durata wave, nemici vivi, drop,
+  danni, boss, spawn edge, varianti bioma, ten-wave, soak e cross-biome con
+  contesti headless deterministici; il playtest full-radius lungo resta nel
+  backlog `BAL-001`.
 - Milestone W0 di `weapon_visual_identity_roadmap.md` completata: baseline
   visuale delle 30 armi catalogo, conferma dei tre profili generici correnti,
   reference da preservare e checklist manuale per pickup, held, HUD,
