@@ -2,8 +2,19 @@
 
 ## Unreleased
 
+### Removed
+
+- Rimosso il renderer legacy `MultiRegionRenderer` e il suo
+  `tests/milestone_8_multi_region_smoke_test.gd`. `WorldRegionStreamer` e l'unico
+  produttore di contenuto regione: `ZombieModeController` non istanzia piu il
+  vecchio neighbor-ground placeholder ne il fallback `_render_neighbor_regions`.
+
 ### Added
 
+- Seed golden unico condiviso tra gioco e test: `GameConstants.GOLDEN_WORLD_SEED`
+  e la sorgente di verita del default di `WorldGenerationSeed`, con helper
+  `tests/support/golden_world.gd` e `tests/golden_seed_default_smoke_test.gd` che
+  ancora il contratto "default del gioco == mondo golden".
 - Aggiornata la checklist manuale repo-fix Milestone 13 con workflow standard
   per import, `fast`, `slow`, visual QA, asset check, export PCK, export EXE e
   build smoke.

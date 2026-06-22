@@ -184,10 +184,6 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
   dell'attraversamento. Registra i nodi nei sistemi zombie esistenti, cosi
   query di collisione, safe position, danno da caduta e ledger crate restano
   centralizzati.
-- `MultiRegionRenderer`: prototipo/fallback visuale storico; conserva il
-  contratto dei vicini solo ground per test e debug. Non viene creato durante
-  la risoluzione componenti della survival standard; `ZombieModeController` lo
-  istanzia solo come fallback lazy se `WorldRegionStreamer` non puo streamare.
 - `WorldGenerationSeed`: seed globale di run e derivazione deterministica degli stream RNG per mappa, terreno, ostacoli, bordi, loot e spawn.
 - `BiomeWorldGenerator`: orchestratore della pipeline procedurale globale per mappa biomi, layout per cella e debug seed.
 - `BiomeMapGenerator`: costruisce la griglia di `BiomeCell` `500x500` con default `3x3`, assegna tipi bioma, coordinate globali, vicini, seed locali e grafo connesso con loop.
@@ -680,10 +676,10 @@ multi-bioma.
   vicini hanno contenuto `FULL`; regioni oltre il raggio restano dati
   persistenti non istanziati.
 - `ZombieModeController` invoca `WorldRegionStreamer.stream_world()` a ogni
-  cambio regione e lo pulisce a `stop_run()`; l'integrazione e gated da
-  `enable_multi_region_render`. `MultiRegionRenderer` resta fallback visuale
-  lazy-only se lo streamer non e disponibile, quindi il bootstrap survival
-  standard non crea piu neighbor ground placeholder.
+  cambio regione e lo pulisce a `stop_run()`; lo streaming multi-regione e gated
+  da `enable_multi_region_render`. Il vecchio `MultiRegionRenderer` (renderer
+  parallelo dei vicini solo-ground) e stato rimosso: lo streamer e l'unico
+  produttore di contenuto regione, senza piu neighbor ground placeholder.
 
 ## Contratto progressione e run
 

@@ -43,7 +43,6 @@ var random_encounter_system
 var world_runtime: WorldRuntime
 var region_seam_system
 var world_region_streamer
-var multi_region_renderer: MultiRegionRenderer
 var is_active: bool = false
 var last_applied_region_id: StringName = &""
 # Screen-space backdrop painted with the active biome's void colour so anything
@@ -229,8 +228,6 @@ func stop_run() -> void:
 		region_seam_system.stop_run()
 	if world_region_streamer != null:
 		world_region_streamer.clear()
-	if multi_region_renderer != null:
-		multi_region_renderer.clear()
 	if random_encounter_system != null and random_encounter_system.has_method("cleanup_encounter"):
 		random_encounter_system.cleanup_encounter()
 	if world_runtime != null:
@@ -298,10 +295,6 @@ func _resolve_components() -> void:
 		world_region_streamer = WORLD_REGION_STREAMER_SCRIPT.new()
 		world_region_streamer.name = "WorldRegionStreamer"
 		add_child(world_region_streamer)
-	if multi_region_renderer == null:
-		multi_region_renderer = get_tree().get_first_node_in_group(
-			"multi_region_renderer"
-		) as MultiRegionRenderer
 	if (
 		zombie_spawner != null
 		and zombie_spawner.has_method("configure_runtime_dependencies")
@@ -415,7 +408,6 @@ func _apply_active_biome(biome: BiomeDefinition) -> void:
 		hazard_system.start_run(biome)
 	if resource_crate_system != null:
 		resource_crate_system.start_run(biome)
-	_render_neighbor_regions(region_id)
 	active_biome_applied.emit(biome.biome_id)
 
 func _stream_active_regions(region_id: StringName) -> bool:
@@ -444,54 +436,6 @@ func _stream_active_regions(region_id: StringName) -> bool:
 		obstacle_system,
 		hazard_system,
 		resource_crate_system
-	)
-
-func _render_neighbor_regions(region_id: StringName) -> void:
-	if (
-		not region_streaming_enabled_for_run
-		or biome_manager == null
-		or region_id.is_empty()
-	):
-		return
-	if multi_region_renderer == null:
-		multi_region_renderer = get_tree().get_first_node_in_group(
-			"multi_region_renderer"
-		) as MultiRegionRenderer
-	if multi_region_renderer == null:
-		multi_region_renderer = MultiRegionRenderer.new()
-		multi_region_renderer.name = "LegacyMultiRegionRenderer"
-		add_child(multi_region_renderer)
-	var graph = biome_manager.get_world_graph()
-	if graph == null:
-		return
-	var container := _get_environment_container()
-	if container == null:
-		return
-	multi_region_renderer.render_world(
-		graph,
-		region_id,
-		container,
-		_layout_for_region,
-		_palette_for_biome,
-		_neighbor_ground_sample_step()
-	)
-
-func _layout_for_region(region_id: StringName) -> BiomeEnvironmentLayout:
-	if biome_manager == null:
-		return null
-	var cell := biome_manager.get_cell_by_region_id(region_id) as BiomeCell
-	return cell.generated_layout if cell != null else null
-
-func _palette_for_biome(biome_id: StringName) -> BiomePalette:
-	if biome_manager == null:
-		return null
-	var definition = biome_manager.get_biome_definition(biome_id)
-	return definition.palette if definition != null else null
-
-func _neighbor_ground_sample_step() -> int:
-	# Neighbors are background context: sample coarser than the current region.
-	return IsometricEnvironmentManifest.get_shared().get_terrain_sample_step(
-		&"performance"
 	)
 
 func _get_environment_container() -> Node:
