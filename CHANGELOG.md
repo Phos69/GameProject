@@ -4,6 +4,9 @@
 
 ### Added
 
+- Aggiornata la checklist manuale repo-fix Milestone 13 con workflow standard
+  per import, `fast`, `slow`, visual QA, asset check, export PCK, export EXE e
+  build smoke.
 - Aggiunti `tests/milestone_12_balance_metrics_smoke_test.gd` e
   `tests/milestone_12_zombie_balance_metrics_smoke_test.gd` per validare
   durata wave, nemici vivi, drop, danni, boss, spawn edge e varianti bioma in
@@ -148,6 +151,14 @@
 
 ### Changed
 
+- README, ROADMAP, TODO, ARCHITECTURE e GAME_DESIGN documentano lo stato reale
+  M13: export PCK Windows verificato, export EXE/build smoke bloccati
+  localmente dai template Godot `4.6.3` mancanti e `REL-001` ancora aperta per
+  release pubblicabile.
+- `tools/run_tests.ps1` e `tools/run_tests.sh` classificano
+  `milestone_13_weapon_tower_visual` e `milestone_17_run_results` come test
+  `slow`, per mantenere la suite `fast` sotto il timeout standard senza
+  indebolire i guardrail.
 - `tools/run_tests.ps1` e `tools/run_tests.sh` classificano i nuovi guardrail
   metrici M12 come test `slow`.
 - I test M12/ten-wave/soak/cross-biome usano context o radius mirati per
@@ -349,6 +360,11 @@
 
 ### Fixed
 
+- Ripristinato `tests/milestone_10_passage_tile_smoke_test.gd`: i connector di
+  passaggio del resolver isometrico hanno priorita sulle road decorative
+  sovrapposte e restano coerenti con il `passage_type`.
+- Stabilizzati gli smoke M13 repo-fix per starter senza blocchi interni,
+  ostacoli/crate in regioni streamate e recovery temporizzate RPG sotto carico.
 - Corretto il profilo `Infinite Arena` murato: il context `walled` raggiunge
   anche la pipeline starter void-first, che riempie il void residuo come floor
   invece di generare chasm/fall zone interne.

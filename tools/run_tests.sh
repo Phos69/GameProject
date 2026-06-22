@@ -70,6 +70,8 @@ classify_test() {
 		*milestone_11_weapon_drop_progression*|\
 		*milestone_12_balance_metrics*|\
 		*milestone_12_zombie_balance_metrics*|\
+		*milestone_13_weapon_tower_visual*|\
+		*milestone_17_run_results*|\
 		*milestone_10_cross_biome_chase*|\
 		*milestone_10_full_region_streaming*|\
 		*milestone_10_isometric_performance*|\

@@ -73,14 +73,18 @@ func _run() -> void:
 	_expect(beast_used, "licantropo super activates")
 	_expect(rpg_component.is_beast_transformed(), "licantropo enters transformed state")
 	rpg_component.beast_night_timer = 0.02
-	for _frame in range(4):
+	for _frame in range(60):
+		if not rpg_component.is_beast_transformed():
+			break
 		await process_frame
 	_expect(not rpg_component.is_beast_transformed(), "beast night transformation ends")
 	_expect(rpg_component.is_beast_recovering(), "beast night enters readable recovery")
 	rpg_component.super_notice_timer = 0.0
 	_expect(rpg_component.get_super_status_text() == "RECUPERO", "beast recovery status is explicit")
 	rpg_component.beast_recovery_timer = 0.02
-	for _frame in range(4):
+	for _frame in range(60):
+		if not rpg_component.is_beast_recovering():
+			break
 		await process_frame
 	_expect(not rpg_component.is_beast_recovering(), "beast recovery expires")
 

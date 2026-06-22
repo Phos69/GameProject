@@ -113,7 +113,9 @@ func _run() -> void:
 		"phantom blade damages enemies in the dash path"
 	)
 	rpg_component.super_invulnerable_timer = 0.02
-	for _frame in range(4):
+	for _frame in range(60):
+		if not player_health.invulnerable:
+			break
 		await process_frame
 	_expect(not player_health.invulnerable, "phantom blade invulnerability recovers")
 

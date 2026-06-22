@@ -12,8 +12,8 @@ Il progetto vuole diventare una piattaforma modulare per sperimentare tre modali
 - boss fight ricorrenti nelle ondate importanti o alla fine dei livelli.
 
 La base attuale contiene Milestone 0-21 completate: tre modalita giocabili,
-progressione persistente, build Windows verificata e sistemi modulari per
-visual, co-op, risultati, audio, boss e varianti arena survival.
+progressione persistente, preset export Windows documentato e sistemi modulari
+per visual, co-op, risultati, audio, boss e varianti arena survival.
 
 ## Stack tecnico
 
@@ -135,9 +135,20 @@ tools/run_tests.sh
 ./tools/run_tests.ps1 -Category fast -SkipImport
 tools/run_tests.sh "" fast
 
+# Suite lenta: include guardrail pesanti da eseguire con timeout piu ampio.
+./tools/run_tests.ps1 -Category slow -SkipImport -TimeoutSec 240
+TEST_TIMEOUT=240 SKIP_IMPORT=1 tools/run_tests.sh "" slow
+
 # Filtri per nome file.
 ./tools/run_tests.ps1 -Filter biome -SkipImport
 tools/run_tests.sh biome
+
+# Asset check isometrico.
+godot --headless --path . --script res://tools/generate_isometric_environment_assets.gd -- --check
+
+# QA visuale richiede rendering reale/GPU.
+./tools/run_tests.ps1 -Category visual -SkipImport -IncludeVisualQa
+INCLUDE_VISUAL_QA=1 SKIP_IMPORT=1 tools/run_tests.sh "" visual
 ```
 
 I log dei runner vengono scritti in `build/test_logs/`. Le categorie supportate
@@ -231,12 +242,17 @@ godot --path . --rendering-method gl_compatibility --script res://tests/weapon_v
 Export Windows:
 
 ```text
+godot --headless --path . --import
 godot --headless --path . --export-release "Windows Desktop" build/iso_local_sandbox.exe
 godot --headless --path . --export-pack "Windows Desktop" build/iso_local_sandbox.pck
 build/iso_local_sandbox.exe --rendering-method gl_compatibility -- --build-smoke
 ```
 
-I template Windows ufficiali Godot `4.6.3` devono essere installati in `Godot/export_templates/4.6.3.stable`. EXE e PCK sono stati generati; lo smoke test della release passa con exit code `0`.
+I template Windows ufficiali Godot `4.6.3` devono essere installati in
+`%APPDATA%/Godot/export_templates/4.6.3.stable`. In questa validazione M13 del
+2026-06-22 l'export PCK passa, mentre l'export EXE e il build smoke sono
+bloccati localmente dai template `windows_debug_x86_64.exe` e
+`windows_release_x86_64.exe` assenti; il blocco e esterno al codice del preset.
 
 ## Struttura cartelle
 

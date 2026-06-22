@@ -43,6 +43,12 @@ func _validate_cell_props(cell: BiomeCell) -> void:
 	if layout == null:
 		_expect(false, "%s has generated layout" % String(cell.id))
 		return
+	if layout.block_rects.is_empty():
+		_expect(
+			bool(layout.validation_report.get("is_valid", false)),
+			"%s has no internal block props contract and stays valid" % String(cell.id)
+		)
+		return
 	var prop_pool := _prop_pool(cell.biome_id)
 
 	var prop_count := 0

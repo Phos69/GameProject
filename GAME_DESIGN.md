@@ -660,6 +660,8 @@ Il revamp zombie e completo come prima versione giocabile:
 - il party attraversa passaggi fisici aperti tra territori confinanti; la
   regione corrente cambia dalla posizione world-space del gruppo, senza
   teletrasporto, portali o trigger visibili nel flusso standard;
+- entry, exit e connector dei passaggi mantengono tile coerenti con il bioma di
+  collegamento anche quando si sovrappongono a strade decorative interne;
 - ogni area ha passaggi fisici solo sui lati collegati; i lati esterni senza vicino sono fall boundary leggibili;
 - la regione corrente e i territori collegati adiacenti sono presenti come
   contenuto gameplay: ostacoli, hazard e crate dei vicini sono gia fisici prima

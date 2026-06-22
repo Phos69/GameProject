@@ -749,10 +749,11 @@ multi-bioma.
   (`road`, `bridge`, `snow_pass`, `broken_gate`, `burned_road`, entry/exit),
   `hazard_floor`, `border_floor`, `void_depth` o una transizione cliff
   neighbor-aware. Le transizioni distinguono bordi north/south/east/west,
-  angoli interni/esterni e due raccordi diagonali. Le route generate
-  preferiscono `road_cell_tags` diagonali; i
-  rettangoli restano per aperture/passaggi e compatibilita. I connector di
-  passaggio hanno priorita sulle road decorative sovrapposte.
+  angoli interni/esterni e due raccordi diagonali. Le aperture di passaggio
+  dichiarate nei rettangoli hanno priorita sulle road decorative sovrapposte,
+  cosi entry, exit e connector restano coerenti con il `passage_type`; le altre
+  route generate preferiscono `road_cell_tags` diagonali e usano i rettangoli
+  solo per compatibilita.
 - `IsometricTileCatalog` possiede solo ID statici, sezioni manifest e liste di
   route/tile richiesti. `IsometricTileResolver` mantiene alias pubblici per i
   consumer esistenti e resta l'unico responsabile della scelta per-cella.

@@ -316,6 +316,11 @@ Attivita post-roadmap:
 - secondo boss e registro configurabile completati;
 - arena survival, biomi e props interattivi completati;
 - accessibilita, profiling e pipeline asset completati;
+- repo-fix Milestone 13 completata il 2026-06-22: README, TODO, roadmap,
+  architettura, game design, changelog, checklist manuale e report di
+  validazione sono allineati al workflow corrente; l'export PCK Windows passa,
+  mentre l'export EXE/build smoke richiede i template ufficiali Godot `4.6.3`
+  mancanti nell'ambiente locale;
 - roadmap RPG Mode M1-M12 completata fino al polish feedback RPG;
 - roadmap identita visuale armi completata fino alla Milestone W1: contratto
   condiviso esteso in `WeaponVisualData`, helper `WeaponVisualRenderer` e

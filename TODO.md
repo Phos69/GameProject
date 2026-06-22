@@ -53,6 +53,10 @@ La Milestone 12 di `repo_fix_roadmap.md` e completata con guardrail metrici:
 `Infinite Arena` e `Zombie Survival` raccolgono durata wave, nemici vivi, drop,
 danni, boss, spawn edge e varianti bioma; il playtest manuale lungo resta in
 `BAL-001`.
+La Milestone 13 di `repo_fix_roadmap.md` e completata: README, roadmap,
+checklist manuale e report di validazione descrivono i comandi standard di
+import, fast/slow, visual QA, asset check ed export; `REL-001` resta aperta
+solo per template/firma/build smoke release esterni all'ambiente corrente.
 
 Regole per nuove voci:
 
@@ -65,10 +69,10 @@ Regole per nuove voci:
 
 | Area | Stato noto | Evidenza | Prossima azione |
 | --- | --- | --- | --- |
-| Documentazione principale | Rivista | `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`, `TODO.md`, report test e checklist manuale | Mantenere allineata durante le milestone successive |
+| Documentazione principale | PASS nella validazione Milestone 13 repo-fix | `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`, `TODO.md`, `docs/latest_commit_validation_report.md`, `docs/testing/manual_checklist.md` | Mantenere allineata durante le milestone successive |
 | Test discovery | 75 runner trovati | `rg --files tests` | Usare come inventario per regressioni future |
 | Suite smoke | PASS nella validazione Milestone 1 | `docs/latest_commit_validation_report.md` | Rieseguire dopo modifiche runtime o teardown |
-| Build/export Windows | PASS nell'ultima validazione completa disponibile | `docs/latest_commit_validation_report.md` | Rieseguire in Milestone 12 o se cambia packaging |
+| Build/export Windows | PCK PASS; EXE/build smoke bloccati localmente dai template Windows Godot `4.6.3` assenti | `docs/latest_commit_validation_report.md`, `export_presets.cfg` | Installare template ufficiali e riprendere `REL-001` prima di release pubblicabile |
 | Shutdown headless | Risolto nella Milestone 1 | Loop 100 avvii main scene e smoke prioritari senza cleanup warning noti | Monitorare solo come regressione futura |
 | Mini-eventi bioma | PASS nella validazione Milestone 2 | `tests/biome_mini_events_smoke_test.gd`, `tests/random_encounter_smoke_test.gd`, `docs/latest_commit_validation_report.md` | Riprendere solo dentro playtest/bilanciamento Milestone 11 |
 | Default Infinite Arena | PASS nella validazione Milestone 3 repo-fix | `tests/infinite_arena_default_mode_smoke_test.gd`, `tests/zombie_survival_world_contract_smoke_test.gd`, `tests/milestone_9_smoke_test.gd`, `tests/milestone_17_run_results_smoke_test.gd` | Playtest manuale dei bordi murati e di `Zombie Survival` multi-bioma nella prossima iterazione |
@@ -77,7 +81,7 @@ Regole per nuove voci:
 | HUD Tower Defense e arena murata | PASS nella validazione Milestone 7 repo-fix | `tests/tower_defense_smoke_test.gd`, `tests/milestone_10_visual_smoke_test.gd`, `tests/survival_wave_smoke_test.gd`, `tests/dungeon_smoke_test.gd`, `tests/zombie_survival_world_contract_smoke_test.gd`, `tests/infinite_arena_default_mode_smoke_test.gd` | Monitorare come regressione HUD modalita o world generation arena `walled` |
 | Refactor weapon visual renderer | PASS nella validazione Milestone 8 repo-fix | `WeaponVisualRenderer` 460 LOC, `WeaponVisualShapeLibrary` 808 LOC, `tests/weapon_visual_catalog_smoke_test.gd`, `tests/weapon_pickup_visual_identity_smoke_test.gd`, `tests/weapon_held_hud_visual_identity_smoke_test.gd`, `tests/weapon_projectile_vfx_identity_smoke_test.gd`, `tests/weapon_melee_visual_identity_smoke_test.gd` | Monitorare come regressione presentazionale armi; prossimi hotspot M8 richiedono goal separati |
 | Refactor SVG fallback loader | PASS nella ripresa Milestone 8 repo-fix | `IsometricSvgTextureLoader` 1022 -> 136 LOC, `IsometricSvgFallbackTextureBuilder` 908 LOC, `tests/milestone_10_asset_pipeline_smoke_test.gd`, `tests/milestone_10_object_asset_smoke_test.gd`, `tests/isometric_environment_manifest_smoke_test.gd` | Monitorare come regressione asset isometrici; prossimi hotspot M8 richiedono goal separati |
-| Refactor tile resolver catalog/utils | PASS nella ripresa Milestone 8 repo-fix | `IsometricTileResolver` 1090 -> 989 LOC, `IsometricTileCatalog` 226 LOC, `IsometricTileResolverUtils` 29 LOC, `tests/milestone_10_tile_layer_smoke_test.gd`, `tests/milestone_10_void_cliff_asset_smoke_test.gd`, `tests/forest_isometric_texture_transition_smoke_test.gd`, `tests/isometric_environment_manifest_smoke_test.gd` | Monitorare come regressione resolver tile; `tests/milestone_10_passage_tile_smoke_test.gd` resta follow-up separato `BUG-001` |
+| Refactor tile resolver catalog/utils | PASS nella ripresa Milestone 8 repo-fix; passage tile ripristinato in Milestone 13 | `IsometricTileResolver` 1090 -> 989 LOC, `IsometricTileCatalog` 226 LOC, `IsometricTileResolverUtils` 29 LOC, `tests/milestone_10_tile_layer_smoke_test.gd`, `tests/milestone_10_void_cliff_asset_smoke_test.gd`, `tests/forest_isometric_texture_transition_smoke_test.gd`, `tests/isometric_environment_manifest_smoke_test.gd`, `tests/milestone_10_passage_tile_smoke_test.gd` | Monitorare come regressione resolver tile e priorita dei connector di passaggio |
 | Refactor BiomeObstacle painter | PASS nella ripresa finale Milestone 8 repo-fix | `BiomeObstacle` 1226 -> 961 LOC, `BiomeObstaclePainter` 342 LOC, `tests/obstacle_rendering_contract_smoke_test.gd`, `tests/obstacle_3x3_smoke_test.gd`, `tests/milestone_10_object_asset_smoke_test.gd`, `tests/milestone_10_void_cliff_asset_smoke_test.gd`, `tests/forest_isometric_texture_transition_smoke_test.gd`, `tests/milestone_10_tile_layer_smoke_test.gd`, `tests/isometric_environment_manifest_smoke_test.gd`, `tests/obstacle_asset_visual_qa.gd`, `tests/obstacle_3x3_visual_qa.gd` | Monitorare come regressione render procedurale fallback; prossimi hotspot grandi richiedono goal separati |
 | Dependency lookup player/HUD/spawner | PASS nella validazione Milestone 9 repo-fix | `get_first_node_in_group` in `game/` 216 -> 184; `HUDManager` 22 -> 1, `PlayerController` 6 -> 1, `ZombieSpawner` 7 -> 1; `tests/player_query_smoke_test.gd`, `tests/player_world_hud_layout_smoke_test.gd`, `tests/zombie_spawner_edge_smoke_test.gd`, `tests/survival_wave_smoke_test.gd`, `tests/tower_defense_smoke_test.gd` | Proseguire solo con goal separati su altri hotspot come `AudioEventRouter`, `BasicEnemy`, `MainMenu` o mode controller |
 | Asset fallback policy M10 | PASS nella validazione Milestone 10 repo-fix | `docs/repo_fix_milestone_10_asset_fallback_policy.md`, `tests/milestone_10_asset_fallback_policy_smoke_test.gd`, asset generator `--check`, smoke manifest/legacy/object/cliff/tile e QA visuale finale M10 | Monitorare come regressione asset/fallback; nuovi status `needs_asset`/`procedural_fallback`/`deprecated` richiedono fallback path esplicito e TODO collegata |
@@ -157,21 +161,6 @@ revisione manuale, baseline e consolidamento TODO.
 - Test richiesto: suite headless completa, nuovi smoke mirati e report test
   aggiornato.
 
-### BUG-001 - Ripristinare passage tile smoke
-
-- Obiettivo: correggere il caso in cui i passaggi sorgente di `biome_0_0`
-  generano `passage_type` `snow_pass` ma i probe del resolver vedono
-  `road_tags=[broken_street]`, facendo risolvere tile terrain invece di entry,
-  exit e connector passage.
-- Milestone collegata: follow-up `repo_fix_roadmap.md` Milestone 8 / `QA-001`.
-- File/sistemi coinvolti: `BiomeManager`, `BiomeEnvironmentLayout`,
-  `WorldGraph`, `IsometricTileResolver`, `tests/milestone_10_passage_tile_smoke_test.gd`.
-- Criterio di accettazione: ogni apertura di passaggio generata espone tag
-  coerenti con `passage.passage_type` su outer, inner e connector, senza
-  rompere route decorative o transizioni forestali.
-- Test richiesto: `tests/milestone_10_passage_tile_smoke_test.gd` con exit code
-  `0`, piu regressione `tests/milestone_10_tile_layer_smoke_test.gd`.
-
 ### BAL-001 - Bilanciamento, performance e playtest end-to-end
 
 - Obiettivo: affinare valori data-driven e performance dopo playtest reali su
@@ -203,19 +192,6 @@ revisione manuale, baseline e consolidamento TODO.
   documentato.
 - Test richiesto: export release, export pack, build smoke, avvio manuale
   Windows con controller/audio e verifica firma se toolchain disponibile.
-
-### DOC-001 - Documentazione finale e workflow di iterazione
-
-- Obiettivo: chiudere la TODO critica, aggiornare documentazione e lasciare un
-  workflow chiaro per futuri goal.
-- Milestone collegata: `todo_roadmap.md` Milestone 13.
-- File/sistemi coinvolti: `README.md`, `ROADMAP.md`, `TODO.md`,
-  `CHANGELOG.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`, `docs/`, `prompts/`.
-- Criterio di accettazione: nessun punto TODO critico resta aperto senza owner
-  o decisione, README descrive avvio/test/build/stato reale e i documenti
-  tecnici non contraddicono il codice.
-- Test richiesto: revisione incrociata documenti, avvio principale e build
-  smoke solo se la release e nello scope.
 
 ## Follow-up e decisioni aperte
 

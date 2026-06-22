@@ -480,6 +480,9 @@ func _resolve_route_tile_data(
 	biome_id: StringName = &"",
 	biome_cell: BiomeCell = null
 ) -> Dictionary:
+	var passage_rect_data := _resolve_passage_rect_route_tile_data(layout, cell)
+	if not passage_rect_data.is_empty():
+		return passage_rect_data
 	var cell_route_tags := layout.get_road_tags_at_cell(cell)
 	if not cell_route_tags.is_empty():
 		if _is_forest_biome(biome_id):
@@ -535,6 +538,35 @@ func _resolve_route_tile_data(
 		TILE_SECTION_TERRAIN,
 		_resolve_terrain_route_role(terrain_tile_id)
 	)
+
+func _resolve_passage_rect_route_tile_data(
+	layout: BiomeEnvironmentLayout,
+	cell: Vector2i
+) -> Dictionary:
+	for index in range(layout.road_rects.size() - 1, -1, -1):
+		if not layout.road_rects[index].has_point(cell):
+			continue
+		var passage_tag := _road_tag_for_index(layout, index)
+		if not _is_passage_type(passage_tag):
+			continue
+		if RESOLVER_UTILS.cell_inside_any_rect(cell, layout.passage_rects):
+			var endpoint_tile := (
+				get_passage_exit_tile_id(passage_tag)
+				if _cell_on_outer_passage_edge(layout, cell)
+				else get_passage_entry_tile_id(passage_tag)
+			)
+			return _tile_data(
+				endpoint_tile,
+				TILE_SECTION_PASSAGE,
+				&"passage_exit" if String(endpoint_tile).ends_with("_exit") else &"passage_entry"
+			)
+		if RESOLVER_UTILS.cell_inside_any_rect(cell, layout.passage_connector_rects):
+			return _tile_data(
+				passage_tag,
+				TILE_SECTION_PASSAGE,
+				&"passage_connector"
+			)
+	return {}
 
 func _road_tag_for_index(layout: BiomeEnvironmentLayout, index: int) -> StringName:
 	if index >= 0 and index < layout.road_rect_tags.size():

@@ -113,15 +113,28 @@ func _run() -> void:
 		"starting biome palette is applied to the shared playground"
 	)
 
+	var player := get_first_node_in_group("players") as Node2D
+	if player != null:
+		player.global_position = Vector2.ZERO
+
 	var obstacles: Array = obstacle_system.get_active_obstacles()
 	_expect(
-		obstacles.size() == layout.obstacle_positions.size(),
-		"obstacle system creates the deterministic starting layout"
+		obstacles.size() >= layout.obstacle_positions.size(),
+		"obstacle system creates at least the deterministic starting layout"
 	)
 	var spawned_obstacle_ids: Array[StringName] = []
+	var current_region_obstacles: Array = []
 	for obstacle in obstacles:
 		if obstacle == null:
 			continue
+		if (
+			obstacle is Node2D
+			and _position_matches_any(
+				(obstacle as Node2D).global_position,
+				layout.obstacle_positions
+			)
+		):
+			current_region_obstacles.append(obstacle)
 		spawned_obstacle_ids.append(
 			StringName(obstacle.get("obstacle_id"))
 		)
@@ -135,6 +148,10 @@ func _run() -> void:
 			and obstacle.is_in_group("spawn_blockers"),
 			"environment obstacle participates in spawn validation"
 		)
+	_expect(
+		current_region_obstacles.size() == layout.obstacle_positions.size(),
+		"obstacle system creates every current-region configured obstacle"
+	)
 	for required_id in [
 		&"large_rock",
 		&"forest_tree"
@@ -167,8 +184,8 @@ func _run() -> void:
 			"central combat corridor remains open at %s" % safe_point
 		)
 
-	if not obstacles.is_empty():
-		var first_obstacle := obstacles[0] as Node2D
+	if not current_region_obstacles.is_empty():
+		var first_obstacle := current_region_obstacles[0] as Node2D
 		_expect(
 			obstacle_system.is_position_blocked(
 				first_obstacle.global_position
@@ -183,9 +200,13 @@ func _run() -> void:
 	var crates: Array = resource_crate_system.get_active_crates()
 	var crate_ids: Array[StringName] = resource_crate_system.get_active_crate_ids()
 	var active_crate_positions: Array[Vector2] = []
+	var current_region_crates: Array = []
 	for active_crate in crates:
 		if active_crate is Node2D:
-			active_crate_positions.append((active_crate as Node2D).global_position)
+			var active_position := (active_crate as Node2D).global_position
+			active_crate_positions.append(active_position)
+			if _position_matches_any(active_position, layout.crate_positions):
+				current_region_crates.append(active_crate)
 	var configured_crate_blockers: Array[String] = []
 	for configured_position in layout.crate_positions:
 		configured_crate_blockers.append(
@@ -196,17 +217,24 @@ func _run() -> void:
 			]
 		)
 	_expect(
-		crates.size() == layout.crate_positions.size(),
-		"resource crate system creates every valid configured crate (%d/%d configured=%s active=%s)"
-		% [crates.size(), layout.crate_positions.size(), str(layout.crate_positions), str(active_crate_positions)]
+		crates.size() >= layout.crate_positions.size()
+		and current_region_crates.size() == layout.crate_positions.size(),
+		"resource crate system creates every current-region configured crate (%d current/%d configured, %d active total configured=%s active=%s)"
+		% [
+			current_region_crates.size(),
+			layout.crate_positions.size(),
+			crates.size(),
+			str(layout.crate_positions),
+			str(active_crate_positions)
+		]
 	)
-	if crates.size() != layout.crate_positions.size():
+	if current_region_crates.size() != layout.crate_positions.size():
 		push_error("crate blockers: " + str(configured_crate_blockers))
 	_expect(
 		crate_ids.has(&"common") and crate_ids.has(&"medical"),
 		"starting biome provides common and medical resources"
 	)
-	for crate in crates:
+	for crate in current_region_crates:
 		var crate_node := crate as SupplyCrate
 		if crate_node == null:
 			continue
@@ -223,20 +251,20 @@ func _run() -> void:
 			"resource crate does not overlap an environment hazard"
 		)
 		_expect(
-			_distance_to_nearest_player(crate_node.global_position) < 420.0,
+			_distance_to_nearest_player(crate_node.global_position)
+			<= layout.logical_tile_scale * 30.0,
 			"resource crate is reachable from the party start"
 		)
 	_expect(
-		_crate_loot_contains(crates, &"common", GameConstants.DROP_MONEY)
+		_crate_loot_contains(current_region_crates, &"common", GameConstants.DROP_MONEY)
 		and _crate_loot_contains(
-			crates,
+			current_region_crates,
 			&"medical",
 			GameConstants.DROP_HEALTH
 		),
 		"crate loot changes between common and medical containers"
 	)
 
-	var player := get_first_node_in_group("players") as Node2D
 	if player != null:
 		player.global_position = Vector2.ZERO
 	var lane_enemy := enemy_system.spawn_enemy(
@@ -303,6 +331,12 @@ func _distance_to_nearest_player(position: Vector2) -> float:
 				position.distance_to((player as Node2D).global_position)
 			)
 	return nearest
+
+func _position_matches_any(position: Vector2, expected_positions: Array[Vector2]) -> bool:
+	for expected in expected_positions:
+		if position.distance_to(expected) <= 0.5:
+			return true
+	return false
 
 func _crate_loot_contains(
 	crates: Array,

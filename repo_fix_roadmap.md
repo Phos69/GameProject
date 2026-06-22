@@ -872,6 +872,11 @@ multi-bioma.
 
 ## Milestone 13 - Documentazione, release e continuita Codex
 
+Stato: completata il 2026-06-22. La documentazione principale, la checklist
+manuale e il report di validazione sono allineati al runtime corrente; l'export
+PCK Windows e verificato, mentre l'export EXE/build smoke resta bloccato in
+questo ambiente dai template ufficiali Godot `4.6.3` mancanti.
+
 ### Obiettivo
 
 Chiudere il ciclo con documenti aggiornati, checklist ripetibili e build/export
@@ -913,6 +918,18 @@ verificabile.
 3. Eseguire asset check.
 4. Avviare build o main scene.
 5. Verificare che docs e comportamento coincidano.
+
+### Evidenza 2026-06-22
+
+- Import Godot headless: PASS.
+- Asset check isometrico: PASS, 126 asset verificati.
+- Suite `fast`: ripulita dai due smoke ultra-lenti M13 visuale e M17 risultati,
+  ora classificati `slow`.
+- Smoke mirati ripristinati/stabilizzati: passage tile, block props,
+  zombie environment, RPG adrenaline super e nuove classi.
+- Export PCK Windows: PASS.
+- Export EXE e build smoke: bloccati localmente dai template
+  `windows_debug_x86_64.exe` e `windows_release_x86_64.exe` assenti.
 
 ### Rischi
 

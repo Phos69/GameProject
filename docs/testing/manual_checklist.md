@@ -297,6 +297,25 @@ build/qa/milestone_13_player_weapons.png
 build/qa/milestone_13_defense_towers.png
 ```
 
+## Release workflow Milestone 13
+
+- Da checkout pulito, eseguire `godot --headless --path . --import`.
+- Eseguire `./tools/run_tests.ps1 -Category fast -SkipImport`.
+- Eseguire `./tools/run_tests.ps1 -Category slow -SkipImport -TimeoutSec 240`
+  prima di merge/release o quando cambia runtime condiviso.
+- Eseguire QA visuale solo con rendering reale/GPU:
+  `./tools/run_tests.ps1 -Category visual -SkipImport -IncludeVisualQa`.
+- Verificare gli asset isometrici con
+  `godot --headless --path . --script res://tools/generate_isometric_environment_assets.gd -- --check`.
+- Verificare il preset Windows con
+  `godot --headless --path . --export-pack "Windows Desktop" build/iso_local_sandbox.pck`.
+- Per release EXE, installare prima i template ufficiali Godot `4.6.3` in
+  `%APPDATA%/Godot/export_templates/4.6.3.stable`, poi eseguire
+  `godot --headless --path . --export-release "Windows Desktop" build/iso_local_sandbox.exe`
+  e `build/iso_local_sandbox.exe --rendering-method gl_compatibility -- --build-smoke`.
+- Se i template o la firma digitale non sono disponibili, registrare il blocco
+  in `docs/latest_commit_validation_report.md` e mantenere aperto `REL-001`.
+
 ## Regressione Milestone 14
 
 - `GET READY`, `WAVE` e `WAVE CLEAR` sono leggibili da divano.
