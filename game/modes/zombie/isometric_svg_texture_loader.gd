@@ -6,6 +6,26 @@ const FALLBACK_TEXTURE_BUILDER := preload(
 	"res://game/modes/zombie/isometric_svg_fallback_texture_builder.gd"
 )
 
+# Session cache keyed by "asset_path@WxH": a rasterized SVG (or its imported
+# texture) is built once and reused across every tile-layer build, region stream,
+# biome change and run, instead of re-rasterizing the same asset every time.
+static var _texture_cache: Dictionary = {}
+
+static func _cache_key(asset_path: String, texture_size: Vector2i) -> String:
+	return "%s@%dx%d" % [asset_path, texture_size.x, texture_size.y]
+
+static func clear_cache() -> void:
+	_texture_cache.clear()
+
+static func get_cached_texture_count() -> int:
+	return _texture_cache.size()
+
+static func has_cached_texture(
+	asset_path: String,
+	texture_size: Vector2i = DEFAULT_SIZE
+) -> bool:
+	return _texture_cache.has(_cache_key(asset_path, texture_size))
+
 static func load_texture(
 	asset_path: String,
 	fallback_primary: Color,
@@ -16,6 +36,9 @@ static func load_texture(
 		return null
 	if not asset_path.ends_with(".svg"):
 		return load(asset_path) as Texture2D
+	var cache_key := _cache_key(asset_path, texture_size)
+	if _texture_cache.has(cache_key):
+		return _texture_cache[cache_key] as Texture2D
 	if not FileAccess.file_exists(asset_path):
 		return null
 	var content := _read_text(asset_path)
@@ -23,13 +46,18 @@ static func load_texture(
 		return null
 	var svg_texture := _load_svg_texture_from_content(content, texture_size)
 	if svg_texture != null:
+		_texture_cache[cache_key] = svg_texture
 		return svg_texture
 	var imported_texture := _load_imported_texture(asset_path)
 	if (
 		imported_texture != null
 		and _texture_has_transparent_corners(imported_texture)
 	):
+		_texture_cache[cache_key] = imported_texture
 		return imported_texture
+	# The procedural fallback depends on the caller's palette colours, so it is
+	# intentionally NOT cached by asset path/size (different biomes derive
+	# different fallback colours from the same asset id).
 	var colors := _extract_hex_colors(content)
 	var primary := fallback_primary
 	var secondary := Color(0.14, 0.16, 0.18, 1.0)

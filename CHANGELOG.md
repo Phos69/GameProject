@@ -22,6 +22,11 @@
 
 ### Added
 
+- Cache di sessione delle texture isometriche nel loader SVG
+  (`IsometricSvgTextureLoader`): ogni SVG viene rasterizzato una sola volta per
+  `(path, size)` e riusato da tile layer, streaming regioni, cambi bioma e run
+  successive invece di essere ricaricato ogni volta. Aggiunto
+  `tests/isometric_texture_cache_smoke_test.gd`.
 - Barra di caricamento con progresso determinato per fasi (`WorldLoadingScreen`:
   `set_phase`/`complete` + percentuale): `Preparazione mondo` -> `Generazione mondo`
   -> `Costruzione terreno` -> 100%. `Zombie Survival` ora costruisce la megamappa
