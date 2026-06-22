@@ -123,10 +123,6 @@ func _run() -> void:
 				tile_layer.get_missing_asset_count() == 0,
 				"%s tile layer has no missing visual cells" % String(biome_id)
 			)
-		_expect(
-			terrain_generator.get_generated_patches().is_empty(),
-			"%s suppresses legacy terrain patches while tile layer is active" % String(biome_id)
-		)
 		_expect_streamed_region_content(streamer, cell, layout)
 		_expect(
 			playground.floor_color.is_equal_approx(

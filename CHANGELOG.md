@@ -4,6 +4,12 @@
 
 ### Removed
 
+- Rimossi i ground procedurali legacy `BiomeRegionGround` e `BiomeTerrainPatch`:
+  `TerrainGenerator` costruisce sempre il `BiomeTileLayer` asset-driven (anche nel
+  percorso mono-regione di Infinite Arena). I `fallback_path` del manifest sono
+  ripuntati su `biome_tile_layer.gd` e i test relativi aggiornati; documentati
+  anche i cliff mesh builder come fallback tecnici (fix di un rosso pre-esistente
+  introdotto dal commit forest-cliffs).
 - Rimosso il renderer legacy `MultiRegionRenderer` e il suo
   `tests/milestone_8_multi_region_smoke_test.gd`. `WorldRegionStreamer` e l'unico
   produttore di contenuto regione: `ZombieModeController` non istanzia piu il

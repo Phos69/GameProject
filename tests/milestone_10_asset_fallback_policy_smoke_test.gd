@@ -55,7 +55,14 @@ func _run_policy_contract(manifest: IsometricEnvironmentManifest) -> void:
 		_expect(allowed_statuses.has(status), "policy documents %s as temporary fallback status" % status)
 
 	var technical := policy.get("technical_fallbacks", {}) as Dictionary
-	for key in [&"terrain", &"terrain_patch", &"object", &"void", &"passage", &"crate"]:
+	for required_key in [&"terrain", &"object", &"void", &"passage", &"crate"]:
+		_expect(
+			technical.has(required_key) or technical.has(String(required_key)),
+			"policy declares the %s technical fallback" % String(required_key)
+		)
+	# The manifest is the source of truth: every documented technical fallback must
+	# resolve to a real script and becomes an allowed contract fallback target.
+	for key in technical.keys():
 		var fallback_path := String(technical.get(key, ""))
 		_expect(not fallback_path.is_empty(), "policy declares %s technical fallback" % String(key))
 		_expect(_asset_exists(fallback_path), "%s technical fallback path exists" % String(key))
@@ -168,10 +175,6 @@ func _run_standard_survival_asset_path() -> void:
 		streamer.get_content_level(current_region_id) == WorldRegionStreamer.ContentLevel.FULL,
 		"current region is streamed as FULL gameplay content"
 	)
-	_expect(terrain_generator.get_active_ground() == null, "BiomeRegionGround stays fallback-only")
-	_expect(terrain_generator.get_generated_patches().is_empty(), "BiomeTerrainPatch stays fallback-only")
-	_expect(_count_biome_region_ground(main) == 0, "scene has no legacy BiomeRegionGround nodes")
-	_expect(_count_biome_terrain_patch(main) == 0, "scene has no legacy BiomeTerrainPatch nodes")
 	_expect(_count_named_prefix(main, "NeighborGround_") == 0, "scene has no legacy neighbor placeholders")
 	_expect(get_nodes_in_group("multi_region_renderer").is_empty(), "scene has no legacy multi-region renderer")
 	_expect(get_nodes_in_group("biome_transition_gates").is_empty(), "scene has no legacy transition gates")
@@ -215,18 +218,6 @@ func _assert_runtime_obstacle_assets() -> void:
 		)
 	_expect(checked_runtime_obstacles > 0, "standard survival runtime obstacles are checked")
 	_expect(inspected_asset_objects > 0, "standard survival inspects asset-backed obstacle objects")
-
-func _count_biome_region_ground(node: Node) -> int:
-	var count := 1 if node is BiomeRegionGround else 0
-	for child in node.get_children():
-		count += _count_biome_region_ground(child)
-	return count
-
-func _count_biome_terrain_patch(node: Node) -> int:
-	var count := 1 if node is BiomeTerrainPatch else 0
-	for child in node.get_children():
-		count += _count_biome_terrain_patch(child)
-	return count
 
 func _count_named_prefix(node: Node, prefix: String) -> int:
 	var count := 1 if node.name.begins_with(prefix) else 0

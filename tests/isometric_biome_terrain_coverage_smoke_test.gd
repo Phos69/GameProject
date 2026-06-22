@@ -15,8 +15,6 @@ func _run() -> void:
 		for failure in manifest_report.get("failures", PackedStringArray()):
 			push_error("manifest failure: " + String(failure))
 	_run_manifest_terrain_inventory(manifest)
-	_run_patch_draw_mode_smoke(manifest)
-	_run_region_ground_sample_step_smoke(manifest)
 
 	var biome_manager := BiomeManager.new()
 	root.add_child(biome_manager)
@@ -96,39 +94,6 @@ func _run_manifest_terrain_inventory(manifest: IsometricEnvironmentManifest) -> 
 	_expect(manifest.get_terrain_sample_step(&"performance") == 12, "performance ground preset is 12")
 	_expect(manifest.get_terrain_sample_step(&"balanced") == 8, "balanced ground preset is 8")
 	_expect(manifest.get_terrain_sample_step(&"quality") == 4, "quality ground preset is 4")
-
-func _run_patch_draw_mode_smoke(manifest: IsometricEnvironmentManifest) -> void:
-	var patch := BiomeTerrainPatch.new()
-	patch.configure(
-		&"bridge",
-		42.0,
-		Color(0.18, 0.20, 0.14, 1.0),
-		Color(0.58, 0.48, 0.28, 1.0),
-		7,
-		manifest.get_terrain_style(&"bridge")
-	)
-	_expect(patch.get_draw_mode() == &"bridge_path", "bridge passage uses bridge draw mode")
-	patch.configure(
-		&"burned_road",
-		42.0,
-		Color(0.18, 0.20, 0.14, 1.0),
-		Color(0.58, 0.48, 0.28, 1.0),
-		8,
-		manifest.get_terrain_style(&"burned_road")
-	)
-	_expect(patch.get_draw_mode() == &"burned_road", "burned road uses burned road draw mode")
-	patch.free()
-
-func _run_region_ground_sample_step_smoke(manifest: IsometricEnvironmentManifest) -> void:
-	var ground := BiomeRegionGround.new()
-	var layout := BiomeEnvironmentLayout.new()
-	layout.generation_seed = 1
-	var palette := BiomePalette.new()
-	ground.configure(layout, palette, manifest.get_terrain_sample_step(&"quality"))
-	_expect(ground.get_sample_step() == 4, "region ground accepts quality sample step")
-	ground.configure(layout, palette, manifest.get_terrain_sample_step(&"balanced"))
-	_expect(ground.get_sample_step() == 8, "region ground keeps balanced sample step")
-	ground.free()
 
 func _run_generated_terrain_coverage(
 	manifest: IsometricEnvironmentManifest,

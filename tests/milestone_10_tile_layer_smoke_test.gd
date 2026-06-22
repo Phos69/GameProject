@@ -198,8 +198,6 @@ func _run_terrain_generator_integration_smoke(biome_manager: BiomeManager) -> vo
 	terrain_generator.start_run(biome)
 	var layer := terrain_generator.get_active_tile_layer()
 	_expect(layer != null, "TerrainGenerator creates BiomeTileLayer as primary ground")
-	_expect(terrain_generator.get_active_ground() == null, "TerrainGenerator keeps BiomeRegionGround as fallback only")
-	_expect(terrain_generator.get_generated_patches().is_empty(), "TerrainGenerator suppresses legacy terrain patches in tile layer mode")
 	_expect(container.get_node_or_null("BiomeTileLayer") != null, "BiomeTileLayer is added to the environment container")
 	if layer != null:
 		var expected_tile_count := biome.environment_layout.zone_size.x * biome.environment_layout.zone_size.y

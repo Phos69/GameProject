@@ -76,22 +76,6 @@ func _run() -> void:
 		"terrain generator tracks the current streamed tile layer"
 	)
 	_expect(
-		terrain_generator.get_active_ground() == null,
-		"standard survival does not instantiate BiomeRegionGround"
-	)
-	_expect(
-		terrain_generator.get_generated_patches().is_empty(),
-		"standard survival does not instantiate BiomeTerrainPatch nodes"
-	)
-	_expect(
-		_count_biome_region_ground(main) == 0,
-		"scene tree contains no legacy BiomeRegionGround nodes"
-	)
-	_expect(
-		_count_biome_terrain_patch(main) == 0,
-		"scene tree contains no legacy BiomeTerrainPatch nodes"
-	)
-	_expect(
 		_count_named_prefix(main, "NeighborGround_") == 0,
 		"standard survival does not instantiate legacy neighbor ground placeholders"
 	)
@@ -146,18 +130,6 @@ func _run_source_audit() -> void:
 		not configure_body.contains("_spawn_generated_map_gates"),
 		"transition configuration does not spawn generated map gates"
 	)
-
-func _count_biome_region_ground(node: Node) -> int:
-	var count := 1 if node is BiomeRegionGround else 0
-	for child in node.get_children():
-		count += _count_biome_region_ground(child)
-	return count
-
-func _count_biome_terrain_patch(node: Node) -> int:
-	var count := 1 if node is BiomeTerrainPatch else 0
-	for child in node.get_children():
-		count += _count_biome_terrain_patch(child)
-	return count
 
 func _count_named_prefix(node: Node, prefix: String) -> int:
 	var count := 1 if node.name.begins_with(prefix) else 0

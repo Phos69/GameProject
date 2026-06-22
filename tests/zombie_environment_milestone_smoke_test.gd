@@ -104,10 +104,6 @@ func _run() -> void:
 		)
 		_expect(tile_layer.get_missing_asset_count() == 0, "asset tile layer has no missing visual cells")
 	_expect(
-		terrain_generator.get_generated_patches().is_empty(),
-		"terrain generator suppresses legacy terrain patches when tile layer is active"
-	)
-	_expect(
 		playground.floor_color.is_equal_approx(palette.background_color)
 		and playground.concrete_color.is_equal_approx(palette.floor_color),
 		"starting biome palette is applied to the shared playground"
@@ -290,10 +286,6 @@ func _run() -> void:
 	survival_mode.stop_mode()
 	await process_frame
 	await process_frame
-	_expect(
-		terrain_generator.get_generated_patches().is_empty(),
-		"terrain patch fallback remains inactive when survival stops"
-	)
 	_expect(
 		obstacle_system.get_active_obstacles().is_empty(),
 		"physical obstacles are removed when survival stops"
