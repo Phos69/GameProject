@@ -99,12 +99,44 @@ func complete() -> void:
 	_shown = 1.0
 	_update_bar()
 
+# Convenience for modes whose setup is synchronous and instant (Dungeon, Tower
+# Defense): shows the overlay as a short, consistent "entering mode" transition
+# that fills and then completes after `duration`, instead of a sub-frame flash.
+static func show_brief(
+	host: Node,
+	message: String,
+	duration: float = 0.5
+) -> WorldLoadingScreen:
+	if host == null:
+		return null
+	var tree := host.get_tree()
+	if tree == null:
+		return null
+	var screen := WorldLoadingScreen.new()
+	screen.name = "WorldLoadingScreen"
+	var scene := tree.current_scene
+	if scene != null and scene != host:
+		scene.add_child(screen)
+	else:
+		host.add_child(screen)
+	screen.set_phase(message, 0.0, 1.0)
+	var timer := tree.create_timer(maxf(duration, 0.05))
+	timer.timeout.connect(func() -> void:
+		if is_instance_valid(screen):
+			screen.complete()
+			screen.queue_free()
+	)
+	return screen
+
 func _process(delta: float) -> void:
 	if _shown < _ceil:
 		_shown += (_ceil - _shown) * clampf(delta * EASE_SPEED, 0.0, 1.0)
 		if _ceil - _shown < 0.002:
 			_shown = _ceil
 		_update_bar()
+
+func get_progress() -> float:
+	return _shown
 
 func _update_bar() -> void:
 	if _bar_fill != null:

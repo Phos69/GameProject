@@ -27,7 +27,10 @@
   -> `Costruzione terreno` -> 100%. `Zombie Survival` ora costruisce la megamappa
   `3x3` su worker thread dietro la barra come gia faceva `Infinite Arena`, cosi la
   finestra non si blocca; l'async e attivo nelle run reali e resta sincrono in
-  headless per i test deterministici.
+  headless per i test deterministici. `Dungeon` e `Tower Defense` mostrano lo
+  stesso overlay come breve transizione d'ingresso tramite
+  `WorldLoadingScreen.show_brief()` (anch'essa solo nelle run reali). Aggiunto
+  `tests/world_loading_screen_smoke_test.gd`.
 - Seed golden unico condiviso tra gioco e test: `GameConstants.GOLDEN_WORLD_SEED`
   e la sorgente di verita del default di `WorldGenerationSeed`, con helper
   `tests/support/golden_world.gd` e `tests/golden_seed_default_smoke_test.gd` che

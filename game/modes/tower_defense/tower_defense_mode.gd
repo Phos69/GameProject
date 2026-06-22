@@ -67,6 +67,8 @@ func start_mode(context: Dictionary = {}) -> void:
 	if is_running or not _resolve_systems():
 		return
 	super.start_mode(context)
+	if DisplayServer.get_name() != "headless":
+		WorldLoadingScreen.show_brief(self, "Caricamento Tower Defense")
 	_clear_runtime()
 	_set_prototype_arena_visible(false)
 

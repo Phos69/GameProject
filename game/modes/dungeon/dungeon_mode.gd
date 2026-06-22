@@ -68,6 +68,8 @@ func start_mode(context: Dictionary = {}) -> void:
 	if not _resolve_systems():
 		return
 	super.start_mode(context)
+	if DisplayServer.get_name() != "headless":
+		WorldLoadingScreen.show_brief(self, "Caricamento Dungeon")
 
 	run_seed = int(context.get("seed", default_seed))
 	var requested_room_count := int(context.get("room_count", default_room_count))
