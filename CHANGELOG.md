@@ -22,6 +22,12 @@
 
 ### Added
 
+- Barra di caricamento con progresso determinato per fasi (`WorldLoadingScreen`:
+  `set_phase`/`complete` + percentuale): `Preparazione mondo` -> `Generazione mondo`
+  -> `Costruzione terreno` -> 100%. `Zombie Survival` ora costruisce la megamappa
+  `3x3` su worker thread dietro la barra come gia faceva `Infinite Arena`, cosi la
+  finestra non si blocca; l'async e attivo nelle run reali e resta sincrono in
+  headless per i test deterministici.
 - Seed golden unico condiviso tra gioco e test: `GameConstants.GOLDEN_WORLD_SEED`
   e la sorgente di verita del default di `WorldGenerationSeed`, con helper
   `tests/support/golden_world.gd` e `tests/golden_seed_default_smoke_test.gd` che

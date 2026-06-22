@@ -98,12 +98,15 @@ func _start_run_sync(resolved_context: Dictionary) -> void:
 	_emit_run_started()
 
 func _start_run_async(resolved_context: Dictionary) -> void:
-	_show_loading_screen("Generazione mondo")
+	_show_loading_screen("Preparazione mondo")
+	_set_loading_phase("Preparazione mondo", 0.0, 0.1)
 	# Pre-warm shared, lazily-loaded resources on the main thread so the worker
 	# thread only ever reads them.
 	IsometricEnvironmentManifest.get_shared()
 	if biome_manager != null:
 		biome_manager.begin_world_build()
+		# Opaque worker-thread phase: the bar eases across the band while it runs.
+		_set_loading_phase("Generazione mondo", 0.1, 0.6)
 		var thread := Thread.new()
 		thread.start(_threaded_generate_world.bind(resolved_context))
 		# Yield each frame so the loading screen keeps animating while the worker
@@ -112,13 +115,14 @@ func _start_run_async(resolved_context: Dictionary) -> void:
 			await get_tree().process_frame
 		var world_data: Dictionary = thread.wait_to_finish()
 		biome_manager.apply_world_data(world_data)
-	_set_loading_message("Costruzione terreno")
+	_set_loading_phase("Costruzione terreno", 0.6, 0.92)
 	if terrain_generator != null:
 		terrain_generator.async_tile_build = true
 	_finish_start_run(resolved_context)
 	if terrain_generator != null:
 		terrain_generator.async_tile_build = false
 	await _await_active_tile_build()
+	_complete_loading_screen()
 	_hide_loading_screen()
 	_emit_run_started()
 
@@ -174,9 +178,17 @@ func _show_loading_screen(message: String) -> void:
 		add_child(_loading_screen)
 	_loading_screen.call("set_message", message)
 
-func _set_loading_message(message: String) -> void:
+func _set_loading_phase(
+	message: String,
+	floor_value: float,
+	ceil_value: float
+) -> void:
 	if _loading_screen != null and is_instance_valid(_loading_screen):
-		_loading_screen.call("set_message", message)
+		_loading_screen.call("set_phase", message, floor_value, ceil_value)
+
+func _complete_loading_screen() -> void:
+	if _loading_screen != null and is_instance_valid(_loading_screen):
+		_loading_screen.call("complete")
 
 func _hide_loading_screen() -> void:
 	if _loading_screen != null and is_instance_valid(_loading_screen):

@@ -42,9 +42,19 @@ func _process(_delta: float) -> void:
 func start_mode(context: Dictionary = {}) -> void:
 	if is_running:
 		return
+	var resolved_context := context.duplicate(true)
+	# Real runs build the world on a worker thread behind the loading screen so the
+	# window never freezes (Zombie Survival's 3x3 megamap is the heaviest build).
+	# Headless tests keep the synchronous, deterministic path unless they opt in.
+	if (
+		not resolved_context.has("async_world_build")
+		and not resolved_context.has(&"async_world_build")
+		and DisplayServer.get_name() != "headless"
+	):
+		resolved_context["async_world_build"] = true
 	# BaseGameMode applica il roster personaggi (selected_character_id /
 	# selected_character_ids_by_slot) ai player gia presenti durante super.start_mode.
-	super.start_mode(context)
+	super.start_mode(resolved_context)
 	_resolve_wave_manager()
 	_resolve_ammo_director()
 	_resolve_market_controller()
@@ -52,13 +62,13 @@ func start_mode(context: Dictionary = {}) -> void:
 	_resolve_zombie_mode_controller()
 	if arena_manager != null:
 		var arena_id := StringName(
-			context.get("arena_id", arena_manager.default_arena_id)
+			resolved_context.get("arena_id", arena_manager.default_arena_id)
 		)
 		arena_manager.activate_arena(arena_id)
 	if zombie_mode_controller != null:
 		# Awaits the worker-thread world build when the context requests it
 		# (async_world_build); returns immediately for the synchronous path.
-		await zombie_mode_controller.start_run(context)
+		await zombie_mode_controller.start_run(resolved_context)
 	if not is_running:
 		# The run was stopped while the world was building (e.g. back to menu).
 		return
