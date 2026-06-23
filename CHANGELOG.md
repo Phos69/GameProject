@@ -4,6 +4,16 @@
 
 ### Added
 
+- Riscrittura test M5 — area A5 Combat, Weapons & Drops migrata a GUT (15/15 file
+  → 4 suite sotto `tests/suites/combat/`): `combat_test.gd` (combat su main.tscn,
+  risoluzione melee vs proiettile, contratti di hitbox), `weapon_catalog_test.gd`
+  (armi base per personaggio, ammo/reload world HUD, inventario/catalogo 30 armi,
+  drop, input mapping, effetti elementali), `weapon_visual_test.gd` (identità
+  visiva: id di shape stabili, silhouette uniche via signature poligonali, palette
+  e VFX tematici — niente confronto di pixel) e `drops_test.gd` (loop drop nemico,
+  progressione da kill/level-up, identità tower attraverso le modalità, status
+  effect ambientali). 20 test/1639 assert verdi. I Visual QA delle armi restano
+  differiti a M-FINAL.
 - Riscrittura test M4 (completata) — area A4 Assets & Manifests migrata a GUT
   (11/11 file → 7 suite sotto `tests/suites/assets/`). Oltre al primo batch
   (manifest/pipeline/character/fallback), il secondo batch aggiunge:
