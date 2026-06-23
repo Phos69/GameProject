@@ -4,6 +4,14 @@
 
 ### Added
 
+- Riscrittura test M8 — area A8 Game Modes & Waves migrata a GUT (13/13 file →
+  3 suite sotto `tests/suites/modes/`): `core_modes_test.gd` (survival wave loop
+  con boss/ammo/multiplayer, tower defense, dungeon ramificato con shop/boss,
+  grafo deterministico), `zombie_modes_test.gd` (revamp foundation, market
+  post-boss, contratto del mondo survival, infinite arena di default con build
+  async, ambiente arena con props esplosivi) e `encounters_test.gd` (helper
+  wave-cycle, encounter casuali, mini-eventi biome, menu/save/audio/avvio
+  modalità). 13 test/577 assert verdi.
 - Riscrittura test M7 — area A7 Characters, RPG & Progression migrata a GUT
   (12/12 file → 3 suite sotto `tests/suites/progression/`):
   `rpg_progression_test.gd` (stat di classe e formule di danno, XP da kill/wave,
