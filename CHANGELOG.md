@@ -4,6 +4,13 @@
 
 ### Added
 
+- Riscrittura test M6 — area A6 Enemies & Bosses migrata a GUT (9/9 file → 2 suite
+  sotto `tests/suites/enemies/`): `enemies_test.gd` (nemici tematici per biome +
+  hazard, wave director scaling, bordi/rifiuti/fallback dello spawner, varianti
+  runner/tank, nemico ranged con telegraph, marker direzionali off-screen) e
+  `boss_test.gd` (flusso della boss wave con pattern/fasi/market, telegraph degli
+  attacchi, registry multi-boss con compatibilità di modalità). Ogni test riusa il
+  boot di main.tscn via la fixture condivisa. 9 test/253 assert verdi.
 - Riscrittura test M5 — area A5 Combat, Weapons & Drops migrata a GUT (15/15 file
   → 4 suite sotto `tests/suites/combat/`): `combat_test.gd` (combat su main.tscn,
   risoluzione melee vs proiettile, contratti di hitbox), `weapon_catalog_test.gd`

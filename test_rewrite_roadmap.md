@@ -82,7 +82,7 @@ elencati. Ogni area = una zona di interesse con una fixture condivisa.
 | A3 | **Obstacles & Collision** ✅ | `obstacles/` | milestone_4_obstacle_collision, obstacle_3x3, obstacle_rendering_contract, scalable_obstacle |
 | A4 | **Assets & Manifests** ✅ | `assets/` | milestone_10_asset_manifest_v7, milestone_10_asset_fallback_policy, milestone_10_asset_pipeline, milestone_10_object_asset, milestone_10_void_cliff_asset, isometric_environment_manifest, rpg_character_asset_manifest, forest_grass_generated_texture, void_cliff_generated_texture, forest_isometric_texture_transition, biome_obstacle_generation _(re-bucket da A1: categorie manifest)_ |
 | A5 | **Combat, Weapons & Drops** ✅ | `combat/` | combat, rpg_melee_attack_resolution, milestone_rpg_3_weapons, milestone_rpg_4_hitbox, milestone_rpg_5_ammo_reload, weapon_inventory_catalog, weapon_visual_catalog, weapon_held_hud_visual_identity, weapon_melee_visual_identity, weapon_pickup_visual_identity, weapon_projectile_vfx_identity, milestone_11_weapon_drop_progression, milestone_13_weapon_tower_visual, enemy_drop, biome_status_effects _(re-bucket da A1: BiomeStatusRuntime/health)_ |
-| A6 | **Enemies & Bosses** | `enemies/` | zombie_biome_enemy, zombie_biome_wave_director, zombie_spawner_edge, milestone_12_enemy_variants, milestone_15_ranged_enemy, boss, milestone_11_boss_telegraph, milestone_19_boss_registry, offscreen_enemy_markers |
+| A6 | **Enemies & Bosses** ✅ | `enemies/` | zombie_biome_enemy, zombie_biome_wave_director, zombie_spawner_edge, milestone_12_enemy_variants, milestone_15_ranged_enemy, boss, milestone_11_boss_telegraph, milestone_19_boss_registry, offscreen_enemy_markers |
 | A7 | **Characters, RPG & Progression** | `progression/` | milestone_rpg_1_character_select, milestone_rpg_2_stats, milestone_rpg_6_xp_level, milestone_rpg_7_passives, milestone_rpg_8_adrenaline_super, milestone_rpg_11_data_driven, milestone_rpg_13_new_classes, character_select_ui, character_select_independent, all_modes_character_system, milestone_16_downed_revive, player_query |
 | A8 | **Game Modes & Waves** | `modes/` | survival_wave, tower_defense, dungeon, dungeon_graph, zombie_revamp_foundation, zombie_market, zombie_survival_world_contract, infinite_arena_default_mode, milestone_20_arena_environment, random_encounter, wave_cycle, milestone_9, biome_mini_events _(re-bucket da A1: RandomEncounterSystem)_ |
 | A9 | **UI, HUD, Audio, Settings & Feedback** | `ui_audio/` | milestone_rpg_9_hud, milestone_rpg_12_feedback, player_world_hud_layout, milestone_17_run_results, pause_settings, milestone_21_visual_settings_performance, biome_debug_overlay, game_log, milestone_18_audio_mix |
@@ -232,8 +232,15 @@ stress (`milestone_20_arena_stress`, `zombie_revamp_ten_minute_soak`,
 - **Criterio di accettazione:** ✅ copertura ≥ legacy (fuoco, danno, reload, ammo,
   inventario, drop progression, identità visiva, tower, status); legacy A5 rimossi.
 
-### M6 — A6 Enemies & Bosses
-- **Criterio di accettazione:** copertura ≥ legacy (varianti nemici, ranged,
+### M6 — A6 Enemies & Bosses ✅ FATTA (9/9 file)
+- **Esito (2 suite GUT sotto `tests/suites/enemies/`):**
+  - `enemies_test.gd` ← zombie_biome_enemy + zombie_biome_wave_director +
+    zombie_spawner_edge + milestone_12_enemy_variants + milestone_15_ranged_enemy
+    + offscreen_enemy_markers
+  - `boss_test.gd` ← boss + milestone_11_boss_telegraph + milestone_19_boss_registry
+- Ogni test riusa il boot di main.tscn via `main_scene_fixture` (9 boot, uno per
+  test). 9 test / 253 assert verdi (~4m17s).
+- **Criterio di accettazione:** ✅ copertura ≥ legacy (varianti nemici, ranged,
   spawner, telegraph, registry boss, marker offscreen); legacy A6 rimossi.
 
 ### M7 — A7 Characters, RPG & Progression
@@ -308,7 +315,7 @@ quell'area senza toccare le altre.
 - [x] M3 — A3 Obstacles & Collision ✅ (4/4 file → 2 suite GUT; 15 test/490 assert verdi, ~30s)
 - [x] M4 — A4 Assets & Manifests ✅ (11/11 file → 7 suite GUT; 49 test/7218 assert verdi, ~3m10s)
 - [x] M5 — A5 Combat, Weapons & Drops ✅ (15/15 file → 4 suite GUT; 20 test/1639 assert verdi)
-- [ ] M6 — A6 Enemies & Bosses
+- [x] M6 — A6 Enemies & Bosses ✅ (9/9 file → 2 suite GUT; 9 test/253 assert verdi)
 - [ ] M7 — A7 Characters, RPG & Progression
 - [ ] M8 — A8 Game Modes & Waves
 - [ ] M9 — A9 UI, HUD, Audio, Settings & Feedback
