@@ -5,7 +5,7 @@
 ### Added
 
 - Riscrittura test M2 (in corso) — area A2 Environment, Streaming & Graph migrata
-  a GUT in batch in-place. Fatto finora (16/20 file → 6 suite sotto
+  a GUT in batch in-place. Fatto finora (18/20 file → 6 suite sotto
   `tests/suites/environment/`): `world_graph_streaming_test.gd` (grafo,
   connettivita multi-seed, streaming, persistenza save v6), `tile_layout_test.gd`
   (tile layer asset-driven, props dei blocchi, muri perimetrali),
@@ -15,12 +15,13 @@
   (cluster che boota `main.tscn`: streaming completo regione+vicini, profilo
   prestazioni isometrico, assenza di renderer/gate legacy, attraversamento dei
   varchi senza portali, transizione che segue il movimento fisico, inseguimento
-  di un nemico attraverso il seam). Le prime cinque costruiscono la megamappa una
-  sola volta in before_all; `integration_test.gd` istanzia `main.tscn` UNA volta
-  (nuova fixture condivisa `tests/support/main_scene_fixture.gd`) e riavvia
-  survival per test, ripristinando i tunable in before_each. Resta da migrare il
-  resto del cluster di integrazione (4 file che bootano `main.tscn`: i tre
-  `zombie_*` ambiente/transizione/fall e `biome_world_generation`) nella stessa
+  di un nemico attraverso il seam, generazione deterministica del mondo a biomi +
+  transizione via comando, transizioni multi-step con terreno/loot/HUD). Le prime
+  cinque costruiscono la megamappa una sola volta in before_all;
+  `integration_test.gd` istanzia `main.tscn` UNA volta (nuova fixture condivisa
+  `tests/support/main_scene_fixture.gd`) e riavvia survival per test,
+  ripristinando i tunable in before_each. Restano da migrare 2 file del cluster di
+  integrazione (`zombie_environment_milestone`, `zombie_fall_hazard`) nella stessa
   suite condivisa.
 - Riscrittura test M1 — area A1 World Generation & Determinism migrata a GUT
   (vedi `test_rewrite_roadmap.md`). 11 file legacy (`golden_seed_default`,

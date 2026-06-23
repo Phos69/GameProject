@@ -451,6 +451,159 @@ func test_enemy_chases_across_biome_seam() -> void:
 	if is_instance_valid(enemy):
 		enemy.queue_free()
 
+# --- generazione del mondo a biomi e transizione via comando ----------------
+# (biome_world_generation)
+
+func test_biome_world_generation() -> void:
+	var biome_manager := _scene.node(&"biome_manager") as BiomeManager
+	var obstacle_system := _scene.node(&"obstacle_system") as ObstacleSystem
+	var hazard_system := _scene.node(&"hazard_system") as HazardSystem
+	var crate_system := _scene.node(&"resource_crate_system") as ResourceCrateSystem
+	var transition_system := _scene.node(&"biome_transition_system") as BiomeTransitionSystem
+	var zombie_spawner := _scene.node(&"zombie_spawner") as ZombieSpawner
+	assert_not_null(biome_manager, "biome manager is available")
+	assert_not_null(transition_system, "transition system is available")
+	assert_not_null(zombie_spawner, "zombie spawner is available")
+	if biome_manager == null or obstacle_system == null or hazard_system == null or crate_system == null or transition_system == null or zombie_spawner == null:
+		return
+
+	# Determinismo della mappa: build dirette del BiomeManager (no survival).
+	var seed_context := {"world_seed": 424242, "preserve_biome_sequence": false}
+	biome_manager.start_run(seed_context)
+	var signature_a := biome_manager.get_generation_signature()
+	biome_manager.start_run(seed_context)
+	var signature_b := biome_manager.get_generation_signature()
+	biome_manager.start_run({"world_seed": 424243, "preserve_biome_sequence": false})
+	var signature_c := biome_manager.get_generation_signature()
+	assert_eq(signature_a, signature_b, "same seed regenerates identical biome map")
+	assert_ne(signature_a, signature_c, "different seed changes generated map signature")
+	assert_eq(int(biome_manager.get_seed_record().get("global_seed", 0)), 424243, "seed record stores the current global seed")
+
+	var cells := biome_manager.get_generated_biome_map()
+	assert_gte(cells.size(), 5, "global biome map contains the planned biome cells")
+	var start_cell := biome_manager.get_current_biome_cell()
+	assert_true(start_cell != null and start_cell.biome_id == &"infected_plains", "generated run starts from the base biome")
+	for cell in cells:
+		_validate_cell(cell)
+
+	var base_layout := (start_cell.generated_layout if start_cell != null else null)
+	assert_not_null(base_layout, "starting biome has a generated layout")
+	if base_layout != null:
+		assert_eq(base_layout.zone_size, BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE, "starting biome is generated as 500x500 logical cells")
+		assert_true(not base_layout.rock_rects.is_empty() and not base_layout.forest_rects.is_empty(), "base biome (void-first) contains rocks and forests")
+		assert_true((not base_layout.road_rects.is_empty() or not base_layout.get_road_cells().is_empty()) and not base_layout.crate_cells.is_empty(),
+			"base biome has roads, corridors and resource crates")
+
+	transition_system.transition_cooldown = 0.01
+	assert_true(_scene.start_survival({"world_seed": 424242, "preserve_biome_sequence": true}), "survival starts with generated biome map context")
+	await wait_frames(1)
+	await wait_physics_frames(1)
+
+	var active_cell := biome_manager.get_current_biome_cell()
+	var active_biome := biome_manager.get_current_biome() as BiomeDefinition
+	var active_layout := (active_cell.generated_layout if active_cell != null else null)
+	assert_true(active_cell != null and active_cell.biome_id == &"infected_plains", "survival uses the generated starting cell")
+	if active_layout != null and active_biome != null:
+		assert_gte(obstacle_system.get_active_obstacles().size(), active_layout.obstacle_positions.size(),
+			"obstacle system renders at least the generated current-region obstacle layout")
+		assert_gte(hazard_system.get_active_hazards().size(), active_layout.hazard_positions.size(),
+			"hazard system renders at least the current-region fall zones and biome hazards")
+		assert_gte(crate_system.get_active_crates().size(), active_layout.crate_positions.size(),
+			"resource crate system renders at least the current-region generated crates")
+		assert_true(_scene.nodes(&"biome_transition_gates").is_empty(), "generated passages no longer instantiate transition gates")
+		if not active_layout.fall_zone_rects.is_empty():
+			var fall_position := active_layout.rect_center_to_world(active_layout.fall_zone_rects.front())
+			assert_false(zombie_spawner.is_spawn_position_valid(fall_position, active_biome), "zombie spawner rejects generated fall zones")
+
+	if active_cell != null and not active_cell.passages.is_empty():
+		var passage: BiomePassage = active_cell.passages.front()
+		transition_system.cooldown_timer = 0.0
+		assert_true(transition_system.transition_to(passage.to_biome_id, passage.side, passage.to_cell_id),
+			"generated passage transitions to the neighbor biome")
+		await wait_frames(1)
+		assert_ne(biome_manager.get_current_biome_cell(), active_cell, "biome manager advances to the generated neighbor cell")
+
+# --- transizioni multi-step con terreno/loot/HUD per biome ------------------
+# (zombie_biome_transition)
+
+func test_zombie_biome_transition() -> void:
+	var biome_manager := _scene.node(&"biome_manager") as BiomeManager
+	var transition_system := _scene.node(&"biome_transition_system") as BiomeTransitionSystem
+	var terrain_generator := _scene.node(&"terrain_generator") as TerrainGenerator
+	var obstacle_system := _scene.node(&"obstacle_system") as ObstacleSystem
+	var crate_system := _scene.node(&"resource_crate_system") as ResourceCrateSystem
+	var streamer = _scene.node(&"world_region_streamer")
+	var multi_region_renderer = _scene.node(&"multi_region_renderer")
+	var hud := _scene.node(&"hud_manager") as HUDManager
+	var playground := _scene.main.get_node_or_null("World/Playground") as IsometricPlayground
+	assert_not_null(transition_system, "transition system is available")
+	assert_not_null(terrain_generator, "terrain generator is available")
+	assert_not_null(hud, "HUD is available")
+	assert_not_null(playground, "playground is available")
+	if biome_manager == null or transition_system == null or terrain_generator == null or obstacle_system == null or crate_system == null or streamer == null or hud == null or playground == null:
+		return
+
+	transition_system.transition_cooldown = 0.01
+	streamer.set("active_radius", 0)
+	if multi_region_renderer != null:
+		multi_region_renderer.set("neighbor_radius", 0)
+	assert_true(_scene.start_survival(), "survival starts with biome transitions")
+	await wait_frames(1)
+	await wait_physics_frames(1)
+
+	var graph := biome_manager.get_world_graph()
+	assert_true(graph != null and graph.is_graph_connected(), "persistent biome graph is connected")
+	var seen_biomes := {}
+	for step in range(2):
+		var cell := biome_manager.get_current_biome_cell()
+		assert_not_null(cell, "current region exists at step %d" % step)
+		if cell == null:
+			break
+		var biome_id := cell.biome_id
+		seen_biomes[biome_id] = true
+		var biome := biome_manager.get_current_biome() as BiomeDefinition
+		assert_true(biome != null and biome.biome_id == biome_id, "biome manager selects region %s biome %s" % [String(cell.id), String(biome_id)])
+		if biome == null or biome.environment_layout == null:
+			continue
+		var layout := biome.environment_layout
+		assert_eq(terrain_generator.get_active_biome_id(), biome_id, "terrain switches to %s" % String(biome_id))
+		var tile_layer := terrain_generator.get_active_tile_layer()
+		assert_not_null(tile_layer, "%s creates an asset tile layer" % String(biome_id))
+		if tile_layer != null:
+			assert_eq(tile_layer.get_visual_tile_count(), layout.zone_size.x * layout.zone_size.y, "%s tile layer covers every logical cell" % String(biome_id))
+			assert_eq(tile_layer.get_missing_asset_count(), 0, "%s tile layer has no missing visual cells" % String(biome_id))
+		_expect_streamed_region_content(streamer, cell, layout)
+		assert_true(playground.floor_color.is_equal_approx(biome.palette.background_color), "%s palette is applied" % String(biome_id))
+		assert_true(_has_blocked_boundary(obstacle_system), "%s retains a physical blocked boundary" % String(biome_id))
+		assert_true(_scene.nodes(&"biome_transition_gates").is_empty(), "%s exposes open passages without runtime gates" % String(biome_id))
+		assert_true(_has_thematic_loot(crate_system, biome_id), "%s exposes biome-aware crate loot" % String(biome_id))
+		await wait_frames(1)
+		assert_true(biome.display_name in hud.status_label.text, "HUD displays %s" % biome.display_name)
+		if step == 0 and not cell.passages.is_empty():
+			var passage: BiomePassage = cell.passages.front()
+			transition_system.cooldown_timer = 0.0
+			assert_true(transition_system.transition_to(passage.to_biome_id, passage.side, passage.to_cell_id),
+				"transition follows physical passage to %s" % String(passage.to_cell_id))
+			await wait_frames(1)
+			await wait_physics_frames(1)
+
+	if graph != null:
+		var graph_biomes := {}
+		for region in graph.get_regions_sorted():
+			graph_biomes[region.biome_id] = true
+		for required_biome in [&"infected_plains", &"toxic_wastes", &"burning_fields", &"frozen_outskirts", &"drowned_marsh"]:
+			assert_true(graph_biomes.has(required_biome), "graph contains %s" % String(required_biome))
+
+	var marsh := biome_manager.get_biome_definition(&"drowned_marsh") as BiomeDefinition
+	var themed_enemy_found := false
+	if marsh != null:
+		for spawn_index in range(40):
+			var enemy_id := marsh.resolve_enemy_id(5, spawn_index, 40)
+			if String(enemy_id).contains("drowned") or String(enemy_id).contains("marsh") or String(enemy_id).contains("water"):
+				themed_enemy_found = true
+				break
+	assert_true(themed_enemy_found, "advanced biome wave resolves thematic enemies")
+
 # --- helper di asserzione (porting dei test legacy) -------------------------
 
 func _assert_neighbor_gameplay_queries(streamer, biome_manager: BiomeManager,
@@ -486,6 +639,49 @@ func _assert_neighbor_crate_persistence(streamer, graph: WorldGraph, biome_manag
 		environment_container, pickup_container, terrain_generator, obstacle_system, hazard_system, crate_system)
 	await wait_frames(1)
 	assert_null(_find_crate_by_region_key(crate_system, neighbor_id, crate_key), "re-streaming skips the opened neighbor crate")
+
+func _validate_cell(cell: BiomeCell) -> void:
+	assert_eq(Vector2i(cell.width, cell.height), BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE, "%s is 500x500" % cell.id)
+	assert_ne(cell.seed, 0, "%s has a local deterministic seed" % cell.id)
+	assert_not_null(cell.generated_layout, "%s has generated terrain" % cell.id)
+	if cell.generated_layout != null:
+		assert_true(bool(cell.generated_layout.validation_report.get("is_valid", false)), "%s passes pathfinding validation" % cell.id)
+		var placement_errors := (cell.generated_layout.validation_report.get("placement_errors", PackedStringArray()) as PackedStringArray)
+		assert_true(placement_errors.is_empty(), "%s has valid spawn, crate and hazard placements" % cell.id)
+	for side in BiomeCell.SIDES:
+		if cell.has_neighbor(side):
+			assert_eq(cell.get_border(side), BiomeCell.BorderType.CONNECTED, "%s %s border is connected" % [cell.id, side])
+			assert_false(cell.get_passages_for_side(side).is_empty(), "%s %s border has a passage" % [cell.id, side])
+		else:
+			assert_true(cell.get_border(side) == BiomeCell.BorderType.FALL or cell.get_border(side) == BiomeCell.BorderType.BLOCKED,
+				"%s %s border is fall or blocked by graph topology" % [cell.id, side])
+	if cell.generated_layout != null:
+		var classification := cell.generated_layout.get_classification_report()
+		assert_true(bool(classification.get("is_complete", false)), "%s has complete 500x500 terrain classification" % cell.id)
+
+func _has_blocked_boundary(obstacle_system: ObstacleSystem) -> bool:
+	for obstacle in obstacle_system.get_active_obstacles():
+		if "boundary" in String(obstacle.get("obstacle_id")):
+			return true
+	return false
+
+func _has_thematic_loot(crate_system: ResourceCrateSystem, biome_id: StringName) -> bool:
+	if biome_id == &"infected_plains":
+		return crate_system.get_active_crate_ids().has(&"common") and crate_system.get_active_crate_ids().has(&"medical")
+	for crate in crate_system.get_active_crates():
+		if crate == null or crate.loot_table == null:
+			continue
+		for entry in crate.loot_table.entries:
+			if entry != null and not entry.resource_tag.is_empty():
+				return true
+	return false
+
+func _expect_streamed_region_content(streamer, cell: BiomeCell, layout: BiomeEnvironmentLayout) -> void:
+	var counts: Dictionary = streamer.get_region_content_counts(cell.id)
+	assert_eq(int(counts.get("tiles", 0)), layout.zone_size.x * layout.zone_size.y, "%s streams a full tile layer" % String(cell.biome_id))
+	assert_eq(int(counts.get("obstacles", 0)), layout.obstacle_positions.size(), "%s streams all physical obstacles" % String(cell.biome_id))
+	assert_eq(int(counts.get("hazards", 0)), layout.hazard_positions.size(), "%s streams all environment hazards" % String(cell.biome_id))
+	assert_true(int(counts.get("crates", 0)) > 0 or layout.crate_positions.is_empty(), "%s streams biome resource crates" % String(cell.biome_id))
 
 func _assert_source_audit() -> void:
 	var controller_source := _read_text("res://game/modes/zombie/zombie_mode_controller.gd")
