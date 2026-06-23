@@ -4,25 +4,26 @@
 
 ### Added
 
-- Riscrittura test M2 (in corso) — area A2 Environment, Streaming & Graph migrata
-  a GUT in batch in-place. Fatto finora (18/20 file → 6 suite sotto
-  `tests/suites/environment/`): `world_graph_streaming_test.gd` (grafo,
-  connettivita multi-seed, streaming, persistenza save v6), `tile_layout_test.gd`
-  (tile layer asset-driven, props dei blocchi, muri perimetrali),
-  `fall_test.gd` (fall boundary, dodge sui varchi), `passage_tile_test.gd`
-  (tile/connettori dei passaggi, dati di connessione del grafo),
-  `exploration_map_test.gd` (fog ed esplorazione) e `integration_test.gd`
-  (cluster che boota `main.tscn`: streaming completo regione+vicini, profilo
-  prestazioni isometrico, assenza di renderer/gate legacy, attraversamento dei
-  varchi senza portali, transizione che segue il movimento fisico, inseguimento
-  di un nemico attraverso il seam, generazione deterministica del mondo a biomi +
-  transizione via comando, transizioni multi-step con terreno/loot/HUD). Le prime
-  cinque costruiscono la megamappa una sola volta in before_all;
-  `integration_test.gd` istanzia `main.tscn` UNA volta (nuova fixture condivisa
-  `tests/support/main_scene_fixture.gd`) e riavvia survival per test,
-  ripristinando i tunable in before_each. Restano da migrare 2 file del cluster di
-  integrazione (`zombie_environment_milestone`, `zombie_fall_hazard`) nella stessa
-  suite condivisa.
+- Riscrittura test M2 — area A2 Environment, Streaming & Graph migrata a GUT
+  (20/20 file → 6 suite sotto `tests/suites/environment/`):
+  `world_graph_streaming_test.gd` (grafo, connettivita multi-seed, streaming,
+  persistenza save v6), `tile_layout_test.gd` (tile layer asset-driven, props dei
+  blocchi, muri perimetrali), `fall_test.gd` (fall boundary, dodge sui varchi),
+  `passage_tile_test.gd` (tile/connettori dei passaggi, dati di connessione del
+  grafo), `exploration_map_test.gd` (fog ed esplorazione) e `integration_test.gd`
+  (il cluster di 10 file che bootavano `main.tscn`: streaming completo
+  regione+vicini, profilo prestazioni isometrico, assenza di renderer/gate legacy,
+  attraversamento dei varchi senza portali, transizione che segue il movimento
+  fisico, inseguimento di un nemico attraverso il seam, generazione deterministica
+  del mondo a biomi + transizione via comando, transizioni multi-step con
+  terreno/loot/HUD, ambiente generato (ostacoli/casse/corridoio) e fall hazard
+  completo (danno/respawn/invulnerabilità, dodge sul void, morte da void con
+  segnali audio/drop)). Le prime cinque suite costruiscono la megamappa una sola
+  volta in before_all; `integration_test.gd` istanzia `main.tscn` UNA volta (nuova
+  fixture condivisa `tests/support/main_scene_fixture.gd`, riusabile dalle aree
+  future che bootano la scena) e riavvia survival per test ripristinando i tunable
+  in before_each. Il cluster di integrazione passa da 10 boot di `main.tscn` a 1.
+  10 test/1062 assert verdi per `integration_test.gd`.
 - Riscrittura test M1 — area A1 World Generation & Determinism migrata a GUT
   (vedi `test_rewrite_roadmap.md`). 11 file legacy (`golden_seed_default`,
   `biome_roster`, `persistent_world_generation`,

@@ -25,6 +25,11 @@ var _default_move_party: bool = true
 var _default_active_radius: int = 1
 var _default_neighbor_radius: int = 1
 
+# Stato raccolto dai segnali durante test_zombie_fall_hazard (resettato a inizio test).
+var _cue_ids: Array[StringName] = []
+var _spawned_drop_count: int = 0
+var _void_enemy_death_reason: StringName = &""
+
 func before_all() -> void:
 	_scene = MainSceneFixture.new()
 	assert_true(_scene.boot(self), "main scene can be loaded")
@@ -604,6 +609,285 @@ func test_zombie_biome_transition() -> void:
 				break
 	assert_true(themed_enemy_found, "advanced biome wave resolves thematic enemies")
 
+# --- ambiente generato: ostacoli, casse, corridoio, teardown ----------------
+# (zombie_environment_milestone)
+
+func test_zombie_environment_milestone() -> void:
+	var biome_manager := _scene.node(&"biome_manager") as BiomeManager
+	var terrain_generator := _scene.node(&"terrain_generator") as TerrainGenerator
+	var obstacle_system := _scene.node(&"obstacle_system") as ObstacleSystem
+	var resource_crate_system := _scene.node(&"resource_crate_system") as ResourceCrateSystem
+	var hazard_system := _scene.node(&"hazard_system") as HazardSystem
+	var enemy_system := _scene.node(&"enemy_system") as EnemySystem
+	var playground := _scene.main.get_node_or_null("World/Playground") as IsometricPlayground
+	var survival_mode := _scene.survival_mode()
+	assert_not_null(terrain_generator, "terrain generator is available")
+	assert_not_null(obstacle_system, "obstacle system is available")
+	assert_not_null(resource_crate_system, "resource crate system is available")
+	assert_not_null(playground, "shared playground is available")
+	assert_not_null(survival_mode, "survival mode is available")
+	if biome_manager == null or terrain_generator == null or obstacle_system == null or resource_crate_system == null or hazard_system == null or enemy_system == null or playground == null or survival_mode == null:
+		return
+
+	assert_true(_scene.start_survival(), "survival starts with the environment milestone enabled")
+	await wait_frames(2)
+	await wait_physics_frames(1)
+
+	var biome := biome_manager.get_current_biome() as BiomeDefinition
+	var layout := biome.environment_layout
+	var palette := biome.palette
+	assert_eq(biome_manager.get_current_biome_id(), &"infected_plains", "environment generation starts from Pianura Infetta")
+	assert_not_null(layout, "starting biome exposes an environment layout")
+	if layout == null or palette == null:
+		return
+
+	var tile_layer := terrain_generator.get_active_tile_layer()
+	assert_not_null(tile_layer, "terrain generator creates the asset tile layer")
+	if tile_layer != null:
+		assert_eq(tile_layer.get_visual_tile_count(), layout.zone_size.x * layout.zone_size.y, "asset tile layer covers the full generated layout")
+		assert_eq(tile_layer.get_missing_asset_count(), 0, "asset tile layer has no missing visual cells")
+	assert_true(playground.floor_color.is_equal_approx(palette.background_color) and playground.concrete_color.is_equal_approx(palette.floor_color),
+		"starting biome palette is applied to the shared playground")
+
+	var player := _scene.node(&"players") as Node2D
+	if player != null:
+		player.global_position = Vector2.ZERO
+
+	var obstacles: Array = obstacle_system.get_active_obstacles()
+	assert_gte(obstacles.size(), layout.obstacle_positions.size(), "obstacle system creates at least the deterministic starting layout")
+	var spawned_obstacle_ids: Array[StringName] = []
+	var current_region_obstacles: Array = []
+	for obstacle in obstacles:
+		if obstacle == null:
+			continue
+		if obstacle is Node2D and _position_matches_any((obstacle as Node2D).global_position, layout.obstacle_positions):
+			current_region_obstacles.append(obstacle)
+		spawned_obstacle_ids.append(StringName(obstacle.get("obstacle_id")))
+		assert_true(obstacle is StaticBody2D and int(obstacle.get("collision_layer")) & BiomeObstacle.MOVEMENT_BLOCK_LAYER_BIT != 0,
+			"environment obstacle is a physical body on the shared movement layer")
+		assert_true(obstacle.is_in_group("environment_obstacles") and obstacle.is_in_group("spawn_blockers"),
+			"environment obstacle participates in spawn validation")
+	assert_eq(current_region_obstacles.size(), layout.obstacle_positions.size(), "obstacle system creates every current-region configured obstacle")
+	for required_id in [&"large_rock", &"forest_tree"]:
+		assert_true(spawned_obstacle_ids.has(required_id), "%s is present in the starting biome" % String(required_id))
+	if layout.obstacle_ids.has(&"boundary_fence"):
+		assert_true(spawned_obstacle_ids.has(&"boundary_fence"), "generated solid boundary is represented at runtime")
+	else:
+		assert_false(layout.fall_zone_rects.is_empty(), "fall/cliff boundary replaces a solid fence when the generated edge is void")
+
+	for safe_point in [Vector2.ZERO, Vector2(0.0, -180.0), Vector2(0.0, 180.0), Vector2(-120.0, 0.0), Vector2(120.0, 0.0)]:
+		assert_false(obstacle_system.is_position_blocked(safe_point), "central combat corridor remains open at %s" % safe_point)
+
+	if not current_region_obstacles.is_empty():
+		var first_obstacle := current_region_obstacles[0] as Node2D
+		assert_true(obstacle_system.is_position_blocked(first_obstacle.global_position), "obstacle center is rejected by placement validation")
+		assert_true(_physics_query_finds_obstacle(first_obstacle), "physics space contains the generated obstacle collision")
+
+	var crates: Array = resource_crate_system.get_active_crates()
+	var crate_ids: Array[StringName] = resource_crate_system.get_active_crate_ids()
+	var current_region_crates: Array = []
+	for active_crate in crates:
+		if active_crate is Node2D and _position_matches_any((active_crate as Node2D).global_position, layout.crate_positions):
+			current_region_crates.append(active_crate)
+	assert_true(crates.size() >= layout.crate_positions.size() and current_region_crates.size() == layout.crate_positions.size(),
+		"resource crate system creates every current-region configured crate (%d current/%d configured)" % [current_region_crates.size(), layout.crate_positions.size()])
+	assert_true(crate_ids.has(&"common") and crate_ids.has(&"medical"), "starting biome provides common and medical resources")
+	for crate in current_region_crates:
+		var crate_node := crate as SupplyCrate
+		if crate_node == null:
+			continue
+		assert_false(obstacle_system.is_position_blocked(crate_node.global_position), "resource crate does not overlap a physical obstacle")
+		assert_false(hazard_system.is_position_hazardous(crate_node.global_position), "resource crate does not overlap an environment hazard")
+		assert_lte(_distance_to_nearest_player(crate_node.global_position), layout.logical_tile_scale * 30.0, "resource crate is reachable from the party start")
+	assert_true(
+		_crate_loot_contains(current_region_crates, &"common", GameConstants.DROP_MONEY)
+		and _crate_loot_contains(current_region_crates, &"medical", GameConstants.DROP_HEALTH),
+		"crate loot changes between common and medical containers")
+
+	if player != null:
+		player.global_position = Vector2.ZERO
+	var lane_enemy := enemy_system.spawn_enemy(&"survival_zombie", Vector2(0.0, -430.0)) as BasicEnemy
+	assert_not_null(lane_enemy, "a zombie can spawn in the open north lane")
+	if lane_enemy != null and player != null:
+		var initial_distance := lane_enemy.global_position.distance_to(player.global_position)
+		for _frame in range(90):
+			await wait_physics_frames(1)
+		var final_distance := lane_enemy.global_position.distance_to(player.global_position)
+		assert_lt(final_distance, initial_distance - 80.0, "zombie advances through the preserved central corridor")
+		lane_enemy.queue_free()
+
+	survival_mode.stop_mode()
+	await wait_frames(2)
+	assert_true(obstacle_system.get_active_obstacles().is_empty(), "physical obstacles are removed when survival stops")
+	assert_true(resource_crate_system.get_active_crates().is_empty(), "environment resource crates are removed when survival stops")
+
+# --- fall hazard: danno/respawn/invulnerabilità, dodge sul void, morte da void
+# (zombie_fall_hazard)
+
+func test_zombie_fall_hazard() -> void:
+	_cue_ids = []
+	_spawned_drop_count = 0
+	_void_enemy_death_reason = &""
+
+	var hazard_system := _scene.node(&"hazard_system") as HazardSystem
+	var zombie_spawner := _scene.node(&"zombie_spawner") as ZombieSpawner
+	var enemy_system := _scene.node(&"enemy_system") as EnemySystem
+	var drop_system := _scene.node(&"drop_system") as DropSystem
+	var health_system := _scene.node(&"health_system") as HealthSystem
+	var gameplay_effects := _scene.node(&"gameplay_effects") as GameplayEffects
+	var audio_manager := _scene.node(&"audio_manager") as AudioManager
+	var player := _scene.node(&"players") as PlayerController
+	assert_not_null(hazard_system, "hazard system is available")
+	assert_not_null(drop_system, "drop system is available")
+	assert_not_null(gameplay_effects, "gameplay effects are available")
+	assert_not_null(audio_manager, "audio manager is available")
+	assert_not_null(player, "player one is available")
+	if hazard_system == null or zombie_spawner == null or enemy_system == null or drop_system == null or health_system == null or gameplay_effects == null or audio_manager == null or player == null:
+		return
+
+	audio_manager.cue_played.connect(_on_cue_played)
+	drop_system.drop_spawned.connect(_on_drop_spawned)
+	hazard_system.safe_position_update_interval = 0.05
+	hazard_system.fall_respawn_invulnerability = 0.20
+	hazard_system.fall_retrigger_cooldown = 0.15
+	assert_eq(hazard_system.fall_damage, 20, "fall damage defaults to exactly 20 HP")
+	assert_true(_scene.start_survival(), "survival starts with fall hazards enabled")
+	await wait_frames(2)
+	await wait_physics_frames(1)
+
+	var hazards := hazard_system.get_active_hazards()
+	assert_gte(hazards.size(), 1, "starting biome creates fall zone coverage")
+	if hazards.is_empty():
+		_disconnect_fall_signals(audio_manager, drop_system)
+		return
+	var fall_zone := hazards[0] as BiomeFallZone
+	assert_not_null(fall_zone, "generated hazard uses BiomeFallZone")
+	if fall_zone == null:
+		_disconnect_fall_signals(audio_manager, drop_system)
+		return
+	assert_true(fall_zone.is_in_group("fall_zones") and fall_zone.is_in_group("environment_hazards"),
+		"fall zone is registered for hazard and spawn validation")
+	assert_true(hazard_system.is_position_hazardous(fall_zone.global_position), "fall zone center is reported as hazardous")
+	assert_true(hazard_system.is_position_fall_zone(fall_zone.global_position), "fall zone center is reported by the dedicated fall query")
+	assert_false(hazard_system.is_position_environment_hazard(fall_zone.global_position), "fall zone is not reported as a generic environment hazard")
+	assert_eq(fall_zone.get_fall_style(), &"cliff", "starting biome fall zone uses the default cliff visual style")
+
+	var runtime_environment_hazard := hazard_system.spawn_runtime_hazard(&"fire_zone", Vector2(520.0, 0.0))
+	assert_not_null(runtime_environment_hazard, "runtime environmental hazard can be spawned for query checks")
+	if runtime_environment_hazard != null:
+		await wait_frames(1)
+		assert_true(hazard_system.is_position_environment_hazard(runtime_environment_hazard.global_position), "environmental hazard is reported by the environment query")
+		assert_false(hazard_system.is_position_fall_zone(runtime_environment_hazard.global_position), "environmental hazard is not reported as a fall zone")
+	assert_false(zombie_spawner.is_spawn_position_valid(fall_zone.global_position), "zombie spawner rejects the fall zone")
+
+	var safe_position := Vector2(120.0, 0.0)
+	player.global_position = safe_position
+	player.velocity = Vector2(80.0, 0.0)
+	for _frame in range(8):
+		await wait_physics_frames(1)
+	var recorded_safe_position := hazard_system.get_last_safe_position(player)
+	assert_lt(recorded_safe_position.distance_to(safe_position), 2.0, "safe-position tracker records a valid player location")
+	assert_false(hazard_system.is_position_safe(fall_zone.global_position + Vector2(fall_zone.zone_size.x * 0.5 + 12.0, 0.0)),
+		"safe positions require clearance from the fall zone")
+
+	var health := player.health_component
+	var health_before := health.current_health
+	var external_source := &"test_external_invulnerability"
+	var fall_source := StringName("fall_respawn_%d" % player.get_instance_id())
+	health.add_invulnerability_source(external_source)
+	var effect_count_before := gameplay_effects.effect_spawn_count
+	player.global_position = fall_zone.global_position
+	for _frame in range(30):
+		await wait_physics_frames(1)
+		if health.current_health < health_before:
+			break
+
+	assert_eq(health.current_health, health_before - 20, "fall applies exactly 20 HP even during another invulnerability")
+	assert_lt(player.global_position.distance_to(recorded_safe_position), 2.0, "player respawns at the last safe position")
+	assert_true(player.velocity.is_zero_approx(), "respawn clears player velocity")
+	assert_true(health.has_invulnerability_source(fall_source), "fall grants a dedicated temporary invulnerability source")
+	assert_true(health.has_invulnerability_source(external_source), "fall does not replace an existing invulnerability source")
+	assert_true(
+		gameplay_effects.effect_spawn_count >= effect_count_before + 2
+		and _has_effect_kind(gameplay_effects, &"fall_damage")
+		and _has_effect_kind(gameplay_effects, &"fall_respawn"),
+		"fall generates damage and respawn visual feedback")
+	assert_true(_cue_ids.has(&"player_fell"), "fall generates its environment audio cue")
+	assert_false(hazard_system.trigger_fall(player, fall_zone), "fall cooldown prevents an immediate duplicate trigger")
+
+	for _frame in range(24):
+		await wait_physics_frames(1)
+	assert_false(health.has_invulnerability_source(fall_source), "fall invulnerability expires after the configured duration")
+	assert_true(health.has_invulnerability_source(external_source) and health.is_invulnerable(), "other invulnerability remains active after fall recovery")
+	health.remove_invulnerability_source(external_source)
+	assert_false(health.is_invulnerable(), "player becomes vulnerable when all sources are removed")
+
+	var health_before_void_dodge := health.current_health
+	_start_test_dodge(player, fall_zone.global_position, fall_zone.global_position, 0.18)
+	for _frame in range(4):
+		await wait_physics_frames(1)
+	assert_true(player.get_entity_state_name() == &"dodging" and health.current_health == health_before_void_dodge,
+		"void does not damage or interrupt an active dodge")
+	for _frame in range(18):
+		await wait_physics_frames(1)
+		if player.get_entity_state_name() == &"falling":
+			break
+	assert_true(player.get_entity_state_name() == &"falling" and health.current_health == health_before_void_dodge,
+		"dodge landing on void starts falling before damage")
+	for _frame in range(40):
+		await wait_physics_frames(1)
+		if health.current_health < health_before_void_dodge:
+			break
+	assert_true(health.current_health == health_before_void_dodge - 20 and player.global_position.distance_to(recorded_safe_position) < 2.0,
+		"void dodge landing applies one fall hit and respawns safely")
+
+	var health_before_safe_dodge := health.current_health
+	_start_test_dodge(player, recorded_safe_position, recorded_safe_position + Vector2(8.0, 0.0), 0.12)
+	for _frame in range(16):
+		await wait_physics_frames(1)
+	assert_true(player.get_entity_state_name() == &"normal" and health.current_health == health_before_safe_dodge,
+		"dodge landing on walkable terrain returns to normal without damage")
+
+	var guaranteed_entry := DropEntry.new()
+	guaranteed_entry.drop_type = GameConstants.DROP_MONEY
+	guaranteed_entry.chance = 1.0
+	guaranteed_entry.min_amount = 10
+	guaranteed_entry.max_amount = 10
+	var guaranteed_loot := LootTable.new()
+	guaranteed_loot.entries.append(guaranteed_entry)
+	var enemy := enemy_system.spawn_enemy(&"basic_zombie", recorded_safe_position + Vector2(32.0, 0.0)) as BasicEnemy
+	assert_not_null(enemy, "test zombie spawns for void-death validation")
+	if enemy != null:
+		enemy.loot_table = guaranteed_loot
+		enemy.kill_experience = 23
+		enemy.died.connect(_on_test_enemy_died)
+		health_system.apply_damage(enemy, 1, player, &"test_player_damage")
+		var experience_before := player.rpg_component.experience
+		var drops_before := _spawned_drop_count
+		enemy.global_position = fall_zone.global_position
+		for _frame in range(5):
+			await wait_physics_frames(1)
+			if enemy.get_state_name() == &"falling":
+				break
+		assert_true(enemy.get_state_name() == &"falling" and enemy.health_component.is_alive(),
+			"zombie enters falling state and stays alive during animation")
+		for _frame in range(45):
+			await wait_physics_frames(1)
+			if not is_instance_valid(enemy):
+				break
+		await wait_frames(1)
+		assert_eq(_void_enemy_death_reason, &"void", "zombie void death exposes an explicit death reason")
+		assert_eq(_spawned_drop_count, drops_before, "zombie void death does not spawn guaranteed loot")
+		assert_eq(player.rpg_component.experience, experience_before, "zombie void death grants no kill experience")
+	for _frame in range(12):
+		await wait_frames(1)
+
+	_disconnect_fall_signals(audio_manager, drop_system)
+	_scene.game_mode_manager().set_mode(GameConstants.MODE_MENU)
+	await wait_frames(2)
+	assert_true(hazard_system.get_active_hazards().is_empty(), "fall zones are removed when survival stops")
+	assert_false(health.has_invulnerability_source(fall_source), "stopping survival leaves no fall invulnerability token")
+
 # --- helper di asserzione (porting dei test legacy) -------------------------
 
 func _assert_neighbor_gameplay_queries(streamer, biome_manager: BiomeManager,
@@ -827,3 +1111,74 @@ func _direction_for_side(side: StringName) -> Vector2:
 			return Vector2.DOWN
 		_:
 			return Vector2.RIGHT
+
+func _position_matches_any(position: Vector2, expected_positions: Array[Vector2]) -> bool:
+	for expected in expected_positions:
+		if position.distance_to(expected) <= 0.5:
+			return true
+	return false
+
+func _physics_query_finds_obstacle(obstacle: Node2D) -> bool:
+	var query := PhysicsPointQueryParameters2D.new()
+	query.position = obstacle.global_position
+	query.collision_mask = 1
+	query.collide_with_areas = false
+	query.collide_with_bodies = true
+	var results := obstacle.get_world_2d().direct_space_state.intersect_point(query, 16)
+	for result in results:
+		if result.get("collider") == obstacle:
+			return true
+	return false
+
+func _distance_to_nearest_player(position: Vector2) -> float:
+	var nearest := INF
+	for player in _scene.nodes(&"players"):
+		if player is Node2D:
+			nearest = minf(nearest, position.distance_to((player as Node2D).global_position))
+	return nearest
+
+func _crate_loot_contains(crates: Array, crate_id: StringName, drop_type: StringName) -> bool:
+	for crate in crates:
+		var crate_node := crate as SupplyCrate
+		if crate_node == null or StringName(crate_node.get_meta("biome_crate_id", &"")) != crate_id or crate_node.loot_table == null:
+			continue
+		for entry in crate_node.loot_table.entries:
+			if entry != null and entry.drop_type == drop_type:
+				return true
+	return false
+
+func _has_effect_kind(gameplay_effects: GameplayEffects, effect_kind: StringName) -> bool:
+	for effect in gameplay_effects.get_children():
+		if effect is GameplayEffect and effect.effect_kind == effect_kind:
+			return true
+	return false
+
+func _start_test_dodge(player: PlayerController, start: Vector2, target: Vector2, duration: float) -> void:
+	var component := player.dodge_component
+	component.reset_runtime()
+	player.global_position = start
+	component.start_position = start
+	component.target_position = target
+	component.dodge_direction = start.direction_to(target)
+	if component.dodge_direction.is_zero_approx():
+		component.dodge_direction = Vector2.RIGHT
+	component.dodge_duration = duration
+	component.dodge_time_left = duration
+	component.is_dodging = true
+	component.dodge_started.emit(component.dodge_direction, target, start != target)
+
+func _disconnect_fall_signals(audio_manager: AudioManager, drop_system: DropSystem) -> void:
+	if audio_manager.cue_played.is_connected(_on_cue_played):
+		audio_manager.cue_played.disconnect(_on_cue_played)
+	if drop_system.drop_spawned.is_connected(_on_drop_spawned):
+		drop_system.drop_spawned.disconnect(_on_drop_spawned)
+
+func _on_cue_played(cue_id: StringName, _bus_name: StringName, _used_optional_stream: bool, _priority: int, _frames_written: int) -> void:
+	_cue_ids.append(cue_id)
+
+func _on_drop_spawned(_pickup: Node, _drop_data: Dictionary) -> void:
+	_spawned_drop_count += 1
+
+func _on_test_enemy_died(enemy: Node) -> void:
+	if enemy != null and enemy.has_method("get_death_reason"):
+		_void_enemy_death_reason = StringName(enemy.call("get_death_reason"))

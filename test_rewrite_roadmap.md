@@ -150,19 +150,19 @@ stress (`milestone_20_arena_stress`, `zombie_revamp_ten_minute_soak`,
 - **Criterio di accettazione:** ✅ copertura ≥ legacy; suite A1 verde; nessun file
   legacy A1 residuo; baseline documentata.
 
-### M2 — A2 Environment, Streaming & Graph 🔄 IN CORSO (18/20 file)
+### M2 — A2 Environment, Streaming & Graph ✅ FATTA (20/20 file)
 - **Obiettivo:** convertire l'area più grande sfruttando build di mondo condivise
   per suite.
-- **Fatto (6 suite, in-place, ognuna con commit dedicato):**
+- **Esito (6 suite GUT, in-place, ognuna con commit dedicato):**
   - `world_graph_streaming_test.gd` ← world_graph_connectivity, milestone_7_graph_connectivity, region_streaming
   - `tile_layout_test.gd` ← milestone_10_tile_layer, isometric_block_props, isometric_perimeter_wall
   - `fall_test.gd` ← fall_boundary_visual_logic, player_dodge_gap
   - `passage_tile_test.gd` ← milestone_10_passage_tile
   - `exploration_map_test.gd` ← exploration_map
-  - `integration_test.gd` ← milestone_10_full_region_streaming, milestone_10_isometric_performance,
-    milestone_10_legacy_cleanup (parte 6) + milestone_10_no_portal_transition,
-    open_passage_transition, milestone_10_cross_biome_chase (parte 7) +
-    biome_world_generation, zombie_biome_transition (parte 8)
+  - `integration_test.gd` ← cluster di integrazione (10 file che bootavano
+    `main.tscn`), in 4 batch: streaming/profilo/cleanup (parte 6), transizioni
+    seam (parte 7), biome gen + transizioni multi-step (parte 8), ambiente +
+    fall hazard (parte 9). 10 test / 1062 assert verdi.
 - **Fixture condivisa nuova:** `tests/support/main_scene_fixture.gd` istanzia
   `main.tscn` UNA volta (la aggancia alla root e la imposta come `current_scene`,
   necessario allo streaming regioni) e (ri)avvia survival per test. NB:
@@ -170,14 +170,13 @@ stress (`milestone_20_arena_stress`, `zombie_revamp_ten_minute_soak`,
   quindi `after_each` chiama `stop_survival`. I tunable mutati dai test (cooldown
   seam/transizione, move_party, active/neighbor radius, spawn_interval, slot
   multiplayer) sono ripristinati in `before_each` per rendere l'ordine irrilevante.
-- **Da fare — ultimi 2 file del cluster di integrazione (boot `main.tscn`) nella
-  stessa `integration_test.gd`:** zombie_environment_milestone, zombie_fall_hazard
-  → **un solo boot condiviso** (qui il taglio dei boot rende il massimo: 10 boot →
-  1). I test che mutano lo stato re-impostano survival per restare isolati.
+  La fixture è riusabile dalle aree future che bootano `main.tscn` (combat,
+  enemies, modes).
 - **Nota perf:** il profilo frame del test isometrico usa un tetto di 45 ms (era
   35 ms nel processo dedicato legacy): il boot condiviso GUT ha baseline più alto,
   il tetto resta un guard anti-regressione (una regressione vera è ~100 ms/frame).
-- **Criterio di accettazione:** copertura ≥ legacy; file legacy A2 rimossi.
+- **Criterio di accettazione:** ✅ copertura ≥ legacy; tutti i 20 file legacy A2
+  rimossi; cluster di integrazione 10 boot → 1.
 
 ### M3 — A3 Obstacles & Collision
 - **Criterio di accettazione:** copertura ≥ legacy (collisione, 3x3, rendering
@@ -266,7 +265,7 @@ quell'area senza toccare le altre.
 
 - [x] M0 — Fondazione GUT + utility condivise ✅ (GUT 9.6.0 vendorizzato, `.gutconfig.json`, fixture condivisa, suite bootstrap 4/4 verde, CI doppio runner, wrapper `tools/run_gut.*`)
 - [x] M1 — A1 World Generation & Determinism ✅ (11 file → 3 suite GUT; baseline 230s→130s = 1.8x; 4 file re-bucketati ad A2/A4/A5/A8)
-- [~] M2 — A2 Environment, Streaming & Graph 🔄 18/20 file (6 suite GUT verdi; restano 2 file del cluster di integrazione: zombie environment/fall hazard)
+- [x] M2 — A2 Environment, Streaming & Graph ✅ (20/20 file → 6 suite GUT; cluster di integrazione 10 boot main.tscn → 1 via fixture condivisa; 10 test/1062 assert verdi)
 - [ ] M3 — A3 Obstacles & Collision
 - [ ] M4 — A4 Assets & Manifests
 - [ ] M5 — A5 Combat, Weapons & Drops
