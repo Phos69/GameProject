@@ -1,0 +1,525 @@
+extends GutTest
+## Modes A8 — Modalità zombie: revamp foundation, market, contratto mondo,
+## infinite arena di default, ambiente arena.
+##
+## Migra e accorpa:
+##   tests/zombie_revamp_foundation_smoke_test.gd        (main.tscn)
+##   tests/zombie_market_smoke_test.gd                   (main.tscn)
+##   tests/zombie_survival_world_contract_smoke_test.gd  (sintetico)
+##   tests/infinite_arena_default_mode_smoke_test.gd     (main.tscn, async)
+##   tests/milestone_20_arena_environment_smoke_test.gd  (main.tscn)
+
+const MainSceneFixture = preload("res://tests/support/main_scene_fixture.gd")
+
+var _async_world_ready: bool = false
+var _explosion_targets: Array[Node] = []
+
+# --- foundation: biome/wave/spawner + wave loop (zombie_revamp_foundation) ---
+
+func test_zombie_revamp_foundation() -> void:
+	var scene := MainSceneFixture.new()
+	assert_true(scene.boot(self), "main scene can be loaded")
+	await wait_frames(2)
+	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
+	var survival_mode := scene.node(&"survival_mode") as SurvivalMode
+	var wave_manager := scene.node(&"wave_manager") as WaveManager
+	var health_system := scene.node(&"health_system") as HealthSystem
+	var biome_manager = scene.node(&"biome_manager")
+	var wave_director = scene.node(&"wave_director")
+	var zombie_spawner = scene.node(&"zombie_spawner")
+	if game_mode_manager == null or survival_mode == null or wave_manager == null or health_system == null or biome_manager == null or wave_director == null or zombie_spawner == null:
+		assert_true(false, "revamp foundation systems are available")
+		scene.teardown()
+		return
+
+	assert_gte(biome_manager.get_available_biome_ids().size(), 5, "biome manager registers the planned biome set")
+	assert_eq(biome_manager.get_current_biome_id(), &"infected_plains", "initial biome defaults to Pianura Infetta")
+	assert_eq(wave_director.get_enemy_id_for_spawn(1, 0, 3), &"survival_zombie", "first wave resolves to base zombies")
+
+	var visible_rect: Rect2 = zombie_spawner.get_visible_world_rect()
+	assert_gt(visible_rect.size.x, 0.0, "spawner can read the camera visible rect")
+	assert_false(visible_rect.has_point(zombie_spawner.get_spawn_position(0)), "spawner previews positions outside the current camera view")
+
+	survival_mode.stop_mode()
+	await wait_frames(1)
+	wave_manager.initial_delay = 0.0
+	wave_manager.intermission_duration = 100.0
+	wave_manager.spawn_interval = 0.01
+	wave_manager.base_enemy_count = 2
+	wave_manager.enemy_count_growth = 0
+	wave_manager.boss_wave_interval = 99
+	survival_mode.boss_wave_interval = 99
+
+	assert_true(game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL), "survival mode starts through the game mode manager")
+	assert_true(await _wait_for_wave_combat(wave_manager, 1), "first wave reaches combat")
+	assert_eq(biome_manager.get_current_biome_id(), &"infected_plains", "survival run starts from the starting biome")
+	assert_eq(wave_manager.current_wave_biome_id, &"infected_plains", "wave manager records the biome used for the wave")
+	var wave_enemies := wave_manager.get_active_wave_enemies()
+	assert_eq(wave_enemies.size(), 2, "wave one spawns through the delegated systems")
+	for enemy in wave_enemies:
+		if enemy is Node2D:
+			assert_false(visible_rect.has_point((enemy as Node2D).global_position), "spawned zombie enters from outside the initial camera view")
+		health_system.apply_damage(enemy, 9999)
+	assert_true(await _wait_for_wave_completed(wave_manager, 1), "delegated wave completes")
+
+	survival_mode.stop_mode()
+	scene.teardown()
+	await wait_frames(1)
+
+# --- market post-boss (zombie_market) ---------------------------------------
+
+func test_zombie_market() -> void:
+	var scene := MainSceneFixture.new()
+	assert_true(scene.boot(self), "main scene loads with the survival market")
+	await wait_frames(2)
+	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
+	var survival_mode := scene.node(&"survival_mode") as SurvivalMode
+	var wave_manager := scene.node(&"wave_manager") as WaveManager
+	var market := scene.node(&"survival_market_controller") as SurvivalMarketController
+	var market_ui := scene.node(&"survival_market_ui") as SurvivalMarketUI
+	var progression := scene.node(&"progression_manager") as ProgressionManager
+	var player_manager := scene.node(&"player_manager") as PlayerManager
+	var multiplayer := scene.node(&"local_multiplayer_manager") as LocalMultiplayerManager
+	var health_system := scene.node(&"health_system") as HealthSystem
+	if game_mode_manager == null or survival_mode == null or wave_manager == null or market == null or market_ui == null or progression == null or player_manager == null or multiplayer == null or health_system == null:
+		assert_true(false, "market systems are available")
+		scene.teardown()
+		return
+
+	survival_mode.stop_mode()
+	multiplayer.activate_slot(2)
+	await wait_frames(1)
+	var player_one := player_manager.players.get(1) as PlayerController
+	var player_two := player_manager.players.get(2) as PlayerController
+	if player_one == null or player_two == null:
+		_teardown_market(scene, multiplayer)
+		return
+
+	wave_manager.initial_delay = 0.0
+	wave_manager.intermission_duration = 0.01
+	wave_manager.spawn_interval = 0.001
+	wave_manager.base_enemy_count = 1
+	wave_manager.enemy_count_growth = 0
+	wave_manager.boss_wave_escort_count = 1
+	wave_manager.boss_wave_interval = 5
+	survival_mode.boss_wave_interval = 5
+	market.set_random_seed(20260620)
+	progression.add_money(220)
+	assert_true(game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL), "survival run starts")
+	var player_one_health := player_one.get_node("HealthComponent") as HealthComponent
+	health_system.apply_damage(player_one, 90)
+
+	assert_true(await _advance_until_market(wave_manager, market, health_system), "waves 1-4 complete and the market opens only after boss wave 5")
+	assert_eq(wave_manager.current_wave, 5, "market belongs to wave 5")
+	assert_true(market.is_market_open, "market phase is active")
+	assert_true(wave_manager.state == WaveManager.State.REWARD and wave_manager.is_next_wave_blocked(), "wave progression remains blocked in reward state during the market")
+	assert_eq(wave_manager.get_enemies_remaining(), 0, "no zombie or boss remains and no new spawn starts during the market")
+	assert_true(not player_one.gameplay_input_enabled and not player_two.gameplay_input_enabled, "combat input is disabled for every active player")
+	assert_true(player_one_health.has_invulnerability_source(SurvivalMarketController.MARKET_INVULNERABILITY), "players cannot take combat damage during the market phase")
+	assert_true(market_ui.visible, "market UI is visible")
+	assert_true(market_ui.wallet_label.text.contains(str(progression.money)), "market UI always exposes the shared wallet total")
+
+	var offers := market.get_weapon_offers()
+	var unique_ids: Dictionary = {}
+	for offer in offers:
+		var weapon_id := StringName(offer.get("weapon_id", &""))
+		unique_ids[weapon_id] = true
+		assert_not_null(WeaponCatalog.get_definition(weapon_id), "weapon offer comes from the existing catalog")
+		assert_true(not str(offer.get("display_name", "")).is_empty() and not StringName(offer.get("category", &"")).is_empty() and not StringName(offer.get("rarity", &"")).is_empty() and int(offer.get("cost", 0)) > 0 and str(offer.get("stats_text", "")).contains("DMG"), "offer exposes name, category, rarity, price and readable stats")
+	assert_true(offers.size() == 4 and unique_ids.size() == 4, "market rolls four unique weapons")
+
+	var wallet_before_heal := progression.money
+	var health_before := player_one_health.current_health
+	assert_true(market.try_purchase(1, SurvivalMarketController.ITEM_HEAL_SMALL), "P1 buys health for itself")
+	assert_true(player_one_health.current_health > health_before and player_one_health.current_health <= player_one_health.max_health, "health purchase heals without exceeding max HP")
+	assert_eq(progression.money, wallet_before_heal - market.heal_small_cost, "health purchase deducts the shared wallet exactly once")
+
+	if not offers.is_empty():
+		var weapon_offer := offers[0]
+		var weapon_id := StringName(weapon_offer.get("weapon_id", &""))
+		var wallet_before_weapon := progression.money
+		assert_true(market.try_purchase(1, weapon_id), "P1 buys a catalog weapon")
+		var weapon_one := player_one.get_node("WeaponSystem") as WeaponSystem
+		var weapon_two := player_two.get_node("WeaponSystem") as WeaponSystem
+		assert_true(weapon_one.has_weapon(weapon_id) and not weapon_two.has_weapon(weapon_id), "purchased weapon is assigned only to the buying player")
+		assert_eq(progression.money, wallet_before_weapon - int(weapon_offer.get("cost", 0)), "weapon purchase uses the shared wallet")
+		var refill_weapon := weapon_offer.get("weapon_data") as WeaponData
+		if refill_weapon == null or refill_weapon.infinite_reserve_ammo:
+			refill_weapon = WeaponCatalog.get_definition(&"tactical_carbine")
+			weapon_one.add_weapon(refill_weapon, true)
+		else:
+			weapon_one.select_weapon(refill_weapon.weapon_id)
+		weapon_one.current_ammo = 0
+		weapon_one.reserve_ammo = 0
+		var wallet_before_ammo := progression.money
+		assert_true(market.try_purchase(1, SurvivalMarketController.ITEM_AMMO_ACTIVE), "P1 refills only its equipped weapon")
+		assert_true(weapon_one.current_ammo == refill_weapon.magazine_size and weapon_one.reserve_ammo == refill_weapon.starting_reserve_ammo, "equipped ammo purchase restores magazine and reserve")
+		assert_eq(progression.money, wallet_before_ammo - market.ammo_active_cost, "ammo purchase deducts its configured price")
+
+	progression.try_spend_money(progression.money)
+	var denied_id := StringName((offers[1] if offers.size() > 1 else {}).get("weapon_id", &""))
+	var player_two_weapons := player_two.get_node("WeaponSystem") as WeaponSystem
+	assert_true(not market.try_purchase(2, denied_id) and not player_two_weapons.has_weapon(denied_id) and progression.money == 0, "insufficient shared funds deny the purchase without assigning the weapon")
+	progression.add_money(100)
+	player_one_health.current_health = player_one_health.max_health
+	var wallet_at_full_health := progression.money
+	assert_true(not market.try_purchase(1, SurvivalMarketController.ITEM_HEAL_SMALL) and progression.money == wallet_at_full_health, "full HP denies healing without wasting money")
+
+	assert_true(market.set_player_ready(1, true), "P1 marks itself ready")
+	assert_true(market.is_market_open, "one player cannot close the market for everyone")
+	assert_true(market.set_player_ready(2, true), "P2 marks itself ready")
+	assert_false(market.is_market_open, "all living players ready close the market")
+	assert_true(await _wait_for_wave_running(wave_manager, 6), "closing the market resumes the run at wave 6")
+	assert_true(player_one.gameplay_input_enabled and player_two.gameplay_input_enabled and not player_one_health.has_invulnerability_source(SurvivalMarketController.MARKET_INVULNERABILITY), "closing the market restores combat state")
+	assert_true(market.should_open_after_wave(10) and market.should_open_after_wave(15) and not market.should_open_after_wave(6), "the recurring schedule targets waves 10, 15 and later multiples of five")
+	wave_manager.wave_completed.emit(5)
+	await wait_frames(1)
+	assert_false(market.is_market_open, "processed boss wave cannot reopen its market")
+
+	survival_mode.stop_mode()
+	assert_true(not market.is_run_active and not market.is_market_open and market.get_weapon_offers().is_empty(), "new-run cleanup resets market state and offers")
+	_teardown_market(scene, multiplayer)
+
+func _teardown_market(scene: MainSceneFixture, multiplayer: LocalMultiplayerManager) -> void:
+	if multiplayer != null:
+		multiplayer.deactivate_slot(2)
+	scene.teardown()
+	await wait_frames(1)
+
+# --- contratto del mondo survival (zombie_survival_world_contract) ----------
+
+func test_world_contract() -> void:
+	var harness := Node.new()
+	add_child(harness)
+	var biome_manager := BiomeManager.new()
+	biome_manager.name = "BiomeManager"
+	harness.add_child(biome_manager)
+	var controller := ZombieModeController.new()
+	controller.name = "ZombieModeController"
+	controller.biome_manager_path = NodePath("../BiomeManager")
+	controller.enable_multi_region_render = false
+	harness.add_child(controller)
+	await wait_frames(1)
+
+	controller.start_run({})
+	_assert_default_survival_world(biome_manager)
+	controller.stop_run()
+
+	controller.start_run({"single_biome_arena": true})
+	_assert_single_biome_quick_arena(biome_manager)
+	controller.stop_run()
+
+	controller.start_run({"single_biome_arena": true, "arena_boundary_mode": "walled"})
+	_assert_walled_infinite_arena_profile(biome_manager)
+	controller.stop_run()
+
+	controller.start_run({"single_biome_arena": true, "biome_map_width": 2, "biome_map_height": 2})
+	assert_eq(biome_manager.get_generated_biome_map().size(), 4, "explicit map dimensions override single-biome arena profile")
+	controller.stop_run()
+
+	harness.queue_free()
+	await wait_frames(1)
+
+func _assert_default_survival_world(biome_manager: BiomeManager) -> void:
+	assert_eq(biome_manager.get_generation_seed(), GameConstants.GOLDEN_WORLD_SEED, "default survival run uses the golden world seed")
+	var cells := biome_manager.get_generated_biome_map()
+	assert_eq(cells.size(), 9, "default survival generates a 3x3 biome map")
+	var graph := biome_manager.get_world_graph()
+	assert_true(graph != null and graph.is_graph_connected(), "default survival graph is connected")
+	var graph_biomes: Dictionary = {}
+	if graph != null:
+		for region in graph.get_regions_sorted():
+			graph_biomes[region.biome_id] = true
+	for required_biome in [&"infected_plains", &"toxic_wastes", &"burning_fields", &"frozen_outskirts", &"drowned_marsh"]:
+		assert_true(graph_biomes.has(required_biome), "default survival graph contains %s" % String(required_biome))
+	var start_cell := biome_manager.get_current_biome_cell()
+	assert_true(start_cell != null and start_cell.biome_id == &"infected_plains", "default survival starts from infected_plains")
+	var connected_border_count := 0
+	var outer_fall_count := 0
+	for cell in cells:
+		for side in BiomeCell.SIDES:
+			if cell.has_neighbor(side):
+				connected_border_count += 1
+			elif cell.get_border(side) == BiomeCell.BorderType.FALL:
+				outer_fall_count += 1
+	assert_gt(connected_border_count, 0, "default survival contains connected biome passages")
+	assert_gt(outer_fall_count, 0, "default survival keeps fall boundary on the outer world edge")
+
+func _assert_single_biome_quick_arena(biome_manager: BiomeManager) -> void:
+	assert_eq(biome_manager.get_generated_biome_map().size(), 1, "quick arena profile generates one cell")
+	var start_cell := biome_manager.get_current_biome_cell()
+	assert_true(start_cell != null and start_cell.biome_id == &"infected_plains", "quick arena starts from infected_plains")
+	if start_cell == null:
+		return
+	assert_true(start_cell.passages.is_empty(), "quick arena has no inter-region passages")
+	for side in BiomeCell.SIDES:
+		assert_eq(start_cell.get_border(side), BiomeCell.BorderType.FALL, "quick arena %s border falls to void" % String(side))
+
+func _assert_walled_infinite_arena_profile(biome_manager: BiomeManager) -> void:
+	assert_eq(biome_manager.get_generated_biome_map().size(), 1, "walled arena profile generates one cell")
+	var start_cell := biome_manager.get_current_biome_cell()
+	assert_true(start_cell != null and start_cell.biome_id == &"infected_plains", "walled arena starts from infected_plains")
+	if start_cell == null:
+		return
+	assert_true(start_cell.passages.is_empty(), "walled arena has no inter-region passages")
+	for side in BiomeCell.SIDES:
+		assert_eq(start_cell.get_border(side), BiomeCell.BorderType.BLOCKED, "walled arena %s border is blocked by walls" % String(side))
+	var layout := start_cell.generated_layout
+	assert_not_null(layout, "walled arena generates terrain layout")
+	if layout == null:
+		return
+	assert_gt(layout.wall_segment_rects.size(), 0, "walled arena emits perimeter wall segments")
+	assert_true(layout.fall_zone_rects.is_empty(), "walled arena has no fall zones")
+
+# --- infinite arena come modalità di default (infinite_arena_default_mode) ---
+
+func test_infinite_arena_default() -> void:
+	var scene := MainSceneFixture.new()
+	assert_true(scene.boot(self), "main scene can be loaded")
+	await wait_frames(2)
+	await wait_physics_frames(1)
+	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
+	var main_menu := scene.node(&"main_menu") as MainMenu
+	var save_manager := scene.node(&"save_manager") as SaveManager
+	var infinite_arena_mode = scene.node(&"infinite_arena_mode")
+	var survival_mode := scene.node(&"survival_mode") as SurvivalMode
+	var biome_manager := scene.node(&"biome_manager") as BiomeManager
+	var world_runtime := scene.node(&"world_runtime") as WorldRuntime
+	var streamer := scene.node(&"world_region_streamer") as WorldRegionStreamer
+	var hud := scene.node(&"hud_manager") as HUDManager
+	if game_mode_manager == null or main_menu == null or save_manager == null or infinite_arena_mode == null or survival_mode == null or biome_manager == null or world_runtime == null or streamer == null:
+		assert_true(false, "infinite arena systems are available")
+		scene.teardown()
+		return
+
+	assert_true(game_mode_manager.has_mode(GameConstants.MODE_INFINITE_ARENA), "game mode manager exposes infinite arena")
+	assert_true(game_mode_manager.has_mode(GameConstants.MODE_SURVIVAL), "game mode manager keeps zombie survival available")
+	assert_true(main_menu.first_mode_button != null and main_menu.first_mode_button.text == "Infinite Arena", "main menu first mode is Infinite Arena")
+	assert_not_null(_find_menu_button(main_menu, "Zombie Survival"), "main menu exposes Zombie Survival as a separate mode")
+	assert_eq(String((save_manager.create_empty_save()["settings"] as Dictionary).get("last_mode", "")), String(GameConstants.MODE_INFINITE_ARENA), "new saves default Continue to Infinite Arena")
+
+	var zombie_controller = scene.node(&"zombie_mode_controller")
+	assert_not_null(zombie_controller, "zombie mode controller is available")
+	assert_true(main_menu.start_selected_mode(GameConstants.MODE_INFINITE_ARENA), "main menu starts Infinite Arena")
+	await wait_frames(2)
+	await wait_physics_frames(1)
+	assert_true(await _await_world_ready(zombie_controller), "Infinite Arena finishes its async world build")
+
+	assert_eq(game_mode_manager.active_mode_id, GameConstants.MODE_INFINITE_ARENA, "Infinite Arena becomes the active mode")
+	assert_true(bool(infinite_arena_mode.get("is_running")), "infinite arena adapter is running")
+	assert_true(survival_mode.is_running, "shared survival runtime is running")
+	assert_false(main_menu.is_open(), "menu hides after Infinite Arena starts")
+	assert_true(main_menu.character_select_panel == null or not main_menu.character_select_panel.visible, "Infinite Arena does not open Character Select")
+	assert_true(not world_runtime.is_active and world_runtime.graph == null and world_runtime.get_active_region_ids().is_empty(), "Infinite Arena does not start WorldRuntime exploration")
+	assert_true(streamer.get_streamed_region_ids().is_empty(), "Infinite Arena does not stream connected regions")
+	assert_true(scene.nodes(&"biome_transition_gates").is_empty(), "Infinite Arena creates no biome transition gates")
+	if hud != null:
+		assert_true(hud.exploration_map_panel == null or not hud.exploration_map_panel.visible, "Infinite Arena leaves exploration map hidden")
+
+	_assert_infinite_arena_world(biome_manager)
+	_assert_arena_terrain_is_solid(scene)
+
+	main_menu.open_menu()
+	await wait_frames(1)
+	assert_eq(game_mode_manager.active_mode_id, GameConstants.MODE_MENU, "returning to menu restores menu mode")
+	assert_false(bool(infinite_arena_mode.get("is_running")), "Infinite Arena stops on menu return")
+	assert_false(survival_mode.is_running, "shared survival runtime stops on menu return")
+
+	scene.teardown()
+	await wait_frames(1)
+
+func _assert_infinite_arena_world(biome_manager: BiomeManager) -> void:
+	var cells := biome_manager.get_generated_biome_map()
+	assert_eq(cells.size(), 1, "Infinite Arena generates one biome cell")
+	var start_cell := biome_manager.get_current_biome_cell()
+	assert_not_null(start_cell, "Infinite Arena has an active arena cell")
+	if start_cell == null:
+		return
+	assert_eq(Vector2i(start_cell.width, start_cell.height), Vector2i(500, 500), "Infinite Arena cell is 500x500")
+	assert_true(start_cell.passages.is_empty(), "Infinite Arena has no inter-biome passages")
+	for side in BiomeCell.SIDES:
+		assert_eq(start_cell.get_border(side), BiomeCell.BorderType.BLOCKED, "Infinite Arena %s border is a wall" % String(side))
+	var layout := start_cell.generated_layout
+	assert_not_null(layout, "Infinite Arena has generated terrain")
+	if layout == null:
+		return
+	assert_gt(layout.wall_segment_rects.size(), 0, "Infinite Arena layout emits perimeter wall segments")
+	assert_true(layout.fall_zone_rects.is_empty(), "Infinite Arena layout has no fall boundary")
+	assert_true(bool(layout.validation_report.get("is_valid", false)), "Infinite Arena layout passes validation")
+
+func _assert_arena_terrain_is_solid(scene: MainSceneFixture) -> void:
+	var hazard_system := scene.node(&"hazard_system") as HazardSystem
+	assert_not_null(hazard_system, "hazard system is available in Infinite Arena")
+	if hazard_system == null:
+		return
+	assert_false(hazard_system.is_void_at_world_position(Vector2.ZERO), "Infinite Arena spawn center is solid ground, not void")
+	var player := scene.node(&"players") as Node2D
+	if player != null:
+		assert_false(hazard_system.is_void_at_world_position(player.global_position), "Infinite Arena player spawn is not classified as void")
+
+# --- ambiente arena: profili, props, esplosivi (milestone_20) ---------------
+
+func test_arena_environment() -> void:
+	_explosion_targets = []
+	var scene := MainSceneFixture.new()
+	assert_true(scene.boot(self), "main scene can be loaded")
+	await wait_frames(3)
+	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
+	var arena_manager := scene.node(&"survival_arena_manager") as SurvivalArenaManager
+	var wave_manager := scene.node(&"wave_manager") as WaveManager
+	var local_multiplayer := scene.node(&"local_multiplayer_manager") as LocalMultiplayerManager
+	var player_manager := scene.node(&"player_manager") as PlayerManager
+	var enemy_system := scene.node(&"enemy_system") as EnemySystem
+	var projectile_system := scene.node(&"projectile_system") as ProjectileSystem
+	var playground := scene.main.get_node_or_null("World/Playground") as IsometricPlayground
+	var hud := scene.node(&"hud_manager") as HUDManager
+	if game_mode_manager == null or arena_manager == null or wave_manager == null or local_multiplayer == null or player_manager == null or enemy_system == null or projectile_system == null or playground == null or hud == null:
+		assert_true(false, "arena environment systems are available")
+		scene.teardown()
+		return
+
+	assert_true(arena_manager.get_available_arena_ids().has(&"industrial_crossroads") and arena_manager.get_available_arena_ids().has(&"rift_foundry"), "two arena profiles are registered")
+	for player_slot in range(2, 5):
+		local_multiplayer.activate_slot(player_slot)
+	wave_manager.initial_delay = 100.0
+	game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL, {"arena_id": &"industrial_crossroads"})
+	# I player vengono posizionati agli spawn dell'arena in modo sincrono dentro
+	# set_mode; la separazione fisica da overlap li allontana già al primo frame,
+	# quindi si cattura il match qui, prima di qualsiasi await.
+	var players_at_spawns := _players_match_spawns(player_manager, arena_manager.active_profile.player_spawn_points)
+	await wait_frames(2)
+
+	assert_eq(arena_manager.get_active_arena_id(), &"industrial_crossroads", "survival context selects the industrial arena")
+	assert_eq(playground.layout_kind, &"crossroads", "industrial arena configures the shared playground")
+	assert_eq(wave_manager.spawn_points.size(), 8, "industrial profile configures all wave spawn points")
+	assert_eq(arena_manager.get_spawn_gates().size(), wave_manager.spawn_points.size(), "every enemy spawn has a visible gate")
+	assert_eq(arena_manager.get_interactive_props().size(), 2, "industrial profile creates its interactive props")
+	assert_eq(hud._get_mode_title(), "Industrial Crossroads", "HUD exposes the selected arena name")
+	assert_true(players_at_spawns, "four players are positioned from arena data")
+
+	var barrel := arena_manager.get_interactive_props()[0] as ExplosiveBarrel
+	assert_not_null(barrel, "explosive barrel is available")
+	if barrel == null:
+		scene.teardown()
+		return
+	assert_true(barrel.get_class() == "Area2D" and barrel.collision_mask == 0, "interactive prop is projectile-readable but never blocks pathing")
+	barrel.warning_duration = 5.0
+	barrel.explosion_damage = 36
+	barrel.exploded.connect(_on_barrel_exploded)
+	var target_enemy := enemy_system.spawn_enemy(&"survival_zombie", barrel.global_position + Vector2(68.0, 0.0)) as BasicEnemy
+	assert_not_null(target_enemy, "damage target spawns near the barrel")
+	if target_enemy == null:
+		scene.teardown()
+		return
+	target_enemy.set_physics_process(false)
+	var enemy_health_before := target_enemy.health_component.current_health
+	var player := player_manager.players.get(1) as PlayerController
+	var projectile := projectile_system.spawn_projectile(barrel.global_position + Vector2(-70.0, 0.0), Vector2.RIGHT, 720.0, player, null, barrel.health_component.max_health, &"arena_prop_test")
+	assert_not_null(projectile, "player projectile is spawned for prop collision")
+	for _frame in range(12):
+		await wait_physics_frames(1)
+		if barrel.is_armed:
+			break
+	assert_true(barrel.is_armed, "projectile collision arms the explosive prop")
+	assert_eq(target_enemy.health_component.current_health, enemy_health_before, "barrel deals no damage during its warning")
+	assert_gt(barrel.warning_time_left, 0.0, "explosion warning exposes reaction time")
+	barrel.advance_warning(barrel.warning_duration)
+	assert_true(barrel.has_exploded, "warning completion triggers the explosion")
+	assert_lt(target_enemy.health_component.current_health, enemy_health_before, "explosion applies area damage through HealthSystem")
+	assert_true(_explosion_targets.has(target_enemy), "explosion reports every damaged target")
+	await wait_frames(1)
+
+	assert_true(arena_manager.activate_arena(&"rift_foundry"), "second arena can be selected without replacing SurvivalMode")
+	await wait_frames(1)
+	assert_true(arena_manager.get_active_arena_id() == &"rift_foundry" and playground.layout_kind == &"ring", "rift profile swaps layout data on the shared playground")
+	assert_true(wave_manager.spawn_points.size() == 6 and arena_manager.get_spawn_gates().size() == 6, "rift profile replaces wave spawns and gates")
+	assert_eq(arena_manager.get_interactive_props().size(), 3, "rift profile owns a distinct prop layout")
+	wave_manager.base_enemy_count = 1
+	wave_manager.enemy_count_growth = 0
+	wave_manager.spawn_interval = 0.0
+	wave_manager.start_next_wave()
+	var pulsing_gate_found := false
+	for _frame in range(30):
+		for gate in arena_manager.get_spawn_gates():
+			if gate.pulse_timer > 0.0:
+				pulsing_gate_found = true
+				break
+		if pulsing_gate_found:
+			break
+		await wait_physics_frames(1)
+	assert_true(pulsing_gate_found, "the gate matching a wave spawn receives visual feedback")
+
+	scene.teardown()
+	await wait_frames(1)
+
+# --- helper -----------------------------------------------------------------
+
+func _wait_for_wave_combat(wave_manager: WaveManager, wave_index: int) -> bool:
+	for _frame in range(240):
+		if wave_manager.current_wave == wave_index and wave_manager.state == WaveManager.State.COMBAT:
+			return true
+		await wait_physics_frames(1)
+	return false
+
+func _wait_for_wave_completed(wave_manager: WaveManager, wave_index: int) -> bool:
+	for _frame in range(180):
+		if wave_manager.current_wave == wave_index and not wave_manager.wave_running:
+			return true
+		await wait_physics_frames(1)
+	return false
+
+func _wait_for_wave_running(wave_manager: WaveManager, wave_index: int) -> bool:
+	for _frame in range(300):
+		if wave_manager.current_wave == wave_index and wave_manager.wave_running:
+			return true
+		await wait_physics_frames(1)
+	return false
+
+func _advance_until_market(wave_manager: WaveManager, market: SurvivalMarketController, health_system: HealthSystem) -> bool:
+	for _frame in range(2400):
+		for enemy in wave_manager.get_active_wave_enemies():
+			enemy.set_physics_process(false)
+			health_system.apply_damage(enemy, 999999)
+		var boss := wave_manager.get_active_boss()
+		if boss != null:
+			boss.set_physics_process(false)
+			health_system.apply_damage(boss, 999999)
+		if market.is_market_open:
+			return true
+		await wait_physics_frames(1)
+	return false
+
+func _await_world_ready(zombie_controller: Node) -> bool:
+	if zombie_controller == null:
+		return false
+	_async_world_ready = false
+	zombie_controller.world_ready.connect(_on_async_world_ready, CONNECT_ONE_SHOT)
+	var deadline := Time.get_ticks_msec() + 150000
+	while not _async_world_ready and Time.get_ticks_msec() < deadline:
+		await wait_frames(1)
+	return _async_world_ready
+
+func _on_async_world_ready(_biome_id: StringName) -> void:
+	_async_world_ready = true
+
+func _find_menu_button(main_menu: MainMenu, label_text: String) -> Button:
+	for button in main_menu.menu_buttons:
+		if button != null and button.text == label_text:
+			return button
+	return null
+
+func _players_match_spawns(player_manager: PlayerManager, spawn_points: Array[Vector2]) -> bool:
+	# Tolleranza: i player partono dagli spawn dell'arena ma la separazione fisica
+	# da overlap li allontana di qualche decina di px nei frame successivi. Un
+	# margine ampio distingue comunque "posizionati dall'arena" (drift <50px) dal
+	# layout multiplayer di default (oltre 80px di scarto sull'asse X).
+	for slot in range(1, 5):
+		var player := player_manager.players.get(slot) as Node2D
+		if player == null:
+			return false
+		if player.global_position.distance_to(spawn_points[slot - 1]) > 50.0:
+			return false
+	return true
+
+func _on_barrel_exploded(_barrel: ExplosiveBarrel, damaged_targets: Array[Node]) -> void:
+	_explosion_targets = damaged_targets.duplicate()
