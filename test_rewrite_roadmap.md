@@ -77,14 +77,14 @@ elencati. Ogni area = una zona di interesse con una fixture condivisa.
 
 | # | Area (suite) | Cartella | File legacy assorbiti (logica) |
 | --- | --- | --- | --- |
-| A1 | **World Generation & Determinism** | `world_gen/` | golden_seed_default, biome_world_generation, biome_roster, biome_status_effects, biome_obstacle_generation, biome_mini_events, persistent_world_generation, isometric_biome_generation_rewrite, isometric_biome_terrain_coverage, voidfirst_forests, voidfirst_roads, voidfirst_road_border, voidfirst_rocks, voidfirst_void_lottery, voidfirst_integration |
-| A2 | **Environment, Streaming & Graph** | `environment/` | region_streaming, world_graph_connectivity, milestone_7_graph_connectivity, milestone_10_full_region_streaming, milestone_10_tile_layer, milestone_10_passage_tile, milestone_10_no_portal_transition, open_passage_transition, isometric_perimeter_wall, isometric_block_props, milestone_10_legacy_cleanup, milestone_10_isometric_performance, milestone_10_cross_biome_chase, fall_boundary_visual_logic, zombie_fall_hazard, player_dodge_gap, exploration_map, zombie_biome_transition, zombie_environment_milestone |
+| A1 | **World Generation & Determinism** ✅ | `world_gen/` | golden_seed_default, biome_roster, persistent_world_generation, isometric_biome_generation_rewrite, isometric_biome_terrain_coverage, voidfirst_forests, voidfirst_roads, voidfirst_road_border, voidfirst_rocks, voidfirst_void_lottery, voidfirst_integration |
+| A2 | **Environment, Streaming & Graph** | `environment/` | region_streaming, world_graph_connectivity, milestone_7_graph_connectivity, milestone_10_full_region_streaming, milestone_10_tile_layer, milestone_10_passage_tile, milestone_10_no_portal_transition, open_passage_transition, isometric_perimeter_wall, isometric_block_props, milestone_10_legacy_cleanup, milestone_10_isometric_performance, milestone_10_cross_biome_chase, fall_boundary_visual_logic, zombie_fall_hazard, player_dodge_gap, exploration_map, zombie_biome_transition, zombie_environment_milestone, biome_world_generation _(re-bucket da A1: integrazione main.tscn)_ |
 | A3 | **Obstacles & Collision** | `obstacles/` | milestone_4_obstacle_collision, obstacle_3x3, obstacle_rendering_contract, scalable_obstacle |
-| A4 | **Assets & Manifests** | `assets/` | milestone_10_asset_manifest_v7, milestone_10_asset_fallback_policy, milestone_10_asset_pipeline, milestone_10_object_asset, milestone_10_void_cliff_asset, isometric_environment_manifest, rpg_character_asset_manifest, forest_grass_generated_texture, void_cliff_generated_texture, forest_isometric_texture_transition |
-| A5 | **Combat, Weapons & Drops** | `combat/` | combat, rpg_melee_attack_resolution, milestone_rpg_3_weapons, milestone_rpg_4_hitbox, milestone_rpg_5_ammo_reload, weapon_inventory_catalog, weapon_visual_catalog, weapon_held_hud_visual_identity, weapon_melee_visual_identity, weapon_pickup_visual_identity, weapon_projectile_vfx_identity, milestone_11_weapon_drop_progression, milestone_13_weapon_tower_visual, enemy_drop |
+| A4 | **Assets & Manifests** | `assets/` | milestone_10_asset_manifest_v7, milestone_10_asset_fallback_policy, milestone_10_asset_pipeline, milestone_10_object_asset, milestone_10_void_cliff_asset, isometric_environment_manifest, rpg_character_asset_manifest, forest_grass_generated_texture, void_cliff_generated_texture, forest_isometric_texture_transition, biome_obstacle_generation _(re-bucket da A1: categorie manifest)_ |
+| A5 | **Combat, Weapons & Drops** | `combat/` | combat, rpg_melee_attack_resolution, milestone_rpg_3_weapons, milestone_rpg_4_hitbox, milestone_rpg_5_ammo_reload, weapon_inventory_catalog, weapon_visual_catalog, weapon_held_hud_visual_identity, weapon_melee_visual_identity, weapon_pickup_visual_identity, weapon_projectile_vfx_identity, milestone_11_weapon_drop_progression, milestone_13_weapon_tower_visual, enemy_drop, biome_status_effects _(re-bucket da A1: BiomeStatusRuntime/health)_ |
 | A6 | **Enemies & Bosses** | `enemies/` | zombie_biome_enemy, zombie_biome_wave_director, zombie_spawner_edge, milestone_12_enemy_variants, milestone_15_ranged_enemy, boss, milestone_11_boss_telegraph, milestone_19_boss_registry, offscreen_enemy_markers |
 | A7 | **Characters, RPG & Progression** | `progression/` | milestone_rpg_1_character_select, milestone_rpg_2_stats, milestone_rpg_6_xp_level, milestone_rpg_7_passives, milestone_rpg_8_adrenaline_super, milestone_rpg_11_data_driven, milestone_rpg_13_new_classes, character_select_ui, character_select_independent, all_modes_character_system, milestone_16_downed_revive, player_query |
-| A8 | **Game Modes & Waves** | `modes/` | survival_wave, tower_defense, dungeon, dungeon_graph, zombie_revamp_foundation, zombie_market, zombie_survival_world_contract, infinite_arena_default_mode, milestone_20_arena_environment, random_encounter, wave_cycle, milestone_9 |
+| A8 | **Game Modes & Waves** | `modes/` | survival_wave, tower_defense, dungeon, dungeon_graph, zombie_revamp_foundation, zombie_market, zombie_survival_world_contract, infinite_arena_default_mode, milestone_20_arena_environment, random_encounter, wave_cycle, milestone_9, biome_mini_events _(re-bucket da A1: RandomEncounterSystem)_ |
 | A9 | **UI, HUD, Audio, Settings & Feedback** | `ui_audio/` | milestone_rpg_9_hud, milestone_rpg_12_feedback, player_world_hud_layout, milestone_17_run_results, pause_settings, milestone_21_visual_settings_performance, biome_debug_overlay, game_log, milestone_18_audio_mix |
 | A10 | **Balance & Metrics** | `balance/` | milestone_12_balance_metrics, milestone_12_zombie_balance_metrics, milestone_rpg_10_balance |
 
@@ -130,15 +130,25 @@ stress (`milestone_20_arena_stress`, `zombie_revamp_ten_minute_soak`,
 - **Criterio di accettazione:** `godot --headless -s res://addons/gut/gut_cmdln.gd
   -gconfig=.gutconfig.json -gexit` parte verde con una suite di esempio (1 test).
 
-### M1 — Pilota: prima area + baseline tempi
+### M1 — Pilota: prima area + baseline tempi ✅ FATTA
 - **Obiettivo:** convertire **A1 (World Generation & Determinism)** come pilota e
-  validare il pattern di fixture condivisa + parametrizzazione.
-- **Attività:** scrivere `tests/suites/world_gen/`, accorpare i 15 file A1,
-  parametrizzare le varianti biome/voidfirst, **cancellare i file legacy A1**.
-- **Misura:** registrare wall-clock prima (legacy A1) vs dopo (GUT A1) →
-  baseline ufficiale dei guadagni.
-- **Criterio di accettazione:** copertura comportamentale ≥ legacy; suite A1 verde;
-  nessun file `milestone_*`/legacy di A1 residuo; tempo documentato nel CHANGELOG.
+  validare il pattern di fixture condivisa + accorpamento.
+- **Esito:** 11 file legacy → **3 suite GUT** (`world_gen/golden_seed_test.gd`,
+  `biome_map_test.gd`, `voidfirst_generation_test.gd`) + helper
+  `tests/support/world_gen_helpers.gd`. Build condivise: la mappa 3x3 e il layout
+  void-first si costruiscono una sola volta in `before_all`; il determinismo
+  void-first è accorpato (da ~12 build a 2). 32 test world_gen / 316 asserzioni
+  totali verdi. Cancellati gli 11 file legacy + `.uid`.
+- **Re-bucket della tassonomia:** 4 file che la bozza A1 includeva ma che
+  appartengono ad altre aree NON sono stati toccati e migreranno nella loro
+  milestone: `biome_world_generation`→A2, `biome_obstacle_generation`→A4,
+  `biome_status_effects`→A5, `biome_mini_events`→A8.
+- **Baseline tempi (locale, Godot 4.6.3, post-import):** legacy A1 (11 boot)
+  **~230s** → GUT world_gen (1 boot) **~130s** = **1.8x**. Area compute-bound
+  (le build 500x500 dominano sul boot): le aree leggere renderanno molto di più
+  con l'eliminazione dei boot.
+- **Criterio di accettazione:** ✅ copertura ≥ legacy; suite A1 verde; nessun file
+  legacy A1 residuo; baseline documentata.
 
 ### M2 — A2 Environment, Streaming & Graph
 - **Obiettivo:** convertire l'area più grande (19 file) sfruttando una sola fixture
@@ -232,7 +242,7 @@ quell'area senza toccare le altre.
 ## 10. Checklist di avanzamento
 
 - [x] M0 — Fondazione GUT + utility condivise ✅ (GUT 9.6.0 vendorizzato, `.gutconfig.json`, fixture condivisa, suite bootstrap 4/4 verde, CI doppio runner, wrapper `tools/run_gut.*`)
-- [ ] M1 — A1 World Generation & Determinism (+ baseline tempi)
+- [x] M1 — A1 World Generation & Determinism ✅ (11 file → 3 suite GUT; baseline 230s→130s = 1.8x; 4 file re-bucketati ad A2/A4/A5/A8)
 - [ ] M2 — A2 Environment, Streaming & Graph
 - [ ] M3 — A3 Obstacles & Collision
 - [ ] M4 — A4 Assets & Manifests

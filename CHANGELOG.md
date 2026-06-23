@@ -4,6 +4,18 @@
 
 ### Added
 
+- Riscrittura test M1 — area A1 World Generation & Determinism migrata a GUT
+  (vedi `test_rewrite_roadmap.md`). 11 file legacy (`golden_seed_default`,
+  `biome_roster`, `persistent_world_generation`,
+  `isometric_biome_generation_rewrite`, `isometric_biome_terrain_coverage`, e i 6
+  `voidfirst_*`) accorpati in 3 suite GUT sotto `tests/suites/world_gen/` con
+  helper condiviso `tests/support/world_gen_helpers.gd`. La mappa 3x3 e il layout
+  void-first si costruiscono una sola volta per suite (before_all) e il
+  determinismo è accorpato. Baseline locale: ~230s (11 boot) → ~130s (1 boot),
+  1.8x sull'area (compute-bound). I file legacy A1 sono stati rimossi; 4 file che
+  la bozza includeva in A1 (`biome_world_generation`, `biome_obstacle_generation`,
+  `biome_status_effects`, `biome_mini_events`) sono stati ricondotti alle aree
+  A2/A4/A5/A8 e migreranno lì.
 - Fondazione GUT (Milestone M0 della riscrittura test, vedi
   `test_rewrite_roadmap.md`): vendorizzato `addons/gut/` (GUT 9.6.0, per Godot
   4.6), nuova cartella `tests/suites/` raccolta in un solo processo Godot via
