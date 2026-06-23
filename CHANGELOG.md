@@ -4,6 +4,144 @@
 
 ### Added
 
+- Riscrittura test M7 — area A7 Characters, RPG & Progression migrata a GUT
+  (12/12 file → 3 suite sotto `tests/suites/progression/`):
+  `rpg_progression_test.gd` (stat di classe e formule di danno, XP da kill/wave,
+  passive, adrenalina/super delle 4 classi base, registry data-driven, classi
+  avanzate mago/domatrice/licantropo con companion e beast night),
+  `character_select_test.gd` (flusso survival, personaggio condiviso da tutte le
+  modalità, UI safe-area multi-risoluzione + navigazione, selezione indipendente
+  per-player) e `downed_revive_test.gd` (downed/revive su survival/dungeon/tower e
+  helper PlayerQuery). Nuovo `tests/support/player_stub.gd` per i player sintetici
+  (GUT richiede script-risorsa reali per inst_to_dict). 12 test/269 assert verdi.
+- Riscrittura test M6 — area A6 Enemies & Bosses migrata a GUT (9/9 file → 2 suite
+  sotto `tests/suites/enemies/`): `enemies_test.gd` (nemici tematici per biome +
+  hazard, wave director scaling, bordi/rifiuti/fallback dello spawner, varianti
+  runner/tank, nemico ranged con telegraph, marker direzionali off-screen) e
+  `boss_test.gd` (flusso della boss wave con pattern/fasi/market, telegraph degli
+  attacchi, registry multi-boss con compatibilità di modalità). Ogni test riusa il
+  boot di main.tscn via la fixture condivisa. 9 test/253 assert verdi.
+- Riscrittura test M5 — area A5 Combat, Weapons & Drops migrata a GUT (15/15 file
+  → 4 suite sotto `tests/suites/combat/`): `combat_test.gd` (combat su main.tscn,
+  risoluzione melee vs proiettile, contratti di hitbox), `weapon_catalog_test.gd`
+  (armi base per personaggio, ammo/reload world HUD, inventario/catalogo 30 armi,
+  drop, input mapping, effetti elementali), `weapon_visual_test.gd` (identità
+  visiva: id di shape stabili, silhouette uniche via signature poligonali, palette
+  e VFX tematici — niente confronto di pixel) e `drops_test.gd` (loop drop nemico,
+  progressione da kill/level-up, identità tower attraverso le modalità, status
+  effect ambientali). 20 test/1639 assert verdi. I Visual QA delle armi restano
+  differiti a M-FINAL.
+- Riscrittura test M4 (completata) — area A4 Assets & Manifests migrata a GUT
+  (11/11 file → 7 suite sotto `tests/suites/assets/`). Oltre al primo batch
+  (manifest/pipeline/character/fallback), il secondo batch aggiunge:
+  `generated_texture_test.gd` (forest_grass + void_cliff_generated_texture +
+  forest_isometric_texture_transition: contratti delle texture generate, mesh di
+  cliff/bordo, resolver forest su mappa 3x3 e consumo via BiomeTileLayer),
+  `object_asset_test.gd` (milestone_10_object_asset: contratti object_scenes,
+  silhouette runtime via SVG loader, factory IsometricEnvironmentObject,
+  integrazione ObstacleSystem, supply crate) e `void_cliff_asset_test.gd`
+  (milestone_10_void_cliff_asset: contratti void/transition, resolver delle
+  transizioni di bordo, mesh di giunzione, fall zone per lato e hazard runtime su
+  3x3 condivisa). Assert su esistenza/contratto e tileability strutturale, non su
+  qualità artistica dei pixel (Visual QA differiti). 49 test/7218 assert verdi.
+- Riscrittura test M3 — area A3 Obstacles & Collision migrata a GUT (4/4 file →
+  2 suite sotto `tests/suites/obstacles/`): `collision_test.gd`
+  (milestone_4_obstacle_collision: shape/flag dal manifest, collisione runtime
+  rectangle/circle/open, layer/mask dei proiettili, query jumpable/non-jumpable,
+  chiavi stabili, proiettile fermato dal muro) e `footprint_contract_test.gd`
+  (obstacle_rendering_contract + obstacle_3x3 + scalable_obstacle: footprint a
+  slot, layout autoriali/generati, oggetto runtime + Y-sort, identità void/cliff,
+  feature 3x3, rocce scalabili, e il controllo su `main.tscn` isolato nell'ultimo
+  test via fixture condivisa). Il manifest si carica una volta in before_all; i
+  layout 500x500 si costruiscono solo nei test che li verificano. 15 test/490
+  assert verdi (~30s). I Visual QA degli ostacoli restano differiti a M-FINAL.
+- Riscrittura test M2 — area A2 Environment, Streaming & Graph migrata a GUT
+  (20/20 file → 6 suite sotto `tests/suites/environment/`):
+  `world_graph_streaming_test.gd` (grafo, connettivita multi-seed, streaming,
+  persistenza save v6), `tile_layout_test.gd` (tile layer asset-driven, props dei
+  blocchi, muri perimetrali), `fall_test.gd` (fall boundary, dodge sui varchi),
+  `passage_tile_test.gd` (tile/connettori dei passaggi, dati di connessione del
+  grafo), `exploration_map_test.gd` (fog ed esplorazione) e `integration_test.gd`
+  (il cluster di 10 file che bootavano `main.tscn`: streaming completo
+  regione+vicini, profilo prestazioni isometrico, assenza di renderer/gate legacy,
+  attraversamento dei varchi senza portali, transizione che segue il movimento
+  fisico, inseguimento di un nemico attraverso il seam, generazione deterministica
+  del mondo a biomi + transizione via comando, transizioni multi-step con
+  terreno/loot/HUD, ambiente generato (ostacoli/casse/corridoio) e fall hazard
+  completo (danno/respawn/invulnerabilità, dodge sul void, morte da void con
+  segnali audio/drop)). Le prime cinque suite costruiscono la megamappa una sola
+  volta in before_all; `integration_test.gd` istanzia `main.tscn` UNA volta (nuova
+  fixture condivisa `tests/support/main_scene_fixture.gd`, riusabile dalle aree
+  future che bootano la scena) e riavvia survival per test ripristinando i tunable
+  in before_each. Il cluster di integrazione passa da 10 boot di `main.tscn` a 1.
+  10 test/1062 assert verdi per `integration_test.gd`.
+- Riscrittura test M1 — area A1 World Generation & Determinism migrata a GUT
+  (vedi `test_rewrite_roadmap.md`). 11 file legacy (`golden_seed_default`,
+  `biome_roster`, `persistent_world_generation`,
+  `isometric_biome_generation_rewrite`, `isometric_biome_terrain_coverage`, e i 6
+  `voidfirst_*`) accorpati in 3 suite GUT sotto `tests/suites/world_gen/` con
+  helper condiviso `tests/support/world_gen_helpers.gd`. La mappa 3x3 e il layout
+  void-first si costruiscono una sola volta per suite (before_all) e il
+  determinismo è accorpato. Baseline locale: ~230s (11 boot) → ~130s (1 boot),
+  1.8x sull'area (compute-bound). I file legacy A1 sono stati rimossi; 4 file che
+  la bozza includeva in A1 (`biome_world_generation`, `biome_obstacle_generation`,
+  `biome_status_effects`, `biome_mini_events`) sono stati ricondotti alle aree
+  A2/A4/A5/A8 e migreranno lì.
+- Fondazione GUT (Milestone M0 della riscrittura test, vedi
+  `test_rewrite_roadmap.md`): vendorizzato `addons/gut/` (GUT 9.6.0, per Godot
+  4.6), nuova cartella `tests/suites/` raccolta in un solo processo Godot via
+  `.gutconfig.json`. Aggiunta la fixture condivisa
+  `tests/support/golden_world_fixture.gd` (costruisce il mondo golden una volta e
+  lo riusa nella suite) e la suite di bootstrap `tests/suites/_sanity/`. Wrapper
+  locali `tools/run_gut.sh` / `tools/run_gut.ps1`. La CI ora esegue il doppio
+  runner: suite legacy `extends SceneTree` (in dismissione) + suite GUT (in
+  crescita).
+
+### Removed
+
+- Rimossi i portali legacy `BiomeTransitionGate` e tutto il macchinario di spawn
+  gate da `BiomeTransitionSystem`, che resta solo come API imperativa
+  `transition_to()` per debug/smoke (il cambio regione nel runtime standard e di
+  `RegionSeamSystem`). Eliminato `tests/milestone_6_open_passage_smoke_test.gd` e
+  aggiornati i test che interrogavano `get_active_gates()`.
+- Rimossi i ground procedurali legacy `BiomeRegionGround` e `BiomeTerrainPatch`:
+  `TerrainGenerator` costruisce sempre il `BiomeTileLayer` asset-driven (anche nel
+  percorso mono-regione di Infinite Arena). I `fallback_path` del manifest sono
+  ripuntati su `biome_tile_layer.gd` e i test relativi aggiornati; documentati
+  anche i cliff mesh builder come fallback tecnici (fix di un rosso pre-esistente
+  introdotto dal commit forest-cliffs).
+- Rimosso il renderer legacy `MultiRegionRenderer` e il suo
+  `tests/milestone_8_multi_region_smoke_test.gd`. `WorldRegionStreamer` e l'unico
+  produttore di contenuto regione: `ZombieModeController` non istanzia piu il
+  vecchio neighbor-ground placeholder ne il fallback `_render_neighbor_regions`.
+
+### Added
+
+- Retry veloce: ripetere una run con lo stesso seed non rigenera ne' ri-bakea il
+  mondo. `GameModeManager.retry_active_mode()` parcheggia il mondo costruito
+  (`stop_mode(keep_world=true)`); `ZombieModeController` lo riusa se il contesto
+  combacia (`can_reuse_world`/`_world_parked`) e resetta solo il gameplay
+  (ondate/nemici/player via `game_mode_started`). Un contesto diverso ricostruisce,
+  uno stop completo libera il parcheggio. Aggiunto
+  `tests/world_reuse_retry_smoke_test.gd`.
+- Cache di sessione delle texture isometriche nel loader SVG
+  (`IsometricSvgTextureLoader`): ogni SVG viene rasterizzato una sola volta per
+  `(path, size)` e riusato da tile layer, streaming regioni, cambi bioma e run
+  successive invece di essere ricaricato ogni volta. Aggiunto
+  `tests/isometric_texture_cache_smoke_test.gd`.
+- Barra di caricamento con progresso determinato per fasi (`WorldLoadingScreen`:
+  `set_phase`/`complete` + percentuale): `Preparazione mondo` -> `Generazione mondo`
+  -> `Costruzione terreno` -> 100%. `Zombie Survival` ora costruisce la megamappa
+  `3x3` su worker thread dietro la barra come gia faceva `Infinite Arena`, cosi la
+  finestra non si blocca; l'async e attivo nelle run reali e resta sincrono in
+  headless per i test deterministici. `Dungeon` e `Tower Defense` mostrano lo
+  stesso overlay come breve transizione d'ingresso tramite
+  `WorldLoadingScreen.show_brief()` (anch'essa solo nelle run reali). Aggiunto
+  `tests/world_loading_screen_smoke_test.gd`.
+- Seed golden unico condiviso tra gioco e test: `GameConstants.GOLDEN_WORLD_SEED`
+  e la sorgente di verita del default di `WorldGenerationSeed`, con helper
+  `tests/support/golden_world.gd` e `tests/golden_seed_default_smoke_test.gd` che
+  ancora il contratto "default del gioco == mondo golden".
 - Aggiornata la checklist manuale repo-fix Milestone 13 con workflow standard
   per import, `fast`, `slow`, visual QA, asset check, export PCK, export EXE e
   build smoke.

@@ -43,7 +43,6 @@ var random_encounter_system
 var world_runtime: WorldRuntime
 var region_seam_system
 var world_region_streamer
-var multi_region_renderer: MultiRegionRenderer
 var is_active: bool = false
 var last_applied_region_id: StringName = &""
 # Screen-space backdrop painted with the active biome's void colour so anything
@@ -60,6 +59,12 @@ const ASYNC_WORLD_BUILD_KEY := "async_world_build"
 var world_runtime_enabled_for_run: bool = true
 var region_streaming_enabled_for_run: bool = true
 var _loading_screen: CanvasLayer
+# Fast retry: when a run is stopped with keep_world=true the built world (terrain,
+# tiles, obstacles, hazards, streamed regions, biome data) is parked instead of torn
+# down. A following start_run() with the same context signature reuses it and only
+# the gameplay layer (waves/enemies/players) resets, so retry is instant.
+var _world_parked: bool = false
+var _built_context_signature: String = ""
 
 static func get_void_background_color(palette: BiomePalette) -> Color:
 	if palette == null:
@@ -74,6 +79,16 @@ func _ready() -> void:
 func start_run(context: Dictionary = {}) -> void:
 	_resolve_components()
 	var resolved_context := _resolve_survival_world_context(context)
+	var signature := _context_signature(resolved_context)
+	if _world_parked and signature == _built_context_signature:
+		# Same world already built and parked: reuse it, skip generation and bake.
+		_reuse_parked_world(resolved_context)
+		return
+	if _world_parked:
+		# Parked world no longer matches the request: discard it before rebuilding.
+		_teardown_world()
+		_world_parked = false
+		last_applied_region_id = &""
 	world_runtime_enabled_for_run = not _get_context_bool(
 		resolved_context,
 		DISABLE_WORLD_RUNTIME_KEY,
@@ -87,10 +102,39 @@ func start_run(context: Dictionary = {}) -> void:
 			false
 		)
 	)
+	_built_context_signature = signature
 	if _get_context_bool(resolved_context, ASYNC_WORLD_BUILD_KEY, false):
 		await _start_run_async(resolved_context)
 	else:
 		_start_run_sync(resolved_context)
+
+# True when stop_run(keep_world=true) parked a world that matches `context`, so a
+# retry can reuse it without rebuilding.
+func can_reuse_world(context: Dictionary = {}) -> bool:
+	return (
+		_world_parked
+		and _context_signature(_resolve_survival_world_context(context))
+		== _built_context_signature
+	)
+
+func _reuse_parked_world(resolved_context: Dictionary) -> void:
+	_world_parked = false
+	is_active = true
+	if wave_director != null and wave_director.has_method("start_run"):
+		wave_director.start_run()
+	if random_encounter_system != null and random_encounter_system.has_method("configure_seed"):
+		random_encounter_system.configure_seed(
+			int(resolved_context.get("world_seed", resolved_context.get("run_seed", 0)))
+		)
+	_emit_run_started()
+
+func _context_signature(context: Dictionary) -> String:
+	var keys := context.keys()
+	keys.sort_custom(func(a, b) -> bool: return str(a) < str(b))
+	var parts := PackedStringArray()
+	for key in keys:
+		parts.append("%s=%s" % [str(key), str(context[key])])
+	return "|".join(parts)
 
 func _start_run_sync(resolved_context: Dictionary) -> void:
 	if biome_manager != null:
@@ -99,12 +143,15 @@ func _start_run_sync(resolved_context: Dictionary) -> void:
 	_emit_run_started()
 
 func _start_run_async(resolved_context: Dictionary) -> void:
-	_show_loading_screen("Generazione mondo")
+	_show_loading_screen("Preparazione mondo")
+	_set_loading_phase("Preparazione mondo", 0.0, 0.1)
 	# Pre-warm shared, lazily-loaded resources on the main thread so the worker
 	# thread only ever reads them.
 	IsometricEnvironmentManifest.get_shared()
 	if biome_manager != null:
 		biome_manager.begin_world_build()
+		# Opaque worker-thread phase: the bar eases across the band while it runs.
+		_set_loading_phase("Generazione mondo", 0.1, 0.6)
 		var thread := Thread.new()
 		thread.start(_threaded_generate_world.bind(resolved_context))
 		# Yield each frame so the loading screen keeps animating while the worker
@@ -113,13 +160,14 @@ func _start_run_async(resolved_context: Dictionary) -> void:
 			await get_tree().process_frame
 		var world_data: Dictionary = thread.wait_to_finish()
 		biome_manager.apply_world_data(world_data)
-	_set_loading_message("Costruzione terreno")
+	_set_loading_phase("Costruzione terreno", 0.6, 0.92)
 	if terrain_generator != null:
 		terrain_generator.async_tile_build = true
 	_finish_start_run(resolved_context)
 	if terrain_generator != null:
 		terrain_generator.async_tile_build = false
 	await _await_active_tile_build()
+	_complete_loading_screen()
 	_hide_loading_screen()
 	_emit_run_started()
 
@@ -175,9 +223,17 @@ func _show_loading_screen(message: String) -> void:
 		add_child(_loading_screen)
 	_loading_screen.call("set_message", message)
 
-func _set_loading_message(message: String) -> void:
+func _set_loading_phase(
+	message: String,
+	floor_value: float,
+	ceil_value: float
+) -> void:
 	if _loading_screen != null and is_instance_valid(_loading_screen):
-		_loading_screen.call("set_message", message)
+		_loading_screen.call("set_phase", message, floor_value, ceil_value)
+
+func _complete_loading_screen() -> void:
+	if _loading_screen != null and is_instance_valid(_loading_screen):
+		_loading_screen.call("complete")
 
 func _hide_loading_screen() -> void:
 	if _loading_screen != null and is_instance_valid(_loading_screen):
@@ -212,10 +268,34 @@ func _get_context_bool(
 		return bool(context.get(string_name_key))
 	return default_value
 
-func stop_run() -> void:
+# keep_world=true parks the built world for a same-seed retry: only the gameplay
+# layer is stopped here (waves/encounters), while terrain, tiles, obstacles,
+# hazards, streamed regions and biome data stay alive for reuse. The gameplay
+# entities (enemies, players) are reset by the mode's own stop/start and by
+# ProgressionManager on game_mode_started, not by the world teardown.
+func stop_run(keep_world: bool = false) -> void:
 	_hide_loading_screen()
 	if terrain_generator != null:
 		terrain_generator.async_tile_build = false
+	if random_encounter_system != null and random_encounter_system.has_method("cleanup_encounter"):
+		random_encounter_system.cleanup_encounter()
+	if wave_director != null and wave_director.has_method("stop_run"):
+		wave_director.stop_run()
+	is_active = false
+	if keep_world:
+		_world_parked = true
+		zombie_run_stopped.emit()
+		return
+	_teardown_world()
+	_world_parked = false
+	world_runtime_enabled_for_run = true
+	region_streaming_enabled_for_run = true
+	last_applied_region_id = &""
+	_built_context_signature = ""
+	zombie_run_stopped.emit()
+
+func _teardown_world() -> void:
+	if terrain_generator != null:
 		terrain_generator.stop_run()
 	if obstacle_system != null:
 		obstacle_system.stop_run()
@@ -229,22 +309,11 @@ func stop_run() -> void:
 		region_seam_system.stop_run()
 	if world_region_streamer != null:
 		world_region_streamer.clear()
-	if multi_region_renderer != null:
-		multi_region_renderer.clear()
-	if random_encounter_system != null and random_encounter_system.has_method("cleanup_encounter"):
-		random_encounter_system.cleanup_encounter()
 	if world_runtime != null:
 		world_runtime.stop_run()
-	if wave_director != null and wave_director.has_method("stop_run"):
-		wave_director.stop_run()
 	if biome_manager != null and biome_manager.has_method("stop_run"):
 		biome_manager.stop_run()
-	is_active = false
-	world_runtime_enabled_for_run = true
-	region_streaming_enabled_for_run = true
-	last_applied_region_id = &""
 	_clear_void_backdrop()
-	zombie_run_stopped.emit()
 
 func get_current_biome():
 	_resolve_components()
@@ -298,10 +367,6 @@ func _resolve_components() -> void:
 		world_region_streamer = WORLD_REGION_STREAMER_SCRIPT.new()
 		world_region_streamer.name = "WorldRegionStreamer"
 		add_child(world_region_streamer)
-	if multi_region_renderer == null:
-		multi_region_renderer = get_tree().get_first_node_in_group(
-			"multi_region_renderer"
-		) as MultiRegionRenderer
 	if (
 		zombie_spawner != null
 		and zombie_spawner.has_method("configure_runtime_dependencies")
@@ -415,7 +480,6 @@ func _apply_active_biome(biome: BiomeDefinition) -> void:
 		hazard_system.start_run(biome)
 	if resource_crate_system != null:
 		resource_crate_system.start_run(biome)
-	_render_neighbor_regions(region_id)
 	active_biome_applied.emit(biome.biome_id)
 
 func _stream_active_regions(region_id: StringName) -> bool:
@@ -444,54 +508,6 @@ func _stream_active_regions(region_id: StringName) -> bool:
 		obstacle_system,
 		hazard_system,
 		resource_crate_system
-	)
-
-func _render_neighbor_regions(region_id: StringName) -> void:
-	if (
-		not region_streaming_enabled_for_run
-		or biome_manager == null
-		or region_id.is_empty()
-	):
-		return
-	if multi_region_renderer == null:
-		multi_region_renderer = get_tree().get_first_node_in_group(
-			"multi_region_renderer"
-		) as MultiRegionRenderer
-	if multi_region_renderer == null:
-		multi_region_renderer = MultiRegionRenderer.new()
-		multi_region_renderer.name = "LegacyMultiRegionRenderer"
-		add_child(multi_region_renderer)
-	var graph = biome_manager.get_world_graph()
-	if graph == null:
-		return
-	var container := _get_environment_container()
-	if container == null:
-		return
-	multi_region_renderer.render_world(
-		graph,
-		region_id,
-		container,
-		_layout_for_region,
-		_palette_for_biome,
-		_neighbor_ground_sample_step()
-	)
-
-func _layout_for_region(region_id: StringName) -> BiomeEnvironmentLayout:
-	if biome_manager == null:
-		return null
-	var cell := biome_manager.get_cell_by_region_id(region_id) as BiomeCell
-	return cell.generated_layout if cell != null else null
-
-func _palette_for_biome(biome_id: StringName) -> BiomePalette:
-	if biome_manager == null:
-		return null
-	var definition = biome_manager.get_biome_definition(biome_id)
-	return definition.palette if definition != null else null
-
-func _neighbor_ground_sample_step() -> int:
-	# Neighbors are background context: sample coarser than the current region.
-	return IsometricEnvironmentManifest.get_shared().get_terrain_sample_step(
-		&"performance"
 	)
 
 func _get_environment_container() -> Node:

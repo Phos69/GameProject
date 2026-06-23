@@ -4,6 +4,12 @@ class_name GameConstants
 const MAX_LOCAL_PLAYERS: int = 4
 const DEFAULT_BOSS_WAVE_INTERVAL: int = 5
 
+## Seed deterministico condiviso ("golden world"): e' il default usato dal gioco
+## quando il contesto non specifica un seed e il punto di ancoraggio dei test di
+## contratto mondo. Resta la singola sorgente di verita finche la generazione di
+## mondi nuovi da parte dell'utente non sara disponibile.
+const GOLDEN_WORLD_SEED: int = 20260615
+
 ## Bitmask dei collision layer (valori, non indici), come da ARCHITECTURE.md.
 ## Layer 1: player e corpi generici, inclusi gli ostacoli che bloccano il
 ## movimento. Layer 2: bersagli damageable. Layer 4: proiettili player.

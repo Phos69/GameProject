@@ -42,23 +42,39 @@ func _process(_delta: float) -> void:
 func start_mode(context: Dictionary = {}) -> void:
 	if is_running:
 		return
+	var resolved_context := context.duplicate(true)
+	# Real runs build the world on a worker thread behind the loading screen so the
+	# window never freezes (Zombie Survival's 3x3 megamap is the heaviest build).
+	# Headless tests keep the synchronous, deterministic path unless they opt in.
+	if (
+		not resolved_context.has("async_world_build")
+		and not resolved_context.has(&"async_world_build")
+		and DisplayServer.get_name() != "headless"
+	):
+		resolved_context["async_world_build"] = true
 	# BaseGameMode applica il roster personaggi (selected_character_id /
 	# selected_character_ids_by_slot) ai player gia presenti durante super.start_mode.
-	super.start_mode(context)
+	super.start_mode(resolved_context)
 	_resolve_wave_manager()
 	_resolve_ammo_director()
 	_resolve_market_controller()
 	_resolve_arena_manager()
 	_resolve_zombie_mode_controller()
-	if arena_manager != null:
+	# On a same-seed retry the world (and its arena props) are reused, so skip the
+	# arena rebuild; only the gameplay layer below resets.
+	var reuse_world: bool = (
+		zombie_mode_controller != null
+		and zombie_mode_controller.can_reuse_world(resolved_context)
+	)
+	if arena_manager != null and not reuse_world:
 		var arena_id := StringName(
-			context.get("arena_id", arena_manager.default_arena_id)
+			resolved_context.get("arena_id", arena_manager.default_arena_id)
 		)
 		arena_manager.activate_arena(arena_id)
 	if zombie_mode_controller != null:
-		# Awaits the worker-thread world build when the context requests it
-		# (async_world_build); returns immediately for the synchronous path.
-		await zombie_mode_controller.start_run(context)
+		# Reuses the parked world instantly, or awaits the worker-thread build when
+		# the context requests it (async_world_build); sync path returns immediately.
+		await zombie_mode_controller.start_run(resolved_context)
 	if not is_running:
 		# The run was stopped while the world was building (e.g. back to menu).
 		return
@@ -69,7 +85,7 @@ func start_mode(context: Dictionary = {}) -> void:
 	if wave_manager != null:
 		wave_manager.start_run()
 
-func stop_mode() -> void:
+func stop_mode(keep_world: bool = false) -> void:
 	if not is_running:
 		return
 	if ammo_director != null:
@@ -79,10 +95,11 @@ func stop_mode() -> void:
 	if market_controller != null:
 		market_controller.stop_run()
 	if zombie_mode_controller != null:
-		zombie_mode_controller.stop_run()
-	if arena_manager != null:
+		zombie_mode_controller.stop_run(keep_world)
+	# Keep the arena props alive when parking the world for a fast retry.
+	if arena_manager != null and not keep_world:
 		arena_manager.deactivate_arena()
-	super.stop_mode()
+	super.stop_mode(keep_world)
 
 func should_spawn_boss_for_wave(wave_index: int) -> bool:
 	return boss_wave_interval > 0 and wave_index % boss_wave_interval == 0

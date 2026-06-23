@@ -184,10 +184,6 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
   dell'attraversamento. Registra i nodi nei sistemi zombie esistenti, cosi
   query di collisione, safe position, danno da caduta e ledger crate restano
   centralizzati.
-- `MultiRegionRenderer`: prototipo/fallback visuale storico; conserva il
-  contratto dei vicini solo ground per test e debug. Non viene creato durante
-  la risoluzione componenti della survival standard; `ZombieModeController` lo
-  istanzia solo come fallback lazy se `WorldRegionStreamer` non puo streamare.
 - `WorldGenerationSeed`: seed globale di run e derivazione deterministica degli stream RNG per mappa, terreno, ostacoli, bordi, loot e spawn.
 - `BiomeWorldGenerator`: orchestratore della pipeline procedurale globale per mappa biomi, layout per cella e debug seed.
 - `BiomeMapGenerator`: costruisce la griglia di `BiomeCell` `500x500` con default `3x3`, assegna tipi bioma, coordinate globali, vicini, seed locali e grafo connesso con loop.
@@ -227,11 +223,11 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
   Converte la posizione del party in tile globali, verifica che il bordo
   attraversato appartenga a un `WorldRegionConnection` aperto e aggiorna
   `BiomeManager`/`WorldRuntime` senza creare `Area2D` o marker di transizione.
-- `BiomeTransitionSystem`: API legacy/debug per forzare `transition_to()` negli
-  smoke e nei tool esistenti; non istanzia piu `BiomeTransitionGate` nel
-  runtime survival standard.
-- `BiomeTransitionGate`: classe storica mantenuta per compatibilita dei test di
-  dimensionamento/span; non e piu creata dalla survival.
+- `BiomeTransitionSystem`: API imperativa di debug/test per forzare
+  `transition_to()` (cambio bioma/regione) da smoke e tool. Il runtime survival
+  standard non la usa per navigare: il cambio regione e rilevato da
+  `RegionSeamSystem`. I portali Area2D `BiomeTransitionGate` sono stati rimossi e
+  questo nodo non istanzia piu alcun gate.
 - `BiomeEnvironmentLayout`: placement deterministico di floor scavati,
   `road_cell_tags`, rettangoli di apertura, blocchi interni, bridge,
   water/deep-water rects, ostacoli fisici, casse e hazard per un bioma, con
@@ -244,18 +240,12 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
   Espone motivo di scarto e report tentativi per test/debug; nella megamappa
   valida le posizioni contro regioni streamate world-space invece del solo
   layout locale corrente.
-- `TerrainGenerator`: applica la palette del bioma, genera il piano visuale
-  `500x500` e legge gli stili terrain dal manifest. Nel percorso standard
-  registra il tile layer streamato; patch e ground procedurali restano fallback
-  espliciti.
-- `BiomeRegionGround`: base visuale estesa dell'intero territorio, separata
-  dalle patch decorative puntuali, con `sample_step` guidato dai preset del
-  manifest. E un fallback tecnico, non un nodo della survival standard
-  asset-driven.
-- `BiomeTerrainPatch`: patch decorativa procedurale che usa draw mode
-  data-driven per strade, passaggi e dettagli bioma senza possedere collisioni.
-  Rimane per fallback/test legacy e non viene istanziata quando il tile layer
-  asset-driven e attivo.
+- `TerrainGenerator`: applica la palette del bioma, costruisce il piano visuale
+  `500x500` come `BiomeTileLayer` asset-driven e legge gli stili terrain dal
+  manifest. Nel percorso streaming registra il tile layer creato da
+  `WorldRegionStreamer`; nel percorso mono-regione (es. Infinite Arena) crea
+  direttamente il proprio `BiomeTileLayer`. I vecchi `BiomeRegionGround` e
+  `BiomeTerrainPatch` procedurali sono stati rimossi.
 - `ObstacleSystem`: genera e registra ostacoli fisici usati anche come spawn
   blocker; nel percorso asset-driven delega a `IsometricEnvironmentObjectFactory`.
 - `IsometricEnvironmentObjectFactory`: legge il contratto `object_scenes` dal
@@ -680,10 +670,10 @@ multi-bioma.
   vicini hanno contenuto `FULL`; regioni oltre il raggio restano dati
   persistenti non istanziati.
 - `ZombieModeController` invoca `WorldRegionStreamer.stream_world()` a ogni
-  cambio regione e lo pulisce a `stop_run()`; l'integrazione e gated da
-  `enable_multi_region_render`. `MultiRegionRenderer` resta fallback visuale
-  lazy-only se lo streamer non e disponibile, quindi il bootstrap survival
-  standard non crea piu neighbor ground placeholder.
+  cambio regione e lo pulisce a `stop_run()`; lo streaming multi-regione e gated
+  da `enable_multi_region_render`. Il vecchio `MultiRegionRenderer` (renderer
+  parallelo dei vicini solo-ground) e stato rimosso: lo streamer e l'unico
+  produttore di contenuto regione, senza piu neighbor ground placeholder.
 
 ## Contratto progressione e run
 
@@ -732,7 +722,7 @@ multi-bioma.
 - La megamappa contiene territori `500x500`, seed locali, vicini, bordi, grafo connesso, passaggi fisici, fall boundary e layout ambientali validati prima di essere assegnati alle `BiomeDefinition`.
 - Ogni nuova run survival riparte dalla `Pianura Infetta`.
 - `WorldRuntime` marca la regione iniziale come visited, scopre i vicini collegati e conserva lo stato esplorazione.
-- `BiomeTransitionSystem` collega territori confinanti tramite passaggi aperti; il party condivide una sola regione corrente.
+- I territori confinanti sono collegati da passaggi aperti; `RegionSeamSystem` aggiorna la regione corrente e il party condivide una sola regione alla volta.
 - Quando il party attraversa un varco, `RegionSeamSystem` verifica posizione,
   regione target e connessione aperta usando coordinate globali; i lati senza
   edge non cambiano regione e restano muro, bordo o fall zone.
@@ -750,12 +740,11 @@ multi-bioma.
   altre superfici senza cambiare la classe terrain walkable.
 - `TerrainGenerator` modifica palette e ground visuale; non possiede collisioni
   o regole combat.
-- In modalita asset, `TerrainGenerator` registra il `BiomeTileLayer` della
-  regione corrente creato da `WorldRegionStreamer`; nel fallback mono-regione
-  puo ancora creare direttamente il ground primario e non istanzia i vecchi
-  `BiomeTerrainPatch` ovali. Se `use_asset_tile_layer` viene disattivato o lo
-  streaming non e disponibile, `BiomeRegionGround` e `BiomeTerrainPatch`
-  restano fallback tecnici controllati, non visuali della survival standard.
+- `TerrainGenerator` registra il `BiomeTileLayer` della regione corrente creato
+  da `WorldRegionStreamer` nel percorso streaming; nel percorso mono-regione crea
+  direttamente il proprio `BiomeTileLayer`. Il tile layer asset-driven e l'unico
+  produttore di ground: i vecchi `BiomeRegionGround` e `BiomeTerrainPatch`
+  procedurali sono stati rimossi.
 - `IsometricTileResolver` risolve deterministicamente ogni cella logica
   `500x500` in `floor_base`, varianti floor, route tile asset-driven
   (`main_road`, road tematiche, curve/edge/intersezioni), passage tile
@@ -849,10 +838,11 @@ multi-bioma.
   licenza, attribution e `fallback_path` quando l'asset e ancora assente.
 - La fallback policy M10 distingue fallback tecnici necessari da status
   temporanei. Il percorso survival standard non puo usare path
-  `placeholder`/`generic`, `generic_barrier` implicito, `BiomeRegionGround`,
-  `BiomeTerrainPatch`, `MultiRegionRenderer`, `NeighborGround_*` o
-  `BiomeTransitionGate`; `tests/milestone_10_asset_fallback_policy_smoke_test.gd`
-  blocca queste regressioni insieme all'asset check.
+  `placeholder`/`generic`, `generic_barrier` implicito o `NeighborGround_*`; i
+  vecchi renderer/ground procedurali (`BiomeRegionGround`, `BiomeTerrainPatch`,
+  `MultiRegionRenderer`) e i portali `BiomeTransitionGate` sono stati rimossi dal
+  codice. `tests/milestone_10_asset_fallback_policy_smoke_test.gd` blocca queste
+  regressioni insieme all'asset check.
 - `BiomeObstacle` costruisce la collisione dal manifest: `collision_shape`
   (`rectangle`/`circle`/`open`) guida lo shape runtime e `contains_global_position`,
   `blocks_movement` e `blocks_projectiles` guidano i bit di `collision_layer`,

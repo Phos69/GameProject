@@ -1,31 +1,23 @@
 extends Node
 class_name BiomeTransitionSystem
 
-signal transition_gate_spawned(
-	gate: BiomeTransitionGate,
-	target_biome_id: StringName
-)
 signal biome_transitioned(
 	previous_biome_id: StringName,
 	current_biome_id: StringName
 )
 
-const TRANSITION_GATE_SCRIPT = preload(
-	"res://game/modes/zombie/biome_transition_gate.gd"
-)
+# Command API to force a biome/region change from debug helpers and smoke tests.
+# The standard survival runtime does NOT use this to navigate: region changes are
+# detected by RegionSeamSystem from the party world-space position and open
+# WorldRegionConnection data. The legacy Area2D `BiomeTransitionGate` portals were
+# removed; this node keeps only the imperative transition command.
 
-@export var environment_container_path: NodePath = NodePath(
-	"../../../../World/EnvironmentProps"
-)
-@export var east_gate_position: Vector2 = Vector2(555.0, 0.0)
-@export var west_gate_position: Vector2 = Vector2(-555.0, 0.0)
 @export var party_entry_offset: float = 410.0
 @export_range(0.1, 3.0, 0.1) var transition_cooldown: float = 0.8
 @export var move_party_on_transition: bool = false
 
 var biome_manager: BiomeManager
 var active_biome: BiomeDefinition
-var active_gates: Array[BiomeTransitionGate] = []
 var is_active: bool = false
 var cooldown_timer: float = 0.0
 
@@ -44,17 +36,9 @@ func start_run(
 	configure_biome(biome)
 
 func configure_biome(biome: BiomeDefinition) -> void:
-	_clear_gates()
 	active_biome = biome
-	if not is_active or active_biome == null:
-		return
-	# Milestone 10.7 keeps this node as a compatibility command API for older
-	# smoke tests and debug helpers, but the standard survival runtime no longer
-	# creates Area2D gates. Region changes are detected by RegionSeamSystem from
-	# party world-space position and open WorldRegionConnection data.
 
 func stop_run() -> void:
-	_clear_gates()
 	active_biome = null
 	biome_manager = null
 	is_active = false
@@ -87,51 +71,6 @@ func transition_to(
 	biome_transitioned.emit(previous_id, target_biome_id)
 	return true
 
-func get_active_gates() -> Array[BiomeTransitionGate]:
-	_prune_gates()
-	return active_gates.duplicate()
-
-func _spawn_gate(
-	target_biome_id: StringName,
-	direction_id: StringName,
-	gate_position: Vector2,
-	color: Color,
-	target_region_id: StringName = &"",
-	passage_type: StringName = &"open_passage",
-	span: float = 0.0
-) -> void:
-	var container := _get_environment_container()
-	if container == null:
-		return
-	var gate := TRANSITION_GATE_SCRIPT.new() as BiomeTransitionGate
-	if gate == null:
-		return
-	gate.name = "%sTransitionGate" % String(direction_id).capitalize()
-	gate.configure(
-		target_biome_id,
-		direction_id,
-		gate_position,
-		color,
-		target_region_id,
-		passage_type,
-		span
-	)
-	container.add_child(gate)
-	gate.body_entered.connect(_on_gate_body_entered.bind(gate))
-	active_gates.append(gate)
-	transition_gate_spawned.emit(gate, target_biome_id)
-
-func _on_gate_body_entered(
-	body: Node2D,
-	gate: BiomeTransitionGate
-) -> void:
-	if (
-		body.is_in_group("players")
-		and gate != null
-		and is_instance_valid(gate)
-	):
-		transition_to(gate.target_biome_id, gate.direction_id, gate.target_region_id)
-
 func _move_party_to_entry(direction_id: StringName) -> void:
 	var entry_position := Vector2.ZERO
 	match direction_id:
@@ -163,77 +102,3 @@ func _move_party_to_entry(direction_id: StringName) -> void:
 
 func _resolve_biome_manager() -> BiomeManager:
 	return get_tree().get_first_node_in_group("biome_manager") as BiomeManager
-
-func _spawn_generated_map_gates(color: Color) -> bool:
-	if biome_manager == null:
-		biome_manager = _resolve_biome_manager()
-	if biome_manager == null or not biome_manager.has_method("get_current_biome_cell"):
-		return false
-	var cell := biome_manager.get_current_biome_cell() as BiomeCell
-	if cell == null or cell.passages.is_empty():
-		return false
-	for passage in cell.passages:
-		_spawn_gate(
-			passage.to_biome_id,
-			passage.side,
-			_get_gate_position_for_passage(passage, cell),
-			color,
-			passage.to_cell_id,
-			passage.passage_type,
-			_get_passage_span(passage, cell)
-		)
-	return true
-
-# Opening span in world units, derived from the logical passage width so the
-# trigger aligns with the physical gap left between the border walls.
-func _get_passage_span(passage: BiomePassage, cell: BiomeCell) -> float:
-	var layout := (
-		cell.generated_layout
-		if cell.generated_layout != null
-		else active_biome.environment_layout if active_biome != null else null
-	)
-	var scale := layout.logical_tile_scale if layout != null else 8.0
-	return float(passage.width) * scale
-
-func _get_gate_position_for_passage(
-	passage: BiomePassage,
-	cell: BiomeCell
-) -> Vector2:
-	var layout := (
-		cell.generated_layout
-		if cell.generated_layout != null
-		else active_biome.environment_layout
-	)
-	var scale := (
-		layout.logical_tile_scale
-		if layout != null
-		else 8.0
-	)
-	var zone_size := cell.get_zone_size()
-	var half_world := Vector2(zone_size) * scale * 0.5
-	var margin := 45.0
-	var offset := (float(passage.position) - float(zone_size.y) * 0.5) * scale
-	match passage.side:
-		&"north":
-			return Vector2(offset, -half_world.y + margin)
-		&"south":
-			return Vector2(offset, half_world.y - margin)
-		&"west":
-			return Vector2(-half_world.x + margin, offset)
-		_:
-			return Vector2(half_world.x - margin, offset)
-
-func _get_environment_container() -> Node:
-	var container := get_node_or_null(environment_container_path)
-	return container if container != null else get_tree().current_scene
-
-func _clear_gates() -> void:
-	for gate in active_gates:
-		if is_instance_valid(gate):
-			gate.queue_free()
-	active_gates.clear()
-
-func _prune_gates() -> void:
-	for gate in active_gates.duplicate():
-		if not is_instance_valid(gate) or gate.is_queued_for_deletion():
-			active_gates.erase(gate)

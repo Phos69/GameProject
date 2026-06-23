@@ -68,6 +68,8 @@ func start_mode(context: Dictionary = {}) -> void:
 	if not _resolve_systems():
 		return
 	super.start_mode(context)
+	if DisplayServer.get_name() != "headless":
+		WorldLoadingScreen.show_brief(self, "Caricamento Dungeon")
 
 	run_seed = int(context.get("seed", default_seed))
 	var requested_room_count := int(context.get("room_count", default_room_count))
@@ -82,13 +84,13 @@ func start_mode(context: Dictionary = {}) -> void:
 	dungeon_started.emit(run_seed, layout.duplicate(true))
 	_enter_room(_start_room_index())
 
-func stop_mode() -> void:
+func stop_mode(keep_world: bool = false) -> void:
 	if not is_running:
 		return
 	current_room_state = &"idle"
 	_clear_room_runtime()
 	_set_prototype_arena_visible(true)
-	super.stop_mode()
+	super.stop_mode(keep_world)
 
 func request_next_room() -> bool:
 	if (
