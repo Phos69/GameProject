@@ -4,6 +4,19 @@
 
 ### Added
 
+- Riscrittura test M4 (completata) — area A4 Assets & Manifests migrata a GUT
+  (11/11 file → 7 suite sotto `tests/suites/assets/`). Oltre al primo batch
+  (manifest/pipeline/character/fallback), il secondo batch aggiunge:
+  `generated_texture_test.gd` (forest_grass + void_cliff_generated_texture +
+  forest_isometric_texture_transition: contratti delle texture generate, mesh di
+  cliff/bordo, resolver forest su mappa 3x3 e consumo via BiomeTileLayer),
+  `object_asset_test.gd` (milestone_10_object_asset: contratti object_scenes,
+  silhouette runtime via SVG loader, factory IsometricEnvironmentObject,
+  integrazione ObstacleSystem, supply crate) e `void_cliff_asset_test.gd`
+  (milestone_10_void_cliff_asset: contratti void/transition, resolver delle
+  transizioni di bordo, mesh di giunzione, fall zone per lato e hazard runtime su
+  3x3 condivisa). Assert su esistenza/contratto e tileability strutturale, non su
+  qualità artistica dei pixel (Visual QA differiti). 49 test/7218 assert verdi.
 - Riscrittura test M3 — area A3 Obstacles & Collision migrata a GUT (4/4 file →
   2 suite sotto `tests/suites/obstacles/`): `collision_test.gd`
   (milestone_4_obstacle_collision: shape/flag dal manifest, collisione runtime
