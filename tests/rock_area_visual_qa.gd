@@ -58,11 +58,9 @@ func _run() -> void:
 	_expect(layer.has_rock_area_art(), "tile layer owns the rock-area visual")
 	var counts := layer.get_rock_area_counts()
 	_expect(int(counts.get("areas", 0)) == 2, "both rock areas are rendered")
-	_expect(int(counts.get("horizontal", 0)) == 4, "four horizontal borders are rendered")
-	_expect(int(counts.get("vertical", 0)) == 4, "four vertical borders are rendered")
 	_expect(
-		int(counts.get("raised_tiles", 0)) == 12,
-		"both southern fronts are assembled from raised 3D cliff tiles"
+		int(counts.get("faces", 0)) == 6,
+		"each raised plateau emits a front and two oblique side walls"
 	)
 	await _add_occlusion_probes(scene_root, layout)
 	_add_labels(scene_root)
@@ -132,7 +130,7 @@ func _add_occlusion_probes(
 
 func _add_labels(scene_root: Node2D) -> void:
 	var title := Label.new()
-	title.text = "AREE ROCCIOSE - TILE CLIFF 3D ASCENDENTI"
+	title.text = "AREE ROCCIOSE - PLATEAU RIALZATI (CLIFF INVERTITO)"
 	title.position = Vector2(0.0, 24.0)
 	title.size = Vector2(1280.0, 42.0)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

@@ -311,41 +311,32 @@ func test_rock_area_mesh_builder() -> void:
 	builder.configure(palette, 424242)
 	builder.build(rock_rects, Vector2i(100, 100), LOGICAL_TILE_SCALE)
 	var counts := builder.get_counts()
-	assert_true(builder.has_geometry(), "rock-area builder creates continuous top geometry")
+	assert_true(builder.has_geometry(), "rock-area builder creates a raised plateau")
 	assert_eq(int(counts.get("areas", 0)), 2, "builder covers both generated rock rects")
-	assert_eq(int(counts.get("horizontal", 0)), 4, "each rock has two horizontal borders")
-	assert_eq(int(counts.get("vertical", 0)), 4, "each rock has two vertical borders")
-	assert_eq(int(counts.get("raised_tiles", 0)),
-		ceili(float(SMALL_CELLS.x) / 4.0) + ceili(float(LARGE_CELLS.x) / 4.0),
-		"each southern edge is assembled from raised 3D cliff tiles")
-	assert_gt(int(counts.get("raised_segments", 0)), int(counts.get("raised_tiles", 0)),
-		"raised cliff tiles emit multiple textured face segments")
-	assert_not_null(builder.get_horizontal_mesh(), "horizontal border mesh exists")
-	assert_not_null(builder.get_vertical_mesh(), "vertical border mesh exists")
-	assert_not_null(builder.get_face_mesh(), "raised cliff tile face mesh exists")
-	assert_not_null(builder.get_lip_mesh(), "raised cliff tile top lip mesh exists")
-	var upward_lines := builder.get_upward_lines()
-	assert_gte(upward_lines.size(), 12, "raised 3D tiles expose repeated upward fissures")
-	var all_ridges_point_up := true
-	for line_index in range(0, upward_lines.size(), 2):
-		if upward_lines[line_index].y <= upward_lines[line_index + 1].y:
-			all_ridges_point_up = false
-			break
-	assert_true(all_ridges_point_up, "every tile fissure runs from the base upward")
+	assert_eq(int(counts.get("faces", 0)), 6, "each plateau emits a front wall and two oblique side walls")
+	assert_not_null(builder.get_face_mesh(), "ascending wall mesh exists")
+	assert_not_null(builder.top_mesh, "raised crown mesh exists")
 	var single_rect: Array[Rect2i] = [
 		Rect2i(Vector2i(12, 12), SMALL_CELLS)
 	]
 	builder.build(single_rect, Vector2i(64, 64), LOGICAL_TILE_SCALE)
+	var raise := RectilinearRockAreaMeshBuilder.RAISE_HEIGHT_CELLS * LOGICAL_TILE_SCALE
+	var lean := minf(
+		raise * RectilinearRockAreaMeshBuilder.LATERAL_LEAN_RATIO,
+		float(SMALL_CELLS.x) * LOGICAL_TILE_SCALE * 0.3
+	)
 	var top_bounds := builder.top_mesh.get_aabb() if builder.top_mesh != null else AABB()
-	assert_lt(absf(top_bounds.size.x - float(SMALL_CELLS.x) * LOGICAL_TILE_SCALE), 0.01,
-		"top mesh spans the full generated rock width")
-	var expected_top_height := float(
-		SMALL_CELLS.y
-		+ int(counts.get("back_overhang_cells", 0))
-		- int(counts.get("front_face_depth_cells", 0))
-	) * LOGICAL_TILE_SCALE
-	assert_lt(absf(top_bounds.size.y - expected_top_height), 0.01,
-		"top mesh extends north and stops where the southern face begins")
+	# The crown is the footprint translated straight up and inset by `lean` per side.
+	assert_lt(absf(top_bounds.size.x - (float(SMALL_CELLS.x) * LOGICAL_TILE_SCALE - lean * 2.0)), 0.01,
+		"crown is inset on both sides into a mesa")
+	assert_lt(absf(top_bounds.size.y - float(SMALL_CELLS.y) * LOGICAL_TILE_SCALE), 0.01,
+		"crown keeps the footprint depth, lifted above the ground")
+	# Walls span the full footprint width at the ground and rise the lift height.
+	var face_bounds := builder.get_face_mesh().get_aabb() if builder.get_face_mesh() != null else AABB()
+	assert_lt(absf(face_bounds.size.x - float(SMALL_CELLS.x) * LOGICAL_TILE_SCALE), 0.01,
+		"walls reach the full footprint width at the ground")
+	assert_lt(absf(face_bounds.size.y - (float(SMALL_CELLS.y) * LOGICAL_TILE_SCALE + raise)), 0.01,
+		"walls ascend the full lift height above the footprint")
 
 # --- main.tscn: obstacle system + Y-sort (ultimo: boota la scena) -----------
 

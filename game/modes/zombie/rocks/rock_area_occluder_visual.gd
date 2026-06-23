@@ -6,8 +6,10 @@ const SVG_TEXTURE_LOADER = preload(
 )
 
 const LOGICAL_TILE_SCALE := 8.0
-const BACK_OVERHANG_CELLS := 8
-const COVER_DEPTH_CELLS := 3
+# Kept in sync with RectilinearRockAreaMeshBuilder: the crown is lifted this many
+# cells and the lateral walls lean in by this ratio of the lift.
+const RAISE_HEIGHT_CELLS := 7.0
+const LATERAL_LEAN_RATIO := 0.42
 const TEXTURE_REPEAT_WORLD_SIZE := 256.0
 
 var footprint_size := Vector2(120.0, 120.0)
@@ -55,12 +57,18 @@ func _draw() -> void:
 		draw_mesh(cover_mesh, top_texture)
 
 func _rebuild_mesh() -> void:
+	# The occluder redraws only the lifted crown (the cobble plateau), so entities
+	# standing behind the rock are masked by the same silhouette the tile layer
+	# paints. The ascending walls live in the layer behind the entities, so they are
+	# intentionally excluded here to avoid pasting the crown texture over them.
 	var collision_top := -footprint_size.y * 0.5
-	var top := collision_top - BACK_OVERHANG_CELLS * LOGICAL_TILE_SCALE + 2.0
-	var bottom := collision_top + COVER_DEPTH_CELLS * LOGICAL_TILE_SCALE
+	var raise := RAISE_HEIGHT_CELLS * LOGICAL_TILE_SCALE
+	var lean := minf(raise * LATERAL_LEAN_RATIO, footprint_size.x * 0.3)
+	var top := collision_top - raise
+	var bottom := collision_top - raise + footprint_size.y
 	cover_bounds = Rect2(
-		Vector2(-footprint_size.x * 0.5, top),
-		Vector2(footprint_size.x, bottom - top)
+		Vector2(-footprint_size.x * 0.5 + lean, top),
+		Vector2(footprint_size.x - lean * 2.0, bottom - top)
 	)
 	var left := cover_bounds.position.x
 	var right := cover_bounds.end.x

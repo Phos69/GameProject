@@ -52,19 +52,23 @@ possono cosi coprire gli attori dietro senza cambiare ordine durante il moviment
 `forest_tree` resta il riferimento per l'ostacolo singolo `3x3`: occupa nove
 slot e usa collisione rettangolare sull'intero footprint. `large_rock` e invece
 scalabile: il void-first genera rettangoli quadrati da `15x15` a `30x30` celle e
-`RectilinearRockAreaMeshBuilder` deriva da ogni `rock_rect` il visual nel tile
-layer con top roccioso world-space, facce `cliff_face_generated_v2.png` e bordi
-orizzontali/verticali distinti. Il fronte sud e composto da moduli da 4 celle
-generati dallo stesso `IsometricCliffMeshBuilder` del void: il mode `raise`
-estrude verso l'alto le 14 geometrie e mappa il materiale faccia world-space,
-con lip sulla sommita. Il nodo `large_rock` non disegna uno sprite ma
-mantiene collisione, blocker, overlay `F9` e il cap Y-sorted di occlusione. La
-faccia verticale occupa gli ultimi 6 tile a sud; il top prosegue 8 tile a nord
-senza ampliare la collisione. Un player entro la larghezza e a nord della linea
-centrale e dietro al cliff, a sud e davanti; fuori larghezza non viene coperto.
-Il top dedicato evita le terrazze orizzontali del vecchio lip; materiale e
-fenditure seguono le facce delle tile 3D dal basso verso l'alto. Entrambi
-bloccano movimento e proiettili sull'intera area dichiarata.
+`RectilinearRockAreaMeshBuilder` trasforma ogni `rock_rect` in un plateau
+rialzato, cioe il void cliff specchiato verso l'alto. La corona cobble
+(`rock_plateau_top_generated.png`) e sollevata di `RAISE_HEIGHT_CELLS` e rientra
+in un mesa; tre pareti continue a colonne (`rock_cliff_face_upward_generated.png`)
+salgono dal prato fino al bordo: il fronte sud a tutta larghezza piu i due
+fianchi obliqui inclinati di `LATERAL_LEAN_RATIO`. La parete nord guarda lontano
+dalla camera e non viene emessa. Le pareti sono disegnate per prime e la corona
+le copre, mascherando i triangoli alti come fa il void con il suo lip. Lo shading
+e per lato (fronte chiaro, est illuminato, ovest in ombra) con gradiente verso la
+base; non ci sono fenditure o lip disegnati a mano, quindi la superficie resta
+priva di linee procedurali. Il nodo `large_rock` non disegna uno sprite ma
+mantiene collisione, blocker, overlay `F9` e il cap Y-sorted di occlusione.
+`RockAreaOccluderVisual` ridisegna esattamente la corona sollevata (stesso
+rettangolo rientrato del builder), cosi un player entro la larghezza e a nord
+della linea centrale resta dietro la roccia, a sud davanti; fuori larghezza non
+viene coperto. Entrambi bloccano movimento e proiettili sull'intera area
+dichiarata.
 
 Void/fall zone usano contratti `void_tiles`/cliff separati e non sono ostacoli
 solidi. Pareti, case, vegetazione e rocce usano invece `object_scenes` e dichiarano

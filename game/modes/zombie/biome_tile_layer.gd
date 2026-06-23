@@ -237,8 +237,6 @@ func has_rock_area_art() -> bool:
 		_uses_forest_ground()
 		and _rock_top_texture != null
 		and _rock_cliff_face_texture != null
-		and _cliff_lip_texture != null
-		and _cliff_lip_vertical_texture != null
 		and _rock_area_mesh_builder != null
 		and _rock_area_mesh_builder.has_geometry()
 	)
@@ -328,35 +326,23 @@ func _draw() -> void:
 	if _ground_mesh != null:
 		draw_mesh(_ground_mesh, null)
 	if has_rock_area_art():
+		# The ascending walls are drawn first; the raised crown is drawn afterwards
+		# so it masks the hidden upper wall triangles, mirroring how the void ground
+		# masks the geometry behind its lip.
 		var rock_face_mesh := _rock_area_mesh_builder.get_face_mesh()
 		if rock_face_mesh != null:
 			draw_mesh(
 				rock_face_mesh,
 				_rock_cliff_face_texture,
 				Transform2D.IDENTITY,
-				Color(1.22, 1.22, 1.22, 1.0)
+				Color(1.12, 1.12, 1.12, 1.0)
 			)
-		var upward_lines := _rock_area_mesh_builder.get_upward_lines()
-		if upward_lines.size() >= 2:
-			draw_multiline(
-				upward_lines,
-				Color(0.075, 0.065, 0.055, 0.52),
-				0.9,
-				true
-			)
-		# The raised tile faces start at the collision base and end against the
-		# plateau. Drawing the continuous top afterwards masks their hidden upper
-		# triangles, exactly as the void ground masks geometry behind its lip.
-		draw_mesh(_rock_area_mesh_builder.top_mesh, _rock_top_texture)
-		var raised_lip_mesh := _rock_area_mesh_builder.get_lip_mesh()
-		if raised_lip_mesh != null:
-			draw_mesh(raised_lip_mesh, _rock_top_texture)
-		var horizontal_rock_mesh := _rock_area_mesh_builder.get_horizontal_mesh()
-		if horizontal_rock_mesh != null:
-			draw_mesh(horizontal_rock_mesh, _cliff_lip_texture)
-		var vertical_rock_mesh := _rock_area_mesh_builder.get_vertical_mesh()
-		if vertical_rock_mesh != null:
-			draw_mesh(vertical_rock_mesh, _cliff_lip_vertical_texture)
+		draw_mesh(
+			_rock_area_mesh_builder.top_mesh,
+			_rock_top_texture,
+			Transform2D.IDENTITY,
+			Color(1.06, 1.06, 1.06, 1.0)
+		)
 	if (
 		has_forest_cliff_border_art()
 		and _rectilinear_cliff_face_mesh_builder != null

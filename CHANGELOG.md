@@ -5,20 +5,21 @@
 ### Added
 
 - Aggiunto `RectilinearRockAreaMeshBuilder`: le `large_rock` void-first da
-  `15x15` a `30x30` celle non scalano piu il PNG 3x3. `BiomeTileLayer` rende
-  l'intero `rock_rect` con top world-space, facce cliff e mesh separate per
-  bordi orizzontali/verticali; il nodo oggetto conserva solo collisione e debug
-  `F9`. Inclusa QA reale in `tests/rock_area_visual_qa.gd`.
-- Corretto l'orientamento delle aree rocciose: la faccia verticale occupa gli
-  ultimi 6 tile sul lato sud della collisione, mentre il top prosegue 8 tile a
-  nord. `RockAreaOccluderVisual` partecipa al Y-sort dell'ostacolo e usa la
-  linea centrale per distinguere separatamente ogni player dietro/davanti.
-- Aggiunto `rock_plateau_top_generated.png`, materiale top-down dedicato e
-  armonizzato con i cliff v2, e `rock_cliff_face_upward_generated.png` per le
-  pareti rialzate. `IsometricCliffMeshBuilder` supporta ora il mode `raise`:
-  riusa le stesse 14 geometrie N/S/E/W, corner e diagonali del void, ma estrude
-  facce, lip e fenditure verso l'alto. Le masse rocciose applicano il materiale
-  world-space a moduli 3D da 4 celle sul fronte sud.
+  `15x15` a `30x30` celle non scalano piu il PNG 3x3. Ogni `rock_rect` diventa un
+  plateau rialzato (il void cliff specchiato verso l'alto): la corona cobble e
+  sollevata di `RAISE_HEIGHT_CELLS` e rientra in un mesa, mentre tre pareti
+  continue (fronte sud + due fianchi obliqui in `LATERAL_LEAN_RATIO`) salgono dal
+  prato fino al bordo. Niente piu fenditure/lip disegnate a mano ne bordo a
+  zig-zag: il dettaglio arriva solo dalle texture corona/parete, quindi la
+  superficie resta priva di linee procedurali. Il nodo oggetto conserva solo
+  collisione e debug `F9`. QA reale in `tests/rock_area_visual_qa.gd`.
+- `RockAreaOccluderVisual` ridisegna esattamente la corona sollevata (stesso
+  rettangolo rientrato del builder) per il Y-sort, mascherando i player dietro la
+  roccia senza coprire le pareti che vivono nel `BiomeTileLayer`.
+- Aggiunto `rock_plateau_top_generated.png` (corona cobble world-space) e
+  `rock_cliff_face_upward_generated.png` (pareti a colonne) come materiali
+  dedicati delle masse rocciose, con shading per lato (fronte chiaro, est
+  illuminato, ovest in ombra) e gradiente verso la base.
 - Riscrittura test M7 — area A7 Characters, RPG & Progression migrata a GUT
   (12/12 file → 3 suite sotto `tests/suites/progression/`):
   `rpg_progression_test.gd` (stat di classe e formule di danno, XP da kill/wave,
