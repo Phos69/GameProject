@@ -49,7 +49,7 @@ jobs:
       - name: Import project resources
         run: godot --headless --import --path . || true
 
-      - name: Run test suite
+      - name: Run legacy test suite (SceneTree, in dismissione)
         env:
           GODOT: godot
           SKIP_IMPORT: "1"
@@ -57,6 +57,11 @@ jobs:
           TEST_LOG_DIR: "build/test_logs"
           TEST_TIMEOUT: "240"
         run: bash tools/run_tests.sh "" "$TEST_CATEGORY"
+
+      # Nuova suite GUT (tests/suites/**): un solo processo Godot per tutta la
+      # suite. Cresce milestone dopo milestone finche assorbe i test legacy sopra.
+      - name: Run GUT suite (nuova)
+        run: godot --headless -s res://addons/gut/gut_cmdln.gd -gconfig=res://.gutconfig.json -gexit
 
       - name: Upload test logs
         if: always()

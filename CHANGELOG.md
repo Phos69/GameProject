@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Added
+
+- Fondazione GUT (Milestone M0 della riscrittura test, vedi
+  `test_rewrite_roadmap.md`): vendorizzato `addons/gut/` (GUT 9.6.0, per Godot
+  4.6), nuova cartella `tests/suites/` raccolta in un solo processo Godot via
+  `.gutconfig.json`. Aggiunta la fixture condivisa
+  `tests/support/golden_world_fixture.gd` (costruisce il mondo golden una volta e
+  lo riusa nella suite) e la suite di bootstrap `tests/suites/_sanity/`. Wrapper
+  locali `tools/run_gut.sh` / `tools/run_gut.ps1`. La CI ora esegue il doppio
+  runner: suite legacy `extends SceneTree` (in dismissione) + suite GUT (in
+  crescita).
+
 ### Removed
 
 - Rimossi i portali legacy `BiomeTransitionGate` e tutto il macchinario di spawn

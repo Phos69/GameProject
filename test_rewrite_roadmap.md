@@ -1,0 +1,245 @@
+# Roadmap — Riscrittura totale della suite di test
+
+Riscrittura completa dei test del progetto, riorganizzati per **zone di interesse**
+(domini funzionali del gioco) invece che per milestone storiche, con l'obiettivo
+di **accorpare** quanti più test possibile e **ridurre drasticamente il tempo di
+esecuzione** lanciando il gioco nel modo più ottimizzato.
+
+> Stato: PROPOSTA. Nessuna milestone ancora avviata.
+
+---
+
+## 1. Diagnosi dello stato attuale
+
+| Metrica | Valore |
+| --- | --- |
+| File di test (`tests/*.gd`) | **138** |
+| Di cui `extends SceneTree` standalone | **135** |
+| Di cui Visual QA (`*_qa.gd`) | **~24** |
+| Test che fanno boot completo di `main.tscn` | **68** |
+| Test che usano l'helper condiviso `GoldenWorld` | **1** |
+| Framework di test | nessuno (assert/quit reimplementati a mano) |
+| Autoload di progetto | nessuno (i sistemi sono `class_name` globali) |
+
+### Problemi strutturali
+
+1. **Un processo Godot per file.** [tools/run_tests.sh](tools/run_tests.sh) lancia
+   `godot --headless --path . --script <file>` per ognuno dei 135 test → **~135
+   cold-start dell'engine**. È il collo di bottiglia dominante del wall-clock.
+2. **Boot ripetuto del mondo.** 68 test istanziano `main.tscn` da zero, in
+   isolamento, ognuno ripagando l'intero costo di boot.
+3. **Naming milestone-centrico.** `milestone_4`→`21`, `milestone_rpg_1`→`13`: è
+   archeologia di sviluppo, non documentazione viva del comportamento. Forte
+   sovrapposizione (es. i soli `milestone_10_*` sono ~15 file).
+4. **Boilerplate duplicato.** Ogni file reimplementa `_expect`/`_assert`/`_finish`.
+5. **Classificazione fragile.** Le categorie fast/slow/soak/visual sono decise per
+   pattern sul nome file dentro il runner.
+
+---
+
+## 2. Decisioni adottate
+
+| Tema | Scelta | Implicazione |
+| --- | --- | --- |
+| **Runner** | **GUT (Godot Unit Test) 9.6.0** | Framework standard per Godot 4.6, esegue l'intera cartella in **un solo processo**. `before_all`/`after_all` per fixture condivise. Exit 0/1 per la CI. |
+| **Scope** | **Solo logica/smoke** | Si riscrivono i ~112 test di logica. I ~24 Visual QA e i soak/stress restano com'è e migrano in una milestone finale. |
+| **Migrazione** | **In-place incrementale** | Si converte area per area dentro `tests/`, cancellando i file legacy man mano. La CI fa girare vecchio + nuovo durante la transizione. |
+
+---
+
+## 3. Strategia di ottimizzazione (il "perché" dei tempi)
+
+Tre leve, in ordine d'impatto:
+
+1. **Un solo boot dell'engine.** GUT scopre ed esegue tutte le suite in un unico
+   processo Godot:
+   `godot --headless -s res://addons/gut/gut_cmdln.gd -gdir=res://tests/suites -ginclude_subdirs -gexit`.
+   → **135 processi → 1 processo.** Sparisce il costo di N cold-start.
+2. **Fixture di mondo condivise per area.** Ogni suite costruisce il mondo golden
+   **una volta** in `before_all()` e lo riusa tra i `test_*` della stessa area.
+   → **68 boot di `main.tscn` → ~9** (uno per area; spesso meno, perché molte
+   asserzioni lavorano su sotto-sistemi senza boot completo).
+3. **Accorpamento + parametrizzazione.** I gruppi di file quasi-identici (varianti
+   biome, varianti voidfirst, varianti weapon, manifest…) diventano **un test
+   parametrizzato** (`use_parameters`) invece di N file.
+   → meno file, meno setup ripetuto, copertura esplicita nei parametri.
+
+**Target indicativo:** da ~135 invocazioni a **1 sessione GUT**, con riduzione del
+wall-clock attesa nell'ordine di **5–10×** (dominata dall'eliminazione dei
+cold-start e dal boot condiviso). I numeri esatti si misurano in M1 (baseline).
+
+---
+
+## 4. Tassonomia — le zone di interesse
+
+Le nuove suite vivono in `tests/suites/<area>/` e sostituiscono i file legacy
+elencati. Ogni area = una zona di interesse con una fixture condivisa.
+
+| # | Area (suite) | Cartella | File legacy assorbiti (logica) |
+| --- | --- | --- | --- |
+| A1 | **World Generation & Determinism** | `world_gen/` | golden_seed_default, biome_world_generation, biome_roster, biome_status_effects, biome_obstacle_generation, biome_mini_events, persistent_world_generation, isometric_biome_generation_rewrite, isometric_biome_terrain_coverage, voidfirst_forests, voidfirst_roads, voidfirst_road_border, voidfirst_rocks, voidfirst_void_lottery, voidfirst_integration |
+| A2 | **Environment, Streaming & Graph** | `environment/` | region_streaming, world_graph_connectivity, milestone_7_graph_connectivity, milestone_10_full_region_streaming, milestone_10_tile_layer, milestone_10_passage_tile, milestone_10_no_portal_transition, open_passage_transition, isometric_perimeter_wall, isometric_block_props, milestone_10_legacy_cleanup, milestone_10_isometric_performance, milestone_10_cross_biome_chase, fall_boundary_visual_logic, zombie_fall_hazard, player_dodge_gap, exploration_map, zombie_biome_transition, zombie_environment_milestone |
+| A3 | **Obstacles & Collision** | `obstacles/` | milestone_4_obstacle_collision, obstacle_3x3, obstacle_rendering_contract, scalable_obstacle |
+| A4 | **Assets & Manifests** | `assets/` | milestone_10_asset_manifest_v7, milestone_10_asset_fallback_policy, milestone_10_asset_pipeline, milestone_10_object_asset, milestone_10_void_cliff_asset, isometric_environment_manifest, rpg_character_asset_manifest, forest_grass_generated_texture, void_cliff_generated_texture, forest_isometric_texture_transition |
+| A5 | **Combat, Weapons & Drops** | `combat/` | combat, rpg_melee_attack_resolution, milestone_rpg_3_weapons, milestone_rpg_4_hitbox, milestone_rpg_5_ammo_reload, weapon_inventory_catalog, weapon_visual_catalog, weapon_held_hud_visual_identity, weapon_melee_visual_identity, weapon_pickup_visual_identity, weapon_projectile_vfx_identity, milestone_11_weapon_drop_progression, milestone_13_weapon_tower_visual, enemy_drop |
+| A6 | **Enemies & Bosses** | `enemies/` | zombie_biome_enemy, zombie_biome_wave_director, zombie_spawner_edge, milestone_12_enemy_variants, milestone_15_ranged_enemy, boss, milestone_11_boss_telegraph, milestone_19_boss_registry, offscreen_enemy_markers |
+| A7 | **Characters, RPG & Progression** | `progression/` | milestone_rpg_1_character_select, milestone_rpg_2_stats, milestone_rpg_6_xp_level, milestone_rpg_7_passives, milestone_rpg_8_adrenaline_super, milestone_rpg_11_data_driven, milestone_rpg_13_new_classes, character_select_ui, character_select_independent, all_modes_character_system, milestone_16_downed_revive, player_query |
+| A8 | **Game Modes & Waves** | `modes/` | survival_wave, tower_defense, dungeon, dungeon_graph, zombie_revamp_foundation, zombie_market, zombie_survival_world_contract, infinite_arena_default_mode, milestone_20_arena_environment, random_encounter, wave_cycle, milestone_9 |
+| A9 | **UI, HUD, Audio, Settings & Feedback** | `ui_audio/` | milestone_rpg_9_hud, milestone_rpg_12_feedback, player_world_hud_layout, milestone_17_run_results, pause_settings, milestone_21_visual_settings_performance, biome_debug_overlay, game_log, milestone_18_audio_mix |
+| A10 | **Balance & Metrics** | `balance/` | milestone_12_balance_metrics, milestone_12_zombie_balance_metrics, milestone_rpg_10_balance |
+
+**Infra/Core** (helper, non test): `headless_shutdown_loop`, `test_scene_lifecycle`,
+`golden_world` → confluiscono nelle utility condivise di M0.
+
+**Differiti a M-FINAL** (per scelta di scope): i ~24 `*_qa.gd` Visual QA e i soak/
+stress (`milestone_20_arena_stress`, `zombie_revamp_ten_minute_soak`,
+`zombie_revamp_ten_wave`).
+
+---
+
+## 5. Convenzioni della nuova suite
+
+- **Base class:** ogni suite `extends GutTest`, file `tests/suites/<area>/<nome>_test.gd`.
+- **Fixture condivisa:** `before_all()` costruisce il mondo golden via
+  `GoldenWorld` (riuso dell'helper esistente); `after_all()` fa teardown con la
+  logica già in [tests/test_scene_lifecycle.gd](tests/test_scene_lifecycle.gd).
+- **Determinismo:** seed sempre dal `GoldenWorld.SEED` (= `GameConstants.GOLDEN_WORLD_SEED`).
+- **Asincronia:** `await wait_frames(n)` / `await wait_physics_frames(n)` di GUT al
+  posto dei loop manuali `await process_frame`.
+- **Parametrizzazione:** varianti omogenee (biomi, armi, manifest) via
+  `use_parameters([...])`, una funzione al posto di N file.
+- **Niente milestone nel nome:** i nomi descrivono il comportamento
+  (`weapon_ammo_reload_test.gd`, non `milestone_rpg_5_*`).
+- **Categorie via tag GUT** (`-ginner_class`, gruppi) invece che pattern sul filename.
+
+---
+
+## 6. Milestone
+
+### M0 — Fondazione GUT + utility condivise
+- **Obiettivo:** installare GUT e creare le fondamenta riusabili senza ancora
+  toccare i test legacy.
+- **Attività:**
+  - Vendorizzare `addons/gut/` (GUT 9.6.0) e committarlo (verificare che
+    `.gitignore` non escluda `addons/`; i `.uid` rigenerati sono ignorati, ok).
+  - Creare `tests/suites/` e `tests/support/` (estendere l'attuale `support/`).
+  - Base fixture condivisa `tests/support/golden_world_fixture.gd` che incapsula
+    boot/teardown del mondo golden, costruita sopra `GoldenWorld` e
+    `TestSceneLifecycle`.
+  - `.gutconfig.json` con `dirs=["res://tests/suites"]`, `include_subdirs=true`.
+- **Criterio di accettazione:** `godot --headless -s res://addons/gut/gut_cmdln.gd
+  -gconfig=.gutconfig.json -gexit` parte verde con una suite di esempio (1 test).
+
+### M1 — Pilota: prima area + baseline tempi
+- **Obiettivo:** convertire **A1 (World Generation & Determinism)** come pilota e
+  validare il pattern di fixture condivisa + parametrizzazione.
+- **Attività:** scrivere `tests/suites/world_gen/`, accorpare i 15 file A1,
+  parametrizzare le varianti biome/voidfirst, **cancellare i file legacy A1**.
+- **Misura:** registrare wall-clock prima (legacy A1) vs dopo (GUT A1) →
+  baseline ufficiale dei guadagni.
+- **Criterio di accettazione:** copertura comportamentale ≥ legacy; suite A1 verde;
+  nessun file `milestone_*`/legacy di A1 residuo; tempo documentato nel CHANGELOG.
+
+### M2 — A2 Environment, Streaming & Graph
+- **Obiettivo:** convertire l'area più grande (19 file) sfruttando una sola fixture
+  di mondo per tutta la suite.
+- **Criterio di accettazione:** copertura ≥ legacy; un solo boot del mondo nella
+  suite; file legacy A2 rimossi.
+
+### M3 — A3 Obstacles & Collision
+- **Criterio di accettazione:** copertura ≥ legacy (collisione, 3x3, rendering
+  contract, scalabilità); legacy A3 rimossi.
+
+### M4 — A4 Assets & Manifests
+- **Nota:** area a rischio dipendenze da asset generati → tenere assert su esistenza/
+  contratto manifest, non su pixel (quelli restano nei Visual QA differiti).
+- **Criterio di accettazione:** copertura ≥ legacy; legacy A4 rimossi.
+
+### M5 — A5 Combat, Weapons & Drops
+- **Obiettivo:** consolidare combat + arsenale + drop in una suite con fixture di
+  player/armi condivisa; parametrizzare il catalogo armi.
+- **Criterio di accettazione:** copertura ≥ legacy (fuoco, danno, reload, ammo,
+  inventario, drop progression); legacy A5 rimossi.
+
+### M6 — A6 Enemies & Bosses
+- **Criterio di accettazione:** copertura ≥ legacy (varianti nemici, ranged,
+  spawner, telegraph, registry boss, marker offscreen); legacy A6 rimossi.
+
+### M7 — A7 Characters, RPG & Progression
+- **Criterio di accettazione:** copertura ≥ legacy (character select, stats, xp,
+  passive, adrenalina/super, classi, downed/revive, data-driven); legacy A7 rimossi.
+
+### M8 — A8 Game Modes & Waves
+- **Criterio di accettazione:** copertura ≥ legacy (survival, tower defense, dungeon,
+  zombie revamp/market/contract, arena, encounter, wave cycle); legacy A8 rimossi.
+
+### M9 — A9 UI, HUD, Audio, Settings & Feedback
+- **Criterio di accettazione:** copertura ≥ legacy (hud, feedback, run results,
+  pause/settings, audio mix, debug overlay, game log); legacy A9 rimossi.
+
+### M10 — A10 Balance & Metrics
+- **Criterio di accettazione:** copertura ≥ legacy (balance metrics, zombie balance,
+  rpg balance); legacy A10 rimossi.
+
+### M-FINAL — Cutover, soak e Visual QA
+- **Obiettivo:** chiudere la transizione.
+- **Attività:**
+  - Migrare i soak/stress in una cartella GUT dedicata `tests/suites/soak/` con
+    tag escluso dal run rapido (eseguito solo su richiesta / notturno).
+  - Decidere e attuare i Visual QA: mantenerli come tool a parte (lista esplicita)
+    oppure incapsularli in GUT con asserzioni sui contratti, lasciando lo
+    screenshot come artefatto.
+  - **Ritirare** `tools/run_tests.sh` / `.ps1` legacy (o ridurli a wrapper di GUT).
+  - Aggiornare `.github/workflows/ci.yml` per usare solo GUT.
+  - Verifica finale: zero file legacy `extends SceneTree` in `tests/*.gd`.
+- **Criterio di accettazione:** CI verde con il solo runner GUT; nessun residuo
+  legacy; documentazione aggiornata.
+
+---
+
+## 7. Aggiornamento CI (transizione)
+
+Durante M1→M10 la CI esegue **due step** in `ci.yml`:
+
+1. **Legacy (decrescente):** `bash tools/run_tests.sh` sui file `tests/*.gd`
+   ancora non migrati (il runner attuale fa già glob non ricorsivo, quindi
+   **non** raccoglie `tests/suites/**` — nessun doppio-run).
+2. **GUT (crescente):** `godot --headless -s res://addons/gut/gut_cmdln.gd
+   -gconfig=.gutconfig.json -gexit`.
+
+A M-FINAL resta solo lo step GUT.
+
+---
+
+## 8. Rischi e mitigazioni
+
+| Rischio | Mitigazione |
+| --- | --- |
+| Fixture condivisa che "sporca" lo stato tra test | `before_each`/`after_each` per reset mirato; teardown rigoroso in `after_all`. |
+| Perdita di copertura nell'accorpamento | Regola fissa: ogni milestone deve avere copertura **≥** legacy prima di cancellare; diff delle asserzioni nel PR. |
+| GUT instabile in headless su Godot 4.6 | M0 valida l'invocazione headless prima di qualsiasi migrazione. |
+| `.uid`/import su checkout pulito (CI) | Mantenere lo step `--import` prima del run, come oggi. |
+| Visual QA difficili da automatizzare | Esplicitamente differiti a M-FINAL, fuori dallo scope logica. |
+
+## 9. Rollback
+
+Migrazione in-place ma reversibile per area: ogni milestone è un PR atomico che
+rimuove i legacy di **una** area. Un revert del PR ripristina i file legacy di
+quell'area senza toccare le altre.
+
+---
+
+## 10. Checklist di avanzamento
+
+- [x] M0 — Fondazione GUT + utility condivise ✅ (GUT 9.6.0 vendorizzato, `.gutconfig.json`, fixture condivisa, suite bootstrap 4/4 verde, CI doppio runner, wrapper `tools/run_gut.*`)
+- [ ] M1 — A1 World Generation & Determinism (+ baseline tempi)
+- [ ] M2 — A2 Environment, Streaming & Graph
+- [ ] M3 — A3 Obstacles & Collision
+- [ ] M4 — A4 Assets & Manifests
+- [ ] M5 — A5 Combat, Weapons & Drops
+- [ ] M6 — A6 Enemies & Bosses
+- [ ] M7 — A7 Characters, RPG & Progression
+- [ ] M8 — A8 Game Modes & Waves
+- [ ] M9 — A9 UI, HUD, Audio, Settings & Feedback
+- [ ] M10 — A10 Balance & Metrics
+- [ ] M-FINAL — Cutover + soak + Visual QA
