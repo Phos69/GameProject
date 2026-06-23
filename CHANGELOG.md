@@ -5,16 +5,20 @@
 ### Added
 
 - Riscrittura test M2 (in corso) — area A2 Environment, Streaming & Graph migrata
-  a GUT in batch in-place. Fatto finora (10/20 file → 5 suite sotto
+  a GUT in batch in-place. Fatto finora (13/20 file → 6 suite sotto
   `tests/suites/environment/`): `world_graph_streaming_test.gd` (grafo,
   connettivita multi-seed, streaming, persistenza save v6), `tile_layout_test.gd`
   (tile layer asset-driven, props dei blocchi, muri perimetrali),
   `fall_test.gd` (fall boundary, dodge sui varchi), `passage_tile_test.gd`
   (tile/connettori dei passaggi, dati di connessione del grafo),
-  `exploration_map_test.gd` (fog ed esplorazione). Ogni suite costruisce la
-  megamappa una sola volta in before_all. Resta da migrare il cluster di
-  integrazione (10 file che bootano `main.tscn`) in un'unica suite con un solo
-  boot condiviso.
+  `exploration_map_test.gd` (fog ed esplorazione) e `integration_test.gd`
+  (cluster che boota `main.tscn`: streaming completo regione+vicini, profilo
+  prestazioni isometrico, assenza di renderer/gate legacy). Le prime cinque
+  costruiscono la megamappa una sola volta in before_all; `integration_test.gd`
+  istanzia `main.tscn` UNA volta (nuova fixture condivisa
+  `tests/support/main_scene_fixture.gd`) e riavvia survival per test. Resta da
+  migrare il resto del cluster di integrazione (7 file che bootano `main.tscn`)
+  nella stessa suite condivisa.
 - Riscrittura test M1 — area A1 World Generation & Determinism migrata a GUT
   (vedi `test_rewrite_roadmap.md`). 11 file legacy (`golden_seed_default`,
   `biome_roster`, `persistent_world_generation`,
