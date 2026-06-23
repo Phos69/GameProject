@@ -133,7 +133,7 @@ stress (`milestone_20_arena_stress`, `zombie_revamp_ten_minute_soak`,
 ### M1 — Pilota: prima area + baseline tempi ✅ FATTA
 - **Obiettivo:** convertire **A1 (World Generation & Determinism)** come pilota e
   validare il pattern di fixture condivisa + accorpamento.
-- **Esito:** 11 file legacy → **3 suite GUT** (`world_gen/golden_seed_test.gd`,
+- **Esito:** 11 file legacy → **3 suite GUT** (`world_gfirmen/golden_seed_test.gd`,
   `biome_map_test.gd`, `voidfirst_generation_test.gd`) + helper
   `tests/support/world_gen_helpers.gd`. Build condivise: la mappa 3x3 e il layout
   void-first si costruiscono una sola volta in `before_all`; il determinismo
@@ -150,11 +150,23 @@ stress (`milestone_20_arena_stress`, `zombie_revamp_ten_minute_soak`,
 - **Criterio di accettazione:** ✅ copertura ≥ legacy; suite A1 verde; nessun file
   legacy A1 residuo; baseline documentata.
 
-### M2 — A2 Environment, Streaming & Graph
-- **Obiettivo:** convertire l'area più grande (19 file) sfruttando una sola fixture
-  di mondo per tutta la suite.
-- **Criterio di accettazione:** copertura ≥ legacy; un solo boot del mondo nella
-  suite; file legacy A2 rimossi.
+### M2 — A2 Environment, Streaming & Graph 🔄 IN CORSO (10/20 file)
+- **Obiettivo:** convertire l'area più grande sfruttando build di mondo condivise
+  per suite.
+- **Fatto (5 suite, in-place, ognuna con commit dedicato):**
+  - `world_graph_streaming_test.gd` ← world_graph_connectivity, milestone_7_graph_connectivity, region_streaming
+  - `tile_layout_test.gd` ← milestone_10_tile_layer, isometric_block_props, isometric_perimeter_wall
+  - `fall_test.gd` ← fall_boundary_visual_logic, player_dodge_gap
+  - `passage_tile_test.gd` ← milestone_10_passage_tile
+  - `exploration_map_test.gd` ← exploration_map
+- **Da fare — cluster di integrazione (10 file, tutti boot `main.tscn`):**
+  biome_world_generation, milestone_10_full_region_streaming, milestone_10_legacy_cleanup,
+  milestone_10_no_portal_transition, open_passage_transition, milestone_10_cross_biome_chase,
+  milestone_10_isometric_performance, zombie_fall_hazard, zombie_biome_transition,
+  zombie_environment_milestone → **una sola suite con UN boot condiviso** in
+  `before_all` (qui il taglio dei boot rende il massimo: 10 boot → 1). I test che
+  mutano lo stato re-impostano survival per restare isolati.
+- **Criterio di accettazione:** copertura ≥ legacy; file legacy A2 rimossi.
 
 ### M3 — A3 Obstacles & Collision
 - **Criterio di accettazione:** copertura ≥ legacy (collisione, 3x3, rendering
@@ -243,7 +255,7 @@ quell'area senza toccare le altre.
 
 - [x] M0 — Fondazione GUT + utility condivise ✅ (GUT 9.6.0 vendorizzato, `.gutconfig.json`, fixture condivisa, suite bootstrap 4/4 verde, CI doppio runner, wrapper `tools/run_gut.*`)
 - [x] M1 — A1 World Generation & Determinism ✅ (11 file → 3 suite GUT; baseline 230s→130s = 1.8x; 4 file re-bucketati ad A2/A4/A5/A8)
-- [ ] M2 — A2 Environment, Streaming & Graph
+- [~] M2 — A2 Environment, Streaming & Graph 🔄 10/20 file (5 suite GUT verdi; resta il cluster di integrazione con boot main.tscn)
 - [ ] M3 — A3 Obstacles & Collision
 - [ ] M4 — A4 Assets & Manifests
 - [ ] M5 — A5 Combat, Weapons & Drops
