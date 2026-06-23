@@ -4,6 +4,16 @@
 
 ### Added
 
+- Riscrittura test M7 — area A7 Characters, RPG & Progression migrata a GUT
+  (12/12 file → 3 suite sotto `tests/suites/progression/`):
+  `rpg_progression_test.gd` (stat di classe e formule di danno, XP da kill/wave,
+  passive, adrenalina/super delle 4 classi base, registry data-driven, classi
+  avanzate mago/domatrice/licantropo con companion e beast night),
+  `character_select_test.gd` (flusso survival, personaggio condiviso da tutte le
+  modalità, UI safe-area multi-risoluzione + navigazione, selezione indipendente
+  per-player) e `downed_revive_test.gd` (downed/revive su survival/dungeon/tower e
+  helper PlayerQuery). Nuovo `tests/support/player_stub.gd` per i player sintetici
+  (GUT richiede script-risorsa reali per inst_to_dict). 12 test/269 assert verdi.
 - Riscrittura test M6 — area A6 Enemies & Bosses migrata a GUT (9/9 file → 2 suite
   sotto `tests/suites/enemies/`): `enemies_test.gd` (nemici tematici per biome +
   hazard, wave director scaling, bordi/rifiuti/fallback dello spawner, varianti
