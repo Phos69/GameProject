@@ -34,13 +34,13 @@ func start_mode(context: Dictionary = {}) -> void:
 	if not survival_mode.is_running:
 		super.stop_mode()
 
-func stop_mode() -> void:
+func stop_mode(keep_world: bool = false) -> void:
 	if not is_running:
 		return
 	_resolve_survival_mode()
 	if survival_mode != null and survival_mode.is_running:
-		survival_mode.stop_mode()
-	super.stop_mode()
+		survival_mode.stop_mode(keep_world)
+	super.stop_mode(keep_world)
 
 func _resolve_survival_mode() -> void:
 	if survival_mode != null and is_instance_valid(survival_mode):

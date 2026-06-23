@@ -60,14 +60,20 @@ func start_mode(context: Dictionary = {}) -> void:
 	_resolve_market_controller()
 	_resolve_arena_manager()
 	_resolve_zombie_mode_controller()
-	if arena_manager != null:
+	# On a same-seed retry the world (and its arena props) are reused, so skip the
+	# arena rebuild; only the gameplay layer below resets.
+	var reuse_world: bool = (
+		zombie_mode_controller != null
+		and zombie_mode_controller.can_reuse_world(resolved_context)
+	)
+	if arena_manager != null and not reuse_world:
 		var arena_id := StringName(
 			resolved_context.get("arena_id", arena_manager.default_arena_id)
 		)
 		arena_manager.activate_arena(arena_id)
 	if zombie_mode_controller != null:
-		# Awaits the worker-thread world build when the context requests it
-		# (async_world_build); returns immediately for the synchronous path.
+		# Reuses the parked world instantly, or awaits the worker-thread build when
+		# the context requests it (async_world_build); sync path returns immediately.
 		await zombie_mode_controller.start_run(resolved_context)
 	if not is_running:
 		# The run was stopped while the world was building (e.g. back to menu).
@@ -79,7 +85,7 @@ func start_mode(context: Dictionary = {}) -> void:
 	if wave_manager != null:
 		wave_manager.start_run()
 
-func stop_mode() -> void:
+func stop_mode(keep_world: bool = false) -> void:
 	if not is_running:
 		return
 	if ammo_director != null:
@@ -89,10 +95,11 @@ func stop_mode() -> void:
 	if market_controller != null:
 		market_controller.stop_run()
 	if zombie_mode_controller != null:
-		zombie_mode_controller.stop_run()
-	if arena_manager != null:
+		zombie_mode_controller.stop_run(keep_world)
+	# Keep the arena props alive when parking the world for a fast retry.
+	if arena_manager != null and not keep_world:
 		arena_manager.deactivate_arena()
-	super.stop_mode()
+	super.stop_mode(keep_world)
 
 func should_spawn_boss_for_wave(wave_index: int) -> bool:
 	return boss_wave_interval > 0 and wave_index % boss_wave_interval == 0

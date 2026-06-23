@@ -22,6 +22,13 @@
 
 ### Added
 
+- Retry veloce: ripetere una run con lo stesso seed non rigenera ne' ri-bakea il
+  mondo. `GameModeManager.retry_active_mode()` parcheggia il mondo costruito
+  (`stop_mode(keep_world=true)`); `ZombieModeController` lo riusa se il contesto
+  combacia (`can_reuse_world`/`_world_parked`) e resetta solo il gameplay
+  (ondate/nemici/player via `game_mode_started`). Un contesto diverso ricostruisce,
+  uno stop completo libera il parcheggio. Aggiunto
+  `tests/world_reuse_retry_smoke_test.gd`.
 - Cache di sessione delle texture isometriche nel loader SVG
   (`IsometricSvgTextureLoader`): ogni SVG viene rasterizzato una sola volta per
   `(path, size)` e riusato da tile layer, streaming regioni, cambi bioma e run

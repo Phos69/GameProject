@@ -108,7 +108,9 @@ func retry_active_mode() -> bool:
 		return false
 	var current_mode: Node = registered_modes.get(active_mode_id)
 	if current_mode != null and current_mode.has_method("stop_mode"):
-		current_mode.stop_mode()
+		# Retry keeps the built world parked so a same-seed restart reuses it and
+		# only the gameplay layer resets, instead of rebuilding everything.
+		current_mode.stop_mode(true)
 	run_result_active = false
 	last_run_result = {}
 	var context := mode_contexts.get(active_mode_id, {}) as Dictionary

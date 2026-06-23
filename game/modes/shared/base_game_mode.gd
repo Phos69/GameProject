@@ -23,7 +23,7 @@ func start_mode(context: Dictionary = {}) -> void:
 	_apply_character_context(context)
 	mode_started.emit(mode_id)
 
-func stop_mode() -> void:
+func stop_mode(_keep_world: bool = false) -> void:
 	if not is_running:
 		return
 	is_running = false
