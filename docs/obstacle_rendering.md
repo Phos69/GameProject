@@ -120,7 +120,6 @@ godot --headless --path . --script res://tests/scalable_obstacle_smoke_test.gd
 godot --headless --path . --script res://tests/obstacle_asset_visual_qa.gd
 godot --path . --rendering-method gl_compatibility --script res://tests/obstacle_3x3_visual_qa.gd
 godot --path . --rendering-method gl_compatibility --script res://tests/rock_area_visual_qa.gd
-godot --path . --rendering-method gl_compatibility --script res://tests/rock_cliff_generated_visual_qa.gd
 godot --headless --path . --script res://tests/isometric_environment_manifest_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_10_object_asset_smoke_test.gd
 godot --headless --path . --script res://tests/starter_biome_vertical_slice_smoke_test.gd

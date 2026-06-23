@@ -12,14 +12,10 @@ const LATERAL_FALL_STRIPES := 3
 # but textured art needs a minimum visible face instead of collapsing to a line.
 const SOUTH_INSTANT_DEPTH := 5.0
 const SOUTH_TEXTURED_DEPTH := 14.0
-const FACE_MODE_DROP := &"drop"
-const FACE_MODE_RAISE := &"raise"
-const RAISED_FACE_STRIPES := 2
 
 var palette: BiomePalette
 var generation_seed: int = 0
 var textured_art_enabled: bool = false
-var face_mode: StringName = FACE_MODE_DROP
 
 var face_mesh: ArrayMesh
 var lip_mesh: ArrayMesh
@@ -39,17 +35,11 @@ var _lip_indices: PackedInt32Array = PackedInt32Array()
 func configure(
 	next_palette: BiomePalette,
 	next_generation_seed: int,
-	enable_textured_art: bool = false,
-	next_face_mode: StringName = FACE_MODE_DROP
+	enable_textured_art: bool = false
 ) -> void:
 	palette = next_palette
 	generation_seed = next_generation_seed
 	textured_art_enabled = enable_textured_art
-	face_mode = (
-		next_face_mode
-		if next_face_mode == FACE_MODE_RAISE
-		else FACE_MODE_DROP
-	)
 	reset()
 
 func reset() -> void:
@@ -83,24 +73,20 @@ func append_transition(
 		if face_depth_override > 0.0
 		else maxf(half_h * 8.0, 28.0)
 	)
-	var faces: Array
-	if face_mode == FACE_MODE_RAISE:
-		faces = _raised_cliff_faces(tile_id, center, half_w, half_h, depth)
-	else:
-		var south_join_y := _find_south_join_y(
-			tile_id,
-			center.y,
-			southern_tile_ids,
-			tile_step_y
-		)
-		faces = _cliff_faces(
-			tile_id,
-			center,
-			half_w,
-			half_h,
-			depth,
-			south_join_y
-		)
+	var south_join_y := _find_south_join_y(
+		tile_id,
+		center.y,
+		southern_tile_ids,
+		tile_step_y
+	)
+	var faces := _cliff_faces(
+		tile_id,
+		center,
+		half_w,
+		half_h,
+		depth,
+		south_join_y
+	)
 	if faces.is_empty():
 		return
 	transition_count += 1
@@ -134,37 +120,18 @@ func append_transition(
 			var end := path[point_index + 1]
 			var start_drop := drops[point_index] if drops.size() == path.size() else drop
 			var end_drop := drops[point_index + 1] if drops.size() == path.size() else drop
-			var start_color := face_top
-			var end_color := face_bottom
-			if face_mode == FACE_MODE_RAISE:
-				start_color = Color(
-					face_top.r * 0.62,
-					face_top.g * 0.62,
-					face_top.b * 0.62,
-					0.98
-				)
-				end_color = Color(face_top.r, face_top.g, face_top.b, 1.0)
 			_append_gradient_quad(
 				_face_vertices, _face_colors, _face_uvs, _face_indices,
-				start, end, start_drop, end_drop, start_color, end_color
+				start, end, start_drop, end_drop, face_top, face_bottom
 			)
-			var lip_start := start
-			var lip_end := end
-			var lip_start_direction := start_drop
-			var lip_end_direction := end_drop
-			if face_mode == FACE_MODE_RAISE:
-				lip_start += start_drop
-				lip_end += end_drop
-				lip_start_direction = -start_drop
-				lip_end_direction = -end_drop
 			_append_lip_quad(
-				lip_start,
-				lip_end,
-				lip_start_direction,
-				lip_end_direction,
+				start,
+				end,
+				start_drop,
+				end_drop,
 				brightness
 			)
-			_append_line(lip_lines, lip_start, lip_end)
+			_append_line(lip_lines, start, end)
 			var stripes := int(face.get("fall_stripes", 0))
 			if stripes > 0:
 				# Evenly spaced lines parallel to the (slanted) drop: the oblique
@@ -418,75 +385,6 @@ func _cliff_faces(
 					"path": PackedVector2Array([top, bottom]),
 					"drop": Vector2(0.0, depth * 0.55),
 					"brightness": 0.88
-				})
-	return result
-
-func _raised_cliff_faces(
-	tile_id: StringName,
-	center: Vector2,
-	half_w: float,
-	half_h: float,
-	height: float
-) -> Array:
-	var top := center + Vector2(0.0, -half_h)
-	var right := center + Vector2(half_w, 0.0)
-	var bottom := center + Vector2(0.0, half_h)
-	var left := center + Vector2(-half_w, 0.0)
-	var result: Array = []
-	var sides := _cliff_sides_for_tile_id(tile_id)
-	for side in sides:
-		match side:
-			&"north":
-				result.append({
-					"path": PackedVector2Array([left, top, right]),
-					"drop": Vector2(0.0, -height),
-					"brightness": 0.72,
-					"fall_stripes": RAISED_FACE_STRIPES
-				})
-			&"east":
-				var east_path := PackedVector2Array([top, right, bottom])
-				if sides.has(&"south"):
-					east_path = PackedVector2Array([top, right])
-				elif sides.has(&"north"):
-					east_path = PackedVector2Array([right, bottom])
-				result.append({
-					"path": east_path,
-					"drop": Vector2(-height * LATERAL_VOID_SLOPE, -height),
-					"brightness": 0.82,
-					"fall_stripes": RAISED_FACE_STRIPES
-				})
-			&"south":
-				result.append({
-					"path": PackedVector2Array([left, bottom, right]),
-					"drop": Vector2(0.0, -height),
-					"brightness": 1.0,
-					"fall_stripes": RAISED_FACE_STRIPES
-				})
-			&"west":
-				var west_path := PackedVector2Array([top, left, bottom])
-				if sides.has(&"south"):
-					west_path = PackedVector2Array([top, left])
-				elif sides.has(&"north"):
-					west_path = PackedVector2Array([left, bottom])
-				result.append({
-					"path": west_path,
-					"drop": Vector2(height * LATERAL_VOID_SLOPE, -height),
-					"brightness": 0.60,
-					"fall_stripes": RAISED_FACE_STRIPES
-				})
-			&"diagonal_ne_sw":
-				result.append({
-					"path": PackedVector2Array([left, right]),
-					"drop": Vector2(0.0, -height * 0.75),
-					"brightness": 0.90,
-					"fall_stripes": RAISED_FACE_STRIPES
-				})
-			&"diagonal_nw_se":
-				result.append({
-					"path": PackedVector2Array([top, bottom]),
-					"drop": Vector2(0.0, -height * 0.75),
-					"brightness": 0.90,
-					"fall_stripes": RAISED_FACE_STRIPES
 				})
 	return result
 

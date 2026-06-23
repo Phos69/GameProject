@@ -812,19 +812,18 @@ multi-bioma.
   quando il contratto dichiara esplicitamente un fallback procedurale.
 - Il loader accetta SVG e texture raster importate. `forest_tree` mantiene il
   PNG trasparente originale; `large_rock` non usa piu una silhouette fissa e
-  combina sull'intero `rock_rect` top roccioso, facce cliff e bordi
-  orizzontali/verticali dedicati. La sorgente visuale non cambia gameplay,
-  collisione o classificazione.
-- `RectilinearRockAreaMeshBuilder` separa verticalita e occlusione: gli ultimi
-  6 tile a sud del `rock_rect` ricevono la faccia verticale, mentre il top si
-  prolunga 8 tile a nord senza ampliare la collisione. Il prolungamento viene
-  duplicato da `RockAreaOccluderVisual` sul nodo ostacolo Y-sorted. Il top usa
-  `rock_plateau_top_generated.png`. La parete usa
-  `rock_cliff_face_upward_generated.png` su moduli 3D larghi 4 celle creati da
-  `IsometricCliffMeshBuilder` in mode `raise`: sono le stesse 14 geometrie del
-  void, con vettore di estrusione invertito, lip sulla sommita e fissure line
-  dal bordo inferiore verso quello superiore. Il mode `drop` resta il default
-  e conserva invariato il rendering void.
+  rende sull'intero `rock_rect` un plateau rialzato con corona e pareti dedicate.
+  La sorgente visuale non cambia gameplay, collisione o classificazione.
+- `RectilinearRockAreaMeshBuilder` costruisce il void cliff specchiato verso
+  l'alto: la corona cobble e sollevata di `RAISE_HEIGHT_CELLS` e rientra in un
+  mesa, mentre tre pareti continue (fronte sud a tutta larghezza + due fianchi
+  obliqui in `LATERAL_LEAN_RATIO`) salgono dal prato fino al bordo; la parete
+  nord guarda lontano dalla camera e non viene emessa. Le pareti sono disegnate
+  per prime e la corona le copre, mascherando i triangoli alti. Il top usa
+  `rock_plateau_top_generated.png`, le pareti `rock_cliff_face_upward_generated.png`
+  con shading per lato e gradiente verso la base; nessuna fissure/lip disegnata a
+  mano, quindi la superficie resta priva di linee procedurali. La corona viene
+  duplicata da `RockAreaOccluderVisual` sul nodo ostacolo Y-sorted.
 - `IsometricEnvironmentObject.is_world_position_behind_cliff()` classifica una
   posizione come dietro quando ricade nella larghezza della roccia e ha Y
   minore della linea centrale; Y maggiore/uguale significa davanti. Posizioni
@@ -874,10 +873,8 @@ multi-bioma.
   collisione e base visiva derivano poi dallo stesso rettangolo.
 - `forest_tree` dichiara slot `3x3` (`12x12` celle). Le `large_rock` void-first
   sono invece quadrati scalabili da `15x15` a `30x30` celle: `rock_rect`, size
-  collisione e sorgente del visual coincidono; il top puo estendersi solo a
-  nord per l'occlusione presentazionale. Il builder riusa
-  `IsometricCliffBorderMeshBuilder` per le mesh orizzontali/verticali e il mode
-  `raise` di `IsometricCliffMeshBuilder` per comporre il fronte sud da tile 3D.
+  collisione e sorgente del visual coincidono; la corona sollevata si estende
+  oltre il footprint solo come overhang presentazionale per l'occlusione.
   Alberi e rocce bloccano movimento e proiettili sull'intero rettangolo, non
   sull'estensione grafica.
 - `BiomeEnvironmentLayout.get_obstacle_record()` espone tipo, categoria,
