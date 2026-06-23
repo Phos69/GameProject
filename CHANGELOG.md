@@ -4,6 +4,17 @@
 
 ### Added
 
+- Riscrittura test M3 — area A3 Obstacles & Collision migrata a GUT (4/4 file →
+  2 suite sotto `tests/suites/obstacles/`): `collision_test.gd`
+  (milestone_4_obstacle_collision: shape/flag dal manifest, collisione runtime
+  rectangle/circle/open, layer/mask dei proiettili, query jumpable/non-jumpable,
+  chiavi stabili, proiettile fermato dal muro) e `footprint_contract_test.gd`
+  (obstacle_rendering_contract + obstacle_3x3 + scalable_obstacle: footprint a
+  slot, layout autoriali/generati, oggetto runtime + Y-sort, identità void/cliff,
+  feature 3x3, rocce scalabili, e il controllo su `main.tscn` isolato nell'ultimo
+  test via fixture condivisa). Il manifest si carica una volta in before_all; i
+  layout 500x500 si costruiscono solo nei test che li verificano. 15 test/490
+  assert verdi (~30s). I Visual QA degli ostacoli restano differiti a M-FINAL.
 - Riscrittura test M2 — area A2 Environment, Streaming & Graph migrata a GUT
   (20/20 file → 6 suite sotto `tests/suites/environment/`):
   `world_graph_streaming_test.gd` (grafo, connettivita multi-seed, streaming,

@@ -79,7 +79,7 @@ elencati. Ogni area = una zona di interesse con una fixture condivisa.
 | --- | --- | --- | --- |
 | A1 | **World Generation & Determinism** ✅ | `world_gen/` | golden_seed_default, biome_roster, persistent_world_generation, isometric_biome_generation_rewrite, isometric_biome_terrain_coverage, voidfirst_forests, voidfirst_roads, voidfirst_road_border, voidfirst_rocks, voidfirst_void_lottery, voidfirst_integration |
 | A2 | **Environment, Streaming & Graph** | `environment/` | region_streaming, world_graph_connectivity, milestone_7_graph_connectivity, milestone_10_full_region_streaming, milestone_10_tile_layer, milestone_10_passage_tile, milestone_10_no_portal_transition, open_passage_transition, isometric_perimeter_wall, isometric_block_props, milestone_10_legacy_cleanup, milestone_10_isometric_performance, milestone_10_cross_biome_chase, fall_boundary_visual_logic, zombie_fall_hazard, player_dodge_gap, exploration_map, zombie_biome_transition, zombie_environment_milestone, biome_world_generation _(re-bucket da A1: integrazione main.tscn)_ |
-| A3 | **Obstacles & Collision** | `obstacles/` | milestone_4_obstacle_collision, obstacle_3x3, obstacle_rendering_contract, scalable_obstacle |
+| A3 | **Obstacles & Collision** ✅ | `obstacles/` | milestone_4_obstacle_collision, obstacle_3x3, obstacle_rendering_contract, scalable_obstacle |
 | A4 | **Assets & Manifests** | `assets/` | milestone_10_asset_manifest_v7, milestone_10_asset_fallback_policy, milestone_10_asset_pipeline, milestone_10_object_asset, milestone_10_void_cliff_asset, isometric_environment_manifest, rpg_character_asset_manifest, forest_grass_generated_texture, void_cliff_generated_texture, forest_isometric_texture_transition, biome_obstacle_generation _(re-bucket da A1: categorie manifest)_ |
 | A5 | **Combat, Weapons & Drops** | `combat/` | combat, rpg_melee_attack_resolution, milestone_rpg_3_weapons, milestone_rpg_4_hitbox, milestone_rpg_5_ammo_reload, weapon_inventory_catalog, weapon_visual_catalog, weapon_held_hud_visual_identity, weapon_melee_visual_identity, weapon_pickup_visual_identity, weapon_projectile_vfx_identity, milestone_11_weapon_drop_progression, milestone_13_weapon_tower_visual, enemy_drop, biome_status_effects _(re-bucket da A1: BiomeStatusRuntime/health)_ |
 | A6 | **Enemies & Bosses** | `enemies/` | zombie_biome_enemy, zombie_biome_wave_director, zombie_spawner_edge, milestone_12_enemy_variants, milestone_15_ranged_enemy, boss, milestone_11_boss_telegraph, milestone_19_boss_registry, offscreen_enemy_markers |
@@ -178,8 +178,20 @@ stress (`milestone_20_arena_stress`, `zombie_revamp_ten_minute_soak`,
 - **Criterio di accettazione:** ✅ copertura ≥ legacy; tutti i 20 file legacy A2
   rimossi; cluster di integrazione 10 boot → 1.
 
-### M3 — A3 Obstacles & Collision
-- **Criterio di accettazione:** copertura ≥ legacy (collisione, 3x3, rendering
+### M3 — A3 Obstacles & Collision ✅ FATTA (4/4 file)
+- **Esito (2 suite GUT sotto `tests/suites/obstacles/`):**
+  - `collision_test.gd` ← milestone_4_obstacle_collision (shape/flag dal manifest,
+    collisione runtime rectangle/circle/open, layer/mask dei proiettili, query
+    jumpable/non-jumpable, chiavi stabili, proiettile fermato dal muro)
+  - `footprint_contract_test.gd` ← obstacle_rendering_contract + obstacle_3x3 +
+    scalable_obstacle (footprint a slot, layout autoriali/generati, oggetto
+    runtime + Y-sort, identità void/cliff, feature 3x3, rocce scalabili, e il
+    controllo su main.tscn — l'unico boot, isolato nell'ultimo test via fixture)
+- **Manifest condiviso** caricato una volta in before_all; i layout 500x500 si
+  costruiscono solo nei test che li verificano. Niente assert su pixel (restano nei
+  Visual QA differiti `obstacle_3x3_visual_qa`/`obstacle_asset_visual_qa`).
+- 15 test / 490 assert verdi, ~30s (area leggera, no boot ripetuto del mondo).
+- **Criterio di accettazione:** ✅ copertura ≥ legacy (collisione, 3x3, rendering
   contract, scalabilità); legacy A3 rimossi.
 
 ### M4 — A4 Assets & Manifests
@@ -266,7 +278,7 @@ quell'area senza toccare le altre.
 - [x] M0 — Fondazione GUT + utility condivise ✅ (GUT 9.6.0 vendorizzato, `.gutconfig.json`, fixture condivisa, suite bootstrap 4/4 verde, CI doppio runner, wrapper `tools/run_gut.*`)
 - [x] M1 — A1 World Generation & Determinism ✅ (11 file → 3 suite GUT; baseline 230s→130s = 1.8x; 4 file re-bucketati ad A2/A4/A5/A8)
 - [x] M2 — A2 Environment, Streaming & Graph ✅ (20/20 file → 6 suite GUT; cluster di integrazione 10 boot main.tscn → 1 via fixture condivisa; 10 test/1062 assert verdi)
-- [ ] M3 — A3 Obstacles & Collision
+- [x] M3 — A3 Obstacles & Collision ✅ (4/4 file → 2 suite GUT; 15 test/490 assert verdi, ~30s)
 - [ ] M4 — A4 Assets & Manifests
 - [ ] M5 — A5 Combat, Weapons & Drops
 - [ ] M6 — A6 Enemies & Bosses
