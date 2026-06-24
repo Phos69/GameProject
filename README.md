@@ -124,125 +124,36 @@ la lista completa arma-per-arma in [GAME_DESIGN.md](GAME_DESIGN.md) e gli esiti
 W0-W8 nel
 [report di validazione](docs/weapon_visual_identity_validation_report.md).
 
-Smoke test headless e QA visuale:
+## Test
+
+La suite di test e interamente [GUT](https://github.com/bitwes/Gut) (Godot Unit
+Test): un solo processo Godot esegue tutte le suite logiche sotto
+`tests/suites/**`. La CI (`.github/workflows/ci.yml`) lancia solo questo runner.
 
 ```text
-# Suite completa headless, visual QA esclusa.
-./tools/run_tests.ps1 -SkipImport
-tools/run_tests.sh
+# Tutte le suite logiche rapide (un solo processo Godot).
+tools/run_gut.sh
+./tools/run_gut.ps1
 
-# Suite rapida: esclude visual QA, soak/stress e smoke ultra-lenti.
-./tools/run_tests.ps1 -Category fast -SkipImport
-tools/run_tests.sh "" fast
+# Solo un'area (es. world_gen, combat, ui_audio, balance...).
+tools/run_gut.sh -gdir=res://tests/suites/combat
 
-# Suite lenta: include guardrail pesanti da eseguire con timeout piu ampio.
-./tools/run_tests.ps1 -Category slow -SkipImport -TimeoutSec 240
-TEST_TIMEOUT=240 SKIP_IMPORT=1 tools/run_tests.sh "" slow
+# Invocazione diretta (quella usata in CI).
+godot --headless -s res://addons/gut/gut_cmdln.gd -gconfig=res://.gutconfig.json -gexit
 
-# Filtri per nome file.
-./tools/run_tests.ps1 -Filter biome -SkipImport
-tools/run_tests.sh biome
+# Soak/stress (lunghi, esclusi dal run rapido; girano di notte via soak.yml).
+godot --headless -s res://addons/gut/gut_cmdln.gd -gconfig=res://.gutconfig.soak.json -gexit
+
+# Visual QA: tool a parte, richiedono rendering reale/GPU (non headless).
+tools/run_visual_qa.sh            # vedi docs/testing/visual_qa.md
 
 # Asset check isometrico.
 godot --headless --path . --script res://tools/generate_isometric_environment_assets.gd -- --check
-
-# QA visuale richiede rendering reale/GPU.
-./tools/run_tests.ps1 -Category visual -SkipImport -IncludeVisualQa
-INCLUDE_VISUAL_QA=1 SKIP_IMPORT=1 tools/run_tests.sh "" visual
 ```
 
-I log dei runner vengono scritti in `build/test_logs/`. Le categorie supportate
-sono `all`, `fast`, `slow`, `soak` e `visual`; i test visual QA sono esclusi di
-default e vanno eseguiti solo con rendering reale/GPU.
-
-```text
-godot --headless --path . --script res://tests/headless_shutdown_loop_test.gd
-godot --headless --path . --script res://tests/combat_smoke_test.gd
-godot --headless --path . --script res://tests/enemy_drop_smoke_test.gd
-godot --headless --path . --script res://tests/survival_wave_smoke_test.gd
-godot --headless --path . --script res://tests/zombie_market_smoke_test.gd
-godot --headless --path . --script res://tests/zombie_revamp_foundation_smoke_test.gd
-godot --headless --path . --script res://tests/zombie_spawner_edge_smoke_test.gd
-godot --headless --path . --script res://tests/zombie_biome_wave_director_smoke_test.gd
-godot --headless --path . --script res://tests/zombie_environment_milestone_smoke_test.gd
-godot --headless --path . --script res://tests/zombie_fall_hazard_smoke_test.gd
-godot --headless --path . --script res://tests/zombie_biome_transition_smoke_test.gd
-godot --headless --path . --script res://tests/zombie_biome_enemy_smoke_test.gd
-godot --headless --path . --script res://tests/zombie_revamp_ten_wave_smoke_test.gd
-godot --headless --path . --script res://tests/zombie_revamp_ten_minute_soak_test.gd
-godot --headless --path . --script res://tests/milestone_12_balance_metrics_smoke_test.gd
-godot --headless --path . --script res://tests/milestone_12_zombie_balance_metrics_smoke_test.gd
-godot --headless --path . --script res://tests/milestone_12_enemy_variants_smoke_test.gd
-godot --headless --path . --script res://tests/biome_world_generation_smoke_test.gd
-godot --headless --path . --script res://tests/world_graph_connectivity_smoke_test.gd
-godot --headless --path . --script res://tests/persistent_world_generation_smoke_test.gd
-godot --headless --path . --script res://tests/open_passage_transition_smoke_test.gd
-godot --headless --path . --script res://tests/isometric_environment_manifest_smoke_test.gd
-godot --headless --path . --script res://tests/obstacle_rendering_contract_smoke_test.gd
-godot --headless --path . --script res://tests/obstacle_3x3_smoke_test.gd
-godot --headless --path . --script res://tests/obstacle_asset_visual_qa.gd
-godot --path . --rendering-method gl_compatibility --script res://tests/obstacle_3x3_visual_qa.gd
-godot --headless --path . --script res://tests/milestone_10_asset_fallback_policy_smoke_test.gd
-godot --headless --path . --script res://tests/milestone_10_asset_manifest_v7_smoke_test.gd
-godot --headless --path . --script res://tests/milestone_10_asset_pipeline_smoke_test.gd
-godot --headless --path . --script res://tests/milestone_10_tile_layer_smoke_test.gd
-godot --headless --path . --script res://tests/milestone_10_passage_tile_smoke_test.gd
-godot --headless --path . --script res://tests/milestone_10_object_asset_smoke_test.gd
-godot --headless --path . --script res://tests/milestone_10_void_cliff_asset_smoke_test.gd
-godot --headless --path . --script res://tests/void_cliff_generated_texture_smoke_test.gd
-godot --headless --path . --script res://tests/forest_grass_generated_texture_smoke_test.gd
-godot --path . --rendering-method gl_compatibility --script res://tests/forest_surface_generated_visual_qa.gd
-godot --path . --rendering-method gl_compatibility --script res://tests/void_cliff_generated_visual_qa.gd
-godot --path . --rendering-method gl_compatibility --script res://tests/void_cliff_runtime_visual_qa.gd
-godot --headless --path . --script res://tests/forest_isometric_texture_transition_smoke_test.gd
-godot --headless --path . --script res://tests/isometric_biome_generation_rewrite_smoke_test.gd
-godot --headless --path . --script res://tests/starter_biome_vertical_slice_smoke_test.gd
-godot --headless --path . --script res://tests/isometric_biome_terrain_coverage_smoke_test.gd
-godot --headless --path . --script res://tests/fall_boundary_visual_logic_smoke_test.gd
-godot --headless --path . --script res://tests/milestone_10_no_portal_transition_smoke_test.gd
-godot --headless --path . --script res://tests/milestone_10_full_region_streaming_smoke_test.gd
-godot --headless --path . --script res://tests/milestone_10_cross_biome_chase_smoke_test.gd
-godot --headless --path . --script res://tests/milestone_10_legacy_cleanup_smoke_test.gd
-godot --headless --path . --script res://tests/milestone_10_isometric_performance_smoke_test.gd
-godot --headless --path . --script res://tests/player_dodge_gap_smoke_test.gd
-godot --headless --path . --script res://tests/exploration_map_smoke_test.gd
-godot --headless --path . --script res://tests/biome_debug_overlay_smoke_test.gd
-godot --headless --path . --script res://tests/biome_mini_events_smoke_test.gd
-godot --headless --path . --script res://tests/boss_smoke_test.gd
-godot --headless --path . --script res://tests/dungeon_smoke_test.gd
-godot --headless --path . --script res://tests/tower_defense_smoke_test.gd
-godot --headless --path . --script res://tests/milestone_9_smoke_test.gd
-godot --headless --path . --script res://tests/milestone_10_visual_smoke_test.gd
-godot --headless --path . --script res://tests/milestone_11_boss_telegraph_smoke_test.gd
-godot --headless --path . --script res://tests/milestone_12_enemy_variants_smoke_test.gd
-godot --headless --path . --script res://tests/milestone_13_weapon_tower_visual_smoke_test.gd
-godot --headless --path . --script res://tests/milestone_14_final_polish_smoke_test.gd
-godot --headless --path . --script res://tests/character_select_ui_smoke_test.gd
-godot --headless --path . --script res://tests/milestone_rpg_1_character_select_smoke_test.gd
-godot --headless --path . --script res://tests/milestone_rpg_2_stats_smoke_test.gd
-godot --headless --path . --script res://tests/milestone_rpg_3_weapons_smoke_test.gd
-godot --headless --path . --script res://tests/milestone_rpg_4_hitbox_smoke_test.gd
-godot --headless --path . --script res://tests/milestone_rpg_5_ammo_reload_smoke_test.gd
-godot --headless --path . --script res://tests/milestone_rpg_6_xp_level_smoke_test.gd
-godot --headless --path . --script res://tests/milestone_rpg_7_passives_smoke_test.gd
-godot --headless --path . --script res://tests/milestone_rpg_8_adrenaline_super_smoke_test.gd
-godot --headless --path . --script res://tests/milestone_rpg_9_hud_smoke_test.gd
-godot --headless --path . --script res://tests/milestone_rpg_10_balance_smoke_test.gd
-godot --headless --path . --script res://tests/milestone_rpg_11_data_driven_smoke_test.gd
-godot --headless --path . --script res://tests/milestone_rpg_12_feedback_smoke_test.gd
-godot --headless --path . --script res://tests/milestone_rpg_13_new_classes_smoke_test.gd
-godot --headless --path . --script res://tests/player_world_hud_layout_smoke_test.gd
-godot --path . --rendering-method gl_compatibility --script res://tests/player_world_hud_visual_qa.gd
-godot --headless --path . --script res://tests/rpg_melee_attack_resolution_smoke_test.gd
-godot --headless --path . --script res://tests/weapon_inventory_catalog_smoke_test.gd
-godot --headless --path . --script res://tests/milestone_11_weapon_drop_progression_smoke_test.gd
-godot --headless --path . --script res://tests/weapon_visual_catalog_smoke_test.gd
-godot --headless --path . --script res://tests/weapon_pickup_visual_identity_smoke_test.gd
-godot --headless --path . --script res://tests/weapon_held_hud_visual_identity_smoke_test.gd
-godot --headless --path . --script res://tests/weapon_projectile_vfx_identity_smoke_test.gd
-godot --headless --path . --script res://tests/weapon_melee_visual_identity_smoke_test.gd
-godot --path . --rendering-method gl_compatibility --script res://tests/weapon_visual_identity_qa.gd
-```
+> I runner legacy `tools/run_tests.sh` / `.ps1` ("un processo per file") sono
+> deprecati e ora inoltrano a GUT. I Visual QA vivono in `tests/visual_qa/`,
+> i soak/stress in `tests/suites/soak/`.
 
 Export Windows:
 
@@ -482,15 +393,6 @@ Non ancora completato:
 3. Affinare bilanciamento e performance del revamp zombie dopo playtest reali.
 4. Firmare digitalmente la build pubblica.
 
-Smoke test aggiunti per l'iterazione biome survival:
-
-```text
-godot --headless --path . --script res://tests/infinite_arena_default_mode_smoke_test.gd
-godot --headless --path . --script res://tests/zombie_survival_world_contract_smoke_test.gd
-godot --headless --path . --script res://tests/biome_status_effects_smoke_test.gd
-godot --headless --path . --script res://tests/biome_roster_smoke_test.gd
-godot --headless --path . --script res://tests/biome_obstacle_generation_smoke_test.gd
-godot --headless --path . --script res://tests/random_encounter_smoke_test.gd
-godot --headless --path . --script res://tests/biome_debug_overlay_smoke_test.gd
-godot --headless --path . --script res://tests/biome_mini_events_smoke_test.gd
-```
+La copertura dell'iterazione biome survival vive ora nelle suite GUT
+(`tests/suites/world_gen`, `environment`, `assets`, `modes`, `ui_audio`); vedi la
+sezione [Test](#test).

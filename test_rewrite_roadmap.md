@@ -324,33 +324,46 @@ stress (`milestone_20_arena_stress`, `zombie_revamp_ten_minute_soak`,
 - **Criterio di accettazione:** ✅ copertura ≥ legacy (balance metrics, zombie
   balance, rpg balance); tutti i 3 file legacy A10 rimossi.
 
-### M-FINAL — Cutover, soak e Visual QA
+### M-FINAL — Cutover, soak e Visual QA ✅ FATTA
 - **Obiettivo:** chiudere la transizione.
-- **Attività:**
-  - Migrare i soak/stress in una cartella GUT dedicata `tests/suites/soak/` con
-    tag escluso dal run rapido (eseguito solo su richiesta / notturno).
-  - Decidere e attuare i Visual QA: mantenerli come tool a parte (lista esplicita)
-    oppure incapsularli in GUT con asserzioni sui contratti, lasciando lo
-    screenshot come artefatto.
-  - **Ritirare** `tools/run_tests.sh` / `.ps1` legacy (o ridurli a wrapper di GUT).
-  - Aggiornare `.github/workflows/ci.yml` per usare solo GUT.
-  - Verifica finale: zero file legacy `extends SceneTree` in `tests/*.gd`.
-- **Criterio di accettazione:** CI verde con il solo runner GUT; nessun residuo
-  legacy; documentazione aggiornata.
+- **Esito:**
+  - **Soak/stress → GUT** sotto `tests/suites/soak/` (4 suite: `arena_stress`,
+    `ten_wave`, `ten_minute_soak`, `scene_lifecycle_loop` ← ex
+    `headless_shutdown_loop`). Escluse dal run rapido: `.gutconfig.json` ora
+    enumera le sole aree rapide, il nuovo `.gutconfig.soak.json` lancia la cartella
+    soak. Girano di notte / su richiesta via `.github/workflows/soak.yml`
+    (schedule + workflow_dispatch).
+  - **Visual QA → tool a parte (lista esplicita).** Richiedono rendering reale
+    (non headless), quindi NON entrano nella CI GUT: 24 file spostati in
+    `tests/visual_qa/`, con runner `tools/run_visual_qa.sh` e l'elenco in
+    `docs/testing/visual_qa.md`. Escono dal glob `tests/*.gd`.
+  - **Smoke test orfani** (non bucketizzati in A1-A10) migrati nelle suite GUT
+    esistenti: `loading_screen`/`presentation_smoke` (ui_audio), `boss_polish`
+    (enemies), `world_reuse` (environment), `texture_cache` (assets).
+  - **Runner legacy ritirati:** `tools/run_tests.sh` / `.ps1` ridotti a wrapper di
+    deprecazione che inoltrano a GUT. L'helper `tests/test_scene_lifecycle.gd`
+    (ormai assorbito da `main_scene_fixture`) rimosso.
+  - **CI a singolo runner:** `ci.yml` esegue solo lo step GUT (rimosso lo step
+    legacy SceneTree).
+  - **Verifica finale:** `tests/*.gd` (top-level) non contiene piu alcun file
+    `extends SceneTree` — zero residuo legacy.
+- **Criterio di accettazione:** ✅ CI con il solo runner GUT; nessun residuo
+  legacy in `tests/*.gd`; documentazione (README, docs/testing) aggiornata.
+  NB: la verifica "CI verde" si materializza all'apertura della PR verso `master`
+  (i workflow scattano su push/PR verso master), non sui push del branch di feature.
 
 ---
 
 ## 7. Aggiornamento CI (transizione)
 
-Durante M1→M10 la CI esegue **due step** in `ci.yml`:
+Durante M1→M10 la CI eseguiva **due step** in `ci.yml`: lo step legacy
+(`bash tools/run_tests.sh`, decrescente) e lo step GUT (crescente).
 
-1. **Legacy (decrescente):** `bash tools/run_tests.sh` sui file `tests/*.gd`
-   ancora non migrati (il runner attuale fa già glob non ricorsivo, quindi
-   **non** raccoglie `tests/suites/**` — nessun doppio-run).
-2. **GUT (crescente):** `godot --headless -s res://addons/gut/gut_cmdln.gd
-   -gconfig=.gutconfig.json -gexit`.
-
-A M-FINAL resta solo lo step GUT.
+**Stato finale (M-FINAL):** resta **solo lo step GUT**:
+`godot --headless -s res://addons/gut/gut_cmdln.gd -gconfig=res://.gutconfig.json
+-gexit` (soak escluso). I soak/stress hanno un workflow notturno dedicato
+(`soak.yml`, `.gutconfig.soak.json`); i Visual QA sono fuori dalla CI headless
+(`tools/run_visual_qa.sh`).
 
 ---
 
@@ -385,4 +398,8 @@ quell'area senza toccare le altre.
 - [x] M8 — A8 Game Modes & Waves ✅ (13/13 file → 3 suite GUT; 13 test/577 assert verdi)
 - [x] M9 — A9 UI, HUD, Audio, Settings & Feedback ✅ (9/9 file → 5 suite GUT; player HUD/feedback, run results, settings/pausa, audio mix, diagnostica; 9 test/~188 assert)
 - [x] M10 — A10 Balance & Metrics ✅ (3/3 file → 2 suite GUT; raccolta metriche d'ondata condivisa fra arena e zombie survival; 3 test/~90 assert)
-- [ ] M-FINAL — Cutover + soak + Visual QA
+- [x] M-FINAL — Cutover + soak + Visual QA ✅ (soak → tests/suites/soak/ esclusa dal run rapido + soak.yml notturno; Visual QA → tests/visual_qa/ con runner dedicato; orfani assorbiti nelle suite; run_tests.sh/.ps1 deprecati a wrapper GUT; CI a singolo runner GUT; zero legacy in tests/*.gd)
+
+> **Roadmap completata.** Tutta la logica vive nelle suite GUT sotto
+> `tests/suites/**` (un solo processo Godot in CI). I Visual QA sono tool a parte
+> in `tests/visual_qa/`; i soak/stress in `tests/suites/soak/` (notturni).

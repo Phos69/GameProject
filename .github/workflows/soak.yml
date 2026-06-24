@@ -1,19 +1,19 @@
-name: CI
+name: Soak
 
+# I soak/stress (tests/suites/soak) sono lunghi: fuori dalla CI rapida, girano
+# di notte e su richiesta manuale.
 on:
-  push:
-    branches: [master]
-  pull_request:
-    branches: [master]
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
 
-# Annulla run precedenti sullo stesso ref quando arrivano nuovi commit.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: soak-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  tests:
-    name: Headless test suite
+  soak:
+    name: Soak & stress suite
     runs-on: ubuntu-latest
     env:
       GODOT_VERSION: 4.6.3
@@ -49,9 +49,5 @@ jobs:
       - name: Import project resources
         run: godot --headless --import --path . || true
 
-      # Unico runner: GUT esegue tutte le suite logiche (tests/suites/**, soak
-      # escluso via .gutconfig.json) in un solo processo Godot. I soak/stress
-      # girano nel workflow notturno (soak.yml); i Visual QA sono tool a parte
-      # (tools/run_visual_qa.sh) fuori dalla CI headless.
-      - name: Run GUT suite
-        run: godot --headless -s res://addons/gut/gut_cmdln.gd -gconfig=res://.gutconfig.json -gexit
+      - name: Run soak/stress suite (GUT)
+        run: godot --headless -s res://addons/gut/gut_cmdln.gd -gconfig=res://.gutconfig.soak.json -gexit
