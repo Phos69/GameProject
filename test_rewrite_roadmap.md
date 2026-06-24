@@ -302,9 +302,27 @@ stress (`milestone_20_arena_stress`, `zombie_revamp_ten_minute_soak`,
   pause/settings, audio mix, debug overlay, game log); tutti i 9 file legacy A9
   rimossi.
 
-### M10 — A10 Balance & Metrics
-- **Criterio di accettazione:** copertura ≥ legacy (balance metrics, zombie balance,
-  rpg balance); legacy A10 rimossi.
+### M10 — A10 Balance & Metrics ✅ FATTA (3/3 file)
+- **Esito (2 suite GUT sotto `tests/suites/balance/`):**
+  - `weapon_balance_test.gd` ← milestone_rpg_10_balance (registry classi + WeaponData,
+    logica pura senza scena)
+  - `wave_metrics_test.gd` ← milestone_12_balance_metrics + milestone_12_zombie_balance_metrics
+    (entrambi bootano main.tscn, uno per test via fixture)
+- **Accorpamento:** la raccolta metriche via segnali (wave_started/configured/
+  enemy_spawned/completed, drop, damage, boss) era duplicata quasi identica nei due
+  milestone_12: ora vive in handler condivisi nella suite. Un flag `_track_boss`
+  distingue il picco di vivi dell'arena (conta anche il boss) da quello survival
+  (solo nemici d'ondata); i segnali boss si collegano solo nello scenario arena.
+  Lo stato metriche viene resettato e i segnali riconnessi all'inizio di ogni test
+  sulla nuova istanza di main.tscn; un flag `_metrics_active` blocca gli handler
+  dopo il teardown.
+- **Note:** le attese d'ondata usano `await get_tree().physics_frame` in loop con
+  tetto di frame come nei legacy (1200/360 arena, 900/300 survival). I nemici
+  spawnati ricevono `set_physics_process(false)` e una loot table money garantita
+  per metriche deterministiche, come nel legacy.
+- 3 test / ~90 assert (alcune in loop) sotto un unico processo GUT.
+- **Criterio di accettazione:** ✅ copertura ≥ legacy (balance metrics, zombie
+  balance, rpg balance); tutti i 3 file legacy A10 rimossi.
 
 ### M-FINAL — Cutover, soak e Visual QA
 - **Obiettivo:** chiudere la transizione.
@@ -366,5 +384,5 @@ quell'area senza toccare le altre.
 - [x] M7 — A7 Characters, RPG & Progression ✅ (12/12 file → 3 suite GUT; 12 test/269 assert verdi)
 - [x] M8 — A8 Game Modes & Waves ✅ (13/13 file → 3 suite GUT; 13 test/577 assert verdi)
 - [x] M9 — A9 UI, HUD, Audio, Settings & Feedback ✅ (9/9 file → 5 suite GUT; player HUD/feedback, run results, settings/pausa, audio mix, diagnostica; 9 test/~188 assert)
-- [ ] M10 — A10 Balance & Metrics
+- [x] M10 — A10 Balance & Metrics ✅ (3/3 file → 2 suite GUT; raccolta metriche d'ondata condivisa fra arena e zombie survival; 3 test/~90 assert)
 - [ ] M-FINAL — Cutover + soak + Visual QA
