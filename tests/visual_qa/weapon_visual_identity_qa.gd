@@ -3,8 +3,8 @@ extends SceneTree
 const OUTPUT_DIRECTORY := "res://build/qa"
 const PICKUP_SCENE_PATH := "res://game/drops/drop_pickup.tscn"
 const PROJECTILE_SCENE_PATH := "res://game/projectiles/projectile.tscn"
-const QA_BOARD := preload("res://tests/weapon_visual_identity_qa_board.gd")
-const SURVIVAL_QA := preload("res://tests/weapon_visual_identity_survival_qa.gd")
+const QA_BOARD := preload("res://tests/visual_qa/weapon_visual_identity_qa_board.gd")
+const SURVIVAL_QA := preload("res://tests/visual_qa/weapon_visual_identity_survival_qa.gd")
 const PICKUP_GRID_FILE := "weapon_visual_identity_pickup_grid.png"
 const HELD_HUD_GRID_FILE := "weapon_visual_identity_held_hud_grid.png"
 const PROJECTILE_EFFECT_GRID_FILE := "weapon_visual_identity_projectile_effect_grid.png"

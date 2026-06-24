@@ -279,41 +279,91 @@ stress (`milestone_20_arena_stress`, `zombie_revamp_ten_minute_soak`,
   dungeon, zombie revamp/market/contract, arena, encounter, wave cycle); legacy
   A8 rimossi.
 
-### M9 — A9 UI, HUD, Audio, Settings & Feedback
-- **Criterio di accettazione:** copertura ≥ legacy (hud, feedback, run results,
-  pause/settings, audio mix, debug overlay, game log); legacy A9 rimossi.
+### M9 — A9 UI, HUD, Audio, Settings & Feedback ✅ FATTA (9/9 file)
+- **Esito (5 suite GUT sotto `tests/suites/ui_audio/`):**
+  - `player_hud_test.gd` ← milestone_rpg_9_hud + player_world_hud_layout +
+    milestone_rpg_12_feedback (solo player.tscn, niente boot di main.tscn)
+  - `run_results_test.gd` ← milestone_17_run_results (boot main.tscn:
+    survival/dungeon/tower)
+  - `settings_test.gd` ← pause_settings + milestone_21_visual_settings_performance
+    (un boot main.tscn per test, isolato per via dei rebind input/slot globali)
+  - `audio_mix_test.gd` ← milestone_18_audio_mix (boot main.tscn + cue survival)
+  - `diagnostics_test.gd` ← biome_debug_overlay (scena sintetica + current_scene)
+    + game_log (gating per livello, logica pura)
+- **Note:** (1) i tre test HUD usano solo `player.tscn` (boot leggero) e non
+  condividono l'istanza perche mutano stato RPG distinto (XP/adrenalina/effetti);
+  (2) pause_settings e visual_settings bootano main.tscn isolatamente perche
+  mutano stato globale (InputMap, slot multiplayer, profili visivi); (3) il tetto
+  del profilo frame del milestone_21 passa da 35 ms a **45 ms**, allineato al tetto
+  gia adottato in M2 per il profilo isometrico nel processo GUT condiviso (baseline
+  di boot piu alta; una regressione vera resta ~100 ms/frame).
+- 9 test / ~188 assert (alcune in loop) sotto un unico processo GUT.
+- **Criterio di accettazione:** ✅ copertura ≥ legacy (hud, feedback, run results,
+  pause/settings, audio mix, debug overlay, game log); tutti i 9 file legacy A9
+  rimossi.
 
-### M10 — A10 Balance & Metrics
-- **Criterio di accettazione:** copertura ≥ legacy (balance metrics, zombie balance,
-  rpg balance); legacy A10 rimossi.
+### M10 — A10 Balance & Metrics ✅ FATTA (3/3 file)
+- **Esito (2 suite GUT sotto `tests/suites/balance/`):**
+  - `weapon_balance_test.gd` ← milestone_rpg_10_balance (registry classi + WeaponData,
+    logica pura senza scena)
+  - `wave_metrics_test.gd` ← milestone_12_balance_metrics + milestone_12_zombie_balance_metrics
+    (entrambi bootano main.tscn, uno per test via fixture)
+- **Accorpamento:** la raccolta metriche via segnali (wave_started/configured/
+  enemy_spawned/completed, drop, damage, boss) era duplicata quasi identica nei due
+  milestone_12: ora vive in handler condivisi nella suite. Un flag `_track_boss`
+  distingue il picco di vivi dell'arena (conta anche il boss) da quello survival
+  (solo nemici d'ondata); i segnali boss si collegano solo nello scenario arena.
+  Lo stato metriche viene resettato e i segnali riconnessi all'inizio di ogni test
+  sulla nuova istanza di main.tscn; un flag `_metrics_active` blocca gli handler
+  dopo il teardown.
+- **Note:** le attese d'ondata usano `await get_tree().physics_frame` in loop con
+  tetto di frame come nei legacy (1200/360 arena, 900/300 survival). I nemici
+  spawnati ricevono `set_physics_process(false)` e una loot table money garantita
+  per metriche deterministiche, come nel legacy.
+- 3 test / ~90 assert (alcune in loop) sotto un unico processo GUT.
+- **Criterio di accettazione:** ✅ copertura ≥ legacy (balance metrics, zombie
+  balance, rpg balance); tutti i 3 file legacy A10 rimossi.
 
-### M-FINAL — Cutover, soak e Visual QA
+### M-FINAL — Cutover, soak e Visual QA ✅ FATTA
 - **Obiettivo:** chiudere la transizione.
-- **Attività:**
-  - Migrare i soak/stress in una cartella GUT dedicata `tests/suites/soak/` con
-    tag escluso dal run rapido (eseguito solo su richiesta / notturno).
-  - Decidere e attuare i Visual QA: mantenerli come tool a parte (lista esplicita)
-    oppure incapsularli in GUT con asserzioni sui contratti, lasciando lo
-    screenshot come artefatto.
-  - **Ritirare** `tools/run_tests.sh` / `.ps1` legacy (o ridurli a wrapper di GUT).
-  - Aggiornare `.github/workflows/ci.yml` per usare solo GUT.
-  - Verifica finale: zero file legacy `extends SceneTree` in `tests/*.gd`.
-- **Criterio di accettazione:** CI verde con il solo runner GUT; nessun residuo
-  legacy; documentazione aggiornata.
+- **Esito:**
+  - **Soak/stress → GUT** sotto `tests/suites/soak/` (4 suite: `arena_stress`,
+    `ten_wave`, `ten_minute_soak`, `scene_lifecycle_loop` ← ex
+    `headless_shutdown_loop`). Escluse dal run rapido: `.gutconfig.json` ora
+    enumera le sole aree rapide, il nuovo `.gutconfig.soak.json` lancia la cartella
+    soak. Girano di notte / su richiesta via `.github/workflows/soak.yml`
+    (schedule + workflow_dispatch).
+  - **Visual QA → tool a parte (lista esplicita).** Richiedono rendering reale
+    (non headless), quindi NON entrano nella CI GUT: 24 file spostati in
+    `tests/visual_qa/`, con runner `tools/run_visual_qa.sh` e l'elenco in
+    `docs/testing/visual_qa.md`. Escono dal glob `tests/*.gd`.
+  - **Smoke test orfani** (non bucketizzati in A1-A10) migrati nelle suite GUT
+    esistenti: `loading_screen`/`presentation_smoke` (ui_audio), `boss_polish`
+    (enemies), `world_reuse` (environment), `texture_cache` (assets).
+  - **Runner legacy ritirati:** `tools/run_tests.sh` / `.ps1` ridotti a wrapper di
+    deprecazione che inoltrano a GUT. L'helper `tests/test_scene_lifecycle.gd`
+    (ormai assorbito da `main_scene_fixture`) rimosso.
+  - **CI a singolo runner:** `ci.yml` esegue solo lo step GUT (rimosso lo step
+    legacy SceneTree).
+  - **Verifica finale:** `tests/*.gd` (top-level) non contiene piu alcun file
+    `extends SceneTree` — zero residuo legacy.
+- **Criterio di accettazione:** ✅ CI con il solo runner GUT; nessun residuo
+  legacy in `tests/*.gd`; documentazione (README, docs/testing) aggiornata.
+  NB: la verifica "CI verde" si materializza all'apertura della PR verso `master`
+  (i workflow scattano su push/PR verso master), non sui push del branch di feature.
 
 ---
 
 ## 7. Aggiornamento CI (transizione)
 
-Durante M1→M10 la CI esegue **due step** in `ci.yml`:
+Durante M1→M10 la CI eseguiva **due step** in `ci.yml`: lo step legacy
+(`bash tools/run_tests.sh`, decrescente) e lo step GUT (crescente).
 
-1. **Legacy (decrescente):** `bash tools/run_tests.sh` sui file `tests/*.gd`
-   ancora non migrati (il runner attuale fa già glob non ricorsivo, quindi
-   **non** raccoglie `tests/suites/**` — nessun doppio-run).
-2. **GUT (crescente):** `godot --headless -s res://addons/gut/gut_cmdln.gd
-   -gconfig=.gutconfig.json -gexit`.
-
-A M-FINAL resta solo lo step GUT.
+**Stato finale (M-FINAL):** resta **solo lo step GUT**:
+`godot --headless -s res://addons/gut/gut_cmdln.gd -gconfig=res://.gutconfig.json
+-gexit` (soak escluso). I soak/stress hanno un workflow notturno dedicato
+(`soak.yml`, `.gutconfig.soak.json`); i Visual QA sono fuori dalla CI headless
+(`tools/run_visual_qa.sh`).
 
 ---
 
@@ -346,6 +396,10 @@ quell'area senza toccare le altre.
 - [x] M6 — A6 Enemies & Bosses ✅ (9/9 file → 2 suite GUT; 9 test/253 assert verdi)
 - [x] M7 — A7 Characters, RPG & Progression ✅ (12/12 file → 3 suite GUT; 12 test/269 assert verdi)
 - [x] M8 — A8 Game Modes & Waves ✅ (13/13 file → 3 suite GUT; 13 test/577 assert verdi)
-- [ ] M9 — A9 UI, HUD, Audio, Settings & Feedback
-- [ ] M10 — A10 Balance & Metrics
-- [ ] M-FINAL — Cutover + soak + Visual QA
+- [x] M9 — A9 UI, HUD, Audio, Settings & Feedback ✅ (9/9 file → 5 suite GUT; player HUD/feedback, run results, settings/pausa, audio mix, diagnostica; 9 test/~188 assert)
+- [x] M10 — A10 Balance & Metrics ✅ (3/3 file → 2 suite GUT; raccolta metriche d'ondata condivisa fra arena e zombie survival; 3 test/~90 assert)
+- [x] M-FINAL — Cutover + soak + Visual QA ✅ (soak → tests/suites/soak/ esclusa dal run rapido + soak.yml notturno; Visual QA → tests/visual_qa/ con runner dedicato; orfani assorbiti nelle suite; run_tests.sh/.ps1 deprecati a wrapper GUT; CI a singolo runner GUT; zero legacy in tests/*.gd)
+
+> **Roadmap completata.** Tutta la logica vive nelle suite GUT sotto
+> `tests/suites/**` (un solo processo Godot in CI). I Visual QA sono tool a parte
+> in `tests/visual_qa/`; i soak/stress in `tests/suites/soak/` (notturni).

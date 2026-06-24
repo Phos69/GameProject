@@ -63,6 +63,10 @@ func test_biome_themed_enemies() -> void:
 	toxic_enemy._attack_target()
 	await wait_frames(1)
 	assert_true(hazard_system.get_player_status_ids(player).has(&"poison"), "toxic zombie applies poison on hit")
+	# Il moltiplicatore di velocita da status si aggiorna in _process: nel processo
+	# GUT condiviso servono alcuni frame idle prima di leggerlo.
+	for _i in range(8):
+		await get_tree().process_frame
 	assert_lt(player.get_environment_speed_multiplier(), 1.0, "poison status modifies player movement")
 
 	var hazard_count_before := hazard_system.get_active_hazards().size()

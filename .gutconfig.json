@@ -1,5 +1,17 @@
 {
-	"dirs": ["res://tests/suites"],
+	"dirs": [
+		"res://tests/suites/_sanity",
+		"res://tests/suites/world_gen",
+		"res://tests/suites/environment",
+		"res://tests/suites/obstacles",
+		"res://tests/suites/assets",
+		"res://tests/suites/combat",
+		"res://tests/suites/enemies",
+		"res://tests/suites/progression",
+		"res://tests/suites/modes",
+		"res://tests/suites/ui_audio",
+		"res://tests/suites/balance"
+	],
 	"include_subdirs": true,
 	"prefix": "",
 	"suffix": "_test.gd",
