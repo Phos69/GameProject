@@ -279,9 +279,28 @@ stress (`milestone_20_arena_stress`, `zombie_revamp_ten_minute_soak`,
   dungeon, zombie revamp/market/contract, arena, encounter, wave cycle); legacy
   A8 rimossi.
 
-### M9 — A9 UI, HUD, Audio, Settings & Feedback
-- **Criterio di accettazione:** copertura ≥ legacy (hud, feedback, run results,
-  pause/settings, audio mix, debug overlay, game log); legacy A9 rimossi.
+### M9 — A9 UI, HUD, Audio, Settings & Feedback ✅ FATTA (9/9 file)
+- **Esito (5 suite GUT sotto `tests/suites/ui_audio/`):**
+  - `player_hud_test.gd` ← milestone_rpg_9_hud + player_world_hud_layout +
+    milestone_rpg_12_feedback (solo player.tscn, niente boot di main.tscn)
+  - `run_results_test.gd` ← milestone_17_run_results (boot main.tscn:
+    survival/dungeon/tower)
+  - `settings_test.gd` ← pause_settings + milestone_21_visual_settings_performance
+    (un boot main.tscn per test, isolato per via dei rebind input/slot globali)
+  - `audio_mix_test.gd` ← milestone_18_audio_mix (boot main.tscn + cue survival)
+  - `diagnostics_test.gd` ← biome_debug_overlay (scena sintetica + current_scene)
+    + game_log (gating per livello, logica pura)
+- **Note:** (1) i tre test HUD usano solo `player.tscn` (boot leggero) e non
+  condividono l'istanza perche mutano stato RPG distinto (XP/adrenalina/effetti);
+  (2) pause_settings e visual_settings bootano main.tscn isolatamente perche
+  mutano stato globale (InputMap, slot multiplayer, profili visivi); (3) il tetto
+  del profilo frame del milestone_21 passa da 35 ms a **45 ms**, allineato al tetto
+  gia adottato in M2 per il profilo isometrico nel processo GUT condiviso (baseline
+  di boot piu alta; una regressione vera resta ~100 ms/frame).
+- 9 test / ~188 assert (alcune in loop) sotto un unico processo GUT.
+- **Criterio di accettazione:** ✅ copertura ≥ legacy (hud, feedback, run results,
+  pause/settings, audio mix, debug overlay, game log); tutti i 9 file legacy A9
+  rimossi.
 
 ### M10 — A10 Balance & Metrics
 - **Criterio di accettazione:** copertura ≥ legacy (balance metrics, zombie balance,
@@ -346,6 +365,6 @@ quell'area senza toccare le altre.
 - [x] M6 — A6 Enemies & Bosses ✅ (9/9 file → 2 suite GUT; 9 test/253 assert verdi)
 - [x] M7 — A7 Characters, RPG & Progression ✅ (12/12 file → 3 suite GUT; 12 test/269 assert verdi)
 - [x] M8 — A8 Game Modes & Waves ✅ (13/13 file → 3 suite GUT; 13 test/577 assert verdi)
-- [ ] M9 — A9 UI, HUD, Audio, Settings & Feedback
+- [x] M9 — A9 UI, HUD, Audio, Settings & Feedback ✅ (9/9 file → 5 suite GUT; player HUD/feedback, run results, settings/pausa, audio mix, diagnostica; 9 test/~188 assert)
 - [ ] M10 — A10 Balance & Metrics
 - [ ] M-FINAL — Cutover + soak + Visual QA
