@@ -511,8 +511,11 @@ func _wait_for_wave_combat(wave_manager: WaveManager, wave_index: int, max_frame
 	return false
 
 func _wait_for_wave_completed(wave_manager: WaveManager, wave_index: int, max_frames: int) -> bool:
+	# Si affida al segnale wave_completed gia raccolto in _metrics: il controllo
+	# diretto current_wave==N && !wave_running ha una finestra troppo stretta con
+	# intermission cortissima (la wave successiva puo gia essere partita).
 	for _frame in range(max_frames):
-		if wave_manager.current_wave == wave_index and not wave_manager.wave_running:
+		if (_metrics.get("waves_completed", []) as Array).has(wave_index):
 			return true
 		await get_tree().physics_frame
 	return false
