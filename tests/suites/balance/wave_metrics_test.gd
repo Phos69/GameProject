@@ -80,7 +80,9 @@ func test_infinite_arena_metrics() -> void:
 		game_mode_manager.set_mode(GameConstants.MODE_INFINITE_ARENA, {"world_seed": 20260622}),
 		"infinite arena starts through the game mode manager"
 	)
-	await wait_frames(8)
+	# La generazione del mondo arena puo completare in modo asincrono: si attende
+	# che la biome map sia pronta invece di un numero fisso di frame.
+	await _poll_idle(func() -> bool: return biome_manager.get_generated_biome_map().size() >= 1, 600)
 
 	var player := player_manager.players.get(1) as PlayerController
 	assert_not_null(player, "infinite arena has player one")
@@ -112,6 +114,10 @@ func test_infinite_arena_metrics() -> void:
 	assert_true(enemy_ids.has("survival_runner"), "infinite arena wave mix includes runners")
 	assert_true(enemy_ids.has("survival_tank"), "infinite arena wave mix includes tanks")
 	assert_true(enemy_ids.has("survival_shooter"), "infinite arena wave mix includes shooters")
+	# Ferma lo spawn delle ondate successive prima di contare i residui: con
+	# intermission corta una nuova ondata puo partire durante l'attesa.
+	game_mode_manager.set_mode(GameConstants.MODE_MENU)
+	await _poll_idle(func() -> bool: return wave_manager.get_enemies_remaining() == 0, 180)
 	assert_eq(
 		wave_manager.get_enemies_remaining(), 0,
 		"infinite arena has no leftover wave enemies after the metric run"
@@ -171,7 +177,8 @@ func test_zombie_survival_metrics() -> void:
 		),
 		"zombie survival starts through the game mode manager"
 	)
-	await wait_frames(10)
+	# Attende la generazione della mappa multi-bioma invece di un numero fisso di frame.
+	await _poll_idle(func() -> bool: return biome_manager.get_generated_biome_map().size() >= 9, 600)
 
 	var player := player_manager.players.get(1) as PlayerController
 	assert_not_null(player, "zombie survival has player one")
@@ -213,6 +220,9 @@ func test_zombie_survival_metrics() -> void:
 	assert_true(await _wait_for_wave_completed(wave_manager, 2, 300), "zombie survival wave 2 completes cleanly")
 	await wait_frames(4)
 
+	# Ferma lo spawn prima di contare i residui (vedi infinite arena).
+	game_mode_manager.set_mode(GameConstants.MODE_MENU)
+	await _poll_idle(func() -> bool: return wave_manager.get_enemies_remaining() == 0, 180)
 	_validate_zombie_metrics(wave_manager)
 	_finish_metrics()
 	scene.teardown()
@@ -506,3 +516,11 @@ func _wait_for_wave_completed(wave_manager: WaveManager, wave_index: int, max_fr
 			return true
 		await get_tree().physics_frame
 	return false
+
+# Attesa su frame idle (_process) finche la condizione e vera o si esaurisce il
+# budget: la generazione del mondo e gli aggiornamenti di stato girano in _process.
+func _poll_idle(cond: Callable, max_frames: int) -> void:
+	for _i in range(max_frames):
+		if bool(cond.call()):
+			return
+		await get_tree().process_frame

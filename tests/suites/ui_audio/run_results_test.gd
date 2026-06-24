@@ -64,7 +64,7 @@ func test_run_results_across_modes() -> void:
 		_remove_temporary_save()
 		return
 	player.health_component.apply_damage(9999)
-	await wait_frames(2)
+	await _poll_idle(func() -> bool: return result_screen.is_open(), 240)
 
 	assert_true(result_screen.is_open(), "survival defeat opens the results screen")
 	assert_eq(result_screen.title_label.text, "RUN OVER", "survival uses its explicit end title")
@@ -104,7 +104,7 @@ func test_run_results_across_modes() -> void:
 	)
 
 	player.health_component.apply_damage(9999)
-	await wait_frames(2)
+	await _poll_idle(func() -> bool: return result_screen.is_open(), 240)
 	result_screen._on_change_mode_pressed()
 	await wait_frames(2)
 	assert_true(
@@ -156,3 +156,12 @@ func _remove_temporary_save() -> void:
 		var path: String = TEMP_SAVE_PATH + str(suffix)
 		if FileAccess.file_exists(path):
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+
+# La sconfitta survival e l'apertura dei risultati sono guidate da _process (frame
+# idle): nel processo GUT condiviso servono piu frame idle del vecchio processo
+# dedicato, quindi si attende la condizione invece di un numero fisso di frame.
+func _poll_idle(cond: Callable, max_frames: int) -> void:
+	for _i in range(max_frames):
+		if bool(cond.call()):
+			return
+		await get_tree().process_frame

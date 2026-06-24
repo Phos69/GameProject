@@ -70,7 +70,14 @@ func test_required_footprints() -> void:
 
 func test_authored_layouts() -> void:
 	for biome_id in BIOME_IDS:
-		var biome := load("res://game/modes/zombie/biomes/%s.tres" % String(biome_id)) as BiomeDefinition
+		# Carica una copia fresca dal disco: a runtime un'altra suite puo aver
+		# sostituito definition.environment_layout con un layout generato sulla
+		# BiomeDefinition condivisa in cache. Qui vogliamo il layout autoriale.
+		var biome := ResourceLoader.load(
+			"res://game/modes/zombie/biomes/%s.tres" % String(biome_id),
+			"",
+			ResourceLoader.CACHE_MODE_IGNORE
+		) as BiomeDefinition
 		if biome == null or biome.environment_layout == null:
 			continue
 		var layout := biome.environment_layout
