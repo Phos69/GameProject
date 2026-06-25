@@ -22,6 +22,12 @@ func generate_world(
 ) -> Dictionary:
 	_ensure_components()
 	clear_world()
+	# Cache hit: riusa lo snapshot (clone gia indipendente) senza rigenerare ne'
+	# ri-bakeare i layout 500x500 (la parte costosa).
+	var cached := WorldDataCache.fetch(context)
+	if not cached.is_empty():
+		_adopt_cached_world(context, cached)
+		return get_world_data()
 	active_context = context.duplicate(true)
 	active_seed = seed_service.start_run(context)
 	var biome_ids := _get_biome_ids(biome_definitions)
@@ -41,7 +47,31 @@ func generate_world(
 		world_generated.emit(active_seed, active_cells)
 	else:
 		call_deferred("emit_signal", &"world_generated", active_seed, active_cells)
-	return get_world_data()
+	var world_data := get_world_data()
+	WorldDataCache.store(context, world_data)
+	return world_data
+
+# Installa uno snapshot di cache come stato attivo del generatore senza rigenerare.
+# Allinea active_seed/active_cells/active_graph e il seed service, cosi
+# get_world_data(), get_map_signature() e get_seed_record() restano coerenti col
+# mondo servito (le firme sono pure sulle celle passate).
+func _adopt_cached_world(context: Dictionary, world_data: Dictionary) -> void:
+	active_context = context.duplicate(true)
+	active_seed = int(world_data.get("seed", 0))
+	seed_service.set_seed(active_seed)
+	var cells: Array[BiomeCell] = []
+	for cell in world_data.get("cells", []) as Array:
+		var typed := cell as BiomeCell
+		if typed != null:
+			cells.append(typed)
+	active_cells = cells
+	active_graph = world_data.get("world_graph", null) as WorldGraph
+	if debug_overlay != null:
+		debug_overlay.configure(active_seed, active_cells)
+	if OS.get_thread_caller_id() == OS.get_main_thread_id():
+		world_generated.emit(active_seed, active_cells)
+	else:
+		call_deferred("emit_signal", &"world_generated", active_seed, active_cells)
 
 func regenerate_same_seed(biome_definitions: Dictionary) -> Dictionary:
 	var context := active_context.duplicate(true)

@@ -84,6 +84,29 @@ var _floor_tag_cache: PackedInt32Array = PackedInt32Array()
 # terrain classification so is_wall_segment_cell() is O(1).
 var _wall_segment_cache: PackedByteArray = PackedByteArray()
 
+# Copia profonda e indipendente del layout. Copia OGNI variabile di script (sia
+# @export sia interna) iterando la property list, cosi resta corretta anche quando
+# si aggiungono nuovi campi senza dover aggiornare il clone a mano. Serve alla
+# WorldDataCache per restituire mondi riusabili senza che teardown/rebake di una
+# run intacchino lo snapshot in cache.
+func clone() -> BiomeEnvironmentLayout:
+	var copy := BiomeEnvironmentLayout.new()
+	for property in get_property_list():
+		if int(property.get("usage", 0)) & PROPERTY_USAGE_SCRIPT_VARIABLE == 0:
+			continue
+		var property_name := String(property.get("name", ""))
+		copy.set(property_name, _duplicate_value(get(property_name)))
+	return copy
+
+static func _duplicate_value(value: Variant) -> Variant:
+	if value is Array or value is Dictionary:
+		return value.duplicate(true)
+	# Tutti i Packed*Array stanno in coda all'enum dei tipi: una sola soglia li
+	# copre tutti (e i loro elementi sono value-type, quindi duplicate() basta).
+	if typeof(value) >= TYPE_PACKED_BYTE_ARRAY:
+		return value.duplicate()
+	return value
+
 func has_generated_map_data() -> bool:
 	return (
 		generation_seed != 0

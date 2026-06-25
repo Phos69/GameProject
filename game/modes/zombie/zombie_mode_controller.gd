@@ -129,12 +129,12 @@ func _reuse_parked_world(resolved_context: Dictionary) -> void:
 	_emit_run_started()
 
 func _context_signature(context: Dictionary) -> String:
-	var keys := context.keys()
-	keys.sort_custom(func(a, b) -> bool: return str(a) < str(b))
-	var parts := PackedStringArray()
-	for key in keys:
-		parts.append("%s=%s" % [str(key), str(context[key])])
-	return "|".join(parts)
+	# Identita della scena bakeata parcheggiata. Usa la firma-scena della
+	# WorldDataCache, che esclude le chiavi di puro gameplay (personaggio, run_seed,
+	# async_world_build) ma tiene i toggle di render/runtime: cosi un retry che
+	# cambia solo il gameplay riusa il mondo parcheggiato invece di ricostruirlo.
+	# Era questo il motivo per cui il riuso "golden" spesso non scattava.
+	return WorldDataCache.build_signature(context)
 
 func _start_run_sync(resolved_context: Dictionary) -> void:
 	if biome_manager != null:

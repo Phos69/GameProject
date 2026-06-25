@@ -88,6 +88,40 @@ func get_signature() -> String:
 		"|".join(passage_signature)
 	]
 
+# Copia indipendente della cella, SENZA i link ai vicini: i neighbors puntano ad
+# altre celle e vanno ricollegati dal chiamante una volta clonate tutte (vedi
+# WorldDataCache). Bordi, passaggi e layout generato sono invece copiati a fondo.
+func clone() -> BiomeCell:
+	var copy := BiomeCell.new()
+	copy.id = id
+	copy.biome_id = biome_id
+	copy.grid = grid
+	copy.world_origin = world_origin
+	copy.width = width
+	copy.height = height
+	copy.seed = seed
+	copy.borders = borders.duplicate()
+	for side in SIDES:
+		copy.neighbors[side] = null
+	copy.passages = []
+	for passage in passages:
+		if passage != null:
+			copy.passages.append(passage.clone())
+	copy.generated_layout = (
+		generated_layout.clone() if generated_layout != null else null
+	)
+	copy.validation_report = validation_report.duplicate(true)
+	return copy
+
+# Ricollega i neighbors di una cella clonata usando la mappa id -> cella clonata.
+func relink_neighbors(source: BiomeCell, clones_by_id: Dictionary) -> void:
+	for side in SIDES:
+		var source_neighbor := source.get_neighbor(side)
+		if source_neighbor != null and clones_by_id.has(source_neighbor.id):
+			neighbors[side] = clones_by_id[source_neighbor.id] as BiomeCell
+		else:
+			neighbors[side] = null
+
 func clear_runtime_links() -> void:
 	neighbors.clear()
 	borders.clear()

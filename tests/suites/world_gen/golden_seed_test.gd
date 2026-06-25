@@ -9,6 +9,18 @@ extends GutTest
 const GoldenWorld = preload("res://tests/support/golden_world.gd")
 const WorldGen = preload("res://tests/support/world_gen_helpers.gd")
 
+# Questa suite verifica la GENERAZIONE in se (determinismo dal seed): con la
+# WorldDataCache attiva il secondo build dello stesso contesto sarebbe servito
+# come clone del primo, rendendo banale il confronto. La disattiviamo qui cosi
+# ogni build rigenera davvero, e ripuliamo per isolare le suite vicine.
+func before_all() -> void:
+	WorldDataCache.set_enabled(false)
+	WorldDataCache.clear()
+
+func after_all() -> void:
+	WorldDataCache.set_enabled(true)
+	WorldDataCache.clear()
+
 func test_constant_alignment() -> void:
 	var seed_service := WorldGenerationSeed.new()
 	assert_eq(seed_service.default_seed, GameConstants.GOLDEN_WORLD_SEED,

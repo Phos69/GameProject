@@ -119,6 +119,24 @@ func get_exit_tile_id() -> StringName:
 		_:
 			return &"road_exit"
 
+# Copia indipendente del passaggio. Tutti i campi sono value-type (StringName/int/
+# Vector2i), quindi una copia per assegnazione e gia un deep-copy.
+func clone() -> BiomePassage:
+	var copy := BiomePassage.new()
+	copy.from_cell_id = from_cell_id
+	copy.to_cell_id = to_cell_id
+	copy.from_biome_id = from_biome_id
+	copy.to_biome_id = to_biome_id
+	copy.side = side
+	copy.opposite_side = opposite_side
+	copy.position = position
+	copy.width = width
+	copy.passage_type = passage_type
+	copy.from_world_origin = from_world_origin
+	copy.to_world_origin = to_world_origin
+	copy.seed = seed
+	return copy
+
 func get_signature() -> String:
 	return "%s>%s:%s:%d:%d:%s" % [
 		String(from_cell_id),
