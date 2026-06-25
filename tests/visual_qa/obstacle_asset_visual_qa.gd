@@ -64,6 +64,16 @@ func _validate_asset(
 		return
 	var native_size := manifest.get_native_visual_size(obstacle_id)
 	var expected_size := Vector2i(roundi(native_size.x), roundi(native_size.y))
+	var render_mode := StringName(str(contract.get("render_mode", "sprite")))
+	if render_mode == &"tile_layer_rock_area":
+		_expect(
+			asset_path.ends_with("rock_plateau_top_generated.png"),
+			"%s uses the dedicated repeated rock top material" % String(obstacle_id)
+		)
+		_expect(image.get_width() >= 512 and image.get_height() >= 512, "%s top texture supports tiled rendering" % String(obstacle_id))
+		var output_path := output_absolute.path_join("%s.png" % String(obstacle_id))
+		_expect(image.save_png(output_path) == OK, "%s visual QA PNG is saved" % String(obstacle_id))
+		return
 	if asset_path.ends_with(".svg"):
 		_expect(
 			image.get_size() == expected_size,

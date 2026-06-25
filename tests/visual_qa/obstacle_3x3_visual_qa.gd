@@ -3,10 +3,13 @@ extends SceneTree
 const OUTPUT_DIR := "res://build/qa/obstacle_3x3"
 const GAMEPLAY_FILE := "obstacle_3x3_gameplay.png"
 const FOOTPRINT_FILE := "obstacle_3x3_footprints.png"
-const FEATURE_IDS: Array[StringName] = [&"forest_tree", &"large_rock"]
-const FEATURE_LABELS: Array[String] = ["ALBERO 3x3", "ROCCIA 3x3"]
-const FEATURE_CENTERS: Array[Vector2] = [Vector2(350.0, 455.0), Vector2(930.0, 455.0)]
-const WORLD_SIZE := Vector2(96.0, 96.0)
+const FEATURE_IDS: Array[StringName] = [&"forest_tree"]
+const FEATURE_LABELS: Array[String] = ["ALBERO 3x3"]
+const FEATURE_NOTES: Array[String] = [
+	"9 slot bloccanti | movimento + proiettili"
+]
+const FEATURE_CENTERS: Array[Vector2] = [Vector2(640.0, 455.0)]
+const FEATURE_WORLD_SIZES: Array[Vector2] = [Vector2(96.0, 96.0)]
 
 var failures := PackedStringArray()
 
@@ -15,10 +18,8 @@ class QaBackdrop extends Node2D:
 
 	func _draw() -> void:
 		draw_rect(Rect2(Vector2.ZERO, Vector2(1280.0, 720.0)), Color("10171c"))
-		_draw_panel(Rect2(54.0, 92.0, 592.0, 552.0))
-		_draw_panel(Rect2(634.0, 92.0, 592.0, 552.0))
-		_draw_grid(Vector2(350.0, 455.0))
-		_draw_grid(Vector2(930.0, 455.0))
+		_draw_panel(Rect2(344.0, 92.0, 592.0, 552.0))
+		_draw_grid(Vector2(640.0, 455.0))
 
 	func _draw_panel(rect: Rect2) -> void:
 		draw_rect(rect, Color("18242a"), true)
@@ -80,7 +81,7 @@ func _run() -> void:
 		var obstacle_id := FEATURE_IDS[index]
 		var obstacle := system.create_obstacle_instance(
 			obstacle_id,
-			WORLD_SIZE,
+			FEATURE_WORLD_SIZES[index],
 			&"rectangle",
 			0.0,
 			Color("3f512f"),
@@ -123,7 +124,7 @@ func _add_labels(scene_root: Node2D) -> void:
 	for index in range(FEATURE_LABELS.size()):
 		var label := _make_label(
 			FEATURE_LABELS[index],
-			Vector2(54.0 + float(index) * 580.0, 110.0),
+			Vector2(344.0, 110.0),
 			Vector2(592.0, 34.0),
 			20,
 			Color("e8f0d2")
@@ -131,8 +132,8 @@ func _add_labels(scene_root: Node2D) -> void:
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		scene_root.add_child(label)
 		var note := _make_label(
-			"9 slot bloccanti | movimento + proiettili",
-			Vector2(54.0 + float(index) * 580.0, 596.0),
+			FEATURE_NOTES[index],
+			Vector2(344.0, 596.0),
 			Vector2(592.0, 28.0),
 			15,
 			Color("9fb398")

@@ -12,6 +12,22 @@
   async, ambiente arena con props esplosivi) e `encounters_test.gd` (helper
   wave-cycle, encounter casuali, mini-eventi biome, menu/save/audio/avvio
   modalità). 13 test/577 assert verdi.
+- Aggiunto `RectilinearRockAreaMeshBuilder`: le `large_rock` void-first da
+  `15x15` a `30x30` celle non scalano piu il PNG 3x3. Ogni `rock_rect` diventa un
+  plateau rialzato (il void cliff specchiato verso l'alto): la corona cobble e
+  sollevata di `RAISE_HEIGHT_CELLS` e rientra in un mesa, mentre tre pareti
+  continue (fronte sud + due fianchi obliqui in `LATERAL_LEAN_RATIO`) salgono dal
+  prato fino al bordo. Niente piu fenditure/lip disegnate a mano ne bordo a
+  zig-zag: il dettaglio arriva solo dalle texture corona/parete, quindi la
+  superficie resta priva di linee procedurali. Il nodo oggetto conserva solo
+  collisione e debug `F9`. QA reale in `tests/rock_area_visual_qa.gd`.
+- `RockAreaOccluderVisual` ridisegna esattamente la corona sollevata (stesso
+  rettangolo rientrato del builder) per il Y-sort, mascherando i player dietro la
+  roccia senza coprire le pareti che vivono nel `BiomeTileLayer`.
+- Aggiunto `rock_plateau_top_generated.png` (corona cobble world-space) e
+  `rock_cliff_face_upward_generated.png` (pareti a colonne) come materiali
+  dedicati delle masse rocciose, con shading per lato (fronte chiaro, est
+  illuminato, ovest in ombra) e gradiente verso la base.
 - Riscrittura test M7 — area A7 Characters, RPG & Progression migrata a GUT
   (12/12 file → 3 suite sotto `tests/suites/progression/`):
   `rpg_progression_test.gd` (stat di classe e formule di danno, XP da kill/wave,

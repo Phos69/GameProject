@@ -36,7 +36,8 @@ mantengono sorgente, licenza e attribuzione nel manifest. Esempi:
 - `objects/trees/log_3x1.svg`;
 - `objects/trees/dense_forest_3x3.svg`;
 - `objects/trees/forest_tree_3x3.png`;
-- `objects/rocks/large_rock_3x3.png`;
+- `edges/cliffs/textures/rock_plateau_top_generated.png` (top massa rocciosa scalabile);
+- `edges/cliffs/textures/rock_cliff_face_upward_generated.png` (faccia cliff rialzata);
 - `objects/houses/ruined_house_4x4.svg`;
 - `objects/houses/lab_block_6x6.svg`.
 
@@ -48,11 +49,26 @@ world-space restano in Y-sort con `z_index = 0` e posizione derivata dal centro
 del rettangolo logico; `sort_offset` ancora lo sprite al pavimento. Tetti e chiome
 possono cosi coprire gli attori dietro senza cambiare ordine durante il movimento.
 
-`forest_tree` e `large_rock` sono i riferimenti finali per ostacoli singoli
-`3x3`: occupano nove slot (dodici per dodici celle logiche), usano collisione
-rettangolare sull'intero footprint e bloccano sia movimento sia proiettili. Il
-generatore starter li colloca solo su terreno walkable libero e ne garantisce
-almeno uno per tipo nella Pianura Infetta.
+`forest_tree` resta il riferimento per l'ostacolo singolo `3x3`: occupa nove
+slot e usa collisione rettangolare sull'intero footprint. `large_rock` e invece
+scalabile: il void-first genera rettangoli quadrati da `15x15` a `30x30` celle e
+`RectilinearRockAreaMeshBuilder` trasforma ogni `rock_rect` in un plateau
+rialzato, cioe il void cliff specchiato verso l'alto. La corona cobble
+(`rock_plateau_top_generated.png`) e sollevata di `RAISE_HEIGHT_CELLS` e rientra
+in un mesa; tre pareti continue a colonne (`rock_cliff_face_upward_generated.png`)
+salgono dal prato fino al bordo: il fronte sud a tutta larghezza piu i due
+fianchi obliqui inclinati di `LATERAL_LEAN_RATIO`. La parete nord guarda lontano
+dalla camera e non viene emessa. Le pareti sono disegnate per prime e la corona
+le copre, mascherando i triangoli alti come fa il void con il suo lip. Lo shading
+e per lato (fronte chiaro, est illuminato, ovest in ombra) con gradiente verso la
+base; non ci sono fenditure o lip disegnati a mano, quindi la superficie resta
+priva di linee procedurali. Il nodo `large_rock` non disegna uno sprite ma
+mantiene collisione, blocker, overlay `F9` e il cap Y-sorted di occlusione.
+`RockAreaOccluderVisual` ridisegna esattamente la corona sollevata (stesso
+rettangolo rientrato del builder), cosi un player entro la larghezza e a nord
+della linea centrale resta dietro la roccia, a sud davanti; fuori larghezza non
+viene coperto. Entrambi bloccano movimento e proiettili sull'intera area
+dichiarata.
 
 Void/fall zone usano contratti `void_tiles`/cliff separati e non sono ostacoli
 solidi. Pareti, case, vegetazione e rocce usano invece `object_scenes` e dichiarano
@@ -100,8 +116,10 @@ Smoke automatici:
 ```text
 godot --headless --path . --script res://tests/obstacle_rendering_contract_smoke_test.gd
 godot --headless --path . --script res://tests/obstacle_3x3_smoke_test.gd
+godot --headless --path . --script res://tests/scalable_obstacle_smoke_test.gd
 godot --headless --path . --script res://tests/obstacle_asset_visual_qa.gd
 godot --path . --rendering-method gl_compatibility --script res://tests/obstacle_3x3_visual_qa.gd
+godot --path . --rendering-method gl_compatibility --script res://tests/rock_area_visual_qa.gd
 godot --headless --path . --script res://tests/isometric_environment_manifest_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_10_object_asset_smoke_test.gd
 godot --headless --path . --script res://tests/starter_biome_vertical_slice_smoke_test.gd

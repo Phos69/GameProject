@@ -18,12 +18,17 @@ const RECTILINEAR_CLIFF_FACE_MESH_BUILDER_SCRIPT = preload(
 const FOREST_GROUND_MESH_BUILDER_SCRIPT = preload(
 	"res://game/modes/zombie/ground/isometric_forest_ground_mesh_builder.gd"
 )
+const RECTILINEAR_ROCK_AREA_MESH_BUILDER_SCRIPT = preload(
+	"res://game/modes/zombie/rocks/rectilinear_rock_area_mesh_builder.gd"
+)
 const SVG_TEXTURE_LOADER = preload(
 	"res://game/modes/zombie/isometric_svg_texture_loader.gd"
 )
 const CLIFF_FACE_TEXTURE_ID := &"cliff_face_texture"
 const CLIFF_LIP_TEXTURE_ID := &"cliff_lip_texture"
 const CLIFF_LIP_VERTICAL_TEXTURE_ID := &"cliff_lip_vertical_texture"
+const ROCK_CLIFF_FACE_TEXTURE_ID := &"rock_cliff_face_texture"
+const LARGE_ROCK_OBJECT_ID := &"large_rock"
 const FOREST_GRASS_TEXTURE_ID := &"forest_grass"
 const FOREST_SURFACE_TEXTURE_WORLD_SIZE := 256.0
 const FOREST_SURFACE_TEXTURE_IDS: Array[StringName] = [
@@ -71,12 +76,16 @@ var _forest_surface_meshes: Dictionary = {}
 var _cliff_mesh_builder: IsometricCliffMeshBuilder
 var _cliff_border_mesh_builder: IsometricCliffBorderMeshBuilder
 var _rectilinear_cliff_face_mesh_builder: RectilinearCliffFaceMeshBuilder
+var _rock_area_mesh_builder: RectilinearRockAreaMeshBuilder
 var _cliff_face_texture: Texture2D
 var _cliff_lip_texture: Texture2D
 var _cliff_lip_vertical_texture: Texture2D
+var _rock_top_texture: Texture2D
+var _rock_cliff_face_texture: Texture2D
 var _forest_surface_textures: Dictionary = {}
 var _forest_surface_art_asset_paths: Dictionary = {}
 var _cliff_art_asset_paths: Dictionary = {}
+var _rock_art_asset_paths: Dictionary = {}
 var _grid_points: PackedVector2Array = PackedVector2Array()
 var _texture_dark_lines: PackedVector2Array = PackedVector2Array()
 var _texture_light_lines: PackedVector2Array = PackedVector2Array()
@@ -105,6 +114,7 @@ func configure(
 	manifest = next_manifest if next_manifest != null else IsometricEnvironmentManifest.get_shared()
 	resolver = next_resolver if next_resolver != null else IsometricTileResolver.new(manifest)
 	_load_cliff_art_textures()
+	_load_rock_art_texture()
 	_load_forest_surface_art_textures()
 	_cliff_mesh_builder = CLIFF_MESH_BUILDER_SCRIPT.new() as IsometricCliffMeshBuilder
 	_cliff_border_mesh_builder = (
@@ -112,6 +122,14 @@ func configure(
 	)
 	_rectilinear_cliff_face_mesh_builder = (
 		RECTILINEAR_CLIFF_FACE_MESH_BUILDER_SCRIPT.new() as RectilinearCliffFaceMeshBuilder
+	)
+	_rock_area_mesh_builder = (
+		RECTILINEAR_ROCK_AREA_MESH_BUILDER_SCRIPT.new()
+		as RectilinearRockAreaMeshBuilder
+	)
+	_rock_area_mesh_builder.configure(
+		palette,
+		layout.generation_seed if layout != null else 0
 	)
 	_cliff_mesh_builder.configure(
 		palette,
@@ -214,6 +232,23 @@ func get_forest_cliff_border_counts() -> Dictionary:
 func get_cliff_art_asset_paths() -> Dictionary:
 	return _cliff_art_asset_paths.duplicate(true)
 
+func has_rock_area_art() -> bool:
+	return (
+		_uses_forest_ground()
+		and _rock_top_texture != null
+		and _rock_cliff_face_texture != null
+		and _rock_area_mesh_builder != null
+		and _rock_area_mesh_builder.has_geometry()
+	)
+
+func get_rock_area_counts() -> Dictionary:
+	if _rock_area_mesh_builder == null:
+		return {}
+	return _rock_area_mesh_builder.get_counts()
+
+func get_rock_art_asset_paths() -> Dictionary:
+	return _rock_art_asset_paths.duplicate(true)
+
 func has_forest_ground_art_texture() -> bool:
 	return _forest_surface_textures.get(FOREST_GRASS_TEXTURE_ID) is Texture2D
 
@@ -290,6 +325,24 @@ func _draw() -> void:
 			draw_mesh(surface_mesh, surface_texture)
 	if _ground_mesh != null:
 		draw_mesh(_ground_mesh, null)
+	if has_rock_area_art():
+		# The ascending walls are drawn first; the raised crown is drawn afterwards
+		# so it masks the hidden upper wall triangles, mirroring how the void ground
+		# masks the geometry behind its lip.
+		var rock_face_mesh := _rock_area_mesh_builder.get_face_mesh()
+		if rock_face_mesh != null:
+			draw_mesh(
+				rock_face_mesh,
+				_rock_cliff_face_texture,
+				Transform2D.IDENTITY,
+				Color(1.12, 1.12, 1.12, 1.0)
+			)
+		draw_mesh(
+			_rock_area_mesh_builder.top_mesh,
+			_rock_top_texture,
+			Transform2D.IDENTITY,
+			Color(1.06, 1.06, 1.06, 1.0)
+		)
 	if (
 		has_forest_cliff_border_art()
 		and _rectilinear_cliff_face_mesh_builder != null
@@ -376,6 +429,42 @@ func _load_cliff_art_texture(asset_id: StringName) -> Texture2D:
 		Vector2i(512, 512)
 	)
 
+func _load_rock_art_texture() -> void:
+	_rock_top_texture = null
+	_rock_cliff_face_texture = null
+	_rock_art_asset_paths.clear()
+	if manifest == null or not _uses_forest_ground():
+		return
+	var contract := manifest.get_object_asset_contract(LARGE_ROCK_OBJECT_ID)
+	var top_path := String(contract.get("asset_path", ""))
+	_rock_art_asset_paths[&"top"] = top_path
+	var face_contract := manifest.get_void_asset_contract(
+		ROCK_CLIFF_FACE_TEXTURE_ID
+	)
+	var face_path := String(face_contract.get("asset_path", ""))
+	_rock_art_asset_paths[&"face"] = face_path
+	_rock_art_asset_paths[&"horizontal_border"] = String(
+		_cliff_art_asset_paths.get(CLIFF_LIP_TEXTURE_ID, "")
+	)
+	_rock_art_asset_paths[&"vertical_border"] = String(
+		_cliff_art_asset_paths.get(CLIFF_LIP_VERTICAL_TEXTURE_ID, "")
+	)
+	if top_path.is_empty():
+		return
+	_rock_top_texture = SVG_TEXTURE_LOADER.load_texture(
+		top_path,
+		palette.prop_color if palette != null else Color(0.34, 0.31, 0.27, 1.0),
+		palette.floor_color if palette != null else Color(0.48, 0.43, 0.34, 1.0),
+		Vector2i(512, 512)
+	)
+	if not face_path.is_empty():
+		_rock_cliff_face_texture = SVG_TEXTURE_LOADER.load_texture(
+			face_path,
+			palette.prop_color if palette != null else Color(0.34, 0.31, 0.27, 1.0),
+			palette.floor_color if palette != null else Color(0.48, 0.43, 0.34, 1.0),
+			Vector2i(512, 512)
+		)
+
 func _load_forest_surface_art_textures() -> void:
 	_forest_surface_textures.clear()
 	_forest_surface_art_asset_paths.clear()
@@ -412,6 +501,8 @@ func _rebuild_ground_geometry() -> void:
 		_cliff_border_mesh_builder.reset()
 	if _rectilinear_cliff_face_mesh_builder != null:
 		_rectilinear_cliff_face_mesh_builder.reset()
+	if _rock_area_mesh_builder != null:
+		_rock_area_mesh_builder.reset()
 	if layout == null or palette == null:
 		return
 	var scale := layout.logical_tile_scale
@@ -506,6 +597,16 @@ func _rebuild_ground_geometry() -> void:
 				layout.zone_size,
 				scale
 			)
+	if (
+		_uses_forest_ground()
+		and _rock_top_texture != null
+		and _rock_area_mesh_builder != null
+	):
+		_rock_area_mesh_builder.build(
+			layout.rock_rects,
+			layout.zone_size,
+			scale
+		)
 
 func _get_fall_zone_sides() -> Array[StringName]:
 	var sides: Array[StringName] = []

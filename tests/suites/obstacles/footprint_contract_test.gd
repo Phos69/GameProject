@@ -13,6 +13,9 @@ extends GutTest
 ## per non sporcare le query a gruppo degli altri.
 
 const MainSceneFixture = preload("res://tests/support/main_scene_fixture.gd")
+const ROCK_AREA_MESH_BUILDER_SCRIPT = preload(
+	"res://game/modes/zombie/rocks/rectilinear_rock_area_mesh_builder.gd"
+)
 
 const REQUIRED_FOOTPRINTS: Dictionary = {
 	Vector2i(1, 1): &"small_rock",
@@ -233,6 +236,28 @@ func test_scalable_obstacle() -> void:
 	assert_true(_manifest.is_scalable(ROCK_ID), "large_rock is scalable")
 	assert_false(_manifest.is_scalable(NON_SCALABLE_ID), "small_rock is not scalable")
 	assert_eq(_manifest.get_footprint_tiles(ROCK_ID), Vector2i(15, 15), "large_rock base footprint is 15x15")
+	var contract := _manifest.get_object_asset_contract(ROCK_ID)
+	var top_path := String(contract.get("asset_path", ""))
+	assert_true(top_path.ends_with("rock_plateau_top_generated.png"), "large_rock uses the dedicated harmonious top material")
+	assert_true(FileAccess.file_exists(top_path), "dedicated rock top texture exists")
+	var import_file := FileAccess.open(top_path + ".import", FileAccess.READ)
+	assert_true(import_file != null, "rock top import contract exists")
+	if import_file != null:
+		var import_text := import_file.get_as_text()
+		import_file.close()
+		assert_true(import_text.contains("mipmaps/generate=true"), "rock top enables mipmaps")
+		assert_true(import_text.contains("process/size_limit=512"), "rock top limits runtime size")
+	var face_contract := _manifest.get_void_asset_contract(&"rock_cliff_face_texture")
+	var face_path := String(face_contract.get("asset_path", ""))
+	assert_true(face_path.ends_with("rock_cliff_face_upward_generated.png"), "raised rock tiles use the dedicated upward face material")
+	assert_true(FileAccess.file_exists(face_path), "raised rock face texture exists")
+	var face_import_file := FileAccess.open(face_path + ".import", FileAccess.READ)
+	assert_true(face_import_file != null, "raised rock face import contract exists")
+	if face_import_file != null:
+		var face_import_text := face_import_file.get_as_text()
+		face_import_file.close()
+		assert_true(face_import_text.contains("mipmaps/generate=true"), "raised rock face enables mipmaps")
+		assert_true(face_import_text.contains("process/size_limit=512"), "raised rock face limits runtime size")
 	var report := _manifest.validate()
 	assert_true(bool(report.get("is_valid", false)), "manifest stays valid with a scalable non-slot footprint")
 	for failure in report.get("failures", PackedStringArray()):
@@ -247,15 +272,25 @@ func test_scalable_obstacle() -> void:
 	if small != null and large != null:
 		_expect_collision_size(small, Vector2(SMALL_CELLS) * LOGICAL_TILE_SCALE, "small rock")
 		_expect_collision_size(large, Vector2(LARGE_CELLS) * LOGICAL_TILE_SCALE, "large rock")
-		assert_true(bool(small.call("has_asset_sprite")), "small rock loads its sprite")
-		assert_true(bool(large.call("has_asset_sprite")), "large rock loads its sprite")
-		var small_scale := _sprite_scale(small)
-		var large_scale := _sprite_scale(large)
-		assert_true(small_scale > 0.0 and large_scale > 0.0, "both rock sprites are scaled")
-		if small_scale > 0.0:
-			var ratio := large_scale / small_scale
-			assert_lt(absf(ratio - 2.0), 0.2, "large rock sprite scales ~2x the small one (ratio %0.2f)" % ratio)
+		assert_true(bool(small.call("has_asset_visual")), "small rock delegates to an asset-backed area visual")
+		assert_true(bool(large.call("has_asset_visual")), "large rock delegates to an asset-backed area visual")
+		assert_true(StringName(small.call("get_render_mode")) == &"tile_layer_rock_area", "large_rock selects the tile-layer area render mode")
+		assert_true(bool(small.call("uses_tile_layer_rock_visual")), "small rock suppresses per-instance art")
+		assert_true(bool(large.call("uses_tile_layer_rock_visual")), "large rock suppresses per-instance art")
+		assert_false(bool(small.call("has_asset_sprite")), "small rock does not stretch a sprite")
+		assert_false(bool(large.call("has_asset_sprite")), "large rock does not stretch a sprite")
+		assert_true(bool(small.call("is_world_position_behind_cliff", Vector2(0.0, -100.0))), "position north of the sort line is behind the cliff")
+		assert_true(bool(small.call("is_world_position_in_front_of_cliff", Vector2(0.0, 100.0))), "position south of the sort line is in front of the cliff")
+		assert_false(bool(small.call("is_world_position_behind_cliff", Vector2(200.0, -100.0))), "position outside the rock width is not occluded")
+		var occluder := small.get_node_or_null("RockAreaOccluder") as RockAreaOccluderVisual
+		assert_true(occluder != null and occluder.has_texture(), "rock creates a Y-sorted occlusion cap")
+		if occluder != null:
+			var cover_bounds := occluder.get_cover_bounds()
+			assert_lt(cover_bounds.position.y, -SMALL_CELLS.y * LOGICAL_TILE_SCALE * 0.5, "occlusion cap extends north beyond the collision")
 		assert_true(bool(large.call("is_footprint_contract_aligned")), "scalable rock counts as footprint-aligned")
+		small.queue_free()
+		large.queue_free()
+		await wait_frames(1)
 	system.queue_free()
 	await wait_frames(1)
 
@@ -272,6 +307,43 @@ func test_scalable_obstacle() -> void:
 	assert_true(record_failures.is_empty(), "scalable rock record is valid at a non-base footprint")
 	for failure in record_failures:
 		push_error("record: " + String(failure))
+
+func test_rock_area_mesh_builder() -> void:
+	var builder := ROCK_AREA_MESH_BUILDER_SCRIPT.new() as RectilinearRockAreaMeshBuilder
+	var rock_rects: Array[Rect2i] = [
+		Rect2i(Vector2i(8, 10), SMALL_CELLS),
+		Rect2i(Vector2i(52, 42), LARGE_CELLS)
+	]
+	var palette := load("res://game/modes/zombie/biomes/infected_plains_palette.tres") as BiomePalette
+	builder.configure(palette, 424242)
+	builder.build(rock_rects, Vector2i(100, 100), LOGICAL_TILE_SCALE)
+	var counts := builder.get_counts()
+	assert_true(builder.has_geometry(), "rock-area builder creates a raised plateau")
+	assert_eq(int(counts.get("areas", 0)), 2, "builder covers both generated rock rects")
+	assert_eq(int(counts.get("faces", 0)), 6, "each plateau emits a front wall and two oblique side walls")
+	assert_not_null(builder.get_face_mesh(), "ascending wall mesh exists")
+	assert_not_null(builder.top_mesh, "raised crown mesh exists")
+	var single_rect: Array[Rect2i] = [
+		Rect2i(Vector2i(12, 12), SMALL_CELLS)
+	]
+	builder.build(single_rect, Vector2i(64, 64), LOGICAL_TILE_SCALE)
+	var raise := RectilinearRockAreaMeshBuilder.RAISE_HEIGHT_CELLS * LOGICAL_TILE_SCALE
+	var lean := minf(
+		raise * RectilinearRockAreaMeshBuilder.LATERAL_LEAN_RATIO,
+		float(SMALL_CELLS.x) * LOGICAL_TILE_SCALE * 0.3
+	)
+	var top_bounds := builder.top_mesh.get_aabb() if builder.top_mesh != null else AABB()
+	# The crown is the footprint translated straight up and inset by `lean` per side.
+	assert_lt(absf(top_bounds.size.x - (float(SMALL_CELLS.x) * LOGICAL_TILE_SCALE - lean * 2.0)), 0.01,
+		"crown is inset on both sides into a mesa")
+	assert_lt(absf(top_bounds.size.y - float(SMALL_CELLS.y) * LOGICAL_TILE_SCALE), 0.01,
+		"crown keeps the footprint depth, lifted above the ground")
+	# Walls span the full footprint width at the ground and rise the lift height.
+	var face_bounds := builder.get_face_mesh().get_aabb() if builder.get_face_mesh() != null else AABB()
+	assert_lt(absf(face_bounds.size.x - float(SMALL_CELLS.x) * LOGICAL_TILE_SCALE), 0.01,
+		"walls reach the full footprint width at the ground")
+	assert_lt(absf(face_bounds.size.y - (float(SMALL_CELLS.y) * LOGICAL_TILE_SCALE + raise)), 0.01,
+		"walls ascend the full lift height above the footprint")
 
 # --- main.tscn: obstacle system + Y-sort (ultimo: boota la scena) -----------
 
@@ -302,9 +374,3 @@ func _expect_collision_size(obstacle: Node, expected: Vector2, label: String) ->
 	var collision := obstacle.get_node_or_null("CollisionShape2D") as CollisionShape2D
 	var rectangle := collision.shape as RectangleShape2D if collision != null else null
 	assert_true(rectangle != null and rectangle.size.is_equal_approx(expected), "%s collision matches its instance footprint" % label)
-
-func _sprite_scale(obstacle: Node) -> float:
-	var sprite := obstacle.get_node_or_null("AssetSprite") as Sprite2D
-	if sprite == null:
-		return 0.0
-	return sprite.scale.x

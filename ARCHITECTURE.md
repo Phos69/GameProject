@@ -804,14 +804,32 @@ multi-bioma.
   li trattano come impedimento fisico.
 - Gli ostacoli appartengono anche ai gruppi `environment_obstacles` e `spawn_blockers`.
 - `ObstacleSystem` usa `IsometricEnvironmentObjectFactory` per preferire
-  `IsometricEnvironmentObject`: uno sprite asset-backed costruito dal
-  `asset_path` `object_scenes`, ancorato al pavimento e ordinato con
-  `sort_offset`. `BiomeObstacle` resta adapter/fallback quando il contratto
-  dichiara esplicitamente un fallback procedurale.
-- Il loader accetta SVG e texture raster importate. `forest_tree` e
-  `large_rock` usano PNG trasparenti originali; la dimensione sorgente non
-  cambia il gameplay perche il runtime scala sempre al target deterministico
-  prodotto da footprint e `visual_height_tiles`.
+  `IsometricEnvironmentObject`: normalmente uno sprite asset-backed costruito
+  dal contratto `object_scenes`, ancorato al pavimento e ordinato con
+  `sort_offset`. Il render mode `tile_layer_rock_area` rende il nodo oggetto
+  collision-only e delega il visual a `BiomeTileLayer` tramite
+  `RectilinearRockAreaMeshBuilder`. `BiomeObstacle` resta adapter/fallback
+  quando il contratto dichiara esplicitamente un fallback procedurale.
+- Il loader accetta SVG e texture raster importate. `forest_tree` mantiene il
+  PNG trasparente originale; `large_rock` non usa piu una silhouette fissa e
+  rende sull'intero `rock_rect` un plateau rialzato con corona e pareti dedicate.
+  La sorgente visuale non cambia gameplay, collisione o classificazione.
+- `RectilinearRockAreaMeshBuilder` costruisce il void cliff specchiato verso
+  l'alto: la corona cobble e sollevata di `RAISE_HEIGHT_CELLS` e rientra in un
+  mesa, mentre tre pareti continue (fronte sud a tutta larghezza + due fianchi
+  obliqui in `LATERAL_LEAN_RATIO`) salgono dal prato fino al bordo; la parete
+  nord guarda lontano dalla camera e non viene emessa. Le pareti sono disegnate
+  per prime e la corona le copre, mascherando i triangoli alti. Il top usa
+  `rock_plateau_top_generated.png`, le pareti `rock_cliff_face_upward_generated.png`
+  con shading per lato e gradiente verso la base; nessuna fissure/lip disegnata a
+  mano, quindi la superficie resta priva di linee procedurali. La corona viene
+  duplicata da `RockAreaOccluderVisual` sul nodo ostacolo Y-sorted.
+- `IsometricEnvironmentObject.is_world_position_behind_cliff()` classifica una
+  posizione come dietro quando ricade nella larghezza della roccia e ha Y
+  minore della linea centrale; Y maggiore/uguale significa davanti. Posizioni
+  fuori dalla larghezza non vengono occluse. Non si cambia globalmente lo
+  `z_index`: il Y-sort confronta lo stesso cliff con ciascun player, quindi il
+  co-op supporta contemporaneamente attori davanti e dietro.
 - In streaming multi-regione, `ObstacleSystem` registra gli ostacoli creati da
   `WorldRegionStreamer`; le query `is_position_blocked` leggono tutti i nodi
   attivi nei gruppi `environment_obstacles`/`spawn_blockers`, inclusi i vicini.
@@ -853,11 +871,12 @@ multi-bioma.
   celle realmente occupate. `ObstacleLayoutGenerator` normalizza ogni oggetto
   non-border al footprint manifest prima delle query di spazio; posizione,
   collisione e base visiva derivano poi dallo stesso rettangolo.
-- Gli ostacoli `forest_tree` e `large_rock` dichiarano entrambi slot `3x3`
-  (`12x12` celle), collisione `rectangle` e blocchi movimento/proiettili. Il
-  generatore starter garantisce un'istanza per ID su terreno walkable libero;
-  le nove celle-slot sono quindi interamente non attraversabili, non solo il
-  centro della sprite.
+- `forest_tree` dichiara slot `3x3` (`12x12` celle). Le `large_rock` void-first
+  sono invece quadrati scalabili da `15x15` a `30x30` celle: `rock_rect`, size
+  collisione e sorgente del visual coincidono; la corona sollevata si estende
+  oltre il footprint solo come overhang presentazionale per l'occlusione.
+  Alberi e rocce bloccano movimento e proiettili sull'intero rettangolo, non
+  sull'estensione grafica.
 - `BiomeEnvironmentLayout.get_obstacle_record()` espone tipo, categoria,
   footprint, celle, asset/variante, altezza e blocchi. La validazione rifiuta
   mismatch o ostacoli solidi privi di asset; `ObstacleSystem` propaga il record

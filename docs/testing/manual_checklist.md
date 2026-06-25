@@ -1152,12 +1152,18 @@ QA visuale e runtime da eseguire dopo modifiche a `ObstacleSystem`,
 - Confermare che case, cabine, laboratori, recinti, muri, barili, relitti,
   tronchi, ponti e crate abbiano silhouette diverse e non usino piu la stessa
   casetta placeholder generica.
-- Nella Pianura Infetta individuare `forest_tree` e `large_rock`: ciascuno deve
-  coprire una base isometrica `3x3`, restare nitido e non mostrare aloni del
-  chroma key.
-- Attivare `F9` e verificare che i nove slot evidenziati coincidano con la base;
-  provare tutti i lati con player e proiettili, senza passaggi attraverso angoli
-  o collisioni esterne alla grafica.
+- Nella Pianura Infetta verificare un `forest_tree` `3x3` e almeno due
+  `large_rock` di dimensione diversa. Le rocce devono mostrare top continuo,
+  faccia cliff solo a sud e bordi orizzontali/verticali sul `rock_rect`, senza
+  il vecchio PNG stirato o visual per-slot ripetuti. Il top non deve avere
+  terrazze/bande orizzontali; la faccia deve essere composta da tile 3D larghe
+  4 celle, con texture e fenditure estruse dal bordo inferiore verso il lip.
+- Portare un player sul lato nord: il top prolungato deve coprirlo interamente.
+  Sul lato sud il player deve restare davanti alla faccia. In co-op lasciare un
+  player per lato contemporaneamente: l'ordinamento deve restare indipendente.
+- Attivare `F9`: i nove slot dell'albero e i rettangoli roccia `15x15`-`30x30`
+  devono coincidere con la base visuale. Provare tutti i lati con player e
+  proiettili, senza passaggi attraverso angoli o collisioni fuori grafica.
 - Confermare che `tests/milestone_10_object_asset_smoke_test.gd` passi anche il
   confronto alpha tra `ruined_house` e `toxic_barrel`, inclusa la regressione
   sul fallback SVG temporaneo.
@@ -1174,7 +1180,9 @@ QA visuale e runtime da eseguire dopo modifiche a `ObstacleSystem`,
 ```text
 godot --headless --path . --script res://tests/milestone_10_object_asset_smoke_test.gd
 godot --headless --path . --script res://tests/obstacle_3x3_smoke_test.gd
+godot --headless --path . --script res://tests/scalable_obstacle_smoke_test.gd
 godot --path . --rendering-method gl_compatibility --script res://tests/obstacle_3x3_visual_qa.gd
+godot --path . --rendering-method gl_compatibility --script res://tests/rock_area_visual_qa.gd
 godot --headless --path . --script res://tests/biome_obstacle_generation_smoke_test.gd
 godot --headless --path . --script res://tests/isometric_environment_manifest_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_4_obstacle_collision_smoke_test.gd

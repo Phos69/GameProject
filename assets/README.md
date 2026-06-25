@@ -167,6 +167,19 @@ ombra a terra, anchor al pavimento, `sort_offset` e footprint debug opzionale.
 `BiomeObstacle` resta il fallback tecnico quando il manifest dichiara un
 fallback procedurale esplicito.
 
+Le `large_rock` scalabili usano il render mode `tile_layer_rock_area`: il nodo
+oggetto conserva collisione e overlay `F9`, mentre `BiomeTileLayer` sostituisce
+lo sprite stirato con un plateau rialzato sull'intero `rock_rect` (il void cliff
+specchiato verso l'alto). La corona cobble e sollevata e rientra in un mesa, con
+tre pareti continue a colonne (fronte sud + due fianchi obliqui) che salgono dal
+prato fino al bordo; la corona si prolunga a nord come overhang e
+`RockAreaOccluderVisual` la replica nel Y-sort per coprire soltanto i player
+dietro. Visual e collisione derivano dallo stesso rettangolo, ma l'estensione
+nord resta solo presentazionale. Il top usa
+`edges/cliffs/textures/rock_plateau_top_generated.png`; le pareti usano
+`rock_cliff_face_upward_generated.png` con shading per lato. Non e una fascia
+piatta e non porta linee disegnate: il dettaglio arriva solo dalle texture.
+
 Gli slot ostacolo misurano `4x4` celle logiche. I formati piccoli vivono in
 cartelle per categoria (`rocks/`, `fences/`, `debris/`, `trees/`, `wrecks/`) e
 riportano la dimensione nel filename; le case vivono in `objects/houses/`.

@@ -63,11 +63,16 @@ func append_transition(
 	half_w: float,
 	half_h: float,
 	southern_tile_ids: Array[StringName] = [],
-	tile_step_y: float = 0.0
+	tile_step_y: float = 0.0,
+	face_depth_override: float = 0.0
 ) -> void:
 	if palette == null:
 		return
-	var depth := maxf(half_h * 8.0, 28.0)
+	var depth := (
+		face_depth_override
+		if face_depth_override > 0.0
+		else maxf(half_h * 8.0, 28.0)
+	)
 	var south_join_y := _find_south_join_y(
 		tile_id,
 		center.y,

@@ -486,6 +486,7 @@ func _normalize_asset_contract(section: StringName, entry: Dictionary) -> Dictio
 		"id": asset_id,
 		"section": section,
 		"asset_path": String(entry.get("asset_path", "")),
+		"render_mode": StringName(str(entry.get("render_mode", "sprite"))),
 		"status": String(entry.get("status", asset_contract_defaults.get("status", "needs_asset"))),
 		"biome_ids": _normalize_string_name_array(
 			entry.get("biome_ids", asset_contract_defaults.get("biome_ids", ["shared"]))

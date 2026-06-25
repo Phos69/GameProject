@@ -521,6 +521,15 @@ Attivita post-roadmap:
   trasparente per due ostacoli singoli `3x3`, piazzamento garantito nella
   Pianura Infetta, collisione rettangolare su tutti i nove slot e screenshot QA
   gameplay/footprint in `build/qa/obstacle_3x3/`.
+- Pass ISO-OBS-003 completato: la successiva generazione void-first rende
+  `large_rock` scalabile da `15x15` a `30x30` celle come plateau rialzato del tile
+  layer (il void cliff specchiato verso l'alto), senza scalare il PNG 3x3. La
+  corona cobble e sollevata di `RAISE_HEIGHT_CELLS` e rientra in un mesa; tre
+  pareti continue (fronte sud + due fianchi obliqui) salgono dal prato al bordo,
+  con shading per lato e UV world-space e nessuna linea procedurale. La corona/
+  occluder prosegue a nord e usa Y-sort per player. Smoke e QA confrontano
+  entrambe le dimensioni e i due lati della soglia. Il pass usa un materiale
+  corona top-down armonizzato e un materiale parete a colonne ascendente.
 - Pass ISO-CLIFF-001 completato: due materiali PNG seamless generati per faccia
   e lip alimentano via UV world-space tutte le 14 geometrie cliff del tile
   layer; la dissolvenza termina nel void uniforme e gli smoke confermano
