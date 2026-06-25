@@ -7,7 +7,6 @@ const BIOME_TILE_LAYER_SCRIPT = preload(
 	"res://game/modes/zombie/biome_tile_layer.gd"
 )
 
-@export var playground_path: NodePath = NodePath("../../../../World/Playground")
 @export var environment_container_path: NodePath = NodePath(
 	"../../../../World/EnvironmentProps"
 )
@@ -29,8 +28,6 @@ func start_run(biome: BiomeDefinition) -> void:
 	_clear_runtime()
 	active_biome = biome
 	is_active = true
-	_apply_biome_palette()
-	_set_legacy_playground_visible(true)
 	_build_tile_layer()
 	terrain_configured.emit(
 		active_biome.biome_id if active_biome != null else &""
@@ -40,25 +37,14 @@ func begin_streaming_run(biome: BiomeDefinition) -> void:
 	_clear_runtime()
 	active_biome = biome
 	is_active = true
-	_apply_biome_palette()
-	# The streamed tile layer paints the whole chunk, so the legacy playground
-	# arena (a default tile grid, barricades and lane markers drawn at the world
-	# origin) is obsolete and would show through at the map centre. Hide it.
-	_set_legacy_playground_visible(false)
 	terrain_configured.emit(
 		active_biome.biome_id if active_biome != null else &""
 	)
 
 func stop_run() -> void:
 	_clear_runtime()
-	_set_legacy_playground_visible(true)
 	is_active = false
 	active_biome = null
-
-func _set_legacy_playground_visible(value: bool) -> void:
-	var playground := get_node_or_null(playground_path) as IsometricPlayground
-	if playground != null:
-		playground.visible = value
 
 func get_active_biome_id() -> StringName:
 	return active_biome.biome_id if active_biome != null else &""
@@ -74,14 +60,6 @@ func register_streamed_tile_layer(
 		return
 	if is_current_region:
 		active_tile_layer = tile_layer
-
-func _apply_biome_palette() -> void:
-	if active_biome == null:
-		return
-	var playground := get_node_or_null(playground_path) as IsometricPlayground
-	var palette := active_biome.palette
-	if playground != null and palette != null:
-		playground.configure_biome_palette(palette)
 
 func _build_tile_layer() -> void:
 	if active_biome == null:

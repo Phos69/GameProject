@@ -1,4 +1,4 @@
-[gd_scene load_steps=48 format=3]
+[gd_scene load_steps=46 format=3]
 
 [ext_resource type="Script" path="res://game/main/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://game/input/input_manager.gd" id="2_input_manager"]
@@ -12,7 +12,6 @@
 [ext_resource type="Script" path="res://game/progression/progression_manager.gd" id="10_progression_manager"]
 [ext_resource type="Script" path="res://game/procedural/dungeon_generator.gd" id="11_dungeon_generator"]
 [ext_resource type="Script" path="res://game/modes/tower_defense/tower_defense_manager.gd" id="12_tower_defense_manager"]
-[ext_resource type="Script" path="res://game/main/isometric_playground.gd" id="13_playground"]
 [ext_resource type="Script" path="res://game/camera/isometric_camera_controller.gd" id="14_camera"]
 [ext_resource type="Script" path="res://game/ui/hud_manager.gd" id="15_hud_manager"]
 [ext_resource type="Script" path="res://game/projectiles/projectile_system.gd" id="16_projectile_system"]
@@ -31,7 +30,6 @@
 [ext_resource type="Script" path="res://game/player/revive_system.gd" id="28_revive_system"]
 [ext_resource type="Script" path="res://game/progression/run_session_tracker.gd" id="29_run_tracker"]
 [ext_resource type="Script" path="res://game/ui/run_results_screen.gd" id="30_run_results"]
-[ext_resource type="Script" path="res://game/environment/survival_arena_manager.gd" id="31_arena_manager"]
 [ext_resource type="Script" path="res://game/visuals/visual_settings_manager.gd" id="32_visual_settings"]
 [ext_resource type="Script" path="res://game/modes/zombie/zombie_mode_controller.gd" id="33_zombie_controller"]
 [ext_resource type="Script" path="res://game/modes/zombie/biome_manager.gd" id="34_biome_manager"]
@@ -169,15 +167,8 @@ script = ExtResource("11_dungeon_generator")
 [node name="TowerDefenseManager" type="Node" parent="Systems"]
 script = ExtResource("12_tower_defense_manager")
 
-[node name="SurvivalArenaManager" type="Node" parent="Systems"]
-script = ExtResource("31_arena_manager")
-
 [node name="World" type="Node2D" parent="."]
 y_sort_enabled = true
-
-[node name="Playground" type="Node2D" parent="World" groups=["prototype_arena_content"]]
-z_index = -10
-script = ExtResource("13_playground")
 
 [node name="Players" type="Node2D" parent="World"]
 

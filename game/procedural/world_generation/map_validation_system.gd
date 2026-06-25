@@ -23,7 +23,7 @@ func validate_layout(
 	var crate_failures := _find_unreachable_crates(layout, visited)
 	var placement_failures := _find_invalid_placements(cell, layout)
 	var fall_failures := _find_invalid_fall_boundaries(cell, layout)
-	var main_road_report := _validate_main_roads(layout)
+	var main_road_report := _validate_main_roads(cell, layout)
 	var water_crossing_failures := _find_unbridged_water_crossings(layout)
 	var route_obstacle_failures := _find_route_obstacle_overlaps(layout)
 	var classification_report := layout.get_classification_report()
@@ -210,7 +210,7 @@ func _find_invalid_fall_boundaries(
 			failures.append(side)
 	return failures
 
-func _validate_main_roads(layout: BiomeEnvironmentLayout) -> Dictionary:
+func _validate_main_roads(cell: BiomeCell, layout: BiomeEnvironmentLayout) -> Dictionary:
 	var has_horizontal := false
 	var has_vertical := false
 	var passes_center := false
@@ -243,19 +243,30 @@ func _validate_main_roads(layout: BiomeEnvironmentLayout) -> Dictionary:
 		has_horizontal = has_horizontal or bool(cell_report.get("horizontal", false))
 		has_vertical = has_vertical or bool(cell_report.get("vertical", false))
 		passes_center = passes_center or bool(cell_report.get("center", false))
+	# Regions that connect to neighbours carry their roads as a central hub the
+	# passage corridors converge on; passage reachability from spawn is validated
+	# separately (_find_unreachable_passages), so they only need a road hub at the
+	# centre, not an edge-to-edge cross. Regions without passages (e.g. the walled
+	# arena) keep the edge-to-edge cross for interior structure.
+	var requires_edge_to_edge := cell == null or cell.passages.is_empty()
 	var failures := PackedStringArray()
-	if not has_horizontal:
-		failures.append("missing_edge_to_edge_horizontal_main_road")
-	if not has_vertical:
-		failures.append("missing_edge_to_edge_vertical_main_road")
+	if requires_edge_to_edge:
+		if not has_horizontal:
+			failures.append("missing_edge_to_edge_horizontal_main_road")
+		if not has_vertical:
+			failures.append("missing_edge_to_edge_vertical_main_road")
 	if not passes_center:
 		failures.append("main_road_does_not_pass_center")
+	var is_valid := passes_center and (
+		not requires_edge_to_edge or (has_horizontal and has_vertical)
+	)
 	return {
-		"is_valid": has_horizontal and has_vertical and passes_center,
+		"is_valid": is_valid,
 		"edge_to_edge_count": edge_to_edge_count,
 		"has_horizontal": has_horizontal,
 		"has_vertical": has_vertical,
 		"passes_center": passes_center,
+		"requires_edge_to_edge": requires_edge_to_edge,
 		"failures": failures
 	}
 

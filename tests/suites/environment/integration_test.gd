@@ -351,6 +351,11 @@ func test_open_passage_follows_physical_movement() -> void:
 		return
 	var player := player_manager.players.get(1) as PlayerController
 	assert_not_null(player, "player one exists")
+	# Anchor the party at the region centre before measuring so this case is isolated
+	# from whatever position a previous test left in the shared scene (the seam sits
+	# at a region border, far from the centre, so a real crossing moves well past 80).
+	if player != null:
+		player.global_position = Vector2.ZERO
 	var original_position: Vector2 = player.global_position if player != null else Vector2.ZERO
 	var connection := _first_connection_for_cell(graph, start_cell)
 	assert_not_null(connection, "start cell has an open WorldRegionConnection")
@@ -540,12 +545,10 @@ func test_zombie_biome_transition() -> void:
 	var streamer = _scene.node(&"world_region_streamer")
 	var multi_region_renderer = _scene.node(&"multi_region_renderer")
 	var hud := _scene.node(&"hud_manager") as HUDManager
-	var playground := _scene.main.get_node_or_null("World/Playground") as IsometricPlayground
 	assert_not_null(transition_system, "transition system is available")
 	assert_not_null(terrain_generator, "terrain generator is available")
 	assert_not_null(hud, "HUD is available")
-	assert_not_null(playground, "playground is available")
-	if biome_manager == null or transition_system == null or terrain_generator == null or obstacle_system == null or crate_system == null or streamer == null or hud == null or playground == null:
+	if biome_manager == null or transition_system == null or terrain_generator == null or obstacle_system == null or crate_system == null or streamer == null or hud == null:
 		return
 
 	transition_system.transition_cooldown = 0.01
@@ -577,8 +580,8 @@ func test_zombie_biome_transition() -> void:
 		if tile_layer != null:
 			assert_eq(tile_layer.get_visual_tile_count(), layout.zone_size.x * layout.zone_size.y, "%s tile layer covers every logical cell" % String(biome_id))
 			assert_eq(tile_layer.get_missing_asset_count(), 0, "%s tile layer has no missing visual cells" % String(biome_id))
+			assert_true(tile_layer.palette == biome.palette, "%s palette is applied to the tile layer" % String(biome_id))
 		_expect_streamed_region_content(streamer, cell, layout)
-		assert_true(playground.floor_color.is_equal_approx(biome.palette.background_color), "%s palette is applied" % String(biome_id))
 		assert_true(_has_blocked_boundary(obstacle_system), "%s retains a physical blocked boundary" % String(biome_id))
 		assert_true(_scene.nodes(&"biome_transition_gates").is_empty(), "%s exposes open passages without runtime gates" % String(biome_id))
 		assert_true(_has_thematic_loot(crate_system, biome_id), "%s exposes biome-aware crate loot" % String(biome_id))
@@ -619,14 +622,12 @@ func test_zombie_environment_milestone() -> void:
 	var resource_crate_system := _scene.node(&"resource_crate_system") as ResourceCrateSystem
 	var hazard_system := _scene.node(&"hazard_system") as HazardSystem
 	var enemy_system := _scene.node(&"enemy_system") as EnemySystem
-	var playground := _scene.main.get_node_or_null("World/Playground") as IsometricPlayground
 	var survival_mode := _scene.survival_mode()
 	assert_not_null(terrain_generator, "terrain generator is available")
 	assert_not_null(obstacle_system, "obstacle system is available")
 	assert_not_null(resource_crate_system, "resource crate system is available")
-	assert_not_null(playground, "shared playground is available")
 	assert_not_null(survival_mode, "survival mode is available")
-	if biome_manager == null or terrain_generator == null or obstacle_system == null or resource_crate_system == null or hazard_system == null or enemy_system == null or playground == null or survival_mode == null:
+	if biome_manager == null or terrain_generator == null or obstacle_system == null or resource_crate_system == null or hazard_system == null or enemy_system == null or survival_mode == null:
 		return
 
 	assert_true(_scene.start_survival(), "survival starts with the environment milestone enabled")
@@ -646,8 +647,7 @@ func test_zombie_environment_milestone() -> void:
 	if tile_layer != null:
 		assert_eq(tile_layer.get_visual_tile_count(), layout.zone_size.x * layout.zone_size.y, "asset tile layer covers the full generated layout")
 		assert_eq(tile_layer.get_missing_asset_count(), 0, "asset tile layer has no missing visual cells")
-	assert_true(playground.floor_color.is_equal_approx(palette.background_color) and playground.concrete_color.is_equal_approx(palette.floor_color),
-		"starting biome palette is applied to the shared playground")
+		assert_true(tile_layer.palette == palette, "starting biome palette is applied to the tile layer")
 
 	var player := _scene.node(&"players") as Node2D
 	if player != null:

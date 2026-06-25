@@ -21,17 +21,15 @@ func test_crowded_arena_under_load() -> void:
 	await wait_frames(3)
 
 	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
-	var arena_manager := scene.node(&"survival_arena_manager") as SurvivalArenaManager
 	var local_multiplayer := scene.node(&"local_multiplayer_manager") as LocalMultiplayerManager
 	var wave_manager := scene.node(&"wave_manager") as WaveManager
 	var enemy_system := scene.node(&"enemy_system") as EnemySystem
 	assert_not_null(game_mode_manager, "game mode manager is available")
-	assert_not_null(arena_manager, "arena manager is available")
 	assert_not_null(local_multiplayer, "local multiplayer manager is available")
 	assert_not_null(wave_manager, "wave manager is available")
 	assert_not_null(enemy_system, "enemy system is available")
 	if (
-		game_mode_manager == null or arena_manager == null or local_multiplayer == null
+		game_mode_manager == null or local_multiplayer == null
 		or wave_manager == null or enemy_system == null
 	):
 		scene.teardown()
@@ -40,12 +38,14 @@ func test_crowded_arena_under_load() -> void:
 	for player_slot in range(2, 5):
 		local_multiplayer.activate_slot(player_slot)
 	wave_manager.initial_delay = 100.0
-	game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL, {"arena_id": &"rift_foundry"})
+	game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL, {})
 	await wait_frames(2)
 	assert_eq(scene.nodes(&"players").size(), 4, "stress scenario activates four local players")
 
 	var spawned: Array[Node] = []
-	var spawn_points := arena_manager.active_profile.enemy_spawn_points
+	var spawn_points: Array[Vector2] = []
+	for spawn_index in range(6):
+		spawn_points.append(Vector2.RIGHT.rotated(TAU * float(spawn_index) / 6.0) * 360.0)
 	var start_msec := Time.get_ticks_msec()
 	for index in range(32):
 		var gate_position := spawn_points[index % spawn_points.size()]
@@ -70,8 +70,6 @@ func test_crowded_arena_under_load() -> void:
 	for enemy_id in ENEMY_IDS:
 		assert_true(roster_ids.has(enemy_id), "stress scenario keeps %s active" % enemy_id)
 	assert_lt(elapsed_msec, 5000, "mixed arena scenario processes 90 physics frames within budget")
-	assert_eq(arena_manager.get_spawn_gates().size(), spawn_points.size(), "all spawn gates remain valid under load")
-	assert_eq(arena_manager.get_interactive_props().size(), 3, "interactive props remain valid under load")
 	game_mode_manager.set_mode(GameConstants.MODE_MENU)
 	await wait_frames(5)
 

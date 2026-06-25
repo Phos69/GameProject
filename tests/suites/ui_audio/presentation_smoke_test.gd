@@ -23,7 +23,6 @@ func test_presentation_contracts() -> void:
 	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
 	var hud := scene.node(&"hud_manager") as HUDManager
 	var effects := scene.node(&"gameplay_effects") as GameplayEffects
-	var playground := scene.main.get_node_or_null("World/Playground") as IsometricPlayground
 	var debug_target := scene.main.get_node_or_null("World/CombatTargets/TargetEast") as CombatTarget
 	assert_not_null(player_manager, "player manager is available")
 	assert_not_null(enemy_system, "enemy system is available")
@@ -33,7 +32,6 @@ func test_presentation_contracts() -> void:
 	assert_not_null(game_mode_manager, "game mode manager is available")
 	assert_not_null(hud, "HUD manager is available")
 	assert_not_null(effects, "gameplay effects system is available")
-	assert_not_null(playground, "survival arena visual is available")
 	assert_true(
 		debug_target != null and debug_target.collision_layer == 0,
 		"hidden combat fixtures cannot intercept survival projectiles"
@@ -41,7 +39,7 @@ func test_presentation_contracts() -> void:
 	if (
 		player_manager == null or enemy_system == null or projectile_system == null
 		or drop_system == null or health_system == null or game_mode_manager == null
-		or hud == null or effects == null or playground == null
+		or hud == null or effects == null
 	):
 		scene.teardown()
 		return
@@ -55,7 +53,6 @@ func test_presentation_contracts() -> void:
 	assert_not_null(player_visual, "player uses the modular survivor visual")
 	var player_world_hud := player.get_node_or_null("WorldHud")
 	assert_not_null(player_world_hud, "player uses the world-space HUD package")
-	assert_lt(playground.concrete_color.get_luminance(), 0.30, "arena background remains muted behind actors")
 
 	game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL)
 	await wait_frames(2)

@@ -134,7 +134,9 @@ func populate_layout(
 # Void-first pipeline orchestrator. Grown one milestone at a time; the chunk
 # starts as pure void and each pass carves into it:
 #   passages -> rocks -> forests -> roads/paths -> road tree borders -> void lottery
-# Currently implemented: passages reservation + rocks (M1).
+# Roads use a single unified "hub + spokes" model for both survival and the
+# Infinite Arena (see _add_voidfirst_roads): inter-biome passages and arena walls
+# are both treated as exits the central network connects to.
 func populate_layout_voidfirst(
 	layout: BiomeEnvironmentLayout,
 	cell: BiomeCell,
@@ -147,8 +149,7 @@ func populate_layout_voidfirst(
 	_carve_passages(layout, cell)
 	_place_rocks(layout, biome, rng)
 	_place_forests(layout, biome, rng)
-	_add_voidfirst_roads(layout, rng)
-	_connect_passages_to_roads(layout, cell)
+	_add_voidfirst_roads(layout, rng, cell, context)
 	_choose_voidfirst_spawn(layout)
 	_add_voidfirst_paths(layout, rng)
 	_clear_trees_on_routes(layout)
@@ -178,20 +179,6 @@ func _voidfirst_center_reserved(layout: BiomeEnvironmentLayout) -> Rect2i:
 	var center := layout.zone_size / 2
 	var half := 38
 	return Rect2i(center - Vector2i(half, half), Vector2i(half * 2, half * 2))
-
-# Connect every passage to the central road network with an A* route around rocks,
-# so each passage is reachable from spawn regardless of the void lottery.
-func _connect_passages_to_roads(
-	layout: BiomeEnvironmentLayout,
-	cell: BiomeCell
-) -> void:
-	if cell.passages.is_empty():
-		return
-	var astar := _build_road_astar(layout)
-	var center := layout.zone_size / 2
-	for passage in cell.passages:
-		var anchor := _passage_inner_anchor(passage, layout.zone_size)
-		_carve_astar_road(layout, astar, anchor, center, &"broken_street")
 
 # Pick a guaranteed-walkable spawn: the centre if it is road, else the nearest
 # road cell to the centre.
@@ -351,30 +338,119 @@ func _can_place_tree(layout: BiomeEnvironmentLayout, rect: Rect2i) -> bool:
 		return false
 	return true
 
-# M3 — carve two main roads (horizontal + vertical) edge-to-edge. They route on a
-# coarse A* grid that treats rocks as solid, so roads go around rocks while still
-# crossing forests. Trees on the carved lane are removed later.
+# M3 — build the region's road backbone with a single unified "hub + spokes"
+# model. The network connects the chunk centre to one spoke per "exit", where an
+# exit is either:
+#   - an inter-biome passage (survival megamap → the roads "depend on the
+#     neighbours": one broken_street spoke routes from each passage to the centre);
+#   - or an arena wall (the walled Infinite Arena → each of the four enclosing
+#     walls becomes a main_road spoke to its mid-point, and the four together form
+#     the classic edge-to-edge cross).
+# "Wall = neighbour" is what lets both modes share one code path: the cross is just
+# the degenerate case where every side is a wall. A fully isolated region with
+# neither passages nor walls (e.g. a standalone unit-test cell) falls back to the
+# four wall mid-points so it is never roadless.
+#
+# The central hub plaza is carved only when passages converge on it (it gives the
+# converging corridors a shared walkable node); the pure wall-cross needs none,
+# since its spokes already meet at the centre. The old fixed edge-to-edge cross was
+# dropped for connected regions because, with passages at random border positions,
+# its arms dead-ended at empty borders and ran parallel to the passage corridors,
+# reading as two overlapping roads — the spoke model avoids that by construction.
 func _add_voidfirst_roads(
 	layout: BiomeEnvironmentLayout,
-	_rng: RandomNumberGenerator
+	_rng: RandomNumberGenerator,
+	cell: BiomeCell,
+	context: Dictionary = {}
 ) -> void:
+	var spokes := _collect_road_spokes(layout, cell, context)
+	if spokes.is_empty():
+		return
+	var has_passage_spoke := false
+	for spoke in spokes:
+		if bool(spoke.get("is_passage", false)):
+			has_passage_spoke = true
+			break
+	if has_passage_spoke:
+		_carve_center_hub(layout)
 	var astar := _build_road_astar(layout)
-	var mid_y := layout.zone_size.y / 2
-	var mid_x := layout.zone_size.x / 2
-	_carve_astar_road(
-		layout,
-		astar,
-		Vector2i(BORDER_THICKNESS, mid_y),
-		Vector2i(layout.zone_size.x - BORDER_THICKNESS - 1, mid_y),
-		&"main_road"
-	)
-	_carve_astar_road(
-		layout,
-		astar,
-		Vector2i(mid_x, BORDER_THICKNESS),
-		Vector2i(mid_x, layout.zone_size.y - BORDER_THICKNESS - 1),
-		&"main_road"
-	)
+	var center := layout.zone_size / 2
+	for spoke in spokes:
+		_carve_astar_road(
+			layout,
+			astar,
+			spoke["anchor"] as Vector2i,
+			center,
+			spoke["tag"] as StringName
+		)
+
+# One road spoke per region exit (see _add_voidfirst_roads): every passage becomes
+# a broken_street spoke to its inner anchor, and — when the region is a walled
+# arena — every border without a passage becomes a main_road spoke to its
+# mid-point. With no exits at all the region is treated as fully walled (fallback
+# cross) so it always has through-roads and a walkable centre.
+func _collect_road_spokes(
+	layout: BiomeEnvironmentLayout,
+	cell: BiomeCell,
+	context: Dictionary
+) -> Array[Dictionary]:
+	var spokes: Array[Dictionary] = []
+	var covered_sides: Dictionary = {}
+	for passage in cell.passages:
+		spokes.append({
+			"anchor": _passage_inner_anchor(passage, layout.zone_size),
+			"tag": &"broken_street",
+			"is_passage": true
+		})
+		covered_sides[passage.side] = true
+	if _is_walled_arena_context(context):
+		spokes.append_array(_wall_spokes(layout, covered_sides))
+	if spokes.is_empty():
+		spokes = _wall_spokes(layout, covered_sides)
+	return spokes
+
+# A main_road spoke to the mid-point of every border not already served by a
+# passage. The four of them together carve the edge-to-edge cross.
+func _wall_spokes(
+	layout: BiomeEnvironmentLayout,
+	covered_sides: Dictionary
+) -> Array[Dictionary]:
+	var spokes: Array[Dictionary] = []
+	for side in BiomeCell.SIDES:
+		if covered_sides.has(side):
+			continue
+		spokes.append({
+			"anchor": _wall_midpoint_anchor(layout, side),
+			"tag": &"main_road",
+			"is_passage": false
+		})
+	return spokes
+
+func _wall_midpoint_anchor(
+	layout: BiomeEnvironmentLayout,
+	side: StringName
+) -> Vector2i:
+	var mid := layout.zone_size / 2
+	match side:
+		&"north":
+			return Vector2i(mid.x, BORDER_THICKNESS)
+		&"south":
+			return Vector2i(mid.x, layout.zone_size.y - BORDER_THICKNESS - 1)
+		&"west":
+			return Vector2i(BORDER_THICKNESS, mid.y)
+		_:
+			return Vector2i(layout.zone_size.x - BORDER_THICKNESS - 1, mid.y)
+
+# Central hub plaza: a compact walkable square at the chunk centre, registered both
+# as a road rect (route metadata/rendering) and as per-cell road tags so the spawn
+# picker, walkability classification and the tile resolver all see the centre as
+# walkable road that the passage spokes hook onto.
+func _carve_center_hub(layout: BiomeEnvironmentLayout) -> void:
+	var hub := _voidfirst_center_reserved(layout)
+	_add_road_rect(layout, hub, &"main_road")
+	for hub_y in range(hub.position.y, hub.end.y):
+		for hub_x in range(hub.position.x, hub.end.x):
+			layout.add_road_cell(Vector2i(hub_x, hub_y), &"main_road")
 
 func _build_road_astar(layout: BiomeEnvironmentLayout) -> AStarGrid2D:
 	var step := VOIDFIRST_ROUTE_STEP

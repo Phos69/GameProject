@@ -11,7 +11,6 @@ signal survival_defeated(wave_index: int)
 var wave_manager: WaveManager
 var ammo_director: SurvivalAmmoDirector
 var market_controller: SurvivalMarketController
-var arena_manager: SurvivalArenaManager
 var zombie_mode_controller
 
 func _ready() -> void:
@@ -20,7 +19,6 @@ func _ready() -> void:
 	_resolve_wave_manager()
 	_resolve_ammo_director()
 	_resolve_market_controller()
-	_resolve_arena_manager()
 	_resolve_zombie_mode_controller()
 	_resolve_player_manager()
 
@@ -58,19 +56,7 @@ func start_mode(context: Dictionary = {}) -> void:
 	_resolve_wave_manager()
 	_resolve_ammo_director()
 	_resolve_market_controller()
-	_resolve_arena_manager()
 	_resolve_zombie_mode_controller()
-	# On a same-seed retry the world (and its arena props) are reused, so skip the
-	# arena rebuild; only the gameplay layer below resets.
-	var reuse_world: bool = (
-		zombie_mode_controller != null
-		and zombie_mode_controller.can_reuse_world(resolved_context)
-	)
-	if arena_manager != null and not reuse_world:
-		var arena_id := StringName(
-			resolved_context.get("arena_id", arena_manager.default_arena_id)
-		)
-		arena_manager.activate_arena(arena_id)
 	if zombie_mode_controller != null:
 		# Reuses the parked world instantly, or awaits the worker-thread build when
 		# the context requests it (async_world_build); sync path returns immediately.
@@ -96,9 +82,6 @@ func stop_mode(keep_world: bool = false) -> void:
 		market_controller.stop_run()
 	if zombie_mode_controller != null:
 		zombie_mode_controller.stop_run(keep_world)
-	# Keep the arena props alive when parking the world for a fast retry.
-	if arena_manager != null and not keep_world:
-		arena_manager.deactivate_arena()
 	super.stop_mode(keep_world)
 
 func should_spawn_boss_for_wave(wave_index: int) -> bool:
@@ -117,9 +100,7 @@ func _on_boss_wave_requested(wave_index: int) -> void:
 	}
 	var boss: Node = game_mode_manager.request_boss(
 		StringName("survival_wave_%d" % wave_index),
-		arena_manager.get_boss_spawn_position(boss_spawn_position)
-		if arena_manager != null
-		else boss_spawn_position,
+		boss_spawn_position,
 		null,
 		config
 	)
@@ -144,12 +125,6 @@ func _resolve_market_controller() -> void:
 		market_controller = get_node_or_null(
 			"MarketController"
 		) as SurvivalMarketController
-
-func _resolve_arena_manager() -> void:
-	if arena_manager == null:
-		arena_manager = get_tree().get_first_node_in_group(
-			"survival_arena_manager"
-		) as SurvivalArenaManager
 
 func _resolve_zombie_mode_controller() -> void:
 	if zombie_mode_controller == null:

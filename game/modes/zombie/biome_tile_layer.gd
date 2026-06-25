@@ -51,6 +51,18 @@ const FOREST_TRANSITION_TEXTURE_IDS: Array[StringName] = [
 	&"grass_to_road",
 	&"path_to_road"
 ]
+# Passage connectors/endpoints (road, broken_gate, burned_road, bridge, snow_pass
+# and their *_entry/*_exit) are emitted by the resolver as raw passage tags. Without
+# a surface mapping they fell through to the flat per-tile diamond fill, so a
+# passage corridor read as a green isometric grid on the grass. Surfacing them as a
+# worn dirt path makes the connection render as ground instead of a bare lattice.
+const FOREST_PASSAGE_SURFACE_TILE_IDS: Array[StringName] = [
+	&"road", &"road_entry", &"road_exit",
+	&"broken_gate", &"broken_gate_entry", &"broken_gate_exit",
+	&"burned_road", &"burned_road_entry", &"burned_road_exit",
+	&"bridge", &"bridge_entry", &"bridge_exit",
+	&"snow_pass", &"snow_pass_entry", &"snow_pass_exit"
+]
 
 var layout: BiomeEnvironmentLayout
 var palette: BiomePalette
@@ -638,6 +650,8 @@ func _forest_surface_texture_id(tile_id: StringName) -> StringName:
 		return FOREST_GRASS_TEXTURE_ID
 	if FOREST_GRASS_SURFACE_TILE_IDS.has(tile_id):
 		return FOREST_GRASS_TEXTURE_ID
+	if FOREST_PASSAGE_SURFACE_TILE_IDS.has(tile_id):
+		return &"forest_path"
 	match tile_id:
 		IsometricTileResolver.TILE_FOREST_PATH:
 			return &"forest_path"
@@ -787,6 +801,8 @@ func _append_underlay_run(
 func _forest_underlay_key(tile_id: StringName) -> StringName:
 	if resolver != null and resolver.is_void_transition_tile_id(tile_id):
 		return &"grass"
+	if FOREST_PASSAGE_SURFACE_TILE_IDS.has(tile_id):
+		return &"path"
 	match tile_id:
 		IsometricTileResolver.TILE_FOREST_PATH, IsometricTileResolver.TILE_GRASS_TO_PATH:
 			return &"path"

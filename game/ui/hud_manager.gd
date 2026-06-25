@@ -30,9 +30,6 @@ var high_contrast: bool = false
 @export var tower_defense_mode_path: NodePath = NodePath(
 	"../Modes/TowerDefenseMode"
 )
-@export var survival_arena_manager_path: NodePath = NodePath(
-	"../Systems/SurvivalArenaManager"
-)
 @export var biome_manager_path: NodePath = NodePath(
 	"../Modes/SurvivalMode/ZombieModeController/BiomeManager"
 )
@@ -50,7 +47,6 @@ var drop_system: DropSystem
 var survival_mode: SurvivalMode
 var dungeon_mode: DungeonMode
 var tower_defense_mode: TowerDefenseMode
-var survival_arena_manager: SurvivalArenaManager
 var biome_manager: BiomeManager
 var hazard_system: HazardSystem
 var world_runtime: WorldRuntime
@@ -283,8 +279,10 @@ func _get_mode_title() -> String:
 			GameConstants.MODE_TOWER_DEFENSE:
 				return "Tower Defense"
 			GameConstants.MODE_SURVIVAL:
-				if survival_arena_manager != null:
-					return survival_arena_manager.get_active_display_name()
+				if biome_manager != null:
+					var biome_name := biome_manager.get_current_display_name()
+					if not biome_name.is_empty():
+						return biome_name
 	return "Survival Arena"
 
 func _format_mode_status() -> String:
@@ -861,11 +859,6 @@ func _resolve_runtime_dependencies() -> void:
 			tower_defense_mode_path,
 			&"tower_defense_mode"
 		) as TowerDefenseMode
-	if survival_arena_manager == null:
-		survival_arena_manager = _resolve_node(
-			survival_arena_manager_path,
-			&"survival_arena_manager"
-		) as SurvivalArenaManager
 	if biome_manager == null:
 		biome_manager = _resolve_node(
 			biome_manager_path,

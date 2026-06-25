@@ -87,10 +87,17 @@ func test_sample_cells_roads() -> void:
 		if layout == null:
 			continue
 		if cell.biome_id == &"infected_plains":
-			assert_true(_has_main_road_cells(layout, true),
-				"%s ha una strada principale verticale che raggiunge i bordi" % String(cell.id))
-			assert_true(_has_main_road_cells(layout, false),
-				"%s ha una strada principale orizzontale che raggiunge i bordi" % String(cell.id))
+			# Connected void-first regions route roads as a central hub the passage
+			# corridors converge on (no edge-to-edge cross). Regions with no passages
+			# keep the cross for interior structure.
+			if cell.passages.is_empty():
+				assert_true(_has_main_road_cells(layout, true),
+					"%s (senza passaggi) ha una strada principale verticale ai bordi" % String(cell.id))
+				assert_true(_has_main_road_cells(layout, false),
+					"%s (senza passaggi) ha una strada principale orizzontale ai bordi" % String(cell.id))
+			else:
+				assert_true(layout.get_road_tags_at_cell(layout.zone_size / 2).has(&"main_road"),
+					"%s ha un hub stradale principale al centro" % String(cell.id))
 		else:
 			assert_true(_has_axis_road(layout, &"main_road", ObstacleLayoutGenerator.ROAD_WIDTH, true),
 				"%s ha una main road verticale da %d celle" % [String(cell.id), ObstacleLayoutGenerator.ROAD_WIDTH])

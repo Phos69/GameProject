@@ -88,17 +88,13 @@ func _run() -> void:
 	for player_slot in range(2, 5):
 		local_multiplayer.activate_slot(player_slot)
 	wave_manager.initial_delay = 100.0
-	game_mode_manager.set_mode(
-		GameConstants.MODE_SURVIVAL,
-		{"arena_id": &"rift_foundry"}
-	)
+	game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL, {})
 	await process_frame
 	await process_frame
-	var arena_manager := get_first_node_in_group(
-		"survival_arena_manager"
-	) as SurvivalArenaManager
 	for index in range(ENEMY_IDS.size()):
-		var spawn_position := arena_manager.active_profile.enemy_spawn_points[index]
+		var spawn_position := Vector2.RIGHT.rotated(
+			TAU * float(index) / float(ENEMY_IDS.size())
+		) * 360.0
 		var enemy := enemy_system.spawn_enemy(
 			ENEMY_IDS[index],
 			spawn_position.move_toward(Vector2.ZERO, 155.0)

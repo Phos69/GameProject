@@ -300,7 +300,7 @@ func test_visual_settings_and_performance_budget() -> void:
 	for player_slot in range(2, 5):
 		local_multiplayer.activate_slot(player_slot)
 	wave_manager.initial_delay = 100.0
-	game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL, {"arena_id": &"rift_foundry"})
+	game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL, {})
 	await wait_frames(2)
 	var player_one := player_manager.players.get(1) as PlayerController
 	assert_not_null(player_one, "player one is available")
@@ -367,10 +367,11 @@ func test_visual_settings_and_performance_budget() -> void:
 	)
 
 	var spawned_enemies: Array[Node] = []
-	var arena_manager := scene.node(&"survival_arena_manager") as SurvivalArenaManager
-	var spawn_points := arena_manager.active_profile.enemy_spawn_points
+	var spawn_points: Array[Vector2] = []
+	for spawn_index in range(6):
+		spawn_points.append(Vector2.RIGHT.rotated(TAU * float(spawn_index) / 6.0) * 360.0)
 	for index in range(28):
-		var spawn_position := spawn_points[index % spawn_points.size()]
+		var spawn_position: Vector2 = spawn_points[index % spawn_points.size()]
 		var enemy := enemy_system.spawn_enemy(
 			ENEMY_IDS[index % ENEMY_IDS.size()],
 			spawn_position.move_toward(Vector2.ZERO, 80.0 + float(index % 5) * 24.0)

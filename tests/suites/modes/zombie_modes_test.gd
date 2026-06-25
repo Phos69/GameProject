@@ -1,18 +1,16 @@
 extends GutTest
 ## Modes A8 — Modalità zombie: revamp foundation, market, contratto mondo,
-## infinite arena di default, ambiente arena.
+## infinite arena di default.
 ##
 ## Migra e accorpa:
 ##   tests/zombie_revamp_foundation_smoke_test.gd        (main.tscn)
 ##   tests/zombie_market_smoke_test.gd                   (main.tscn)
 ##   tests/zombie_survival_world_contract_smoke_test.gd  (sintetico)
 ##   tests/infinite_arena_default_mode_smoke_test.gd     (main.tscn, async)
-##   tests/milestone_20_arena_environment_smoke_test.gd  (main.tscn)
 
 const MainSceneFixture = preload("res://tests/support/main_scene_fixture.gd")
 
 var _async_world_ready: bool = false
-var _explosion_targets: Array[Node] = []
 
 # --- foundation: biome/wave/spawner + wave loop (zombie_revamp_foundation) ---
 
@@ -357,101 +355,6 @@ func _assert_arena_terrain_is_solid(scene: MainSceneFixture) -> void:
 	if player != null:
 		assert_false(hazard_system.is_void_at_world_position(player.global_position), "Infinite Arena player spawn is not classified as void")
 
-# --- ambiente arena: profili, props, esplosivi (milestone_20) ---------------
-
-func test_arena_environment() -> void:
-	_explosion_targets = []
-	var scene := MainSceneFixture.new()
-	assert_true(scene.boot(self), "main scene can be loaded")
-	await wait_frames(3)
-	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
-	var arena_manager := scene.node(&"survival_arena_manager") as SurvivalArenaManager
-	var wave_manager := scene.node(&"wave_manager") as WaveManager
-	var local_multiplayer := scene.node(&"local_multiplayer_manager") as LocalMultiplayerManager
-	var player_manager := scene.node(&"player_manager") as PlayerManager
-	var enemy_system := scene.node(&"enemy_system") as EnemySystem
-	var projectile_system := scene.node(&"projectile_system") as ProjectileSystem
-	var playground := scene.main.get_node_or_null("World/Playground") as IsometricPlayground
-	var hud := scene.node(&"hud_manager") as HUDManager
-	if game_mode_manager == null or arena_manager == null or wave_manager == null or local_multiplayer == null or player_manager == null or enemy_system == null or projectile_system == null or playground == null or hud == null:
-		assert_true(false, "arena environment systems are available")
-		scene.teardown()
-		return
-
-	assert_true(arena_manager.get_available_arena_ids().has(&"industrial_crossroads") and arena_manager.get_available_arena_ids().has(&"rift_foundry"), "two arena profiles are registered")
-	for player_slot in range(2, 5):
-		local_multiplayer.activate_slot(player_slot)
-	wave_manager.initial_delay = 100.0
-	game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL, {"arena_id": &"industrial_crossroads"})
-	# I player vengono posizionati agli spawn dell'arena in modo sincrono dentro
-	# set_mode; la separazione fisica da overlap li allontana già al primo frame,
-	# quindi si cattura il match qui, prima di qualsiasi await.
-	var players_at_spawns := _players_match_spawns(player_manager, arena_manager.active_profile.player_spawn_points)
-	await wait_frames(2)
-
-	assert_eq(arena_manager.get_active_arena_id(), &"industrial_crossroads", "survival context selects the industrial arena")
-	assert_eq(playground.layout_kind, &"crossroads", "industrial arena configures the shared playground")
-	assert_eq(wave_manager.spawn_points.size(), 8, "industrial profile configures all wave spawn points")
-	assert_eq(arena_manager.get_spawn_gates().size(), wave_manager.spawn_points.size(), "every enemy spawn has a visible gate")
-	assert_eq(arena_manager.get_interactive_props().size(), 2, "industrial profile creates its interactive props")
-	assert_eq(hud._get_mode_title(), "Industrial Crossroads", "HUD exposes the selected arena name")
-	assert_true(players_at_spawns, "four players are positioned from arena data")
-
-	var barrel := arena_manager.get_interactive_props()[0] as ExplosiveBarrel
-	assert_not_null(barrel, "explosive barrel is available")
-	if barrel == null:
-		scene.teardown()
-		return
-	assert_true(barrel.get_class() == "Area2D" and barrel.collision_mask == 0, "interactive prop is projectile-readable but never blocks pathing")
-	barrel.warning_duration = 5.0
-	barrel.explosion_damage = 36
-	barrel.exploded.connect(_on_barrel_exploded)
-	var target_enemy := enemy_system.spawn_enemy(&"survival_zombie", barrel.global_position + Vector2(68.0, 0.0)) as BasicEnemy
-	assert_not_null(target_enemy, "damage target spawns near the barrel")
-	if target_enemy == null:
-		scene.teardown()
-		return
-	target_enemy.set_physics_process(false)
-	var enemy_health_before := target_enemy.health_component.current_health
-	var player := player_manager.players.get(1) as PlayerController
-	var projectile := projectile_system.spawn_projectile(barrel.global_position + Vector2(-70.0, 0.0), Vector2.RIGHT, 720.0, player, null, barrel.health_component.max_health, &"arena_prop_test")
-	assert_not_null(projectile, "player projectile is spawned for prop collision")
-	for _frame in range(12):
-		await wait_physics_frames(1)
-		if barrel.is_armed:
-			break
-	assert_true(barrel.is_armed, "projectile collision arms the explosive prop")
-	assert_eq(target_enemy.health_component.current_health, enemy_health_before, "barrel deals no damage during its warning")
-	assert_gt(barrel.warning_time_left, 0.0, "explosion warning exposes reaction time")
-	barrel.advance_warning(barrel.warning_duration)
-	assert_true(barrel.has_exploded, "warning completion triggers the explosion")
-	assert_lt(target_enemy.health_component.current_health, enemy_health_before, "explosion applies area damage through HealthSystem")
-	assert_true(_explosion_targets.has(target_enemy), "explosion reports every damaged target")
-	await wait_frames(1)
-
-	assert_true(arena_manager.activate_arena(&"rift_foundry"), "second arena can be selected without replacing SurvivalMode")
-	await wait_frames(1)
-	assert_true(arena_manager.get_active_arena_id() == &"rift_foundry" and playground.layout_kind == &"ring", "rift profile swaps layout data on the shared playground")
-	assert_true(wave_manager.spawn_points.size() == 6 and arena_manager.get_spawn_gates().size() == 6, "rift profile replaces wave spawns and gates")
-	assert_eq(arena_manager.get_interactive_props().size(), 3, "rift profile owns a distinct prop layout")
-	wave_manager.base_enemy_count = 1
-	wave_manager.enemy_count_growth = 0
-	wave_manager.spawn_interval = 0.0
-	wave_manager.start_next_wave()
-	var pulsing_gate_found := false
-	for _frame in range(30):
-		for gate in arena_manager.get_spawn_gates():
-			if gate.pulse_timer > 0.0:
-				pulsing_gate_found = true
-				break
-		if pulsing_gate_found:
-			break
-		await wait_physics_frames(1)
-	assert_true(pulsing_gate_found, "the gate matching a wave spawn receives visual feedback")
-
-	scene.teardown()
-	await wait_frames(1)
-
 # --- helper -----------------------------------------------------------------
 
 func _wait_for_wave_combat(wave_manager: WaveManager, wave_index: int) -> bool:
@@ -507,19 +410,3 @@ func _find_menu_button(main_menu: MainMenu, label_text: String) -> Button:
 		if button != null and button.text == label_text:
 			return button
 	return null
-
-func _players_match_spawns(player_manager: PlayerManager, spawn_points: Array[Vector2]) -> bool:
-	# Tolleranza: i player partono dagli spawn dell'arena ma la separazione fisica
-	# da overlap li allontana di qualche decina di px nei frame successivi. Un
-	# margine ampio distingue comunque "posizionati dall'arena" (drift <50px) dal
-	# layout multiplayer di default (oltre 80px di scarto sull'asse X).
-	for slot in range(1, 5):
-		var player := player_manager.players.get(slot) as Node2D
-		if player == null:
-			return false
-		if player.global_position.distance_to(spawn_points[slot - 1]) > 50.0:
-			return false
-	return true
-
-func _on_barrel_exploded(_barrel: ExplosiveBarrel, damaged_targets: Array[Node]) -> void:
-	_explosion_targets = damaged_targets.duplicate()
