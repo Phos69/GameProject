@@ -128,3 +128,71 @@ func clear_runtime_links() -> void:
 	passages.clear()
 	generated_layout = null
 	validation_report.clear()
+
+# --- Serializzazione (WorldSnapshotCodec / cache su disco) ------------------
+# Rappresentazione a Dictionary salvabile con FileAccess.store_var(). Speculare a
+# clone(): NON serializza i neighbor (puntano ad altre celle), che vengono
+# ricollegati per `id` dal codec una volta deserializzate tutte le celle. Bordi,
+# passaggi e layout generato sono invece serializzati a fondo.
+func to_dict() -> Dictionary:
+	var border_data := {}
+	var neighbor_ids := {}
+	for side in SIDES:
+		border_data[String(side)] = get_border(side)
+		var neighbor := get_neighbor(side)
+		neighbor_ids[String(side)] = String(neighbor.id) if neighbor != null else ""
+	var passage_data: Array = []
+	for passage in passages:
+		if passage != null:
+			passage_data.append(passage.to_dict())
+	return {
+		"id": id,
+		"biome_id": biome_id,
+		"grid": grid,
+		"world_origin": world_origin,
+		"width": width,
+		"height": height,
+		"seed": seed,
+		"borders": border_data,
+		"neighbor_ids": neighbor_ids,
+		"passages": passage_data,
+		"generated_layout": generated_layout.to_dict() if generated_layout != null else null,
+		"validation_report": validation_report.duplicate(true)
+	}
+
+# Ricollega i neighbor da una mappa {side: neighbor_id} (prodotta da to_dict) usando
+# l'indice id -> cella. NON tocca i bordi (gia deserializzati), a differenza di
+# set_neighbor() che li forzerebbe a CONNECTED.
+func relink_neighbors_from_ids(
+	neighbor_ids: Dictionary,
+	cells_by_id: Dictionary
+) -> void:
+	for side in SIDES:
+		var neighbor_id := String(neighbor_ids.get(String(side), ""))
+		if neighbor_id.is_empty():
+			neighbors[side] = null
+			continue
+		neighbors[side] = cells_by_id.get(StringName(neighbor_id), null) as BiomeCell
+
+static func from_dict(data: Dictionary) -> BiomeCell:
+	var cell := BiomeCell.new()
+	cell.id = StringName(data.get("id", &""))
+	cell.biome_id = StringName(data.get("biome_id", &""))
+	cell.grid = data.get("grid", Vector2i.ZERO)
+	cell.world_origin = data.get("world_origin", Vector2i.ZERO)
+	cell.width = int(data.get("width", BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE.x))
+	cell.height = int(data.get("height", BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE.y))
+	cell.seed = int(data.get("seed", 0))
+	var border_data := data.get("borders", {}) as Dictionary
+	for side in SIDES:
+		cell.neighbors[side] = null
+		cell.borders[side] = int(border_data.get(String(side), BorderType.FALL))
+	var typed_passages: Array[BiomePassage] = []
+	for passage_dict in data.get("passages", []) as Array:
+		typed_passages.append(BiomePassage.from_dict(passage_dict as Dictionary))
+	cell.passages = typed_passages
+	var layout_data: Variant = data.get("generated_layout", null)
+	if layout_data is Dictionary:
+		cell.generated_layout = BiomeEnvironmentLayout.from_dict(layout_data as Dictionary)
+	cell.validation_report = (data.get("validation_report", {}) as Dictionary).duplicate(true)
+	return cell

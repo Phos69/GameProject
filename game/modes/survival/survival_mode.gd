@@ -35,7 +35,11 @@ func _process(_delta: float) -> void:
 		return
 	var defeated_wave := wave_manager.current_wave
 	survival_defeated.emit(defeated_wave)
-	stop_mode()
+	# Park the built world on defeat: a retry is the most likely next action, so the
+	# same-seed world is reused instantly instead of rebuilt. A full teardown still
+	# happens if the player leaves to the menu / another mode (stop_mode without
+	# keep_world), see stop_mode() below.
+	stop_mode(true)
 
 func start_mode(context: Dictionary = {}) -> void:
 	if is_running:
@@ -72,14 +76,18 @@ func start_mode(context: Dictionary = {}) -> void:
 		wave_manager.start_run()
 
 func stop_mode(keep_world: bool = false) -> void:
-	if not is_running:
-		return
-	if ammo_director != null:
-		ammo_director.stop_run(true)
-	if wave_manager != null:
-		wave_manager.stop_run(true)
-	if market_controller != null:
-		market_controller.stop_run()
+	# Gameplay-layer stop only runs when the mode is actually running.
+	if is_running:
+		if ammo_director != null:
+			ammo_director.stop_run(true)
+		if wave_manager != null:
+			wave_manager.stop_run(true)
+		if market_controller != null:
+			market_controller.stop_run()
+	# World stop is propagated even when not running: after a defeat parked the world
+	# (stop_mode(true)), leaving to the menu/another mode (stop_mode without
+	# keep_world) must still tear down the parked world instead of leaking it.
+	_resolve_zombie_mode_controller()
 	if zombie_mode_controller != null:
 		zombie_mode_controller.stop_run(keep_world)
 	super.stop_mode(keep_world)

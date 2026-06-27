@@ -120,6 +120,12 @@ func can_reuse_world(context: Dictionary = {}) -> bool:
 func _reuse_parked_world(resolved_context: Dictionary) -> void:
 	_world_parked = false
 	is_active = true
+	# Il mondo (terreno/tile/ostacoli/hazard) resta parcheggiato; va resettato solo
+	# il layer di gameplay: loot (drop a terra + casse), posizione dei personaggi,
+	# ondate ed encounter. La salute/stat dei personaggi e' reimpostata da
+	# ProgressionManager su game_mode_started.
+	_reset_loot_layer()
+	_reposition_players_to_spawn()
 	if wave_director != null and wave_director.has_method("start_run"):
 		wave_director.start_run()
 	if random_encounter_system != null and random_encounter_system.has_method("configure_seed"):
@@ -127,6 +133,35 @@ func _reuse_parked_world(resolved_context: Dictionary) -> void:
 			int(resolved_context.get("world_seed", resolved_context.get("run_seed", 0)))
 		)
 	_emit_run_started()
+
+# Retry istantaneo: azzera SOLO il loot, senza toccare il mondo parcheggiato.
+# Rimuove i drop a terra lasciati dai nemici e rigenera le casse risorse.
+func _reset_loot_layer() -> void:
+	for pickup in get_tree().get_nodes_in_group("drop_pickups"):
+		if is_instance_valid(pickup):
+			pickup.queue_free()
+	var drop_system := get_tree().get_first_node_in_group("drop_system")
+	if drop_system != null and drop_system.has_method("reset_run_weapon_registry"):
+		drop_system.reset_run_weapon_registry()
+	# Le casse risorse: rigenerate dal loro sistema solo sul path NON-streaming (lo
+	# stesso che normalmente le spawna). In streaming la generazione e' guidata dallo
+	# streamer per regione, quindi le casse parcheggiate restano col mondo parcheggiato.
+	if (
+		not region_streaming_enabled_for_run
+		and resource_crate_system != null
+		and resource_crate_system.has_method("start_run")
+	):
+		var biome = get_current_biome()
+		if biome != null:
+			# start_run() libera le casse precedenti (_clear_runtime) e le rigenera.
+			resource_crate_system.start_run(biome)
+
+# Riporta i player al punto di spawn. Su retry i player persistono tra le run, quindi
+# senza questo resterebbero dov'erano morti.
+func _reposition_players_to_spawn() -> void:
+	var player_manager = get_tree().get_first_node_in_group("player_manager")
+	if player_manager != null and player_manager.has_method("reset_players_to_spawn"):
+		player_manager.reset_players_to_spawn()
 
 func _context_signature(context: Dictionary) -> String:
 	# Identita della scena bakeata parcheggiata. Usa la firma-scena della
@@ -197,6 +232,7 @@ func _finish_start_run(resolved_context: Dictionary) -> void:
 		region_seam_system.start_run(biome_manager, world_runtime)
 	var biome = get_current_biome()
 	is_active = true
+	_reposition_players_to_spawn()
 	if wave_director != null and wave_director.has_method("start_run"):
 		wave_director.start_run()
 	if random_encounter_system != null and random_encounter_system.has_method("configure_seed"):

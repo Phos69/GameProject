@@ -107,6 +107,39 @@ static func _duplicate_value(value: Variant) -> Variant:
 		return value.duplicate()
 	return value
 
+# --- Serializzazione (WorldSnapshotCodec / cache su disco) ------------------
+# Rappresentazione a Dictionary di SOLI value-type/array, salvabile con
+# FileAccess.store_var(). Speculare a clone(): itera la property list cosi resta
+# corretta aggiungendo nuovi campi. Su disco gli array tipizzati perdono il tipo
+# (store_var/get_var ritorna Array non tipizzati); from_dict li ri-tipizza con
+# Array.assign() sull'array (gia tipizzato e vuoto) della property di destinazione.
+func to_dict() -> Dictionary:
+	var data := {}
+	for property in get_property_list():
+		if int(property.get("usage", 0)) & PROPERTY_USAGE_SCRIPT_VARIABLE == 0:
+			continue
+		var property_name := String(property.get("name", ""))
+		data[property_name] = _duplicate_value(get(property_name))
+	return data
+
+static func from_dict(data: Dictionary) -> BiomeEnvironmentLayout:
+	var layout := BiomeEnvironmentLayout.new()
+	for property in layout.get_property_list():
+		if int(property.get("usage", 0)) & PROPERTY_USAGE_SCRIPT_VARIABLE == 0:
+			continue
+		var property_name := String(property.get("name", ""))
+		if not data.has(property_name):
+			continue
+		var value: Variant = data[property_name]
+		var target: Variant = layout.get(property_name)
+		if target is Array and value is Array and (target as Array).is_typed():
+			# L'array della property e gia tipizzato (vuoto): assign() converte e
+			# valida gli elementi dell'array non tipizzato letto dal disco.
+			(target as Array).assign(value as Array)
+		else:
+			layout.set(property_name, _duplicate_value(value))
+	return layout
+
 func has_generated_map_data() -> bool:
 	return (
 		generation_seed != 0

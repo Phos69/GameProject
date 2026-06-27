@@ -14,6 +14,8 @@ const WorldGen = preload("res://tests/support/world_gen_helpers.gd")
 # come clone del primo, rendendo banale il confronto. La disattiviamo qui cosi
 # ogni build rigenera davvero, e ripuliamo per isolare le suite vicine.
 func before_all() -> void:
+	# Il tier disco e' gia spento per tutta la suite dal pre_run hook; qui basta
+	# spegnere la cache in memoria per verificare la generazione in se'.
 	WorldDataCache.set_enabled(false)
 	WorldDataCache.clear()
 

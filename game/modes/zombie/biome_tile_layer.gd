@@ -24,6 +24,9 @@ const RECTILINEAR_ROCK_AREA_MESH_BUILDER_SCRIPT = preload(
 const SVG_TEXTURE_LOADER = preload(
 	"res://game/modes/zombie/isometric_svg_texture_loader.gd"
 )
+const TILE_BAKE_CACHE = preload(
+	"res://game/modes/zombie/tile_bake_cache.gd"
+)
 const CLIFF_FACE_TEXTURE_ID := &"cliff_face_texture"
 const CLIFF_LIP_TEXTURE_ID := &"cliff_lip_texture"
 const CLIFF_LIP_VERTICAL_TEXTURE_ID := &"cliff_lip_vertical_texture"
@@ -108,6 +111,9 @@ var _suppressed_void_texture_count: int = 0
 # off the main thread so the game does not freeze while a 500x500 chunk is built.
 var _build_thread: Thread
 var _is_building: bool = false
+# Chiave del tile-bake su disco (TileBakeCache): un hit salta l'intero loop di
+# resolve per-cella, la parte dominante del bake.
+var _bake_key: String = ""
 
 func configure(
 	next_layout: BiomeEnvironmentLayout,
@@ -153,13 +159,19 @@ func configure(
 	texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 	add_to_group("biome_tile_layers")
 	_rebuild_chunks()
+	_bake_key = TILE_BAKE_CACHE.make_key(
+		biome_id,
+		quality_preset,
+		layout.get_generation_signature() if layout != null else "",
+		chunk_size
+	)
 	if async_build:
 		# The node is already in the tree but draws nothing until the bake finishes.
 		_is_building = true
 		_build_thread = Thread.new()
 		_build_thread.start(_threaded_build)
 		return
-	_rebuild_tile_cache()
+	_ensure_tile_cache()
 	_rebuild_ground_geometry()
 	queue_redraw()
 
@@ -169,9 +181,39 @@ func is_building() -> bool:
 func _threaded_build() -> void:
 	# Runs on the worker thread: pure CPU work that fills the tile caches and bakes
 	# the ground geometry. The node is not drawn yet, so there is no render race.
-	_rebuild_tile_cache()
+	_ensure_tile_cache()
 	_rebuild_ground_geometry()
 	call_deferred("_finalize_threaded_build")
+
+# Carica le mappe-tile risolte dalla cache su disco (salta il loop di resolve) o,
+# in mancanza, le ribuilda e le persiste. La geometria viene comunque ricostruita
+# dal chiamante leggendo queste mappe in O(1).
+func _ensure_tile_cache() -> void:
+	if layout == null:
+		return
+	var cell_count := layout.zone_size.x * layout.zone_size.y
+	var cached := TILE_BAKE_CACHE.fetch(_bake_key, cell_count)
+	if not cached.is_empty():
+		_apply_tile_cache_payload(cached)
+		return
+	_rebuild_tile_cache()
+	TILE_BAKE_CACHE.store(_bake_key, cell_count, _tile_cache_payload())
+
+func _tile_cache_payload() -> Dictionary:
+	return {
+		"tile_id": _tile_id_cache,
+		"tile_section": _tile_section_cache,
+		"tile_role": _tile_role_cache,
+		"asset_path": _asset_path_cache,
+		"missing_asset_count": _missing_asset_count
+	}
+
+func _apply_tile_cache_payload(payload: Dictionary) -> void:
+	_tile_id_cache = payload.get("tile_id", {}) as Dictionary
+	_tile_section_cache = payload.get("tile_section", {}) as Dictionary
+	_tile_role_cache = payload.get("tile_role", {}) as Dictionary
+	_asset_path_cache = payload.get("asset_path", {}) as Dictionary
+	_missing_asset_count = int(payload.get("missing_asset_count", 0))
 
 func _finalize_threaded_build() -> void:
 	if _build_thread != null and _build_thread.is_started():

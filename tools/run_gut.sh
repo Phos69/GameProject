@@ -7,11 +7,16 @@
 # Uso:
 #   tools/run_gut.sh [-d res://tests/suites/<area>] [-s <select>]
 # Esempi:
-#   tools/run_gut.sh                          # tutta la suite (da .gutconfig.json)
+#   tools/run_gut.sh                          # solo le suite golden (default)
+#   GUT_CONFIG=res://.gutconfig.json tools/run_gut.sh   # tutta la suite
 #   tools/run_gut.sh -d res://tests/suites/world_gen
+#
+# DEFAULT solo-golden: per ora la suite gira unicamente sul mondo golden
+# (.gutconfig.golden.json). Per tutta la suite usa GUT_CONFIG=res://.gutconfig.json.
 #
 # Variabili d'ambiente:
 #   GODOT        path/comando del binario Godot (default: "godot")
+#   GUT_CONFIG   config GUT da usare (default: res://.gutconfig.golden.json)
 #   SKIP_IMPORT  se "1", salta l'import iniziale delle risorse
 
 set -u
@@ -20,6 +25,7 @@ PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$PROJECT_ROOT"
 
 GODOT="${GODOT:-godot}"
+GUT_CONFIG="${GUT_CONFIG:-res://.gutconfig.golden.json}"
 
 if ! command -v "$GODOT" >/dev/null 2>&1 && [ ! -x "$GODOT" ]; then
 	echo "ERRORE: binario Godot non trovato (comando: '$GODOT')." >&2
@@ -34,6 +40,6 @@ if [ "${SKIP_IMPORT:-0}" != "1" ]; then
 	"$GODOT" --headless --import --path . >/dev/null 2>&1 || true
 fi
 
-echo "==> GUT run (un solo processo)..."
+echo "==> GUT run (un solo processo, config: $GUT_CONFIG)..."
 "$GODOT" --headless -s res://addons/gut/gut_cmdln.gd \
-	-gconfig=res://.gutconfig.json -gexit "${EXTRA_ARGS[@]}"
+	-gconfig="$GUT_CONFIG" -gexit "${EXTRA_ARGS[@]}"

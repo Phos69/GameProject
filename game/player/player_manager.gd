@@ -81,6 +81,16 @@ func spawn_player(player_slot: int) -> Node:
 	player_spawned.emit(player_slot, player)
 	return player
 
+## Riporta i player gia presenti al loro punto di spawn (retry: i player
+## persistono tra una run e l'altra, quindi vanno riposizionati esplicitamente).
+func reset_players_to_spawn() -> void:
+	for player_slot in players.keys():
+		var player = players[player_slot]
+		if player is Node2D and is_instance_valid(player):
+			(player as Node2D).global_position = _spawn_point_for_slot(int(player_slot))
+			if &"velocity" in player:
+				player.set(&"velocity", Vector2.ZERO)
+
 func despawn_player(player_slot: int) -> void:
 	if not players.has(player_slot):
 		return

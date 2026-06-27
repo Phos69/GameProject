@@ -8,6 +8,9 @@ extends GutTest
 const WorldGen = preload("res://tests/support/world_gen_helpers.gd")
 
 func before_each() -> void:
+	# Questa suite verifica la semantica LRU IN MEMORIA (has/size/hits). Il tier
+	# disco e' gia spento per tutta la suite dal pre_run hook, cosi store/fetch non
+	# scrivono ne' leggono snapshot su user://.
 	WorldDataCache.clear()
 	WorldDataCache.set_enabled(true)
 	WorldDataCache.set_max_worlds(WorldDataCache.DEFAULT_MAX_WORLDS)

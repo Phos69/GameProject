@@ -11,6 +11,13 @@ extends GutTest
 
 const GoldenWorld = preload("res://tests/support/golden_world.gd")
 
+# Stub di PlayerManager: conta le richieste di riposizionamento allo spawn, cosi il
+# test verifica che il retry riporti i player allo spawn (non li lasci dove erano).
+class FakePlayerManager extends Node:
+	var reset_calls: int = 0
+	func reset_players_to_spawn() -> void:
+		reset_calls += 1
+
 func test_same_seed_retry_reuses_world() -> void:
 	var harness := Node.new()
 	harness.name = "WorldReuseHarness"
@@ -43,12 +50,37 @@ func test_same_seed_retry_reuses_world() -> void:
 	assert_eq(biome_manager.get_current_biome_cell(), cell, "parked world keeps its cell instances")
 	assert_not_null(cell.generated_layout, "parked cell keeps its generated layout")
 
+	# Stale loot dropped during the previous run must NOT survive a retry, even
+	# though the world itself is reused. Simulate a ground drop left behind.
+	var stale_pickup := Node.new()
+	stale_pickup.name = "StaleDropPickup"
+	stale_pickup.add_to_group("drop_pickups")
+	harness.add_child(stale_pickup)
+
+	# Players persist across a retry, so the reuse path must ask the player manager to
+	# put them back at spawn (otherwise they'd stay where they died).
+	var player_manager := FakePlayerManager.new()
+	player_manager.name = "FakePlayerManager"
+	player_manager.add_to_group("player_manager")
+	harness.add_child(player_manager)
+
 	# Retry with the same context reuses the world: same cell instance, no regen.
 	controller.start_run(context)
 	assert_true(controller.is_active, "world is active again after retry")
 	assert_eq(
 		biome_manager.get_current_biome_cell(), cell,
 		"retry reuses the same world cells without regenerating"
+	)
+	# The loot layer was reset: the stale ground drop is cleared on reuse.
+	await wait_frames(1)
+	assert_true(
+		not is_instance_valid(stale_pickup) or stale_pickup.is_queued_for_deletion(),
+		"retry clears stale ground loot while keeping the parked world"
+	)
+	# Players were repositioned to spawn on the retry.
+	assert_eq(
+		player_manager.reset_calls, 1,
+		"retry repositions players to spawn"
 	)
 
 	# A different seed is not reusable and rebuilds with new cells.

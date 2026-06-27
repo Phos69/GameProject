@@ -30,9 +30,25 @@ class_name WorldDataCache
 
 const DEFAULT_MAX_WORLDS: int = 8
 
+## Tier persistente su disco: a differenza della memoria (per-processo) sopravvive
+## tra processi, cosi il mondo golden buildato dai test e' lo stesso usato dal
+## gameplay. I file (snapshot via WorldSnapshotCodec) vivono qui sotto user://.
+const DISK_DIR: String = "user://world_cache/"
+const DISK_EXT: String = ".bin"
+const WORLD_SNAPSHOT_CODEC = preload(
+	"res://game/procedural/world_generation/world_snapshot_codec.gd"
+)
+
 ## Chiavi che non cambiano MAI il mondo costruito: escluse sia dalla firma dati
-## sia dalla firma scena (park del controller).
+## sia dalla firma scena (park del controller). Includono SIA le chiavi reali del
+## contesto di gioco (character_id / character_ids_by_slot, vedi
+## main_menu._build_character_context + BaseGameMode._apply_character_context) SIA
+## le varianti legacy selected_*: solo cosi canonical_key({}) usato dallo snapshot
+## golden combacia col contesto runtime che porta il personaggio, e lo stesso mondo
+## viene riusato a prescindere dal roster.
 const GAMEPLAY_KEYS: Array[StringName] = [
+	&"character_id",
+	&"character_ids_by_slot",
 	&"selected_character_id",
 	&"selected_character_ids_by_slot",
 	&"run_seed",
@@ -48,6 +64,7 @@ const NON_DATA_KEYS: Array[StringName] = [
 ]
 
 static var _enabled: bool = true
+static var _disk_enabled: bool = true
 static var _max_worlds: int = DEFAULT_MAX_WORLDS
 # Ordinato per ricenza: chiave LRU in testa (keys()[0]), MRU in coda.
 static var _entries: Dictionary = {}
@@ -94,14 +111,23 @@ static func fetch(context: Dictionary) -> Dictionary:
 	if not _enabled:
 		return {}
 	var key := canonical_key(context)
-	if not _entries.has(key):
-		_misses += 1
-		return {}
-	_hits += 1
-	var master := _entries[key] as Dictionary
-	_entries.erase(key)
-	_entries[key] = master
-	return clone_world_data(master)
+	if _entries.has(key):
+		_hits += 1
+		var master := _entries[key] as Dictionary
+		_entries.erase(key)
+		_entries[key] = master
+		return clone_world_data(master)
+	# Miss in memoria: prova il tier disco (sopravvive tra processi). Un hit su
+	# disco viene promosso in memoria come master indipendente.
+	if _disk_enabled:
+		var from_disk := _disk_fetch(key)
+		if not from_disk.is_empty():
+			_hits += 1
+			_entries[key] = from_disk
+			_evict_to_limit()
+			return clone_world_data(from_disk)
+	_misses += 1
+	return {}
 
 ## Memorizza uno snapshot (clone immutabile) di `world_data` per `context`.
 ## No-op se disabilitata o se i dati sono vuoti.
@@ -114,9 +140,16 @@ static func store(context: Dictionary, world_data: Dictionary) -> void:
 	_entries.erase(key)
 	_entries[key] = clone_world_data(world_data)
 	_evict_to_limit()
+	if _disk_enabled:
+		_disk_store(key, world_data)
 
+# has() resta volutamente sola-memoria: riflette lo stato LRU di processo (i test
+# del cap LRU vi si appoggiano). Per il disco usare has_on_disk().
 static func has(context: Dictionary) -> bool:
 	return _enabled and _entries.has(canonical_key(context))
+
+static func has_on_disk(context: Dictionary) -> bool:
+	return _disk_enabled and FileAccess.file_exists(_disk_path(canonical_key(context)))
 
 # --- Clone -----------------------------------------------------------------
 
@@ -173,6 +206,12 @@ static func set_enabled(value: bool) -> void:
 static func is_enabled() -> bool:
 	return _enabled
 
+static func set_disk_enabled(value: bool) -> void:
+	_disk_enabled = value
+
+static func is_disk_enabled() -> bool:
+	return _disk_enabled
+
 ## Svuota la cache e azzera le statistiche (isolamento tra suite di test).
 static func clear() -> void:
 	_entries.clear()
@@ -185,8 +224,88 @@ static func size() -> int:
 static func stats() -> Dictionary:
 	return {
 		"enabled": _enabled,
+		"disk_enabled": _disk_enabled,
 		"size": _entries.size(),
 		"max_worlds": _max_worlds,
 		"hits": _hits,
 		"misses": _misses
 	}
+
+# --- Tier disco (user://) --------------------------------------------------
+
+static func _disk_path(key: String) -> String:
+	# Nome file = hash della chiave canonica (la chiave stessa puo' essere lunga);
+	# la chiave per intero e' ri-validata dentro al blob contro le collisioni.
+	return DISK_DIR + key.sha256_text() + DISK_EXT
+
+static func _ensure_disk_dir() -> void:
+	if not DirAccess.dir_exists_absolute(DISK_DIR):
+		DirAccess.make_dir_recursive_absolute(DISK_DIR)
+
+static func _disk_fetch(key: String) -> Dictionary:
+	var path := _disk_path(key)
+	if not FileAccess.file_exists(path):
+		return {}
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return {}
+	var blob: Variant = file.get_var()
+	file.close()
+	if not (blob is Dictionary):
+		return {}
+	# Guardia contro hash collision / file estraneo: la chiave canonica completa
+	# deve combaciare.
+	if String((blob as Dictionary).get("canonical_key", "")) != key:
+		return {}
+	var snapshot := (blob as Dictionary).get("snapshot", {}) as Dictionary
+	# world_data_from_dict valida il format_version (guardia di drift): blob di
+	# formato vecchio tornano {} e vengono rigenerati.
+	return WORLD_SNAPSHOT_CODEC.world_data_from_dict(snapshot)
+
+static func _disk_store(key: String, world_data: Dictionary) -> void:
+	_ensure_disk_dir()
+	var blob := {
+		"canonical_key": key,
+		"snapshot": WORLD_SNAPSHOT_CODEC.world_data_to_dict(world_data)
+	}
+	var path := _disk_path(key)
+	var tmp_path := path + ".tmp"
+	var file := FileAccess.open(tmp_path, FileAccess.WRITE)
+	if file == null:
+		return
+	file.store_var(blob)
+	file.close()
+	# Scrittura atomica: rimpiazza il file finale solo a write completata.
+	if FileAccess.file_exists(path):
+		DirAccess.remove_absolute(path)
+	DirAccess.rename_absolute(tmp_path, path)
+	_prune_disk_to_limit()
+
+# Cap disco speculare a quello in memoria: sfratta i file .bin meno recenti
+# (per data di modifica) quando si supera _max_worlds.
+static func _prune_disk_to_limit() -> void:
+	if not DirAccess.dir_exists_absolute(DISK_DIR):
+		return
+	var files := DirAccess.get_files_at(DISK_DIR)
+	var snapshots: Array = []
+	for file_name in files:
+		if file_name.ends_with(DISK_EXT):
+			snapshots.append(file_name)
+	if snapshots.size() <= _max_worlds:
+		return
+	snapshots.sort_custom(func(a, b):
+		return (
+			FileAccess.get_modified_time(DISK_DIR + a)
+			< FileAccess.get_modified_time(DISK_DIR + b)
+		))
+	for index in range(snapshots.size() - _max_worlds):
+		DirAccess.remove_absolute(DISK_DIR + snapshots[index])
+
+## Svuota il tier disco. Esplicito: clear() (usato dai test) tocca SOLO la memoria,
+## cosi lo snapshot golden persiste tra suite e tra processi.
+static func clear_disk() -> void:
+	if not DirAccess.dir_exists_absolute(DISK_DIR):
+		return
+	for file_name in DirAccess.get_files_at(DISK_DIR):
+		if file_name.ends_with(DISK_EXT) or file_name.ends_with(".tmp"):
+			DirAccess.remove_absolute(DISK_DIR + file_name)

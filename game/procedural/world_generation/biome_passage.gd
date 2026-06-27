@@ -146,3 +146,38 @@ func get_signature() -> String:
 		width,
 		String(passage_type)
 	]
+
+# --- Serializzazione (WorldSnapshotCodec / cache su disco) ------------------
+# Rappresentazione a Dictionary puro di soli value-type, salvabile con
+# FileAccess.store_var(). Speculare a clone(): tutti i campi sono value-type.
+func to_dict() -> Dictionary:
+	return {
+		"from_cell_id": from_cell_id,
+		"to_cell_id": to_cell_id,
+		"from_biome_id": from_biome_id,
+		"to_biome_id": to_biome_id,
+		"side": side,
+		"opposite_side": opposite_side,
+		"position": position,
+		"width": width,
+		"passage_type": passage_type,
+		"from_world_origin": from_world_origin,
+		"to_world_origin": to_world_origin,
+		"seed": seed
+	}
+
+static func from_dict(data: Dictionary) -> BiomePassage:
+	var passage := BiomePassage.new()
+	passage.from_cell_id = StringName(data.get("from_cell_id", &""))
+	passage.to_cell_id = StringName(data.get("to_cell_id", &""))
+	passage.from_biome_id = StringName(data.get("from_biome_id", &""))
+	passage.to_biome_id = StringName(data.get("to_biome_id", &""))
+	passage.side = StringName(data.get("side", &"east"))
+	passage.opposite_side = StringName(data.get("opposite_side", &"west"))
+	passage.position = int(data.get("position", 100))
+	passage.width = int(data.get("width", 40))
+	passage.passage_type = StringName(data.get("passage_type", &"road"))
+	passage.from_world_origin = data.get("from_world_origin", Vector2i.ZERO)
+	passage.to_world_origin = data.get("to_world_origin", Vector2i.ZERO)
+	passage.seed = int(data.get("seed", 0))
+	return passage
