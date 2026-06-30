@@ -114,7 +114,7 @@ func populate_layout(
 ) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = maxi(cell.seed, 1)
-	var allow_internal_void := not _is_walled_arena_context(context)
+	var allow_internal_void := _internal_void_enabled(context)
 	_add_roads(layout, cell)
 	_add_biome_navigation_features(layout, biome, rng)
 	_add_internal_blocks(layout, biome, rng, allow_internal_void)
@@ -145,7 +145,7 @@ func populate_layout_voidfirst(
 ) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = maxi(cell.seed, 1)
-	var allow_internal_void := not _is_walled_arena_context(context)
+	var allow_internal_void := _internal_void_enabled(context)
 	_carve_passages(layout, cell)
 	_place_rocks(layout, biome, rng)
 	_place_forests(layout, biome, rng)
@@ -1072,6 +1072,25 @@ func _is_walled_arena_context(context: Dictionary) -> bool:
 		_get_context_string(context, "arena_boundary_mode", "") == "walled"
 		or _get_context_string(context, "arena_boundary_mode", "") == "blocked"
 	)
+
+# Internal void/chasms are a shared terrain feature, decoupled from the boundary
+# mode: they are emitted in every mode (Survival and the walled Infinite Arena
+# alike) and only suppressed by an explicit opt-out flag. The walled boundary now
+# governs the perimeter only (walls vs fall edge), never the interior.
+func _internal_void_enabled(context: Dictionary) -> bool:
+	return not _get_context_bool(context, "disable_internal_void", false)
+
+func _get_context_bool(
+	context: Dictionary,
+	key: String,
+	default_value: bool
+) -> bool:
+	if context.has(key):
+		return bool(context.get(key))
+	var string_name_key := StringName(key)
+	if context.has(string_name_key):
+		return bool(context.get(string_name_key))
+	return default_value
 
 func _get_context_string(
 	context: Dictionary,

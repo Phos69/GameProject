@@ -657,8 +657,11 @@ multi-bioma.
   `single_biome_arena = true` e non prevale su `biome_map_width` /
   `biome_map_height` espliciti.
 - Il context `arena_boundary_mode = "walled"` converte i lati senza vicino in
-  `BLOCKED`, genera un anello continuo di segmenti perimetrali e disabilita i
-  void/fall pocket interni del layout arena. Il layout assegna
+  `BLOCKED` e genera un anello continuo di segmenti perimetrali: governa solo il
+  perimetro (muri al posto del precipizio), non il terreno interno. I void/chasm
+  interni del layout sono ora una feature condivisa con `Zombie Survival` e
+  restano attivi nell'arena; si disabilitano solo col flag context esplicito
+  `disable_internal_void`. Il layout assegna
   `perimeter_visual_style = raised_cliff` e altezza sette celle: le strade
   decorative possono terminare sotto il bordo ma non lo aprono. Nord/sud
   possiedono gli angoli e i lati verticali terminano al loro bordo interno.

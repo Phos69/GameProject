@@ -275,7 +275,7 @@ func _assert_walled_infinite_arena_profile(biome_manager: BiomeManager) -> void:
 	if layout == null:
 		return
 	assert_gt(layout.wall_segment_rects.size(), 0, "walled arena emits perimeter wall segments")
-	assert_true(layout.fall_zone_rects.is_empty(), "walled arena has no fall zones")
+	_assert_no_perimeter_fall_zones(layout, "walled arena")
 	_assert_raised_cliff_layout(layout)
 
 # --- infinite arena come modalità di default (infinite_arena_default_mode) ---
@@ -354,7 +354,7 @@ func _assert_infinite_arena_world(biome_manager: BiomeManager) -> void:
 	if layout == null:
 		return
 	assert_gt(layout.wall_segment_rects.size(), 0, "Infinite Arena layout emits perimeter wall segments")
-	assert_true(layout.fall_zone_rects.is_empty(), "Infinite Arena layout has no fall boundary")
+	_assert_no_perimeter_fall_zones(layout, "Infinite Arena layout")
 	assert_true(bool(layout.validation_report.get("is_valid", false)), "Infinite Arena layout passes validation")
 	_assert_raised_cliff_layout(layout)
 
@@ -367,6 +367,21 @@ func _assert_arena_terrain_is_solid(scene) -> void:
 	var player: Node2D = scene.node(&"players") as Node2D
 	if player != null:
 		assert_false(hazard_system.is_void_at_world_position(player.global_position), "Infinite Arena player spawn is not classified as void")
+
+# The walled arena keeps a walled perimeter (no fall edge to the void), but
+# internal chasms are now a shared terrain feature and may appear, so assert only
+# that every emitted fall zone is an internal chasm and none is a perimeter
+# (side-tagged) fall boundary.
+func _assert_no_perimeter_fall_zones(layout: BiomeEnvironmentLayout, label: String) -> void:
+	for index in range(layout.hazard_ids.size()):
+		if layout.hazard_ids[index] != &"fall_zone":
+			continue
+		var side: StringName = layout.hazard_sides[index]
+		assert_eq(
+			side,
+			&"internal",
+			"%s keeps a walled perimeter: fall zones are internal chasms only (got side '%s')" % [label, String(side)]
+		)
 
 func _assert_raised_cliff_layout(layout: BiomeEnvironmentLayout) -> void:
 	assert_eq(

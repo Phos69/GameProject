@@ -602,7 +602,9 @@ di survival, ma con un profilo compatto:
   di sette celle; bloccano player, zombie e proiettili ma non applicano caduta;
 - le strade decorative terminano contro il cliff e non creano uscite;
 - nessuna megamappa, region seam, mappa esplorazione o streaming regioni;
-- nessun fall boundary o void pocket interno nel profilo arena;
+- nessun fall boundary perimetrale nel profilo arena: il perimetro resta murato
+  (raised cliff senza caduta), ma i void/chasm interni sono una feature condivisa
+  con `Zombie Survival` e restano attivi anche nell'arena;
 - ondate infinite, supply crate, boss wave e sistemi condivisi invariati.
 
 Dal menu/Continue la modalita passa ora dalla Character Select come le altre,
