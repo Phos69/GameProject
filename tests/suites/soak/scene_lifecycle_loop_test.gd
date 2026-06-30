@@ -24,9 +24,9 @@ func test_repeated_scene_lifecycle() -> void:
 			break
 		get_tree().root.add_child(instance)
 		get_tree().current_scene = instance
-		await wait_frames(2)
+		await wait_physics_frames(2)
 		_teardown_scene(instance)
-		await wait_frames(2)
+		await wait_physics_frames(2)
 		completed += 1
 	assert_eq(completed, ITERATIONS, "all %d boot/teardown cycles complete" % ITERATIONS)
 

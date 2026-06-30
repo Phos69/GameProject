@@ -11,7 +11,7 @@ const MainSceneFixture = preload("res://tests/support/main_scene_fixture.gd")
 func test_ten_wave_run_crosses_biomes() -> void:
 	var scene := MainSceneFixture.new()
 	assert_true(scene.boot(self), "main scene can be loaded")
-	await wait_frames(2)
+	await wait_physics_frames(2)
 
 	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
 	var survival_mode := scene.node(&"survival_mode") as SurvivalMode
@@ -64,7 +64,7 @@ func test_ten_wave_run_crosses_biomes() -> void:
 			var target_index := mini(floori(float(wave_index - 1) / 2.0), 4)
 			transition_system.cooldown_timer = 0.0
 			transition_system.transition_to(biome_path[target_index], &"east")
-			await wait_frames(1)
+			await wait_physics_frames(1)
 		assert_true(await _wait_for_wave_combat(wave_manager, wave_index), "wave %d reaches combat" % wave_index)
 		seen_biomes[wave_manager.current_wave_biome_id] = true
 		for enemy in wave_manager.get_active_wave_enemies():
@@ -75,7 +75,7 @@ func test_ten_wave_run_crosses_biomes() -> void:
 
 	survival_mode.stop_mode()
 	scene.teardown()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 func _wait_for_wave_combat(wave_manager: WaveManager, wave_index: int) -> bool:
 	for _frame in range(900):

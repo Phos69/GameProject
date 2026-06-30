@@ -18,7 +18,7 @@ var _projectile_spawn_count: int = 0
 func test_class_stats_and_damage() -> void:
 	var scene := MainSceneFixture.new()
 	assert_true(scene.boot(self), "main scene can be loaded")
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	var player_manager := scene.node(&"player_manager") as PlayerManager
 	var health_system := scene.node(&"health_system") as HealthSystem
 	if player_manager == null or health_system == null:
@@ -26,7 +26,7 @@ func test_class_stats_and_damage() -> void:
 		scene.teardown()
 		return
 	assert_true(scene.start_survival({"character_id": &"berserker"}), "survival starts as berserker")
-	await wait_frames(2)
+	await wait_physics_frames(2)
 
 	var player_one := player_manager.players.get(1) as PlayerController
 	if player_one == null:
@@ -41,7 +41,7 @@ func test_class_stats_and_damage() -> void:
 	assert_eq(rpg_component.get_defense(), 1, "class defense is exposed")
 
 	rpg_component.add_experience(45)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_eq(rpg_component.level, 2, "run XP levels up the character")
 	assert_eq(rpg_component.get_max_hp(), 135, "level up increases max HP")
 	assert_eq(rpg_component.get_attack(), 14, "level up increases attack")
@@ -56,14 +56,14 @@ func test_class_stats_and_damage() -> void:
 
 	scene.stop_survival()
 	scene.teardown()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 # --- XP da kill e wave reward (milestone_rpg_6_xp_level) --------------------
 
 func test_xp_from_kills_and_waves() -> void:
 	var scene := MainSceneFixture.new()
 	assert_true(scene.boot(self), "main scene can be loaded")
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	var player_manager := scene.node(&"player_manager") as PlayerManager
 	var enemy_system := scene.node(&"enemy_system") as EnemySystem
 	var health_system := scene.node(&"health_system") as HealthSystem
@@ -73,7 +73,7 @@ func test_xp_from_kills_and_waves() -> void:
 		scene.teardown()
 		return
 	assert_true(scene.start_survival({"character_id": &"ranger"}), "survival starts as ranger")
-	await wait_frames(2)
+	await wait_physics_frames(2)
 
 	var player := player_manager.players.get(1) as PlayerController
 	if player == null:
@@ -88,7 +88,7 @@ func test_xp_from_kills_and_waves() -> void:
 		scene.teardown()
 		return
 	health_system.apply_damage(enemy, 9999, player, &"test_kill")
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_eq(rpg_component.experience, 5, "killer receives zombie kill XP")
 	assert_eq(_count_xp_pickups(scene), 0, "zombie death does not create XP pickups")
 
@@ -99,7 +99,7 @@ func test_xp_from_kills_and_waves() -> void:
 
 	scene.stop_survival()
 	scene.teardown()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 # --- registry data-driven dei personaggi (milestone_rpg_11_data_driven) -----
 
@@ -131,7 +131,7 @@ func test_character_registry_data() -> void:
 
 func test_class_passives() -> void:
 	var player := _spawn_player()
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	var rpg_component := player.get_node("RpgPlayerComponent") as RpgPlayerComponent
 	var health_component := player.get_node("HealthComponent") as HealthComponent
 	var weapon_system := player.get_node("WeaponSystem") as WeaponSystem
@@ -175,7 +175,7 @@ func test_class_passives() -> void:
 	guard_target.free()
 	target.free()
 	player.queue_free()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 # --- adrenalina e super (milestone_rpg_8_adrenaline_super) ------------------
 
@@ -198,7 +198,7 @@ func test_adrenaline_and_supers() -> void:
 	var player := player_scene.instantiate() as PlayerController
 	player.global_position = Vector2.ZERO
 	scene_root.add_child(player)
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	var rpg_component := player.get_node("RpgPlayerComponent") as RpgPlayerComponent
 	var player_health := player.get_node("HealthComponent") as HealthComponent
 	if rpg_component == null or player_health == null:
@@ -207,7 +207,7 @@ func test_adrenaline_and_supers() -> void:
 
 	player.apply_rpg_character(&"ranger")
 	var hit_enemy := _spawn_enemy(scene_root, enemy_scene, Vector2(140.0, 0.0))
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	var start_adrenaline := rpg_component.adrenaline
 	health_system.apply_damage(hit_enemy, 3, player, &"test_hit")
 	assert_gt(rpg_component.adrenaline, start_adrenaline, "damage dealt grants adrenaline")
@@ -217,7 +217,7 @@ func test_adrenaline_and_supers() -> void:
 
 	player.apply_rpg_character(&"ranger")
 	var kill_enemy := _spawn_enemy(scene_root, enemy_scene, Vector2(180.0, 0.0))
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	health_system.apply_damage(kill_enemy, 9999, player, &"test_kill")
 	assert_gte(rpg_component.adrenaline, 6, "kill grants hit and kill adrenaline")
 
@@ -235,7 +235,7 @@ func test_adrenaline_and_supers() -> void:
 
 	player.apply_rpg_character(&"pistoliere")
 	_spawn_enemy(scene_root, enemy_scene, Vector2(220.0, 0.0))
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	_projectile_spawn_count = 0
 	rpg_component.add_adrenaline(100)
 	assert_true(rpg_component.try_activate_super(Vector2.RIGHT), "pistoliere super activates")
@@ -245,7 +245,7 @@ func test_adrenaline_and_supers() -> void:
 	player.apply_rpg_character(&"berserker")
 	player.global_position = Vector2.ZERO
 	var quake_enemy := _spawn_enemy(scene_root, enemy_scene, Vector2(70.0, 0.0))
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	var quake_health := quake_enemy.health_component.current_health
 	rpg_component.add_adrenaline(100)
 	assert_true(rpg_component.try_activate_super(Vector2.RIGHT), "berserker super activates")
@@ -254,7 +254,7 @@ func test_adrenaline_and_supers() -> void:
 	player.apply_rpg_character(&"spadaccino")
 	player.global_position = Vector2.ZERO
 	var blade_enemy := _spawn_enemy(scene_root, enemy_scene, Vector2(110.0, 0.0))
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	var blade_health := blade_enemy.health_component.current_health
 	var start_position := player.global_position
 	player_health.invulnerable = false
@@ -267,11 +267,11 @@ func test_adrenaline_and_supers() -> void:
 	for _frame in range(60):
 		if not player_health.invulnerable:
 			break
-		await wait_frames(1)
+		await wait_physics_frames(1)
 	assert_false(player_health.invulnerable, "phantom blade invulnerability recovers")
 
 	scene_root.queue_free()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 # --- classi avanzate mago/domatrice/licantropo (milestone_rpg_13_new_classes)
 
@@ -280,7 +280,7 @@ func test_advanced_classes() -> void:
 	add_child(scene_root)
 	scene_root.add_child(HealthSystem.new())
 	var player := _spawn_player(scene_root)
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	var rpg_component := player.get_node("RpgPlayerComponent") as RpgPlayerComponent
 	var weapon_system := player.get_node("WeaponSystem") as WeaponSystem
 	if rpg_component == null or weapon_system == null:
@@ -300,7 +300,7 @@ func test_advanced_classes() -> void:
 		assert_false(str(rpg_component.get_hero_name()).is_empty(), "%s exposes hero name" % str(character_id))
 
 	player.apply_rpg_character(&"domatrice")
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_true(rpg_component.briciola_companion != null and is_instance_valid(rpg_component.briciola_companion), "domatrice spawns Briciola companion")
 	if rpg_component.briciola_companion != null:
 		var briciola := rpg_component.briciola_companion
@@ -313,7 +313,7 @@ func test_advanced_classes() -> void:
 		assert_lte(briciola.get_effective_attack_damage(), 8, "frenzy damage stays bounded")
 		assert_gte(briciola.get_effective_attack_cooldown(), 0.45, "frenzy cadence stays bounded")
 	player.apply_rpg_character(&"mago")
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_true(rpg_component.briciola_companion == null or not is_instance_valid(rpg_component.briciola_companion), "changing away from domatrice removes Briciola")
 
 	player.apply_rpg_character(&"licantropo")
@@ -324,7 +324,7 @@ func test_advanced_classes() -> void:
 	for _frame in range(60):
 		if not rpg_component.is_beast_transformed():
 			break
-		await wait_frames(1)
+		await wait_physics_frames(1)
 	assert_false(rpg_component.is_beast_transformed(), "beast night transformation ends")
 	assert_true(rpg_component.is_beast_recovering(), "beast night enters readable recovery")
 	rpg_component.super_notice_timer = 0.0
@@ -333,11 +333,11 @@ func test_advanced_classes() -> void:
 	for _frame in range(60):
 		if not rpg_component.is_beast_recovering():
 			break
-		await wait_frames(1)
+		await wait_physics_frames(1)
 	assert_false(rpg_component.is_beast_recovering(), "beast recovery expires")
 
 	scene_root.queue_free()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 # --- helper -----------------------------------------------------------------
 

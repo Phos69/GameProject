@@ -20,7 +20,7 @@ func test_downed_revive_flow() -> void:
 	_defense_defeat_count = 0
 	var scene := MainSceneFixture.new()
 	assert_true(scene.boot(self), "main scene can be loaded")
-	await wait_frames(3)
+	await wait_physics_frames(3)
 
 	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
 	var local_multiplayer := scene.node(&"local_multiplayer_manager") as LocalMultiplayerManager
@@ -41,7 +41,7 @@ func test_downed_revive_flow() -> void:
 	tower_mode.defense_defeated.connect(_on_defense_defeated)
 	wave_manager.initial_delay = 100.0
 	local_multiplayer.activate_slot(2)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	var player_one := player_manager.players.get(1) as PlayerController
 	var player_two := player_manager.players.get(2) as PlayerController
 	if player_one == null or player_two == null:
@@ -50,7 +50,7 @@ func test_downed_revive_flow() -> void:
 		return
 
 	game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	player_one.global_position = Vector2.ZERO
 	player_two.global_position = Vector2(40.0, 0.0)
 	player_two.prepare_for_run(ProgressionManager.FIELD_KIT_HEALTH_BONUS)
@@ -79,7 +79,7 @@ func test_downed_revive_flow() -> void:
 	assert_eq(player_two_health.max_health, 120, "subsequent run preparation remains idempotent")
 
 	local_multiplayer.activate_slot(3)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	var player_three := player_manager.players.get(3) as PlayerController
 	assert_not_null(player_three, "a third player can join during the run")
 	if player_three != null:
@@ -88,7 +88,7 @@ func test_downed_revive_flow() -> void:
 		player_two_health.apply_damage(9999)
 		revive_system.call("advance_revive", player_two, player_three, 0.3)
 		local_multiplayer.deactivate_slot(3)
-		await wait_frames(1)
+		await wait_physics_frames(1)
 		revive_system.call("interrupt_revive", player_two)
 		assert_true(is_zero_approx(float(revive_system.call("get_revive_progress", player_two))), "reviver leave cannot complete a stale revive")
 		player_two_health.revive(60)
@@ -97,21 +97,21 @@ func test_downed_revive_flow() -> void:
 
 	player_one.health_component.apply_damage(9999)
 	player_two.health_component.apply_damage(9999)
-	await wait_frames(5)
+	await wait_physics_frames(5)
 	assert_true(_survival_defeat_count == 1 and not survival_mode.is_running, "survival ends only when every active player is incapacitated")
 
 	game_mode_manager.set_mode(GameConstants.MODE_DUNGEON, {"seed": 16, "room_count": 4})
-	await wait_frames(1)
+	await wait_physics_frames(3)
 	player_one.health_component.apply_damage(9999)
 	player_two.health_component.apply_damage(9999)
-	await wait_frames(5)
+	await wait_physics_frames(15)
 	assert_true(_dungeon_defeat_count == 1 and not dungeon_mode.is_running, "dungeon ends when the whole party is incapacitated")
 
 	game_mode_manager.set_mode(GameConstants.MODE_TOWER_DEFENSE, {"initial_delay": 100.0})
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	player_one.health_component.apply_damage(9999)
 	player_two.health_component.apply_damage(9999)
-	await wait_frames(5)
+	await wait_physics_frames(5)
 	assert_true(_defense_defeat_count == 1 and tower_mode.state == TowerDefenseWaveController.State.DEFEATED, "tower defense also resolves an all-downed party")
 
 	_teardown(scene, local_multiplayer)
@@ -121,7 +121,7 @@ func _teardown(scene: MainSceneFixture, local_multiplayer: LocalMultiplayerManag
 		local_multiplayer.deactivate_slot(3)
 		local_multiplayer.deactivate_slot(2)
 	scene.teardown()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 # --- helper condiviso PlayerQuery (player_query) ----------------------------
 
@@ -131,7 +131,7 @@ func test_player_query() -> void:
 	var p_dead := _make_stub_player(3, Vector2(3, 0))
 	PlayerQuery.health_component(p_downed).is_downed = true
 	PlayerQuery.health_component(p_dead).is_dead = true
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	var tree := get_tree()
 
 	assert_eq(PlayerQuery.all(tree).size(), 3, "all() ritorna tutti i player")
@@ -163,7 +163,7 @@ func test_player_query() -> void:
 	p_alive.free()
 	p_downed.free()
 	p_dead.free()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 func _make_stub_player(slot: int, position: Vector2) -> Node2D:
 	var player := PlayerStub.new()

@@ -13,7 +13,7 @@ func test_biome_debug_overlay_summary() -> void:
 	scene_root.add_child(overlay)
 	var encounter := RandomEncounterSystem.new()
 	scene_root.add_child(encounter)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	encounter.configure_seed(99)
 	var biome := load("res://game/modes/zombie/biomes/toxic_wastes.tres") as BiomeDefinition
 	var cell := BiomeCell.new()
@@ -85,7 +85,7 @@ func test_biome_debug_overlay_summary() -> void:
 		"overlay exposes threat score"
 	)
 	_free_current_scene_root(scene_root)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 # --- gating per livello del logger condiviso (game_log) ----------------------
 

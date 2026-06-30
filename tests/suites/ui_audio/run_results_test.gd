@@ -11,7 +11,7 @@ func test_run_results_across_modes() -> void:
 	_remove_temporary_save()
 	var scene := MainSceneFixture.new()
 	assert_true(scene.boot(self), "main scene can be loaded")
-	await wait_frames(3)
+	await wait_physics_frames(3)
 
 	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
 	var result_screen := scene.node(&"run_results_screen") as RunResultsScreen
@@ -54,7 +54,7 @@ func test_run_results_across_modes() -> void:
 	save_manager.autosave_mode_selection = false
 	wave_manager.initial_delay = 100.0
 	game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	progression.add_experience(100)
 	progression.add_money(7)
 	var player := player_manager.players.get(1) as PlayerController
@@ -90,7 +90,7 @@ func test_run_results_across_modes() -> void:
 
 	var survival_node_id := survival_mode.get_instance_id()
 	result_screen._on_retry_pressed()
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	assert_false(result_screen.is_open(), "retry hides the results screen")
 	assert_true(survival_mode.is_running, "retry restarts survival")
 	assert_eq(
@@ -106,7 +106,7 @@ func test_run_results_across_modes() -> void:
 	player.health_component.apply_damage(9999)
 	await _poll_idle(func() -> bool: return result_screen.is_open(), 240)
 	result_screen._on_change_mode_pressed()
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	assert_true(
 		game_mode_manager.active_mode_id == GameConstants.MODE_DUNGEON
 		and dungeon_mode.is_running,
@@ -114,14 +114,14 @@ func test_run_results_across_modes() -> void:
 	)
 
 	dungeon_mode.dungeon_completed.emit(dungeon_mode.run_seed, dungeon_mode.layout.size())
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_true(result_screen.is_open(), "dungeon completion opens results")
 	assert_eq(
 		result_screen.title_label.text, "DUNGEON COMPLETE",
 		"dungeon victory uses its explicit title"
 	)
 	result_screen._on_change_mode_pressed()
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	assert_true(
 		game_mode_manager.active_mode_id == GameConstants.MODE_TOWER_DEFENSE
 		and tower_mode.is_running,
@@ -129,14 +129,14 @@ func test_run_results_across_modes() -> void:
 	)
 
 	tower_mode.wave_controller.defeat_run()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_true(result_screen.is_open(), "defense failure opens results")
 	assert_eq(
 		result_screen.title_label.text, "DEFENSE FAILED",
 		"tower defense uses its explicit failure title"
 	)
 	result_screen._on_menu_pressed()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_true(
 		FileAccess.file_exists(TEMP_SAVE_PATH),
 		"results save synchronously before returning to menu"
@@ -148,7 +148,7 @@ func test_run_results_across_modes() -> void:
 	assert_false(result_screen.is_open(), "menu action hides results")
 
 	scene.teardown()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	_remove_temporary_save()
 
 func _remove_temporary_save() -> void:

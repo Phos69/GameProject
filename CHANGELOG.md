@@ -4,6 +4,16 @@
 
 ### Added
 
+- Aggiunto `docs/testing/gut_warning_cleanup_plan.md` con baseline e sequenza di
+  cleanup per deprecazioni GUT, warning generici, orphans, UID addon e leak di
+  shutdown.
+
+- Cutover finale GUT: `tools/run_gut.sh` e `tools/run_gut.ps1` ora eseguono di
+  default la suite rapida completa (`.gutconfig.json`), mantengono un'opzione
+  golden esplicita, generano un report JUnit in `build/test_logs/` e stampano un
+  riepilogo PASS/FAIL con config ed exit code. Il Visual QA delle aree rocciose
+  vive in `tests/visual_qa/rock_area_visual_qa.gd`.
+
 - Riscrittura test M8 — area A8 Game Modes & Waves migrata a GUT (13/13 file →
   3 suite sotto `tests/suites/modes/`): `core_modes_test.gd` (survival wave loop
   con boss/ammo/multiplayer, tower defense, dungeon ramificato con shop/boss,
@@ -20,7 +30,8 @@
   prato fino al bordo. Niente piu fenditure/lip disegnate a mano ne bordo a
   zig-zag: il dettaglio arriva solo dalle texture corona/parete, quindi la
   superficie resta priva di linee procedurali. Il nodo oggetto conserva solo
-  collisione e debug `F9`. QA reale in `tests/rock_area_visual_qa.gd`.
+  collisione e debug `F9`. QA reale in
+  `tests/visual_qa/rock_area_visual_qa.gd`.
 - `RockAreaOccluderVisual` ridisegna esattamente la corona sollevata (stesso
   rettangolo rientrato del builder) per il Y-sort, mascherando i player dietro la
   roccia senza coprire le pareti che vivono nel `BiomeTileLayer`.
@@ -120,6 +131,12 @@
   locali `tools/run_gut.sh` / `tools/run_gut.ps1`. La CI ora esegue il doppio
   runner: suite legacy `extends SceneTree` (in dismissione) + suite GUT (in
   crescita).
+
+### Changed
+
+- Rimossa la deprecazione `wait_frames()` dai test GUT sotto `tests/suites/**`:
+  le attese esistenti usano direttamente `wait_physics_frames()`, equivalente al
+  comportamento precedente del wrapper deprecato.
 
 ### Removed
 

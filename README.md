@@ -135,8 +135,15 @@ Test): un solo processo Godot esegue tutte le suite logiche sotto
 tools/run_gut.sh
 ./tools/run_gut.ps1
 
+# Solo il sottoinsieme golden.
+tools/run_gut.sh --golden
+./tools/run_gut.ps1 -Golden
+
 # Solo un'area (es. world_gen, combat, ui_audio, balance...).
 tools/run_gut.sh -gdir=res://tests/suites/combat
+./tools/run_gut.ps1 -GutDir res://tests/suites/combat
+
+# I wrapper locali stampano config/exit code e producono un report JUnit in build/test_logs/.
 
 # Invocazione diretta (quella usata in CI).
 godot --headless -s res://addons/gut/gut_cmdln.gd -gconfig=res://.gutconfig.json -gexit

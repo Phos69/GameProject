@@ -52,7 +52,7 @@ func test_random_encounter() -> void:
 	scene_root.add_child(crate_system)
 	var encounter := RandomEncounterSystem.new()
 	scene_root.add_child(encounter)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	encounter.base_chance = 1.0
 	encounter.danger_telegraph_duration = 0.01
 	encounter.configure_seed(1234)
@@ -88,7 +88,7 @@ func test_random_encounter() -> void:
 	await get_tree().create_timer(0.05).timeout
 	encounter.cleanup_encounter()
 	_free_current_scene_root(scene_root)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 # --- mini-eventi biome (biome_mini_events) ----------------------------------
 
@@ -110,7 +110,7 @@ func test_biome_mini_events() -> void:
 	scene_root.add_child(crate_system)
 	var encounter := RandomEncounterSystem.new()
 	scene_root.add_child(encounter)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	encounter.danger_telegraph_duration = 0.01
 	encounter.configure_seed(2026)
 	visual_settings.apply_profile(&"high_contrast")
@@ -123,7 +123,7 @@ func test_biome_mini_events() -> void:
 	encounter.cleanup_encounter()
 	hazard_system.stop_run()
 	_free_current_scene_root(scene_root)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 func _validate_biome_event(encounter: RandomEncounterSystem, visual_settings: VisualSettingsManager, biome_id: StringName, expected_event_id: StringName) -> void:
 	var biome := load("res://game/modes/zombie/biomes/%s.tres" % String(biome_id)) as BiomeDefinition
@@ -179,7 +179,7 @@ func test_save_and_mode_flow() -> void:
 	_remove_temporary_save()
 	var scene := MainSceneFixture.new()
 	assert_true(scene.boot(self), "main scene can be loaded")
-	await wait_frames(3)
+	await wait_physics_frames(3)
 	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
 	var main_menu := scene.node(&"main_menu") as MainMenu
 	var save_manager := scene.node(&"save_manager") as SaveManager
@@ -208,7 +208,7 @@ func test_save_and_mode_flow() -> void:
 	save_manager.save_path = TEMP_SAVE_PATH
 	save_manager.auto_persist_in_headless = true
 	progression.add_money(5)
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	assert_true(FileAccess.file_exists(TEMP_SAVE_PATH), "progression changes trigger autosave")
 	save_manager.autosave_progression = false
 	save_manager.autosave_mode_selection = false
@@ -241,7 +241,7 @@ func test_save_and_mode_flow() -> void:
 	assert_true(save_manager.save_game(), "valid save can replace rejected data")
 
 	assert_true(main_menu.start_selected_mode(save_manager.get_last_mode()), "menu starts the saved mode")
-	await wait_frames(3)
+	await wait_physics_frames(3)
 	await wait_physics_frames(1)
 	assert_eq(game_mode_manager.active_mode_id, GameConstants.MODE_DUNGEON, "mode selection updates the active mode")
 	assert_true(dungeon_mode.is_running, "dungeon starts from the main menu")
@@ -254,12 +254,12 @@ func test_save_and_mode_flow() -> void:
 		assert_true(player_health.max_health == 120 and player_health.current_health == 120, "Field Kit raises and refills player health at run start")
 
 	main_menu.open_menu()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_true(main_menu.is_open(), "Escape flow can return to the main menu")
 	assert_false(dungeon_mode.is_running, "returning to menu stops the active mode")
 	assert_eq(game_mode_manager.active_mode_id, GameConstants.MODE_MENU, "returning to menu restores menu state")
 	assert_true(main_menu.start_selected_mode(GameConstants.MODE_SURVIVAL), "a second run can start after returning to the menu")
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	if player_one != null:
 		var player_health := player_one.get_node("HealthComponent") as HealthComponent
 		assert_eq(player_health.max_health, 120, "Field Kit health does not stack across runs")
@@ -268,14 +268,14 @@ func test_save_and_mode_flow() -> void:
 		assert_true(game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL), "the active mode can restart after stopping")
 		assert_eq(player_health.current_health, 120, "same-mode restart prepares the player for a new run")
 	main_menu.open_menu()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_true(FileAccess.file_exists("res://export_presets.cfg"), "desktop export preset is present")
 	assert_true(_has_gameplay_feedback(&"shot") and _has_gameplay_feedback(&"impact") and _has_gameplay_feedback(&"pickup"), "all gameplay feedback categories are emitted")
 
 	if audio_manager.gameplay_feedback_generated.is_connected(_on_gameplay_feedback_generated):
 		audio_manager.gameplay_feedback_generated.disconnect(_on_gameplay_feedback_generated)
 	scene.teardown()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	_remove_temporary_save()
 
 # --- helper -----------------------------------------------------------------

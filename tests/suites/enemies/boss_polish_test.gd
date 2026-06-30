@@ -16,7 +16,7 @@ func test_boss_feedback_and_announcements() -> void:
 	_boss_projectiles = []
 	var scene := MainSceneFixture.new()
 	assert_true(scene.boot(self), "main scene can be loaded")
-	await wait_frames(3)
+	await wait_physics_frames(3)
 
 	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
 	var wave_manager := scene.node(&"wave_manager") as WaveManager
@@ -44,14 +44,14 @@ func test_boss_feedback_and_announcements() -> void:
 
 	wave_manager.initial_delay = 100.0
 	game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL)
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	assert_not_null(hud.combat_announcement, "HUD creates a reusable combat announcement")
 	wave_manager.start_next_wave()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_eq(hud.combat_announcement.announcement_id, &"wave_started", "actual wave start drives the central announcement")
 	assert_true(hud.combat_announcement.is_active(), "wave announcement is visible for couch readability")
 	wave_manager.complete_current_wave()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_eq(hud.combat_announcement.announcement_id, &"wave_clear", "actual wave reward drives the clear announcement")
 
 	var player := player_manager.players.get(1) as PlayerController
@@ -74,7 +74,7 @@ func test_boss_feedback_and_announcements() -> void:
 	assert_not_null(boss_visual, "Wave Warden uses its modular animated visual")
 	assert_true(boss_visual != null and boss_visual.get_profile_id() == &"wave_warden", "boss visual exposes its identity profile")
 	assert_true(boss_visual != null and boss_visual.spawn_timer > 0.0, "boss spawn has world-space activation feedback")
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_true(hud.boss_panel.visible, "boss HUD uses a visible framed panel")
 	assert_eq(hud.combat_announcement.announcement_id, &"boss_spawn", "boss spawn drives its introduction announcement")
 
@@ -86,7 +86,7 @@ func test_boss_feedback_and_announcements() -> void:
 
 	boss.perform_aimed_volley()
 	boss.perform_radial_burst()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_true(_has_projectile_profile(&"boss_aimed"), "aimed boss projectiles receive a dedicated profile")
 	assert_true(_has_projectile_profile(&"boss_radial"), "radial boss projectiles receive a dedicated profile")
 	var aimed_projectile := _find_projectile_profile(&"boss_aimed")
@@ -104,21 +104,21 @@ func test_boss_feedback_and_announcements() -> void:
 	assert_eq(hud.combat_announcement.announcement_id, &"boss_phase", "phase transition drives the overdrive announcement")
 
 	health_system.apply_damage(boss, 99999)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_true(_has_effect_kind(gameplay_effects, &"boss_death"), "boss defeat creates a dedicated world-space death effect")
 	assert_eq(hud.combat_announcement.announcement_id, &"boss_defeated", "boss defeat drives the reward announcement")
 	assert_false(hud.boss_panel.visible, "boss panel hides after defeat")
 
 	game_mode_manager.set_mode(GameConstants.MODE_DUNGEON)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_eq(game_mode_manager.active_mode_id, GameConstants.MODE_DUNGEON, "dungeon still starts after polished survival feedback")
 	game_mode_manager.set_mode(GameConstants.MODE_TOWER_DEFENSE)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_eq(game_mode_manager.active_mode_id, GameConstants.MODE_TOWER_DEFENSE, "tower defense still starts after polished survival feedback")
 
 	_disconnect_projectiles(projectile_system)
 	scene.teardown()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 # --- helper -----------------------------------------------------------------
 

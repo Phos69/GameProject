@@ -44,7 +44,7 @@ godot --headless --path . --script res://tests/combat_smoke_test.gd
 godot --headless --path . --script res://tests/boss_smoke_test.gd
 godot --headless --path . --script res://tests/dungeon_smoke_test.gd
 godot --headless --path . --script res://tests/tower_defense_smoke_test.gd
-godot --path . --rendering-method gl_compatibility --script res://tests/arena_variants_visual_qa.gd
+tools/run_visual_qa.sh survival
 ```
 
 Output QA:
@@ -63,4 +63,3 @@ build/qa/milestone_20_rift_foundry.png
 - Verificare danno su player, nemici e boss dentro l'area.
 - Controllare quattro player e roster misto a 1280x720.
 - Passare a dungeon e tower defense e verificare la pulizia dei props.
-

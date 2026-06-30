@@ -18,7 +18,7 @@ const ENEMY_IDS: Array[StringName] = [
 func test_crowded_arena_under_load() -> void:
 	var scene := MainSceneFixture.new()
 	assert_true(scene.boot(self), "main scene can be loaded for arena stress")
-	await wait_frames(3)
+	await wait_physics_frames(3)
 
 	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
 	var local_multiplayer := scene.node(&"local_multiplayer_manager") as LocalMultiplayerManager
@@ -39,7 +39,7 @@ func test_crowded_arena_under_load() -> void:
 		local_multiplayer.activate_slot(player_slot)
 	wave_manager.initial_delay = 100.0
 	game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL, {})
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	assert_eq(scene.nodes(&"players").size(), 4, "stress scenario activates four local players")
 
 	var spawned: Array[Node] = []
@@ -71,7 +71,7 @@ func test_crowded_arena_under_load() -> void:
 		assert_true(roster_ids.has(enemy_id), "stress scenario keeps %s active" % enemy_id)
 	assert_lt(elapsed_msec, 5000, "mixed arena scenario processes 90 physics frames within budget")
 	game_mode_manager.set_mode(GameConstants.MODE_MENU)
-	await wait_frames(5)
+	await wait_physics_frames(5)
 
 	scene.teardown()
-	await wait_frames(1)
+	await wait_physics_frames(1)

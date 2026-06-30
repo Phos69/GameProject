@@ -19,7 +19,7 @@ func test_combat_targets_and_ammo() -> void:
 	_feedback_events = []
 	var scene := MainSceneFixture.new()
 	assert_true(scene.boot(self), "main scene can be loaded")
-	await wait_frames(2)
+	await wait_physics_frames(2)
 
 	var local_multiplayer := scene.node(&"local_multiplayer_manager") as LocalMultiplayerManager
 	var player_manager := scene.node(&"player_manager") as PlayerManager
@@ -33,7 +33,7 @@ func test_combat_targets_and_ammo() -> void:
 	audio_manager.gameplay_feedback_generated.connect(_on_gameplay_feedback_generated)
 
 	local_multiplayer.activate_slot(2)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_eq(player_manager.get_players().size(), 2, "two local players can coexist during combat")
 
 	var player_one := player_manager.players.get(1) as PlayerController
@@ -96,7 +96,7 @@ func _teardown_combat(audio_manager: AudioManager, local_multiplayer: LocalMulti
 	if local_multiplayer != null:
 		local_multiplayer.deactivate_slot(2)
 	scene.teardown()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 # --- risoluzione melee vs proiettile (scena sintetica) ----------------------
 
@@ -122,7 +122,7 @@ func test_melee_attack_resolution() -> void:
 	var player := player_scene.instantiate() as PlayerController
 	player.global_position = Vector2.ZERO
 	scene_root.add_child(player)
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	var weapon_system := player.get_node("WeaponSystem") as WeaponSystem
 	assert_not_null(weapon_system, "weapon system is available")
 	if weapon_system == null:
@@ -154,13 +154,13 @@ func test_melee_attack_resolution() -> void:
 	assert_true(weapon_system.try_fire(player.global_position + Vector2.RIGHT * 22.0, Vector2.RIGHT, player), "bow fires")
 	assert_eq(_projectile_spawn_count, 1, "bow creates a projectile")
 	_clear_projectiles(scene_root)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 	await _assert_melee_damages(scene_root, target_scene, weapon_system, player, axe, Vector2(82.0, 0.0), 24, "axe")
 	await _assert_melee_damages(scene_root, target_scene, weapon_system, player, sword, Vector2(104.0, 0.0), 16, "sword")
 
 	scene_root.queue_free()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 func _assert_melee_damages(scene_root: Node, target_scene: PackedScene, weapon_system: WeaponSystem,
 		player: PlayerController, weapon: WeaponData, position: Vector2, frames: int, label: String) -> void:
@@ -182,7 +182,7 @@ func _assert_melee_damages(scene_root: Node, target_scene: PackedScene, weapon_s
 		await wait_physics_frames(1)
 	assert_lt(health.current_health, start_health, "%s melee hitbox damages target" % label)
 	target.queue_free()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 # --- contratti di hitbox e proiettile arc -----------------------------------
 
@@ -199,12 +199,12 @@ func test_weapon_hitbox_contracts() -> void:
 	var projectile := projectile_scene.instantiate() as Projectile
 	add_child(projectile)
 	projectile.launch(Vector2.RIGHT, 1.0, null, 1, &"test_arc", null, 80.0, &"arc", Vector2(90.0, 70.0), 4)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	var collision_shape := projectile.get_node("CollisionShape2D") as CollisionShape2D
 	assert_true(collision_shape.shape is ConvexPolygonShape2D, "arc hitbox creates a convex polygon shape")
 	assert_eq(projectile.max_hit_count, 4, "projectile keeps configured multi-hit count")
 	projectile.queue_free()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 func _assert_weapon_hitbox(path: String, expected_type: StringName, expected_size: Vector2, expected_hits: int) -> void:
 	var weapon := load(path) as WeaponData

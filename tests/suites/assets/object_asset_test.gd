@@ -71,7 +71,7 @@ func test_factory_obstacle_coverage() -> void:
 			continue
 		add_child(obstacle)
 		obstacle.global_position = Vector2(320.0, 240.0)
-		await wait_frames(1)
+		await wait_physics_frames(1)
 		assert_eq(obstacle.get_script(), ISOMETRIC_OBJECT_SCRIPT, "%s uses IsometricEnvironmentObject scene path" % String(obstacle_id))
 		if obstacle.get_script() == ISOMETRIC_OBJECT_SCRIPT:
 			if obstacle.is_perimeter_wall():
@@ -85,7 +85,7 @@ func test_factory_obstacle_coverage() -> void:
 			assert_false(obstacle.uses_generic_fallback(), "%s avoids generic visual fallback" % String(obstacle_id))
 		_check_collision_contract(obstacle_id, obstacle)
 		obstacle.queue_free()
-		await wait_frames(1)
+		await wait_physics_frames(1)
 
 func test_obstacle_system_integration() -> void:
 	var container := Node2D.new()
@@ -94,13 +94,13 @@ func test_obstacle_system_integration() -> void:
 	var system := ObstacleSystem.new()
 	system.environment_container_path = NodePath("../EnvironmentProps")
 	container.add_sibling(system)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 	var biome := load("res://game/modes/zombie/biomes/infected_plains.tres") as BiomeDefinition
 	assert_not_null(biome, "infected_plains biome loads")
 	if biome != null:
 		system.start_run(biome)
-		await wait_frames(1)
+		await wait_physics_frames(1)
 		var active_obstacles := system.get_active_obstacles()
 		assert_false(active_obstacles.is_empty(), "obstacle system spawns obstacles")
 		for obstacle in active_obstacles:
@@ -119,7 +119,7 @@ func test_obstacle_system_integration() -> void:
 
 	system.queue_free()
 	container.queue_free()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 func test_supply_crate_asset_visual() -> void:
 	var crate_scene := load("res://game/drops/supply_crate.tscn") as PackedScene
@@ -131,7 +131,7 @@ func test_supply_crate_asset_visual() -> void:
 	if crate == null:
 		return
 	add_child(crate)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	var visual := crate.get_node_or_null("Visual")
 	assert_not_null(visual, "supply crate visual exists")
 	if visual != null:
@@ -143,7 +143,7 @@ func test_supply_crate_asset_visual() -> void:
 	var shape := crate.get_node_or_null("CollisionShape2D") as CollisionShape2D
 	assert_true(shape != null and shape.shape is RectangleShape2D, "supply crate keeps rectangle collision")
 	crate.queue_free()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 # --- helper (porting dei test legacy) ---------------------------------------
 

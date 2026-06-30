@@ -33,7 +33,7 @@ var _void_enemy_death_reason: StringName = &""
 func before_all() -> void:
 	_scene = MainSceneFixture.new()
 	assert_true(_scene.boot(self), "main scene can be loaded")
-	await wait_frames(3)
+	await wait_physics_frames(3)
 	var wave_manager := _scene.node(&"wave_manager") as WaveManager
 	if wave_manager != null:
 		_default_spawn_interval = wave_manager.spawn_interval
@@ -78,7 +78,7 @@ func before_each() -> void:
 func after_each() -> void:
 	# Indispensabile: senza stop, il prossimo set_mode(SURVIVAL) non ricostruisce.
 	_scene.stop_survival()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 func after_all() -> void:
 	_scene.teardown()
@@ -104,7 +104,7 @@ func test_full_region_streaming() -> void:
 	assert_true(_scene.start_survival({
 		"world_seed": 81818, "biome_map_width": 3, "biome_map_height": 3, "extra_edge_chance": 0.5
 	}), "survival starts with full region streaming")
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	await wait_physics_frames(1)
 
 	var graph := biome_manager.get_world_graph()
@@ -161,9 +161,9 @@ func test_isometric_streaming_performance() -> void:
 	assert_true(_scene.start_survival({
 		"world_seed": 641004, "biome_map_width": 3, "biome_map_height": 3, "extra_edge_chance": 0.5
 	}), "survival starts with a 3x3 isometric world")
-	await wait_frames(1)
 	await wait_physics_frames(1)
-	await wait_frames(1)
+	await wait_physics_frames(1)
+	await wait_physics_frames(1)
 
 	assert_eq(biome_manager.get_generated_biome_map().size(), 9, "3x3 biome map is generated")
 	var streamed_ids: Array[StringName] = streamer.get_streamed_region_ids()
@@ -246,9 +246,9 @@ func test_no_legacy_renderer_or_gates() -> void:
 	assert_true(_scene.start_survival({
 		"world_seed": 101010, "biome_map_width": 3, "biome_map_height": 3, "extra_edge_chance": 0.5
 	}), "survival starts with the asset-driven region streamer")
-	await wait_frames(1)
 	await wait_physics_frames(1)
-	await wait_frames(1)
+	await wait_physics_frames(1)
+	await wait_physics_frames(1)
 
 	var current_region_id := biome_manager.get_current_region_id()
 	var streamed_ids: Array[StringName] = streamer.get_streamed_region_ids()
@@ -281,7 +281,7 @@ func test_seam_crossing_through_open_passage() -> void:
 	assert_true(_scene.start_survival({
 		"world_seed": 31337, "biome_map_width": 3, "biome_map_height": 3, "extra_edge_chance": 0.5
 	}), "survival starts with persistent megamap")
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	await wait_physics_frames(1)
 
 	assert_true(_scene.nodes(&"biome_transition_gates").is_empty(), "survival creates no biome transition gate nodes")
@@ -304,7 +304,7 @@ func test_seam_crossing_through_open_passage() -> void:
 	seam_system.set("cooldown_timer", 0.0)
 	assert_true(seam_system.try_update_region_for_position(crossing_position),
 		"world-space crossing through an open passage changes region")
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_eq(biome_manager.get_current_region_id(), connection.to_region_id, "biome manager follows the crossed seam")
 	assert_eq(world_runtime.get_current_region_id(), connection.to_region_id, "world runtime follows the crossed seam")
 	assert_true(_scene.nodes(&"biome_transition_gates").is_empty(), "crossing a seam still creates no gate nodes")
@@ -338,7 +338,7 @@ func test_open_passage_follows_physical_movement() -> void:
 	assert_true(_scene.start_survival({
 		"world_seed": 31337, "biome_map_width": 3, "biome_map_height": 3, "extra_edge_chance": 0.5
 	}), "survival starts with persistent megamap")
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	await wait_physics_frames(1)
 
 	var start_cell := biome_manager.get_current_biome_cell()
@@ -367,7 +367,7 @@ func test_open_passage_follows_physical_movement() -> void:
 	seam_system.set("cooldown_timer", 0.0)
 	assert_true(seam_system.try_update_region_for_position(crossing_position),
 		"world-space seam crossing uses the target region id")
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_eq(biome_manager.get_current_region_id(), connection.to_region_id, "biome manager changes to target region")
 	assert_eq(world_runtime.get_current_region_id(), connection.to_region_id, "world runtime changes to target region")
 	if player != null:
@@ -399,7 +399,7 @@ func test_enemy_chases_across_biome_seam() -> void:
 	assert_true(_scene.start_survival({
 		"world_seed": 91919, "biome_map_width": 3, "biome_map_height": 3, "extra_edge_chance": 0.5
 	}), "survival starts for cross-biome chase")
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	await wait_physics_frames(1)
 
 	var graph := biome_manager.get_world_graph()
@@ -423,7 +423,7 @@ func test_enemy_chases_across_biome_seam() -> void:
 	seam_system.set("cooldown_timer", 0.0)
 	assert_true(seam_system.try_update_region_for_position(crossing_position),
 		"player crossing updates the current region before chase")
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	player.global_position = crossing_position + direction * 220.0
 
 	var enemy_position := crossing_position - direction * 180.0
@@ -506,7 +506,7 @@ func test_biome_world_generation() -> void:
 
 	transition_system.transition_cooldown = 0.01
 	assert_true(_scene.start_survival({"world_seed": 424242, "preserve_biome_sequence": true}), "survival starts with generated biome map context")
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	await wait_physics_frames(1)
 
 	var active_cell := biome_manager.get_current_biome_cell()
@@ -530,7 +530,7 @@ func test_biome_world_generation() -> void:
 		transition_system.cooldown_timer = 0.0
 		assert_true(transition_system.transition_to(passage.to_biome_id, passage.side, passage.to_cell_id),
 			"generated passage transitions to the neighbor biome")
-		await wait_frames(1)
+		await wait_physics_frames(1)
 		assert_ne(biome_manager.get_current_biome_cell(), active_cell, "biome manager advances to the generated neighbor cell")
 
 # --- transizioni multi-step con terreno/loot/HUD per biome ------------------
@@ -556,7 +556,7 @@ func test_zombie_biome_transition() -> void:
 	if multi_region_renderer != null:
 		multi_region_renderer.set("neighbor_radius", 0)
 	assert_true(_scene.start_survival(), "survival starts with biome transitions")
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	await wait_physics_frames(1)
 
 	var graph := biome_manager.get_world_graph()
@@ -585,14 +585,14 @@ func test_zombie_biome_transition() -> void:
 		assert_true(_has_blocked_boundary(obstacle_system), "%s retains a physical blocked boundary" % String(biome_id))
 		assert_true(_scene.nodes(&"biome_transition_gates").is_empty(), "%s exposes open passages without runtime gates" % String(biome_id))
 		assert_true(_has_thematic_loot(crate_system, biome_id), "%s exposes biome-aware crate loot" % String(biome_id))
-		await wait_frames(1)
+		await wait_physics_frames(1)
 		assert_true(biome.display_name in hud.status_label.text, "HUD displays %s" % biome.display_name)
 		if step == 0 and not cell.passages.is_empty():
 			var passage: BiomePassage = cell.passages.front()
 			transition_system.cooldown_timer = 0.0
 			assert_true(transition_system.transition_to(passage.to_biome_id, passage.side, passage.to_cell_id),
 				"transition follows physical passage to %s" % String(passage.to_cell_id))
-			await wait_frames(1)
+			await wait_physics_frames(1)
 			await wait_physics_frames(1)
 
 	if graph != null:
@@ -631,7 +631,7 @@ func test_zombie_environment_milestone() -> void:
 		return
 
 	assert_true(_scene.start_survival(), "survival starts with the environment milestone enabled")
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	await wait_physics_frames(1)
 
 	var biome := biome_manager.get_current_biome() as BiomeDefinition
@@ -717,7 +717,7 @@ func test_zombie_environment_milestone() -> void:
 		lane_enemy.queue_free()
 
 	survival_mode.stop_mode()
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	assert_true(obstacle_system.get_active_obstacles().is_empty(), "physical obstacles are removed when survival stops")
 	assert_true(resource_crate_system.get_active_crates().is_empty(), "environment resource crates are removed when survival stops")
 
@@ -752,7 +752,7 @@ func test_zombie_fall_hazard() -> void:
 	hazard_system.fall_retrigger_cooldown = 0.15
 	assert_eq(hazard_system.fall_damage, 20, "fall damage defaults to exactly 20 HP")
 	assert_true(_scene.start_survival(), "survival starts with fall hazards enabled")
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	await wait_physics_frames(1)
 
 	var hazards := hazard_system.get_active_hazards()
@@ -775,7 +775,7 @@ func test_zombie_fall_hazard() -> void:
 	var runtime_environment_hazard := hazard_system.spawn_runtime_hazard(&"fire_zone", Vector2(520.0, 0.0))
 	assert_not_null(runtime_environment_hazard, "runtime environmental hazard can be spawned for query checks")
 	if runtime_environment_hazard != null:
-		await wait_frames(1)
+		await wait_physics_frames(1)
 		assert_true(hazard_system.is_position_environment_hazard(runtime_environment_hazard.global_position), "environmental hazard is reported by the environment query")
 		assert_false(hazard_system.is_position_fall_zone(runtime_environment_hazard.global_position), "environmental hazard is not reported as a fall zone")
 	assert_false(zombie_spawner.is_spawn_position_valid(fall_zone.global_position), "zombie spawner rejects the fall zone")
@@ -875,16 +875,16 @@ func test_zombie_fall_hazard() -> void:
 			await wait_physics_frames(1)
 			if not is_instance_valid(enemy):
 				break
-		await wait_frames(1)
+		await wait_physics_frames(1)
 		assert_eq(_void_enemy_death_reason, &"void", "zombie void death exposes an explicit death reason")
 		assert_eq(_spawned_drop_count, drops_before, "zombie void death does not spawn guaranteed loot")
 		assert_eq(player.rpg_component.experience, experience_before, "zombie void death grants no kill experience")
 	for _frame in range(12):
-		await wait_frames(1)
+		await wait_physics_frames(1)
 
 	_disconnect_fall_signals(audio_manager, drop_system)
 	_scene.game_mode_manager().set_mode(GameConstants.MODE_MENU)
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	assert_true(hazard_system.get_active_hazards().is_empty(), "fall zones are removed when survival stops")
 	assert_false(health.has_invulnerability_source(fall_source), "stopping survival leaves no fall invulnerability token")
 
@@ -921,7 +921,7 @@ func _assert_neighbor_crate_persistence(streamer, graph: WorldGraph, biome_manag
 	var pickup_container := _scene.main.get_node_or_null("World/Pickups")
 	streamer.stream_world(graph, current_region_id, biome_manager, world_runtime,
 		environment_container, pickup_container, terrain_generator, obstacle_system, hazard_system, crate_system)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_null(_find_crate_by_region_key(crate_system, neighbor_id, crate_key), "re-streaming skips the opened neighbor crate")
 
 func _validate_cell(cell: BiomeCell) -> void:

@@ -30,7 +30,7 @@ func test_same_seed_retry_reuses_world() -> void:
 	controller.biome_manager_path = NodePath("../BiomeManager")
 	controller.enable_multi_region_render = false
 	harness.add_child(controller)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 	var context := GoldenWorld.compact_context()
 	controller.start_run(context)
@@ -39,7 +39,7 @@ func test_same_seed_retry_reuses_world() -> void:
 	assert_not_null(cell, "first run resolves a current cell")
 	if cell == null:
 		harness.queue_free()
-		await wait_frames(1)
+		await wait_physics_frames(1)
 		return
 	assert_not_null(cell.generated_layout, "first run cell owns a generated layout")
 
@@ -72,7 +72,7 @@ func test_same_seed_retry_reuses_world() -> void:
 		"retry reuses the same world cells without regenerating"
 	)
 	# The loot layer was reset: the stale ground drop is cleared on reuse.
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_true(
 		not is_instance_valid(stale_pickup) or stale_pickup.is_queued_for_deletion(),
 		"retry clears stale ground loot while keeping the parked world"
@@ -98,4 +98,4 @@ func test_same_seed_retry_reuses_world() -> void:
 	assert_false(controller.can_reuse_world(other_context), "full stop clears the parked world")
 
 	harness.queue_free()
-	await wait_frames(1)
+	await wait_physics_frames(1)

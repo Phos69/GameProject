@@ -89,7 +89,7 @@ Regole per nuove voci:
 | Zombie/bilanciamento M12 | PASS nella validazione Milestone 12 repo-fix | `tests/milestone_12_balance_metrics_smoke_test.gd`, `tests/milestone_12_zombie_balance_metrics_smoke_test.gd`, `tests/milestone_12_enemy_variants_smoke_test.gd`, `tests/zombie_revamp_ten_wave_smoke_test.gd`, `tests/zombie_revamp_ten_minute_soak_test.gd`, `tests/boss_smoke_test.gd`, `tests/zombie_spawner_edge_smoke_test.gd`, `tests/zombie_biome_transition_smoke_test.gd`, `tests/milestone_10_cross_biome_chase_smoke_test.gd` | Monitorare pacing, full-radius visual streaming e playtest manuale 20 minuti dentro `BAL-001` |
 | Megamappa e streaming regioni | PASS nella validazione Milestone 3 | `tests/region_streaming_smoke_test.gd`, world graph, persistent world, open passage, exploration map, `docs/latest_commit_validation_report.md` | Riprendere in Milestone 4 (asset isometrici) o nel bilanciamento Milestone 11 |
 | Caduta void e dodge | PASS nel pass runtime 2026-06-19 | `EntityVoidFallComponent`, query terrain di `HazardSystem`, `tests/zombie_fall_hazard_smoke_test.gd`, regressioni combat/drop/wave/ranged/terrain | QA manuale multiplayer locale e leggibilita animazione nel playtest Milestone 11 |
-| Asset isometrici ambiente | PASS; footprint v9, albero 3x3, aree rocciose 15-30 celle come plateau rialzati (void cliff specchiato verso l'alto, corona + pareti oblique) con occlusione nord per-player, sei materiali terreno forestale e cliff void completati il 2026-06-23 | `tests/scalable_obstacle_smoke_test.gd`, `tests/rock_area_visual_qa.gd`, smoke ostacoli 3x3, texture forest/cliff e QA `build/qa/scalable_rocks/`, `build/qa/void_cliffs/` | QA manuale co-op con player simultanei dietro/davanti, `F9`, continuita corona/pareti e collisione player/proiettili nel playtest Milestone 11 |
+| Asset isometrici ambiente | PASS; footprint v9, albero 3x3, aree rocciose 15-30 celle come plateau rialzati (void cliff specchiato verso l'alto, corona + pareti oblique) con occlusione nord per-player, sei materiali terreno forestale e cliff void completati il 2026-06-23 | `tests/suites/obstacles/footprint_contract_test.gd`, `tests/visual_qa/rock_area_visual_qa.gd`, smoke ostacoli 3x3, texture forest/cliff e QA `build/qa/scalable_rocks/`, `build/qa/void_cliffs/` | QA manuale co-op con player simultanei dietro/davanti, `F9`, continuita corona/pareti e collisione player/proiettili nel playtest Milestone 11 |
 | Audit migrazione isometrica | PASS completo: Milestone 1-9 e Milestone 10.1-10.11 chiuse con asset, cliff, transizione senza portali, vicini gameplay `FULL`, chase cross-bioma, cleanup legacy, QA screenshot e performance | `docs/isometric_generation_audit_roadmap.md`, `milestone_10_isometric_asset_rewrite_roadmap.md`, manifest ambiente v7, `BiomeTileLayer`, `IsometricTileResolver`, `IsometricEnvironmentObjectFactory`, `IsometricSvgTextureLoader`, `RegionSeamSystem`, `WorldRegionStreamer`, smoke e QA Milestone 10.11 | Monitorare solo come regressione futura o playtest visuale |
 | Dungeon ramificato/shop | PASS nella validazione Milestone 5 | `tests/dungeon_graph_smoke_test.gd`, `tests/dungeon_smoke_test.gd`, `docs/latest_commit_validation_report.md` | UI shop dedicata e arte bioma dungeon restano follow-up; screenshot tre seed nel playtest Milestone 11 |
 | Asset/pipeline personaggi RPG | PASS nella validazione Milestone 6 | `tests/rpg_character_asset_manifest_smoke_test.gd`, `assets/characters/index.json` v2, `docs/latest_commit_validation_report.md` | Arte definitiva per-personaggio (`final_quality`) resta follow-up manuale; screenshot QA nel playtest Milestone 11 |
@@ -101,6 +101,23 @@ Test eseguiti per questo audit: nessun test gameplay. La Milestone 0 richiede
 revisione manuale, baseline e consolidamento TODO.
 
 ## Backlog aperto prioritizzato
+
+### TESTWARN-001 - Cleanup warning GUT
+
+- Avanzamento 2026-06-30: primo fix completato; `wait_frames()` rimosso dai
+  test GUT sotto `tests/suites/**` e dagli esempi dei fixture in `tests/support/**`.
+  Run mirato `progression` verde senza deprecazioni `wait_frames`.
+- Obiettivo: ridurre il rumore dei runner GUT fino a log locali leggibili e
+  warning residui azionabili.
+- Milestone collegata: manutenzione test post-cutover GUT.
+- File/sistemi coinvolti: `tests/suites/**`, `tools/run_gut.ps1`,
+  `addons/gut/*.tscn`, fixture test e cache statiche runtime.
+- Criterio di accettazione: niente `wait_frames()` deprecato nei test GUT,
+  warning GUT generici localizzati, orphans proiettili corretti o tracciati,
+  report quick/soak aggiornati.
+- Test richiesto: `./tools/run_gut.ps1 -SkipImport`, soak con
+  `.gutconfig.soak.json` e run mirati indicati in
+  `docs/testing/gut_warning_cleanup_plan.md`.
 
 ### UIUX-001 - UI, HUD, audio e polish UX trasversale
 

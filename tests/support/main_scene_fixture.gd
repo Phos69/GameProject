@@ -12,7 +12,7 @@ extends RefCounted
 ##   func before_all():
 ##       _scene = MainSceneFixture.new()
 ##       assert_true(_scene.boot(self))
-##       await wait_frames(3)
+##       await wait_physics_frames(3)
 ##   func after_each():
 ##       _scene.stop_survival()
 ##   func after_all():
@@ -29,8 +29,8 @@ var _host: Node
 var _previous_current_scene: Node
 
 ## Istanzia `main.tscn` come figlio di `host` (di norma il nodo GutTest). Dopo la
-## chiamata attendere alcuni frame (`await wait_frames(...)`) prima di leggere i
-## system node o avviare survival.
+## chiamata attendere alcuni physics frame (`await wait_physics_frames(...)`)
+## prima di leggere i system node o avviare survival.
 ##
 ## La scena viene agganciata alla root (non al nodo GutTest) e impostata come
 ## `current_scene`: lo streaming regioni risolve i container `World/EnvironmentProps`

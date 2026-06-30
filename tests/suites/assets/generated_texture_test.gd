@@ -56,7 +56,7 @@ func test_forest_runtime_consumption() -> void:
 	var layer := BiomeTileLayer.new()
 	add_child(layer)
 	layer.configure(layout, palette, &"infected_plains", &"quality", 16, null, _manifest, false)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_true(layer.has_forest_ground_art_texture(), "forest tile layer loads generated grass")
 	assert_true(layer.has_forest_surface_art_textures(), "forest tile layer loads every surface texture")
 	assert_true(layer.get_forest_ground_art_asset_path().ends_with("forest_grass_generated.png"), "forest tile layer exposes generated grass path")
@@ -67,7 +67,7 @@ func test_forest_runtime_consumption() -> void:
 	assert_true(layer.has_cliff_art_textures(), "forest tile layer loads grass-cliff edge")
 	assert_gt(layer.get_cliff_transition_count(), 0, "forest void builds textured cliff transitions")
 	layer.queue_free()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 # --- cliff/void textures e mesh (void_cliff_generated_texture) --------------
 
@@ -131,7 +131,7 @@ func test_tile_layer_consumes_cliff_textures() -> void:
 	var layer := BiomeTileLayer.new()
 	add_child(layer)
 	layer.configure(layout, palette, &"infected_plains", &"quality", 16, null, _manifest, false)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_true(layer.has_cliff_art_textures(), "tile layer loads face and lip textures")
 	assert_true(layer.has_forest_cliff_border_art(), "forest tile layer loads horizontal and vertical cliff border art")
 	var paths := layer.get_cliff_art_asset_paths()
@@ -143,20 +143,20 @@ func test_tile_layer_consumes_cliff_textures() -> void:
 		"synthetic fall rectangle applies every dedicated border mesh")
 	assert_eq(int(border_counts.get("faces", 0)), 4, "synthetic fall rectangle replaces angled per-cell faces with four linear faces")
 	layer.queue_free()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 func test_fall_gameplay_unchanged() -> void:
 	var zone := BiomeFallZone.new()
 	add_child(zone)
 	zone.configure(&"fall_zone", Vector2(180.0, 64.0), 0.0, Color(0.82, 0.58, 0.16, 0.92), &"cliff", &"north", 616161)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_true(zone.contains_global_position(zone.global_position), "fall-zone collision still owns the drop")
 	assert_true(zone.uses_procedural_fallback(), "fall zone does not duplicate tile-layer cliff art")
 	var collision := zone.get_node_or_null("CollisionShape2D") as CollisionShape2D
 	assert_true(collision != null and collision.shape is RectangleShape2D and (collision.shape as RectangleShape2D).size == zone.zone_size,
 		"generated cliff art does not change fall collision")
 	zone.queue_free()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 # --- forest tile resolver su mappa generata (forest_iso_transition) ---------
 
@@ -176,19 +176,19 @@ func test_generated_forest_resolver() -> void:
 	var resolver := IsometricTileResolver.new(_manifest)
 	var biome_manager := BiomeManager.new()
 	add_child(biome_manager)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	biome_manager.start_run({"world_seed": 772031, "biome_map_width": 3, "biome_map_height": 3, "preserve_biome_sequence": false, "extra_edge_chance": 0.25})
 	var cell := _first_cell_for_biome(biome_manager.get_generated_biome_map(), &"infected_plains")
 	assert_not_null(cell, "generated map contains the base forest biome")
 	if cell == null:
 		biome_manager.queue_free()
-		await wait_frames(1)
+		await wait_physics_frames(1)
 		return
 	var layout := cell.generated_layout
 	assert_not_null(layout, "base forest biome has generated layout")
 	if layout == null:
 		biome_manager.queue_free()
-		await wait_frames(1)
+		await wait_physics_frames(1)
 		return
 
 	var saw_tiles: Dictionary = {}
@@ -229,7 +229,7 @@ func test_generated_forest_resolver() -> void:
 	assert_gt(layer.get_cliff_transition_count(), 0, "forest tile layer bakes vertical cliff faces")
 	layer.free()
 	biome_manager.queue_free()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 func test_synthetic_forest_wall() -> void:
 	var resolver := IsometricTileResolver.new(_manifest)

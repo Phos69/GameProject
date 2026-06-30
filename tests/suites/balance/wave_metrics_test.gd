@@ -31,7 +31,7 @@ var _track_boss: bool = false
 func test_infinite_arena_metrics() -> void:
 	var scene := MainSceneFixture.new()
 	assert_true(scene.boot(self), "main scene can be loaded")
-	await wait_frames(4)
+	await wait_physics_frames(4)
 
 	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
 	var survival_mode := scene.node(&"survival_mode") as SurvivalMode
@@ -125,14 +125,14 @@ func test_infinite_arena_metrics() -> void:
 
 	_finish_metrics()
 	scene.teardown()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 # --- zombie survival (milestone_12_zombie_balance_metrics) -------------------
 
 func test_zombie_survival_metrics() -> void:
 	var scene := MainSceneFixture.new()
 	assert_true(scene.boot(self), "main scene can be loaded")
-	await wait_frames(4)
+	await wait_physics_frames(4)
 
 	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
 	var survival_mode := scene.node(&"survival_mode") as SurvivalMode
@@ -212,13 +212,13 @@ func test_zombie_survival_metrics() -> void:
 	assert_eq(wave_manager.current_wave_biome_id, &"infected_plains", "wave 1 records infected plains")
 	await _damage_and_clear_wave(health_system, player)
 	assert_true(await _wait_for_wave_completed(wave_manager, 1, 300), "zombie survival wave 1 completes cleanly")
-	await wait_frames(2)
+	await wait_physics_frames(2)
 
 	assert_true(await _wait_for_wave_combat(wave_manager, 2, 900), "zombie survival wave 2 reaches combat")
 	assert_eq(wave_manager.current_wave_biome_id, &"infected_plains", "wave 2 records infected plains")
 	await _damage_and_clear_wave(health_system, player)
 	assert_true(await _wait_for_wave_completed(wave_manager, 2, 300), "zombie survival wave 2 completes cleanly")
-	await wait_frames(4)
+	await wait_physics_frames(4)
 
 	# Ferma lo spawn prima di contare i residui (vedi infinite arena).
 	game_mode_manager.set_mode(GameConstants.MODE_MENU)
@@ -226,7 +226,7 @@ func test_zombie_survival_metrics() -> void:
 	_validate_zombie_metrics(wave_manager)
 	_finish_metrics()
 	scene.teardown()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 # --- raccolta metriche condivisa --------------------------------------------
 
@@ -305,7 +305,7 @@ func _complete_metric_waves(
 			await _wait_for_wave_completed(wave_manager, wave_index, 360),
 			"wave %d completes during metric run" % wave_index
 		)
-		await wait_frames(4)
+		await wait_physics_frames(4)
 
 func _kill_active_wave(
 	wave_manager: WaveManager,
@@ -319,14 +319,14 @@ func _kill_active_wave(
 	if boss != null:
 		var boss_position := (boss as Node2D).global_position if boss is Node2D else Vector2.ZERO
 		health_system.apply_damage(boss, 999999, player, &"milestone_12_boss_clear", boss_position)
-	await wait_frames(2)
+	await wait_physics_frames(2)
 
 func _damage_and_clear_wave(health_system: HealthSystem, player: PlayerController) -> void:
 	health_system.apply_damage(player, 1, null, &"milestone_12_damage_probe", player.global_position)
 	for enemy in _wave_manager.get_active_wave_enemies():
 		var hit_position := (enemy as Node2D).global_position if enemy is Node2D else Vector2.ZERO
 		health_system.apply_damage(enemy, 999999, player, &"milestone_12_zombie_wave_clear", hit_position)
-	await wait_frames(2)
+	await wait_physics_frames(2)
 
 func _on_wave_started(wave_index: int) -> void:
 	if not _metrics_active:

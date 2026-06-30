@@ -17,7 +17,7 @@ func test_character_base_weapons_and_stats() -> void:
 		return
 	var player := player_scene.instantiate() as PlayerController
 	add_child(player)
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	var weapon_system := player.get_node("WeaponSystem") as WeaponSystem
 	assert_not_null(weapon_system, "weapon system is available")
 	if weapon_system == null:
@@ -54,7 +54,7 @@ func test_character_base_weapons_and_stats() -> void:
 	assert_eq(claws.attack_type, &"melee_arc", "claws use melee arc attack type")
 
 	player.queue_free()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 # --- ammo/reload e world HUD ------------------------------------------------
 
@@ -65,7 +65,7 @@ func test_ammo_reload_world_hud() -> void:
 		return
 	var player := player_scene.instantiate() as PlayerController
 	add_child(player)
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	player.apply_rpg_character(&"ranger")
 	var world_hud := player.get_node("WorldHud")
 	assert_not_null(world_hud, "player has a world-space HUD package")
@@ -76,13 +76,13 @@ func test_ammo_reload_world_hud() -> void:
 	assert_true(is_equal_approx(weapon_system.reload_timer, expected_reload), "reload speed multiplier modifies reload duration")
 	assert_eq(weapon_system.get_reload_ratio(), 0.0, "reload ratio starts empty")
 	assert_true(world_hud.is_showing_reload(), "world HUD switches to reload state")
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_gte(weapon_system.get_reload_ratio(), 0.0, "reload ratio is exposed during reload")
 	assert_gte(world_hud.get_reload_ratio(), 0.0, "world HUD exposes reload progress")
 
 	var card := PlayerHudCard.new()
 	add_child(card)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	card.configure(1, Color(0.18, 0.74, 0.95, 1.0))
 	card.refresh(player)
 	assert_true(card.ammo_pips.is_empty(), "corner card no longer owns magazine pips")
@@ -90,13 +90,13 @@ func test_ammo_reload_world_hud() -> void:
 	assert_eq(world_hud.get_magazine_size(), 1, "bow world HUD uses one ammo segment")
 
 	player.apply_rpg_character(&"pistoliere")
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	card.refresh(player)
 	assert_eq(world_hud.get_magazine_size(), 8, "pistol world HUD shows eight-shot magazine")
 
 	card.queue_free()
 	player.queue_free()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 # --- inventario, catalogo, drop e effetti delle armi ------------------------
 
@@ -110,7 +110,7 @@ func test_weapon_inventory_and_catalog() -> void:
 	var weapon_system := WeaponSystem.new()
 	weapon_system.name = "WeaponSystem"
 	owner.add_child(weapon_system)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 	assert_eq(weapon_system.get_weapon_count(), 0, "base weapon is separate from the collected inventory")
 	assert_true(weapon_system.has_base_weapon(&"starter_pistol"), "base weapon is always addressable")
@@ -172,7 +172,7 @@ func test_weapon_inventory_and_catalog() -> void:
 
 	var input_manager := InputManager.new()
 	world.add_child(input_manager)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_true(_has_joy_button(&"p1_base_attack", 0, JOY_BUTTON_RIGHT_SHOULDER), "P1 RB maps to the base weapon")
 	assert_true(_has_joy_button(&"p1_equipped_attack", 0, JOY_BUTTON_LEFT_SHOULDER), "P1 LB maps to the equipped weapon")
 	assert_true(_has_joy_button(&"p1_weapon_previous", 0, JOY_BUTTON_DPAD_UP), "P1 D-pad up maps to previous weapon")
@@ -182,7 +182,7 @@ func test_weapon_inventory_and_catalog() -> void:
 	var nearby := _make_target(world, Vector2(35.0, 0.0))
 	var fireball := WeaponCatalog.get_definition(&"fireball")
 	WeaponEffectResolver.resolve_impact(get_tree(), fireball, target, Vector2.ZERO, owner, fireball.damage)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_lt((nearby.get_node("HealthComponent") as HealthComponent).current_health, 100, "explosion applies AOE damage")
 	assert_true(target.has_node("WeaponStatusRuntime"), "fire weapon applies visible burn runtime")
 	var ice_lance := WeaponCatalog.get_definition(&"ice_lance")
@@ -198,11 +198,11 @@ func test_weapon_inventory_and_catalog() -> void:
 	weapon_system.equip_weapon(knife)
 	weapon_system.cooldown = 0.0
 	assert_true(weapon_system.try_fire(Vector2.ZERO, Vector2.RIGHT, owner), "melee catalog weapon can attack")
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_true(_melee_started, "melee attack dispatch creates the shared hitbox runtime")
 
 	world.queue_free()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 func _make_target(parent: Node, position: Vector2) -> CharacterBody2D:
 	var target := CharacterBody2D.new()

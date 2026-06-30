@@ -42,7 +42,7 @@ godot --headless --path . --script res://tests/milestone_rpg_8_adrenaline_super_
 godot --headless --path . --script res://tests/milestone_16_downed_revive_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_18_audio_mix_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_20_arena_environment_smoke_test.gd
-godot --path . --rendering-method gl_compatibility --script res://tests/arena_variants_visual_qa.gd
+tools/run_visual_qa.sh survival
 ```
 
 QA visuale verificata a 1280x720 su `Industrial Crossroads`: la fall zone e

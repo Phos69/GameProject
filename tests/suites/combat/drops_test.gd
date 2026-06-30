@@ -20,7 +20,7 @@ func test_enemy_drop_loop() -> void:
 	_feedback_events = []
 	var scene := MainSceneFixture.new()
 	assert_true(scene.boot(self), "main scene can be loaded")
-	await wait_frames(2)
+	await wait_physics_frames(2)
 
 	var local_multiplayer := scene.node(&"local_multiplayer_manager") as LocalMultiplayerManager
 	var player_manager := scene.node(&"player_manager") as PlayerManager
@@ -38,9 +38,9 @@ func test_enemy_drop_loop() -> void:
 
 	for initial_enemy in scene.nodes(&"enemies"):
 		initial_enemy.queue_free()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	local_multiplayer.activate_slot(2)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	var player_one := player_manager.players.get(1) as PlayerController
 	var player_two := player_manager.players.get(2) as PlayerController
 	assert_true(player_one != null and player_two != null, "two local players are active")
@@ -85,7 +85,7 @@ func test_enemy_drop_loop() -> void:
 	assert_eq(enemy_health.current_health, 20, "projectile damages the enemy")
 
 	assert_eq(health_system.apply_damage(enemy, 20), 20, "lethal damage is applied to the enemy")
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_true(enemy_system.get_active_enemies().is_empty(), "dead enemy is removed from EnemySystem")
 
 	var pickups := scene.nodes(&"drop_pickups")
@@ -99,7 +99,7 @@ func test_enemy_drop_loop() -> void:
 		assert_true(_feedback_events.has(&"pickup"), "physical pickup emits gameplay pickup audio")
 
 	local_multiplayer.activate_slot(2)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	player_two = player_manager.players.get(2) as PlayerController
 	assert_not_null(player_two, "player two can rejoin after enemy retargeting")
 	if player_two == null:
@@ -116,7 +116,7 @@ func test_enemy_drop_loop() -> void:
 	assert_true(drop_system.collect_drop({"type": GameConstants.DROP_AMMO, "amount": 7}, player_one), "ammo drop can be collected")
 	assert_eq(weapon_one.reserve_ammo, reserve_one_before + 7, "ammo applies to the collector special weapon")
 	assert_eq(weapon_two.reserve_ammo, reserve_two_before + 7, "ammo is shared with another living player special weapon")
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	var hud := scene.node(&"hud_manager") as HUDManager
 	assert_true(hud != null and hud.pickup_feedback_text == "AMMO SHARED +7", "HUD queues shared ammo pickup feedback")
 	assert_true(drop_system.collect_drop({"type": GameConstants.DROP_HEALTH, "amount": 5}, player_one), "health drop can be collected by a damaged player")
@@ -134,7 +134,7 @@ func test_weapon_drop_progression() -> void:
 	_feedback_events = []
 	var scene := MainSceneFixture.new()
 	assert_true(scene.boot(self), "main scene can be loaded")
-	await wait_frames(4)
+	await wait_physics_frames(4)
 
 	var player_manager := scene.node(&"player_manager") as PlayerManager
 	var enemy_system := scene.node(&"enemy_system") as EnemySystem
@@ -149,10 +149,10 @@ func test_weapon_drop_progression() -> void:
 		return
 	audio_manager.gameplay_feedback_generated.connect(_on_gameplay_feedback_generated)
 	assert_true(scene.start_survival({"character_id": &"ranger", "single_biome_arena": true, "arena_boundary_mode": "walled", "world_seed": 20260621}), "survival arena starts")
-	await wait_frames(6)
+	await wait_physics_frames(6)
 	for initial_enemy in scene.nodes(&"enemies"):
 		initial_enemy.queue_free()
-	await wait_frames(2)
+	await wait_physics_frames(2)
 
 	var player := player_manager.players.get(1) as PlayerController
 	assert_not_null(player, "player one is spawned for the run")
@@ -204,7 +204,7 @@ func test_weapon_drop_progression() -> void:
 	enemy.global_position = Vector2(650.0, 0.0)
 	enemy.loot_table = _make_loot(GameConstants.DROP_MONEY, 9)
 	assert_gt(health_system.apply_damage(enemy, 9999, player, &"milestone_11_kill", enemy.global_position), 0, "player damage kills the zombie through HealthSystem")
-	await wait_frames(6)
+	await wait_physics_frames(6)
 
 	assert_eq(rpg_component.level, 2, "killer XP levels up the RPG component")
 	assert_eq(rpg_component.experience, 0, "level-up consumes the exact XP threshold")
@@ -217,7 +217,7 @@ func test_weapon_drop_progression() -> void:
 	assert_not_null(money_pickup, "enemy death spawns a physical money drop")
 	if money_pickup != null:
 		assert_true(money_pickup.try_collect(player), "physical money drop can be collected")
-		await wait_frames(2)
+		await wait_physics_frames(2)
 		assert_eq(progression.money, money_before + 9, "physical drop updates party money")
 	assert_true(_feedback_events.has(&"pickup"), "pickup loop emits gameplay audio feedback")
 	assert_true(_feedback_events.has(&"shot"), "weapon loop emits gameplay shot audio feedback")
@@ -233,7 +233,7 @@ func test_weapon_tower_visual_identity() -> void:
 	_tower_shot_profiles = []
 	var scene := MainSceneFixture.new()
 	assert_true(scene.boot(self), "main scene can be loaded")
-	await wait_frames(3)
+	await wait_physics_frames(3)
 
 	var local_multiplayer := scene.node(&"local_multiplayer_manager") as LocalMultiplayerManager
 	var player_manager := scene.node(&"player_manager") as PlayerManager
@@ -248,9 +248,9 @@ func test_weapon_tower_visual_identity() -> void:
 
 	for player_slot in range(2, 5):
 		local_multiplayer.activate_slot(player_slot)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL)
-	await wait_frames(2)
+	await wait_physics_frames(2)
 
 	var starter := load("res://game/weapons/starter_pistol.tres") as WeaponData
 	var blaster := load("res://game/weapons/prototype_blaster.tres") as WeaponData
@@ -282,7 +282,7 @@ func test_weapon_tower_visual_identity() -> void:
 	var weapon_three := player_three.get_node("WeaponSystem") as WeaponSystem
 	weapon_two.equip_weapon(blaster)
 	weapon_three.equip_weapon(cannon)
-	await wait_frames(8)
+	await wait_physics_frames(8)
 	assert_eq(player_one.visual.get_weapon_profile_id(), &"starter_pistol", "player visual shows the fallback pistol")
 	assert_eq(player_two.visual.get_weapon_profile_id(), &"prototype_blaster", "player visual updates when the blaster is equipped")
 	assert_eq(player_three.visual.get_weapon_profile_id(), &"wave_cannon", "player visual updates when the Wave Cannon is equipped")
@@ -300,7 +300,7 @@ func test_weapon_tower_visual_identity() -> void:
 	weapon_one.try_fire(player_one.global_position, Vector2.RIGHT, player_one)
 	weapon_two.try_fire(player_two.global_position, Vector2.RIGHT, player_two)
 	weapon_three.try_fire(player_three.global_position, Vector2.RIGHT, player_three)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_gte(_spawned_projectiles.size(), 3, "all three weapon projectiles spawn")
 	assert_true(_has_projectile_profile(&"starter_pistol"), "starter pistol projectile receives visual data")
 	assert_true(_has_projectile_profile(&"prototype_blaster"), "blaster projectile receives visual data")
@@ -311,7 +311,7 @@ func test_weapon_tower_visual_identity() -> void:
 	_clear_projectiles(_spawned_projectiles)
 
 	game_mode_manager.set_mode(GameConstants.MODE_TOWER_DEFENSE, {"initial_delay": 100.0, "starting_credits": 75})
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	var tower := tower_defense_mode.try_build_at_slot(&"slot_b") as DefenseTower
 	assert_not_null(tower, "tower can still be built through the shared manager")
 	if tower == null:
@@ -331,7 +331,7 @@ func test_weapon_tower_visual_identity() -> void:
 	tower.fire_rate = 20.0
 	tower.fired.connect(_on_tower_fired)
 	for _frame in range(12):
-		await wait_frames(1)
+		await wait_physics_frames(1)
 	assert_eq(tower.target, target, "tower still acquires its gameplay target")
 	assert_true(tower.visual.tracking_target, "tower barrel visual follows the acquired target")
 	assert_false(_tower_shots.is_empty(), "tower still fires through ProjectileSystem")
@@ -340,7 +340,7 @@ func test_weapon_tower_visual_identity() -> void:
 		assert_true(tower.visual.is_fire_feedback_active(), "tower firing produces recoil or muzzle feedback")
 
 	game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	_teardown_tower(projectile_system, scene)
 
 # --- status effect ambientali (scena sintetica) -----------------------------
@@ -366,7 +366,7 @@ func test_biome_status_effects() -> void:
 	for id in [&"poison", &"burn", &"bleed", &"freeze", &"shock"]:
 		assert_false(runtime.has_status(player, id), "cleans %s" % id)
 	scene_root.queue_free()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 # --- helper -----------------------------------------------------------------
 
@@ -376,13 +376,13 @@ func _teardown_drops(audio_manager: AudioManager, local_multiplayer: LocalMultip
 	if local_multiplayer != null:
 		local_multiplayer.deactivate_slot(2)
 	scene.teardown()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 func _teardown_tower(projectile_system: ProjectileSystem, scene: MainSceneFixture) -> void:
 	if projectile_system != null and projectile_system.projectile_spawned.is_connected(_on_projectile_spawned):
 		projectile_system.projectile_spawned.disconnect(_on_projectile_spawned)
 	scene.teardown()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 func _make_loot(drop_type: StringName, amount: int) -> LootTable:
 	var entry := DropEntry.new()

@@ -106,7 +106,7 @@ func test_void_identity() -> void:
 func test_runtime_object() -> void:
 	var system := ObstacleSystem.new()
 	add_child(system)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	var obstacle_id := &"ruined_house"
 	var footprint := _manifest.get_footprint_tiles(obstacle_id)
 	var world_size := Vector2(footprint) * 8.0
@@ -115,7 +115,7 @@ func test_runtime_object() -> void:
 	assert_not_null(obstacle, "runtime house object is created")
 	if obstacle != null:
 		add_child(obstacle)
-		await wait_frames(1)
+		await wait_physics_frames(1)
 		assert_true(obstacle.get_visual_base_size().is_equal_approx(world_size), "visual base equals collision footprint")
 		assert_true(obstacle.is_footprint_contract_aligned(), "runtime footprint matches manifest")
 		assert_eq(obstacle.get_footprint_slots(), Vector2i(4, 4), "large house exposes its 4x4 footprint")
@@ -128,7 +128,7 @@ func test_runtime_object() -> void:
 		assert_true(bool(obstacle.call("has_debug_footprint")), "debug state reaches active obstacle footprints")
 		obstacle.queue_free()
 	system.queue_free()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 func test_generated_layout_records() -> void:
 	var generator := BiomeTerrainGenerator.new()
@@ -156,7 +156,7 @@ func test_generated_layout_records() -> void:
 				"render record keeps the collision contract")
 			assert_false(String(record.get("asset_path", "")).is_empty(), "generated obstacle cannot become invisible collision")
 	generator.queue_free()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 # --- feature obstacle 3x3 (forest_tree) -------------------------------------
 
@@ -175,7 +175,7 @@ func test_3x3_feature_obstacle() -> void:
 
 	var system := ObstacleSystem.new()
 	add_child(system)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	var world_size := Vector2(EXPECTED_CELLS) * LOGICAL_TILE_SCALE
 	for obstacle_id in FEATURE_IDS:
 		var obstacle := system.create_obstacle_instance(obstacle_id, world_size, &"rectangle", 0.0,
@@ -184,7 +184,7 @@ func test_3x3_feature_obstacle() -> void:
 		if obstacle == null:
 			continue
 		add_child(obstacle)
-		await wait_frames(1)
+		await wait_physics_frames(1)
 		assert_eq(obstacle.get_footprint_slots(), EXPECTED_SLOTS, "%s keeps 3x3 runtime slots" % String(obstacle_id))
 		assert_true(obstacle.get_visual_base_size().is_equal_approx(world_size), "%s base matches its collision" % String(obstacle_id))
 		assert_true(obstacle.is_footprint_contract_aligned(), "%s runtime footprint is aligned" % String(obstacle_id))
@@ -195,9 +195,9 @@ func test_3x3_feature_obstacle() -> void:
 		var rectangle := collision.shape as RectangleShape2D if collision != null else null
 		assert_true(rectangle != null and rectangle.size.is_equal_approx(world_size), "%s collision is a 3x3 rectangle" % String(obstacle_id))
 		obstacle.queue_free()
-		await wait_frames(1)
+		await wait_physics_frames(1)
 	system.queue_free()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 	var generator := BiomeTerrainGenerator.new()
 	add_child(generator)
@@ -228,7 +228,7 @@ func test_3x3_feature_obstacle() -> void:
 	for failure in record_failures:
 		push_error("obstacle record: " + failure)
 	generator.queue_free()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 # --- ostacolo scalabile (large_rock) ----------------------------------------
 
@@ -265,7 +265,7 @@ func test_scalable_obstacle() -> void:
 
 	var system := ObstacleSystem.new()
 	add_child(system)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	var small := await _spawn_rock(system, SMALL_CELLS)
 	var large := await _spawn_rock(system, LARGE_CELLS)
 	assert_true(small != null and large != null, "both rock instances are created")
@@ -290,9 +290,9 @@ func test_scalable_obstacle() -> void:
 		assert_true(bool(large.call("is_footprint_contract_aligned")), "scalable rock counts as footprint-aligned")
 		small.queue_free()
 		large.queue_free()
-		await wait_frames(1)
+		await wait_physics_frames(1)
 	system.queue_free()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 	var layout := BiomeEnvironmentLayout.new()
 	layout.generation_seed = 4242
@@ -350,14 +350,14 @@ func test_rock_area_mesh_builder() -> void:
 func test_main_scene_obstacle_system() -> void:
 	var scene := MainSceneFixture.new()
 	assert_true(scene.boot(self), "main scene loads after obstacle rendering changes")
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	await wait_physics_frames(1)
 	var system := scene.node(&"obstacle_system") as ObstacleSystem
 	var environment_props := scene.main.get_node_or_null("World/EnvironmentProps") as Node2D
 	assert_not_null(system, "main scene exposes the shared obstacle system")
 	assert_true(environment_props != null and environment_props.y_sort_enabled, "main scene keeps environment obstacles in Y-sort")
 	scene.teardown()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 # --- helper (porting dei test legacy) ---------------------------------------
 
@@ -367,7 +367,7 @@ func _spawn_rock(system: ObstacleSystem, cells: Vector2i) -> Node:
 	if obstacle == null:
 		return null
 	add_child(obstacle)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	return obstacle
 
 func _expect_collision_size(obstacle: Node, expected: Vector2, label: String) -> void:

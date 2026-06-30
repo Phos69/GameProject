@@ -24,7 +24,7 @@ func test_survival_wave_flow() -> void:
 	_boss_requests = []
 	var scene := MainSceneFixture.new()
 	assert_true(scene.boot(self), "main scene can be loaded")
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	var wave_manager := scene.node(&"wave_manager") as WaveManager
 	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
 	var survival_mode := scene.node(&"survival_mode") as SurvivalMode
@@ -41,7 +41,7 @@ func test_survival_wave_flow() -> void:
 		return
 
 	survival_mode.stop_mode()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	wave_manager.initial_delay = 0.0
 	wave_manager.intermission_duration = 0.08
 	wave_manager.spawn_interval = 0.05
@@ -84,7 +84,7 @@ func test_survival_wave_flow() -> void:
 	assert_eq(player_one_weapon.reserve_ammo, player_one_starting_reserve + 4, "wave one reward grants ammunition")
 
 	local_multiplayer.activate_slot(2)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	var player_two := player_manager.players.get(2) as PlayerController
 	if player_two == null:
 		_teardown_survival(scene, local_multiplayer)
@@ -101,7 +101,7 @@ func test_survival_wave_flow() -> void:
 	assert_gt(wave_two_health, wave_one_health, "wave two increases enemy health")
 	assert_gt(wave_two_enemy.move_speed, wave_one_speed, "wave two increases enemy speed")
 	assert_gt(wave_two_enemy.attack_damage, wave_one_damage, "wave two increases enemy damage")
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_false(hud.status_label.text.contains("Wave 2"), "survival HUD omits the persistent wave info panel")
 	assert_false(hud.status_label.text.contains("Enemies 3/3"), "survival HUD omits the persistent enemy count panel")
 	var saved_current_ammo := player_one_weapon.current_ammo
@@ -128,7 +128,7 @@ func test_survival_wave_flow() -> void:
 	assert_false(boss_supply_crates.is_empty(), "boss wave has a guaranteed supply crate")
 	if not boss_supply_crates.is_empty():
 		assert_true(boss_supply_crates[0].try_open(player_one), "supply crate opens and rolls its configured ammo and health loot")
-		await wait_frames(1)
+		await wait_physics_frames(1)
 		assert_true(_has_pickup_type(scene, GameConstants.DROP_AMMO) and _has_pickup_type(scene, GameConstants.DROP_HEALTH), "supply crate produces ammo and health pickups")
 	_freeze_and_kill_wave(wave_manager, health_system)
 	assert_true(await _wait_for_completed_wave(3), "wave three completes")
@@ -153,7 +153,7 @@ func _teardown_survival(scene: MainSceneFixture, local_multiplayer: LocalMultipl
 	if local_multiplayer != null:
 		local_multiplayer.deactivate_slot(2)
 	scene.teardown()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 # --- tower defense (tower_defense) ------------------------------------------
 
@@ -162,7 +162,7 @@ func test_tower_defense_flow() -> void:
 	_tower_shots = 0
 	var scene := MainSceneFixture.new()
 	assert_true(scene.boot(self), "main scene can be loaded")
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
 	var survival_mode := scene.node(&"survival_mode") as SurvivalMode
 	var tower_defense_mode := scene.node(&"tower_defense_mode") as TowerDefenseMode
@@ -188,7 +188,7 @@ func test_tower_defense_flow() -> void:
 	tower_defense_mode.defense_wave_completed.connect(_on_td_wave_completed)
 
 	game_mode_manager.set_mode(GameConstants.MODE_TOWER_DEFENSE, {"initial_delay": 0.0, "starting_credits": 75})
-	await wait_frames(4)
+	await wait_physics_frames(4)
 	await wait_physics_frames(1)
 	assert_true(tower_defense_mode.is_running, "tower defense mode starts")
 	assert_false(survival_mode.is_running, "tower defense stops survival")
@@ -235,17 +235,17 @@ func test_tower_defense_flow() -> void:
 	assert_true(await _wait_for_td_wave(2), "boss wave completes after the tower kills the boss")
 	assert_eq(tower_defense_manager.base_health, base_health_before - 12, "destroyed boss does not damage the core")
 	assert_eq(tower_defense_manager.credits, 106, "boss bounty and wave reward are added to credits")
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	assert_true("Core 238/250" in hud.status_label.text, "HUD displays core health")
 	assert_true("Credits 106" in hud.status_label.text, "HUD displays defense credits")
 
 	tower_defense_manager.damage_base(tower_defense_manager.base_health)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_eq(tower_defense_mode.state, TowerDefenseWaveController.State.DEFEATED, "destroying the core defeats the run")
 	assert_eq(tower_defense_mode.get_enemies_remaining(), 0, "defeat clears the active wave")
 
 	game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_false(tower_defense_mode.is_running, "leaving tower defense stops its runtime")
 	assert_true(survival_mode.is_running, "survival restarts after tower defense")
 	assert_eq(hud.status_label.text.find("Tower Defense"), -1, "survival does not keep tower defense status text")
@@ -261,7 +261,7 @@ func test_dungeon_flow() -> void:
 	_completed_runs = []
 	var scene := MainSceneFixture.new()
 	assert_true(scene.boot(self), "main scene can be loaded")
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
 	var survival_mode := scene.node(&"survival_mode") as SurvivalMode
 	var dungeon_mode := scene.node(&"dungeon_mode") as DungeonMode
@@ -287,7 +287,7 @@ func test_dungeon_flow() -> void:
 	dungeon_mode.combat_enemy_growth = 1
 	dungeon_mode.dungeon_completed.connect(_on_dungeon_completed)
 	game_mode_manager.set_mode(GameConstants.MODE_DUNGEON, {"seed": 4242, "room_count": 8})
-	await wait_frames(4)
+	await wait_physics_frames(4)
 	await wait_physics_frames(1)
 
 	assert_true(dungeon_mode.is_running, "dungeon mode starts")
@@ -328,7 +328,7 @@ func test_dungeon_flow() -> void:
 				if StringName(dungeon_mode.layout[option].get("kind", &"")) == &"shop":
 					target = option
 		assert_true(dungeon_mode.choose_next_room(target), "room accepts a real room choice")
-		await wait_frames(1)
+		await wait_physics_frames(1)
 		await wait_physics_frames(1)
 
 	assert_true(visited_shop, "the walk visited the shop branch")
@@ -346,7 +346,7 @@ func test_dungeon_flow() -> void:
 	assert_true(_completed_runs.has(4242), "dungeon completion reports the seed")
 
 	game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_false(dungeon_mode.is_running, "leaving dungeon stops its runtime")
 	assert_true(survival_mode.is_running, "survival can restart after the dungeon")
 	survival_mode.stop_mode()
@@ -364,7 +364,7 @@ func _test_shop(scene: MainSceneFixture, dungeon_mode: DungeonMode, buyer: Node)
 	var pickups_before := scene.nodes(&"drop_pickups").size()
 	assert_true(dungeon_mode.purchase_offer(cheapest_index, buyer), "an affordable offer can be purchased")
 	assert_eq(dungeon_mode.run_credits, credits_before - cost, "purchase spends exactly the offer cost")
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_gt(scene.nodes(&"drop_pickups").size(), pickups_before, "purchase spawns the reward through DropSystem")
 	assert_false(dungeon_mode.purchase_offer(cheapest_index, buyer), "a sold offer cannot be bought again")
 	dungeon_mode.run_credits = 0
@@ -382,7 +382,7 @@ func test_dungeon_graph() -> void:
 	assert_eq(tiny.size(), 4, "minimum room count is respected")
 	assert_true(DungeonGenerator.boss_is_always_reachable(tiny), "tiny dungeon keeps boss reachable")
 	generator.queue_free()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 func _check_layout(generator: DungeonGenerator, seed_value: int, room_count: int) -> void:
 	var label := "seed %d / %d rooms" % [seed_value, room_count]
@@ -401,7 +401,7 @@ func _check_layout(generator: DungeonGenerator, seed_value: int, room_count: int
 
 func _teardown_simple(scene: MainSceneFixture) -> void:
 	scene.teardown()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 func _freeze_and_kill_wave(wave_manager: WaveManager, health_system: HealthSystem) -> void:
 	for enemy in wave_manager.get_active_wave_enemies():

@@ -15,7 +15,7 @@ func test_hud_card_and_world_hud() -> void:
 	assert_not_null(player, "player scene can be loaded")
 	if player == null:
 		return
-	await wait_frames(2)
+	await wait_physics_frames(2)
 
 	var rpg_component := player.get_node("RpgPlayerComponent") as RpgPlayerComponent
 	var world_hud := player.get_node("WorldHud")
@@ -31,7 +31,7 @@ func test_hud_card_and_world_hud() -> void:
 
 	var card := PlayerHudCard.new()
 	add_child(card)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	card.configure(1, Color(0.18, 0.74, 0.95, 1.0))
 	card.refresh(player)
 
@@ -59,7 +59,7 @@ func test_world_hud_layout_snapshot() -> void:
 	assert_not_null(player, "player scene can be loaded")
 	if player == null:
 		return
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	player.apply_rpg_character(&"ranger")
 	player.rpg_component.add_adrenaline(100)
 
@@ -133,11 +133,11 @@ func test_rpg_feedback_effects() -> void:
 	assert_not_null(player, "player scene can be loaded")
 	if player == null:
 		return
-	await wait_frames(2)
+	await wait_physics_frames(2)
 
 	var effects := GameplayEffects.new()
 	add_child(effects)
-	await wait_frames(2)
+	await wait_physics_frames(2)
 
 	var rpg_component := player.get_node("RpgPlayerComponent") as RpgPlayerComponent
 	assert_not_null(rpg_component, "rpg component is available")
@@ -150,7 +150,7 @@ func test_rpg_feedback_effects() -> void:
 	player.apply_rpg_character(&"ranger")
 	var before_level_effects := effects.effect_spawn_count
 	rpg_component.add_experience(45)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_gt(
 		effects.effect_spawn_count, before_level_effects,
 		"level up spawns RPG feedback"
@@ -162,7 +162,7 @@ func test_rpg_feedback_effects() -> void:
 
 	var before_super_effects := effects.effect_spawn_count
 	rpg_component.super_activated.emit(&"arrow_rain", "Pioggia di Frecce")
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_gt(
 		effects.effect_spawn_count, before_super_effects,
 		"super activation spawns RPG feedback"
@@ -182,16 +182,16 @@ func test_rpg_feedback_effects() -> void:
 	}
 	for super_id in expected_super_kinds.keys():
 		var effect := effects.spawn_rpg_super(Vector2.ZERO, super_id)
-		await wait_frames(1)
+		await wait_physics_frames(1)
 		assert_true(
 			effect != null and effect.effect_kind == expected_super_kinds[super_id],
 			"%s super feedback has distinct effect kind" % str(super_id)
 		)
 
-	await wait_frames(5)
+	await wait_physics_frames(5)
 	effects.queue_free()
 	player.queue_free()
-	await wait_frames(2)
+	await wait_physics_frames(2)
 
 # --- helper -----------------------------------------------------------------
 

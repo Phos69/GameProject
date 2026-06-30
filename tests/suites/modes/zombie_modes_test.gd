@@ -17,7 +17,7 @@ var _async_world_ready: bool = false
 func test_zombie_revamp_foundation() -> void:
 	var scene := MainSceneFixture.new()
 	assert_true(scene.boot(self), "main scene can be loaded")
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
 	var survival_mode := scene.node(&"survival_mode") as SurvivalMode
 	var wave_manager := scene.node(&"wave_manager") as WaveManager
@@ -39,7 +39,7 @@ func test_zombie_revamp_foundation() -> void:
 	assert_false(visible_rect.has_point(zombie_spawner.get_spawn_position(0)), "spawner previews positions outside the current camera view")
 
 	survival_mode.stop_mode()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	wave_manager.initial_delay = 0.0
 	wave_manager.intermission_duration = 100.0
 	wave_manager.spawn_interval = 0.01
@@ -62,14 +62,14 @@ func test_zombie_revamp_foundation() -> void:
 
 	survival_mode.stop_mode()
 	scene.teardown()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 # --- market post-boss (zombie_market) ---------------------------------------
 
 func test_zombie_market() -> void:
 	var scene := MainSceneFixture.new()
 	assert_true(scene.boot(self), "main scene loads with the survival market")
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
 	var survival_mode := scene.node(&"survival_mode") as SurvivalMode
 	var wave_manager := scene.node(&"wave_manager") as WaveManager
@@ -86,7 +86,7 @@ func test_zombie_market() -> void:
 
 	survival_mode.stop_mode()
 	multiplayer.activate_slot(2)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	var player_one := player_manager.players.get(1) as PlayerController
 	var player_two := player_manager.players.get(2) as PlayerController
 	if player_one == null or player_two == null:
@@ -171,7 +171,7 @@ func test_zombie_market() -> void:
 	assert_true(player_one.gameplay_input_enabled and player_two.gameplay_input_enabled and not player_one_health.has_invulnerability_source(SurvivalMarketController.MARKET_INVULNERABILITY), "closing the market restores combat state")
 	assert_true(market.should_open_after_wave(10) and market.should_open_after_wave(15) and not market.should_open_after_wave(6), "the recurring schedule targets waves 10, 15 and later multiples of five")
 	wave_manager.wave_completed.emit(5)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_false(market.is_market_open, "processed boss wave cannot reopen its market")
 
 	survival_mode.stop_mode()
@@ -182,7 +182,7 @@ func _teardown_market(scene: MainSceneFixture, multiplayer: LocalMultiplayerMana
 	if multiplayer != null:
 		multiplayer.deactivate_slot(2)
 	scene.teardown()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 # --- contratto del mondo survival (zombie_survival_world_contract) ----------
 
@@ -197,7 +197,7 @@ func test_world_contract() -> void:
 	controller.biome_manager_path = NodePath("../BiomeManager")
 	controller.enable_multi_region_render = false
 	harness.add_child(controller)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 	controller.start_run({})
 	_assert_default_survival_world(biome_manager)
@@ -216,7 +216,7 @@ func test_world_contract() -> void:
 	controller.stop_run()
 
 	harness.queue_free()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 func _assert_default_survival_world(biome_manager: BiomeManager) -> void:
 	assert_eq(biome_manager.get_generation_seed(), GameConstants.GOLDEN_WORLD_SEED, "default survival run uses the golden world seed")
@@ -274,7 +274,7 @@ func _assert_walled_infinite_arena_profile(biome_manager: BiomeManager) -> void:
 func test_infinite_arena_default() -> void:
 	var scene := MainSceneFixture.new()
 	assert_true(scene.boot(self), "main scene can be loaded")
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	await wait_physics_frames(1)
 	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
 	var main_menu := scene.node(&"main_menu") as MainMenu
@@ -299,7 +299,7 @@ func test_infinite_arena_default() -> void:
 	var zombie_controller = scene.node(&"zombie_mode_controller")
 	assert_not_null(zombie_controller, "zombie mode controller is available")
 	assert_true(main_menu.start_selected_mode(GameConstants.MODE_INFINITE_ARENA), "main menu starts Infinite Arena")
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	await wait_physics_frames(1)
 	assert_true(await _await_world_ready(zombie_controller), "Infinite Arena finishes its async world build")
 
@@ -318,13 +318,13 @@ func test_infinite_arena_default() -> void:
 	_assert_arena_terrain_is_solid(scene)
 
 	main_menu.open_menu()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_eq(game_mode_manager.active_mode_id, GameConstants.MODE_MENU, "returning to menu restores menu mode")
 	assert_false(bool(infinite_arena_mode.get("is_running")), "Infinite Arena stops on menu return")
 	assert_false(survival_mode.is_running, "shared survival runtime stops on menu return")
 
 	scene.teardown()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 func _assert_infinite_arena_world(biome_manager: BiomeManager) -> void:
 	var cells := biome_manager.get_generated_biome_map()
@@ -399,7 +399,7 @@ func _await_world_ready(zombie_controller: Node) -> bool:
 	zombie_controller.world_ready.connect(_on_async_world_ready, CONNECT_ONE_SHOT)
 	var deadline := Time.get_ticks_msec() + 150000
 	while not _async_world_ready and Time.get_ticks_msec() < deadline:
-		await wait_frames(1)
+		await wait_physics_frames(1)
 	return _async_world_ready
 
 func _on_async_world_ready(_biome_id: StringName) -> void:

@@ -13,7 +13,7 @@ const MainSceneFixture = preload("res://tests/support/main_scene_fixture.gd")
 func test_accelerated_ten_minute_soak() -> void:
 	var scene := MainSceneFixture.new()
 	assert_true(scene.boot(self), "main scene can be loaded")
-	await wait_frames(2)
+	await wait_physics_frames(2)
 
 	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
 	var survival_mode := scene.node(&"survival_mode") as SurvivalMode
@@ -85,4 +85,4 @@ func test_accelerated_ten_minute_soak() -> void:
 	Engine.time_scale = 1.0
 	survival_mode.stop_mode()
 	scene.teardown()
-	await wait_frames(1)
+	await wait_physics_frames(1)

@@ -7,7 +7,7 @@ extends GutTest
 func test_progress_api() -> void:
 	var screen := WorldLoadingScreen.new()
 	add_child(screen)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 	# set_progress hard-sets the displayed value.
 	screen.set_progress(0.5)
@@ -22,7 +22,7 @@ func test_progress_api() -> void:
 	assert_gte(screen.get_progress(), 0.6, "a later phase raises the floor")
 
 	# The eased fill stays within the declared band before completion.
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	assert_lte(screen.get_progress(), 0.9 + 0.0001, "eased fill never exceeds the phase ceiling")
 
 	# Out-of-range phase values are clamped to [0, 1].
@@ -33,13 +33,13 @@ func test_progress_api() -> void:
 	assert_almost_eq(screen.get_progress(), 1.0, 0.0001, "complete fills the bar to 100%")
 
 	screen.queue_free()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 func test_show_brief() -> void:
 	var host := Node.new()
 	host.name = "BriefLoadingHost"
 	add_child(host)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 	var screen := WorldLoadingScreen.show_brief(host, "Caricamento", 0.2)
 	assert_not_null(screen, "show_brief returns a loading screen")
@@ -51,8 +51,8 @@ func test_show_brief() -> void:
 
 	# After the (short) duration plus a frame the overlay completes and frees itself.
 	await get_tree().create_timer(0.35).timeout
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_false(is_instance_valid(screen), "show_brief frees the overlay after its duration")
 
 	host.queue_free()
-	await wait_frames(1)
+	await wait_physics_frames(1)

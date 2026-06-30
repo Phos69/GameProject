@@ -114,13 +114,8 @@ biomi. Check manuale dopo modifiche a rendering o collisioni:
 Smoke automatici:
 
 ```text
-godot --headless --path . --script res://tests/obstacle_rendering_contract_smoke_test.gd
-godot --headless --path . --script res://tests/obstacle_3x3_smoke_test.gd
-godot --headless --path . --script res://tests/scalable_obstacle_smoke_test.gd
-godot --headless --path . --script res://tests/obstacle_asset_visual_qa.gd
-godot --path . --rendering-method gl_compatibility --script res://tests/obstacle_3x3_visual_qa.gd
-godot --path . --rendering-method gl_compatibility --script res://tests/rock_area_visual_qa.gd
-godot --headless --path . --script res://tests/isometric_environment_manifest_smoke_test.gd
-godot --headless --path . --script res://tests/milestone_10_object_asset_smoke_test.gd
-godot --headless --path . --script res://tests/starter_biome_vertical_slice_smoke_test.gd
+tools/run_gut.sh -gdir=res://tests/suites/obstacles
+tools/run_gut.sh -gdir=res://tests/suites/assets
+tools/run_visual_qa.sh obstacle
+tools/run_visual_qa.sh rock_area
 ```

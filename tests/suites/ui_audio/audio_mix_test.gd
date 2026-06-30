@@ -14,7 +14,7 @@ func test_audio_mix_and_cues() -> void:
 	_remove_temporary_save()
 	var scene := MainSceneFixture.new()
 	assert_true(scene.boot(self), "main scene can be loaded")
-	await wait_frames(3)
+	await wait_physics_frames(3)
 
 	var audio_manager := scene.node(&"audio_manager") as AudioManager
 	var save_manager := scene.node(&"save_manager") as SaveManager
@@ -99,7 +99,7 @@ func test_audio_mix_and_cues() -> void:
 
 	local_multiplayer.activate_slot(2)
 	game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL)
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	var player_one := player_manager.players.get(1) as PlayerController
 	var player_two := player_manager.players.get(2) as PlayerController
 	if player_one != null and player_two != null:
@@ -115,7 +115,7 @@ func test_audio_mix_and_cues() -> void:
 		shooter.call("start_windup")
 	wave_manager.wave_started.emit(1)
 	wave_manager.wave_completed.emit(1)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_true(
 		_has_cue_event(&"player_downed") and _has_cue_event(&"player_revived"),
 		"downed and revive hooks generate critical audio cues"
@@ -157,7 +157,7 @@ func test_audio_mix_and_cues() -> void:
 	if audio_manager.cue_played.is_connected(_on_cue_played):
 		audio_manager.cue_played.disconnect(_on_cue_played)
 	scene.teardown()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	_remove_temporary_save()
 
 func _has_cue_event(cue_id: StringName) -> bool:

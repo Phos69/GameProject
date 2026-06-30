@@ -18,7 +18,7 @@ var _shooter_projectiles: Array[Projectile] = []
 func test_biome_themed_enemies() -> void:
 	var scene := MainSceneFixture.new()
 	assert_true(scene.boot(self), "main scene can be loaded")
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	var enemy_system := scene.node(&"enemy_system") as EnemySystem
 	var health_system := scene.node(&"health_system") as HealthSystem
 	var hazard_system := scene.node(&"hazard_system") as HazardSystem
@@ -29,7 +29,7 @@ func test_biome_themed_enemies() -> void:
 		scene.teardown()
 		return
 	assert_true(scene.start_survival(), "survival starts for thematic enemy validation")
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 	var expected_profiles: Array[StringName] = [
 		&"toxic_zombie", &"toxic_exploder", &"burned_zombie", &"fire_runner", &"fire_exploder",
@@ -56,12 +56,12 @@ func test_biome_themed_enemies() -> void:
 
 	transition_system.cooldown_timer = 0.0
 	transition_system.transition_to(&"toxic_wastes", &"east")
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	player.global_position = Vector2.ZERO
 	var toxic_enemy := enemy_system.spawn_enemy(&"toxic_zombie", Vector2(20.0, 0.0)) as BasicEnemy
 	toxic_enemy.target = player
 	toxic_enemy._attack_target()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_true(hazard_system.get_player_status_ids(player).has(&"poison"), "toxic zombie applies poison on hit")
 	# Il moltiplicatore di velocita da status si aggiorna in _process: nel processo
 	# GUT condiviso servono alcuni frame idle prima di leggerlo.
@@ -72,7 +72,7 @@ func test_biome_themed_enemies() -> void:
 	var hazard_count_before := hazard_system.get_active_hazards().size()
 	var exploder := enemy_system.spawn_enemy(&"toxic_exploder", Vector2(110.0, 0.0)) as BasicEnemy
 	health_system.apply_damage(exploder, 9999, player)
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	assert_gt(hazard_system.get_active_hazards().size(), hazard_count_before, "toxic exploder leaves a runtime hazard")
 	assert_not_null(_find_hazard(hazard_system, &"toxic_cloud"), "toxic exploder creates a toxic cloud")
 
@@ -87,14 +87,14 @@ func test_biome_themed_enemies() -> void:
 
 	scene.stop_survival()
 	scene.teardown()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 # --- definizioni biome + wave director (zombie_biome_wave_director) ---------
 
 func test_wave_director_biome_scaling() -> void:
 	var scene := MainSceneFixture.new()
 	assert_true(scene.boot(self), "main scene can be loaded")
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	var biome_manager = scene.node(&"biome_manager")
 	var wave_director = scene.node(&"wave_director")
 	var wave_manager := scene.node(&"wave_manager") as WaveManager
@@ -141,14 +141,14 @@ func test_wave_director_biome_scaling() -> void:
 	wave_manager.stop_run(true)
 
 	scene.teardown()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 # --- spawner: bordi, rifiuti, fallback (zombie_spawner_edge) ----------------
 
 func test_spawner_edges_and_rejection() -> void:
 	var scene := MainSceneFixture.new()
 	assert_true(scene.boot(self), "main scene can be loaded")
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	var spawner = scene.node(&"zombie_spawner")
 	var player := scene.node(&"players") as Node2D
 	if spawner == null or player == null:
@@ -180,11 +180,11 @@ func test_spawner_edges_and_rejection() -> void:
 	fall_zone.set_meta("zone_radius", 48.0)
 	fall_zone.add_to_group("fall_zones")
 	scene.main.add_child(fall_zone)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_false(spawner.is_spawn_position_valid(blocked_position), "spawner rejects fall zone positions")
 	assert_eq(spawner.get_spawn_rejection_reason(blocked_position), &"hazard", "spawner reports fall zones as hazardous spawn rejection")
 	fall_zone.queue_free()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 	var obstacle_position: Vector2 = spawner.get_spawn_position(8)
 	var obstacle := Node2D.new()
@@ -193,11 +193,11 @@ func test_spawner_edges_and_rejection() -> void:
 	obstacle.set_meta("zone_radius", 48.0)
 	obstacle.add_to_group("spawn_blockers")
 	scene.main.add_child(obstacle)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_false(spawner.is_spawn_position_valid(obstacle_position), "spawner rejects spawn blocker positions")
 	assert_eq(spawner.get_spawn_rejection_reason(obstacle_position), &"blocked", "spawner reports spawn blockers as blocked spawn rejection")
 	obstacle.queue_free()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 	var old_attempts: int = spawner.max_spawn_attempts
 	spawner.max_spawn_attempts = 0
@@ -206,14 +206,14 @@ func test_spawner_edges_and_rejection() -> void:
 	spawner.max_spawn_attempts = old_attempts
 
 	scene.teardown()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 # --- varianti nemico runner/tank (milestone_12_enemy_variants) --------------
 
 func test_enemy_variants() -> void:
 	var scene := MainSceneFixture.new()
 	assert_true(scene.boot(self), "main scene can be loaded")
-	await wait_frames(3)
+	await wait_physics_frames(3)
 	var enemy_system := scene.node(&"enemy_system") as EnemySystem
 	var wave_manager := scene.node(&"wave_manager") as WaveManager
 	var player_manager := scene.node(&"player_manager") as PlayerManager
@@ -257,7 +257,7 @@ func test_enemy_variants() -> void:
 	assert_eq(tank.kill_experience, 12, "tank grants its configured XP reward")
 
 	basic.queue_free()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	runner.set_physics_process(true)
 	runner.global_position = Vector2(30.0, 0.0)
 	player_health.reset_health()
@@ -279,7 +279,7 @@ func test_enemy_variants() -> void:
 	var active_before_death := enemy_system.get_active_enemies().size()
 	health_system.apply_damage(runner, 9999)
 	health_system.apply_damage(tank, 9999)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_eq(enemy_system.get_active_enemies().size(), active_before_death - 2, "variant deaths use the shared enemy registry")
 	assert_eq(_count_xp_pickups(scene, 7), 0, "runner death no longer creates XP pickups")
 	assert_eq(_count_xp_pickups(scene, 12), 0, "tank death no longer creates XP pickups")
@@ -302,10 +302,10 @@ func test_enemy_variants() -> void:
 
 	wave_manager.stop_run(true)
 	scene.teardown()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 func wave_frames_setup(wave_manager: WaveManager) -> void:
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	wave_manager.initial_delay = 100.0
 	wave_manager.spawn_interval = 0.0
 	wave_manager.base_enemy_count = 3
@@ -322,7 +322,7 @@ func test_ranged_enemy() -> void:
 	_shooter_projectiles = []
 	var scene := MainSceneFixture.new()
 	assert_true(scene.boot(self), "main scene can be loaded")
-	await wait_frames(3)
+	await wait_physics_frames(3)
 	var enemy_system := scene.node(&"enemy_system") as EnemySystem
 	var projectile_system := scene.node(&"projectile_system") as ProjectileSystem
 	var player_manager := scene.node(&"player_manager") as PlayerManager
@@ -362,7 +362,7 @@ func test_ranged_enemy() -> void:
 	shooter._process_windup(0.5)
 	assert_true(_shooter_projectiles.is_empty(), "no projectile is created during the warning")
 	shooter._process_windup(0.6)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_eq(_shooter_projectiles.size(), 1, "one projectile is created after the warning")
 	var projectile := _shooter_projectiles[0] if not _shooter_projectiles.is_empty() else null
 	assert_true(projectile != null and projectile.source_id == &"enemy_shooter" and projectile.visual_data != null and projectile.visual_data.profile_id == &"enemy_shooter", "shooter projectile has a distinct hostile profile")
@@ -385,7 +385,7 @@ func test_ranged_enemy() -> void:
 
 	var active_before_death := enemy_system.get_active_enemies().size()
 	health_system.apply_damage(shooter, 9999)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_eq(enemy_system.get_active_enemies().size(), active_before_death - 1, "shooter death uses the shared enemy registry")
 	assert_eq(_count_xp_pickups(scene, 7), 0, "shooter death no longer creates XP pickups")
 
@@ -396,7 +396,7 @@ func test_ranged_enemy() -> void:
 	if projectile_system.projectile_spawned.is_connected(_on_shooter_projectile_spawned):
 		projectile_system.projectile_spawned.disconnect(_on_shooter_projectile_spawned)
 	scene.teardown()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 # --- marker direzionali off-screen (offscreen_enemy_markers) ----------------
 
@@ -404,7 +404,7 @@ func test_offscreen_enemy_markers() -> void:
 	var scene := MainSceneFixture.new()
 	assert_true(scene.boot(self), "main scene loads")
 	for _frame in range(6):
-		await wait_frames(1)
+		await wait_physics_frames(1)
 	var hud := scene.node(&"hud_manager") as HUDManager
 	var enemy_system := scene.node(&"enemy_system") as EnemySystem
 	if hud == null or enemy_system == null:
@@ -450,7 +450,7 @@ func test_offscreen_enemy_markers() -> void:
 	assert_true(markers.high_contrast and markers.reduced_motion, "visual settings toggle high contrast and reduced motion")
 
 	scene.teardown()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 # --- helper -----------------------------------------------------------------
 

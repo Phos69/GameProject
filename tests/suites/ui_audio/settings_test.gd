@@ -21,7 +21,7 @@ func test_settings_pause_and_rebinding() -> void:
 	_remove_save(PAUSE_SAVE_PATH)
 	var scene := MainSceneFixture.new()
 	assert_true(scene.boot(self), "main scene can be loaded")
-	await wait_frames(3)
+	await wait_physics_frames(3)
 
 	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
 	var main_menu := scene.node(&"main_menu") as MainMenu
@@ -51,7 +51,7 @@ func test_settings_pause_and_rebinding() -> void:
 		return
 
 	main_menu._open_settings(&"audio")
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_true(
 		main_menu.settings_panel != null and main_menu.settings_panel.visible,
 		"main menu opens the shared settings page"
@@ -95,9 +95,9 @@ func test_settings_pause_and_rebinding() -> void:
 		"Back closes Settings and restores the previous menu"
 	)
 	main_menu._open_settings(&"audio")
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	main_menu._open_visual_settings()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_eq(
 		main_menu.settings_panel.tab_container.current_tab,
 		int(main_menu.settings_panel.tab_indices[&"video"]),
@@ -175,20 +175,20 @@ func test_settings_pause_and_rebinding() -> void:
 		game_mode_manager.set_mode(GameConstants.MODE_DUNGEON),
 		"test gameplay mode can start"
 	)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	await _press_pause_button()
 	assert_true(
 		pause_menu.is_open() and get_tree().paused,
 		"Start opens the pause menu and pauses gameplay"
 	)
 	pause_menu._open_settings()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_true(
 		pause_menu.settings_panel.visible and not pause_menu.pause_panel.visible,
 		"pause menu opens the shared settings page"
 	)
 	pause_menu.settings_panel.close()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_true(pause_menu.pause_panel.visible, "closing settings returns to the pause menu")
 	await _press_pause_button()
 	assert_true(
@@ -200,7 +200,7 @@ func test_settings_pause_and_rebinding() -> void:
 	input_manager.reset_joystick_bindings()
 	local_multiplayer.reset_joystick_buttons()
 	scene.teardown()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	_remove_save(PAUSE_SAVE_PATH)
 
 # --- profili visivi, accessibilita e budget frame (milestone_21) ------------
@@ -209,7 +209,7 @@ func test_visual_settings_and_performance_budget() -> void:
 	_remove_save(VISUAL_SAVE_PATH)
 	var scene := MainSceneFixture.new()
 	assert_true(scene.boot(self), "main scene can be loaded")
-	await wait_frames(3)
+	await wait_physics_frames(3)
 
 	var visual_settings := scene.node(&"visual_settings_manager") as VisualSettingsManager
 	var save_manager := scene.node(&"save_manager") as SaveManager
@@ -291,7 +291,7 @@ func test_visual_settings_and_performance_budget() -> void:
 		and bool(visual_settings.get_setting(&"reduced_motion")),
 		"visual settings survive a save/load round-trip"
 	)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_eq(
 		hud.status_label.get_theme_font_size("font_size"), 19,
 		"HUD text scale is applied at runtime"
@@ -301,7 +301,7 @@ func test_visual_settings_and_performance_budget() -> void:
 		local_multiplayer.activate_slot(player_slot)
 	wave_manager.initial_delay = 100.0
 	game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL, {})
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	var player_one := player_manager.players.get(1) as PlayerController
 	assert_not_null(player_one, "player one is available")
 	if player_one == null:
@@ -336,7 +336,7 @@ func test_visual_settings_and_performance_budget() -> void:
 		&"visual_settings_test",
 		weapon_data.visual_data
 	) as Projectile
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_not_null(projectile, "test projectile is available")
 	if projectile != null:
 		assert_true(
@@ -409,7 +409,7 @@ func test_visual_settings_and_performance_budget() -> void:
 	)
 
 	scene.teardown()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	_remove_save(VISUAL_SAVE_PATH)
 
 # --- helper -----------------------------------------------------------------
@@ -420,15 +420,15 @@ func _press_joypad_button(button_index: JoyButton) -> void:
 	pressed.button_index = button_index
 	pressed.pressed = true
 	Input.parse_input_event(pressed)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	var released := pressed.duplicate() as InputEventJoypadButton
 	released.pressed = false
 	Input.parse_input_event(released)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 func _wait_navigation_cooldown() -> void:
 	await get_tree().create_timer(0.22).timeout
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 func _press_pause_button() -> void:
 	await _press_joypad_button(JOY_BUTTON_START)

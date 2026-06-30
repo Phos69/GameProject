@@ -41,7 +41,7 @@ godot --headless --path . --script res://tests/zombie_spawner_edge_smoke_test.gd
 godot --headless --path . --script res://tests/zombie_revamp_foundation_smoke_test.gd
 godot --headless --path . --script res://tests/survival_wave_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_20_arena_environment_smoke_test.gd
-godot --path . --rendering-method gl_compatibility --script res://tests/arena_variants_visual_qa.gd
+tools/run_visual_qa.sh survival
 ```
 
 QA visuale verificata a 1280x720 su `Industrial Crossroads` e `Rift Foundry`.

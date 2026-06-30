@@ -73,7 +73,7 @@ func test_standard_contract_paths() -> void:
 func test_standard_survival_runtime_assets() -> void:
 	var scene := MainSceneFixture.new()
 	assert_true(scene.boot(self), "main scene loads for standard asset path")
-	await wait_frames(2)
+	await wait_physics_frames(2)
 
 	var biome_manager := scene.node(&"biome_manager") as BiomeManager
 	var terrain_generator := scene.node(&"terrain_generator") as TerrainGenerator
@@ -83,13 +83,13 @@ func test_standard_survival_runtime_assets() -> void:
 	assert_not_null(streamer, "world region streamer is available")
 	if biome_manager == null or terrain_generator == null or streamer == null:
 		scene.teardown()
-		await wait_frames(1)
+		await wait_physics_frames(1)
 		return
 
 	assert_true(scene.start_survival(STANDARD_SURVIVAL_CONTEXT), "standard survival starts for asset fallback policy")
-	await wait_frames(1)
 	await wait_physics_frames(1)
-	await wait_frames(1)
+	await wait_physics_frames(1)
+	await wait_physics_frames(1)
 
 	var current_region_id := biome_manager.get_current_region_id()
 	var tile_layer := terrain_generator.get_active_tile_layer()
@@ -106,7 +106,7 @@ func test_standard_survival_runtime_assets() -> void:
 
 	scene.stop_survival()
 	scene.teardown()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 # --- helper (porting dei test legacy) ---------------------------------------
 

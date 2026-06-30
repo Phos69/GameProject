@@ -13,7 +13,7 @@ const MainSceneFixture = preload("res://tests/support/main_scene_fixture.gd")
 func test_presentation_contracts() -> void:
 	var scene := MainSceneFixture.new()
 	assert_true(scene.boot(self), "main scene can be loaded")
-	await wait_frames(3)
+	await wait_physics_frames(3)
 
 	var player_manager := scene.node(&"player_manager") as PlayerManager
 	var enemy_system := scene.node(&"enemy_system") as EnemySystem
@@ -55,7 +55,7 @@ func test_presentation_contracts() -> void:
 	assert_not_null(player_world_hud, "player uses the world-space HUD package")
 
 	game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL)
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	var player_card := hud.player_cards.get(1) as PlayerHudCard
 	assert_true(player_card != null and player_card.visible, "HUD shows player one card")
 	assert_true(
@@ -112,7 +112,7 @@ func test_presentation_contracts() -> void:
 	var pickup := pickup_scene.instantiate() as DropPickup
 	pickup.setup({"type": GameConstants.DROP_HEALTH, "amount": 10})
 	scene.main.get_node("World/Pickups").add_child(pickup)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	var pickup_visual := pickup.get_node_or_null("Visual") as DropPickupVisual
 	assert_not_null(pickup_visual, "pickup uses an icon visual component")
 	assert_null(pickup.get_node_or_null("Label"), "pickup no longer relies on text labels")
@@ -122,7 +122,7 @@ func test_presentation_contracts() -> void:
 	var crate_scene := load("res://game/drops/supply_crate.tscn") as PackedScene
 	var crate := crate_scene.instantiate() as SupplyCrate
 	scene.main.get_node("World/Pickups").add_child(crate)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_true(crate.get_node_or_null("Visual") is SupplyCrateVisual, "supply crate uses a graphic visual without a label")
 	assert_null(crate.get_node_or_null("Label"), "supply crate has no text marker")
 
@@ -147,4 +147,4 @@ func test_presentation_contracts() -> void:
 	assert_gt(effects.effect_spawn_count, pickup_effects_before, "drop collection creates a pickup effect")
 
 	scene.teardown()
-	await wait_frames(1)
+	await wait_physics_frames(1)

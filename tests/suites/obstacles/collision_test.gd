@@ -72,7 +72,7 @@ func test_obstacle_system_queries() -> void:
 	add_child(obstacle_system)
 	var obstacle := _build_obstacle(&"ruined_house", Vector2(120.0, 80.0))
 	obstacle.global_position = Vector2(400.0, 400.0)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	var center := obstacle.global_position
 
 	assert_true(obstacle_system.is_position_blocked(center), "solid obstacle blocks its center")
@@ -123,7 +123,7 @@ func test_projectile_blocked_by_wall() -> void:
 	assert_true(is_instance_valid(free_projectile), "a projectile without an obstacle keeps flying")
 	if is_instance_valid(free_projectile):
 		free_projectile.queue_free()
-		await wait_frames(1)
+		await wait_physics_frames(1)
 
 # --- helper (porting dei test legacy) ---------------------------------------
 
@@ -155,4 +155,4 @@ func _scene_mask_has_bit(path: String, bit: int) -> bool:
 func _free_node(node: Node) -> void:
 	if is_instance_valid(node):
 		node.queue_free()
-	await wait_frames(1)
+	await wait_physics_frames(1)

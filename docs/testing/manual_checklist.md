@@ -240,8 +240,8 @@ Il test verifica tre ondate, scaling, reward, director low-ammo, supply crate bo
 - Cambiare arena non duplica i contenuti runtime.
 
 ```text
-godot --headless --path . --script res://tests/zombie_environment_milestone_smoke_test.gd
-godot --path . --rendering-method gl_compatibility --script res://tests/arena_variants_visual_qa.gd
+./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/modes
+tools/run_visual_qa.sh survival
 ```
 
 ## Regressione Revamp Zombie Z5
@@ -262,7 +262,7 @@ godot --headless --path . --script res://tests/zombie_fall_hazard_smoke_test.gd
 godot --headless --path . --script res://tests/zombie_revamp_foundation_smoke_test.gd
 godot --headless --path . --script res://tests/survival_wave_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_rpg_8_adrenaline_super_smoke_test.gd
-godot --path . --rendering-method gl_compatibility --script res://tests/arena_variants_visual_qa.gd
+tools/run_visual_qa.sh survival
 ```
 
 ## Regressione Milestone 13
@@ -300,11 +300,12 @@ build/qa/milestone_13_defense_towers.png
 ## Release workflow Milestone 13
 
 - Da checkout pulito, eseguire `godot --headless --path . --import`.
-- Eseguire `./tools/run_tests.ps1 -Category fast -SkipImport`.
-- Eseguire `./tools/run_tests.ps1 -Category slow -SkipImport -TimeoutSec 240`
+- Eseguire `./tools/run_gut.ps1 -SkipImport`.
+- Eseguire
+  `godot --headless -s res://addons/gut/gut_cmdln.gd -gconfig=res://.gutconfig.soak.json -gexit`
   prima di merge/release o quando cambia runtime condiviso.
 - Eseguire QA visuale solo con rendering reale/GPU:
-  `./tools/run_tests.ps1 -Category visual -SkipImport -IncludeVisualQa`.
+  `tools/run_visual_qa.sh`.
 - Verificare gli asset isometrici con
   `godot --headless --path . --script res://tools/generate_isometric_environment_assets.gd -- --check`.
 - Verificare il preset Windows con
@@ -530,7 +531,7 @@ godot --path . --rendering-method gl_compatibility --script res://tests/rift_arc
 ```text
 godot --headless --path . --script res://tests/milestone_20_arena_environment_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_20_arena_stress_test.gd
-godot --path . --rendering-method gl_compatibility --script res://tests/arena_variants_visual_qa.gd
+tools/run_visual_qa.sh survival
 ```
 
 ## Regressione Milestone 21
@@ -1182,7 +1183,7 @@ godot --headless --path . --script res://tests/milestone_10_object_asset_smoke_t
 godot --headless --path . --script res://tests/obstacle_3x3_smoke_test.gd
 godot --headless --path . --script res://tests/scalable_obstacle_smoke_test.gd
 godot --path . --rendering-method gl_compatibility --script res://tests/obstacle_3x3_visual_qa.gd
-godot --path . --rendering-method gl_compatibility --script res://tests/rock_area_visual_qa.gd
+tools/run_visual_qa.sh rock_area
 godot --headless --path . --script res://tests/biome_obstacle_generation_smoke_test.gd
 godot --headless --path . --script res://tests/isometric_environment_manifest_smoke_test.gd
 godot --headless --path . --script res://tests/milestone_4_obstacle_collision_smoke_test.gd
@@ -1365,11 +1366,8 @@ godot --headless --path . --script res://tests/survival_wave_smoke_test.gd
   time e qualsiasi rallentamento con full-radius visual streaming.
 
 ```text
-./tools/run_tests.ps1 -Filter milestone_12 -SkipImport -TimeoutSec 180
-./tools/run_tests.ps1 -Filter zombie_revamp_ten_wave -SkipImport -TimeoutSec 180
-./tools/run_tests.ps1 -Filter zombie_revamp_ten_minute_soak -SkipImport -TimeoutSec 180
-./tools/run_tests.ps1 -Filter boss_smoke -SkipImport -TimeoutSec 180
-./tools/run_tests.ps1 -Filter zombie_spawner_edge -SkipImport -TimeoutSec 120
-./tools/run_tests.ps1 -Filter zombie_biome_transition -SkipImport -TimeoutSec 180
-./tools/run_tests.ps1 -Filter milestone_10_cross_biome_chase -SkipImport -TimeoutSec 180
+./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/balance
+./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/enemies
+./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/environment
+godot --headless -s res://addons/gut/gut_cmdln.gd -gconfig=res://.gutconfig.soak.json -gexit
 ```

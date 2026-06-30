@@ -12,7 +12,7 @@ extends RefCounted
 ##   func before_all():
 ##       _world = GoldenWorldFixture.new()
 ##       _world.attach(self)
-##       await wait_frames(1)
+##       await wait_physics_frames(1)
 ##       _world.start_compact()
 ##   func after_all():
 ##       _world.teardown()

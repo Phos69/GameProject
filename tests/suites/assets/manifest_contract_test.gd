@@ -33,7 +33,7 @@ func before_all() -> void:
 	_manifest = IsometricEnvironmentManifest.reload_shared()
 	_biome_manager = BiomeManager.new()
 	add_child(_biome_manager)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	_biome_manager.start_run(GENERATED_WORLD_CONTEXT)
 	_cells = _biome_manager.get_generated_biome_map()
 
@@ -218,7 +218,7 @@ func test_obstacle_coherence() -> void:
 		assert_eq(explicit_barrier.get_draw_mode(), &"wood_barrier", "wood_barrier uses its manifest draw mode")
 		assert_false(explicit_barrier.uses_generic_fallback(), "wood_barrier does not use implicit generic fallback")
 		explicit_barrier.queue_free()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 func test_generated_obstacle_visual_coherence() -> void:
 	var generated_categories := ObstacleLayoutGenerator.get_generated_obstacle_categories()
@@ -240,7 +240,7 @@ func test_generated_obstacle_visual_coherence() -> void:
 		assert_false(obstacle.uses_generic_fallback(), "%s avoids implicit generic fallback" % String(obstacle_id))
 		assert_true(obstacle.has_ground_shadow(), "%s keeps a coherent ground shadow/base contract" % String(obstacle_id))
 		obstacle.queue_free()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 func test_scene_y_sort() -> void:
 	var packed := load("res://game/main/main.tscn") as PackedScene

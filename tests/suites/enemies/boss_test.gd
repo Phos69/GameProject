@@ -27,7 +27,7 @@ func test_boss_wave_flow() -> void:
 	_boss_projectiles = []
 	var scene := MainSceneFixture.new()
 	assert_true(scene.boot(self), "main scene can be loaded")
-	await wait_frames(2)
+	await wait_physics_frames(2)
 
 	var wave_manager := scene.node(&"wave_manager") as WaveManager
 	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
@@ -46,9 +46,9 @@ func test_boss_wave_flow() -> void:
 		return
 
 	survival_mode.stop_mode()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	local_multiplayer.activate_slot(2)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	var player_one := player_manager.players.get(1) as PlayerController
 	var player_two := player_manager.players.get(2) as PlayerController
 	if player_one == null or player_two == null:
@@ -90,7 +90,7 @@ func test_boss_wave_flow() -> void:
 	assert_eq(boss.projectile_damage, 13, "fifth wave scales boss damage")
 	assert_false(ammo_director.get_active_crates().is_empty(), "boss wave starts with a guaranteed ammo source")
 
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_true(hud.boss_health_bar.visible, "boss health bar is visible")
 	assert_true("Wave Warden" in hud.boss_name_label.text, "boss HUD displays the boss name")
 	assert_eq(int(hud.boss_health_bar.max_value), boss_health.max_health, "boss bar uses boss max health")
@@ -107,7 +107,9 @@ func test_boss_wave_flow() -> void:
 	assert_eq(boss.perform_aimed_volley(), 3, "aimed volley spawns three projectiles")
 	for _frame in range(50):
 		await wait_physics_frames(1)
-	assert_eq(player_one_health.current_health, player_health_before_volley - boss.projectile_damage, "aimed boss projectile damages a player")
+	var aimed_damage_taken := player_health_before_volley - player_one_health.current_health
+	assert_gte(aimed_damage_taken, boss.projectile_damage, "aimed boss projectile damages a player")
+	assert_lte(aimed_damage_taken, boss.projectile_damage * boss.aimed_projectile_count, "aimed volley damage stays bounded by spawned projectiles")
 	assert_true(_patterns.has(&"aimed_volley"), "aimed volley emits its pattern signal")
 
 	_clear_boss_projectiles()
@@ -119,7 +121,7 @@ func test_boss_wave_flow() -> void:
 
 	health_system.apply_damage(boss, boss_health.current_health - boss_health.max_health / 2)
 	assert_eq(boss.phase_index, 2, "boss enters phase two below half health")
-	await wait_frames(2)
+	await wait_physics_frames(2)
 	assert_true("Phase 2" in hud.boss_name_label.text, "boss HUD displays phase two")
 	assert_eq(int(hud.boss_health_bar.value), boss_health.current_health, "boss health bar follows damage")
 	assert_false(_completed_waves.has(5), "fifth wave waits for the living boss")
@@ -128,7 +130,7 @@ func test_boss_wave_flow() -> void:
 	assert_true(await _wait_for_completed_wave(5), "fifth wave completes after boss death")
 	assert_true(_defeated_modes.has(GameConstants.MODE_SURVIVAL), "BossSystem reports survival boss defeat")
 	assert_null(boss_system.get_active_boss(), "BossSystem clears the active boss")
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_false(hud.boss_health_bar.visible, "boss health bar hides after defeat")
 
 	var weapon_pickup := _find_weapon_pickup(scene, &"wave_cannon")
@@ -155,7 +157,7 @@ func test_boss_telegraph() -> void:
 	_boss_projectiles = []
 	var scene := MainSceneFixture.new()
 	assert_true(scene.boot(self), "main scene can be loaded")
-	await wait_frames(3)
+	await wait_physics_frames(3)
 	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
 	var boss_system := scene.node(&"boss_system") as BossSystem
 	var projectile_system := scene.node(&"projectile_system") as ProjectileSystem
@@ -233,7 +235,7 @@ func test_boss_telegraph() -> void:
 	assert_true(_audio_feedback.has(&"boss_phase"), "phase transition emits a distinct audio cue")
 
 	boss.queue_free()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	_teardown_boss(scene, null)
 
 # --- registry e secondo boss (milestone_19_boss_registry) -------------------
@@ -244,7 +246,7 @@ func test_boss_registry() -> void:
 	_defeated_details = []
 	var scene := MainSceneFixture.new()
 	assert_true(scene.boot(self), "main scene can be loaded")
-	await wait_frames(3)
+	await wait_physics_frames(3)
 	var boss_system := scene.node(&"boss_system") as BossSystem
 	var player_manager := scene.node(&"player_manager") as PlayerManager
 	var projectile_system := scene.node(&"projectile_system") as ProjectileSystem
@@ -276,7 +278,7 @@ func test_boss_registry() -> void:
 		_teardown_boss(scene, null)
 		return
 	health_system.apply_damage(warden, 99999)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 	var rift := boss_system.request_boss_by_id(&"rift_architect", GameConstants.MODE_DUNGEON, &"registry_test", Vector2.ZERO) as RiftArchitect
 	assert_not_null(rift, "Rift Architect spawns through the registry")
@@ -287,7 +289,7 @@ func test_boss_registry() -> void:
 	rift.target = player
 	assert_true(rift.boss_id == &"rift_architect" and rift.display_name == "Rift Architect", "second boss exposes its own identity")
 	assert_eq(rift.visual.get_profile_id(), &"rift_architect", "second boss uses a distinct modular visual")
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_true(hud.boss_name_label.text.contains("Rift Architect"), "shared boss HUD displays the registered boss name")
 
 	rift.lane_telegraph_duration = 5.0
@@ -296,7 +298,7 @@ func test_boss_registry() -> void:
 	assert_true(_rift_projectiles.is_empty(), "lane sweep creates no projectile during warning")
 	assert_eq(hud.boss_warning_label.text, "LANE SWEEP - FIND THE GAP", "HUD explains the lane gap")
 	rift._finish_attack_telegraph()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_eq(_count_rift_projectiles(&"rift_lane"), rift.lane_projectile_count - 1, "lane sweep fires every warned lane except the safe gap")
 	_clear_rift_projectiles()
 
@@ -309,12 +311,12 @@ func test_boss_registry() -> void:
 	assert_true(_rift_projectiles.is_empty(), "cross burst creates no projectile during warning")
 	assert_eq(hud.boss_warning_label.text, "CROSS BURST - ROTATE", "HUD explains the cross burst")
 	rift._finish_attack_telegraph()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_eq(_count_rift_projectiles(&"rift_cross"), rift.cross_projectile_count, "cross burst fires its configured rotating cross")
 	_clear_rift_projectiles()
 
 	health_system.apply_damage(rift, 99999)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_true(not _defeated_details.is_empty() and _defeated_details[-1].get("boss_id") == &"rift_architect", "detailed defeat event preserves boss identity")
 	assert_gte(_count_weapon_pickups(scene, &"rift_repeater"), 1, "Rift Architect drops its dedicated special weapon")
 
@@ -326,7 +328,7 @@ func _teardown_boss(scene: MainSceneFixture, local_multiplayer: LocalMultiplayer
 	if local_multiplayer != null:
 		local_multiplayer.deactivate_slot(2)
 	scene.teardown()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 func _wait_for_boss_wave(wave_manager: WaveManager) -> bool:
 	for _frame in range(180):

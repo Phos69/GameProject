@@ -31,7 +31,7 @@ func before_all() -> void:
 	_manifest = IsometricEnvironmentManifest.reload_shared()
 	_biome_manager = BiomeManager.new()
 	add_child(_biome_manager)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	_biome_manager.start_run({"world_seed": 106106, "biome_map_width": 3, "biome_map_height": 3, "extra_edge_chance": 0.35})
 	_cells = _biome_manager.get_generated_biome_map()
 
@@ -134,7 +134,7 @@ func test_fall_zone_instance_coverage() -> void:
 		if side == &"east" or side == &"west":
 			size = Vector2(48.0, 420.0)
 		zone.configure(&"fall_zone", size, 0.0, Color(0.82, 0.58, 0.16, 0.92), &"cliff", side, 9901)
-		await wait_frames(1)
+		await wait_physics_frames(1)
 		assert_eq(zone.get_fall_side(), side, "%s fall zone stores side" % String(side))
 		assert_true(zone.uses_procedural_fallback(), "%s fall zone renders the clean procedural void" % String(side))
 		assert_false(zone.has_asset_renderer(), "%s fall zone drops the grainy SVG cliff sprites" % String(side))
@@ -151,10 +151,10 @@ func test_fall_zone_instance_coverage() -> void:
 			"%s fall zone keeps rectangle collision contract" % String(side))
 		assert_true(zone.is_in_group("fall_zones") and zone.is_in_group("environment_hazards"), "%s fall zone keeps hazard groups" % String(side))
 		zone.set_debug_visual_visible(true)
-		await wait_frames(1)
+		await wait_physics_frames(1)
 		assert_true(zone.uses_procedural_fallback(), "%s debug overlay keeps the procedural void" % String(side))
 		zone.queue_free()
-		await wait_frames(1)
+		await wait_physics_frames(1)
 
 func test_tile_layer_visual_authority() -> void:
 	var layer_marker := Node2D.new()
@@ -163,11 +163,11 @@ func test_tile_layer_visual_authority() -> void:
 	var zone := FALL_ZONE_SCRIPT.new() as BiomeFallZone
 	add_child(zone)
 	zone.configure(&"fall_zone", Vector2(180.0, 180.0), 0.0, Color(0.82, 0.58, 0.16, 0.92), &"cliff", &"internal", 9902)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	assert_true(zone.is_world_edge_visual_suppressed(), "tile layer suppresses the duplicate rectangular fall-zone border")
 	zone.queue_free()
 	layer_marker.queue_free()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 # --- metadati di lato e hazard runtime (megamappa 3x3 condivisa) ------------
 
@@ -201,9 +201,9 @@ func test_hazard_system_runtime() -> void:
 	var hazard_system := HazardSystem.new()
 	hazard_system.environment_container_path = NodePath("../EnvironmentProps")
 	add_child(hazard_system)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	hazard_system.start_run(biome)
-	await wait_frames(1)
+	await wait_physics_frames(1)
 	var fall_zone_count := 0
 	for hazard in hazard_system.get_active_hazards():
 		var fall_zone := hazard as BiomeFallZone
@@ -222,7 +222,7 @@ func test_hazard_system_runtime() -> void:
 	assert_gt(fall_zone_count, 0, "hazard system spawns fall zones")
 	hazard_system.queue_free()
 	container.queue_free()
-	await wait_frames(1)
+	await wait_physics_frames(1)
 
 # --- helper (porting dei test legacy) ---------------------------------------
 
