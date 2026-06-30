@@ -66,6 +66,21 @@ const FOREST_PASSAGE_SURFACE_TILE_IDS: Array[StringName] = [
 	&"bridge", &"bridge_entry", &"bridge_exit",
 	&"snow_pass", &"snow_pass_entry", &"snow_pass_exit"
 ]
+# Per-biome ground "theme": maps each surface texture slot (FOREST_SURFACE_TEXTURE_IDS)
+# to the manifest terrain-tiles id that supplies its art for that biome. The resolver
+# emits the same forest_* tile ids for every biome, so a theme just re-skins those six
+# slots with biome textures. infected_plains is implicit (identity: each slot uses its
+# own forest_* asset).
+const SURFACE_THEMES: Dictionary = {
+	&"toxic_wastes": {
+		&"forest_grass": &"swamp_grass",
+		&"forest_path": &"swamp_path",
+		&"forest_road": &"swamp_road",
+		&"grass_to_path": &"swamp_grass_to_path",
+		&"grass_to_road": &"swamp_grass_to_road",
+		&"path_to_road": &"swamp_path_to_road"
+	}
+}
 
 var layout: BiomeEnvironmentLayout
 var palette: BiomePalette
@@ -522,10 +537,10 @@ func _load_rock_art_texture() -> void:
 func _load_forest_surface_art_textures() -> void:
 	_forest_surface_textures.clear()
 	_forest_surface_art_asset_paths.clear()
-	if manifest == null or not _uses_forest_ground():
+	if manifest == null or not _uses_themed_ground():
 		return
 	for texture_id in FOREST_SURFACE_TEXTURE_IDS:
-		var contract := manifest.get_terrain_asset_contract(texture_id)
+		var contract := manifest.get_terrain_asset_contract(_themed_surface_asset_id(texture_id))
 		var asset_path := String(contract.get("asset_path", ""))
 		_forest_surface_art_asset_paths[texture_id] = asset_path
 		if asset_path.is_empty():
@@ -566,7 +581,7 @@ func _rebuild_ground_geometry() -> void:
 	var colors := PackedColorArray()
 	var indices := PackedInt32Array()
 	var grid := PackedVector2Array()
-	if _uses_forest_ground():
+	if _uses_themed_ground():
 		_ground_underlay_mesh = _build_forest_underlay_mesh(scale)
 		for texture_id in FOREST_SURFACE_TEXTURE_IDS:
 			if not (_forest_surface_textures.get(texture_id) is Texture2D):
@@ -880,8 +895,22 @@ func _forest_underlay_color(key: StringName) -> Color:
 func _uses_forest_ground() -> bool:
 	return biome_id == IsometricTileResolver.FOREST_BIOME_ID
 
+func _surface_theme() -> Dictionary:
+	return SURFACE_THEMES.get(biome_id, {})
+
+# True when the biome renders a textured ground surface: forest art for the forest
+# biome, or a per-biome surface theme. Gates surface-texture loading and the
+# underlay/surface meshes. Rock-area and forest cliff-border art stay forest-only.
+func _uses_themed_ground() -> bool:
+	return _uses_forest_ground() or not _surface_theme().is_empty()
+
+# Manifest terrain-tiles id supplying a surface slot's texture for the current biome,
+# defaulting to the slot id itself (forest identity).
+func _themed_surface_asset_id(slot: StringName) -> StringName:
+	return _surface_theme().get(slot, slot)
+
 func _should_draw_grid() -> bool:
-	return not _uses_forest_ground()
+	return not _uses_themed_ground()
 
 func _rebuild_chunks() -> void:
 	_chunks.clear()

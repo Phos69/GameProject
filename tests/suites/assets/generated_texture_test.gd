@@ -69,6 +69,39 @@ func test_forest_runtime_consumption() -> void:
 	layer.queue_free()
 	await wait_physics_frames(1)
 
+# toxic_wastes skins the shared themed-ground surface slots with swamp art (the
+# resolver still emits the forest_* tile ids, so each surface slot must resolve to a
+# swamp_* texture instead of falling back to flat palette colour).
+const SWAMP_SLOT_TEXTURES: Dictionary = {
+	&"forest_grass": "swamp_grass_generated.png",
+	&"forest_path": "swamp_path_generated.png",
+	&"forest_road": "swamp_road_generated.png",
+	&"grass_to_path": "swamp_grass_to_path_generated.png",
+	&"grass_to_road": "swamp_grass_to_road_generated.png",
+	&"path_to_road": "swamp_path_to_road_generated.png"
+}
+
+func test_swamp_runtime_consumption() -> void:
+	var palette := load("res://game/modes/zombie/biomes/toxic_wastes_palette.tres") as BiomePalette
+	var layout := BiomeEnvironmentLayout.new()
+	layout.zone_size = Vector2i(16, 16)
+	layout.generation_seed = 990077
+	layout.add_floor_rect(Rect2i(Vector2i.ZERO, layout.zone_size), &"open_block")
+	layout.rebuild_terrain_classification()
+	var layer := BiomeTileLayer.new()
+	add_child(layer)
+	layer.configure(layout, palette, &"toxic_wastes", &"quality", 16, null, _manifest, false)
+	await wait_physics_frames(1)
+	assert_true(layer.has_forest_surface_art_textures(), "toxic_wastes tile layer loads every swamp surface texture")
+	var paths := layer.get_forest_surface_art_asset_paths()
+	for slot_value in SWAMP_SLOT_TEXTURES.keys():
+		var slot := slot_value as StringName
+		var asset_path := String(paths.get(slot, ""))
+		assert_true(asset_path.ends_with(SWAMP_SLOT_TEXTURES[slot]),
+			"toxic_wastes slot %s uses %s (got %s)" % [String(slot), SWAMP_SLOT_TEXTURES[slot], asset_path])
+	layer.queue_free()
+	await wait_physics_frames(1)
+
 # --- cliff/void textures e mesh (void_cliff_generated_texture) --------------
 
 func test_cliff_manifest_assets() -> void:
