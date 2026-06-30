@@ -17,8 +17,9 @@ Stato dopo il primo cleanup del 2026-06-30:
   creati dai test;
 - gli orphans dei proiettili sono stati eliminati dai run mirati `combat` e
   `progression`;
-- restano aperti i warning UID dell'addon GUT e i leak/resource warning a
-  shutdown.
+- i warning UID dell'addon GUT sono stati rimossi allineando le scene agli
+  `.gd.uid` gia versionati;
+- restano aperti i leak/resource warning a shutdown.
 
 ## Obiettivo
 
@@ -107,6 +108,12 @@ Validazione:
 
 ### 4. Warning UID addon GUT
 
+Stato 2026-06-30: completato. Gli `ext_resource type="Script"` nelle scene
+vendorizzate di GUT puntavano a UID obsoleti rispetto ai `.gd.uid` tracciati.
+Le scene sotto `addons/gut/*.tscn` e `addons/gut/gui/*.tscn` ora usano gli UID
+effettivi dei rispettivi script. Non sono stati aggiunti nuovi `.uid`; la policy
+`.gitignore` resta invariata e continua a ignorare nuovi UID generati.
+
 Obiettivo: rimuovere i warning Godot su `ext_resource, invalid UID` nelle scene
 vendorizzate di GUT.
 
@@ -120,6 +127,13 @@ Criterio di accettazione:
 
 - avvio GUT senza warning `invalid UID` su scene dell'addon;
 - `.gitignore` resta coerente con la scelta sugli `.uid`.
+
+Validazione:
+
+- controllo statico: tutti gli `ext_resource type="Script"` delle scene GUT
+  corrispondono al contenuto dei rispettivi `.gd.uid`;
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/_sanity`: 1
+  script, 4 test, 5 assert, exit code `0`, nessun match `invalid UID` nel log.
 
 ### 5. Leak e resource still in use a shutdown
 

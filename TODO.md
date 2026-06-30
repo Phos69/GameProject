@@ -117,6 +117,9 @@ revisione manuale, baseline e consolidamento TODO.
   `current_scene` non esiste, e il test RPG ripulisce i colpi delle super ranged
   prima delle verifiche successive. Run `combat` e `progression` verdi senza
   `Orphans`.
+- Avanzamento 2026-06-30: warning UID addon GUT corretti. Gli
+  `ext_resource type="Script"` delle scene GUT ora corrispondono ai `.gd.uid`
+  gia tracciati; smoke `_sanity` verde senza `invalid UID` nel log.
 - Obiettivo: ridurre il rumore dei runner GUT fino a log locali leggibili e
   warning residui azionabili.
 - Milestone collegata: manutenzione test post-cutover GUT.
@@ -124,7 +127,7 @@ revisione manuale, baseline e consolidamento TODO.
   `addons/gut/*.tscn`, fixture test e cache statiche runtime.
 - Criterio di accettazione: niente `wait_frames()` deprecato nei test GUT,
   warning GUT generici corretti, orphans proiettili corretti nei run sorgente,
-  report quick/soak aggiornati.
+  warning UID addon GUT rimossi, report quick/soak aggiornati.
 - Test richiesto: `./tools/run_gut.ps1 -SkipImport`, soak con
   `.gutconfig.soak.json` e run mirati indicati in
   `docs/testing/gut_warning_cleanup_plan.md`.

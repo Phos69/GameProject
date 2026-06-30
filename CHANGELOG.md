@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- Allineati gli UID script nelle scene vendorizzate di GUT ai `.gd.uid`
+  tracciati, rimuovendo i warning Godot `ext_resource, invalid UID` all'avvio
+  del runner.
 - `ProjectileSystem` aggancia i proiettili al parent locale quando
   `current_scene` non e disponibile, eliminando gli orphans nei test GUT
   sintetici di combat/progressione; il test RPG ripulisce i proiettili delle
