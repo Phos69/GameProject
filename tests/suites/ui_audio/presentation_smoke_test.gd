@@ -55,8 +55,7 @@ func test_presentation_contracts() -> void:
 	assert_not_null(player_world_hud, "player uses the world-space HUD package")
 
 	game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL)
-	await wait_physics_frames(2)
-	var player_card := hud.player_cards.get(1) as PlayerHudCard
+	var player_card := await _wait_for_player_card(hud, 1, 8)
 	assert_true(player_card != null and player_card.visible, "HUD shows player one card")
 	assert_true(
 		hud.status_panel != null and not hud.status_panel.is_visible_in_tree(),
@@ -148,3 +147,20 @@ func test_presentation_contracts() -> void:
 
 	scene.teardown()
 	await wait_physics_frames(1)
+
+func _wait_for_player_card(
+	hud: HUDManager,
+	player_slot: int,
+	max_frames: int
+) -> PlayerHudCard:
+	for _frame in range(max_frames):
+		var card := hud.player_cards.get(player_slot) as PlayerHudCard
+		if (
+			card != null
+			and card.visible
+			and card.health_bar.value > 0.0
+			and not card.weapon_label.text.is_empty()
+		):
+			return card
+		await wait_physics_frames(1)
+	return hud.player_cards.get(player_slot) as PlayerHudCard

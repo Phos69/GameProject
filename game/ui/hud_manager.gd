@@ -587,6 +587,15 @@ func _on_boss_spawned(boss: Node) -> void:
 		)
 
 func _on_boss_defeated(_mode_id: StringName) -> void:
+	if boss_panel != null:
+		boss_panel.hide()
+	if boss_name_label != null:
+		boss_name_label.hide()
+	if boss_health_bar != null:
+		boss_health_bar.hide()
+	if boss_warning_label != null:
+		boss_warning_label.hide()
+	boss_warning_timer = 0.0
 	if combat_announcement != null:
 		combat_announcement.show_announcement(
 			&"boss_defeated",

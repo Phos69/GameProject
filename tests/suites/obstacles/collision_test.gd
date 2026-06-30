@@ -7,8 +7,9 @@ extends GutTest
 ## traduzione di blocks_projectiles in layer/mask, query jumpable/non-jumpable,
 ## chiavi stabili e proiettili fermati dai muri solidi.
 ##
-## Il manifest condiviso si carica una sola volta in before_all; gli ObstacleSystem
-## e i BiomeObstacle runtime sono economici e si costruiscono per test.
+## Il manifest si carica localmente nei test che lo interrogano: tenere il
+## singleton in un campo condiviso dello script insieme ai riferimenti a
+## ObstacleSystem lascia risorse vive al teardown headless di Godot.
 
 const GENERATED_OBSTACLE_IDS: Array[String] = [
 	"ash_barrier", "boundary_fence", "broken_fence", "broken_walkway",
@@ -20,26 +21,24 @@ const GENERATED_OBSTACLE_IDS: Array[String] = [
 	"toxic_boundary_wall", "wood_barrier"
 ]
 
-var _manifest: IsometricEnvironmentManifest
-
-func before_all() -> void:
-	_manifest = IsometricEnvironmentManifest.reload_shared()
-	assert_true(_manifest.load_error.is_empty(), "manifest loads without error")
+func after_each() -> void:
+	IsometricEnvironmentManifest.clear_shared()
 
 # --- contratto di collisione dal manifest -----------------------------------
 
 func test_manifest_collision_contract() -> void:
+	var manifest := _load_manifest()
 	for id_string in GENERATED_OBSTACLE_IDS:
 		var obstacle_id := StringName(id_string)
-		assert_true(_manifest.has_object(obstacle_id), "%s is described in the manifest" % id_string)
-		var shape := _manifest.get_collision_shape(obstacle_id)
+		assert_true(manifest.has_object(obstacle_id), "%s is described in the manifest" % id_string)
+		var shape := manifest.get_collision_shape(obstacle_id)
 		assert_true(shape == &"rectangle" or shape == &"circle", "%s uses a buildable collision shape (%s)" % [id_string, String(shape)])
-		assert_true(_manifest.blocks_projectiles(obstacle_id), "%s is a solid wall that blocks projectiles" % id_string)
-		assert_false(_manifest.is_jumpable_gap_anchor(obstacle_id), "%s is not a jumpable gap anchor" % id_string)
+		assert_true(manifest.blocks_projectiles(obstacle_id), "%s is a solid wall that blocks projectiles" % id_string)
+		assert_false(manifest.is_jumpable_gap_anchor(obstacle_id), "%s is not a jumpable gap anchor" % id_string)
 
-	assert_eq(_manifest.get_collision_shape(&"bridge_passage"), &"open", "bridge_passage exposes an open (non-colliding) shape")
-	assert_false(_manifest.blocks_projectiles(&"bridge_passage"), "bridge_passage does not block projectiles")
-	assert_true(_manifest.is_jumpable_gap_anchor(&"fall_zone"), "fall_zone is flagged as a jumpable gap anchor")
+	assert_eq(manifest.get_collision_shape(&"bridge_passage"), &"open", "bridge_passage exposes an open (non-colliding) shape")
+	assert_false(manifest.blocks_projectiles(&"bridge_passage"), "bridge_passage does not block projectiles")
+	assert_true(manifest.is_jumpable_gap_anchor(&"fall_zone"), "fall_zone is flagged as a jumpable gap anchor")
 
 # --- costruzione runtime della collisione -----------------------------------
 
@@ -130,8 +129,9 @@ func test_projectile_blocked_by_wall() -> void:
 func _build_obstacle(obstacle_id: StringName, size: Vector2) -> BiomeObstacle:
 	var obstacle := BiomeObstacle.new()
 	add_child(obstacle)
+	var manifest := _load_manifest()
 	obstacle.configure(obstacle_id, size, &"rectangle", 0.0,
-		Color(0.4, 0.4, 0.4, 1.0), Color(0.8, 0.8, 0.4, 1.0), _manifest.get_sort_offset(obstacle_id))
+		Color(0.4, 0.4, 0.4, 1.0), Color(0.8, 0.8, 0.4, 1.0), manifest.get_sort_offset(obstacle_id))
 	return obstacle
 
 func _spawn_projectile(origin: Vector2, direction: Vector2) -> Node:
@@ -156,3 +156,8 @@ func _free_node(node: Node) -> void:
 	if is_instance_valid(node):
 		node.queue_free()
 	await wait_physics_frames(1)
+
+func _load_manifest() -> IsometricEnvironmentManifest:
+	var manifest := IsometricEnvironmentManifest.get_shared()
+	assert_true(manifest.load_error.is_empty(), "manifest loads without error")
+	return manifest

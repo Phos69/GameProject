@@ -1,10 +1,21 @@
 extends GutHookScript
-## Post-run hook GUT: svuota la WorldDataCache a fine suite.
+## Post-run hook GUT: svuota le cache statiche a fine suite.
 ##
-## La cache e un singleton di processo (static): senza questo cleanup i mondi
-## costruiti dalle ultime suite resterebbero referenziati fino all'uscita del
-## processo, gonfiando il warning "resources still in use at exit". Azzerarla qui
-## non toglie nulla al riuso cross-suite (avviene gia durante il run).
+## Le cache sono singleton di processo (static): senza questo cleanup i mondi,
+## manifest e texture costruiti dalle ultime suite resterebbero referenziati fino
+## all'uscita del processo, gonfiando i warning "resources still in use at exit".
+## Azzerarle qui non toglie nulla al riuso cross-suite (avviene gia durante il
+## run) e mantiene il cleanup confinato ai test.
+
+const SVG_TEXTURE_LOADER = preload(
+	"res://game/modes/zombie/isometric_svg_texture_loader.gd"
+)
 
 func run() -> void:
+	for _index in range(3):
+		await gut.get_tree().process_frame
+		await gut.get_tree().physics_frame
 	WorldDataCache.clear()
+	IsometricEnvironmentManifest.clear_shared()
+	SVG_TEXTURE_LOADER.clear_cache()
+	IsometricEnvironmentObject.clear_content_metrics_cache()

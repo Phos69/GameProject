@@ -8,8 +8,17 @@ signal regenerate_new_seed_requested()
 @export var input_enabled: bool = false
 @export_range(0.1, 2.0, 0.1) var refresh_interval: float = 0.5
 
+const CELL_BORDER_FALL := 2
+const CELL_SIDES: Array[StringName] = [&"north", &"south", &"east", &"west"]
+const TERRAIN_BORDER := &"border"
+const TERRAIN_FALL_ZONE := &"fall_zone"
+const TERRAIN_HAZARD := &"hazard"
+const TERRAIN_OBSTACLE := &"obstacle"
+const TERRAIN_VOID := &"void"
+const TERRAIN_WALKABLE := &"walkable"
+
 var seed_value: int = 0
-var cells: Array[BiomeCell] = []
+var cells: Array = []
 var label: Label
 var show_borders: bool = true
 var show_pathfinding: bool = false
@@ -28,6 +37,10 @@ func _ready() -> void:
 	add_child(label)
 	_refresh_label()
 
+func _exit_tree() -> void:
+	cells.clear()
+	label = null
+
 func _process(delta: float) -> void:
 	if not visible:
 		return
@@ -39,7 +52,7 @@ func _process(delta: float) -> void:
 
 func configure(
 	new_seed: int,
-	new_cells: Array[BiomeCell]
+	new_cells: Array
 ) -> void:
 	seed_value = new_seed
 	cells = new_cells.duplicate()
@@ -79,7 +92,7 @@ func get_debug_summary() -> Dictionary:
 			hazard_count += cell.generated_layout.hazard_rects.size()
 			hazard_count += cell.generated_layout.fall_zone_rects.size()
 			crate_count += cell.generated_layout.crate_cells.size()
-			var generation_summary := cell.generated_layout.generation_summary
+			var generation_summary: Dictionary = cell.generated_layout.generation_summary
 			main_road_count += int(generation_summary.get("main_road_count", 0))
 			path_count += int(generation_summary.get("path_count", 0))
 			house_count += int(generation_summary.get("house_count", 0))
@@ -89,7 +102,7 @@ func get_debug_summary() -> Dictionary:
 			water_segment_count += int(generation_summary.get("water_segment_count", 0))
 			car_count += int(generation_summary.get("car_count", 0))
 			fence_count += int(generation_summary.get("fence_count", 0))
-			var report := cell.generated_layout.get_classification_report()
+			var report: Dictionary = cell.generated_layout.get_classification_report()
 			terrain_classification_total += int(report.get("total", 0))
 			if bool(report.get("is_complete", false)):
 				terrain_classification_complete += 1
@@ -100,8 +113,8 @@ func get_debug_summary() -> Dictionary:
 					int(terrain_class_counts.get(class_id, 0))
 					+ int(counts[terrain_class])
 				)
-		for side in BiomeCell.SIDES:
-			if cell.get_border(side) == BiomeCell.BorderType.FALL:
+		for side in CELL_SIDES:
+			if cell.get_border(side) == CELL_BORDER_FALL:
 				fall_side_count += 1
 		if not bool(cell.validation_report.get("is_valid", false)):
 			validation_failures += 1
@@ -109,14 +122,14 @@ func get_debug_summary() -> Dictionary:
 	var graph_report := {}
 	var biome_manager := get_tree().get_first_node_in_group(
 		"biome_manager"
-	) as BiomeManager
+	)
 	if biome_manager != null:
 		current_biome_id = biome_manager.get_current_biome_id()
 		current_region_id = biome_manager.get_current_region_id()
-		var current_cell := biome_manager.get_current_biome_cell()
+		var current_cell: Variant = biome_manager.get_current_biome_cell()
 		if current_cell != null:
 			current_validation = current_cell.validation_report
-		var graph := biome_manager.get_world_graph()
+		var graph: Variant = biome_manager.get_world_graph()
 		if graph != null:
 			graph_report = graph.get_connectivity_report()
 	var active_region_ids: Array[StringName] = []
@@ -257,12 +270,12 @@ func _refresh_label() -> void:
 			int(summary.get("terrain_classification_total", 0))
 		])
 		lines.append("Walk:%d Obs:%d Haz:%d Border:%d Void:%d Fall:%d" % [
-			int(terrain_counts.get(BiomeEnvironmentLayout.TERRAIN_WALKABLE, 0)),
-			int(terrain_counts.get(BiomeEnvironmentLayout.TERRAIN_OBSTACLE, 0)),
-			int(terrain_counts.get(BiomeEnvironmentLayout.TERRAIN_HAZARD, 0)),
-			int(terrain_counts.get(BiomeEnvironmentLayout.TERRAIN_BORDER, 0)),
-			int(terrain_counts.get(BiomeEnvironmentLayout.TERRAIN_VOID, 0)),
-			int(terrain_counts.get(BiomeEnvironmentLayout.TERRAIN_FALL_ZONE, 0))
+			int(terrain_counts.get(TERRAIN_WALKABLE, 0)),
+			int(terrain_counts.get(TERRAIN_OBSTACLE, 0)),
+			int(terrain_counts.get(TERRAIN_HAZARD, 0)),
+			int(terrain_counts.get(TERRAIN_BORDER, 0)),
+			int(terrain_counts.get(TERRAIN_VOID, 0)),
+			int(terrain_counts.get(TERRAIN_FALL_ZONE, 0))
 		])
 	lines.append("Encounter:%s Wave:%d Party:%d Threat:%d Ent:%d Tel:%d Skip:%s" % [
 		String(encounter.get("last_encounter_id", &"")),
@@ -319,10 +332,10 @@ func _region_ids_to_strings(region_ids: Array) -> PackedStringArray:
 
 func _empty_terrain_class_counts() -> Dictionary:
 	return {
-		BiomeEnvironmentLayout.TERRAIN_WALKABLE: 0,
-		BiomeEnvironmentLayout.TERRAIN_OBSTACLE: 0,
-		BiomeEnvironmentLayout.TERRAIN_HAZARD: 0,
-		BiomeEnvironmentLayout.TERRAIN_BORDER: 0,
-		BiomeEnvironmentLayout.TERRAIN_VOID: 0,
-		BiomeEnvironmentLayout.TERRAIN_FALL_ZONE: 0
+		TERRAIN_WALKABLE: 0,
+		TERRAIN_OBSTACLE: 0,
+		TERRAIN_HAZARD: 0,
+		TERRAIN_BORDER: 0,
+		TERRAIN_VOID: 0,
+		TERRAIN_FALL_ZONE: 0
 	}

@@ -64,6 +64,11 @@ func _build_arena_context(context: Dictionary) -> Dictionary:
 	resolved["disable_world_runtime"] = true
 	resolved["disable_region_streaming"] = true
 	# Build the 500x500 arena chunk on a worker thread behind a loading screen so the
-	# window never freezes while it generates and bakes.
-	resolved["async_world_build"] = true
+	# window never freezes while it generates and bakes. Tests can still opt out
+	# explicitly when they need a deterministic synchronous setup.
+	if (
+		not resolved.has("async_world_build")
+		and not resolved.has(&"async_world_build")
+	):
+		resolved["async_world_build"] = true
 	return resolved

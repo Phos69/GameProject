@@ -81,8 +81,15 @@ func after_each() -> void:
 	await wait_physics_frames(1)
 
 func after_all() -> void:
-	_scene.teardown()
+	if _scene != null:
+		_scene.stop_survival()
+		await wait_physics_frames(1)
+		_scene.teardown()
 	_scene = null
+	WorldDataCache.clear()
+	IsometricEnvironmentManifest.clear_shared()
+	IsometricEnvironmentObject.clear_content_metrics_cache()
+	await wait_physics_frames(3)
 
 # --- streaming completo della regione corrente e dei vicini -----------------
 # (milestone_10_full_region_streaming)

@@ -4,6 +4,22 @@
 
 ### Fixed
 
+- Pulita la suite soak GUT: `.gutconfig.soak.json` usa gli hook pre/post di test,
+  `ten_wave_test.gd` libera scena e cache statiche in teardown, e il run soak
+  completo passa senza warning di shutdown.
+- Esteso il post-hook GUT al cleanup di manifest isometrici, cache texture SVG e
+  metriche oggetto, con API dedicate su `IsometricEnvironmentManifest` e
+  `IsometricEnvironmentObject`.
+- Ridotti i riferimenti statici nei test GUT piu pesanti (`balance`,
+  `encounters`, `diagnostics`, `ten_wave`) tramite lazy loading e costanti locali,
+  rendendo i run mirati piu puliti al teardown.
+- `BiomeMapDebugOverlay` non trattiene piu celle e label dopo l'uscita dal tree e
+  non dipende da classi globali per costanti diagnostiche semplici.
+- `InfiniteArenaMode` rispetta un override esplicito di `async_world_build`,
+  mantenendo async di default nelle run reali ma consentendo setup sincroni nei
+  test metrici.
+- `HUDManager` nasconde subito pannello, barra e warning del boss quando il boss
+  viene sconfitto.
 - Ridotti i warning GUT di shutdown legati ai dati mondo: `WorldDataCache`
   spezza i link ciclici dei `world_data` su clear/overwrite/evizione,
   `BiomeWorldGenerator` ripulisce anche i mondi adottati da cache e il test

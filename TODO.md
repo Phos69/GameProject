@@ -126,6 +126,15 @@ revisione manuale, baseline e consolidamento TODO.
   da clear/evizione cache e dal teardown del `BiomeWorldGenerator`; run
   `world_gen`, `assets`, `combat` e `progression` verdi senza
   `ObjectDB instances leaked` ne `resources still in use` in coda.
+- Avanzamento 2026-06-30: soak pulita. La config `.gutconfig.soak.json` usa gli
+  stessi hook pre/post della suite rapida, le cache statiche di manifest,
+  texture SVG e metriche oggetto vengono svuotate a fine run, e
+  `ten_wave_test.gd` libera scena/cache in modo esplicito. Soak completa: 4
+  script, 4 test, 59 assert, exit code `0`, nessun warning di shutdown.
+- Avanzamento 2026-06-30: suite rapida completa verde ma non ancora a warning
+  zero assoluto. Ultimo run: 45 script, 220 test, 14516 assert, exit code `0`;
+  residuo in coda `ObjectDB instances leaked` + `1 resources still in use`, da
+  investigare come residuo cumulativo separato.
 - Obiettivo: ridurre il rumore dei runner GUT fino a log locali leggibili e
   warning residui azionabili.
 - Milestone collegata: manutenzione test post-cutover GUT.
@@ -134,7 +143,8 @@ revisione manuale, baseline e consolidamento TODO.
 - Criterio di accettazione: niente `wait_frames()` deprecato nei test GUT,
   warning GUT generici corretti, orphans proiettili corretti nei run sorgente,
   warning UID addon GUT rimossi, leak world-data di shutdown corretti nei run
-  sorgente, report quick/soak aggiornati.
+  sorgente, soak senza warning di shutdown, report quick/soak aggiornati con
+  eventuali residui documentati.
 - Test richiesto: `./tools/run_gut.ps1 -SkipImport`, soak con
   `.gutconfig.soak.json` e run mirati indicati in
   `docs/testing/gut_warning_cleanup_plan.md`.

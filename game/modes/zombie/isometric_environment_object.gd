@@ -43,6 +43,9 @@ var render_mode: StringName = &"sprite"
 # the art's bottom upward, used to seat the footprint-wide row on the tile.
 static var _content_metrics_cache: Dictionary = {}
 
+static func clear_content_metrics_cache() -> void:
+	_content_metrics_cache.clear()
+
 func configure(
 	next_obstacle_id: StringName,
 	next_size: Vector2,

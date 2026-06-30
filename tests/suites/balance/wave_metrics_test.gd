@@ -9,41 +9,44 @@ extends GutTest
 ## scenari: e centralizzata negli handler condivisi qui sotto. Ogni test resetta
 ## lo stato e (ri)connette i segnali sulla propria istanza fresca di main.tscn.
 
-const MainSceneFixture = preload("res://tests/support/main_scene_fixture.gd")
-
 const EXPECTED_THEMATIC_IDS := {
 	&"toxic_wastes": ["toxic_zombie", "toxic_exploder"],
 	&"burning_fields": ["burned_zombie", "fire_runner", "fire_exploder"],
 	&"frozen_outskirts": ["frozen_zombie", "ice_armored_zombie", "heavy_slow_zombie"],
 	&"drowned_marsh": ["drowned_zombie", "marsh_zombie", "water_emerging_zombie"]
 }
+const DROP_MONEY := &"money"
+const MODE_INFINITE_ARENA := &"infinite_arena"
+const MODE_MENU := &"menu"
+const MODE_SURVIVAL := &"survival"
+const WAVE_STATE_COMBAT := 3
 
 var _metrics: Dictionary = {}
 var _wave_start_frames: Dictionary = {}
-var _wave_manager: WaveManager
-var _zombie_spawner: ZombieSpawner
-var _guaranteed_money_loot: LootTable
+var _wave_manager
+var _zombie_spawner
+var _guaranteed_money_loot
 var _metrics_active: bool = false
 var _track_boss: bool = false
 
 # --- infinite arena (milestone_12_balance_metrics) --------------------------
 
 func test_infinite_arena_metrics() -> void:
-	var scene := MainSceneFixture.new()
+	var scene = _new_main_scene_fixture()
 	assert_true(scene.boot(self), "main scene can be loaded")
 	await wait_physics_frames(4)
 
-	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
-	var survival_mode := scene.node(&"survival_mode") as SurvivalMode
-	var wave_manager := scene.node(&"wave_manager") as WaveManager
-	var health_system := scene.node(&"health_system") as HealthSystem
-	var drop_system := scene.node(&"drop_system") as DropSystem
-	var boss_system := scene.node(&"boss_system") as BossSystem
-	var player_manager := scene.node(&"player_manager") as PlayerManager
-	var biome_manager := scene.node(&"biome_manager") as BiomeManager
-	var zombie_spawner := scene.node(&"zombie_spawner") as ZombieSpawner
-	var zombie_mode_controller := scene.node(&"zombie_mode_controller") as ZombieModeController
-	var world_runtime := scene.node(&"world_runtime") as WorldRuntime
+	var game_mode_manager = scene.node(&"game_mode_manager")
+	var survival_mode = scene.node(&"survival_mode")
+	var wave_manager = scene.node(&"wave_manager")
+	var health_system = scene.node(&"health_system")
+	var drop_system = scene.node(&"drop_system")
+	var boss_system = scene.node(&"boss_system")
+	var player_manager = scene.node(&"player_manager")
+	var biome_manager = scene.node(&"biome_manager")
+	var zombie_spawner = scene.node(&"zombie_spawner")
+	var zombie_mode_controller = scene.node(&"zombie_mode_controller")
+	var world_runtime = scene.node(&"world_runtime")
 	assert_not_null(game_mode_manager, "game mode manager is available")
 	assert_not_null(survival_mode, "survival mode is available")
 	assert_not_null(wave_manager, "wave manager is available")
@@ -77,14 +80,17 @@ func test_infinite_arena_metrics() -> void:
 	_configure_fast_waves(wave_manager, survival_mode, 5, 3, 1, 5, 0.02)
 	_reset_metrics()
 	assert_true(
-		game_mode_manager.set_mode(GameConstants.MODE_INFINITE_ARENA, {"world_seed": 20260622}),
+		game_mode_manager.set_mode(
+			MODE_INFINITE_ARENA,
+			{"world_seed": 20260622, "async_world_build": false}
+		),
 		"infinite arena starts through the game mode manager"
 	)
 	# La generazione del mondo arena puo completare in modo asincrono: si attende
 	# che la biome map sia pronta invece di un numero fisso di frame.
 	await _poll_idle(func() -> bool: return biome_manager.get_generated_biome_map().size() >= 1, 600)
 
-	var player := player_manager.players.get(1) as PlayerController
+	var player = player_manager.players.get(1)
 	assert_not_null(player, "infinite arena has player one")
 	if player == null:
 		_finish_metrics()
@@ -93,7 +99,7 @@ func test_infinite_arena_metrics() -> void:
 	player.global_position = Vector2.ZERO
 
 	assert_eq(
-		game_mode_manager.active_mode_id, GameConstants.MODE_INFINITE_ARENA,
+		game_mode_manager.active_mode_id, MODE_INFINITE_ARENA,
 		"infinite arena is the active gameplay mode"
 	)
 	assert_false(
@@ -116,7 +122,7 @@ func test_infinite_arena_metrics() -> void:
 	assert_true(enemy_ids.has("survival_shooter"), "infinite arena wave mix includes shooters")
 	# Ferma lo spawn delle ondate successive prima di contare i residui: con
 	# intermission corta una nuova ondata puo partire durante l'attesa.
-	game_mode_manager.set_mode(GameConstants.MODE_MENU)
+	game_mode_manager.set_mode(MODE_MENU)
 	await _poll_idle(func() -> bool: return wave_manager.get_enemies_remaining() == 0, 180)
 	assert_eq(
 		wave_manager.get_enemies_remaining(), 0,
@@ -130,20 +136,20 @@ func test_infinite_arena_metrics() -> void:
 # --- zombie survival (milestone_12_zombie_balance_metrics) -------------------
 
 func test_zombie_survival_metrics() -> void:
-	var scene := MainSceneFixture.new()
+	var scene = _new_main_scene_fixture()
 	assert_true(scene.boot(self), "main scene can be loaded")
 	await wait_physics_frames(4)
 
-	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
-	var survival_mode := scene.node(&"survival_mode") as SurvivalMode
-	var wave_manager := scene.node(&"wave_manager") as WaveManager
-	var health_system := scene.node(&"health_system") as HealthSystem
-	var drop_system := scene.node(&"drop_system") as DropSystem
-	var player_manager := scene.node(&"player_manager") as PlayerManager
-	var biome_manager := scene.node(&"biome_manager") as BiomeManager
-	var zombie_spawner := scene.node(&"zombie_spawner") as ZombieSpawner
-	var zombie_mode_controller := scene.node(&"zombie_mode_controller") as ZombieModeController
-	var world_runtime := scene.node(&"world_runtime") as WorldRuntime
+	var game_mode_manager = scene.node(&"game_mode_manager")
+	var survival_mode = scene.node(&"survival_mode")
+	var wave_manager = scene.node(&"wave_manager")
+	var health_system = scene.node(&"health_system")
+	var drop_system = scene.node(&"drop_system")
+	var player_manager = scene.node(&"player_manager")
+	var biome_manager = scene.node(&"biome_manager")
+	var zombie_spawner = scene.node(&"zombie_spawner")
+	var zombie_mode_controller = scene.node(&"zombie_mode_controller")
+	var world_runtime = scene.node(&"world_runtime")
 	assert_not_null(game_mode_manager, "game mode manager is available")
 	assert_not_null(survival_mode, "survival mode is available")
 	assert_not_null(wave_manager, "wave manager is available")
@@ -172,7 +178,7 @@ func test_zombie_survival_metrics() -> void:
 	_reset_metrics()
 	assert_true(
 		game_mode_manager.set_mode(
-			GameConstants.MODE_SURVIVAL,
+			MODE_SURVIVAL,
 			{"world_seed": 20260622, "biome_map_width": 3, "biome_map_height": 3}
 		),
 		"zombie survival starts through the game mode manager"
@@ -180,7 +186,7 @@ func test_zombie_survival_metrics() -> void:
 	# Attende la generazione della mappa multi-bioma invece di un numero fisso di frame.
 	await _poll_idle(func() -> bool: return biome_manager.get_generated_biome_map().size() >= 9, 600)
 
-	var player := player_manager.players.get(1) as PlayerController
+	var player = player_manager.players.get(1)
 	assert_not_null(player, "zombie survival has player one")
 	if player == null:
 		_finish_metrics()
@@ -189,7 +195,7 @@ func test_zombie_survival_metrics() -> void:
 	player.global_position = Vector2.ZERO
 
 	assert_eq(
-		game_mode_manager.active_mode_id, GameConstants.MODE_SURVIVAL,
+		game_mode_manager.active_mode_id, MODE_SURVIVAL,
 		"zombie survival is the active gameplay mode"
 	)
 	assert_true(
@@ -221,7 +227,7 @@ func test_zombie_survival_metrics() -> void:
 	await wait_physics_frames(4)
 
 	# Ferma lo spawn prima di contare i residui (vedi infinite arena).
-	game_mode_manager.set_mode(GameConstants.MODE_MENU)
+	game_mode_manager.set_mode(MODE_MENU)
 	await _poll_idle(func() -> bool: return wave_manager.get_enemies_remaining() == 0, 180)
 	_validate_zombie_metrics(wave_manager)
 	_finish_metrics()
@@ -231,10 +237,10 @@ func test_zombie_survival_metrics() -> void:
 # --- raccolta metriche condivisa --------------------------------------------
 
 func _connect_metric_signals(
-	wave_manager: WaveManager,
-	drop_system: DropSystem,
-	health_system: HealthSystem,
-	boss_system: BossSystem
+	wave_manager,
+	drop_system,
+	health_system,
+	boss_system
 ) -> void:
 	wave_manager.wave_started.connect(_on_wave_started)
 	wave_manager.wave_configured.connect(_on_wave_configured)
@@ -247,8 +253,8 @@ func _connect_metric_signals(
 		boss_system.boss_spawned.connect(_on_boss_spawned)
 
 func _configure_fast_waves(
-	wave_manager: WaveManager,
-	survival_mode: SurvivalMode,
+	wave_manager,
+	survival_mode,
 	boss_interval: int,
 	base_count: int,
 	growth: int,
@@ -289,9 +295,9 @@ func _finish_metrics() -> void:
 	_metrics_active = false
 
 func _complete_metric_waves(
-	wave_manager: WaveManager,
-	health_system: HealthSystem,
-	player: PlayerController,
+	wave_manager,
+	health_system,
+	player,
 	wave_count: int
 ) -> void:
 	for wave_index in range(1, wave_count + 1):
@@ -308,20 +314,20 @@ func _complete_metric_waves(
 		await wait_physics_frames(4)
 
 func _kill_active_wave(
-	wave_manager: WaveManager,
-	health_system: HealthSystem,
-	player: PlayerController
+	wave_manager,
+	health_system,
+	player
 ) -> void:
 	for enemy in wave_manager.get_active_wave_enemies():
 		var hit_position := (enemy as Node2D).global_position if enemy is Node2D else Vector2.ZERO
 		health_system.apply_damage(enemy, 999999, player, &"milestone_12_wave_clear", hit_position)
-	var boss := wave_manager.get_active_boss()
+	var boss: Node = wave_manager.get_active_boss()
 	if boss != null:
 		var boss_position := (boss as Node2D).global_position if boss is Node2D else Vector2.ZERO
 		health_system.apply_damage(boss, 999999, player, &"milestone_12_boss_clear", boss_position)
 	await wait_physics_frames(2)
 
-func _damage_and_clear_wave(health_system: HealthSystem, player: PlayerController) -> void:
+func _damage_and_clear_wave(health_system, player) -> void:
 	health_system.apply_damage(player, 1, null, &"milestone_12_damage_probe", player.global_position)
 	for enemy in _wave_manager.get_active_wave_enemies():
 		var hit_position := (enemy as Node2D).global_position if enemy is Node2D else Vector2.ZERO
@@ -349,10 +355,9 @@ func _on_wave_configured(wave_index: int, enemy_count: int, _is_boss_wave: bool)
 func _on_enemy_spawned(enemy: Node, spawn_position: Vector2, _spawn_index: int) -> void:
 	if not _metrics_active:
 		return
-	if enemy is BasicEnemy:
-		(enemy as BasicEnemy).loot_table = _guaranteed_money_loot
+	enemy.set("loot_table", _guaranteed_money_loot)
 	enemy.set_physics_process(false)
-	var wave_index := _wave_manager.current_wave if _wave_manager != null else 0
+	var wave_index: int = _wave_manager.current_wave if _wave_manager != null else 0
 	var enemy_ids := _metrics["enemy_ids"] as Dictionary
 	if not enemy_ids.has(wave_index):
 		enemy_ids[wave_index] = PackedStringArray()
@@ -412,7 +417,7 @@ func _update_live_peak(wave_index: int) -> void:
 func _current_live_count() -> int:
 	if _wave_manager == null:
 		return 0
-	var count := _wave_manager.get_active_wave_enemies().size()
+	var count: int = _wave_manager.get_active_wave_enemies().size()
 	if _track_boss and _wave_manager.get_active_boss() != null:
 		count += 1
 	return count
@@ -437,7 +442,7 @@ func _validate_common_metrics(metrics: Dictionary, expected_wave_count: int, lab
 	assert_gt(int(metrics.get("damage_total", 0)), 0, "%s records positive damage total" % label)
 	assert_false((metrics.get("spawn_edges", []) as Array).is_empty(), "%s records spawn edge metrics" % label)
 
-func _validate_zombie_metrics(wave_manager: WaveManager) -> void:
+func _validate_zombie_metrics(wave_manager) -> void:
 	var configured := _metrics.get("waves_configured", []) as Array
 	var completed := _metrics.get("waves_completed", []) as Array
 	var durations := _metrics.get("wave_durations", {}) as Dictionary
@@ -459,8 +464,8 @@ func _validate_zombie_metrics(wave_manager: WaveManager) -> void:
 	assert_true(_flatten_enemy_ids(_metrics).has("survival_runner"), "zombie survival metric run encounters base wave enemy variety")
 	assert_eq(wave_manager.get_enemies_remaining(), 0, "zombie survival has no leftover wave enemies after the metric run")
 
-func _expect_biome_definition_variant_window(biome_manager: BiomeManager, biome_id: StringName, wave_index: int) -> void:
-	var biome := biome_manager.get_biome_definition(biome_id) as BiomeDefinition
+func _expect_biome_definition_variant_window(biome_manager, biome_id: StringName, wave_index: int) -> void:
+	var biome = biome_manager.get_biome_definition(biome_id)
 	assert_not_null(biome, "%s biome definition is registered" % String(biome_id))
 	if biome == null:
 		return
@@ -474,6 +479,11 @@ func _expect_biome_definition_variant_window(biome_manager: BiomeManager, biome_
 	assert_true(found, "%s registered wave table can produce thematic enemy variants" % String(biome_id))
 
 # --- helper -----------------------------------------------------------------
+
+func _new_main_scene_fixture():
+	var script := load("res://tests/support/main_scene_fixture.gd") as Script
+	assert_not_null(script, "main scene fixture script loads")
+	return script.new() if script != null else null
 
 func _flatten_enemy_ids(metrics: Dictionary) -> PackedStringArray:
 	var result := PackedStringArray()
@@ -493,24 +503,31 @@ func _seen_biome_count() -> int:
 			seen[biome_id] = true
 	return seen.size()
 
-func _make_guaranteed_money_loot(amount: int) -> LootTable:
-	var money_entry := DropEntry.new()
-	money_entry.drop_type = GameConstants.DROP_MONEY
+func _make_guaranteed_money_loot(amount: int):
+	var drop_entry_script := load("res://game/drops/drop_entry.gd") as Script
+	var loot_table_script := load("res://game/drops/loot_table.gd") as Script
+	assert_not_null(drop_entry_script, "drop entry script loads")
+	assert_not_null(loot_table_script, "loot table script loads")
+	if drop_entry_script == null or loot_table_script == null:
+		return null
+	var money_entry = drop_entry_script.new()
+	money_entry.drop_type = DROP_MONEY
 	money_entry.chance = 1.0
 	money_entry.min_amount = amount
 	money_entry.max_amount = amount
-	var loot := LootTable.new()
-	loot.entries = [money_entry]
+	var loot = loot_table_script.new()
+	loot.entries.clear()
+	loot.entries.append(money_entry)
 	return loot
 
-func _wait_for_wave_combat(wave_manager: WaveManager, wave_index: int, max_frames: int) -> bool:
+func _wait_for_wave_combat(wave_manager, wave_index: int, max_frames: int) -> bool:
 	for _frame in range(max_frames):
-		if wave_manager.current_wave == wave_index and wave_manager.state == WaveManager.State.COMBAT:
+		if wave_manager.current_wave == wave_index and int(wave_manager.state) == WAVE_STATE_COMBAT:
 			return true
 		await get_tree().physics_frame
 	return false
 
-func _wait_for_wave_completed(wave_manager: WaveManager, wave_index: int, max_frames: int) -> bool:
+func _wait_for_wave_completed(wave_manager, wave_index: int, max_frames: int) -> bool:
 	# Si affida al segnale wave_completed gia raccolto in _metrics: il controllo
 	# diretto current_wave==N && !wave_running ha una finestra troppo stretta con
 	# intermission cortissima (la wave successiva puo gia essere partita).

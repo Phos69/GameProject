@@ -29,6 +29,12 @@ func _ready() -> void:
 	object_factory = ISOMETRIC_OBJECT_FACTORY_SCRIPT.new(manifest)
 	set_process_unhandled_key_input(true)
 
+func _exit_tree() -> void:
+	_clear_runtime()
+	active_biome = null
+	manifest = null
+	object_factory = null
+
 func _unhandled_key_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F9:
 		set_debug_footprints_visible(not debug_footprints_visible)

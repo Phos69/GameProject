@@ -6,20 +6,23 @@ extends GutTest
 ##
 ## NB: suite di stress, esclusa dal run rapido (.gutconfig.json).
 
-const MainSceneFixture = preload("res://tests/support/main_scene_fixture.gd")
+const MODE_SURVIVAL := &"survival"
+const WAVE_STATE_COMBAT := 3
 
 func test_ten_wave_run_crosses_biomes() -> void:
-	var scene := MainSceneFixture.new()
+	var scene = _new_main_scene_fixture()
+	if scene == null:
+		return
 	assert_true(scene.boot(self), "main scene can be loaded")
 	await wait_physics_frames(2)
 
-	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
-	var survival_mode := scene.node(&"survival_mode") as SurvivalMode
-	var wave_manager := scene.node(&"wave_manager") as WaveManager
-	var health_system := scene.node(&"health_system") as HealthSystem
-	var biome_manager := scene.node(&"biome_manager") as BiomeManager
-	var transition_system := scene.node(&"biome_transition_system") as BiomeTransitionSystem
-	var zombie_spawner := scene.node(&"zombie_spawner") as ZombieSpawner
+	var game_mode_manager = scene.node(&"game_mode_manager")
+	var survival_mode = scene.node(&"survival_mode")
+	var wave_manager = scene.node(&"wave_manager")
+	var health_system = scene.node(&"health_system")
+	var biome_manager = scene.node(&"biome_manager")
+	var transition_system = scene.node(&"biome_transition_system")
+	var zombie_spawner = scene.node(&"zombie_spawner")
 	assert_not_null(game_mode_manager, "game mode manager is available")
 	assert_not_null(survival_mode, "survival mode is available")
 	assert_not_null(wave_manager, "wave manager is available")
@@ -32,7 +35,7 @@ func test_ten_wave_run_crosses_biomes() -> void:
 		or health_system == null or biome_manager == null or transition_system == null
 		or zombie_spawner == null
 	):
-		scene.teardown()
+		await _cleanup_scene(scene)
 		return
 
 	wave_manager.initial_delay = 0.0
@@ -45,7 +48,7 @@ func test_ten_wave_run_crosses_biomes() -> void:
 	transition_system.transition_cooldown = 0.01
 	assert_true(
 		game_mode_manager.set_mode(
-			GameConstants.MODE_SURVIVAL,
+			MODE_SURVIVAL,
 			{"world_seed": 20260622, "disable_region_streaming": true}
 		),
 		"survival starts for ten-wave regression"
@@ -73,18 +76,40 @@ func test_ten_wave_run_crosses_biomes() -> void:
 	assert_gte(seen_biomes.size(), 5, "ten-wave run exercises all five biomes")
 	assert_eq(wave_manager.current_wave, 10, "survival remains active through ten waves")
 
-	survival_mode.stop_mode()
+	game_mode_manager = null
+	survival_mode = null
+	wave_manager = null
+	health_system = null
+	biome_manager = null
+	transition_system = null
+	zombie_spawner = null
+	await _cleanup_scene(scene)
+
+func _new_main_scene_fixture():
+	var script := load("res://tests/support/main_scene_fixture.gd") as Script
+	assert_not_null(script, "main scene fixture script loads")
+	return script.new() if script != null else null
+
+func _cleanup_scene(scene) -> void:
+	if scene == null:
+		return
+	scene.stop_survival()
+	await wait_physics_frames(1)
 	scene.teardown()
+	await wait_physics_frames(3)
+	WorldDataCache.clear()
+	IsometricEnvironmentManifest.clear_shared()
+	IsometricEnvironmentObject.clear_content_metrics_cache()
 	await wait_physics_frames(1)
 
-func _wait_for_wave_combat(wave_manager: WaveManager, wave_index: int) -> bool:
+func _wait_for_wave_combat(wave_manager, wave_index: int) -> bool:
 	for _frame in range(900):
-		if wave_manager.current_wave == wave_index and wave_manager.state == WaveManager.State.COMBAT:
+		if wave_manager.current_wave == wave_index and int(wave_manager.state) == WAVE_STATE_COMBAT:
 			return true
 		await get_tree().physics_frame
 	return false
 
-func _wait_for_wave_completed(wave_manager: WaveManager, wave_index: int) -> bool:
+func _wait_for_wave_completed(wave_manager, wave_index: int) -> bool:
 	for _frame in range(240):
 		if wave_manager.current_wave == wave_index and not wave_manager.wave_running:
 			return true

@@ -22,6 +22,17 @@ Stato dopo il primo cleanup del 2026-06-30:
 - i leak/resource warning di shutdown da `world_data` ciclici sono stati ridotti
   nei run sorgente `world_gen`, `assets`, `combat` e `progression`.
 
+Stato dopo il pass cache/soak del 2026-06-30:
+
+- suite rapida completa: 45 script, 220 test, 14516 assert, exit code `0`;
+  resta un residuo di shutdown `ObjectDB instances leaked` + `1 resources still
+  in use`;
+- suite soak completa: 4 script, 4 test, 59 assert, exit code `0`, senza warning
+  di shutdown;
+- `ten_wave_test.gd` ora e pulito sia isolato sia dentro la sequenza soak;
+- i run mirati `ui_audio`, `diagnostics`, `ten_wave` e `soak` non producono
+  warning GUT/RID/resource.
+
 ## Obiettivo
 
 Ridurre il rumore dei runner GUT fino a ottenere log locali leggibili, dove i
@@ -138,7 +149,7 @@ Validazione:
 
 ### 5. Leak e resource still in use a shutdown
 
-Stato 2026-06-30: completato sui sorgenti confermati. Il verbose di
+Stato 2026-06-30: completato sui sorgenti confermati e sul perimetro soak. Il verbose di
 `combat` e `golden_snapshot_bake_test.gd` mostrava cicli `RefCounted` tra
 `BiomeCell`, `BiomePassage` e `BiomeEnvironmentLayout`: i `BiomeCell.neighbors`
 si puntano a vicenda e non vengono liberati dal reference counting se il
@@ -148,6 +159,12 @@ i link dei `world_data` su overwrite, evizione LRU e `clear()`, espone
 lifecycle di `BiomeManager`, e `BiomeWorldGenerator.clear_world()` ripulisce
 anche i mondi adottati da cache che non passano da `BiomeMapGenerator.last_cells`.
 Il test golden rilascia esplicitamente i world_data prodotti da codec/fetch.
+Il pass successivo ha allargato il cleanup alle cache statiche di manifest,
+texture SVG e metriche oggetto, ha aggiunto gli hook pre/post anche alla config
+soak e ha reso `ten_wave_test.gd` responsabile del proprio teardown di scena.
+La suite soak e ora pulita; il run rapido completo resta verde ma conserva un
+residuo cumulativo minimo (`ObjectDB` + `1 resource`) da investigare in una
+tranche dedicata.
 
 Obiettivo: distinguere cleanup correggibile nei test da rumore di engine/addon.
 
@@ -180,6 +197,15 @@ Validazione:
 - `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/progression`: 3
   script, 12 test, 269 assert, exit code `0`, nessun warning di shutdown in
   coda.
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/ui_audio`: 7
+  script, 12 test, 255 assert, exit code `0`, nessun warning in coda.
+- `./tools/run_gut.ps1 -SkipImport -Config res://.gutconfig.soak.json -Select ten_wave`:
+  1 script, 1 test, 32 assert, exit code `0`, nessun warning in coda.
+- `./tools/run_gut.ps1 -SkipImport -Config res://.gutconfig.soak.json`: 4 script,
+  4 test, 59 assert, exit code `0`, nessun warning in coda.
+- `./tools/run_gut.ps1 -SkipImport`: 45 script, 220 test, 14516 assert, exit
+  code `0`; residuo in coda: `ObjectDB instances leaked` e `1 resources still in
+  use`.
 
 ### 6. Robustezza runner PowerShell sotto redirezione
 

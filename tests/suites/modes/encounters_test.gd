@@ -7,8 +7,13 @@ extends GutTest
 ##   tests/biome_mini_events_smoke_test.gd   (RandomEncounterSystem sintetico)
 ##   tests/milestone_9_smoke_test.gd         (main.tscn: menu/save/audio/mode)
 
-const MainSceneFixture = preload("res://tests/support/main_scene_fixture.gd")
 const TEMP_SAVE_PATH := "user://m8_encounters_save_test.json"
+const DROP_EXPERIENCE := &"experience"
+const FIELD_KIT_UNLOCK := &"field_kit"
+const MODE_DUNGEON := &"dungeon"
+const MODE_MENU := &"menu"
+const MODE_SURVIVAL := &"survival"
+const SAVE_VERSION := 6
 
 var _gameplay_feedback_events: Array[Dictionary] = []
 
@@ -48,19 +53,23 @@ func test_random_encounter() -> void:
 	var player := Node2D.new()
 	player.add_to_group("players")
 	scene_root.add_child(player)
-	var crate_system := ResourceCrateSystem.new()
+	var crate_system = _new_script_node(
+		"res://game/modes/zombie/resource_crate_system.gd"
+	)
 	scene_root.add_child(crate_system)
-	var encounter := RandomEncounterSystem.new()
+	var encounter = _new_script_node(
+		"res://game/modes/zombie/random_encounter_system.gd"
+	)
 	scene_root.add_child(encounter)
 	await wait_physics_frames(1)
 	encounter.base_chance = 1.0
 	encounter.danger_telegraph_duration = 0.01
 	encounter.configure_seed(1234)
-	var biome := load("res://game/modes/zombie/biomes/toxic_wastes.tres") as BiomeDefinition
+	var biome = load("res://game/modes/zombie/biomes/toxic_wastes.tres")
 
 	assert_false(encounter.can_start_encounter(biome, 2, true), "encounter skips critical/boss state")
 	assert_true(encounter.can_start_encounter(biome, 2, false), "encounter can start after wave one")
-	var result := encounter.force_encounter(biome, &"survivor_cache", 2)
+	var result: Dictionary = encounter.force_encounter(biome, &"survivor_cache", 2)
 	assert_eq(result.get("encounter_id"), &"survivor_cache", "cache encounter")
 	assert_true(result.has("threat_score"), "encounter exposes threat score")
 	assert_true(_has_reward_crate(result, &"medical"), "survivor cache spawns a medical reward crate")
@@ -102,13 +111,21 @@ func test_biome_mini_events() -> void:
 	exposed_player.name = "ExposedPlayer"
 	exposed_player.add_to_group("players")
 	scene_root.add_child(exposed_player)
-	var visual_settings := VisualSettingsManager.new()
+	var visual_settings = _new_script_node(
+		"res://game/visuals/visual_settings_manager.gd"
+	)
 	scene_root.add_child(visual_settings)
-	var hazard_system := HazardSystem.new()
+	var hazard_system = _new_script_node(
+		"res://game/modes/zombie/hazard_system.gd"
+	)
 	scene_root.add_child(hazard_system)
-	var crate_system := ResourceCrateSystem.new()
+	var crate_system = _new_script_node(
+		"res://game/modes/zombie/resource_crate_system.gd"
+	)
 	scene_root.add_child(crate_system)
-	var encounter := RandomEncounterSystem.new()
+	var encounter = _new_script_node(
+		"res://game/modes/zombie/random_encounter_system.gd"
+	)
 	scene_root.add_child(encounter)
 	await wait_physics_frames(1)
 	encounter.danger_telegraph_duration = 0.01
@@ -125,13 +142,18 @@ func test_biome_mini_events() -> void:
 	_free_current_scene_root(scene_root)
 	await wait_physics_frames(1)
 
-func _validate_biome_event(encounter: RandomEncounterSystem, visual_settings: VisualSettingsManager, biome_id: StringName, expected_event_id: StringName) -> void:
-	var biome := load("res://game/modes/zombie/biomes/%s.tres" % String(biome_id)) as BiomeDefinition
+func _validate_biome_event(
+	encounter,
+	visual_settings,
+	biome_id: StringName,
+	expected_event_id: StringName
+) -> void:
+	var biome = load("res://game/modes/zombie/biomes/%s.tres" % String(biome_id))
 	assert_not_null(biome, "%s biome loads" % String(biome_id))
 	if biome == null:
 		return
 	assert_eq(encounter.get_biome_mini_event_id(biome_id), expected_event_id, "%s exposes its mini-event id" % String(biome_id))
-	var result := encounter.force_encounter(biome, expected_event_id, 6)
+	var result: Dictionary = encounter.force_encounter(biome, expected_event_id, 6)
 	var tuning := result.get("tuning") as Dictionary
 	var telegraph := _find_telegraph(result)
 	assert_eq(result.get("encounter_id"), expected_event_id, "%s starts expected event" % String(expected_event_id))
@@ -158,14 +180,19 @@ func _validate_biome_event(encounter: RandomEncounterSystem, visual_settings: Vi
 		_:
 			pass
 
-func _validate_whiteout_status_is_avoidable(encounter: RandomEncounterSystem, hazard_system: HazardSystem, far_player: Node2D, exposed_player: Node2D) -> void:
-	var biome := load("res://game/modes/zombie/biomes/frozen_outskirts.tres") as BiomeDefinition
+func _validate_whiteout_status_is_avoidable(
+	encounter,
+	hazard_system,
+	far_player: Node2D,
+	exposed_player: Node2D
+) -> void:
+	var biome = load("res://game/modes/zombie/biomes/frozen_outskirts.tres")
 	assert_not_null(biome, "frozen biome loads for whiteout status")
 	if biome == null:
 		return
 	hazard_system.start_run(biome)
 	far_player.global_position = Vector2.ZERO
-	var result := encounter.force_encounter(biome, &"whiteout", 6)
+	var result: Dictionary = encounter.force_encounter(biome, &"whiteout", 6)
 	exposed_player.global_position = result.get("position") as Vector2
 	await get_tree().create_timer(0.05).timeout
 	assert_false(hazard_system.has_status(far_player, &"freeze"), "whiteout does not affect players outside the telegraph")
@@ -177,24 +204,24 @@ func _validate_whiteout_status_is_avoidable(encounter: RandomEncounterSystem, ha
 func test_save_and_mode_flow() -> void:
 	_gameplay_feedback_events = []
 	_remove_temporary_save()
-	var scene := MainSceneFixture.new()
+	var scene = _new_main_scene_fixture()
 	assert_true(scene.boot(self), "main scene can be loaded")
 	await wait_physics_frames(3)
-	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
-	var main_menu := scene.node(&"main_menu") as MainMenu
-	var save_manager := scene.node(&"save_manager") as SaveManager
-	var progression := scene.node(&"progression_manager") as ProgressionManager
-	var player_manager := scene.node(&"player_manager") as PlayerManager
-	var survival_mode := scene.node(&"survival_mode") as SurvivalMode
-	var dungeon_mode := scene.node(&"dungeon_mode") as DungeonMode
-	var hud := scene.node(&"hud_manager") as HUDManager
-	var audio_manager := scene.node(&"audio_manager") as AudioManager
+	var game_mode_manager = scene.node(&"game_mode_manager")
+	var main_menu = scene.node(&"main_menu")
+	var save_manager = scene.node(&"save_manager")
+	var progression = scene.node(&"progression_manager")
+	var player_manager = scene.node(&"player_manager")
+	var survival_mode = scene.node(&"survival_mode")
+	var dungeon_mode = scene.node(&"dungeon_mode")
+	var hud = scene.node(&"hud_manager")
+	var audio_manager = scene.node(&"audio_manager")
 	if game_mode_manager == null or main_menu == null or save_manager == null or progression == null or player_manager == null or survival_mode == null or dungeon_mode == null or hud == null or audio_manager == null:
 		assert_true(false, "menu/save systems are available")
 		scene.teardown()
 		return
 
-	assert_eq(game_mode_manager.active_mode_id, GameConstants.MODE_MENU, "the project starts in menu state")
+	assert_eq(game_mode_manager.active_mode_id, MODE_MENU, "the project starts in menu state")
 	assert_true(main_menu.is_open(), "the main menu is visible at startup")
 	assert_false(hud.visible, "the gameplay HUD is hidden in the menu")
 	assert_false(survival_mode.is_running, "survival does not auto-start behind the menu")
@@ -203,7 +230,7 @@ func test_save_and_mode_flow() -> void:
 	audio_manager.gameplay_feedback_generated.connect(_on_gameplay_feedback_generated)
 	assert_gt(audio_manager.play_gameplay_shot(&"starter_pistol"), 0, "gameplay shot feedback writes audio samples")
 	assert_gt(audio_manager.play_gameplay_impact(&"starter_pistol"), 0, "gameplay impact feedback writes audio samples")
-	assert_gt(audio_manager.play_gameplay_pickup(GameConstants.DROP_EXPERIENCE), 0, "gameplay pickup feedback writes audio samples")
+	assert_gt(audio_manager.play_gameplay_pickup(DROP_EXPERIENCE), 0, "gameplay pickup feedback writes audio samples")
 
 	save_manager.save_path = TEMP_SAVE_PATH
 	save_manager.auto_persist_in_headless = true
@@ -213,25 +240,25 @@ func test_save_and_mode_flow() -> void:
 	save_manager.autosave_progression = false
 	save_manager.autosave_mode_selection = false
 	var legacy_file := FileAccess.open(TEMP_SAVE_PATH, FileAccess.WRITE)
-	legacy_file.store_string(JSON.stringify({"version": 1, "party": {"level": 2, "experience": 10, "money": 20}, "settings": {"last_mode": String(GameConstants.MODE_SURVIVAL)}}))
+	legacy_file.store_string(JSON.stringify({"version": 1, "party": {"level": 2, "experience": 10, "money": 20}, "settings": {"last_mode": String(MODE_SURVIVAL)}}))
 	legacy_file.close()
 	assert_true(save_manager.load_game(), "version 1 saves migrate through the current loader")
-	assert_true(progression.has_unlock(ProgressionManager.FIELD_KIT_UNLOCK), "legacy level data grants the Field Kit unlock")
+	assert_true(progression.has_unlock(FIELD_KIT_UNLOCK), "legacy level data grants the Field Kit unlock")
 	assert_true(save_manager.save_game(), "migrated progress is written in the current format")
-	assert_eq(int(_read_json_dictionary(TEMP_SAVE_PATH).get("version", 0)), SaveManager.SAVE_VERSION, "migrated saves use the current save version")
-	progression.restore_save_data({"level": 3, "experience": 45, "money": 70, "unlocks": [String(ProgressionManager.FIELD_KIT_UNLOCK)]})
-	save_manager.set_last_mode(GameConstants.MODE_DUNGEON)
+	assert_eq(int(_read_json_dictionary(TEMP_SAVE_PATH).get("version", 0)), SAVE_VERSION, "migrated saves use the current save version")
+	progression.restore_save_data({"level": 3, "experience": 45, "money": 70, "unlocks": [String(FIELD_KIT_UNLOCK)]})
+	save_manager.set_last_mode(MODE_DUNGEON)
 	assert_true(save_manager.save_game(), "progression save is written")
 
 	progression.restore_save_data({"level": 1, "experience": 0, "money": 0, "unlocks": []})
-	assert_false(progression.has_unlock(ProgressionManager.FIELD_KIT_UNLOCK), "runtime progression can reset to a locked state")
-	save_manager.set_last_mode(GameConstants.MODE_SURVIVAL)
+	assert_false(progression.has_unlock(FIELD_KIT_UNLOCK), "runtime progression can reset to a locked state")
+	save_manager.set_last_mode(MODE_SURVIVAL)
 	assert_true(save_manager.load_game(), "progression save is loaded")
 	assert_eq(progression.level, 3, "save restores party level")
 	assert_eq(progression.experience, 45, "save restores party experience")
 	assert_eq(progression.money, 70, "save restores party money")
-	assert_true(progression.has_unlock(ProgressionManager.FIELD_KIT_UNLOCK), "save restores the Field Kit unlock")
-	assert_eq(save_manager.get_last_mode(), GameConstants.MODE_DUNGEON, "save restores the last selected mode")
+	assert_true(progression.has_unlock(FIELD_KIT_UNLOCK), "save restores the Field Kit unlock")
+	assert_eq(save_manager.get_last_mode(), MODE_DUNGEON, "save restores the last selected mode")
 
 	var invalid_file := FileAccess.open(TEMP_SAVE_PATH, FileAccess.WRITE)
 	invalid_file.store_string('{"version":999,"party":{}}')
@@ -243,29 +270,29 @@ func test_save_and_mode_flow() -> void:
 	assert_true(main_menu.start_selected_mode(save_manager.get_last_mode()), "menu starts the saved mode")
 	await wait_physics_frames(3)
 	await wait_physics_frames(1)
-	assert_eq(game_mode_manager.active_mode_id, GameConstants.MODE_DUNGEON, "mode selection updates the active mode")
+	assert_eq(game_mode_manager.active_mode_id, MODE_DUNGEON, "mode selection updates the active mode")
 	assert_true(dungeon_mode.is_running, "dungeon starts from the main menu")
 	assert_false(main_menu.is_open(), "menu hides after mode selection")
 	assert_true(hud.visible, "gameplay HUD becomes visible after mode selection")
-	var player_one := player_manager.players.get(1) as PlayerController
+	var player_one = player_manager.players.get(1)
 	assert_not_null(player_one, "player one is available for run unlocks")
 	if player_one != null:
-		var player_health := player_one.get_node("HealthComponent") as HealthComponent
+		var player_health = player_one.get_node("HealthComponent")
 		assert_true(player_health.max_health == 120 and player_health.current_health == 120, "Field Kit raises and refills player health at run start")
 
 	main_menu.open_menu()
 	await wait_physics_frames(1)
 	assert_true(main_menu.is_open(), "Escape flow can return to the main menu")
 	assert_false(dungeon_mode.is_running, "returning to menu stops the active mode")
-	assert_eq(game_mode_manager.active_mode_id, GameConstants.MODE_MENU, "returning to menu restores menu state")
-	assert_true(main_menu.start_selected_mode(GameConstants.MODE_SURVIVAL), "a second run can start after returning to the menu")
+	assert_eq(game_mode_manager.active_mode_id, MODE_MENU, "returning to menu restores menu state")
+	assert_true(main_menu.start_selected_mode(MODE_SURVIVAL), "a second run can start after returning to the menu")
 	await wait_physics_frames(2)
 	if player_one != null:
-		var player_health := player_one.get_node("HealthComponent") as HealthComponent
+		var player_health = player_one.get_node("HealthComponent")
 		assert_eq(player_health.max_health, 120, "Field Kit health does not stack across runs")
 		player_health.apply_damage(20)
 		survival_mode.stop_mode()
-		assert_true(game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL), "the active mode can restart after stopping")
+		assert_true(game_mode_manager.set_mode(MODE_SURVIVAL), "the active mode can restart after stopping")
 		assert_eq(player_health.current_health, 120, "same-mode restart prepares the player for a new run")
 	main_menu.open_menu()
 	await wait_physics_frames(1)
@@ -295,21 +322,39 @@ func _free_current_scene_root(scene_root: Node2D) -> void:
 		get_tree().current_scene = null
 	scene_root.queue_free()
 
-func _find_telegraph(result: Dictionary) -> EncounterTelegraphMarker:
+func _new_main_scene_fixture():
+	var script := load("res://tests/support/main_scene_fixture.gd") as Script
+	assert_not_null(script, "main scene fixture script loads")
+	return script.new() if script != null else null
+
+func _new_script_node(path: String) -> Node:
+	var script := load(path) as Script
+	assert_not_null(script, "%s loads" % path)
+	if script == null:
+		return null
+	var node := script.new() as Node
+	assert_not_null(node, "%s instantiates a node" % path)
+	return node
+
+func _find_telegraph(result: Dictionary) -> Node:
 	for entity in result.get("entities", []):
-		if entity is EncounterTelegraphMarker:
-			return entity as EncounterTelegraphMarker
+		if entity is Node and StringName(entity.get("encounter_id")) != &"":
+			return entity
 	return null
 
-func _find_reward_crate(result: Dictionary) -> SupplyCrate:
+func _find_reward_crate(result: Dictionary) -> Node:
 	for entity in result.get("entities", []):
-		if entity is SupplyCrate:
-			return entity as SupplyCrate
+		if entity is Node and (entity as Node).has_meta("biome_crate_id"):
+			return entity
 	return null
 
 func _has_reward_crate(result: Dictionary, expected_crate_id: StringName) -> bool:
 	for entity in result.get("entities", []):
-		if entity is SupplyCrate and StringName((entity as SupplyCrate).get_meta("biome_crate_id", &"")) == expected_crate_id:
+		if (
+			entity is Node
+			and StringName((entity as Node).get_meta("biome_crate_id", &""))
+			== expected_crate_id
+		):
 			return true
 	return false
 

@@ -45,6 +45,11 @@ var _manifest: IsometricEnvironmentManifest
 func before_all() -> void:
 	_manifest = IsometricEnvironmentManifest.reload_shared()
 
+func after_all() -> void:
+	_manifest = null
+	IsometricEnvironmentManifest.clear_shared()
+	IsometricEnvironmentObject.clear_content_metrics_cache()
+
 # --- manifest a slot ---------------------------------------------------------
 
 func test_manifest_contract() -> void:

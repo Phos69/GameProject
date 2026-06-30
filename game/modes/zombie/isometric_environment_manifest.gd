@@ -134,20 +134,13 @@ static func reload_shared() -> IsometricEnvironmentManifest:
 	_cached = null
 	return get_shared()
 
+static func clear_shared() -> void:
+	if _cached != null:
+		_cached._clear_loaded_data()
+	_cached = null
+
 func load_from_disk(path: String = MANIFEST_PATH) -> bool:
-	version = 0
-	coordinate_system = ""
-	default_sort_offset = 0.0
-	footprint_slot_size_cells = Vector2i(4, 4)
-	asset_contract_defaults.clear()
-	fallback_policy.clear()
-	asset_contracts.clear()
-	objects.clear()
-	object_visual_styles.clear()
-	terrain_styles.clear()
-	terrain_sample_step_presets.clear()
-	conversion_backlog.clear()
-	load_error = ""
+	_clear_loaded_data()
 	if not FileAccess.file_exists(path):
 		load_error = "manifest not found: %s" % path
 		return false
@@ -184,6 +177,21 @@ func load_from_disk(path: String = MANIFEST_PATH) -> bool:
 	for backlog_value in data.get("conversion_backlog", []) as Array:
 		conversion_backlog.append(StringName(str(backlog_value)))
 	return true
+
+func _clear_loaded_data() -> void:
+	version = 0
+	coordinate_system = ""
+	default_sort_offset = 0.0
+	footprint_slot_size_cells = Vector2i(4, 4)
+	asset_contract_defaults.clear()
+	fallback_policy.clear()
+	asset_contracts.clear()
+	objects.clear()
+	object_visual_styles.clear()
+	terrain_styles.clear()
+	terrain_sample_step_presets.clear()
+	conversion_backlog.clear()
+	load_error = ""
 
 func has_object(object_id: StringName) -> bool:
 	return objects.has(object_id)

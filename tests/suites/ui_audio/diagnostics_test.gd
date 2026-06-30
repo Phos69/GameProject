@@ -5,23 +5,58 @@ extends GutTest
 ##   tests/biome_debug_overlay_smoke_test.gd  (BiomeMapDebugOverlay + encounter)
 ##   tests/game_log_smoke_test.gd             (gating per livello di GameLog)
 
+const LOG_LEVEL_DEBUG := 0
+const LOG_LEVEL_INFO := 1
+const LOG_LEVEL_WARN := 2
+const LOG_LEVEL_ERROR := 3
+const LOG_LEVEL_SILENT := 4
+const TERRAIN_HAZARD := &"hazard"
+const TERRAIN_OBSTACLE := &"obstacle"
+
+class FakeEncounterSystem:
+	extends Node
+
+	var snapshot: Dictionary = {}
+
+	func _init(new_snapshot: Dictionary) -> void:
+		snapshot = new_snapshot
+
+	func _ready() -> void:
+		add_to_group("random_encounter_system")
+
+	func get_debug_snapshot() -> Dictionary:
+		return snapshot
+
 # --- overlay di debug della mappa biome (biome_debug_overlay) ----------------
 
 func test_biome_debug_overlay_summary() -> void:
 	var scene_root := _make_current_scene_root()
-	var overlay := BiomeMapDebugOverlay.new()
+	var overlay = _new_script_instance(
+		"res://game/procedural/world_generation/biome_map_debug_overlay.gd"
+	)
 	scene_root.add_child(overlay)
-	var encounter := RandomEncounterSystem.new()
+	var threat_score := 8
+	var encounter := FakeEncounterSystem.new({
+		"last_encounter_id": &"survivor_cache",
+		"last_wave": 2,
+		"last_party_size": 1,
+		"last_threat_score": threat_score,
+		"active_entity_count": 0,
+		"pending_telegraph_count": 0,
+		"last_skip_reason": &""
+	})
 	scene_root.add_child(encounter)
 	await wait_physics_frames(1)
-	encounter.configure_seed(99)
-	var biome := load("res://game/modes/zombie/biomes/toxic_wastes.tres") as BiomeDefinition
-	var cell := BiomeCell.new()
+	var cell = _new_script_instance(
+		"res://game/procedural/world_generation/biome_cell.gd"
+	)
 	cell.id = &"debug_cell"
 	cell.biome_id = &"toxic_wastes"
 	cell.seed = 99
 	cell.validation_report = {"is_valid": true}
-	var layout := BiomeEnvironmentLayout.new()
+	var layout = _new_script_instance(
+		"res://game/modes/zombie/biome_environment_layout.gd"
+	)
 	layout.obstacle_rects.append(Rect2i(Vector2i(10, 10), Vector2i(4, 4)))
 	layout.hazard_rects.append(Rect2i(Vector2i(30, 30), Vector2i(5, 5)))
 	layout.crate_cells.append(Vector2i(50, 50))
@@ -38,10 +73,10 @@ func test_biome_debug_overlay_summary() -> void:
 	}
 	layout.rebuild_terrain_classification(cell)
 	cell.generated_layout = layout
-	var cells: Array[BiomeCell] = [cell]
+	var cells: Array = Array([], TYPE_OBJECT, "RefCounted", cell.get_script())
+	cells.append(cell)
 	overlay.configure(99, cells)
-	var result := encounter.force_encounter(biome, &"survivor_cache", 2)
-	var summary := overlay.get_debug_summary()
+	var summary: Dictionary = overlay.get_debug_summary()
 	assert_eq(summary.get("seed"), 99, "overlay reports seed")
 	assert_eq(summary.get("cell_count"), 1, "overlay counts cells")
 	assert_eq(summary.get("obstacle_count"), 1, "overlay counts obstacles")
@@ -67,11 +102,11 @@ func test_biome_debug_overlay_summary() -> void:
 	)
 	var terrain_counts := summary.get("terrain_class_counts") as Dictionary
 	assert_gt(
-		int(terrain_counts.get(BiomeEnvironmentLayout.TERRAIN_OBSTACLE, 0)), 0,
+		int(terrain_counts.get(TERRAIN_OBSTACLE, 0)), 0,
 		"overlay reports obstacle terrain class"
 	)
 	assert_gt(
-		int(terrain_counts.get(BiomeEnvironmentLayout.TERRAIN_HAZARD, 0)), 0,
+		int(terrain_counts.get(TERRAIN_HAZARD, 0)), 0,
 		"overlay reports hazard terrain class"
 	)
 	var encounter_summary := summary.get("encounter") as Dictionary
@@ -81,50 +116,52 @@ func test_biome_debug_overlay_summary() -> void:
 	)
 	assert_eq(
 		int(encounter_summary.get("last_threat_score", 0)),
-		int(result.get("threat_score", 0)),
+		threat_score,
 		"overlay exposes threat score"
 	)
+	overlay.cells.clear()
+	cell.clear_runtime_links()
 	_free_current_scene_root(scene_root)
 	await wait_physics_frames(1)
 
 # --- gating per livello del logger condiviso (game_log) ----------------------
 
 func test_game_log_level_gating() -> void:
-	var original_level := GameLog.min_level
+	var game_log := load("res://game/core/game_log.gd")
+	var original_level: int = int(game_log.min_level)
 
 	# Soglia INFO (default): debug filtrato, info/warn/error abilitati.
-	GameLog.min_level = GameLog.Level.INFO
-	assert_false(GameLog.is_enabled(GameLog.Level.DEBUG), "INFO filtra debug")
-	assert_true(GameLog.is_enabled(GameLog.Level.INFO), "INFO abilita info")
-	assert_true(GameLog.is_enabled(GameLog.Level.WARN), "INFO abilita warn")
-	assert_true(GameLog.is_enabled(GameLog.Level.ERROR), "INFO abilita error")
+	game_log.min_level = LOG_LEVEL_INFO
+	assert_false(game_log.is_enabled(LOG_LEVEL_DEBUG), "INFO filtra debug")
+	assert_true(game_log.is_enabled(LOG_LEVEL_INFO), "INFO abilita info")
+	assert_true(game_log.is_enabled(LOG_LEVEL_WARN), "INFO abilita warn")
+	assert_true(game_log.is_enabled(LOG_LEVEL_ERROR), "INFO abilita error")
 
 	# Soglia DEBUG: tutto abilitato.
-	GameLog.min_level = GameLog.Level.DEBUG
-	assert_true(GameLog.is_enabled(GameLog.Level.DEBUG), "DEBUG abilita debug")
+	game_log.min_level = LOG_LEVEL_DEBUG
+	assert_true(game_log.is_enabled(LOG_LEVEL_DEBUG), "DEBUG abilita debug")
 
 	# Soglia ERROR: solo gli errori passano.
-	GameLog.min_level = GameLog.Level.ERROR
-	assert_false(GameLog.is_enabled(GameLog.Level.WARN), "ERROR filtra warn")
-	assert_true(GameLog.is_enabled(GameLog.Level.ERROR), "ERROR abilita error")
+	game_log.min_level = LOG_LEVEL_ERROR
+	assert_false(game_log.is_enabled(LOG_LEVEL_WARN), "ERROR filtra warn")
+	assert_true(game_log.is_enabled(LOG_LEVEL_ERROR), "ERROR abilita error")
 
 	# Soglia SILENT: niente passa, nemmeno gli errori.
-	GameLog.min_level = GameLog.Level.SILENT
-	assert_false(GameLog.is_enabled(GameLog.Level.ERROR), "SILENT filtra tutto")
+	game_log.min_level = LOG_LEVEL_SILENT
+	assert_false(game_log.is_enabled(LOG_LEVEL_ERROR), "SILENT filtra tutto")
 
 	# Con SILENT le chiamate pubbliche non emettono ne sollevano errori.
-	GameLog.debug(&"Test", "debug soppresso")
-	GameLog.info(&"Test", "info soppresso")
-	GameLog.warn(&"Test", "warn soppresso")
-	GameLog.error(&"Test", "error soppresso")
+	game_log.debug(&"Test", "debug soppresso")
+	game_log.info(&"Test", "info soppresso")
+	game_log.warn(&"Test", "warn soppresso")
+	game_log.error(&"Test", "error soppresso")
 
-	GameLog.min_level = original_level
+	game_log.min_level = original_level
 
 # --- helper -----------------------------------------------------------------
 
-# Gli encounter aggiungono telegraph/crate al container risolto via
-# get_tree().current_scene: la scena sintetica va agganciata alla root e
-# impostata come current_scene (come faceva il vecchio test SceneTree).
+# L'overlay cerca i sistemi diagnostici via SceneTree/group: la scena sintetica
+# va agganciata alla root e impostata come current_scene.
 func _make_current_scene_root() -> Node2D:
 	var scene_root := Node2D.new()
 	get_tree().root.add_child(scene_root)
@@ -134,4 +171,13 @@ func _make_current_scene_root() -> Node2D:
 func _free_current_scene_root(scene_root: Node2D) -> void:
 	if get_tree().current_scene == scene_root:
 		get_tree().current_scene = null
-	scene_root.queue_free()
+	if is_instance_valid(scene_root):
+		var parent := scene_root.get_parent()
+		if parent != null:
+			parent.remove_child(scene_root)
+		scene_root.free()
+
+func _new_script_instance(path: String):
+	var script := load(path) as Script
+	assert_not_null(script, "%s loads" % path)
+	return script.new() if script != null else null
