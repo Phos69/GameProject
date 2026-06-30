@@ -37,7 +37,7 @@ func before_all() -> void:
 
 func after_all() -> void:
 	if _biome_manager != null and is_instance_valid(_biome_manager):
-		_biome_manager.queue_free()
+		_free_test_node(_biome_manager)
 	_biome_manager = null
 	_cells = []
 
@@ -153,7 +153,7 @@ func test_fall_zone_instance_coverage() -> void:
 		zone.set_debug_visual_visible(true)
 		await wait_physics_frames(1)
 		assert_true(zone.uses_procedural_fallback(), "%s debug overlay keeps the procedural void" % String(side))
-		zone.queue_free()
+		_free_test_node(zone)
 		await wait_physics_frames(1)
 
 func test_tile_layer_visual_authority() -> void:
@@ -165,8 +165,8 @@ func test_tile_layer_visual_authority() -> void:
 	zone.configure(&"fall_zone", Vector2(180.0, 180.0), 0.0, Color(0.82, 0.58, 0.16, 0.92), &"cliff", &"internal", 9902)
 	await wait_physics_frames(1)
 	assert_true(zone.is_world_edge_visual_suppressed(), "tile layer suppresses the duplicate rectangular fall-zone border")
-	zone.queue_free()
-	layer_marker.queue_free()
+	_free_test_node(zone)
+	_free_test_node(layer_marker)
 	await wait_physics_frames(1)
 
 # --- metadati di lato e hazard runtime (megamappa 3x3 condivisa) ------------
@@ -189,13 +189,13 @@ func test_hazard_system_runtime() -> void:
 	var target_cell := _first_cell_with_fall_zone(_cells)
 	assert_not_null(target_cell, "generated map has at least one fall-zone region")
 	if target_cell == null:
-		container.queue_free()
+		_free_test_node(container)
 		return
 	assert_true(_biome_manager.set_current_region(target_cell.id), "biome manager selects fall-zone region")
 	var biome := _biome_manager.get_current_biome() as BiomeDefinition
 	assert_not_null(biome, "selected biome definition is available")
 	if biome == null:
-		container.queue_free()
+		_free_test_node(container)
 		return
 
 	var hazard_system := HazardSystem.new()
@@ -220,8 +220,8 @@ func test_hazard_system_runtime() -> void:
 		assert_true(hazard_system.is_position_fall_zone(fall_zone.global_position), "runtime fall-zone query still detects fall zone")
 		assert_false(hazard_system.is_position_environment_hazard(fall_zone.global_position), "runtime fall zone is not generic environment hazard")
 	assert_gt(fall_zone_count, 0, "hazard system spawns fall zones")
-	hazard_system.queue_free()
-	container.queue_free()
+	_free_test_node(hazard_system)
+	_free_test_node(container)
 	await wait_physics_frames(1)
 
 # --- helper (porting dei test legacy) ---------------------------------------
@@ -303,3 +303,11 @@ func _asset_exists(asset_path: String) -> bool:
 	if asset_path.is_empty():
 		return false
 	return ResourceLoader.exists(asset_path) or FileAccess.file_exists(asset_path)
+
+func _free_test_node(node: Node) -> void:
+	if node == null or not is_instance_valid(node):
+		return
+	var parent := node.get_parent()
+	if parent != null:
+		parent.remove_child(node)
+	node.free()

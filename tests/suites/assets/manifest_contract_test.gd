@@ -39,7 +39,7 @@ func before_all() -> void:
 
 func after_all() -> void:
 	if _biome_manager != null and is_instance_valid(_biome_manager):
-		_biome_manager.queue_free()
+		_free_test_node(_biome_manager)
 	_biome_manager = null
 	_cells = []
 
@@ -202,7 +202,7 @@ func test_obstacle_coherence() -> void:
 		assert_eq(rectangle.z_index, 0, "obstacle z_index is 0 so it participates in Y-sort")
 		assert_true(is_equal_approx(rectangle.sort_offset, _manifest.get_sort_offset(&"ruined_house")), "obstacle sort offset comes from the manifest")
 		assert_true(rectangle.contains_global_position(rectangle.global_position), "rectangle footprint contains its center")
-		rectangle.queue_free()
+		_free_test_node(rectangle)
 
 	var circle := _build_obstacle(&"small_rock", Vector2(48.0, 48.0), &"circle")
 	assert_not_null(circle, "circle obstacle builds")
@@ -210,14 +210,14 @@ func test_obstacle_coherence() -> void:
 		var shape := circle.get_node_or_null("CollisionShape2D") as CollisionShape2D
 		assert_true(shape != null and shape.shape is CircleShape2D, "rock has a circle collision footprint")
 		assert_gt(circle.get_clearance_radius(), 0.0, "rock exposes a positive clearance radius")
-		circle.queue_free()
+		_free_test_node(circle)
 
 	var explicit_barrier := _build_obstacle(&"wood_barrier", Vector2(108.0, 22.0), &"rectangle")
 	assert_true(explicit_barrier != null and explicit_barrier.get_node_or_null("CollisionShape2D") != null, "explicit barrier obstacle still has collision")
 	if explicit_barrier != null:
 		assert_eq(explicit_barrier.get_draw_mode(), &"wood_barrier", "wood_barrier uses its manifest draw mode")
 		assert_false(explicit_barrier.uses_generic_fallback(), "wood_barrier does not use implicit generic fallback")
-		explicit_barrier.queue_free()
+		_free_test_node(explicit_barrier)
 	await wait_physics_frames(1)
 
 func test_generated_obstacle_visual_coherence() -> void:
@@ -239,7 +239,7 @@ func test_generated_obstacle_visual_coherence() -> void:
 		assert_true(obstacle.has_dedicated_draw(), "%s uses dedicated procedural draw" % String(obstacle_id))
 		assert_false(obstacle.uses_generic_fallback(), "%s avoids implicit generic fallback" % String(obstacle_id))
 		assert_true(obstacle.has_ground_shadow(), "%s keeps a coherent ground shadow/base contract" % String(obstacle_id))
-		obstacle.queue_free()
+		_free_test_node(obstacle)
 	await wait_physics_frames(1)
 
 func test_scene_y_sort() -> void:
@@ -283,6 +283,14 @@ func _build_obstacle(obstacle_id: StringName, size: Vector2, shape_id: StringNam
 	obstacle.configure(obstacle_id, size, shape_id, 0.0,
 		Color(0.4, 0.4, 0.4, 1.0), Color(0.8, 0.8, 0.4, 1.0), _manifest.get_sort_offset(obstacle_id))
 	return obstacle
+
+func _free_test_node(node: Node) -> void:
+	if node == null or not is_instance_valid(node):
+		return
+	var parent := node.get_parent()
+	if parent != null:
+		parent.remove_child(node)
+	node.free()
 
 func _has_two_obstacle_categories(biome: BiomeDefinition) -> bool:
 	var categories := {}

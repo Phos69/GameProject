@@ -85,7 +85,13 @@ if ([System.IO.Path]::GetFileName($godotExe).ToLowerInvariant() -eq "godot.exe")
 
 if (-not $SkipImport) {
 	Write-Host "==> Import risorse (una tantum)..."
-	& $godotExe --headless --import --path . | Out-Null
+	$previousErrorActionPreference = $ErrorActionPreference
+	$ErrorActionPreference = "Continue"
+	try {
+		& $godotExe --headless --import --path . | Out-Null
+	} finally {
+		$ErrorActionPreference = $previousErrorActionPreference
+	}
 }
 
 $normalizedExtraArgs = @()
@@ -112,8 +118,14 @@ if ($GutDir) { $gutArgs += "-gdir=$GutDir" }
 if ($Select) { $gutArgs += "-gselect=$Select" }
 if ($junitReport) { $gutArgs += "-gjunit_xml_file=$junitReport" }
 if ($normalizedExtraArgs.Count -gt 0) { $gutArgs += $normalizedExtraArgs }
-& $godotExe @gutArgs
-$exitCode = $LASTEXITCODE
+$previousErrorActionPreference = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+try {
+	& $godotExe @gutArgs
+	$exitCode = $LASTEXITCODE
+} finally {
+	$ErrorActionPreference = $previousErrorActionPreference
+}
 if ($junitReport) {
 	Write-Host "==> GUT JUnit report: $junitReport"
 }

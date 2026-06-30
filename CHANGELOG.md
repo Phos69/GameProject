@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Fixed
+
+- Cleanup warning GUT generici: `character_select_test.gd`,
+  `manifest_contract_test.gd` e `void_cliff_asset_test.gd` liberano subito i
+  nodi creati nei test, rimuovendo i warning `Test script has ... unfreed
+  children` dai run mirati.
+- `tools/run_gut.ps1` preserva l'exit code Godot anche sotto redirezione dei log
+  evitando che lo stderr nativo interrompa gli audit warning locali.
+
 ### Added
 
 - Aggiunto `docs/testing/gut_warning_cleanup_plan.md` con baseline e sequenza di

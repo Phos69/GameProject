@@ -1,12 +1,22 @@
 # Piano cleanup warning GUT
 
-Baseline rilevata dopo il cutover finale GUT del 2026-06-30:
+Baseline iniziale rilevata dopo il cutover finale GUT del 2026-06-30:
 
 - suite rapida: 45 script, 220 test, exit code `0`, `Deprecated 1486`,
   `Warnings 3`, `70 Orphans`;
 - suite soak: 4 script, 4 test, exit code `0`, `Deprecated 212`;
 - report JUnit locali in `build/test_logs/`;
 - Visual QA fuori da GUT e non considerati in questo piano.
+
+Stato dopo il primo cleanup del 2026-06-30:
+
+- `wait_frames()` rimosso dai test GUT sotto `tests/suites/**`;
+- warning GUT generici localizzati in `character_select_test.gd`,
+  `manifest_contract_test.gd` e `void_cliff_asset_test.gd`;
+- i tre warning generici sono stati corretti con teardown immediato dei nodi
+  creati dai test;
+- restano aperti gli orphans dei proiettili, i warning UID dell'addon GUT e i
+  leak/resource warning a shutdown.
 
 ## Obiettivo
 
@@ -41,6 +51,15 @@ Criterio di accettazione:
 - suite rapida ancora verde.
 
 ### 2. Warning GUT generici
+
+Stato 2026-06-30: completato. Un audit completo
+`./tools/run_gut.ps1 -SkipImport` ha confermato la suite rapida verde con
+`Warnings 2` dopo la correzione di `character_select_test.gd`; i warning residui
+erano entrambi `Test script has 2 unfreed children` e sono stati localizzati in
+`tests/suites/assets/manifest_contract_test.gd` e
+`tests/suites/assets/void_cliff_asset_test.gd`. I tre script ora liberano
+esplicitamente i nodi creati dai test rimuovendoli dal parent e chiamando
+`free()`. I run mirati dei tre script passano senza `Warnings` nel summary GUT.
 
 Obiettivo: localizzare e correggere i `Warnings 3` del run rapido.
 
@@ -103,6 +122,11 @@ Criterio di accettazione:
 - ogni residuo non risolto documentato con causa probabile.
 
 ### 6. Robustezza runner PowerShell sotto redirezione
+
+Stato 2026-06-30: primo fix completato. `tools/run_gut.ps1` abbassa
+temporaneamente `$ErrorActionPreference` a `Continue` attorno alle invocazioni
+native di Godot, preservando `$LASTEXITCODE` ed evitando che lo stderr nativo
+interrompa gli audit rediretti prima del riepilogo GUT.
 
 Obiettivo: permettere audit warning riproducibili con log completi.
 

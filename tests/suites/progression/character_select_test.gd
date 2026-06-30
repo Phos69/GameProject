@@ -202,7 +202,8 @@ func test_character_select_ui() -> void:
 	await wait_physics_frames(1)
 	assert_true(not main_menu.character_select_panel.visible and main_menu.primary_panel.visible, "keyboard Escape closes character select and restores the main menu")
 
-	main_menu.queue_free()
+	root.gui_release_focus()
+	_free_test_node(main_menu)
 	await wait_physics_frames(1)
 
 # --- selezione indipendente per-player (character_select_independent) --------
@@ -213,9 +214,11 @@ func test_character_select_independent() -> void:
 	add_child(main_menu)
 	await wait_physics_frames(2)
 	var local_multiplayer := get_tree().get_first_node_in_group("local_multiplayer_manager") as LocalMultiplayerManager
+	var created_local_multiplayer := false
 	if local_multiplayer == null:
 		local_multiplayer = LocalMultiplayerManager.new()
 		add_child(local_multiplayer)
+		created_local_multiplayer = true
 		await wait_physics_frames(1)
 	local_multiplayer.activate_slot(2)
 	await wait_physics_frames(1)
@@ -253,7 +256,10 @@ func test_character_select_independent() -> void:
 	assert_false(main_menu.character_start_button.disabled, "start unlocks once both players have independently chosen")
 
 	local_multiplayer.deactivate_slot(2)
-	main_menu.queue_free()
+	root.gui_release_focus()
+	_free_test_node(main_menu)
+	if created_local_multiplayer:
+		_free_test_node(local_multiplayer)
 	await wait_physics_frames(1)
 
 # --- helper -----------------------------------------------------------------
@@ -284,3 +290,11 @@ func _press_joypad_button(device: int, button_index: int) -> void:
 func _wait_navigation_cooldown() -> void:
 	await get_tree().create_timer(0.22).timeout
 	await wait_physics_frames(1)
+
+func _free_test_node(node: Node) -> void:
+	if node == null or not is_instance_valid(node):
+		return
+	var parent := node.get_parent()
+	if parent != null:
+		parent.remove_child(node)
+	node.free()

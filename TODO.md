@@ -107,14 +107,19 @@ revisione manuale, baseline e consolidamento TODO.
 - Avanzamento 2026-06-30: primo fix completato; `wait_frames()` rimosso dai
   test GUT sotto `tests/suites/**` e dagli esempi dei fixture in `tests/support/**`.
   Run mirato `progression` verde senza deprecazioni `wait_frames`.
+- Avanzamento 2026-06-30: warning GUT generici corretti. I warning
+  `Test script has 2 unfreed children` erano in `character_select_test.gd`,
+  `manifest_contract_test.gd` e `void_cliff_asset_test.gd`; i test ora liberano
+  subito i nodi creati nei teardown. Run mirati verdi senza `Warnings` nel
+  summary GUT.
 - Obiettivo: ridurre il rumore dei runner GUT fino a log locali leggibili e
   warning residui azionabili.
 - Milestone collegata: manutenzione test post-cutover GUT.
 - File/sistemi coinvolti: `tests/suites/**`, `tools/run_gut.ps1`,
   `addons/gut/*.tscn`, fixture test e cache statiche runtime.
 - Criterio di accettazione: niente `wait_frames()` deprecato nei test GUT,
-  warning GUT generici localizzati, orphans proiettili corretti o tracciati,
-  report quick/soak aggiornati.
+  warning GUT generici corretti, orphans proiettili corretti o tracciati, report
+  quick/soak aggiornati.
 - Test richiesto: `./tools/run_gut.ps1 -SkipImport`, soak con
   `.gutconfig.soak.json` e run mirati indicati in
   `docs/testing/gut_warning_cleanup_plan.md`.
