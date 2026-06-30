@@ -40,17 +40,15 @@ func generate_layout_for_cell(
 			BiomeEnvironmentLayout.RAISED_CLIFF_HEIGHT_CELLS
 		)
 
-	# infected_plains uses the new void-first generation (rocks -> forests -> roads
-	# -> tree borders -> void lottery); other biomes keep the legacy block layout.
-	if biome.biome_id == &"infected_plains":
-		obstacle_layout_generator.populate_layout_voidfirst(
-			layout,
-			cell,
-			biome,
-			context
-		)
-	else:
-		obstacle_layout_generator.populate_layout(layout, cell, biome, context)
+	# All biomes share the void-first pipeline (rocks/masses -> vegetation clusters
+	# -> hub+spokes roads -> tree borders -> void lottery), skinned per biome via the
+	# void-first palette. The legacy populate_layout() is retained as reference only.
+	obstacle_layout_generator.populate_layout_voidfirst(
+		layout,
+		cell,
+		biome,
+		context
+	)
 	fall_boundary_generator.apply_fall_boundaries(cell, layout)
 	layout.rebuild_terrain_classification(cell)
 	var report := validation_system.validate_layout(cell, layout)

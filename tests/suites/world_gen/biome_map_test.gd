@@ -61,21 +61,15 @@ func test_sample_cells_layout_invariants() -> void:
 			continue
 		assert_eq(layout.zone_size, BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE,
 			"%s usa il chunk 500x500" % String(cell.id))
-		if cell.biome_id != &"infected_plains":
-			assert_eq(layout.player_spawn_cell, layout.zone_size / 2,
-				"%s spawn player centrato sulla rete stradale" % String(cell.id))
 		assert_eq(layout.get_terrain_class_at_cell(layout.player_spawn_cell, cell),
 			BiomeEnvironmentLayout.TERRAIN_WALKABLE,
 			"%s spawn player walkable" % String(cell.id))
 		assert_false(layout.floor_rects.is_empty(),
 			"%s ha blocchi di pavimento walkable carved" % String(cell.id))
-		if cell.biome_id == &"infected_plains":
-			assert_false(layout.rock_rects.is_empty(), "%s ha rocce void-first" % String(cell.id))
-			assert_false(layout.forest_rects.is_empty(), "%s ha foreste void-first" % String(cell.id))
-		else:
-			assert_false(layout.block_rects.is_empty(), "%s ha blocchi interni procedurali" % String(cell.id))
-			assert_true(layout.block_kinds.has(&"full_void") or layout.block_kinds.has(&"partial_void"),
-				"%s mantiene blocchi void/fall nel chunk" % String(cell.id))
+		# Every biome now shares the void-first pipeline: solid masses (rock_rects),
+		# vegetation clusters (forest_rects) and void-lottery chasms (fall zones).
+		assert_false(layout.rock_rects.is_empty(), "%s ha masse solide void-first" % String(cell.id))
+		assert_false(layout.forest_rects.is_empty(), "%s ha cluster di vegetazione void-first" % String(cell.id))
 		assert_false(layout.fall_zone_rects.is_empty(), "%s ha zone di caduta/void" % String(cell.id))
 		assert_false(layout.obstacle_rects.is_empty(), "%s ha oggetti isometrici bloccanti" % String(cell.id))
 		assert_true(bool(layout.validation_report.get("is_valid", false)),
@@ -86,28 +80,18 @@ func test_sample_cells_roads() -> void:
 		var layout := cell.generated_layout
 		if layout == null:
 			continue
-		if cell.biome_id == &"infected_plains":
-			# Connected void-first regions route roads as a central hub the passage
-			# corridors converge on (no edge-to-edge cross). Regions with no passages
-			# keep the cross for interior structure.
-			if cell.passages.is_empty():
-				assert_true(_has_main_road_cells(layout, true),
-					"%s (senza passaggi) ha una strada principale verticale ai bordi" % String(cell.id))
-				assert_true(_has_main_road_cells(layout, false),
-					"%s (senza passaggi) ha una strada principale orizzontale ai bordi" % String(cell.id))
-			else:
-				assert_true(layout.get_road_tags_at_cell(layout.zone_size / 2).has(&"main_road"),
-					"%s ha un hub stradale principale al centro" % String(cell.id))
+		# Every biome shares the void-first hub+spokes road model: connected regions
+		# route roads as a central main-road hub the passage corridors converge on;
+		# regions with no passages keep the edge-to-edge main-road cross. The thematic
+		# lane (spoke_tag) skins the passage spokes, while main_road stays universal.
+		if cell.passages.is_empty():
+			assert_true(_has_main_road_cells(layout, true),
+				"%s (senza passaggi) ha una strada principale verticale ai bordi" % String(cell.id))
+			assert_true(_has_main_road_cells(layout, false),
+				"%s (senza passaggi) ha una strada principale orizzontale ai bordi" % String(cell.id))
 		else:
-			assert_true(_has_axis_road(layout, &"main_road", ObstacleLayoutGenerator.ROAD_WIDTH, true),
-				"%s ha una main road verticale da %d celle" % [String(cell.id), ObstacleLayoutGenerator.ROAD_WIDTH])
-			assert_true(_has_axis_road(layout, &"main_road", ObstacleLayoutGenerator.ROAD_WIDTH, false),
-				"%s ha una main road orizzontale da %d celle" % [String(cell.id), ObstacleLayoutGenerator.ROAD_WIDTH])
-			var path_tag := _expected_path_tag(cell.biome_id)
-			assert_true(_has_axis_road(layout, path_tag, ObstacleLayoutGenerator.SECONDARY_ROAD_WIDTH, true),
-				"%s ha un biome path verticale da %d celle" % [String(cell.id), ObstacleLayoutGenerator.SECONDARY_ROAD_WIDTH])
-			assert_true(_has_axis_road(layout, path_tag, ObstacleLayoutGenerator.SECONDARY_ROAD_WIDTH, false),
-				"%s ha un biome path orizzontale da %d celle" % [String(cell.id), ObstacleLayoutGenerator.SECONDARY_ROAD_WIDTH])
+			assert_true(layout.get_road_tags_at_cell(layout.zone_size / 2).has(&"main_road"),
+				"%s ha un hub stradale principale al centro" % String(cell.id))
 
 func test_sample_cells_passages_and_crates_walkable() -> void:
 	for cell in _sample_cells:

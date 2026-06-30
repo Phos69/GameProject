@@ -20,6 +20,9 @@ const WorldGen = preload("res://tests/support/world_gen_helpers.gd")
 # qui passa anche per le altre invarianti, che sono strutturali.
 const SHARED_SEED := 246810
 const TREE_FOOTPRINT := Vector2i(12, 12)
+# infected_plains slice of the void-first palette, used to exercise the road
+# tree-lining pass directly (the generator resolves the full palette per biome).
+const _PLAINS_LINE_PALETTE := {"line_vegetation": true, "cluster_id": &"forest_tree"}
 
 var _manifest: IsometricEnvironmentManifest
 var _biome: BiomeDefinition
@@ -142,7 +145,7 @@ func test_forced_forest_over_rock_keeps_rock_clear() -> void:
 	layout.add_floor_rect(forest, &"forest_tall_grass")
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 13
-	ObstacleLayoutGenerator.new()._fill_forests_with_trees(layout, rng)
+	ObstacleLayoutGenerator.new()._fill_forests_with_trees(layout, rng, &"forest_tree")
 	var trees := 0
 	var on_rock := false
 	for index in range(layout.obstacle_ids.size()):
@@ -230,7 +233,7 @@ func test_open_road_is_lined() -> void:
 	layout.zone_size = BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE
 	layout.generation_seed = 1
 	_carve_straight_road(layout)
-	ObstacleLayoutGenerator.new()._line_roads_with_trees(layout)
+	ObstacleLayoutGenerator.new()._line_roads_with_trees(layout, _PLAINS_LINE_PALETTE)
 	assert_gt(_count_trees(layout), 0, "la strada nel void aperto riceve un bordo alberato")
 
 func test_forest_bounded_road_not_lined() -> void:
@@ -239,7 +242,7 @@ func test_forest_bounded_road_not_lined() -> void:
 	layout.generation_seed = 2
 	_carve_straight_road(layout)
 	layout.forest_rects.append(Rect2i(Vector2i(0, 200), Vector2i(500, 110)))
-	ObstacleLayoutGenerator.new()._line_roads_with_trees(layout)
+	ObstacleLayoutGenerator.new()._line_roads_with_trees(layout, _PLAINS_LINE_PALETTE)
 	assert_eq(_count_trees(layout), 0, "una strada gia delimitata da foresta non viene rialberata")
 
 # --- void lottery (M5) ----------------------------------------------------

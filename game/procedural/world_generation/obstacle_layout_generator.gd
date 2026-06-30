@@ -146,15 +146,16 @@ func populate_layout_voidfirst(
 	var rng := RandomNumberGenerator.new()
 	rng.seed = maxi(cell.seed, 1)
 	var allow_internal_void := _internal_void_enabled(context)
+	var palette := _voidfirst_palette(biome.biome_id)
 	_carve_passages(layout, cell)
 	_place_rocks(layout, biome, rng)
 	_place_forests(layout, biome, rng)
-	_add_voidfirst_roads(layout, rng, cell, context)
+	_add_voidfirst_roads(layout, rng, cell, context, palette)
 	_choose_voidfirst_spawn(layout)
-	_add_voidfirst_paths(layout, rng)
-	_clear_trees_on_routes(layout)
+	_add_voidfirst_paths(layout, rng, palette["spoke_tag"])
+	_clear_trees_on_routes(layout, palette["cluster_id"])
 	_add_connected_border_walls(layout, cell, biome, context)
-	_line_roads_with_trees(layout)
+	_line_roads_with_trees(layout, palette)
 	_resolve_void_lottery(layout, rng, allow_internal_void)
 	_add_voidfirst_crates(layout, biome)
 	_update_generation_summary(layout, biome)
@@ -216,9 +217,15 @@ func _carve_passages(layout: BiomeEnvironmentLayout, cell: BiomeCell) -> void:
 # chosen side.
 func _place_rocks(
 	layout: BiomeEnvironmentLayout,
-	_biome: BiomeDefinition,
+	biome: BiomeDefinition,
 	rng: RandomNumberGenerator
 ) -> int:
+	# Only infected_plains owns a scalable rock-area asset (large_rock). Other biomes
+	# have no scalable rock, so they scatter natural-footprint thematic obstacles as
+	# the solid masses instead (same count/clearance budget, shared structure).
+	var palette := _voidfirst_palette(biome.biome_id)
+	if not bool(palette["rock_scalable"]):
+		return _scatter_biome_masses(layout, rng, palette["scatter_ids"])
 	var target := rng.randi_range(VOIDFIRST_ROCK_MIN_COUNT, VOIDFIRST_ROCK_MAX_COUNT)
 	var placed := _try_place_rocks(layout, rng, target, VOIDFIRST_ROCK_GAP)
 	# Guarantee the minimum even if rejection sampling was unlucky: relax the gap
@@ -264,15 +271,60 @@ func _try_place_rocks(
 		placed += 1
 	return placed
 
+# Non-plains counterpart of the rock pass: scatter natural-footprint thematic
+# obstacles on the void as the solid masses the road router weaves around (each
+# registered in rock_rects), reusing the scalable-rock count/clearance budget so
+# the shared void-first structure is preserved with biome-correct skins.
+func _scatter_biome_masses(
+	layout: BiomeEnvironmentLayout,
+	rng: RandomNumberGenerator,
+	scatter_ids: Array
+) -> int:
+	if scatter_ids.is_empty():
+		return 0
+	var manifest := IsometricEnvironmentManifest.get_shared()
+	var target := rng.randi_range(VOIDFIRST_ROCK_MIN_COUNT, VOIDFIRST_ROCK_MAX_COUNT)
+	var placed := 0
+	var attempts := 0
+	var lo := BORDER_THICKNESS + VOIDFIRST_ROCK_MARGIN
+	while placed < target and attempts < VOIDFIRST_ROCK_ATTEMPTS:
+		attempts += 1
+		var obstacle_id := scatter_ids[placed % scatter_ids.size()] as StringName
+		var footprint := manifest.get_footprint_tiles(obstacle_id)
+		if footprint.x <= 0 or footprint.y <= 0:
+			continue
+		var hi_x := layout.zone_size.x - lo - footprint.x
+		var hi_y := layout.zone_size.y - lo - footprint.y
+		if hi_x <= lo or hi_y <= lo:
+			continue
+		var rect := Rect2i(
+			Vector2i(rng.randi_range(lo, hi_x), rng.randi_range(lo, hi_y)),
+			footprint
+		)
+		var padded := _inflate_rect(rect, VOIDFIRST_ROCK_GAP)
+		if padded.intersects(_voidfirst_center_reserved(layout)):
+			continue
+		if _rect_overlaps_passage_corridor(layout, padded):
+			continue
+		if _intersects_any(padded, layout.rock_rects):
+			continue
+		layout.rock_rects.append(rect)
+		_add_obstacle(layout, obstacle_id, rect, &"rectangle", 0.0)
+		placed += 1
+	return placed
+
 # M2 — place square forests (side 9..60). Each forest is a walkable floor patch
 # (forest_tall_grass) filled with natural-size forest_tree obstacles on a jittered
 # grid. Trees never land on a rock (rock wins) and spacing leaves walkable gaps so
 # the interior stays traversable.
 func _place_forests(
 	layout: BiomeEnvironmentLayout,
-	_biome: BiomeDefinition,
+	biome: BiomeDefinition,
 	rng: RandomNumberGenerator
 ) -> int:
+	var palette := _voidfirst_palette(biome.biome_id)
+	var floor_tag := palette["cluster_floor"] as StringName
+	var cluster_id := palette["cluster_id"] as StringName
 	var count := rng.randi_range(VOIDFIRST_FOREST_MIN_COUNT, VOIDFIRST_FOREST_MAX_COUNT)
 	var placed := 0
 	var attempts := 0
@@ -289,17 +341,18 @@ func _place_forests(
 			Vector2i(side, side)
 		)
 		layout.forest_rects.append(rect)
-		layout.add_floor_rect(rect, &"forest_tall_grass")
+		layout.add_floor_rect(rect, floor_tag)
 		placed += 1
-	_fill_forests_with_trees(layout, rng)
+	_fill_forests_with_trees(layout, rng, cluster_id)
 	return placed
 
 func _fill_forests_with_trees(
 	layout: BiomeEnvironmentLayout,
-	rng: RandomNumberGenerator
+	rng: RandomNumberGenerator,
+	cluster_id: StringName
 ) -> int:
 	var footprint := IsometricEnvironmentManifest.get_shared().get_footprint_tiles(
-		&"forest_tree"
+		cluster_id
 	)
 	var tree_count := 0
 	for forest_rect in layout.forest_rects:
@@ -321,7 +374,7 @@ func _fill_forests_with_trees(
 				)
 				var rect := Rect2i(pos, footprint)
 				if _can_place_tree(layout, rect):
-					_add_obstacle(layout, &"forest_tree", rect, &"rectangle", 0.0)
+					_add_obstacle(layout, cluster_id, rect, &"rectangle", 0.0)
 					tree_count += 1
 				x += VOIDFIRST_TREE_SPACING
 			y += VOIDFIRST_TREE_SPACING
@@ -361,9 +414,10 @@ func _add_voidfirst_roads(
 	layout: BiomeEnvironmentLayout,
 	_rng: RandomNumberGenerator,
 	cell: BiomeCell,
-	context: Dictionary = {}
+	context: Dictionary,
+	palette: Dictionary
 ) -> void:
-	var spokes := _collect_road_spokes(layout, cell, context)
+	var spokes := _collect_road_spokes(layout, cell, context, palette)
 	if spokes.is_empty():
 		return
 	var has_passage_spoke := false
@@ -372,7 +426,7 @@ func _add_voidfirst_roads(
 			has_passage_spoke = true
 			break
 	if has_passage_spoke:
-		_carve_center_hub(layout)
+		_carve_center_hub(layout, palette["road_tag"])
 	var astar := _build_road_astar(layout)
 	var center := layout.zone_size / 2
 	for spoke in spokes:
@@ -392,28 +446,30 @@ func _add_voidfirst_roads(
 func _collect_road_spokes(
 	layout: BiomeEnvironmentLayout,
 	cell: BiomeCell,
-	context: Dictionary
+	context: Dictionary,
+	palette: Dictionary
 ) -> Array[Dictionary]:
 	var spokes: Array[Dictionary] = []
 	var covered_sides: Dictionary = {}
 	for passage in cell.passages:
 		spokes.append({
 			"anchor": _passage_inner_anchor(passage, layout.zone_size),
-			"tag": &"broken_street",
+			"tag": palette["spoke_tag"] as StringName,
 			"is_passage": true
 		})
 		covered_sides[passage.side] = true
 	if _is_walled_arena_context(context):
-		spokes.append_array(_wall_spokes(layout, covered_sides))
+		spokes.append_array(_wall_spokes(layout, covered_sides, palette["road_tag"]))
 	if spokes.is_empty():
-		spokes = _wall_spokes(layout, covered_sides)
+		spokes = _wall_spokes(layout, covered_sides, palette["road_tag"])
 	return spokes
 
 # A main_road spoke to the mid-point of every border not already served by a
 # passage. The four of them together carve the edge-to-edge cross.
 func _wall_spokes(
 	layout: BiomeEnvironmentLayout,
-	covered_sides: Dictionary
+	covered_sides: Dictionary,
+	road_tag: StringName
 ) -> Array[Dictionary]:
 	var spokes: Array[Dictionary] = []
 	for side in BiomeCell.SIDES:
@@ -421,7 +477,7 @@ func _wall_spokes(
 			continue
 		spokes.append({
 			"anchor": _wall_midpoint_anchor(layout, side),
-			"tag": &"main_road",
+			"tag": road_tag,
 			"is_passage": false
 		})
 	return spokes
@@ -445,12 +501,12 @@ func _wall_midpoint_anchor(
 # as a road rect (route metadata/rendering) and as per-cell road tags so the spawn
 # picker, walkability classification and the tile resolver all see the centre as
 # walkable road that the passage spokes hook onto.
-func _carve_center_hub(layout: BiomeEnvironmentLayout) -> void:
+func _carve_center_hub(layout: BiomeEnvironmentLayout, road_tag: StringName) -> void:
 	var hub := _voidfirst_center_reserved(layout)
-	_add_road_rect(layout, hub, &"main_road")
+	_add_road_rect(layout, hub, road_tag)
 	for hub_y in range(hub.position.y, hub.end.y):
 		for hub_x in range(hub.position.x, hub.end.x):
-			layout.add_road_cell(Vector2i(hub_x, hub_y), &"main_road")
+			layout.add_road_cell(Vector2i(hub_x, hub_y), road_tag)
 
 func _build_road_astar(layout: BiomeEnvironmentLayout) -> AStarGrid2D:
 	var step := VOIDFIRST_ROUTE_STEP
@@ -527,7 +583,8 @@ func _nearest_open_coarse(astar: AStarGrid2D, cell: Vector2i) -> Vector2i:
 # forest and stopping at the first rock (or border / max length).
 func _add_voidfirst_paths(
 	layout: BiomeEnvironmentLayout,
-	rng: RandomNumberGenerator
+	rng: RandomNumberGenerator,
+	trail_tag: StringName
 ) -> void:
 	if layout.forest_rects.is_empty():
 		return
@@ -539,7 +596,7 @@ func _add_voidfirst_paths(
 		var forest_rect := layout.forest_rects[index]
 		var start := forest_rect.position + forest_rect.size / 2
 		var direction: Vector2i = directions[rng.randi_range(0, directions.size() - 1)]
-		_carve_trail(layout, start, direction, VOIDFIRST_PATH_WIDTH, VOIDFIRST_PATH_MAX_LEN, &"broken_street")
+		_carve_trail(layout, start, direction, VOIDFIRST_PATH_WIDTH, VOIDFIRST_PATH_MAX_LEN, trail_tag)
 
 func _carve_trail(
 	layout: BiomeEnvironmentLayout,
@@ -578,9 +635,9 @@ func _trail_band_rect(center: Vector2i, direction: Vector2i, width: int) -> Rect
 
 # Remove forest trees whose footprint overlaps any carved route cell, so roads and
 # trails read as cleared lanes through the woods.
-func _clear_trees_on_routes(layout: BiomeEnvironmentLayout) -> void:
+func _clear_trees_on_routes(layout: BiomeEnvironmentLayout, cluster_id: StringName) -> void:
 	for index in range(layout.obstacle_ids.size() - 1, -1, -1):
-		if layout.obstacle_ids[index] != &"forest_tree":
+		if layout.obstacle_ids[index] != cluster_id:
 			continue
 		if not _rect_overlaps_road_cells(layout, layout.obstacle_rects[index]):
 			continue
@@ -595,9 +652,15 @@ func _clear_trees_on_routes(layout: BiomeEnvironmentLayout) -> void:
 # i.e. where it is not already bounded by a rock or forest ("confine"). Candidate
 # tree slots are scanned on a coarse grid; a tree is placed only if it sits beside
 # a road on a free cell with no existing border nearby.
-func _line_roads_with_trees(layout: BiomeEnvironmentLayout) -> int:
+# Road tree-lining is a forest-biome flourish: only biomes whose palette opts in
+# (line_vegetation) line open-void roads with their cluster obstacle. Non-plains
+# biomes skip it so their roads read as bare thematic lanes rather than tree alleys.
+func _line_roads_with_trees(layout: BiomeEnvironmentLayout, palette: Dictionary) -> int:
+	if not bool(palette["line_vegetation"]):
+		return 0
+	var cluster_id := palette["cluster_id"] as StringName
 	var footprint := IsometricEnvironmentManifest.get_shared().get_footprint_tiles(
-		&"forest_tree"
+		cluster_id
 	)
 	var added := 0
 	var lo := BORDER_THICKNESS
@@ -611,7 +674,7 @@ func _line_roads_with_trees(layout: BiomeEnvironmentLayout) -> int:
 				return added
 			var rect := Rect2i(Vector2i(x, y), footprint)
 			if _should_line_with_tree(layout, rect):
-				_add_obstacle(layout, &"forest_tree", rect, &"rectangle", 0.0)
+				_add_obstacle(layout, cluster_id, rect, &"rectangle", 0.0)
 				added += 1
 			x += VOIDFIRST_ROAD_LINE_SPACING
 		y += VOIDFIRST_ROAD_LINE_SPACING
@@ -2325,6 +2388,71 @@ func _crate_ids(biome_id: StringName) -> Array[StringName]:
 			return [&"biome_marsh", &"common", &"medical"]
 		_:
 			return [&"common", &"medical", &"common"]
+
+# Per-biome asset palette for the void-first pipeline. infected_plains resolves to
+# the historical literals so its output stays byte-identical (rock-area + forest
+# rendering only exist for the forest biome). The four thematic biomes reuse
+# existing selectors so the shared structure — rock/mass scatter, vegetation
+# clusters, hub+spokes roads, void lottery — is skinned per biome with no new art:
+#   - scatter_ids: solid masses for the "rock" pass (no scalable rock outside plains)
+#   - cluster_id / cluster_floor: the "forest" pass obstacle + its floor tag
+#   - road_tag / spoke_tag: wall-spoke (main) and passage-spoke (lane) road tags
+#   - line_vegetation: whether open-void roads get a cluster tree-lining
+func _voidfirst_palette(biome_id: StringName) -> Dictionary:
+	match biome_id:
+		# road_tag stays main_road for every biome: it is the universal, biome-tinted
+		# main-road network the validator and renderer expect at the centre. Only the
+		# passage-spoke/trail tag is skinned to the biome's thematic lane.
+		&"toxic_wastes":
+			return {
+				"rock_scalable": false,
+				"scatter_ids": [&"lab_block", &"pipe_stack", &"industrial_fence"],
+				"cluster_id": &"toxic_barrel",
+				"cluster_floor": &"open_block",
+				"road_tag": &"main_road",
+				"spoke_tag": &"service_lane",
+				"line_vegetation": false,
+			}
+		&"burning_fields":
+			return {
+				"rock_scalable": false,
+				"scatter_ids": [&"burned_house", &"burned_car", &"charred_wall"],
+				"cluster_id": &"ash_barrier",
+				"cluster_floor": &"open_block",
+				"road_tag": &"main_road",
+				"spoke_tag": &"ash_lane",
+				"line_vegetation": false,
+			}
+		&"frozen_outskirts":
+			return {
+				"rock_scalable": false,
+				"scatter_ids": [&"snow_cabin", &"ice_rock", &"snow_wall"],
+				"cluster_id": &"ice_block",
+				"cluster_floor": &"open_block",
+				"road_tag": &"main_road",
+				"spoke_tag": &"packed_snow_path",
+				"line_vegetation": false,
+			}
+		&"drowned_marsh":
+			return {
+				"rock_scalable": false,
+				"scatter_ids": [&"sunken_house", &"marsh_log", &"reed_wall"],
+				"cluster_id": &"dead_tree",
+				"cluster_floor": &"open_block",
+				"road_tag": &"main_road",
+				"spoke_tag": &"wooden_walkway",
+				"line_vegetation": false,
+			}
+		_:
+			return {
+				"rock_scalable": true,
+				"scatter_ids": [&"large_rock"],
+				"cluster_id": &"forest_tree",
+				"cluster_floor": &"forest_tall_grass",
+				"road_tag": &"main_road",
+				"spoke_tag": &"broken_street",
+				"line_vegetation": true,
+			}
 
 func _update_generation_summary(
 	layout: BiomeEnvironmentLayout,
