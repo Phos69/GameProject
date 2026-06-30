@@ -120,6 +120,12 @@ revisione manuale, baseline e consolidamento TODO.
 - Avanzamento 2026-06-30: warning UID addon GUT corretti. Gli
   `ext_resource type="Script"` delle scene GUT ora corrispondono ai `.gd.uid`
   gia tracciati; smoke `_sanity` verde senza `invalid UID` nel log.
+- Avanzamento 2026-06-30: leak/resource warning di shutdown ridotti nei run
+  sorgente. I cicli `BiomeCell`/`BiomePassage`/`BiomeEnvironmentLayout` dei
+  `world_data` ora vengono spezzati da `WorldDataCache.release_world_data()`,
+  da clear/evizione cache e dal teardown del `BiomeWorldGenerator`; run
+  `world_gen`, `assets`, `combat` e `progression` verdi senza
+  `ObjectDB instances leaked` ne `resources still in use` in coda.
 - Obiettivo: ridurre il rumore dei runner GUT fino a log locali leggibili e
   warning residui azionabili.
 - Milestone collegata: manutenzione test post-cutover GUT.
@@ -127,7 +133,8 @@ revisione manuale, baseline e consolidamento TODO.
   `addons/gut/*.tscn`, fixture test e cache statiche runtime.
 - Criterio di accettazione: niente `wait_frames()` deprecato nei test GUT,
   warning GUT generici corretti, orphans proiettili corretti nei run sorgente,
-  warning UID addon GUT rimossi, report quick/soak aggiornati.
+  warning UID addon GUT rimossi, leak world-data di shutdown corretti nei run
+  sorgente, report quick/soak aggiornati.
 - Test richiesto: `./tools/run_gut.ps1 -SkipImport`, soak con
   `.gutconfig.soak.json` e run mirati indicati in
   `docs/testing/gut_warning_cleanup_plan.md`.

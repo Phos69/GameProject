@@ -186,6 +186,11 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
   centralizzati.
 - `WorldGenerationSeed`: seed globale di run e derivazione deterministica degli stream RNG per mappa, terreno, ostacoli, bordi, loot e spawn.
 - `BiomeWorldGenerator`: orchestratore della pipeline procedurale globale per mappa biomi, layout per cella e debug seed.
+- `WorldDataCache`: cache LRU in memoria e su disco dei `world_data` generati.
+  I dati contengono cicli `RefCounted` tra celle, passaggi e layout; chi consuma
+  uno snapshot direttamente fuori dal lifecycle di `BiomeManager` deve chiamare
+  `WorldDataCache.release_world_data()` quando ha finito, mentre cache e
+  generatore lo fanno automaticamente su clear/evizione/teardown.
 - `BiomeMapGenerator`: costruisce la griglia di `BiomeCell` `500x500` con default `3x3`, assegna tipi bioma, coordinate globali, vicini, seed locali e grafo connesso con loop.
 - `BorderGenerator`: calcola lati connessi e lati esterni di caduta per ogni cella bioma.
 - `BiomePassageGenerator`: crea passaggi condivisi e allineati tra celle

@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- Ridotti i warning GUT di shutdown legati ai dati mondo: `WorldDataCache`
+  spezza i link ciclici dei `world_data` su clear/overwrite/evizione,
+  `BiomeWorldGenerator` ripulisce anche i mondi adottati da cache e il test
+  golden rilascia gli snapshot codec/fetch usati direttamente.
 - Allineati gli UID script nelle scene vendorizzate di GUT ai `.gd.uid`
   tracciati, rimuovendo i warning Godot `ext_resource, invalid UID` all'avvio
   del runner.

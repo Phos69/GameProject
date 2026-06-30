@@ -76,6 +76,7 @@ func test_codec_roundtrips_compact_golden() -> void:
 				src_cell.generated_layout.get_generation_signature(),
 				"la firma del layout sopravvive al round-trip"
 			)
+	WorldDataCache.release_world_data(decoded)
 	WorldGen.free_biome_manager(manager)
 
 func test_golden_snapshot_written_for_gameplay() -> void:
@@ -113,6 +114,7 @@ func test_golden_snapshot_written_for_gameplay() -> void:
 		(world_data.get("cells", []) as Array).size(),
 		"lo snapshot su disco conserva tutte le celle"
 	)
+	WorldDataCache.release_world_data(from_disk)
 	WorldGen.free_biome_manager(manager)
 
 func test_tile_bake_cache_roundtrips() -> void:

@@ -19,7 +19,8 @@ Stato dopo il primo cleanup del 2026-06-30:
   `progression`;
 - i warning UID dell'addon GUT sono stati rimossi allineando le scene agli
   `.gd.uid` gia versionati;
-- restano aperti i leak/resource warning a shutdown.
+- i leak/resource warning di shutdown da `world_data` ciclici sono stati ridotti
+  nei run sorgente `world_gen`, `assets`, `combat` e `progression`.
 
 ## Obiettivo
 
@@ -137,6 +138,17 @@ Validazione:
 
 ### 5. Leak e resource still in use a shutdown
 
+Stato 2026-06-30: completato sui sorgenti confermati. Il verbose di
+`combat` e `golden_snapshot_bake_test.gd` mostrava cicli `RefCounted` tra
+`BiomeCell`, `BiomePassage` e `BiomeEnvironmentLayout`: i `BiomeCell.neighbors`
+si puntano a vicenda e non vengono liberati dal reference counting se il
+`world_data` viene solo rimosso da un `Dictionary`. `WorldDataCache` ora spezza
+i link dei `world_data` su overwrite, evizione LRU e `clear()`, espone
+`release_world_data()` per gli snapshot consumati direttamente fuori dal
+lifecycle di `BiomeManager`, e `BiomeWorldGenerator.clear_world()` ripulisce
+anche i mondi adottati da cache che non passano da `BiomeMapGenerator.last_cells`.
+Il test golden rilascia esplicitamente i world_data prodotti da codec/fetch.
+
 Obiettivo: distinguere cleanup correggibile nei test da rumore di engine/addon.
 
 File/sistemi coinvolti:
@@ -150,6 +162,24 @@ Criterio di accettazione:
 - riduzione misurabile di `ObjectDB instances leaked`,
   `resources still in use` e RID leaked dopo la correzione degli orphans;
 - ogni residuo non risolto documentato con causa probabile.
+
+Validazione:
+
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/world_gen -Select golden_snapshot`:
+  1 script, 4 test, 18 assert, exit code `0`, nessun warning di shutdown in
+  coda;
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/world_gen`: 5
+  script, 47 test, 360 assert, exit code `0`, nessun `ObjectDB instances leaked`
+  ne `resources still in use` in coda;
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/assets`: 8
+  script, 50 test, 7276 assert, exit code `0`, nessun warning di shutdown in
+  coda;
+- verbose `combat` su `res://tests/suites/combat`: 4 script, 20 test, 1639
+  assert, exit code `0`, nessun `ObjectDB`, `Resource still in use` o `Orphans`
+  dopo il summary.
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/progression`: 3
+  script, 12 test, 269 assert, exit code `0`, nessun warning di shutdown in
+  coda.
 
 ### 6. Robustezza runner PowerShell sotto redirezione
 

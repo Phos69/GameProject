@@ -127,12 +127,11 @@ func get_seed_record() -> Dictionary:
 func clear_world() -> void:
 	if debug_overlay != null:
 		debug_overlay.configure(0, [])
+	for cell in active_cells:
+		if cell != null:
+			cell.clear_runtime_links()
 	if map_generator != null:
 		map_generator.clear_generated_data()
-	else:
-		for cell in active_cells:
-			if cell != null:
-				cell.clear_runtime_links()
 	active_cells.clear()
 	active_graph = null
 	active_context.clear()

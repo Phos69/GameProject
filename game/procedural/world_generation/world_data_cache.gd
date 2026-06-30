@@ -137,7 +137,9 @@ static func store(context: Dictionary, world_data: Dictionary) -> void:
 	if (world_data.get("cells", []) as Array).is_empty():
 		return
 	var key := canonical_key(context)
-	_entries.erase(key)
+	if _entries.has(key):
+		release_world_data(_entries[key] as Dictionary)
+		_entries.erase(key)
 	_entries[key] = clone_world_data(world_data)
 	_evict_to_limit()
 	if _disk_enabled:
@@ -191,7 +193,9 @@ static func clone_world_data(world_data: Dictionary) -> Dictionary:
 
 static func _evict_to_limit() -> void:
 	while _entries.size() > _max_worlds:
-		_entries.erase(_entries.keys()[0])
+		var key = _entries.keys()[0]
+		release_world_data(_entries[key] as Dictionary)
+		_entries.erase(key)
 
 static func set_max_worlds(value: int) -> void:
 	_max_worlds = maxi(value, 1)
@@ -214,6 +218,8 @@ static func is_disk_enabled() -> bool:
 
 ## Svuota la cache e azzera le statistiche (isolamento tra suite di test).
 static func clear() -> void:
+	for world_data in _entries.values():
+		release_world_data(world_data as Dictionary)
 	_entries.clear()
 	_hits = 0
 	_misses = 0
@@ -230,6 +236,15 @@ static func stats() -> Dictionary:
 		"hits": _hits,
 		"misses": _misses
 	}
+
+## Spezza i link ciclici tra celle/passaggi/layout di un world_data non piu usato.
+## Necessario per snapshot o clone consumati direttamente fuori dal lifecycle di
+## BiomeManager, perche RefCounted non libera cicli di riferimento da solo.
+static func release_world_data(world_data: Dictionary) -> void:
+	for value in world_data.get("cells", []) as Array:
+		var cell := value as BiomeCell
+		if cell != null:
+			cell.clear_runtime_links()
 
 # --- Tier disco (user://) --------------------------------------------------
 
