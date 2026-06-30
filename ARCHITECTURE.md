@@ -514,7 +514,9 @@ ID negli smoke catalogo/pickup/projectile o melee e nella QA screenshot.
 - L'adrenalina arriva da danno applicato, danno subito, kill confermate e reward wave survival.
 - Palette, silhouette, trail, ID shape e sprite opzionali vivono in
   `WeaponVisualData` e non modificano il bilanciamento.
-- `ProjectileSystem` riceve i dati dello sparo e configura il proiettile prima di aggiungerlo alla scena.
+- `ProjectileSystem` riceve i dati dello sparo e configura il proiettile prima
+  di aggiungerlo alla scena. Se `current_scene` non e disponibile, per esempio
+  in fixture sintetiche, usa il proprio parent locale prima del root del tree.
 - Il parametro visuale di `ProjectileSystem` e opzionale per mantenere compatibili boss e chiamanti esistenti.
 - `Projectile` usa `WeaponVisualRenderer` per risolvere poligono e glow,
   mantenendo i fallback legacy basati su `profile_id`.

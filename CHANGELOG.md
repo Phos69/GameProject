@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- `ProjectileSystem` aggancia i proiettili al parent locale quando
+  `current_scene` non e disponibile, eliminando gli orphans nei test GUT
+  sintetici di combat/progressione; il test RPG ripulisce i proiettili delle
+  super ranged dopo gli assert di spawn.
 - Cleanup warning GUT generici: `character_select_test.gd`,
   `manifest_contract_test.gd` e `void_cliff_asset_test.gd` liberano subito i
   nodi creati nei test, rimuovendo i warning `Test script has ... unfreed

@@ -112,14 +112,19 @@ revisione manuale, baseline e consolidamento TODO.
   `manifest_contract_test.gd` e `void_cliff_asset_test.gd`; i test ora liberano
   subito i nodi creati nei teardown. Run mirati verdi senza `Warnings` nel
   summary GUT.
+- Avanzamento 2026-06-30: orphans dei proiettili corretti nei perimetri
+  sorgente. `ProjectileSystem` aggancia i proiettili al parent locale quando
+  `current_scene` non esiste, e il test RPG ripulisce i colpi delle super ranged
+  prima delle verifiche successive. Run `combat` e `progression` verdi senza
+  `Orphans`.
 - Obiettivo: ridurre il rumore dei runner GUT fino a log locali leggibili e
   warning residui azionabili.
 - Milestone collegata: manutenzione test post-cutover GUT.
 - File/sistemi coinvolti: `tests/suites/**`, `tools/run_gut.ps1`,
   `addons/gut/*.tscn`, fixture test e cache statiche runtime.
 - Criterio di accettazione: niente `wait_frames()` deprecato nei test GUT,
-  warning GUT generici corretti, orphans proiettili corretti o tracciati, report
-  quick/soak aggiornati.
+  warning GUT generici corretti, orphans proiettili corretti nei run sorgente,
+  report quick/soak aggiornati.
 - Test richiesto: `./tools/run_gut.ps1 -SkipImport`, soak con
   `.gutconfig.soak.json` e run mirati indicati in
   `docs/testing/gut_warning_cleanup_plan.md`.

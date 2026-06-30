@@ -15,8 +15,10 @@ Stato dopo il primo cleanup del 2026-06-30:
   `manifest_contract_test.gd` e `void_cliff_asset_test.gd`;
 - i tre warning generici sono stati corretti con teardown immediato dei nodi
   creati dai test;
-- restano aperti gli orphans dei proiettili, i warning UID dell'addon GUT e i
-  leak/resource warning a shutdown.
+- gli orphans dei proiettili sono stati eliminati dai run mirati `combat` e
+  `progression`;
+- restano aperti i warning UID dell'addon GUT e i leak/resource warning a
+  shutdown.
 
 ## Obiettivo
 
@@ -76,6 +78,13 @@ Criterio di accettazione:
 
 ### 3. Orphans di proiettili
 
+Stato 2026-06-30: completato sui perimetri sorgente. `ProjectileSystem` ora
+aggancia i proiettili a `current_scene` quando disponibile, altrimenti al parent
+locale del sistema; i test sintetici GUT possono quindi ripulire i proiettili
+insieme al proprio `scene_root`. `rpg_progression_test.gd` ripulisce subito i
+proiettili delle super ranged dopo aver verificato il conteggio di spawn, cosi
+le super melee successive non vengono contaminate da colpi ancora attivi.
+
 Obiettivo: eliminare i `70 Orphans` legati a `Projectile:<Area2D>`.
 
 File/sistemi coinvolti:
@@ -88,6 +97,13 @@ Criterio di accettazione:
 
 - run delle aree `combat` e `progression` senza orphans di proiettili;
 - nessuna regressione su hit/danno/XP/super.
+
+Validazione:
+
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/combat`: 4 script,
+  20 test, 1639 assert, exit code `0`, nessun `Orphans`;
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/progression`: 3
+  script, 12 test, 269 assert, exit code `0`, nessun `Orphans`.
 
 ### 4. Warning UID addon GUT
 

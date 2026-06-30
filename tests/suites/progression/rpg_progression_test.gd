@@ -232,6 +232,8 @@ func test_adrenaline_and_supers() -> void:
 	assert_true(rpg_component.try_activate_super(Vector2.RIGHT), "ranger super activates")
 	assert_eq(rpg_component.adrenaline, 0, "super activation spends adrenaline")
 	assert_eq(_projectile_spawn_count, 12, "arrow rain spawns twelve projectiles")
+	_clear_projectiles(scene_root)
+	await wait_physics_frames(1)
 
 	player.apply_rpg_character(&"pistoliere")
 	_spawn_enemy(scene_root, enemy_scene, Vector2(220.0, 0.0))
@@ -241,6 +243,10 @@ func test_adrenaline_and_supers() -> void:
 	assert_true(rpg_component.try_activate_super(Vector2.RIGHT), "pistoliere super activates")
 	assert_gt(rpg_component.final_barrage_timer, 0.0, "final barrage keeps an active timer")
 	assert_gte(_projectile_spawn_count, 1, "final barrage fires immediately")
+	rpg_component.final_barrage_timer = 0.0
+	rpg_component.final_barrage_fire_timer = 0.0
+	_clear_projectiles(scene_root)
+	await wait_physics_frames(1)
 
 	player.apply_rpg_character(&"berserker")
 	player.global_position = Vector2.ZERO
@@ -364,3 +370,16 @@ func _count_xp_pickups(scene: MainSceneFixture) -> int:
 
 func _on_projectile_spawned(_projectile: Node) -> void:
 	_projectile_spawn_count += 1
+
+func _clear_projectiles(parent: Node) -> void:
+	for child in parent.get_children():
+		if child is Projectile:
+			_free_test_node(child)
+
+func _free_test_node(node: Node) -> void:
+	if node == null or not is_instance_valid(node):
+		return
+	var parent := node.get_parent()
+	if parent != null:
+		parent.remove_child(node)
+	node.free()

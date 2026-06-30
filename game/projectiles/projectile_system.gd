@@ -49,7 +49,7 @@ func spawn_projectile(
 			Callable(self, "_on_projectile_impacted").bind(projectile)
 		)
 
-	var root := get_tree().current_scene
+	var root := _get_projectile_parent()
 	if root != null:
 		root.add_child(projectile)
 
@@ -62,3 +62,12 @@ func _on_projectile_impacted(
 	projectile: Node
 ) -> void:
 	projectile_impacted.emit(projectile, target, applied_damage)
+
+func _get_projectile_parent() -> Node:
+	var scene_root := get_tree().current_scene
+	if scene_root != null:
+		return scene_root
+	var local_parent := get_parent()
+	if local_parent != null:
+		return local_parent
+	return get_tree().root
