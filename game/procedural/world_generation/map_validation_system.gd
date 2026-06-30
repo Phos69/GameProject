@@ -344,6 +344,14 @@ func _find_route_obstacle_overlaps(
 	var failures := PackedStringArray()
 	for obstacle_index in range(layout.obstacle_rects.size()):
 		var obstacle_rect := layout.obstacle_rects[obstacle_index]
+		# A walled perimeter is the endpoint of an arena road, not an obstacle
+		# accidentally placed on a traversable route. Passage walls are already
+		# split by the generator before validation.
+		if (
+			layout.uses_raised_perimeter_cliffs()
+			and not layout.get_wall_segment_side(obstacle_rect).is_empty()
+		):
+			continue
 		if _rect_intersects_any(obstacle_rect, layout.road_rects):
 			failures.append("obstacle_on_route:%d" % obstacle_index)
 			continue

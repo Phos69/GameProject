@@ -2,6 +2,9 @@ extends Resource
 class_name BiomeEnvironmentLayout
 
 const DEFAULT_ZONE_SIZE := Vector2i(500, 500)
+const PERIMETER_VISUAL_WALL: StringName = &"procedural_wall"
+const PERIMETER_VISUAL_RAISED_CLIFF: StringName = &"raised_cliff"
+const RAISED_CLIFF_HEIGHT_CELLS := 7
 
 @export var zone_size: Vector2i = DEFAULT_ZONE_SIZE
 @export var generation_seed: int = 0
@@ -34,6 +37,7 @@ const DEFAULT_ZONE_SIZE := Vector2i(500, 500)
 # so the whole perimeter reads as a continuous wall and not just a central tile.
 const PERIMETER_WALL_HEIGHT_CELLS := 5
 @export var wall_height_cells: int = PERIMETER_WALL_HEIGHT_CELLS
+@export var perimeter_visual_style: StringName = PERIMETER_VISUAL_WALL
 
 var road_rects: Array[Rect2i] = []
 var road_rect_tags: Array[StringName] = []
@@ -344,6 +348,17 @@ func get_wall_segments_for_side(side: StringName) -> Array[Rect2i]:
 		if index < wall_segment_sides.size() and wall_segment_sides[index] == side:
 			result.append(wall_segment_rects[index])
 	return result
+
+func get_wall_segment_side(rect: Rect2i) -> StringName:
+	for index in range(wall_segment_rects.size()):
+		if wall_segment_rects[index] != rect:
+			continue
+		if index < wall_segment_sides.size():
+			return wall_segment_sides[index]
+	return &""
+
+func uses_raised_perimeter_cliffs() -> bool:
+	return perimeter_visual_style == PERIMETER_VISUAL_RAISED_CLIFF
 
 func add_fall_zone_rect(rect: Rect2i, side: StringName = &"") -> void:
 	var clipped := _clip_rect(rect)

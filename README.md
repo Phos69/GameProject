@@ -274,8 +274,8 @@ Completato:
   anche nei preset visuali e nello scenario survival affollato;
 - menu principale mostrato all'avvio;
 - `Infinite Arena` come modalita default/quick play: una cella `500x500`
-  murata, ondate infinite, senza WorldRuntime, mappa esplorazione o streaming
-  multi-regione;
+  chiusa da cliff rocciosi rialzati e solidi, ondate infinite, senza
+  WorldRuntime, mappa esplorazione, fall boundary o streaming multi-regione;
 - selezione personaggio prima della zombie survival con quattro profili iniziali;
 - statistiche classe RPG con HP, attacco, difesa, velocita, progressione XP e level-up per-run;
 - armi base RPG per arco, pistola, ascia e spada con range, scatter, ammo,

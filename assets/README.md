@@ -79,6 +79,14 @@ raccordo della cresta usa mesh e raster dedicati costruiti da
 usano un tile sovrapposto. L'import limita il runtime a 512 px e genera
 mipmap; i sorgenti restano conservati per iterazioni.
 
+Infinite Arena riusa inoltre i raster gia finali
+`rock_cliff_face_upward_generated.png` e
+`rock_plateau_top_generated.png` per il proprio perimetro `raised_cliff`.
+`BiomeObstaclePainter` li applica ai segmenti solidi con UV world-space
+continui e geometria distinta per lati orizzontali/verticali; non sono
+`fall_zone` e non modificano collisioni o danno. Se uno dei due raster non e
+disponibile, il runtime conserva il precedente muro isometrico procedurale.
+
 Il prato forestale finale usa
 `tiles/forest/textures/forest_grass_generated.png`. `BiomeTileLayer` lo stende
 su run continue con UV world-space. La stessa cartella contiene

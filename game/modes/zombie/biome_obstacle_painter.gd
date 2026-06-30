@@ -1,6 +1,226 @@
 extends RefCounted
 class_name BiomeObstaclePainter
 
+const RAISED_CLIFF_FACE_REPEAT_WORLD_SIZE := 128.0
+const RAISED_CLIFF_TOP_REPEAT_WORLD_SIZE := 256.0
+const RAISED_CLIFF_LEAN_RATIO := 0.42
+
+static func draw_raised_perimeter_cliff(
+	canvas: CanvasItem,
+	obstacle_size: Vector2,
+	side: StringName,
+	wall_height: float,
+	face_texture: Texture2D,
+	top_texture: Texture2D,
+	uv_origin: Vector2
+) -> void:
+	_draw_raised_cliff_shadow(canvas, obstacle_size)
+	if obstacle_size.x >= obstacle_size.y:
+		_draw_horizontal_raised_cliff(
+			canvas,
+			obstacle_size,
+			side,
+			wall_height,
+			face_texture,
+			top_texture,
+			uv_origin
+		)
+	else:
+		_draw_vertical_raised_cliff(
+			canvas,
+			obstacle_size,
+			side,
+			wall_height,
+			face_texture,
+			top_texture,
+			uv_origin
+		)
+
+static func _draw_horizontal_raised_cliff(
+	canvas: CanvasItem,
+	obstacle_size: Vector2,
+	side: StringName,
+	wall_height: float,
+	face_texture: Texture2D,
+	top_texture: Texture2D,
+	uv_origin: Vector2
+) -> void:
+	var half := obstacle_size * 0.5
+	var lift := Vector2(0.0, -wall_height)
+	var north_west := Vector2(-half.x, -half.y)
+	var north_east := Vector2(half.x, -half.y)
+	var south_east := Vector2(half.x, half.y)
+	var south_west := Vector2(-half.x, half.y)
+	var top_north_west := north_west + lift
+	var top_north_east := north_east + lift
+	var top_south_east := south_east + lift
+	var top_south_west := south_west + lift
+	var face_brightness := 0.94 if side == &"north" else 1.0
+	_draw_cliff_face(
+		canvas,
+		PackedVector2Array([
+			south_west,
+			south_east,
+			top_south_east,
+			top_south_west
+		]),
+		uv_origin.x,
+		uv_origin.x + obstacle_size.x,
+		wall_height,
+		face_brightness,
+		face_texture
+	)
+	_draw_cliff_top(
+		canvas,
+		PackedVector2Array([
+			top_north_west,
+			top_north_east,
+			top_south_east,
+			top_south_west
+		]),
+		uv_origin,
+		half,
+		top_texture
+	)
+
+static func _draw_vertical_raised_cliff(
+	canvas: CanvasItem,
+	obstacle_size: Vector2,
+	side: StringName,
+	wall_height: float,
+	face_texture: Texture2D,
+	top_texture: Texture2D,
+	uv_origin: Vector2
+) -> void:
+	var half := obstacle_size * 0.5
+	var lean := minf(
+		wall_height * RAISED_CLIFF_LEAN_RATIO,
+		obstacle_size.x * 0.30
+	)
+	var north_west := Vector2(-half.x, -half.y)
+	var north_east := Vector2(half.x, -half.y)
+	var south_east := Vector2(half.x, half.y)
+	var south_west := Vector2(-half.x, half.y)
+	var top_north_west := north_west + Vector2(lean, -wall_height)
+	var top_north_east := north_east + Vector2(-lean, -wall_height)
+	var top_south_east := south_east + Vector2(-lean, -wall_height)
+	var top_south_west := south_west + Vector2(lean, -wall_height)
+	var west_brightness := 0.88 if side == &"east" else 0.68
+	var east_brightness := 0.88 if side == &"west" else 0.76
+	_draw_cliff_face(
+		canvas,
+		PackedVector2Array([
+			north_west,
+			south_west,
+			top_south_west,
+			top_north_west
+		]),
+		uv_origin.y,
+		uv_origin.y + obstacle_size.y,
+		wall_height,
+		west_brightness,
+		face_texture
+	)
+	_draw_cliff_face(
+		canvas,
+		PackedVector2Array([
+			south_east,
+			north_east,
+			top_north_east,
+			top_south_east
+		]),
+		uv_origin.y + obstacle_size.y,
+		uv_origin.y,
+		wall_height,
+		east_brightness,
+		face_texture
+	)
+	_draw_cliff_top(
+		canvas,
+		PackedVector2Array([
+			top_north_west,
+			top_north_east,
+			top_south_east,
+			top_south_west
+		]),
+		uv_origin,
+		half,
+		top_texture
+	)
+
+static func _draw_cliff_face(
+	canvas: CanvasItem,
+	points: PackedVector2Array,
+	run_start: float,
+	run_finish: float,
+	wall_height: float,
+	brightness: float,
+	texture: Texture2D
+) -> void:
+	var run_start_uv := run_start / RAISED_CLIFF_FACE_REPEAT_WORLD_SIZE
+	var run_finish_uv := run_finish / RAISED_CLIFF_FACE_REPEAT_WORLD_SIZE
+	var rise_uv := wall_height / RAISED_CLIFF_FACE_REPEAT_WORLD_SIZE
+	var ground_shade := brightness * 0.70
+	canvas.draw_polygon(
+		points,
+		PackedColorArray([
+			Color(ground_shade, ground_shade, ground_shade, 1.0),
+			Color(ground_shade, ground_shade, ground_shade, 1.0),
+			Color(brightness, brightness, brightness, 1.0),
+			Color(brightness, brightness, brightness, 1.0)
+		]),
+		PackedVector2Array([
+			Vector2(run_start_uv, rise_uv),
+			Vector2(run_finish_uv, rise_uv),
+			Vector2(run_finish_uv, 0.0),
+			Vector2(run_start_uv, 0.0)
+		]),
+		texture
+	)
+
+static func _draw_cliff_top(
+	canvas: CanvasItem,
+	points: PackedVector2Array,
+	uv_origin: Vector2,
+	half_size: Vector2,
+	texture: Texture2D
+) -> void:
+	var uvs := PackedVector2Array()
+	for point in points:
+		uvs.append(
+			(
+				uv_origin
+				+ point
+				+ half_size
+			) / RAISED_CLIFF_TOP_REPEAT_WORLD_SIZE
+		)
+	canvas.draw_polygon(
+		points,
+		PackedColorArray([
+			Color(1.06, 1.06, 1.06, 1.0),
+			Color(1.06, 1.06, 1.06, 1.0),
+			Color(1.02, 1.02, 1.02, 1.0),
+			Color(1.02, 1.02, 1.02, 1.0)
+		]),
+		uvs,
+		texture
+	)
+
+static func _draw_raised_cliff_shadow(
+	canvas: CanvasItem,
+	obstacle_size: Vector2
+) -> void:
+	var half := obstacle_size * 0.5
+	canvas.draw_colored_polygon(
+		PackedVector2Array([
+			Vector2(-half.x + 5.0, half.y + 3.0),
+			Vector2(half.x + 5.0, half.y + 3.0),
+			Vector2(half.x + 16.0, half.y + 12.0),
+			Vector2(-half.x + 16.0, half.y + 12.0)
+		]),
+		Color(0.02, 0.025, 0.02, 0.34)
+	)
+
 static func draw_iso_perimeter_wall(
 	canvas: CanvasItem,
 	obstacle_size: Vector2,

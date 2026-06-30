@@ -150,6 +150,16 @@ func test_clone_preserves_rich_layout_content() -> void:
 		"il clone preserva i rock_rects void-first")
 	assert_eq(clone_layout.road_cell_tags.size(), original_layout.road_cell_tags.size(),
 		"il clone preserva le road_cell_tags")
+	assert_eq(
+		clone_layout.perimeter_visual_style,
+		BiomeEnvironmentLayout.PERIMETER_VISUAL_RAISED_CLIFF,
+		"il clone preserva lo stile cliff del perimetro walled"
+	)
+	assert_eq(
+		clone_layout.wall_height_cells,
+		BiomeEnvironmentLayout.RAISED_CLIFF_HEIGHT_CELLS,
+		"il clone preserva l'altezza del cliff perimetrale"
+	)
 	# La cache di classificazione (PackedByteArray) e copiata: stessa classe al centro.
 	var spawn := original_layout.player_spawn_cell
 	assert_eq(

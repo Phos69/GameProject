@@ -657,8 +657,12 @@ multi-bioma.
   `single_biome_arena = true` e non prevale su `biome_map_width` /
   `biome_map_height` espliciti.
 - Il context `arena_boundary_mode = "walled"` converte i lati senza vicino in
-  `BLOCKED`, genera segmenti di muro perimetrali e disabilita i void/fall pocket
-  interni del layout arena.
+  `BLOCKED`, genera un anello continuo di segmenti perimetrali e disabilita i
+  void/fall pocket interni del layout arena. Il layout assegna
+  `perimeter_visual_style = raised_cliff` e altezza sette celle: le strade
+  decorative possono terminare sotto il bordo ma non lo aprono. Nord/sud
+  possiedono gli angoli e i lati verticali terminano al loro bordo interno.
+  `Zombie Survival` mantiene invece `procedural_wall` e i varchi fisici reali.
 - Ogni `WorldRegionConnection` deve corrispondere a un passaggio fisico aperto su entrambi i lati confinanti.
 - Due regioni adiacenti senza edge navigazionale hanno bordo bloccato; un lato senza regione vicina diventa fall boundary.
 - `BiomeEnvironmentLayout` deve classificare tutto il `500x500` come walkable,
@@ -854,9 +858,12 @@ multi-bioma.
   `IsometricEnvironmentManifest`; se un ID ricade su `generic_barrier`, deve
   essere una scelta esplicita del manifest e non un fallback implicito.
 - `BiomeObstaclePainter` disegna i fallback procedurali piu pesanti
-  (perimeter wall e boundary tematiche) dietro il dispatch di `BiomeObstacle`;
-  il nodo ostacolo resta proprietario di collision layer, shape, footprint,
-  sort metadata e gruppi runtime.
+  (perimeter wall e boundary tematiche) dietro il dispatch di `BiomeObstacle`.
+  Per `raised_cliff` costruisce facce e corona texture-mapped per orientamento,
+  con UV world-space continui tra segmenti, usando il face/crown delle aree
+  rocciose; se uno dei raster manca torna al muro procedurale. Il nodo ostacolo
+  resta proprietario di collision layer, shape, footprint, Y-sort, metadata e
+  gruppi runtime: il cliff arena non usa `BiomeFallZone` e non applica caduta.
 - Il manifest v9 vieta fallback impliciti: ogni ID generato da ostacoli,
   terrain, passaggi, bordi o fall zone deve avere un contratto asset-driven con
   `asset_path`, `status`, `biome_ids`, `anchor`, footprint/collisione, sorgente,

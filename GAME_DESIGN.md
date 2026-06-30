@@ -598,7 +598,9 @@ Il prototipo e lineare. Diramazioni, shop room, biomi, mappa e scelta del percor
 di survival, ma con un profilo compatto:
 
 - una sola cella `500x500`;
-- quattro lati `BLOCKED` con segmenti di muro fisici;
+- quattro lati `BLOCKED` con segmenti fisici resi come cliff rocciosi rialzati
+  di sette celle; bloccano player, zombie e proiettili ma non applicano caduta;
+- le strade decorative terminano contro il cliff e non creano uscite;
 - nessuna megamappa, region seam, mappa esplorazione o streaming regioni;
 - nessun fall boundary o void pocket interno nel profilo arena;
 - ondate infinite, supply crate, boss wave e sistemi condivisi invariati.

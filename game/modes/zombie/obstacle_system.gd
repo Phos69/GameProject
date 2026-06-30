@@ -206,6 +206,7 @@ func _generate_obstacles() -> void:
 			obstacle.remove_from_group("spawn_blockers")
 			obstacle.remove_from_group("environment_obstacles")
 		obstacle.global_position = layout.obstacle_positions[index]
+		configure_perimeter_obstacle_visual(obstacle, layout, index)
 		active_obstacles.append(obstacle)
 		_apply_debug_visibility(obstacle)
 		obstacle_spawned.emit(obstacle, obstacle_id)
@@ -273,6 +274,31 @@ static func make_obstacle_key(
 	obstacle_id: StringName
 ) -> StringName:
 	return StringName("%s:%d:%s" % [String(biome_id), index, String(obstacle_id)])
+
+static func configure_perimeter_obstacle_visual(
+	obstacle: BiomeObstacle,
+	layout: BiomeEnvironmentLayout,
+	index: int
+) -> void:
+	if (
+		obstacle == null
+		or layout == null
+		or not obstacle.is_perimeter_wall()
+		or index < 0
+		or index >= layout.obstacle_rects.size()
+	):
+		return
+	var rect := layout.obstacle_rects[index]
+	var side := layout.get_wall_segment_side(rect)
+	if side.is_empty():
+		return
+	obstacle.configure_perimeter_visual(
+		layout.perimeter_visual_style,
+		side,
+		Vector2(rect.position) * layout.logical_tile_scale,
+		layout.wall_height_cells,
+		layout.logical_tile_scale
+	)
 
 func _sort_offset_for(obstacle_id: StringName) -> float:
 	if manifest == null:

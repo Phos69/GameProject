@@ -32,6 +32,13 @@ func generate_layout_for_cell(
 	layout.logical_tile_scale = 8.0
 	layout.central_corridor_width = 220.0
 	layout.player_spawn_cell = layout.zone_size / 2
+	if _is_walled_arena_context(context):
+		layout.perimeter_visual_style = (
+			BiomeEnvironmentLayout.PERIMETER_VISUAL_RAISED_CLIFF
+		)
+		layout.wall_height_cells = (
+			BiomeEnvironmentLayout.RAISED_CLIFF_HEIGHT_CELLS
+		)
 
 	# infected_plains uses the new void-first generation (rocks -> forests -> roads
 	# -> tree borders -> void lottery); other biomes keep the legacy block layout.
@@ -62,3 +69,10 @@ func generate_layout_for_cell(
 	else:
 		call_deferred("emit_signal", &"biome_layout_generated", cell, layout)
 	return layout
+
+func _is_walled_arena_context(context: Dictionary) -> bool:
+	var mode := String(context.get(
+		"arena_boundary_mode",
+		context.get(&"arena_boundary_mode", "")
+	))
+	return mode == "walled" or mode == "blocked"

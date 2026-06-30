@@ -122,7 +122,7 @@ func populate_layout(
 	_add_large_obstacles(layout, biome, rng)
 	_add_secondary_obstacles(layout, biome, rng)
 	_add_starter_roadside_details(layout, biome, rng)
-	_add_connected_border_walls(layout, cell, biome)
+	_add_connected_border_walls(layout, cell, biome, context)
 	_add_crates(layout, biome)
 	_add_theme_hazards(layout, biome)
 	_add_block_props(layout, biome, rng)
@@ -153,7 +153,7 @@ func populate_layout_voidfirst(
 	_choose_voidfirst_spawn(layout)
 	_add_voidfirst_paths(layout, rng)
 	_clear_trees_on_routes(layout)
-	_add_connected_border_walls(layout, cell, biome)
+	_add_connected_border_walls(layout, cell, biome, context)
 	_line_roads_with_trees(layout)
 	_resolve_void_lottery(layout, rng, allow_internal_void)
 	_add_voidfirst_crates(layout, biome)
@@ -766,6 +766,14 @@ func _merge_row_runs(rects: Array[Rect2i]) -> Array[Rect2i]:
 func repair_layout(layout: BiomeEnvironmentLayout) -> void:
 	for index in range(layout.obstacle_rects.size() - 1, -1, -1):
 		var obstacle_rect := layout.obstacle_rects[index]
+		# Walled arenas intentionally let decorative roads terminate underneath
+		# their solid perimeter. Removing that obstacle would leave a visual and
+		# collision hole while wall_segment_rects still advertised full coverage.
+		if (
+			layout.uses_raised_perimeter_cliffs()
+			and not layout.get_wall_segment_side(obstacle_rect).is_empty()
+		):
+			continue
 		if _intersects_route(layout, obstacle_rect):
 			layout.obstacle_rects.remove_at(index)
 			layout.obstacle_ids.remove_at(index)
@@ -1809,19 +1817,27 @@ func _small_prop_ids(biome_id: StringName) -> Array[StringName]:
 func _add_connected_border_walls(
 	layout: BiomeEnvironmentLayout,
 	cell: BiomeCell,
-	biome: BiomeDefinition
+	biome: BiomeDefinition,
+	context: Dictionary = {}
 ) -> void:
 	var border_obstacle_id := _border_obstacle_id(biome.biome_id if biome != null else &"")
+	var solid_walled_arena := _is_walled_arena_context(context)
 	for side in BiomeCell.SIDES:
 		var border_type := cell.get_border(side)
 		if border_type == BiomeCell.BorderType.FALL:
 			continue
 		var axis_limit := _side_axis_limit(layout, side)
-		var gaps := _wall_gaps_for_side(layout, cell, side, axis_limit)
-		var wall_span := _wall_axis_span_away_from_fall_corners(
-			cell,
-			side,
-			axis_limit
+		var gaps: Array[Vector2i] = []
+		if not solid_walled_arena:
+			gaps = _wall_gaps_for_side(layout, cell, side, axis_limit)
+		var wall_span := (
+			_walled_arena_wall_span(side, axis_limit)
+			if solid_walled_arena
+			else _wall_axis_span_away_from_fall_corners(
+				cell,
+				side,
+				axis_limit
+			)
 		)
 		# Wall the side, leaving a clean physical opening for every passage so
 		# additional (extra-edge) connections are never sealed shut. If an
@@ -1845,6 +1861,19 @@ func _add_connected_border_walls(
 			wall_span.y,
 			border_obstacle_id
 		)
+
+func _walled_arena_wall_span(
+	side: StringName,
+	axis_limit: int
+) -> Vector2i:
+	# North/south own the four corner footprints. The vertical sides stop at
+	# their inner edges so collision and raised-cliff crowns never overlap.
+	if side == &"west" or side == &"east":
+		return Vector2i(
+			BORDER_THICKNESS,
+			maxi(axis_limit - BORDER_THICKNESS, BORDER_THICKNESS)
+		)
+	return Vector2i(0, axis_limit)
 
 func _wall_gaps_for_side(
 	layout: BiomeEnvironmentLayout,

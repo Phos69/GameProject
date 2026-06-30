@@ -35,7 +35,7 @@ Variabili utili: `GODOT` (binario), `QA_RENDER` (default `gl_compatibility`),
 | Ostacoli / asset | `obstacle_3x3_visual_qa.gd`, `obstacle_asset_visual_qa.gd`, `rock_area_visual_qa.gd`, `void_cliff_generated_visual_qa.gd`, `void_cliff_runtime_visual_qa.gd` |
 | Armi | `weapon_visual_identity_qa.gd`, `weapon_visual_identity_qa_board.gd`, `weapon_visual_identity_survival_qa.gd`, `weapon_tower_visual_qa.gd` |
 | Nemici / boss | `enemy_variants_visual_qa.gd`, `ranged_enemy_visual_qa.gd`, `boss_telegraph_visual_qa.gd`, `rift_architect_visual_qa.gd` |
-| Modalità / arena | `survival_visual_qa.gd`, `final_survival_visual_qa.gd` |
+| Modalità / arena | `survival_visual_qa.gd`, `final_survival_visual_qa.gd`, `infinite_arena_cliff_visual_qa.gd` |
 | UI / HUD / audio | `menu_visual_qa.gd`, `player_world_hud_visual_qa.gd`, `run_results_visual_qa.gd`, `audio_mix_visual_qa.gd`, `downed_revive_visual_qa.gd`, `visual_accessibility_qa.gd` |
 
 > Nota: `weapon_visual_identity_qa.gd` orchestra `weapon_visual_identity_qa_board.gd`

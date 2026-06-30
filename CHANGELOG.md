@@ -8,6 +8,11 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Added
 
+- Infinite Arena rende i quattro lati `BLOCKED` come cliff rocciosi rialzati di
+  sette celle. `BiomeEnvironmentLayout` distingue `procedural_wall` e
+  `raised_cliff`; i segmenti conservano collisioni e Y-sort ma usano materiali
+  world-space continui per parete e plateau. Aggiunti guardrail GUT e QA reale
+  in `tests/visual_qa/infinite_arena_cliff_visual_qa.gd`.
 - Aggiunto il server MCP locale read-only in `tools/mcp-server/`, separato dal
   runtime Godot. Usa Node.js/TypeScript, `@modelcontextprotocol/sdk` e transport
   `stdio`.
@@ -42,6 +47,9 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Fixed
 
+- Chiuso il perimetro `walled` di Infinite Arena anche dove le strade
+  decorative raggiungono il bordo: validazione e `repair_layout()` riconoscono i
+  wall segment come endpoint solidi e preservano il relativo `BiomeObstacle`.
 - Eliminati i residui di shutdown della suite rapida GUT legati a fixture,
   risorse `Script`, children non liberati, cache statiche, dati mondo ciclici,
   UID GUT vendorizzati e proiettili orfani nei test sintetici.
@@ -130,8 +138,9 @@ Questa sezione compatta le milestone chiuse. Le regole di gioco vivono in
 - Resi asset-driven ground, strade, connector, passaggi, cliff, fall zone,
   ostacoli, crate e oggetti ambientali senza rendere obbligatori asset esterni.
 - Aggiunti loader SVG runtime, materiali raster generati, cliff seamless,
-  texture forestali, plateau rocciosi scalabili, occluder Y-sort e footprint
-  slot-based per collisione, spawn blocker e debug `F9`.
+  texture forestali, plateau rocciosi scalabili, raised cliff per Infinite Arena,
+  occluder Y-sort e footprint slot-based per collisione, spawn blocker e debug
+  `F9`.
 - La fallback policy vieta placeholder generici impliciti nel percorso survival
   standard; eventuali fallback tecnici devono essere documentati nel manifest e
   coperti da smoke o asset check.

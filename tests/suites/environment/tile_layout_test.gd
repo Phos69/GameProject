@@ -285,6 +285,12 @@ func test_perimeter_wall_factory_render() -> void:
 		return
 	assert_true(wall.is_perimeter_wall(), "l'ostacolo di bordo e flaggato come muro perimetrale")
 	assert_gt(wall.get_wall_height(), 32.0, "il muro perimetrale renderizza piu alto del suo spessore")
+	assert_eq(
+		wall.get_perimeter_visual_style(),
+		BiomeEnvironmentLayout.PERIMETER_VISUAL_WALL,
+		"il factory wall generico mantiene il renderer procedurale di default"
+	)
+	assert_false(wall.has_raised_cliff_art(), "il factory wall generico non carica cliff art fuori dal profilo arena")
 	if wall.has_method("uses_procedural_fallback"):
 		assert_true(bool(wall.call("uses_procedural_fallback")), "il muro perimetrale usa il volume iso procedurale tileabile")
 	wall.free()

@@ -8,6 +8,9 @@ class_name BiomeObstacle
 const MOVEMENT_BLOCK_LAYER_BIT := 1
 const PROJECTILE_BLOCK_LAYER_BIT := 32
 const BIOME_OBSTACLE_PAINTER := preload("res://game/modes/zombie/biome_obstacle_painter.gd")
+const PERIMETER_CLIFF_PROFILE := preload(
+	"res://game/modes/zombie/cliffs/perimeter_cliff_visual_profile.gd"
+)
 
 var obstacle_id: StringName = &"small_rock"
 var obstacle_category: StringName = &"rock"
@@ -29,6 +32,7 @@ var primary_color: Color = Color(0.38, 0.30, 0.16, 1.0)
 var accent_color: Color = Color(0.74, 0.58, 0.16, 0.82)
 var sort_offset: float = 0.0
 var sort_anchor_y: float = 0.0
+var perimeter_cliff_profile := PERIMETER_CLIFF_PROFILE.new()
 
 func configure(
 	next_obstacle_id: StringName,
@@ -153,6 +157,46 @@ func is_jumpable_obstacle() -> bool:
 func get_obstacle_key() -> StringName:
 	return obstacle_key
 
+func configure_perimeter_visual(
+	next_style: StringName,
+	next_side: StringName,
+	next_uv_origin: Vector2,
+	height_cells: int,
+	logical_tile_scale: float
+) -> void:
+	perimeter_cliff_profile.configure(
+		next_style,
+		next_side,
+		next_uv_origin,
+		height_cells,
+		logical_tile_scale,
+		primary_color,
+		accent_color
+	)
+	texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+	set_meta("perimeter_visual_style", perimeter_cliff_profile.style)
+	set_meta("perimeter_side", perimeter_cliff_profile.side)
+	set_meta("perimeter_uv_origin", perimeter_cliff_profile.uv_origin)
+	queue_redraw()
+
+func get_perimeter_visual_style() -> StringName:
+	return perimeter_cliff_profile.style
+
+func get_perimeter_side() -> StringName:
+	return perimeter_cliff_profile.side
+
+func get_perimeter_uv_origin() -> Vector2:
+	return perimeter_cliff_profile.uv_origin
+
+func get_perimeter_asset_paths() -> Dictionary:
+	return perimeter_cliff_profile.asset_paths.duplicate(true)
+
+func has_raised_cliff_art() -> bool:
+	return perimeter_cliff_profile.has_raised_cliff_art()
+
+func uses_perimeter_visual_fallback() -> bool:
+	return perimeter_cliff_profile.uses_fallback()
+
 func _resolve_collision_shape(
 	manifest_shape: StringName,
 	layout_shape: StringName
@@ -192,6 +236,8 @@ func is_perimeter_wall() -> bool:
 	return obstacle_category == &"border"
 
 func get_wall_height() -> float:
+	if perimeter_cliff_profile.wall_height > 0.0:
+		return perimeter_cliff_profile.wall_height
 	# Tall, readable isometric wall: clearly taller than the footprint thickness.
 	var thickness := minf(obstacle_size.x, obstacle_size.y)
 	return maxf(50.0, thickness * 1.4)
@@ -286,6 +332,17 @@ func _ellipse_points(center: Vector2, radius: Vector2, segments: int) -> PackedV
 	return points
 
 func _draw_iso_perimeter_wall() -> void:
+	if has_raised_cliff_art():
+		BIOME_OBSTACLE_PAINTER.draw_raised_perimeter_cliff(
+			self,
+			obstacle_size,
+			perimeter_cliff_profile.side,
+			get_wall_height(),
+			perimeter_cliff_profile.face_texture,
+			perimeter_cliff_profile.top_texture,
+			perimeter_cliff_profile.uv_origin
+		)
+		return
 	BIOME_OBSTACLE_PAINTER.draw_iso_perimeter_wall(
 		self,
 		obstacle_size,

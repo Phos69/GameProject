@@ -244,6 +244,12 @@ func _assert_default_survival_world(biome_manager: BiomeManager) -> void:
 				outer_fall_count += 1
 	assert_gt(connected_border_count, 0, "default survival contains connected biome passages")
 	assert_gt(outer_fall_count, 0, "default survival keeps fall boundary on the outer world edge")
+	if start_cell != null and start_cell.generated_layout != null:
+		assert_eq(
+			start_cell.generated_layout.perimeter_visual_style,
+			BiomeEnvironmentLayout.PERIMETER_VISUAL_WALL,
+			"default survival keeps thematic procedural perimeter walls"
+		)
 
 func _assert_single_biome_quick_arena(biome_manager: BiomeManager) -> void:
 	assert_eq(biome_manager.get_generated_biome_map().size(), 1, "quick arena profile generates one cell")
@@ -270,6 +276,7 @@ func _assert_walled_infinite_arena_profile(biome_manager: BiomeManager) -> void:
 		return
 	assert_gt(layout.wall_segment_rects.size(), 0, "walled arena emits perimeter wall segments")
 	assert_true(layout.fall_zone_rects.is_empty(), "walled arena has no fall zones")
+	_assert_raised_cliff_layout(layout)
 
 # --- infinite arena come modalità di default (infinite_arena_default_mode) ---
 
@@ -319,6 +326,7 @@ func test_infinite_arena_default() -> void:
 
 	_assert_infinite_arena_world(biome_manager)
 	_assert_arena_terrain_is_solid(scene)
+	_assert_runtime_raised_cliffs(scene, biome_manager)
 
 	main_menu.open_menu()
 	await wait_physics_frames(1)
@@ -348,6 +356,7 @@ func _assert_infinite_arena_world(biome_manager: BiomeManager) -> void:
 	assert_gt(layout.wall_segment_rects.size(), 0, "Infinite Arena layout emits perimeter wall segments")
 	assert_true(layout.fall_zone_rects.is_empty(), "Infinite Arena layout has no fall boundary")
 	assert_true(bool(layout.validation_report.get("is_valid", false)), "Infinite Arena layout passes validation")
+	_assert_raised_cliff_layout(layout)
 
 func _assert_arena_terrain_is_solid(scene) -> void:
 	var hazard_system: HazardSystem = scene.node(&"hazard_system") as HazardSystem
@@ -358,6 +367,86 @@ func _assert_arena_terrain_is_solid(scene) -> void:
 	var player: Node2D = scene.node(&"players") as Node2D
 	if player != null:
 		assert_false(hazard_system.is_void_at_world_position(player.global_position), "Infinite Arena player spawn is not classified as void")
+
+func _assert_raised_cliff_layout(layout: BiomeEnvironmentLayout) -> void:
+	assert_eq(
+		layout.perimeter_visual_style,
+		BiomeEnvironmentLayout.PERIMETER_VISUAL_RAISED_CLIFF,
+		"walled arena selects raised cliff perimeter art"
+	)
+	assert_eq(
+		layout.wall_height_cells,
+		BiomeEnvironmentLayout.RAISED_CLIFF_HEIGHT_CELLS,
+		"raised arena cliff uses the shared seven-cell height"
+	)
+	for side in BiomeCell.SIDES:
+		var segments := layout.get_wall_segments_for_side(side)
+		assert_false(segments.is_empty(), "raised cliff covers %s side" % String(side))
+		var vertical := side == &"west" or side == &"east"
+		var covered := 0
+		for rect in segments:
+			covered += rect.size.y if vertical else rect.size.x
+		var expected := (
+			layout.zone_size.y - ObstacleLayoutGenerator.BORDER_THICKNESS * 2
+			if vertical
+			else layout.zone_size.x
+		)
+		assert_eq(covered, expected, "raised cliff %s side has no decorative-road gap" % String(side))
+		for rect in segments:
+			assert_true(
+				layout.obstacle_rects.has(rect),
+				"raised cliff %s segment keeps its runtime collision obstacle" % String(side)
+			)
+	var midpoint := layout.zone_size / 2
+	assert_true(layout.is_wall_segment_cell(Vector2i(midpoint.x, 0)), "north road terminates at the raised cliff")
+	assert_true(layout.is_wall_segment_cell(Vector2i(midpoint.x, layout.zone_size.y - 1)), "south road terminates at the raised cliff")
+	assert_true(layout.is_wall_segment_cell(Vector2i(0, midpoint.y)), "west road terminates at the raised cliff")
+	assert_true(layout.is_wall_segment_cell(Vector2i(layout.zone_size.x - 1, midpoint.y)), "east road terminates at the raised cliff")
+
+func _assert_runtime_raised_cliffs(
+	scene: MainSceneFixture,
+	biome_manager: BiomeManager
+) -> void:
+	var perimeter_count := 0
+	for node in scene.nodes(&"environment_obstacles"):
+		var obstacle := node as BiomeObstacle
+		if obstacle == null or not obstacle.is_perimeter_wall():
+			continue
+		perimeter_count += 1
+		assert_eq(
+			obstacle.get_perimeter_visual_style(),
+			BiomeEnvironmentLayout.PERIMETER_VISUAL_RAISED_CLIFF,
+			"runtime arena perimeter obstacle uses raised cliff art"
+		)
+		assert_true(obstacle.has_raised_cliff_art(), "runtime raised cliff loads face and crown textures")
+		assert_false(obstacle.uses_perimeter_visual_fallback(), "runtime raised cliff avoids procedural wall fallback")
+		assert_eq(obstacle.get_wall_height(), 56.0, "runtime raised cliff is seven logical cells high")
+		assert_true(
+			(obstacle.collision_layer & BiomeObstacle.MOVEMENT_BLOCK_LAYER_BIT) != 0,
+			"runtime raised cliff still blocks movement"
+		)
+		assert_true(
+			(obstacle.collision_layer & BiomeObstacle.PROJECTILE_BLOCK_LAYER_BIT) != 0,
+			"runtime raised cliff still blocks projectiles"
+		)
+		var record := obstacle.get_meta("obstacle_record", {}) as Dictionary
+		var occupied_cells := record.get("occupied_cells", Rect2i()) as Rect2i
+		assert_eq(
+			obstacle.get_perimeter_uv_origin(),
+			Vector2(occupied_cells.position) * 8.0,
+			"runtime raised cliff UV origin follows its generated wall segment"
+		)
+	var cell := biome_manager.get_current_biome_cell()
+	var expected_count := (
+		cell.generated_layout.wall_segment_rects.size()
+		if cell != null and cell.generated_layout != null
+		else 0
+	)
+	assert_eq(
+		perimeter_count,
+		expected_count,
+		"Infinite Arena instantiates every generated raised cliff segment"
+	)
 
 # --- helper -----------------------------------------------------------------
 
