@@ -22,7 +22,8 @@ describe("MCP tool handlers", () => {
       "run_safe_check",
       "asset_inventory",
       "codex_task_brief",
-      "git_context"
+      "git_context",
+      "find_symbol"
     ]));
   });
 
@@ -37,6 +38,26 @@ describe("MCP tool handlers", () => {
     const response = await callProjectTool(root, "git_context", { command: "push" });
     expect(response.isError).toBe(true);
     expect(parseToolText(response).error).toContain("Unsupported git command");
+  });
+
+  it("finds GDScript declarations by name", async () => {
+    const result = parseToolText(await callProjectTool(root, "find_symbol", {
+      query: "ResourceCrateSystem",
+      exact: true
+    }));
+    expect(result.resultCount).toBeGreaterThan(0);
+    const match = result.results.find((item: { kind: string }) => item.kind === "class_name");
+    expect(match).toBeTruthy();
+    expect(match.path).toBe("game/modes/zombie/resource_crate_system.gd");
+  });
+
+  it("filters find_symbol results by kind", async () => {
+    const result = parseToolText(await callProjectTool(root, "find_symbol", {
+      query: "spawn_encounter_crate",
+      kind: ["func"]
+    }));
+    expect(result.results.every((item: { kind: string }) => item.kind === "func")).toBe(true);
+    expect(result.results.some((item: { path: string }) => item.path === "game/modes/zombie/resource_crate_system.gd")).toBe(true);
   });
 
   it("builds a repository overview from real files", async () => {

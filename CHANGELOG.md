@@ -39,10 +39,12 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
   `stdio`.
 - Aggiunti gli script npm root `mcp:start`, `mcp:dev`, `mcp:build`,
   `mcp:test` e `mcp:smoke`, delegati al package `tools/mcp-server/`.
-- Esposti 10 tool MCP: `repo_overview`, `list_project_files`,
+- Esposti 11 tool MCP: `repo_overview`, `list_project_files`,
   `read_project_context`, `search_project`, `game_system_summary`,
-  `roadmap_context`, `run_safe_check`, `asset_inventory`, `codex_task_brief` e
-  `git_context` (status/log/diff read-only, solo sottocomandi allowlisted).
+  `roadmap_context`, `run_safe_check`, `asset_inventory`, `codex_task_brief`,
+  `git_context` (status/log/diff read-only, solo sottocomandi allowlisted) e
+  `find_symbol` (indice a runtime di `class_name`, `extends`, `func`,
+  `signal`, `const`, `enum` e classi interne GDScript, per nome e tipo).
 - Esposti 5 prompt MCP operativi: `audit_isometric_generation`,
   `improve_zombie_mode`, `implement_roadmap_milestone`,
   `refactor_gameplay_system` e `asset_quality_pass`.
@@ -147,9 +149,10 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 - `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/assets -Select texture_cache`:
   1 test, 13 assert, passa.
 - `npm run mcp:build`: passa.
-- `npm run mcp:test`: 5 file test (aggiunto `git_context` e detection della root
-  via marker `project.godot`); da rieseguire in locale dove Node è installato.
-- `npm run mcp:smoke`: attesa lista di 10 tool MCP e 5 prompt.
+- `npm run mcp:test`: 5 file test (aggiunti `git_context`, `find_symbol` e
+  detection della root via marker `project.godot`); da rieseguire in locale
+  dove Node è installato.
+- `npm run mcp:smoke`: attesa lista di 11 tool MCP e 5 prompt.
 - Nota locale: `npm run mcp:smoke` stampa un warning npm su
   `metrics-registry`; non blocca build, test o smoke.
 

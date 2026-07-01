@@ -1176,6 +1176,9 @@ Contratto operativo:
   build output, vendor pesanti e lockfile non richiesti;
 - `git_context` espone solo status/log/diff read-only via sottocomandi git
   allowlisted, senza shell arbitraria, con path validato e output troncato;
+- `find_symbol` indicizza a runtime le dichiarazioni GDScript (`class_name`,
+  `extends`, `func`, `signal`, `const`, `enum`, classi interne) per nome e
+  tipo, senza mantenere una cache persistente su disco;
 - `repo_overview`, `game_system_summary`, `roadmap_context`,
   `asset_inventory` e `codex_task_brief` ricavano il contesto dai file reali
   della repo, non da supposizioni hardcoded;

@@ -256,6 +256,23 @@ Input:
 
 Il path è repo-relative, validato contro il traversal e passato dopo `--`. Output troncato al limite del server.
 
+### `find_symbol`
+
+Cerca dichiarazioni GDScript per nome in tutti i file `.gd`.
+
+Input:
+
+```json
+{
+  "query": "ZombieSpawner",
+  "kind": ["class_name", "func"],
+  "exact": false,
+  "maxResults": 50
+}
+```
+
+Tipi (`kind`) supportati: `class_name`, `inner_class`, `extends`, `func`, `signal`, `const`, `enum`. Senza `query` elenca tutte le dichiarazioni del tipo richiesto (utile per navigare, es. tutte le `class_name` della repo). Output: nome, tipo, path, riga e riga sorgente (`signature`).
+
 ## Prompt MCP
 
 Il server espone questi template:
@@ -290,4 +307,4 @@ Manual/smoke MCP:
 npm run mcp:smoke
 ```
 
-Output atteso: lista dei 10 tool e dei 5 prompt.
+Output atteso: lista degli 11 tool e dei 5 prompt.

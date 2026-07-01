@@ -19,6 +19,7 @@ import {
 import { searchProject } from "./search.js";
 import { listSafeChecks, runSafeCheck } from "./safe_checks.js";
 import { gitContext } from "./git.js";
+import { findSymbols } from "./symbols.js";
 
 export type ToolResponse = {
   content: Array<{ type: "text"; text: string }>;
@@ -130,6 +131,25 @@ export const TOOL_DEFINITIONS = [
       required: ["command"],
       additionalProperties: false
     }
+  },
+  {
+    name: "find_symbol",
+    description: "Find GDScript declarations (class_name, extends, func, signal, const, enum, inner class) by name across .gd files, with file and line.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "Substring or exact name to match. Omit to list all declarations of the given kind." },
+        kind: {
+          type: "array",
+          items: { type: "string" },
+          description: "Optional filter: class_name, inner_class, extends, func, signal, const, enum. Defaults to all."
+        },
+        exact: { type: "boolean", description: "Require an exact name match instead of substring." },
+        maxResults: { type: "number", description: "Maximum matches to return. Capped by the server." },
+        maxFileBytes: { type: "number", description: "Per-file scan limit. Capped by the server." }
+      },
+      additionalProperties: false
+    }
   }
 ] as const;
 
@@ -171,6 +191,8 @@ export async function callProjectTool(root: string, name: string, args: Record<s
         return jsonContent(await codexTaskBrief(root, args));
       case "git_context":
         return jsonContent(await gitContext(root, args));
+      case "find_symbol":
+        return jsonContent(await findSymbols(root, args));
       default:
         return jsonContent({ error: `Unknown tool '${name}'.` }, true);
     }

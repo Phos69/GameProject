@@ -28,8 +28,8 @@ try {
     promptCount: prompts.prompts.length,
     prompts: prompts.prompts.map((prompt) => prompt.name)
   }, null, 2));
-  if (tools.tools.length < 10) {
-    throw new Error(`Expected at least 10 tools, got ${tools.tools.length}.`);
+  if (tools.tools.length < 11) {
+    throw new Error(`Expected at least 11 tools, got ${tools.tools.length}.`);
   }
   await client.close();
 } catch (error) {
