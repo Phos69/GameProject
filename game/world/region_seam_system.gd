@@ -118,10 +118,8 @@ func get_region_id_for_world_position(world_position: Vector2) -> StringName:
 	if graph == null:
 		return &""
 	var world_tile := world_position_to_logical_tile(world_position)
-	for region in graph.get_regions_sorted():
-		if region_contains_world_tile(region, world_tile):
-			return region.region_id
-	return &""
+	var region := graph.get_region_at_world_tile(world_tile)
+	return region.region_id if region != null else &""
 
 func world_position_to_logical_tile(world_position: Vector2) -> Vector2i:
 	var anchor := _get_anchor_region()

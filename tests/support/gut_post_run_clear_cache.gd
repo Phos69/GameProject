@@ -10,6 +10,9 @@ extends GutHookScript
 const SVG_TEXTURE_LOADER = preload(
 	"res://game/modes/zombie/isometric_svg_texture_loader.gd"
 )
+const GENERATED_TEXTURE_TOOLS = preload(
+	"res://game/modes/zombie/generated_biome_texture_tools.gd"
+)
 
 func run() -> void:
 	for _index in range(3):
@@ -18,4 +21,5 @@ func run() -> void:
 	WorldDataCache.clear()
 	IsometricEnvironmentManifest.clear_shared()
 	SVG_TEXTURE_LOADER.clear_cache()
+	GENERATED_TEXTURE_TOOLS.clear_cache()
 	IsometricEnvironmentObject.clear_content_metrics_cache()

@@ -7,6 +7,17 @@ var regions: Dictionary = {}
 var connections: Array[WorldRegionConnection] = []
 var start_region_id: StringName = &""
 
+# Lookup memoizzate: il grafo e' di sola lettura dopo configure_from_biome_cells
+# / from_save_data, ma queste query girano per-frame (seam system, tracking
+# nemici, pathfinder) e ricostruire/ordinare le regioni a ogni chiamata dominava
+# il costo. Le cache si ricostruiscono in modo lazy quando _region_lookup_dirty.
+var _sorted_regions_cache: Array[WorldRegion] = []
+var _regions_by_grid: Dictionary = {}
+var _region_lookup_dirty: bool = true
+# Vero quando ogni regione rispetta world_origin == grid_position * region_size
+# con size uniforme: consente la lookup O(1) tile->regione per divisione intera.
+var _uniform_grid_lookup: bool = false
+
 func configure_from_biome_cells(
 	cells: Array[BiomeCell],
 	seed: int
@@ -15,6 +26,7 @@ func configure_from_biome_cells(
 	regions.clear()
 	connections.clear()
 	start_region_id = &""
+	_region_lookup_dirty = true
 	for cell in cells:
 		var region := WorldRegion.new()
 		region.configure_from_cell(cell)
@@ -39,14 +51,8 @@ func get_region(region_id: StringName) -> WorldRegion:
 	return regions.get(region_id, null) as WorldRegion
 
 func get_regions_sorted() -> Array[WorldRegion]:
-	var ids := regions.keys()
-	ids.sort()
-	var result: Array[WorldRegion] = []
-	for region_id in ids:
-		var region := get_region(region_id)
-		if region != null:
-			result.append(region)
-	return result
+	_rebuild_region_lookup_if_needed()
+	return _sorted_regions_cache.duplicate()
 
 func get_connection_count() -> int:
 	var undirected := {}
@@ -72,11 +78,59 @@ func get_connections_for_region(region_id: StringName) -> Array[WorldRegionConne
 	return region.connection_edges.duplicate() if region != null else []
 
 func get_region_at_grid(grid_position: Vector2i) -> WorldRegion:
-	for region in regions.values():
-		var typed_region := region as WorldRegion
-		if typed_region != null and typed_region.grid_position == grid_position:
-			return typed_region
+	_rebuild_region_lookup_if_needed()
+	return _regions_by_grid.get(grid_position) as WorldRegion
+
+## Regione che contiene il tile logico mondo, o null se fuori da ogni regione.
+## O(1) sul layout a griglia uniforme prodotto dalla generazione; degrada a una
+## scansione lineare (senza sort/allocazioni) solo su layout non uniformi.
+func get_region_at_world_tile(world_tile: Vector2i) -> WorldRegion:
+	_rebuild_region_lookup_if_needed()
+	if _uniform_grid_lookup:
+		var grid := Vector2i(
+			floori(float(world_tile.x) / float(region_size.x)),
+			floori(float(world_tile.y) / float(region_size.y))
+		)
+		var region := _regions_by_grid.get(grid) as WorldRegion
+		if (
+			region != null
+			and Rect2i(region.world_origin, region.size_tiles).has_point(world_tile)
+		):
+			return region
+		return null
+	for region in _sorted_regions_cache:
+		if Rect2i(region.world_origin, region.size_tiles).has_point(world_tile):
+			return region
 	return null
+
+func _rebuild_region_lookup_if_needed() -> void:
+	if not _region_lookup_dirty:
+		return
+	_region_lookup_dirty = false
+	var ids := regions.keys()
+	ids.sort()
+	var sorted_regions: Array[WorldRegion] = []
+	_regions_by_grid = {}
+	_uniform_grid_lookup = (
+		not regions.is_empty()
+		and region_size.x > 0
+		and region_size.y > 0
+	)
+	for region_id in ids:
+		var region := get_region(region_id)
+		if region == null:
+			continue
+		sorted_regions.append(region)
+		_regions_by_grid[region.grid_position] = region
+		if (
+			region.size_tiles != region_size
+			or region.world_origin != Vector2i(
+				region.grid_position.x * region_size.x,
+				region.grid_position.y * region_size.y
+			)
+		):
+			_uniform_grid_lookup = false
+	_sorted_regions_cache = sorted_regions
 
 func is_graph_connected() -> bool:
 	if regions.is_empty():
@@ -197,6 +251,7 @@ static func from_save_data(data: Dictionary) -> WorldGraph:
 	for region_value in data.get("regions", []):
 		var region := WorldRegion.from_save_data(region_value as Dictionary)
 		graph.regions[region.region_id] = region
+	graph._region_lookup_dirty = true
 	for connection_value in data.get("connections", []):
 		var connection := WorldRegionConnection.from_save_data(
 			connection_value as Dictionary

@@ -755,18 +755,22 @@ func _load_generated_cliff_texture(asset_path: String) -> Texture2D:
 	return _trim_repeating_texture(
 		texture,
 		_generated_cliff_texture_edge_trim_pixels(),
-		_should_harmonize_generated_cliff_edges()
+		_should_harmonize_generated_cliff_edges(),
+		asset_path
 	)
 
 func _trim_repeating_texture(
 	texture: Texture2D,
 	trim: int,
-	harmonize_edges: bool = false
+	harmonize_edges: bool = false,
+	cache_key: String = ""
 ) -> Texture2D:
 	return GENERATED_TEXTURE_TOOLS.normalize_repeating_texture(
 		texture,
 		trim,
-		harmonize_edges
+		harmonize_edges,
+		GENERATED_TEXTURE_TOOLS.BURNING_FIELDS_EDGE_BLEND_PIXELS,
+		cache_key
 	)
 
 func _generated_surface_texture_edge_trim_pixels() -> int:

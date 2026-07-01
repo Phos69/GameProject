@@ -9,6 +9,20 @@ const FROZEN_ROUTE_SNOW_BLEND := 0.16
 const FROZEN_ROAD_SNOW_BLEND := 0.24
 const FROZEN_SNOW_BLEND_COLOR := Color(0.82, 0.90, 0.97, 1.0)
 
+# Cache di sessione delle texture normalizzate, keyed su asset_path + parametri.
+# La normalizzazione gira pixel-per-pixel in GDScript: senza cache veniva rifatta
+# a ogni configure() di regione (hitch sul main thread durante lo streaming) e
+# ogni chiamata caricava in VRAM una ImageTexture duplicata della stessa asset.
+# Il path identifica il contenuto sorgente perche' gli asset generati sono PNG
+# raster serviti dalla cache per-path di IsometricSvgTextureLoader.
+static var _normalized_texture_cache: Dictionary = {}
+
+static func clear_cache() -> void:
+	_normalized_texture_cache.clear()
+
+static func get_cached_normalized_texture_count() -> int:
+	return _normalized_texture_cache.size()
+
 static func surface_edge_trim_pixels(biome_id: StringName) -> int:
 	if biome_id == &"burning_fields":
 		return BURNING_FIELDS_GENERATED_TEXTURE_EDGE_TRIM_PIXELS
@@ -28,20 +42,63 @@ static func normalize_surface_texture(
 	biome_id: StringName,
 	asset_path: String
 ) -> Texture2D:
-	var normalized := normalize_repeating_texture(
+	if texture == null:
+		return null
+	# Trim/harmonize/blend neve derivano tutti da biome_id + asset_path, quindi
+	# la coppia identifica completamente l'output normalizzato.
+	var cache_key := "surface|%s|%s" % [String(biome_id), asset_path]
+	if not asset_path.is_empty() and _normalized_texture_cache.has(cache_key):
+		return _normalized_texture_cache[cache_key] as Texture2D
+	var normalized := _normalize_repeating_texture_uncached(
 		texture,
 		surface_edge_trim_pixels(biome_id),
-		should_harmonize_surface_edges(biome_id)
+		should_harmonize_surface_edges(biome_id),
+		BURNING_FIELDS_EDGE_BLEND_PIXELS
 	)
-	if biome_id != &"frozen_outskirts":
-		return normalized
-	return _harmonize_frozen_surface_texture(normalized, asset_path)
+	if biome_id == &"frozen_outskirts":
+		normalized = _harmonize_frozen_surface_texture(normalized, asset_path)
+	if not asset_path.is_empty() and normalized != null:
+		_normalized_texture_cache[cache_key] = normalized
+	return normalized
 
+## `cache_key` (di norma l'asset_path sorgente) abilita la cache di sessione:
+## vuoto = normalizzazione sempre ricalcolata (input non identificabili per path).
 static func normalize_repeating_texture(
 	texture: Texture2D,
 	trim: int,
 	harmonize_edges: bool = false,
-	blend_pixels: int = BURNING_FIELDS_EDGE_BLEND_PIXELS
+	blend_pixels: int = BURNING_FIELDS_EDGE_BLEND_PIXELS,
+	cache_key: String = ""
+) -> Texture2D:
+	if texture == null:
+		return null
+	var full_key := ""
+	if not cache_key.is_empty():
+		full_key = "repeat|%s|%d|%s|%d" % [
+			cache_key,
+			trim,
+			str(harmonize_edges),
+			blend_pixels
+		]
+		if _normalized_texture_cache.has(full_key):
+			return _normalized_texture_cache[full_key] as Texture2D
+	var result := _normalize_repeating_texture_uncached(
+		texture,
+		trim,
+		harmonize_edges,
+		blend_pixels
+	)
+	# Anche i passthrough (immagine non leggibile) vengono cache-ati: rifallire
+	# costa comunque un get_image() dalla VRAM a ogni chiamata.
+	if not full_key.is_empty() and result != null:
+		_normalized_texture_cache[full_key] = result
+	return result
+
+static func _normalize_repeating_texture_uncached(
+	texture: Texture2D,
+	trim: int,
+	harmonize_edges: bool,
+	blend_pixels: int
 ) -> Texture2D:
 	if texture == null:
 		return null

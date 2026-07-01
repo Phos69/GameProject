@@ -136,5 +136,7 @@ func _load_generated_repeating_texture(
 	return GENERATED_TEXTURE_TOOLS.normalize_repeating_texture(
 		texture,
 		trim,
-		harmonize_edges
+		harmonize_edges,
+		GENERATED_TEXTURE_TOOLS.BURNING_FIELDS_EDGE_BLEND_PIXELS,
+		asset_path
 	)
