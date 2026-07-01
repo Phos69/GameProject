@@ -114,7 +114,9 @@ func _update_ranged_movement(delta: float, distance_to_target: float) -> void:
 	var direction := global_position.direction_to(target.global_position)
 	var desired_velocity := Vector2.ZERO
 	if distance_to_target > preferred_distance:
-		desired_velocity = direction * move_speed
+		# Approach through the pathfinder so ranged enemies also route around
+		# obstacles/pits; retreat and strafe stay direct (short close-range moves).
+		desired_velocity = _navigate_direction(target.global_position, delta) * move_speed
 		_set_state(State.CHASE)
 	elif distance_to_target < retreat_distance:
 		desired_velocity = -direction * move_speed

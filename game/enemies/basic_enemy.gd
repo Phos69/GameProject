@@ -15,6 +15,9 @@ enum State {
 }
 
 @export var enemy_id: StringName = &"basic_zombie"
+## AI level for pathfinding: 0 = avoid obstacles only (may fall into pits),
+## 1 = also avoid pits. See EnemyPathfinder. Overwritten by the enemy profile.
+@export var ai_level: int = 0
 @export var move_speed: float = 95.0
 @export var acceleration: float = 650.0
 @export var detection_range: float = 900.0
@@ -58,6 +61,9 @@ var spawn_region_id: StringName = &""
 var current_region_id: StringName = &""
 var last_seen_player_region_id: StringName = &""
 var death_reason: StringName = &"combat"
+var _pathfinder: EnemyPathfinder
+var _obstacle_system: ObstacleSystem
+var _hazard_system: HazardSystem
 
 func _ready() -> void:
 	add_to_group("enemies")
@@ -104,7 +110,7 @@ func _physics_process(delta: float) -> void:
 	var distance_to_target := global_position.distance_to(target.global_position)
 	if distance_to_target > attack_range:
 		_set_state(State.CHASE)
-		var direction := global_position.direction_to(target.global_position)
+		var direction := _navigate_direction(target.global_position, delta)
 		velocity = velocity.move_toward(direction * move_speed, acceleration * delta)
 	else:
 		_set_state(State.ATTACK)
@@ -161,7 +167,11 @@ func modify_incoming_damage(
 
 func _select_target() -> void:
 	var nearest_target: Node2D
-	var nearest_distance := detection_range
+	# Once locked onto a live target the enemy never gives up because of distance:
+	# detection_range only gates ACQUIRING a new target, not retaining the current
+	# one. An already-valid target lets the search run unbounded so the enemy keeps
+	# chasing (and can still re-lock onto a nearer player in multiplayer).
+	var nearest_distance := INF if _is_valid_target(target) else detection_range
 	for candidate in get_tree().get_nodes_in_group("players"):
 		if not candidate is Node2D or not _is_valid_target(candidate as Node2D):
 			continue
@@ -175,6 +185,28 @@ func _select_target() -> void:
 	target = nearest_target
 	_update_last_seen_player_region()
 	target_changed.emit(target)
+
+## Steer toward `to` using the AI-level pathfinder (obstacle/pit avoidance).
+## Falls back to a direct seek whenever the runtime systems are unavailable.
+func _navigate_direction(to: Vector2, delta: float) -> Vector2:
+	if _pathfinder == null:
+		_pathfinder = EnemyPathfinder.new()
+	if _obstacle_system == null:
+		_obstacle_system = get_tree().get_first_node_in_group(
+			"obstacle_system"
+		) as ObstacleSystem
+	if _hazard_system == null:
+		_hazard_system = get_tree().get_first_node_in_group(
+			"hazard_system"
+		) as HazardSystem
+	return _pathfinder.desired_direction(
+		global_position,
+		to,
+		ai_level,
+		delta,
+		_obstacle_system,
+		_hazard_system
+	)
 
 func _is_valid_target(candidate: Node2D) -> bool:
 	if candidate == null or not is_instance_valid(candidate) or candidate.is_queued_for_deletion():
@@ -353,6 +385,7 @@ func _grant_kill_experience() -> void:
 		rpg_component.notify_kill_confirmed()
 
 func _apply_enemy_profile(profile: BiomeEnemyProfile) -> void:
+	ai_level = profile.ai_level
 	move_speed = profile.move_speed
 	acceleration = profile.acceleration
 	attack_range = profile.attack_range
