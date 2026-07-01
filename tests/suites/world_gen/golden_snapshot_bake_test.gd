@@ -156,6 +156,6 @@ func test_tile_bake_cache_roundtrips() -> void:
 		})
 		legacy_file.close()
 	assert_true(TileBakeCache.fetch(key, 2).is_empty(),
-		"TileBakeCache v4 invalida automaticamente il formato v3")
+		"TileBakeCache invalida automaticamente un formato legacy")
 	TileBakeCache.clear()
 	TileBakeCache.set_enabled(false)

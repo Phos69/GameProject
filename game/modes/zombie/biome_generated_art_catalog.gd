@@ -385,7 +385,11 @@ static func _surface_role_for_file(
 ) -> StringName:
 	if (
 		theme_id == &"frozen_tundra"
-		and file_name.contains("base_ground_variation_04")
+		and (
+			file_name.contains("base_ground_variation_02")
+			or file_name.contains("base_ground_variation_03")
+			or file_name.contains("base_ground_variation_04")
+		)
 	):
 		return ROLE_DETAIL
 	if (

@@ -7,6 +7,9 @@ const TEXTURE_LOADER := preload(
 const GENERATED_ART_CATALOG := preload(
 	"res://game/modes/zombie/biome_generated_art_catalog.gd"
 )
+const GENERATED_TEXTURE_TOOLS := preload(
+	"res://game/modes/zombie/generated_biome_texture_tools.gd"
+)
 const FACE_TEXTURE_ID := &"rock_cliff_face_texture"
 const TOP_OBJECT_ID := &"large_rock"
 const TEXTURE_SIZE := Vector2i(512, 512)
@@ -76,17 +79,19 @@ func _load_textures(
 			&"face": face_path,
 			&"top": top_path,
 		}
-		face_texture = TEXTURE_LOADER.load_texture(
+		face_texture = _load_generated_repeating_texture(
 			face_path,
 			primary_color,
 			accent_color,
-			TEXTURE_SIZE
+			GENERATED_TEXTURE_TOOLS.cliff_edge_trim_pixels(biome_id),
+			GENERATED_TEXTURE_TOOLS.should_harmonize_cliff_edges(biome_id)
 		)
-		top_texture = TEXTURE_LOADER.load_texture(
+		top_texture = _load_generated_repeating_texture(
 			top_path,
 			primary_color,
 			accent_color,
-			TEXTURE_SIZE
+			GENERATED_TEXTURE_TOOLS.surface_edge_trim_pixels(biome_id),
+			GENERATED_TEXTURE_TOOLS.should_harmonize_surface_edges(biome_id)
 		)
 		return
 	var manifest := IsometricEnvironmentManifest.get_shared()
@@ -111,4 +116,25 @@ func _load_textures(
 		primary_color,
 		accent_color,
 		TEXTURE_SIZE
+	)
+
+func _load_generated_repeating_texture(
+	asset_path: String,
+	primary_color: Color,
+	accent_color: Color,
+	trim: int,
+	harmonize_edges: bool
+) -> Texture2D:
+	var texture := TEXTURE_LOADER.load_texture(
+		asset_path,
+		primary_color,
+		accent_color,
+		TEXTURE_SIZE
+	)
+	if texture == null:
+		return null
+	return GENERATED_TEXTURE_TOOLS.normalize_repeating_texture(
+		texture,
+		trim,
+		harmonize_edges
 	)

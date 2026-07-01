@@ -116,6 +116,11 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Fixed
 
+- Normalizzato in modo sistematico il caricamento runtime dei cliff PNG
+  generati: facce, lip e varianti dei biomi avanzati ora tagliano il bordo
+  chiaro, propagano i colori nei pixel alpha e condividono la stessa policy tra
+  `BiomeTileLayer` e raised cliff perimetrali, riducendo le strisce bianche tra
+  texture cliff di biomi diversi.
 - `boss_telegraph_visual_qa.gd` attende ora che le regioni streaming siano FULL,
   i tile layer abbiano finito il bake e i chunk visibili/prefetch siano residenti
   prima di salvare gli screenshot dei telegraph boss.
@@ -126,6 +131,10 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 - Reso piu armonico `frozen_outskirts`: passaggi e ground non alternano piu
   materiali neve/ghiaccio per-cella o detail decal a piena superficie, riducendo
   i blocchi ad alto contrasto nelle catture QA.
+- Rifinito ulteriormente `frozen_outskirts`: il ground pieno usa solo la base
+  neve pulita, mentre path e road generated vengono ammorbiditi verso la palette
+  neve a runtime. `TileBakeCache.FORMAT_VERSION` sale a `9` per rigenerare le
+  mappe materiali persistite.
 - Reso piu armonico `drowned_marsh`: il ground runtime non usa piu detail decal
   o tile pieni di muschio/ninfee come superficie base, riducendo il mosaico
   acqua/fango/vegetazione nelle catture QA.
@@ -175,11 +184,11 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 - `./tools/run_visual_qa.ps1 -SkipImport -Filter boss_telegraph`: 1 Visual QA,
   passa.
 - `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/assets -Select generated_texture`:
-  21 test, 1461 assert, passa.
+  21 test, 1680 assert, passa.
 - `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/assets`: 59
   test, 8325 assert, passa.
 - `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/world_gen -Select golden_snapshot_bake`:
-  4 test, 18 assert, passa.
+  4 test, 20 assert, passa.
 - `./tools/run_visual_qa.ps1 -SkipImport -Filter biome_rendering_review`: 1
   Visual QA, passa; rigenerate 150 catture in
   `build/qa/biome_rendering_review/`.

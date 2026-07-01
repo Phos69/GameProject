@@ -190,6 +190,10 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
   distanza e direzione di movimento.
 - `BiomeTileChunkBaker` e `BiomeTileChunk`: commit main-thread dei dati visuali
   e nodo CanvasItem proprietario delle mesh, texture e linee di un chunk.
+- `GeneratedBiomeTextureTools`: normalizzazione condivisa dei PNG generati usati
+  in repeat runtime; applica crop dei bordi chiari, fix dei pixel alpha e la
+  stessa policy a ground, cliff/void e raised cliff perimetrali senza cambiare
+  classificazione, collisioni o pathfinding.
 - `WorldGenerationSeed`: seed globale di run e derivazione deterministica degli stream RNG per mappa, terreno, ostacoli, bordi, loot e spawn.
 - `BiomeWorldGenerator`: orchestratore della pipeline procedurale globale per mappa biomi, layout per cella e debug seed.
 - `WorldDataCache`: cache LRU in memoria e su disco dei `world_data` generati.

@@ -114,6 +114,7 @@ const GENERATED_BIOME_PASSAGE_TAGS: Dictionary = {
 	&"frozen_outskirts": &"snow_pass",
 	&"drowned_marsh": &"bridge",
 }
+const FROZEN_SNOW_REFERENCE := Color(0.82, 0.90, 0.97, 1.0)
 
 func test_generated_biome_catalog_contract() -> void:
 	var failures := BiomeGeneratedArtCatalog.validate_catalog()
@@ -219,8 +220,14 @@ func test_frozen_surface_selection_uses_coherent_materials() -> void:
 			"frozen ground avoids full-surface detail decals"
 		)
 		assert_false(
-			ground_path.contains("base_ground_variation_04"),
-			"frozen ground avoids ice-sheet blocks as the base surface"
+			ground_path.contains("base_ground_variation_02")
+			or ground_path.contains("base_ground_variation_03")
+			or ground_path.contains("base_ground_variation_04"),
+			"frozen ground keeps dirty snow and ice sheets out of the base surface"
+		)
+		assert_true(
+			ground_path.contains("base_ground_variation_01"),
+			"frozen ground uses the clean snow material as its full-surface base"
 		)
 	var coherent_roles: Array[StringName] = [
 		BiomeGeneratedArtCatalog.ROLE_PATH,
@@ -544,6 +551,19 @@ func test_generated_biome_runtime_consumption() -> void:
 				0.04,
 				"burning_fields runtime surface harmonizes opposite edges"
 			)
+		if biome_id == &"frozen_outskirts":
+			_assert_frozen_route_textures_are_snow_softened(
+				layer,
+				"path_variation",
+				expected_surface_trim,
+				"frozen path"
+			)
+			_assert_frozen_route_textures_are_snow_softened(
+				layer,
+				"road_variation",
+				expected_surface_trim,
+				"frozen road"
+			)
 		var selected_material_ids: Dictionary = {}
 		var selected_material_paths: Dictionary = {}
 		for y in range(layout.zone_size.y):
@@ -615,8 +635,26 @@ func test_generated_biome_runtime_consumption() -> void:
 		assert_eq(
 			layer._cliff_lip_texture.get_width(),
 			cliff_lip_source_image.get_width() - expected_cliff_trim * 2,
-			"%s trims generated cliff lips only where the source has matte edges"
+			"%s trims generated cliff lips before repeat sampling"
 			% String(biome_id)
+		)
+		_assert_generated_cliff_texture_is_normalized(
+			layer._cliff_face_texture,
+			String(cliff_paths.get(&"cliff_face_texture", "")),
+			expected_cliff_trim,
+			"%s cliff face" % String(biome_id)
+		)
+		_assert_generated_cliff_texture_is_normalized(
+			layer._cliff_lip_texture,
+			String(cliff_paths.get(&"cliff_lip_texture", "")),
+			expected_cliff_trim,
+			"%s horizontal cliff lip" % String(biome_id)
+		)
+		_assert_generated_cliff_texture_is_normalized(
+			layer._cliff_lip_vertical_texture,
+			String(cliff_paths.get(&"cliff_lip_vertical_texture", "")),
+			expected_cliff_trim,
+			"%s vertical cliff lip" % String(biome_id)
 		)
 		if biome_id == &"burning_fields":
 			var runtime_cliff_lip_image := layer._cliff_lip_texture.get_image()
@@ -734,6 +772,18 @@ func test_generated_biome_upward_cliff_profiles() -> void:
 		assert_true(
 			String(paths.get(&"top", "")).contains("/%s/" % theme_id),
 			"%s upward crown uses its biome theme" % String(biome_id)
+		)
+		_assert_runtime_texture_width_matches_trim(
+			profile.face_texture,
+			String(paths.get(&"face", "")),
+			_expected_generated_cliff_texture_trim_pixels(biome_id),
+			"%s upward cliff face" % String(biome_id)
+		)
+		_assert_runtime_texture_width_matches_trim(
+			profile.top_texture,
+			String(paths.get(&"top", "")),
+			_expected_generated_surface_texture_trim_pixels(biome_id),
+			"%s upward cliff crown" % String(biome_id)
 		)
 
 # --- cliff/void textures e mesh (void_cliff_generated_texture) --------------
@@ -977,10 +1027,52 @@ func _expected_generated_surface_texture_trim_pixels(
 		return 10
 	return 2
 
-func _expected_generated_cliff_texture_trim_pixels(biome_id: StringName) -> int:
-	if biome_id == &"burning_fields":
-		return 10
-	return 0
+func _expected_generated_cliff_texture_trim_pixels(_biome_id: StringName) -> int:
+	return 12
+
+func _assert_generated_cliff_texture_is_normalized(
+	texture: Texture2D,
+	source_path: String,
+	expected_trim: int,
+	label: String
+) -> void:
+	_assert_runtime_texture_width_matches_trim(
+		texture,
+		source_path,
+		expected_trim,
+		label
+	)
+	if texture == null:
+		return
+	var image := texture.get_image()
+	assert_not_null(image, "%s runtime image is available" % label)
+	if image == null:
+		return
+	assert_lte(
+		_edge_visible_matte_ratio(image),
+		0.04,
+		"%s runtime edge has no visible white matte" % label
+	)
+
+func _assert_runtime_texture_width_matches_trim(
+	texture: Texture2D,
+	source_path: String,
+	expected_trim: int,
+	label: String
+) -> void:
+	assert_not_null(texture, "%s runtime texture exists" % label)
+	if texture == null:
+		return
+	var source_image := Image.new()
+	var load_error := source_image.load(ProjectSettings.globalize_path(source_path))
+	assert_eq(load_error, OK, "%s source image loads" % label)
+	if load_error != OK:
+		return
+	assert_eq(
+		texture.get_width(),
+		source_image.get_width() - expected_trim * 2,
+		"%s runtime width reflects generated texture trim" % label
+	)
 
 func _mesh_has_uvs(mesh: ArrayMesh) -> bool:
 	if mesh == null or mesh.get_surface_count() <= 0:
@@ -1048,3 +1140,111 @@ func _edge_seam_score(image: Image) -> float:
 
 func _rgb_delta(first: Color, second: Color) -> float:
 	return (absf(first.r - second.r) + absf(first.g - second.g) + absf(first.b - second.b)) / 3.0
+
+func _edge_visible_matte_ratio(image: Image) -> float:
+	if image == null or image.is_empty():
+		return 1.0
+	var samples := 0
+	var matte_samples := 0
+	var last_x := image.get_width() - 1
+	var last_y := image.get_height() - 1
+	for y in range(image.get_height()):
+		if _is_visible_white_matte(image.get_pixel(0, y)):
+			matte_samples += 1
+		if _is_visible_white_matte(image.get_pixel(last_x, y)):
+			matte_samples += 1
+		samples += 2
+	for x in range(image.get_width()):
+		if _is_visible_white_matte(image.get_pixel(x, 0)):
+			matte_samples += 1
+		if _is_visible_white_matte(image.get_pixel(x, last_y)):
+			matte_samples += 1
+		samples += 2
+	return float(matte_samples) / float(maxi(samples, 1))
+
+func _is_visible_white_matte(color: Color) -> bool:
+	var minimum := minf(color.r, minf(color.g, color.b))
+	var maximum := maxf(color.r, maxf(color.g, color.b))
+	return (
+		color.a >= 0.98
+		and minimum >= 0.86
+		and maximum - minimum <= 0.08
+	)
+
+func _assert_frozen_route_textures_are_snow_softened(
+	layer: BiomeTileLayer,
+	asset_fragment: String,
+	expected_trim: int,
+	label: String
+) -> void:
+	var matched := 0
+	var paths := layer.get_forest_surface_art_asset_paths()
+	for material_id in layer.get_loaded_surface_texture_ids():
+		var source_path := String(paths.get(material_id, ""))
+		if not source_path.contains(asset_fragment):
+			continue
+		matched += 1
+		var runtime_texture := (
+			layer._forest_surface_textures.get(material_id) as Texture2D
+		)
+		assert_not_null(runtime_texture, "%s runtime texture exists" % label)
+		if runtime_texture == null:
+			continue
+		var runtime_image := runtime_texture.get_image()
+		var source_image := Image.new()
+		var load_error := source_image.load(
+			ProjectSettings.globalize_path(source_path)
+		)
+		assert_eq(load_error, OK, "%s source image loads" % label)
+		if load_error != OK:
+			continue
+		var trimmed_source := _trimmed_image_copy(source_image, expected_trim)
+		var source_delta := _average_visible_rgb_delta_to_color(
+			trimmed_source,
+			FROZEN_SNOW_REFERENCE
+		)
+		var runtime_delta := _average_visible_rgb_delta_to_color(
+			runtime_image,
+			FROZEN_SNOW_REFERENCE
+		)
+		assert_lte(
+			runtime_delta,
+			source_delta * 0.92,
+			"%s texture is softened toward the snow palette" % label
+		)
+	assert_gt(matched, 0, "%s has generated route textures to validate" % label)
+
+func _trimmed_image_copy(image: Image, trim: int) -> Image:
+	if image == null or image.is_empty():
+		return Image.new()
+	var safe_trim := maxi(trim, 0)
+	var source_rect := Rect2i(Vector2i.ZERO, image.get_size())
+	if (
+		safe_trim > 0
+		and image.get_width() > safe_trim * 2
+		and image.get_height() > safe_trim * 2
+	):
+		source_rect = Rect2i(
+			Vector2i(safe_trim, safe_trim),
+			Vector2i(
+				image.get_width() - safe_trim * 2,
+				image.get_height() - safe_trim * 2
+			)
+		)
+	return image.get_region(source_rect)
+
+func _average_visible_rgb_delta_to_color(image: Image, target: Color) -> float:
+	if image == null or image.is_empty():
+		return 1.0
+	var samples := 0
+	var total := 0.0
+	for y in range(image.get_height()):
+		for x in range(image.get_width()):
+			var color := image.get_pixel(x, y)
+			if color.a <= 0.01:
+				continue
+			total += _rgb_delta(color, target)
+			samples += 1
+	if samples <= 0:
+		return 1.0
+	return total / float(samples)
