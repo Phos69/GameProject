@@ -528,12 +528,22 @@ func test_generated_biome_runtime_consumption() -> void:
 			ProjectSettings.globalize_path(source_path)
 		)
 		assert_eq(source_load_error, OK, "%s source surface image loads" % String(biome_id))
+		var expected_surface_trim := (
+			_expected_generated_surface_texture_trim_pixels(biome_id)
+		)
 		assert_eq(
 			runtime_texture.get_width(),
-			source_image.get_width() - 4,
+			source_image.get_width() - expected_surface_trim * 2,
 			"%s trims the bright generated surface border at runtime"
 			% String(biome_id)
 		)
+		if biome_id == &"burning_fields":
+			var runtime_image := runtime_texture.get_image()
+			assert_lte(
+				_edge_seam_score(runtime_image),
+				0.04,
+				"burning_fields runtime surface harmonizes opposite edges"
+			)
 		var selected_material_ids: Dictionary = {}
 		var selected_material_paths: Dictionary = {}
 		for y in range(layout.zone_size.y):
@@ -586,6 +596,35 @@ func test_generated_biome_runtime_consumption() -> void:
 			11,
 			"%s loads face, lip, corner and cap cliff art" % String(biome_id)
 		)
+		var cliff_paths := layer.get_cliff_art_asset_paths()
+		var cliff_lip_path := String(
+			cliff_paths.get(&"cliff_lip_texture", "")
+		)
+		var cliff_lip_source_image := Image.new()
+		var cliff_lip_source_load_error := cliff_lip_source_image.load(
+			ProjectSettings.globalize_path(cliff_lip_path)
+		)
+		assert_eq(
+			cliff_lip_source_load_error,
+			OK,
+			"%s source cliff lip image loads" % String(biome_id)
+		)
+		var expected_cliff_trim := (
+			_expected_generated_cliff_texture_trim_pixels(biome_id)
+		)
+		assert_eq(
+			layer._cliff_lip_texture.get_width(),
+			cliff_lip_source_image.get_width() - expected_cliff_trim * 2,
+			"%s trims generated cliff lips only where the source has matte edges"
+			% String(biome_id)
+		)
+		if biome_id == &"burning_fields":
+			var runtime_cliff_lip_image := layer._cliff_lip_texture.get_image()
+			assert_lte(
+				_edge_seam_score(runtime_cliff_lip_image),
+				0.06,
+				"burning_fields runtime cliff lip harmonizes opposite edges"
+			)
 		var probe := Vector2i(3, 3)
 		var material_path := layer.get_resolved_material_asset_path(probe)
 		assert_true(
@@ -930,6 +969,18 @@ func _asset_exists(asset_path: String) -> bool:
 	if asset_path.is_empty():
 		return false
 	return ResourceLoader.exists(asset_path) or FileAccess.file_exists(asset_path)
+
+func _expected_generated_surface_texture_trim_pixels(
+	biome_id: StringName
+) -> int:
+	if biome_id == &"burning_fields":
+		return 10
+	return 2
+
+func _expected_generated_cliff_texture_trim_pixels(biome_id: StringName) -> int:
+	if biome_id == &"burning_fields":
+		return 10
+	return 0
 
 func _mesh_has_uvs(mesh: ArrayMesh) -> bool:
 	if mesh == null or mesh.get_surface_count() <= 0:

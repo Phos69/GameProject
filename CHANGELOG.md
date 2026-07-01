@@ -135,6 +135,10 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 - Reso piu armonico `burning_fields`: detail lava e la base a lava fluida non
   vengono piu usati come ground pieno, riducendo i riquadri ad alto contrasto e
   lasciando la lava come accento/feature.
+- Rifinito ulteriormente `burning_fields`: surface, cliff face e cliff lip
+  vulcanici usano crop runtime piu aggressivo e armonizzazione dei bordi
+  opposti, riducendo le strisce chiare prodotte dalla ripetizione dei PNG
+  generati senza cambiare collisioni, pathfinding o regole bioma.
 - Preservati tile `*_entry` dei passaggi anche con apertura profonda una sola
   cella: il resolver assegna l'entry alla prima cella interna del connector e
   mantiene `*_exit` sul bordo esterno.
@@ -171,7 +175,7 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 - `./tools/run_visual_qa.ps1 -SkipImport -Filter boss_telegraph`: 1 Visual QA,
   passa.
 - `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/assets -Select generated_texture`:
-  20 test, 1446 assert, passa.
+  21 test, 1461 assert, passa.
 - `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/assets`: 59
   test, 8325 assert, passa.
 - `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/world_gen -Select golden_snapshot_bake`:
@@ -185,8 +189,9 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
   passa.
 - `godot --headless --path . --script res://tools/generate_isometric_environment_assets.gd -- --check`:
   passa, `checked=130`.
-- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/environment`: 34
-  test, 2164 assert, passa.
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/environment`:
+  Godot completa con report JUnit `gut_gutconfig_20260701_183934.xml`, 35 test,
+  24705 assert e 0 failure; il wrapper locale e scaduto prima del riepilogo.
 - `./tools/run_visual_qa.ps1 -SkipImport -Filter biome`: 3 Visual QA, passa;
   `biome_rendering_review_visual_qa.gd` genera 150 PNG sotto
   `build/qa/biome_rendering_review/`.
