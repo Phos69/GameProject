@@ -8,6 +8,12 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Added
 
+- Integrati 191 PNG generati e ripuliti sotto
+  `assets/environment/isometric/generated_images/`. I quattro biomi Survival
+  avanzati usano set tematici per ground, route, transizioni, cliff verso void e
+  raised cliff; `desert` e il nuovo set `forest` restano catalogati ma non
+  assegnati. `BiomeGeneratedArtCatalog` assegna ruoli e varianti in modo
+  deterministico.
 - Infinite Arena rende i quattro lati `BLOCKED` come cliff rocciosi rialzati di
   sette celle. `BiomeEnvironmentLayout` distingue `procedural_wall` e
   `raised_cliff`; i segmenti conservano collisioni e Y-sort ma usano materiali
@@ -47,6 +53,9 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Fixed
 
+- Corretto il tentativo di skin swamp su `toxic_wastes`: il bioma usa ora il
+  tema `urban_ruins`, i duplicati swamp sono stati rimossi e i test verificano
+  materiali realmente consumati da mesh non vuote.
 - Chiuso il perimetro `walled` di Infinite Arena anche dove le strade
   decorative raggiungono il bordo: validazione e `repair_layout()` riconoscono i
   wall segment come endpoint solidi e preservano il relativo `BiomeObstacle`.
@@ -139,8 +148,8 @@ Questa sezione compatta le milestone chiuse. Le regole di gioco vivono in
   ostacoli, crate e oggetti ambientali senza rendere obbligatori asset esterni.
 - Aggiunti loader SVG runtime, materiali raster generati, cliff seamless,
   texture forestali, plateau rocciosi scalabili, raised cliff per Infinite Arena,
-  occluder Y-sort e footprint slot-based per collisione, spawn blocker e debug
-  `F9`.
+  PNG generati per biomi avanzati, occluder Y-sort e footprint slot-based per
+  collisione, spawn blocker e debug `F9`.
 - La fallback policy vieta placeholder generici impliciti nel percorso survival
   standard; eventuali fallback tecnici devono essere documentati nel manifest e
   coperti da smoke o asset check.

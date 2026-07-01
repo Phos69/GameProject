@@ -96,6 +96,28 @@ su run continue con UV world-space. La stessa cartella contiene
 classe e usa un periodo UV piu corto per le fasce di transizione. Wall e void
 mantengono i rispettivi materiali e colori.
 
+### Set generati per bioma
+
+I 191 sorgenti raster in `environment/isometric/generated_images/` sono
+organizzati per tema e ruolo. Il mapping runtime e:
+`toxic_wastes -> urban_ruins`, `burning_fields -> volcanic`,
+`frozen_outskirts -> frozen_tundra`, `drowned_marsh -> swamp`.
+`desert` e il nuovo `forest` sono puliti e catalogati ma non assegnati.
+
+`BiomeGeneratedArtCatalog` espone pool tipizzati per ground, path, road,
+transizioni, detail e cliff. Il manifest registra per ogni set attivo stato
+`final`, provenienza `openai_image_generation`, licenza `Project original` e
+le liste di ruoli. Prima di importare o committare modifiche ai sorgenti:
+
+```text
+godot --headless --path . --script res://tools/prepare_generated_biome_assets.gd -- --write
+godot --headless --path . --import
+godot --headless --path . --script res://tools/prepare_generated_biome_assets.gd -- --check
+```
+
+Il tool rimuove le cornici bianche, compatta gutter interni e converte in alpha
+solo il matte esterno dei cutout cliff; neve e ghiaccio interni restano opachi.
+
 - Il loader `game/modes/zombie/isometric_environment_manifest.gd` legge e valida
   il manifest; `ObstacleSystem` lo usa per `sort_offset` e flag di blocco e,
   dalla Milestone 10.5, passa gli `object_scenes` a

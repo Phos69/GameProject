@@ -24,7 +24,7 @@ senza un nuovo goal esplicito e una voce in `TODO.md`.
 | Modalita base | Milestone 5-9: survival a ondate, boss `Wave Warden`, dungeon lineare, tower defense base, save/load, menu, export preset e packaging iniziale. | `ARCHITECTURE.md`, `GAME_DESIGN.md`, `docs/latest_commit_validation_report.md` |
 | Visual gameplay e UX base | Milestone 10-21: readability survival, telegraph boss, varianti zombie, visual armi/torri, polish boss, shooter ranged, downed/revive, risultati run, audio mix, secondo boss, arena data-driven, accessibilita e profiling. | `CHANGELOG.md`, `docs/testing/manual_checklist.md` |
 | Zombie survival e mondo isometrico | Revamp zombie Z1-Z12, megamappa persistente, regioni `500x500`, survival standard `3x3`, terrain classification, hazard, streaming regioni, chase cross-bioma, Infinite Arena con raised cliff `walled` e cleanup legacy. | `ARCHITECTURE.md`, `GAME_DESIGN.md`, suite `world_gen`, `environment`, `modes`, `soak` |
-| Asset isometrici e ostacoli | ISO-001, rewrite biomi R1-R3, manifest ambiente v9, tile/terrain/passaggi/cliff asset-driven, footprint slot-based, alberi/rocce 3x3, plateau rocciosi scalabili e cliff PNG seamless. | `docs/obstacle_rendering.md`, `docs/forest_isometric_texture_system.md`, `docs/repo_fix_milestone_10_asset_fallback_policy.md` |
+| Asset isometrici e ostacoli | ISO-001, rewrite biomi R1-R3, manifest ambiente v9, tile/terrain/passaggi/cliff asset-driven, footprint slot-based, alberi/rocce 3x3, plateau rocciosi scalabili, cliff PNG seamless e generated biome art per quattro biomi avanzati. | `docs/obstacle_rendering.md`, `docs/forest_isometric_texture_system.md`, `docs/repo_fix_milestone_10_asset_fallback_policy.md` |
 | RPG, armi e mercato | RPG Mode M1-M13, classi avanzate, inventario armi, 30 armi catalogo, mercato zombie ricorrente e WVIS W0-W8. | `docs/zombie_market.md`, `docs/weapon_visual_identity_validation_report.md`, `docs/rpg_character_visual_checklist.md` |
 | QA, tooling e documentazione | Cutover GUT, cleanup warning headless, server MCP locale read-only e cleanup documentale 2026-07-01. | `tools/mcp-server/README.md`, `docs/documentation_inventory.md`, `CHANGELOG.md` |
 
@@ -56,8 +56,8 @@ evitare sovrapposizioni.
   e lifecycle oltre agli smoke gia presenti.
 - `BAL-001`: playtest end-to-end, tuning data-driven e profiling su survival,
   dungeon, tower defense, RPG, biomi e boss.
-- Le evidenze visuali dei mini-eventi bioma rientrano qui; `BIO-001` non va
-  riaperto salvo bug o tuning concreto.
+- Le evidenze visuali dei mini-eventi bioma e dei set generated biome art
+  rientrano qui; `BIO-001` non va riaperto salvo bug o tuning concreto.
 
 ### Release
 

@@ -91,9 +91,9 @@ Regole per nuove voci:
   scelta, i biomi avanzati sono pericolosi ma non frustranti e il frame time
   resta nel target documentato o viene tracciato come debito.
 - Test richiesto: playtest `Infinite Arena` 20 minuti, playtest survival
-  multi-bioma 20 minuti con 1-4 player, dungeon con tre seed, tower defense
-  5 wave, profiling full-radius visual streaming e regressione smoke
-  principale.
+  multi-bioma 20 minuti con 1-4 player, attraversamento dei biomi con generated
+  art attiva, dungeon con tre seed, tower defense 5 wave, profiling full-radius
+  visual streaming e regressione smoke principale.
 
 ### REL-001 - Packaging, firma digitale e release readiness
 

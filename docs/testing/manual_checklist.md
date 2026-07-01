@@ -1115,6 +1115,29 @@ godot --headless --path . --script res://tests/milestone_10_tile_layer_smoke_tes
 godot --headless --path . --script res://tools/generate_isometric_environment_assets.gd -- --check
 ```
 
+## Regressione asset generati dei biomi
+
+- Eseguire `prepare_generated_biome_assets.gd -- --check`: devono risultare
+  esattamente 191 PNG, zero modifiche e nessun bordo bianco residuo.
+- Eseguire la QA visuale e controllare i quattro pannelli: terreno, path, road,
+  void face, lip e corona non devono mostrare bianco o checkerboard.
+- In Survival attraversare `toxic_wastes`, `burning_fields`,
+  `frozen_outskirts` e `drowned_marsh`; verificare rispettivamente
+  `urban_ruins`, `volcanic`, `frozen_tundra` e `swamp`.
+- Su una seam tra due biomi controllare entrambi i lati: ogni raised cliff usa
+  il tema della regione proprietaria, resta alto sette celle e non chiude il
+  varco fisico.
+- Controllare una fall zone interna e un bordo esterno: faccia/lip devono
+  seguire il tema, il void puro deve restare uniforme e collisione/caduta
+  devono coincidere con il comportamento del bioma base.
+- Verificare che `desert` e il nuovo `forest` non vengano caricati a runtime.
+
+```text
+godot --headless --path . --script res://tools/prepare_generated_biome_assets.gd -- --check
+godot --path . --rendering-method gl_compatibility --script res://tests/visual_qa/generated_biome_art_visual_qa.gd
+./tools/run_gut.ps1 -GutDir res://tests/suites/assets -Select generated_texture
+```
+
 ## Regressione Milestone 10.4 - strade e passaggi asset-driven
 
 QA visuale e runtime da eseguire dopo modifiche a `BiomePassage`,

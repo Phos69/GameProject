@@ -794,6 +794,13 @@ multi-bioma.
   path, road, transizioni e cliff; le celle pure `void_depth`/`forest_void`
   restano escluse dalla mesh e dal reticolo, lasciando un fondale uniforme con
   lo stesso colore condiviso dal `VoidBackdrop` fuori-mappa.
+  I biomi avanzati riusano lo stesso percorso geometrico tramite
+  `BiomeGeneratedArtCatalog`: `toxic_wastes -> urban_ruins`,
+  `burning_fields -> volcanic`, `frozen_outskirts -> frozen_tundra` e
+  `drowned_marsh -> swamp`. Il resolver conserva `tile_id`, `section` e
+  `role`, aggiunge `material_asset_id`/`material_asset_path` e il layer
+  raggruppa le mesh per tale materiale. `desert` e il set sostitutivo `forest`
+  sono validati dal catalogo ma non hanno un consumer runtime.
   `IsometricCliffMeshBuilder` mantiene le 14 geometrie neighbor-aware per il
   fallback non forestale. Nel forestale `RectilinearCliffFaceMeshBuilder`
   sostituisce le facce per-cell con quattro pannelli continui per ogni fall
@@ -814,6 +821,16 @@ multi-bioma.
   campionamento. Le linee e le facce inclinate legacy non vengono sovrapposte
   nel forestale. Collisioni e regole di caduta restano esclusivamente in
   `BiomeFallZone`/`HazardSystem`.
+  Per i temi generati i pool cliff associano `01/02` alle facce, `03/04` ai
+  lip orizzontale/verticale, `05-08` agli outer corner, `09/10` agli inner
+  corner specchiabili e `11` al cap. Le facce e i lip selezionati alimentano
+  gli stessi builder rettilinei del bioma base; tutti gli undici asset del
+  tema sono caricati e validati come pool tipizzato.
+- Ogni `wall_segment_rects` Survival usa `raised_cliff` alto sette celle.
+  `WorldRegionStreamer` passa il bioma locale fino a
+  `PerimeterCliffVisualProfile`, così faccia e corona seguono il tema del lato
+  che le possiede. I varchi e gli intervalli void non generano segmenti; body
+  fisico e Y-sort restano responsabilità degli ostacoli esistenti.
 - Gli ostacoli runtime sono `StaticBody2D` sul layer `1`, quindi player e zombie
   li trattano come impedimento fisico.
 - Gli ostacoli appartengono anche ai gruppi `environment_obstacles` e `spawn_blockers`.

@@ -702,10 +702,16 @@ Identita dei biomi:
   strada principale edge-to-edge, sentieri, almeno una casa, vegetazione densa
   impassabile, alberi `3x3` e masse rocciose scalabili, auto abbandonate e un possibile
   fiume attraversabile solo sui bridge;
-- `Bioma Tossico`: pozze e gas, antidoti, zombie tossici ed esplosivi;
-- `Bioma Infuocato`: fiamme, lava, casse militari, runner ed esplosivi;
-- `Bioma Neve`: ghiaccio, neve alta, kit termici e zombie corazzati;
-- `Bioma Palude`: acqua profonda, fango, loot organico e zombie emergenti;
+- `Bioma Tossico`: pozze e gas, antidoti, zombie tossici ed esplosivi; usa il
+  set terreno/cliff `urban_ruins`;
+- `Bioma Infuocato`: fiamme, lava, casse militari, runner ed esplosivi; usa il
+  set `volcanic`;
+- `Bioma Neve`: ghiaccio, neve alta, kit termici e zombie corazzati; usa il set
+  `frozen_tundra`;
+- `Bioma Palude`: acqua profonda, fango, loot organico e zombie emergenti; usa
+  il set `swamp`;
+- i set generati `desert` e `forest` non definiscono oggi un nuovo bioma e
+  restano non assegnati;
 - tutti i layout sono deterministici e partono da void: il generatore scava
   strade principali orizzontali/verticali larghe 40 celle, sentieri tematici
   medi larghi 20 celle, passaggi fisici larghi 40 celle e blocchi interni;
@@ -720,8 +726,9 @@ Identita dei biomi:
   a nord della linea centrale della roccia viene coperto dal cliff, quello a
   sud resta davanti; in co-op la relazione viene risolta per ogni player. Top
   a lastre e tile cliff 3D estruse verso l'alto rendono leggibile il volume;
-- i lati collegati tra biomi hanno muri o barriere tematiche con almeno un
-  passaggio raggiungibile; i lati senza vicino diventano fall zone con visuale
+- i lati collegati tra biomi hanno raised cliff tematici alti sette celle con
+  almeno un passaggio raggiungibile; ogni regione rende il proprio lato con il
+  proprio tema. I lati senza vicino diventano fall zone con visuale
   cliff/depth;
 - tall grass, path, road e transizioni del bioma base sono solo lettura
   visuale: non rendono obbligatori asset esterni e non cambiano walkability,
@@ -765,6 +772,9 @@ Regole hazard:
 - il void profondo non mostra texture o reticoli ripetuti: resta uniforme e
   usa lo stesso colore del fuori-mappa e viene definito visivamente dal cliff
   dettagliato solo sul confine con terreno calpestabile;
+- ground, path, road, passaggi, hazard-underlay, transizioni e bordo cliff dei
+  quattro biomi avanzati usano esclusivamente il relativo set generato; questa
+  skin non modifica collisioni, danno, spawn, fall recovery o pathfinding;
 - quando void e bordo esterno si incontrano non viene disegnato alcun raccordo,
   muro o cliff aggiuntivo: l'intero tratto di contatto resta puro vuoto;
 - calpestando una cella `void` o `fall_zone` il player entra in `falling`; il
