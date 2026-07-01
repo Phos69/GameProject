@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "gameproject": {
+      "command": "npm",
+      "args": ["--prefix", "tools/mcp-server", "run", "start"]
+    }
+  }
+}
