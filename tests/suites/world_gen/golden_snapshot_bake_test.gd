@@ -140,5 +140,22 @@ func test_tile_bake_cache_roundtrips() -> void:
 		"la mappa tile_id sopravvive al round-trip")
 	assert_true(TileBakeCache.fetch(key, 999).is_empty(),
 		"cell_count diverso -> niente hit (guardia)")
+	var legacy_path := (
+		"user://world_cache/bake/"
+		+ key.sha256_text()
+		+ ".bin"
+	)
+	var legacy_file := FileAccess.open(legacy_path, FileAccess.WRITE)
+	assert_not_null(legacy_file, "la fixture cache legacy e scrivibile")
+	if legacy_file != null:
+		legacy_file.store_var({
+			"format_version": 3,
+			"key": key,
+			"cell_count": 2,
+			"payload": payload
+		})
+		legacy_file.close()
+	assert_true(TileBakeCache.fetch(key, 2).is_empty(),
+		"TileBakeCache v4 invalida automaticamente il formato v3")
 	TileBakeCache.clear()
 	TileBakeCache.set_enabled(false)

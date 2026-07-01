@@ -88,12 +88,14 @@ Regole per nuove voci:
   `docs/testing/manual_checklist.md`.
 - Criterio di accettazione: survival 10 wave e soak 10 minuti restano stabili,
   i guardrail M12 restano verdi, ogni classe RPG ha un motivo chiaro per essere
-  scelta, i biomi avanzati sono pericolosi ma non frustranti e il frame time
-  resta nel target documentato o viene tracciato come debito.
+  scelta, i biomi avanzati sono pericolosi ma non frustranti. In Zombie
+  Survival a 1280x720, preset balanced, generated art, 4 player e 28 nemici:
+  p95 normale <= 33,3 ms, frame massimo al seam <= 50 ms, zero chunk mancanti
+  in camera e nessuna crescita di chunk/memoria dopo percorsi di ritorno.
 - Test richiesto: playtest `Infinite Arena` 20 minuti, playtest survival
   multi-bioma 20 minuti con 1-4 player, attraversamento dei biomi con generated
-  art attiva, dungeon con tre seed, tower defense 5 wave, profiling full-radius
-  visual streaming e regressione smoke principale.
+  art attiva e zoom variabile, dungeon con tre seed, tower defense 5 wave,
+  profiling renderizzato dello streaming chunk e regressione smoke principale.
 
 ### REL-001 - Packaging, firma digitale e release readiness
 

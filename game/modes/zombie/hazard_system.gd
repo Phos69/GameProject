@@ -81,6 +81,12 @@ func begin_streaming_run(biome: BiomeDefinition) -> void:
 		active_biome.biome_id if active_biome != null else &""
 	)
 
+func set_active_biome(biome: BiomeDefinition) -> void:
+	active_biome = biome
+	is_active = biome != null
+	if active_biome != null:
+		hazard_rules_configured.emit(active_biome.biome_id)
+
 func stop_run() -> void:
 	_clear_runtime()
 	is_active = false
@@ -157,6 +163,7 @@ func spawn_runtime_hazard(
 	zone.name = "%sRuntimeHazard" % BiomeHazardCatalog.pascal_case(
 		String(hazard_id)
 	)
+	zone.add_to_group("world_streaming_pins")
 	zone.configure(
 		hazard_id,
 		Vector2(radius * 2.0, radius * 1.25),
@@ -323,6 +330,11 @@ func register_streamed_hazard(
 	if not active_hazards.has(hazard):
 		active_hazards.append(hazard)
 	hazard_spawned.emit(hazard, hazard_id)
+
+func unregister_streamed_hazard(hazard: Node2D) -> void:
+	if hazard == null:
+		return
+	active_hazards.erase(hazard)
 
 func finalize_streamed_hazards() -> void:
 	if status_runtime != null:

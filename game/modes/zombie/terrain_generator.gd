@@ -41,6 +41,12 @@ func begin_streaming_run(biome: BiomeDefinition) -> void:
 		active_biome.biome_id if active_biome != null else &""
 	)
 
+func set_active_biome(biome: BiomeDefinition) -> void:
+	active_biome = biome
+	is_active = biome != null
+	if active_biome != null:
+		terrain_configured.emit(active_biome.biome_id)
+
 func stop_run() -> void:
 	_clear_runtime()
 	is_active = false
@@ -60,6 +66,10 @@ func register_streamed_tile_layer(
 		return
 	if is_current_region:
 		active_tile_layer = tile_layer
+
+func unregister_streamed_tile_layer(tile_layer: BiomeTileLayer) -> void:
+	if active_tile_layer == tile_layer:
+		active_tile_layer = null
 
 func _build_tile_layer() -> void:
 	if active_biome == null:

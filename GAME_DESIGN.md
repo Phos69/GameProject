@@ -654,8 +654,10 @@ camera validati dal terreno e varianti tematiche nei biomi avanzati. I test
 headless ten-wave/soak possono disabilitare lo streaming regioni per isolare
 wave, director e rotazione biomi; i test transition/chase limitano il radius
 alla regione corrente per restare deterministici. Il playtest manuale resta il
-controllo richiesto per full-radius visual streaming, performance e leggibilita
-su 20 minuti.
+controllo richiesto per streaming visuale camera-centrico, performance e
+leggibilita su 20 minuti. Il profilo di riferimento e 1280x720, balanced,
+generated art, 4 player e 28 nemici: p95 normale <= 33,3 ms, frame massimo al
+seam <= 50 ms, zero chunk mancanti in camera e memoria stabile sui ritorni.
 
 Il revamp zombie e completo come prima versione giocabile:
 
@@ -677,7 +679,11 @@ Il revamp zombie e completo come prima versione giocabile:
 - la regione corrente e i territori collegati adiacenti sono presenti come
   contenuto gameplay: ostacoli, hazard e crate dei vicini sono gia fisici prima
   dell'attraversamento;
-- il cambio regione aggiorna palette, terreno, ostacoli, casse, hazard, HUD, mappa esplorazione e wave successive;
+- il terreno e reso per chunk attorno alla camera: camera visibile, anello +1
+  caricato, +2 prefabbricato e +3 trattenuto con 2 secondi di isteresi;
+- il cambio regione riusa i nodi gia presenti e aggiorna palette, HUD, mappa
+  esplorazione e wave successive senza loading screen, teleport o blocco del
+  movimento;
 - gli zombie gia vivi continuano il chase attraverso i varchi aperti tra biomi,
   senza despawn, reset di vita, perdita del target o cambio forzato di roster;
 - la mappa consultabile mostra solo territori unknown/discovered/visited/cleared e la posizione corrente del party;

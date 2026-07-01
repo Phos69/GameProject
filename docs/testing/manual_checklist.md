@@ -1382,13 +1382,21 @@ godot --headless --path . --script res://tests/survival_wave_smoke_test.gd
   wave successiva, con drop leggibili e danni attribuibili.
 - Verificare che runner, tank e shooter compaiano nel mix entro le prime wave
   accelerate o in un playtest breve.
-- In `Zombie Survival`, attraversare piu regioni/biomi con streaming normale e
-  verificare che spawn e inseguimento restino fuori camera, raggiungibili e
-  senza teletrasporti visibili.
+- In `Zombie Survival`, attraversare avanti/indietro piu regioni/biomi con 1 e
+  4 player e zoom variabile; non devono comparire loading screen, teleport,
+  terreno mancante o pop-in dentro la camera.
+- Verificare che spawn e inseguimento cross-bioma restino fuori camera,
+  raggiungibili e che nemici, boss e hazard runtime non spariscano al seam.
+- Eseguire il ritorno sullo stesso percorso e confrontare
+  `WorldRegionStreamer.get_streaming_stats()`: chunk residenti e memoria devono
+  stabilizzarsi, senza crescita a ogni andata/ritorno.
 - Confermare che i biomi avanzati mostrino varianti tematiche coerenti
   (`toxic`, `burning`, `frozen`, `drowned`) senza bloccare il director.
-- Annotare durata wave percepita, picchi di nemici vivi, drop, morti, frame
-  time e qualsiasi rallentamento con full-radius visual streaming.
+- Profilare con rendering reale a 1280x720, preset balanced, generated art,
+  4 player e 28 nemici: p95 normale <= 33,3 ms, frame massimo al seam <= 50 ms
+  e zero chunk mancanti dentro la camera.
+- Annotare durata wave percepita, picchi di nemici vivi, drop, morti, p95,
+  massimo al seam, chunk residenti e memoria prima/dopo il percorso di ritorno.
 
 ```text
 ./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/balance

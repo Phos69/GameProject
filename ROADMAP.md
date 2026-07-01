@@ -9,7 +9,8 @@ regole di gioco in `GAME_DESIGN.md`.
 
 Il progetto ha superato il prototipo minimo: le tre modalita principali sono
 giocabili, la zombie survival usa il mondo isometrico seed-based con streaming
-regioni, il roster RPG e le armi hanno pass data-driven, UI/audio/settings sono
+incrementale di regioni e chunk camera-centrici, il roster RPG e le armi hanno
+pass data-driven, UI/audio/settings sono
 funzionali e la suite rapida GUT e pulita. Il lavoro attivo ora riguarda polish,
 scelte di espansione, QA piu profonda, bilanciamento e release readiness.
 
@@ -23,7 +24,7 @@ senza un nuovo goal esplicito e una voce in `TODO.md`.
 | Fondazione runtime | Milestone 0-4: repo, progetto Godot, input, co-op locale, camera, player, combat, health, nemici, drop e pickup. | `README.md`, `ARCHITECTURE.md`, suite GUT core/combat/progression |
 | Modalita base | Milestone 5-9: survival a ondate, boss `Wave Warden`, dungeon lineare, tower defense base, save/load, menu, export preset e packaging iniziale. | `ARCHITECTURE.md`, `GAME_DESIGN.md`, `docs/latest_commit_validation_report.md` |
 | Visual gameplay e UX base | Milestone 10-21: readability survival, telegraph boss, varianti zombie, visual armi/torri, polish boss, shooter ranged, downed/revive, risultati run, audio mix, secondo boss, arena data-driven, accessibilita e profiling. | `CHANGELOG.md`, `docs/testing/manual_checklist.md` |
-| Zombie survival e mondo isometrico | Revamp zombie Z1-Z12, megamappa persistente, regioni `150x150` tile logici (`450x450` equivalenti legacy), survival standard `3x3`, terrain classification, hazard, streaming regioni, chase cross-bioma, Infinite Arena con raised cliff `walled` e cleanup legacy. | `ARCHITECTURE.md`, `GAME_DESIGN.md`, suite `world_gen`, `environment`, `modes`, `soak` |
+| Zombie survival e mondo isometrico | Revamp zombie Z1-Z12, megamappa persistente, regioni `150x150` tile logici (`450x450` equivalenti legacy), survival standard `3x3`, terrain classification, hazard, streaming incrementale senza caricamento ai seam, chase cross-bioma, Infinite Arena con raised cliff `walled` e cleanup legacy. | `ARCHITECTURE.md`, `GAME_DESIGN.md`, suite `world_gen`, `environment`, `modes`, `soak` |
 | Asset isometrici e ostacoli | ISO-001, rewrite biomi R1-R3, manifest ambiente v9, tile/terrain/passaggi/cliff asset-driven, footprint slot-based, alberi/rocce 3x3, plateau rocciosi scalabili, cliff PNG seamless e generated biome art per quattro biomi avanzati. | `docs/obstacle_rendering.md`, `docs/forest_isometric_texture_system.md`, `docs/repo_fix_milestone_10_asset_fallback_policy.md` |
 | RPG, armi e mercato | RPG Mode M1-M13, classi avanzate, inventario armi, 30 armi catalogo, mercato zombie ricorrente e WVIS W0-W8. | `docs/zombie_market.md`, `docs/weapon_visual_identity_validation_report.md`, `docs/rpg_character_visual_checklist.md` |
 | QA, tooling e documentazione | Cutover GUT, cleanup warning headless, server MCP locale read-only e cleanup documentale 2026-07-01. | `tools/mcp-server/README.md`, `docs/documentation_inventory.md`, `CHANGELOG.md` |
@@ -55,7 +56,9 @@ evitare sovrapposizioni.
 - `QA-001`: coprire meglio health, multiplayer, wave, save/load, world runtime
   e lifecycle oltre agli smoke gia presenti.
 - `BAL-001`: playtest end-to-end, tuning data-driven e profiling su survival,
-  dungeon, tower defense, RPG, biomi e boss.
+  dungeon, tower defense, RPG, biomi e boss. Il profilo Zombie Survival
+  `1280x720`, balanced/generated art, 4 player e 28 nemici deve misurare
+  p95 normale <= 33,3 ms, seam <= 50 ms e nessun chunk mancante in camera.
 - Le evidenze visuali dei mini-eventi bioma e dei set generated biome art
   rientrano qui; `BIO-001` non va riaperto salvo bug o tuning concreto.
 

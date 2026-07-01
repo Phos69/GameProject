@@ -8,6 +8,15 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Added
 
+- Aggiunto lo streaming visuale incrementale della Zombie Survival: il grafo
+  `3x3` viene avviato una volta, mentre `BiomeTileChunkBaker`,
+  `BiomeTileChunk` e `WorldChunkVisibilityController` mantengono attorno alla
+  camera gli anelli visibile, prefetch e retention senza ricostruire il mondo
+  ai seam.
+- Aggiunte a `WorldRegionStreamer` le API `start_world`,
+  `set_current_region`, `prepare_area`, `is_area_ready`,
+  `get_loaded_visual_chunk_keys` e `get_streaming_stats`, con test
+  deterministici per mapping camera/chunk, copertura e attraversamento.
 - Aggiunto `IsoGridConfig` come contratto centrale per la nuova griglia
   isometrica: tile logico `3x3` legacy, scala world `24.0`, biomi `150x150`
   (`450x450` equivalenti legacy) e costanti condivise per strade, passaggi,
@@ -41,14 +50,23 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Changed
 
+- `WorldRegionStreamer` usa ora `WorldRuntime.active_regions` come autorita
+  gameplay, aggiunge e rimuove solo il delta di regioni e conserva
+  temporaneamente quelle contenenti player, nemici, boss o hazard runtime.
+  Ostacoli, hazard, casse e tile layer hanno registrazione e rimozione
+  simmetriche; le crate layout conservano il ledger persistente.
+- Il bake asincrono di `BiomeTileLayer` produce solo dati CPU nel worker;
+  texture, mesh, chunk e scene tree vengono creati sul main thread. Il commit
+  visuale e limitato a due chunk e 2 ms per frame, con isteresi di 2 secondi.
 - Migrata la generazione mondo iso da regioni `500x500` a regioni `150x150`
   tile logici. Layout, pathfinding, passaggi, fall boundary, streaming,
   coordinate world, spawn, tile resolver e Infinite Arena usano la nuova scala
   senza deformare gli asset: le texture restano caricate a dimensione nativa e i
   footprint legacy vengono convertiti a runtime.
-- Incrementati `WorldSnapshotCodec.FORMAT_VERSION` e
-  `TileBakeCache.FORMAT_VERSION` a `3`, cosi snapshot/cache pre-migrazione
-  vengono ignorati e rigenerati.
+- `WorldSnapshotCodec.FORMAT_VERSION` resta a `3`; incrementato
+  `TileBakeCache.FORMAT_VERSION` a `4`, cosi le cache tile precedenti allo
+  streaming per-chunk vengono ignorate e rigenerate senza cambiare seed, layout
+  o formato save.
 - Il loader texture isometrico carica i raster sorgente quando la cache `.ctex`
   locale non e stata importata, mantenendo separata la cache raster dalla cache
   SVG esposta ai test.

@@ -297,6 +297,9 @@ Completato:
 - revamp zombie completo con controller, biomi, wave director, spawner camera-edge, transizioni e sistemi ambientali modulari;
 - motore procedurale seed-based per mappa globale biomi, celle `150x150` tile logici (`450x450` equivalenti legacy), passaggi, fall boundary, layout interno e validazione pathfinding;
 - megamappa persistente seed-based con grafo connesso, regioni default `3x3` da `150x150`, passaggi fisici aperti, stato esplorazione salvabile e mappa consultabile;
+- streaming senza caricamenti ai confini: regione corrente e vicini restano
+  gameplay-ready, mentre il terreno e composto da chunk visuali `20x20`
+  caricati attorno alla camera con prefetch, retention e isteresi;
 - `Zombie Survival` avviata dal menu dedicato o da `F7` usa la megamappa `3x3`;
   l'arena compatta `1x1` resta disponibile solo passando
   `single_biome_arena = true` nel context di debug/test, mentre il profilo

@@ -30,6 +30,9 @@ const TILE_BAKE_CACHE = preload(
 const GENERATED_ART_CATALOG = preload(
 	"res://game/modes/zombie/biome_generated_art_catalog.gd"
 )
+const BIOME_TILE_CHUNK_BAKER_SCRIPT = preload(
+	"res://game/modes/zombie/terrain/biome_tile_chunk_baker.gd"
+)
 const CLIFF_FACE_TEXTURE_ID := &"cliff_face_texture"
 const CLIFF_LIP_TEXTURE_ID := &"cliff_lip_texture"
 const CLIFF_LIP_VERTICAL_TEXTURE_ID := &"cliff_lip_vertical_texture"
@@ -113,13 +116,35 @@ var _texture_light_lines: PackedVector2Array = PackedVector2Array()
 var _transition_lines: PackedVector2Array = PackedVector2Array()
 var _depth_lines: PackedVector2Array = PackedVector2Array()
 var _suppressed_void_texture_count: int = 0
-# Optional worker thread that bakes the (CPU-heavy) tile cache + ground geometry
-# off the main thread so the game does not freeze while a full iso region is built.
+var _chunk_nodes: Dictionary = {}
+var _uses_chunk_nodes: bool = false
+var _build_all_chunks_on_finalize: bool = true
+var _cliff_transition_built_chunks: Dictionary = {}
+# Optional worker thread for the CPU-heavy tile cache. Meshes and chunk nodes
+# are always finalized on the main thread.
 var _build_thread: Thread
 var _is_building: bool = false
 # Chiave del tile-bake su disco (TileBakeCache): un hit salta l'intero loop di
 # resolve per-cella, la parte dominante del bake.
 var _bake_key: String = ""
+
+func prewarm_assets(
+	next_layout: BiomeEnvironmentLayout,
+	next_palette: BiomePalette,
+	next_biome_id: StringName,
+	next_manifest: IsometricEnvironmentManifest = null
+) -> void:
+	layout = next_layout
+	palette = next_palette
+	biome_id = next_biome_id
+	manifest = (
+		next_manifest
+		if next_manifest != null
+		else IsometricEnvironmentManifest.get_shared()
+	)
+	_load_cliff_art_textures()
+	_load_rock_art_texture()
+	_load_forest_surface_art_textures()
 
 func configure(
 	next_layout: BiomeEnvironmentLayout,
@@ -129,7 +154,8 @@ func configure(
 	next_chunk_size: int = 0,
 	next_resolver: IsometricTileResolver = null,
 	next_manifest: IsometricEnvironmentManifest = null,
-	async_build: bool = false
+	async_build: bool = false,
+	build_all_chunks: bool = true
 ) -> void:
 	layout = next_layout
 	palette = next_palette
@@ -161,6 +187,7 @@ func configure(
 		has_cliff_art_textures()
 	)
 	chunk_size = _resolve_chunk_size(next_chunk_size, quality_preset)
+	_build_all_chunks_on_finalize = build_all_chunks
 	z_index = -9
 	texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 	add_to_group("biome_tile_layers")
@@ -185,10 +212,9 @@ func is_building() -> bool:
 	return _is_building
 
 func _threaded_build() -> void:
-	# Runs on the worker thread: pure CPU work that fills the tile caches and bakes
-	# the ground geometry. The node is not drawn yet, so there is no render race.
+	# Only deterministic numeric/cache data is prepared off-thread. ArrayMesh and
+	# scene-tree chunk creation are finalized on the main thread.
 	_ensure_tile_cache()
-	_rebuild_ground_geometry()
 	call_deferred("_finalize_threaded_build")
 
 # Carica le mappe-tile risolte dalla cache su disco (salta il loop di resolve) o,
@@ -229,6 +255,7 @@ func _finalize_threaded_build() -> void:
 	if _build_thread != null and _build_thread.is_started():
 		_build_thread.wait_to_finish()
 	_build_thread = null
+	_rebuild_ground_geometry()
 	_is_building = false
 	queue_redraw()
 	build_completed.emit()
@@ -238,6 +265,7 @@ func _exit_tree() -> void:
 		_build_thread.wait_to_finish()
 	_build_thread = null
 	_is_building = false
+	_chunk_nodes.clear()
 
 func get_chunk_count() -> int:
 	return _chunks.size()
@@ -251,6 +279,104 @@ func get_quality_preset() -> StringName:
 func get_visual_tile_count() -> int:
 	return _tile_id_cache.size()
 
+func get_loaded_visual_tile_count() -> int:
+	var result := 0
+	for node_value in _chunk_nodes.values():
+		var chunk := node_value as Node2D
+		if chunk != null and is_instance_valid(chunk) and chunk.visible:
+			result += int(chunk.call("get_visual_tile_count"))
+	return result if _uses_chunk_nodes else get_visual_tile_count()
+
+func get_loaded_chunk_count() -> int:
+	if not _uses_chunk_nodes:
+		return _chunks.size()
+	var count := 0
+	for node_value in _chunk_nodes.values():
+		var chunk := node_value as Node2D
+		if chunk != null and is_instance_valid(chunk) and chunk.visible:
+			count += 1
+	return count
+
+func get_resident_chunk_count() -> int:
+	return _chunk_nodes.size()
+
+func get_resident_chunk_coords() -> Array[Vector2i]:
+	var result: Array[Vector2i] = []
+	for key in _chunk_nodes.keys():
+		var chunk := _chunk_nodes[key] as Node
+		if chunk != null and is_instance_valid(chunk):
+			result.append(key as Vector2i)
+	result.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
+		return a.y < b.y or (a.y == b.y and a.x < b.x)
+	)
+	return result
+
+func has_chunk(coord: Vector2i) -> bool:
+	var chunk := _chunk_nodes.get(coord) as Node2D
+	return chunk != null and is_instance_valid(chunk)
+
+func get_loaded_chunk_coords() -> Array[Vector2i]:
+	var result: Array[Vector2i] = []
+	for key in _chunk_nodes.keys():
+		var chunk := _chunk_nodes[key] as Node2D
+		if chunk != null and is_instance_valid(chunk) and chunk.visible:
+			result.append(key as Vector2i)
+	result.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
+		return a.y < b.y or (a.y == b.y and a.x < b.x)
+	)
+	return result
+
+func set_active_chunk_coords(coords: Array[Vector2i]) -> void:
+	if not _uses_chunk_nodes:
+		return
+	var active := {}
+	for coord in coords:
+		active[coord] = true
+	for key in _chunk_nodes.keys():
+		var chunk := _chunk_nodes[key] as Node2D
+		if chunk != null and is_instance_valid(chunk):
+			chunk.visible = active.has(key)
+
+func request_chunk(coord: Vector2i) -> bool:
+	var chunk := _chunk_nodes.get(coord) as Node2D
+	if chunk == null or not is_instance_valid(chunk):
+		if not _build_chunk_for_coord(coord):
+			return false
+		chunk = _chunk_nodes.get(coord) as Node2D
+	chunk.visible = true
+	return true
+
+func release_chunk(coord: Vector2i) -> bool:
+	var chunk := _chunk_nodes.get(coord) as Node2D
+	if chunk == null or not is_instance_valid(chunk):
+		return false
+	chunk.visible = false
+	return true
+
+func evict_chunks_except(retained_coords: Array[Vector2i]) -> void:
+	if not _uses_chunk_nodes and _chunk_nodes.is_empty():
+		return
+	var retained := {}
+	for coord in retained_coords:
+		retained[coord] = true
+	for key in _chunk_nodes.keys().duplicate():
+		if retained.has(key):
+			continue
+		var chunk := _chunk_nodes[key] as Node
+		if chunk != null and is_instance_valid(chunk):
+			chunk.set("visible", false)
+			if chunk.is_inside_tree():
+				chunk.queue_free()
+			else:
+				chunk.free()
+		_chunk_nodes.erase(key)
+	_uses_chunk_nodes = true
+
+func ensure_chunk(coord: Vector2i) -> bool:
+	if has_chunk(coord):
+		return true
+	return _build_chunk_for_coord(coord)
+
 func get_missing_asset_count() -> int:
 	return _missing_asset_count
 
@@ -258,6 +384,13 @@ func uses_procedural_fallback() -> bool:
 	return _missing_asset_count > 0
 
 func get_texture_detail_line_count() -> int:
+	if _uses_chunk_nodes:
+		var chunk_line_count: int = 0
+		for chunk_value in _chunk_nodes.values():
+			var chunk := chunk_value as BiomeTileChunk
+			if chunk != null and is_instance_valid(chunk):
+				chunk_line_count += chunk.get_texture_detail_line_count()
+		return chunk_line_count
 	return int((
 		_texture_dark_lines.size()
 		+ _texture_light_lines.size()
@@ -341,6 +474,13 @@ func get_forest_surface_art_asset_paths() -> Dictionary:
 	return _forest_surface_art_asset_paths.duplicate(true)
 
 func get_suppressed_void_texture_count() -> int:
+	if _uses_chunk_nodes:
+		var suppressed_count: int = 0
+		for chunk_value in _chunk_nodes.values():
+			var chunk := chunk_value as BiomeTileChunk
+			if chunk != null and is_instance_valid(chunk):
+				suppressed_count += chunk.get_suppressed_void_texture_count()
+		return suppressed_count
 	return _suppressed_void_texture_count
 
 func get_void_background_color() -> Color:
@@ -403,9 +543,23 @@ func get_loaded_surface_texture_ids() -> Array[StringName]:
 	return _surface_texture_ids.duplicate()
 
 func get_rendered_surface_material_ids() -> Array[StringName]:
+	if _uses_chunk_nodes:
+		var resident_material_ids := {}
+		for chunk_value in _chunk_nodes.values():
+			var chunk := chunk_value as BiomeTileChunk
+			if chunk == null or not is_instance_valid(chunk):
+				continue
+			for material_id in chunk.surface_texture_ids:
+				resident_material_ids[material_id] = true
+		var chunk_result: Array[StringName] = []
+		for material_id in resident_material_ids.keys():
+			chunk_result.append(material_id as StringName)
+		chunk_result.sort()
+		return chunk_result
 	var result: Array[StringName] = []
 	for material_id in _surface_texture_ids:
-		if _forest_surface_meshes.get(material_id) is ArrayMesh:
+		var surface_mesh := _forest_surface_meshes.get(material_id) as ArrayMesh
+		if surface_mesh != null and surface_mesh.get_surface_count() > 0:
 			result.append(material_id)
 	return result
 
@@ -419,15 +573,16 @@ func _draw() -> void:
 	# The ground is pre-baked in _rebuild_ground_geometry(): a mesh for the
 	# filled diamonds and, for forest terrain, a coloured underlay that removes
 	# black gaps between playable tiles.
-	if _ground_underlay_mesh != null:
-		draw_mesh(_ground_underlay_mesh, null)
-	for texture_id in _surface_texture_ids:
-		var surface_mesh := _forest_surface_meshes.get(texture_id) as ArrayMesh
-		var surface_texture := _forest_surface_textures.get(texture_id) as Texture2D
-		if surface_mesh != null and surface_texture != null:
-			draw_mesh(surface_mesh, surface_texture)
-	if _ground_mesh != null:
-		draw_mesh(_ground_mesh, null)
+	if not _uses_chunk_nodes:
+		if _ground_underlay_mesh != null:
+			draw_mesh(_ground_underlay_mesh, null)
+		for texture_id in _surface_texture_ids:
+			var surface_mesh := _forest_surface_meshes.get(texture_id) as ArrayMesh
+			var surface_texture := _forest_surface_textures.get(texture_id) as Texture2D
+			if surface_mesh != null and surface_texture != null:
+				draw_mesh(surface_mesh, surface_texture)
+		if _ground_mesh != null:
+			draw_mesh(_ground_mesh, null)
 	if has_rock_area_art():
 		# The ascending walls are drawn first; the raised crown is drawn afterwards
 		# so it masks the hidden upper wall triangles, mirroring how the void ground
@@ -471,13 +626,13 @@ func _draw() -> void:
 		and _cliff_lip_texture != null
 	):
 		draw_mesh(_cliff_mesh_builder.lip_mesh, _cliff_lip_texture)
-	if _texture_dark_lines.size() >= 2:
+	if not _uses_chunk_nodes and _texture_dark_lines.size() >= 2:
 		draw_multiline(_texture_dark_lines, Color(0.09, 0.18, 0.075, 0.34), 1.0)
-	if _texture_light_lines.size() >= 2:
+	if not _uses_chunk_nodes and _texture_light_lines.size() >= 2:
 		draw_multiline(_texture_light_lines, Color(0.70, 0.76, 0.42, 0.24), 1.0)
-	if _transition_lines.size() >= 2:
+	if not _uses_chunk_nodes and _transition_lines.size() >= 2:
 		draw_multiline(_transition_lines, Color(0.24, 0.15, 0.075, 0.42), 1.2)
-	if _depth_lines.size() >= 2:
+	if not _uses_chunk_nodes and _depth_lines.size() >= 2:
 		draw_multiline(_depth_lines, Color(0.12, 0.22, 0.14, 0.48), 1.4)
 	if (
 		not has_forest_cliff_border_art()
@@ -503,7 +658,7 @@ func _draw() -> void:
 			Color(palette.floor_color.lightened(0.46), lip_alpha),
 			lip_width
 		)
-	if _should_draw_grid() and _grid_points.size() >= 2:
+	if not _uses_chunk_nodes and _should_draw_grid() and _grid_points.size() >= 2:
 		draw_multiline(_grid_points, Color(palette.grid_color, 0.12))
 
 func _load_cliff_art_textures() -> void:
@@ -650,6 +805,13 @@ func _rebuild_ground_geometry() -> void:
 	_transition_lines = PackedVector2Array()
 	_depth_lines = PackedVector2Array()
 	_suppressed_void_texture_count = 0
+	for chunk_value in _chunk_nodes.values():
+		var existing_chunk := chunk_value as Node
+		if existing_chunk != null and is_instance_valid(existing_chunk):
+			existing_chunk.queue_free()
+	_chunk_nodes.clear()
+	_uses_chunk_nodes = false
+	_cliff_transition_built_chunks.clear()
 	if _cliff_mesh_builder != null:
 		_cliff_mesh_builder.reset()
 	if _cliff_border_mesh_builder != null:
@@ -661,80 +823,13 @@ func _rebuild_ground_geometry() -> void:
 	if layout == null or palette == null:
 		return
 	var scale := layout.logical_tile_scale
-	var half_w := scale * 0.62
-	var half_h := scale * 0.34
-	var vertices := PackedVector2Array()
-	var colors := PackedColorArray()
-	var indices := PackedInt32Array()
-	var grid := PackedVector2Array()
-	if _uses_themed_ground():
-		_ground_underlay_mesh = _build_forest_underlay_mesh(scale)
-		for texture_id in _surface_texture_ids:
-			if not (_forest_surface_textures.get(texture_id) is Texture2D):
-				continue
-			var surface_mesh := _build_forest_surface_mesh(scale, texture_id)
-			if surface_mesh != null:
-				_forest_surface_meshes[texture_id] = surface_mesh
-	for chunk in _chunks:
-		for y in range(chunk.position.y, chunk.position.y + chunk.size.y):
-			for x in range(chunk.position.x, chunk.position.x + chunk.size.x):
-				var cell := Vector2i(x, y)
-				var tile_id := get_resolved_tile_id(cell)
-				if tile_id.is_empty():
-					continue
-				if _is_untextured_void_tile(tile_id):
-					_suppressed_void_texture_count += 1
-					continue
-				var center := _cell_center_to_world(cell)
-				if _uses_generated_forest_surface(cell, tile_id):
-					_append_cliff_transition_mesh(cell, tile_id, center, half_w, half_h, scale)
-					continue
-				var top := center + Vector2(0.0, -half_h)
-				var right := center + Vector2(half_w, 0.0)
-				var bottom := center + Vector2(0.0, half_h)
-				var left := center + Vector2(-half_w, 0.0)
-				var base := vertices.size()
-				vertices.append(top)
-				vertices.append(right)
-				vertices.append(bottom)
-				vertices.append(left)
-				var color := _tile_color(tile_id)
-				colors.append(color)
-				colors.append(color)
-				colors.append(color)
-				colors.append(color)
-				indices.append(base)
-				indices.append(base + 1)
-				indices.append(base + 2)
-				indices.append(base)
-				indices.append(base + 2)
-				indices.append(base + 3)
-				grid.append(top)
-				grid.append(right)
-				grid.append(right)
-				grid.append(bottom)
-				grid.append(bottom)
-				grid.append(left)
-				grid.append(left)
-				grid.append(top)
-				_append_texture_details(
-					cell,
-					tile_id,
-					center,
-					half_w,
-					half_h
-				)
-				_append_cliff_transition_mesh(cell, tile_id, center, half_w, half_h, scale)
-	_grid_points = grid
-	if not vertices.is_empty():
-		var arrays := []
-		arrays.resize(Mesh.ARRAY_MAX)
-		arrays[Mesh.ARRAY_VERTEX] = vertices
-		arrays[Mesh.ARRAY_COLOR] = colors
-		arrays[Mesh.ARRAY_INDEX] = indices
-		var mesh := ArrayMesh.new()
-		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-		_ground_mesh = mesh
+	if _build_all_chunks_on_finalize:
+		for chunk_rect in _chunks:
+			_build_visual_chunk(chunk_rect, scale)
+	_uses_chunk_nodes = true
+	# Per-cell cliff transitions are collected while each chunk is built, then
+	# committed once as the region-level feature layer. Large cliff/rock features
+	# also remain region-owned so a long feature is never duplicated at a seam.
 	if _cliff_mesh_builder != null:
 		_cliff_mesh_builder.build_meshes()
 	if has_forest_cliff_border_art() and _cliff_border_mesh_builder != null:
@@ -763,6 +858,171 @@ func _rebuild_ground_geometry() -> void:
 			layout.zone_size,
 			scale
 		)
+	# Ground/detail buffers now belong to BiomeTileChunk children.
+	_ground_mesh = null
+	_ground_underlay_mesh = null
+	_forest_surface_meshes.clear()
+	_grid_points = PackedVector2Array()
+	_texture_dark_lines = PackedVector2Array()
+	_texture_light_lines = PackedVector2Array()
+	_transition_lines = PackedVector2Array()
+	_depth_lines = PackedVector2Array()
+
+func _build_visual_chunk(chunk_rect: Rect2i, scale: float) -> void:
+	_ground_mesh = null
+	_ground_underlay_mesh = null
+	_forest_surface_meshes.clear()
+	_grid_points = PackedVector2Array()
+	_texture_dark_lines = PackedVector2Array()
+	_texture_light_lines = PackedVector2Array()
+	_transition_lines = PackedVector2Array()
+	_depth_lines = PackedVector2Array()
+	_suppressed_void_texture_count = 0
+	var half_w := scale * 0.62
+	var half_h := scale * 0.34
+	var vertices := PackedVector2Array()
+	var colors := PackedColorArray()
+	var indices := PackedInt32Array()
+	var grid := PackedVector2Array()
+	var coord := Vector2i(
+		chunk_rect.position.x / chunk_size,
+		chunk_rect.position.y / chunk_size
+	)
+	var collect_cliff_transitions := (
+		not _cliff_transition_built_chunks.has(coord)
+	)
+	if _uses_themed_ground():
+		_ground_underlay_mesh = _build_forest_underlay_mesh(scale, chunk_rect)
+		for texture_id in _surface_texture_ids:
+			if not (_forest_surface_textures.get(texture_id) is Texture2D):
+				continue
+			var surface_mesh := _build_forest_surface_mesh(
+				scale,
+				texture_id,
+				chunk_rect
+			)
+			if surface_mesh != null and surface_mesh.get_surface_count() > 0:
+				_forest_surface_meshes[texture_id] = surface_mesh
+	for y in range(
+		chunk_rect.position.y,
+		chunk_rect.position.y + chunk_rect.size.y
+	):
+		for x in range(
+			chunk_rect.position.x,
+			chunk_rect.position.x + chunk_rect.size.x
+		):
+			var cell := Vector2i(x, y)
+			var tile_id := get_resolved_tile_id(cell)
+			if tile_id.is_empty():
+				continue
+			if _is_untextured_void_tile(tile_id):
+				_suppressed_void_texture_count += 1
+				continue
+			var center := _cell_center_to_world(cell)
+			if _uses_generated_forest_surface(cell, tile_id):
+				if collect_cliff_transitions:
+					_append_cliff_transition_mesh(
+						cell,
+						tile_id,
+						center,
+						half_w,
+						half_h,
+						scale
+					)
+				continue
+			var top := center + Vector2(0.0, -half_h)
+			var right := center + Vector2(half_w, 0.0)
+			var bottom := center + Vector2(0.0, half_h)
+			var left := center + Vector2(-half_w, 0.0)
+			var base := vertices.size()
+			vertices.append(top)
+			vertices.append(right)
+			vertices.append(bottom)
+			vertices.append(left)
+			var color := _tile_color(tile_id)
+			for _index in range(4):
+				colors.append(color)
+			indices.append(base)
+			indices.append(base + 1)
+			indices.append(base + 2)
+			indices.append(base)
+			indices.append(base + 2)
+			indices.append(base + 3)
+			grid.append(top)
+			grid.append(right)
+			grid.append(right)
+			grid.append(bottom)
+			grid.append(bottom)
+			grid.append(left)
+			grid.append(left)
+			grid.append(top)
+			_append_texture_details(cell, tile_id, center, half_w, half_h)
+			if collect_cliff_transitions:
+				_append_cliff_transition_mesh(
+					cell,
+					tile_id,
+					center,
+					half_w,
+					half_h,
+					scale
+				)
+	_grid_points = grid
+	if not vertices.is_empty():
+		var arrays := []
+		arrays.resize(Mesh.ARRAY_MAX)
+		arrays[Mesh.ARRAY_VERTEX] = vertices
+		arrays[Mesh.ARRAY_COLOR] = colors
+		arrays[Mesh.ARRAY_INDEX] = indices
+		var mesh := ArrayMesh.new()
+		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+		_ground_mesh = mesh
+	var chunk := BIOME_TILE_CHUNK_BAKER_SCRIPT.bake_chunk(
+		self,
+		coord,
+		chunk_rect,
+		_ground_underlay_mesh,
+		_ground_mesh,
+		_forest_surface_meshes,
+		_forest_surface_textures,
+		_surface_texture_ids,
+		_texture_dark_lines,
+		_texture_light_lines,
+		_transition_lines,
+		_depth_lines,
+		_grid_points,
+		Color(palette.grid_color, 0.12) if _should_draw_grid() else Color.TRANSPARENT,
+		_suppressed_void_texture_count
+	) as BiomeTileChunk
+	if chunk == null:
+		return
+	_chunk_nodes[coord] = chunk
+	_cliff_transition_built_chunks[coord] = true
+
+func _build_chunk_for_coord(coord: Vector2i) -> bool:
+	if layout == null or chunk_size <= 0:
+		return false
+	var position := coord * chunk_size
+	if (
+		position.x < 0
+		or position.y < 0
+		or position.x >= layout.zone_size.x
+		or position.y >= layout.zone_size.y
+	):
+		return false
+	var rect := Rect2i(
+		position,
+		Vector2i(
+			mini(chunk_size, layout.zone_size.x - position.x),
+			mini(chunk_size, layout.zone_size.y - position.y)
+		)
+	)
+	var had_cliff_transitions := _cliff_transition_built_chunks.has(coord)
+	_build_visual_chunk(rect, layout.logical_tile_scale)
+	_uses_chunk_nodes = not _chunk_nodes.is_empty()
+	if not had_cliff_transitions and _cliff_mesh_builder != null:
+		_cliff_mesh_builder.build_meshes()
+		queue_redraw()
+	return has_chunk(coord)
 
 func _get_fall_zone_sides() -> Array[StringName]:
 	var sides: Array[StringName] = []
@@ -864,18 +1124,28 @@ func _append_cliff_transition_mesh(
 		scale
 	)
 
-func _build_forest_underlay_mesh(scale: float) -> ArrayMesh:
+func _build_forest_underlay_mesh(
+	scale: float,
+	chunk_rect: Rect2i
+) -> ArrayMesh:
 	var vertices := PackedVector2Array()
 	var colors := PackedColorArray()
 	var indices := PackedInt32Array()
-	for y in range(layout.zone_size.y):
-		var run_start := 0
-		var run_key := _forest_underlay_key(get_resolved_tile_id(Vector2i(0, y)))
-		for x in range(1, layout.zone_size.x + 1):
+	var start_x := chunk_rect.position.x
+	var end_x := chunk_rect.position.x + chunk_rect.size.x
+	for y in range(
+		chunk_rect.position.y,
+		chunk_rect.position.y + chunk_rect.size.y
+	):
+		var run_start := start_x
+		var run_key := _forest_underlay_key(
+			get_resolved_tile_id(Vector2i(start_x, y))
+		)
+		for x in range(start_x + 1, end_x + 1):
 			var next_key := &""
-			if x < layout.zone_size.x:
+			if x < end_x:
 				next_key = _forest_underlay_key(get_resolved_tile_id(Vector2i(x, y)))
-			if x < layout.zone_size.x and next_key == run_key:
+			if x < end_x and next_key == run_key:
 				continue
 			_append_underlay_run(vertices, colors, indices, run_start, x, y, scale, _forest_underlay_color(run_key))
 			run_start = x
@@ -891,13 +1161,22 @@ func _build_forest_underlay_mesh(scale: float) -> ArrayMesh:
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	return mesh
 
-func _build_forest_surface_mesh(scale: float, texture_id: StringName) -> ArrayMesh:
+func _build_forest_surface_mesh(
+	scale: float,
+	texture_id: StringName,
+	chunk_rect: Rect2i
+) -> ArrayMesh:
 	var surface_runs: Array[Rect2i] = []
-	for y in range(layout.zone_size.y):
+	var start_x := chunk_rect.position.x
+	var end_x := chunk_rect.position.x + chunk_rect.size.x
+	for y in range(
+		chunk_rect.position.y,
+		chunk_rect.position.y + chunk_rect.size.y
+	):
 		var run_start := -1
-		for x in range(layout.zone_size.x + 1):
+		for x in range(start_x, end_x + 1):
 			var uses_texture := (
-				x < layout.zone_size.x
+				x < end_x
 				and _surface_texture_id_for_cell(
 					Vector2i(x, y),
 					get_resolved_tile_id(Vector2i(x, y))

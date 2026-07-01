@@ -202,6 +202,7 @@ func _start_run_async(resolved_context: Dictionary) -> void:
 	if terrain_generator != null:
 		terrain_generator.async_tile_build = false
 	await _await_active_tile_build()
+	await _await_streaming_readiness()
 	_complete_loading_screen()
 	_hide_loading_screen()
 	_emit_run_started()
@@ -223,6 +224,19 @@ func _await_active_tile_build() -> void:
 		and tile_layer.has_method("is_building")
 		and bool(tile_layer.call("is_building"))
 	):
+		await get_tree().process_frame
+
+func _await_streaming_readiness() -> void:
+	if (
+		not region_streaming_enabled_for_run
+		or world_region_streamer == null
+		or not world_region_streamer.is_streaming_graph(
+			biome_manager.get_world_graph() if biome_manager != null else null
+		)
+	):
+		return
+	world_region_streamer.prepare_area()
+	while not world_region_streamer.is_area_ready():
 		await get_tree().process_frame
 
 func _finish_start_run(resolved_context: Dictionary) -> void:
@@ -533,18 +547,25 @@ func _stream_active_regions(region_id: StringName) -> bool:
 	var pickup_container := _get_pickup_container()
 	if environment_container == null:
 		return false
-	return world_region_streamer.stream_world(
-		graph,
-		region_id,
-		biome_manager,
-		world_runtime,
-		environment_container,
-		pickup_container,
-		terrain_generator,
-		obstacle_system,
-		hazard_system,
-		resource_crate_system
-	)
+	var started: bool
+	if world_region_streamer.is_streaming_graph(graph):
+		started = world_region_streamer.set_current_region(region_id)
+	else:
+		started = world_region_streamer.start_world(
+			graph,
+			region_id,
+			biome_manager,
+			world_runtime,
+			environment_container,
+			pickup_container,
+			terrain_generator,
+			obstacle_system,
+			hazard_system,
+			resource_crate_system
+		)
+	if started:
+		world_region_streamer.prepare_area()
+	return started
 
 func _get_environment_container() -> Node:
 	var scene := get_tree().current_scene

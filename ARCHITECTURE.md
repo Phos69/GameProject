@@ -42,9 +42,10 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 21. `RegionSeamSystem` legge posizione world-space del party, grafo e
     `WorldRegionConnection` aperti per aggiornare la regione corrente senza
     portali, trigger visibili o teletrasporto.
-22. `WorldRegionStreamer` mantiene la regione corrente e i vicini connessi come
-    contenuto gameplay attivo: tile, ostacoli, hazard/fall zone e crate sono
-    gia presenti prima dell'attraversamento.
+22. `WorldRegionStreamer` mantiene incrementalmente la regione corrente e i
+    vicini indicati da `WorldRuntime.active_regions` come contenuto gameplay
+    `FULL`; `WorldChunkVisibilityController` rende solo i chunk attorno alla
+    camera. Il passaggio di confine non pulisce ne ricostruisce il mondo.
 23. `SurvivalArenaManager` configura playground, player, crate, gate e fallback spawn per lo spawner.
 24. `HazardSystem` genera fall zone e hazard ambientali, aggiorna posizioni sicure, status e modificatori movimento.
 25. `WaveManager` interroga `WaveDirector` per roster/scaling bioma e `ZombieSpawner` per spawn dai bordi camera, poi crea zombie tramite `EnemySystem`.
@@ -178,12 +179,17 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `WorldExplorationState`: stato unknown/discovered/visited/cleared per regione e marker della regione corrente.
 - `PersistentWorldState`: payload serializzabile del mondo, seed, regione corrente, posizione party e stato esplorazione.
 - `WorldRuntime`: runtime del grafo persistente; sincronizza `BiomeManager`, exploration state e save/load, con spazio per streaming regioni.
-- `WorldRegionStreamer`: streamer gameplay multi-regione; istanzia regione
-  corrente e vicini connessi a offset derivati da `WorldRegion.world_origin`,
-  con tile layer, ostacoli, hazard/fall zone e crate gia presenti prima
-  dell'attraversamento. Registra i nodi nei sistemi zombie esistenti, cosi
-  query di collisione, safe position, danno da caduta e ledger crate restano
-  centralizzati.
+- `WorldRegionStreamer`: owner persistente del contenuto gameplay
+  multi-regione. Espone `start_world`, `set_current_region`, `prepare_area`,
+  `is_area_ready`, `get_loaded_visual_chunk_keys` e `get_streaming_stats`;
+  applica solo il delta di regioni e registra/rimuove simmetricamente tile
+  layer, ostacoli, hazard/fall zone e crate.
+- `WorldChunkVisibilityController`: policy camera/chunk separata dal lifecycle
+  gameplay. Mantiene visibile il rettangolo camera, prepara gli anelli +1/+2,
+  trattiene il +3 con isteresi e ordina i commit per regione corrente,
+  distanza e direzione di movimento.
+- `BiomeTileChunkBaker` e `BiomeTileChunk`: commit main-thread dei dati visuali
+  e nodo CanvasItem proprietario delle mesh, texture e linee di un chunk.
 - `WorldGenerationSeed`: seed globale di run e derivazione deterministica degli stream RNG per mappa, terreno, ostacoli, bordi, loot e spawn.
 - `BiomeWorldGenerator`: orchestratore della pipeline procedurale globale per mappa biomi, layout per cella e debug seed.
 - `WorldDataCache`: cache LRU in memoria e su disco dei `world_data` generati.
@@ -679,16 +685,20 @@ multi-bioma.
 - `ExplorationMapPanel` mostra solo regioni note; unknown/fog non rivela la topologia completa.
 - `SaveManager` sovrappone `PersistentWorldState` alla prossima generazione con lo stesso seed.
 - Contratto megamappa scelto (Milestone 10.8): continuita fisica multi-regione
-  gameplay. `WorldRegionStreamer` istanzia la regione corrente piu i vicini
-  connessi entro `active_radius`, posizionandoli con offset
-  `(world_origin_regione - world_origin_start) * logical_tile_scale`. Current e
-  vicini hanno contenuto `FULL`; regioni oltre il raggio restano dati
-  persistenti non istanziati.
-- `ZombieModeController` invoca `WorldRegionStreamer.stream_world()` a ogni
-  cambio regione e lo pulisce a `stop_run()`; lo streaming multi-regione e gated
-  da `enable_multi_region_render`. Il vecchio `MultiRegionRenderer` (renderer
-  parallelo dei vicini solo-ground) e stato rimosso: lo streamer e l'unico
-  produttore di contenuto regione, senza piu neighbor ground placeholder.
+  gameplay. `WorldRuntime.active_regions` e la fonte unica per corrente e
+  vicini: questi territori arrivano a contenuto `FULL`, mentre le regioni
+  esterne restano dati persistenti non istanziati. Regioni con player, nemici,
+  boss o hazard runtime vengono trattenute finche possiedono tali entita.
+- `ZombieModeController` invoca `WorldRegionStreamer.start_world()` una sola
+  volta e poi `set_current_region()`; il cambio regione non usa `clear()`,
+  loading screen, teleport o ricostruzione. Le nuove regioni vengono aggiunte
+  una per volta, con un solo worker tile attivo, e diventano `FULL` soltanto a
+  bake terminato; `ZombieSpawner` continua a leggere esclusivamente le regioni
+  `FULL`. Lo streamer viene pulito solo a `stop_run()`.
+- Il caricamento iniziale pre-riscalda le texture dei biomi presenti, costruisce
+  corrente e vicini e prepara camera piu due anelli prima di dichiarare il
+  mondo ready. Texture, `ArrayMesh`, nodi e scene tree sono creati sul main
+  thread; il worker produce soltanto dati del tile bake.
 
 ## Contratto progressione e run
 
@@ -744,7 +754,9 @@ multi-bioma.
 - Durante la survival standard non esistono nodi nel gruppo
   `biome_transition_gates`; i passaggi sono comunicati da tile, apertura fisica
   e continuita del terreno.
-- Il cambio regione applica terreno, ostacoli, casse, hazard e passaggi della nuova regione senza riavviare `WaveManager`.
+- Il cambio regione seleziona bioma e tile layer gia esistenti senza riavviare
+  `WaveManager`; terreno, ostacoli, casse, hazard e passaggi della destinazione
+  sono gia gameplay-ready.
 - `WaveDirector` legge il bioma corrente per risolvere roster, moltiplicatori, ritmo spawn e drop.
 - Lo scaling contestuale considera wave, player vivi, tempo sopravvissuto e profondita del bioma.
 - Ogni bioma legge `BiomeEnvironmentLayout` per terreno, ostacoli, casse e hazard senza placement hardcoded nei controller.
@@ -784,9 +796,18 @@ multi-bioma.
   `ground_to_void_cliff` e `ground_to_mountain_wall`. Queste scelte sono
   presentazionali e neighbor-aware: non cambiano pathfinding, collisioni,
   hazard o spawn.
-- `BiomeTileLayer` cache-a tutti i 22.500 tile e li divide in chunk
-  (`balanced` 20x20, `performance` 25x25, `quality` 16x16) senza creare nodi
-  per-tile. Nel bioma forestale pre-bake-a run rettangolari con UV world-space
+- `BiomeTileLayer` cache-a tutti i 22.500 tile e delega ogni unita visuale a un
+  nodo `BiomeTileChunk` (`balanced` 20x20, `performance` 25x25, `quality`
+  16x16), senza creare nodi per-tile. Ogni primitiva ground appartiene a un
+  solo chunk; cliff, rocce e overhang restano geometria globale del layer e
+  leggono il layout completo, evitando duplicati ai bordi. Il layer distingue
+  tile totali, tile visuali residenti e chunk visibili.
+  In Zombie Survival il rettangolo camera e visibile, +1 e caricato, +2 viene
+  prefabbricato e i residenti entro +3 vengono conservati; oltre +3 il rilascio
+  avviene dopo 2 secondi. Il commit main-thread e limitato a due chunk e 2 ms
+  per frame. Infinite Arena riusa lo stesso tipo di chunk, ma prepara l'intera
+  regione all'avvio senza `WorldRuntime`.
+  Nel bioma forestale il baker pre-bake-a run rettangolari con UV world-space
   per prato, sentiero in terra, strada asfaltata e le tre transizioni tra tali
   materiali, evitando di ripetere un rombo completo per cella.
   `IsometricForestGroundMeshBuilder` possiede la costruzione delle mesh; le
@@ -862,9 +883,10 @@ multi-bioma.
   fuori dalla larghezza non vengono occluse. Non si cambia globalmente lo
   `z_index`: il Y-sort confronta lo stesso cliff con ciascun player, quindi il
   co-op supporta contemporaneamente attori davanti e dietro.
-- In streaming multi-regione, `ObstacleSystem` registra gli ostacoli creati da
-  `WorldRegionStreamer`; le query `is_position_blocked` leggono tutti i nodi
-  attivi nei gruppi `environment_obstacles`/`spawn_blockers`, inclusi i vicini.
+- In streaming multi-regione, `ObstacleSystem` registra e rimuove
+  simmetricamente gli ostacoli creati da `WorldRegionStreamer`; le query
+  `is_position_blocked` leggono tutti i nodi attivi nei gruppi
+  `environment_obstacles`/`spawn_blockers`, inclusi i vicini.
 - `IsometricSvgTextureLoader` evita che il runtime dipenda dall'import editor:
   rasterizza direttamente il contenuto SVG quando mantiene corner trasparenti,
   accetta la texture importata solo se non introduce un canvas opaco e, in
@@ -958,7 +980,9 @@ multi-bioma.
 - `ResourceCrateSystem` valida le posizioni contro `ObstacleSystem`, `HazardSystem` e la distanza minima tra casse.
 - In streaming multi-regione, le crate layout create da `WorldRegionStreamer`
   portano `region_id` e `region_crate_key`; aprirle aggiorna il ledger del
-  rispettivo territorio e il re-stream non le ripristina.
+  rispettivo territorio e il re-stream non le ripristina. La rimozione della
+  regione deregistra la crate; i contenuti encounter/runtime restano invece
+  sotto il lifecycle del sistema che li ha creati.
 - Casse comuni, mediche, militari e tematiche usano loot table dedicate ma continuano a generare pickup tramite `DropSystem`.
 - I loot tematici aggiungono `resource_tag` presentazionali senza creare un secondo inventario.
 - `HazardSystem` delega tossico, fuoco, gelo, acqua e fango a `BiomeStatusRuntime`, tramite danno periodico o `environment_speed_multiplier`.

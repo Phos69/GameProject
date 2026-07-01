@@ -22,6 +22,8 @@ var _default_seam_cooldown: float = 0.0
 var _default_transition_cooldown: float = 0.0
 var _default_move_party: bool = true
 var _default_active_radius: int = 1
+var _default_loaded_region_radius: int = 1
+var _default_unload_grace_seconds: float = 2.0
 var _default_neighbor_radius: int = 1
 
 # Stato raccolto dai segnali durante test_zombie_fall_hazard (resettato a inizio test).
@@ -46,6 +48,10 @@ func before_all() -> void:
 	var streamer = _scene.node(&"world_region_streamer")
 	if streamer != null:
 		_default_active_radius = int(streamer.get("active_radius"))
+		_default_unload_grace_seconds = float(streamer.get("unload_grace_seconds"))
+	var world_runtime: WorldRuntime = _scene.node(&"world_runtime") as WorldRuntime
+	if world_runtime != null:
+		_default_loaded_region_radius = world_runtime.loaded_region_radius
 	var multi_region_renderer = _scene.node(&"multi_region_renderer")
 	if multi_region_renderer != null:
 		_default_neighbor_radius = int(multi_region_renderer.get("neighbor_radius"))
@@ -70,6 +76,10 @@ func before_each() -> void:
 	var streamer = _scene.node(&"world_region_streamer")
 	if streamer != null:
 		streamer.set("active_radius", _default_active_radius)
+		streamer.set("unload_grace_seconds", _default_unload_grace_seconds)
+	var world_runtime: WorldRuntime = _scene.node(&"world_runtime") as WorldRuntime
+	if world_runtime != null:
+		world_runtime.loaded_region_radius = _default_loaded_region_radius
 	var multi_region_renderer = _scene.node(&"multi_region_renderer")
 	if multi_region_renderer != null:
 		multi_region_renderer.set("neighbor_radius", _default_neighbor_radius)
@@ -134,6 +144,48 @@ func test_full_region_streaming() -> void:
 	assert_eq(int(current_counts.get("tiles", 0)), current_layout.zone_size.x * current_layout.zone_size.y, "current region has a full tile layer")
 	assert_eq(int(current_counts.get("obstacles", 0)), current_layout.obstacle_positions.size(), "current region streams all obstacles")
 	assert_eq(int(current_counts.get("hazards", 0)), current_layout.hazard_positions.size(), "current region streams all hazards")
+	var current_tile_layer := terrain_generator.get_active_tile_layer()
+	assert_not_null(current_tile_layer, "current region exposes its chunked tile layer")
+	if current_tile_layer != null:
+		assert_gt(current_tile_layer.get_loaded_chunk_count(), 0,
+			"camera halo keeps visible terrain chunks active")
+		assert_lt(current_tile_layer.get_loaded_chunk_count(), current_tile_layer.get_chunk_count(),
+			"chunks outside the camera halo are not rendered")
+		assert_lt(current_tile_layer.get_loaded_visual_tile_count(), current_layout.zone_size.x * current_layout.zone_size.y,
+			"resident visual tiles are bounded by the camera halo")
+	var camera_rect := Rect2(Vector2(-320.0, -180.0), Vector2(640.0, 360.0))
+	var mapped_once: Array[Vector2i] = streamer.get_chunk_coords_for_world_rect(
+		current_cell.id,
+		camera_rect,
+		0
+	)
+	var mapped_twice: Array[Vector2i] = streamer.get_chunk_coords_for_world_rect(
+		current_cell.id,
+		camera_rect,
+		0
+	)
+	var mapped_with_margin: Array[Vector2i] = streamer.get_chunk_coords_for_world_rect(
+		current_cell.id,
+		camera_rect,
+		1
+	)
+	assert_eq(mapped_once, mapped_twice, "camera-to-chunk mapping is deterministic")
+	assert_false(mapped_once.is_empty(), "camera rect maps to at least one current-region chunk")
+	assert_gte(mapped_with_margin.size(), mapped_once.size(), "chunk margin never shrinks the visible set")
+	assert_true(streamer.prepare_area(camera_rect),
+		"prepare_area reports an already-prefetched active camera area as ready")
+	assert_eq(int((streamer.get_streaming_stats() as Dictionary).get("pending_regions", -1)), 0,
+		"initial gameplay ring is ready before the run starts")
+	var initial_chunk_keys: Array[StringName] = streamer.get_loaded_visual_chunk_keys()
+	var distant_camera_rect := Rect2(Vector2(1680.0, 1680.0), Vector2(24.0, 24.0))
+	assert_false(streamer.prepare_area(distant_camera_rect),
+		"prepare_area queues a distant debug/teleport target not yet prefetched")
+	var hysteresis_stats := streamer.get_streaming_stats() as Dictionary
+	assert_gt(int(hysteresis_stats.get("scheduled_chunk_unloads", 0)), 0,
+		"resident chunks beyond the retention ring enter hysteresis")
+	var retained_chunk_keys: Array[StringName] = streamer.get_loaded_visual_chunk_keys()
+	assert_eq(retained_chunk_keys, initial_chunk_keys,
+		"hysteresis keeps old chunks resident during its grace interval")
 
 	var neighbor_id := _first_neighbor_with_content(graph, biome_manager, current_cell.id)
 	assert_false(neighbor_id.is_empty(), "at least one connected neighbor has generated content")
@@ -277,10 +329,12 @@ func test_seam_crossing_through_open_passage() -> void:
 	var seam_system = _scene.node(&"region_seam_system")
 	var transition_system: BiomeTransitionSystem = _scene.node(&"biome_transition_system") as BiomeTransitionSystem
 	var player_manager: PlayerManager = _scene.node(&"player_manager") as PlayerManager
+	var streamer: WorldRegionStreamer = _scene.node(&"world_region_streamer") as WorldRegionStreamer
 	assert_not_null(seam_system, "region seam system is available")
 	assert_not_null(transition_system, "legacy transition command API is available")
 	assert_not_null(player_manager, "player manager is available")
-	if biome_manager == null or world_runtime == null or seam_system == null or player_manager == null:
+	assert_not_null(streamer, "world region streamer is available")
+	if biome_manager == null or world_runtime == null or seam_system == null or player_manager == null or streamer == null:
 		return
 
 	seam_system.set("transition_cooldown", 0.01)
@@ -305,6 +359,10 @@ func test_seam_crossing_through_open_passage() -> void:
 	var player := player_manager.players.get(1) as Node2D
 	assert_not_null(player, "player one exists")
 	var crossing_position: Vector2 = seam_system.get_crossing_position_for_connection(connection, graph.start_region_id)
+	var source_root_id := streamer.get_region_environment_root_instance_id(start_cell.id)
+	var target_root_id := streamer.get_region_environment_root_instance_id(connection.to_region_id)
+	assert_ne(source_root_id, 0, "source region root exists before crossing")
+	assert_ne(target_root_id, 0, "destination region is gameplay-ready before crossing")
 	if player != null:
 		player.global_position = crossing_position
 	seam_system.set("cooldown_timer", 0.0)
@@ -313,10 +371,35 @@ func test_seam_crossing_through_open_passage() -> void:
 	await wait_physics_frames(1)
 	assert_eq(biome_manager.get_current_region_id(), connection.to_region_id, "biome manager follows the crossed seam")
 	assert_eq(world_runtime.get_current_region_id(), connection.to_region_id, "world runtime follows the crossed seam")
+	assert_eq(streamer.get_region_environment_root_instance_id(start_cell.id), source_root_id,
+		"source region root is preserved instead of globally rebuilt")
+	assert_eq(streamer.get_region_environment_root_instance_id(connection.to_region_id), target_root_id,
+		"destination region root is reused without a loading rebuild")
 	assert_true(_scene.nodes(&"biome_transition_gates").is_empty(), "crossing a seam still creates no gate nodes")
 
-	biome_manager.set_current_region(start_cell.id)
-	world_runtime.set_current_region(start_cell.id)
+	var target_region := graph.get_region(connection.to_region_id)
+	var reverse_connection: WorldRegionConnection = null
+	if target_region != null:
+		for candidate in target_region.connection_edges:
+			if candidate.to_region_id == start_cell.id:
+				reverse_connection = candidate
+				break
+	assert_not_null(reverse_connection, "destination exposes the reverse physical connection")
+	if reverse_connection != null:
+		var return_position: Vector2 = seam_system.get_crossing_position_for_connection(
+			reverse_connection,
+			graph.start_region_id
+		)
+		if player != null:
+			player.global_position = return_position
+		seam_system.set("cooldown_timer", 0.0)
+		assert_true(seam_system.try_update_region_for_position(return_position),
+			"the party can cross the same seam backwards")
+		await wait_physics_frames(1)
+		assert_eq(streamer.get_region_environment_root_instance_id(start_cell.id), source_root_id,
+			"the source root is reused on the return crossing")
+		assert_eq(streamer.get_region_environment_root_instance_id(connection.to_region_id), target_root_id,
+			"the destination root is retained after the return crossing")
 	seam_system.set("cooldown_timer", 0.0)
 	var blocked_position := _blocked_border_position(graph, start_cell)
 	assert_false(seam_system.try_update_region_for_position(blocked_position),
@@ -388,6 +471,7 @@ func test_enemy_chases_across_biome_seam() -> void:
 	var biome_manager: BiomeManager = _scene.node(&"biome_manager") as BiomeManager
 	var player_manager: PlayerManager = _scene.node(&"player_manager") as PlayerManager
 	var enemy_system: EnemySystem = _scene.node(&"enemy_system") as EnemySystem
+	var world_runtime: WorldRuntime = _scene.node(&"world_runtime") as WorldRuntime
 	var seam_system = _scene.node(&"region_seam_system")
 	var zombie_spawner: ZombieSpawner = _scene.node(&"zombie_spawner") as ZombieSpawner
 	var streamer = _scene.node(&"world_region_streamer")
@@ -395,11 +479,15 @@ func test_enemy_chases_across_biome_seam() -> void:
 	assert_not_null(enemy_system, "enemy system is available")
 	assert_not_null(seam_system, "region seam system is available")
 	assert_not_null(zombie_spawner, "zombie spawner is available")
-	if biome_manager == null or player_manager == null or enemy_system == null or seam_system == null or zombie_spawner == null:
+	assert_not_null(streamer, "world region streamer is available")
+	if biome_manager == null or player_manager == null or enemy_system == null or seam_system == null or zombie_spawner == null or streamer == null:
 		return
 
 	if streamer != null:
 		streamer.set("active_radius", 0)
+		streamer.set("unload_grace_seconds", 0.0)
+	if world_runtime != null:
+		world_runtime.loaded_region_radius = 0
 	if multi_region_renderer != null:
 		multi_region_renderer.set("neighbor_radius", 0)
 	assert_true(_scene.start_survival({
@@ -425,13 +513,9 @@ func test_enemy_chases_across_biome_seam() -> void:
 		return
 	var direction := _direction_for_side(connection.side)
 	var crossing_position: Vector2 = seam_system.get_crossing_position_for_connection(connection, graph.start_region_id)
-	player.global_position = crossing_position
-	seam_system.set("cooldown_timer", 0.0)
-	assert_true(seam_system.try_update_region_for_position(crossing_position),
-		"player crossing updates the current region before chase")
-	await wait_physics_frames(1)
-	player.global_position = crossing_position + direction * 220.0
-
+	var source_root_id: int = int(
+		streamer.get_region_environment_root_instance_id(start_cell.id)
+	)
 	var enemy_position := crossing_position - direction * 180.0
 	var spawn_region_id := StringName(seam_system.get_region_id_for_world_position(enemy_position))
 	assert_eq(spawn_region_id, start_cell.id, "enemy spawn remains in source region")
@@ -439,6 +523,15 @@ func test_enemy_chases_across_biome_seam() -> void:
 	assert_not_null(enemy, "enemy spawns on source side of seam")
 	if enemy == null:
 		return
+	player.global_position = crossing_position
+	seam_system.set("cooldown_timer", 0.0)
+	assert_true(seam_system.try_update_region_for_position(crossing_position),
+		"player crossing updates the current region before chase")
+	await wait_physics_frames(1)
+	assert_eq(streamer.get_region_environment_root_instance_id(start_cell.id), source_root_id,
+		"a source region containing an enemy stays pinned outside active_regions")
+	player.global_position = crossing_position + direction * 220.0
+
 	enemy.detection_range = 4000.0
 	enemy.move_speed = 180.0
 	enemy.target_refresh_interval = 0.01
@@ -466,6 +559,9 @@ func test_enemy_chases_across_biome_seam() -> void:
 
 	if is_instance_valid(enemy):
 		enemy.queue_free()
+	await wait_physics_frames(2)
+	assert_eq(streamer.get_region_environment_root_instance_id(start_cell.id), 0,
+		"the source region unloads after its last runtime pin leaves")
 
 # --- generazione del mondo a biomi e transizione via comando ----------------
 # (biome_world_generation)
@@ -559,6 +655,9 @@ func test_zombie_biome_transition() -> void:
 
 	transition_system.transition_cooldown = 0.01
 	streamer.set("active_radius", 0)
+	var world_runtime: WorldRuntime = _scene.node(&"world_runtime") as WorldRuntime
+	if world_runtime != null:
+		world_runtime.loaded_region_radius = 0
 	if multi_region_renderer != null:
 		multi_region_renderer.set("neighbor_radius", 0)
 	assert_true(_scene.start_survival(), "survival starts with biome transitions")
@@ -920,6 +1019,9 @@ func _assert_neighbor_crate_persistence(streamer, graph: WorldGraph, biome_manag
 	if crate == null:
 		return
 	var crate_key := StringName(crate.get_meta("region_crate_key", &""))
+	var root_instance_id: int = int(
+		streamer.get_region_environment_root_instance_id(neighbor_id)
+	)
 	crate.opened.emit(crate, null)
 	assert_true(world_runtime.is_region_item_consumed(neighbor_id, PersistentWorldState.CATEGORY_OPENED_CRATES, crate_key),
 		"opening a neighbor crate records it in the neighbor ledger")
@@ -929,6 +1031,8 @@ func _assert_neighbor_crate_persistence(streamer, graph: WorldGraph, biome_manag
 		environment_container, pickup_container, terrain_generator, obstacle_system, hazard_system, crate_system)
 	await wait_physics_frames(1)
 	assert_null(_find_crate_by_region_key(crate_system, neighbor_id, crate_key), "re-streaming skips the opened neighbor crate")
+	assert_eq(streamer.get_region_environment_root_instance_id(neighbor_id), root_instance_id,
+		"re-streaming preserves the existing neighbor root")
 
 func _validate_cell(cell: BiomeCell) -> void:
 	assert_eq(Vector2i(cell.width, cell.height), BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE, "%s uses the shared iso grid size" % cell.id)

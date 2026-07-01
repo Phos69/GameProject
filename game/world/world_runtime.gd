@@ -4,10 +4,10 @@ class_name WorldRuntime
 ## Streaming contract:
 ## `active_regions` is the set of regions the runtime keeps "warm" as data: the
 ## current region plus every neighbor within `loaded_region_radius` hops on the
-## world graph. The current region is the only one whose gameplay content is
-## instantiated by the biome systems; neighbors are preloaded graph data ready
-## for the next transition; regions outside the set are left as pure save data
-## and are not instantiated. Consumed content (opened crates, completed
+## world graph. WorldRegionStreamer treats this set as the authority for FULL
+## gameplay content; visual ground residency is handled separately around the
+## camera. Regions outside the set remain pure save data unless temporarily
+## pinned by a runtime entity. Consumed content (opened crates, completed
 ## encounters, destroyed obstacles) is recorded per region in
 ## `persistent_state` so re-entering a streamed region does not respawn it.
 

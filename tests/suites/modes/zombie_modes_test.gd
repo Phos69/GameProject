@@ -25,7 +25,9 @@ func test_zombie_revamp_foundation() -> void:
 	var biome_manager = scene.node(&"biome_manager")
 	var wave_director = scene.node(&"wave_director")
 	var zombie_spawner = scene.node(&"zombie_spawner")
-	if game_mode_manager == null or survival_mode == null or wave_manager == null or health_system == null or biome_manager == null or wave_director == null or zombie_spawner == null:
+	var zombie_controller = scene.node(&"zombie_mode_controller")
+	var streamer: WorldRegionStreamer = scene.node(&"world_region_streamer") as WorldRegionStreamer
+	if game_mode_manager == null or survival_mode == null or wave_manager == null or health_system == null or biome_manager == null or wave_director == null or zombie_spawner == null or zombie_controller == null or streamer == null:
 		assert_true(false, "revamp foundation systems are available")
 		scene.teardown()
 		scene = null
@@ -49,7 +51,14 @@ func test_zombie_revamp_foundation() -> void:
 	wave_manager.boss_wave_interval = 99
 	survival_mode.boss_wave_interval = 99
 
-	assert_true(game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL), "survival mode starts through the game mode manager")
+	assert_true(game_mode_manager.set_mode(
+		GameConstants.MODE_SURVIVAL,
+		{"async_world_build": true}
+	), "survival mode starts through the game mode manager")
+	assert_true(await _await_world_ready(zombie_controller),
+		"standard survival waits for camera and prefetch chunks before readiness")
+	assert_true(streamer.is_area_ready(),
+		"the loading screen closes only after the active camera area is ready")
 	assert_true(await _wait_for_wave_combat(wave_manager, 1), "first wave reaches combat")
 	assert_eq(biome_manager.get_current_biome_id(), &"infected_plains", "survival run starts from the starting biome")
 	assert_eq(wave_manager.current_wave_biome_id, &"infected_plains", "wave manager records the biome used for the wave")

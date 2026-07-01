@@ -72,6 +72,17 @@ func begin_streaming_run(biome: BiomeDefinition) -> void:
 		active_biome.biome_id if active_biome != null else &""
 	)
 
+func set_active_biome(biome: BiomeDefinition) -> void:
+	active_biome = biome
+	is_active = biome != null
+	active_region_id = (
+		world_runtime.get_current_region_id()
+		if world_runtime != null
+		else &""
+	)
+	if active_biome != null:
+		crate_rules_configured.emit(active_biome.biome_id)
+
 func stop_run() -> void:
 	_clear_runtime()
 	is_active = false
@@ -111,6 +122,7 @@ func spawn_encounter_crate(
 	crate.set_meta("encounter_source_id", source_id)
 	crate.add_to_group("biome_resource_crates")
 	crate.add_to_group("encounter_rewards")
+	crate.add_to_group("world_streaming_pins")
 	var visual := crate.get_node_or_null("Visual") as SupplyCrateVisual
 	if visual != null:
 		visual.configure_crate_type(crate_id)
@@ -173,6 +185,11 @@ func register_streamed_crate(crate: SupplyCrate, crate_id: StringName) -> void:
 	if not active_crates.has(crate):
 		active_crates.append(crate)
 	resource_crate_spawned.emit(crate, crate_id)
+
+func unregister_streamed_crate(crate: SupplyCrate) -> void:
+	if crate == null:
+		return
+	active_crates.erase(crate)
 
 func is_layout_crate_consumed_for_region(
 	region_id: StringName,
@@ -319,6 +336,8 @@ func _on_layout_crate_opened(crate: SupplyCrate, _opener: Node) -> void:
 			PersistentWorldState.CATEGORY_OPENED_CRATES,
 			crate_key
 		)
+	if not crate.is_queued_for_deletion():
+		crate.queue_free()
 
 func _on_crate_tree_exited(crate: SupplyCrate) -> void:
 	active_crates.erase(crate)

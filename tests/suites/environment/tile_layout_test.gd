@@ -164,6 +164,18 @@ func test_layer_chunking() -> void:
 	var expected_chunk_count := int(ceil(float(cell.generated_layout.zone_size.x) / 20.0)) * int(ceil(float(cell.generated_layout.zone_size.y) / 20.0))
 	assert_eq(layer.get_chunk_size(), 20, "il tile layer balanced usa chunk 20x20")
 	assert_eq(layer.get_chunk_count(), expected_chunk_count, "il tile layer chunka l'intera regione logica")
+	assert_eq(layer.get_resident_chunk_count(), expected_chunk_count,
+		"la modalita full-region prepara tutti i chunk")
+	var covered_cells := {}
+	for chunk_rect in layer.get_chunk_rects():
+		for y in range(chunk_rect.position.y, chunk_rect.end.y):
+			for x in range(chunk_rect.position.x, chunk_rect.end.x):
+				var covered_cell := Vector2i(x, y)
+				assert_false(covered_cells.has(covered_cell),
+					"ogni cella 150x150 appartiene a un solo chunk")
+				covered_cells[covered_cell] = true
+	assert_eq(covered_cells.size(), expected_tile_count,
+		"i chunk coprono l'intera regione 150x150 senza celle mancanti")
 	assert_eq(layer.get_visual_tile_count(), expected_tile_count, "il tile layer cachea tutte le celle visive")
 	assert_eq(layer.get_missing_asset_count(), 0, "la cache del tile layer non ha celle senza asset")
 	assert_false(layer.uses_procedural_fallback(), "il tile layer non usa il fallback procedurale")
@@ -173,6 +185,22 @@ func test_layer_chunking() -> void:
 	assert_eq(layer.get_resolved_tile_id(probe), _resolver.resolve_tile_id(cell.generated_layout, probe, cell.biome_id, &"balanced", cell),
 		"la cache del tile layer combacia col resolver su una cella floor stabile")
 	assert_true(layer.has_visual_tile_for_cell(probe), "il tile layer restituisce un asset visivo per la cella floor stabile")
+	var original_cliff_count := layer.get_cliff_transition_count()
+	var retained_coords: Array[Vector2i] = [Vector2i.ZERO, Vector2i(1, 0)]
+	layer.set_active_chunk_coords(retained_coords)
+	assert_eq(layer.get_loaded_chunk_count(), 2,
+		"solo i chunk richiesti restano visibili")
+	assert_lte(layer.get_loaded_visual_tile_count(), 800,
+		"il conteggio tile residenti segue il camera halo")
+	layer.evict_chunks_except(retained_coords)
+	assert_eq(layer.get_resident_chunk_count(), 2,
+		"i chunk oltre la retention vengono liberati")
+	assert_true(layer.ensure_chunk(Vector2i(2, 0)),
+		"un chunk sfrattato puo essere ricostruito dalla cache regionale")
+	assert_eq(layer.get_resident_chunk_count(), 3,
+		"la ricostruzione aggiunge una sola entry residente")
+	assert_eq(layer.get_cliff_transition_count(), original_cliff_count,
+		"ricostruire un chunk non duplica le transizioni cliff globali")
 	layer.free()
 
 	var performance_layer := BiomeTileLayer.new()
