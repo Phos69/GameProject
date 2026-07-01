@@ -1390,6 +1390,10 @@ godot --headless --path . --script res://tests/survival_wave_smoke_test.gd
 - Eseguire il ritorno sullo stesso percorso e confrontare
   `WorldRegionStreamer.get_streaming_stats()`: chunk residenti e memoria devono
   stabilizzarsi, senza crescita a ogni andata/ritorno.
+- Durante un percorso rettilineo controllare
+  `WorldRegionStreamer.get_streaming_stats()`: `visible_missing_chunks` deve
+  restare `0`; registrare `max_chunk_commit_msec` e
+  `average_chunk_commit_msec` insieme al frame profiler.
 - Confermare che i biomi avanzati mostrino varianti tematiche coerenti
   (`toxic`, `burning`, `frozen`, `drowned`) senza bloccare il director.
 - Profilare con rendering reale a 1280x720, preset balanced, generated art,

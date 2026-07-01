@@ -376,6 +376,71 @@ func test_generated_biome_runtime_consumption() -> void:
 		layer.queue_free()
 		await wait_physics_frames(1)
 
+func test_generated_chunk_rebuild_profile() -> void:
+	var biome_id := &"toxic_wastes"
+	var palette := load(
+		"res://game/modes/zombie/biomes/toxic_wastes_palette.tres"
+	) as BiomePalette
+	var layout := BiomeEnvironmentLayout.new()
+	layout.zone_size = Vector2i(40, 40)
+	layout.generation_seed = 880041
+	layout.add_floor_rect(Rect2i(Vector2i.ZERO, layout.zone_size), &"open_block")
+	layout.road_rects.append(Rect2i(Vector2i(0, 17), Vector2i(40, 5)))
+	layout.road_rect_tags.append(&"main_road")
+	layout.road_rects.append(Rect2i(Vector2i(17, 0), Vector2i(5, 40)))
+	layout.road_rect_tags.append(&"broken_street")
+	layout.add_hazard_rect(
+		Rect2i(Vector2i(5, 5), Vector2i(8, 8)),
+		&"test_hazard"
+	)
+	layout.add_fall_zone_rect(
+		Rect2i(Vector2i(25, 25), Vector2i(8, 8)),
+		&"internal"
+	)
+	layout.rebuild_terrain_classification()
+	var layer := BiomeTileLayer.new()
+	add_child(layer)
+	layer.configure(
+		layout,
+		palette,
+		biome_id,
+		&"balanced",
+		20,
+		null,
+		_manifest,
+		false,
+		false
+	)
+	var rebuild_times_usec := PackedInt64Array()
+	for coord in [
+		Vector2i(0, 0),
+		Vector2i(1, 0),
+		Vector2i(0, 1),
+		Vector2i(1, 1)
+	]:
+		var started_usec := Time.get_ticks_usec()
+		assert_true(layer.ensure_chunk(coord), "generated chunk %s rebuilds" % coord)
+		rebuild_times_usec.append(Time.get_ticks_usec() - started_usec)
+		layer.evict_chunks_except([])
+	var total_usec := 0
+	var max_usec := 0
+	for elapsed_usec in rebuild_times_usec:
+		total_usec += elapsed_usec
+		max_usec = maxi(max_usec, elapsed_usec)
+	var average_msec := (
+		float(total_usec)
+		/ float(maxi(rebuild_times_usec.size(), 1))
+		/ 1000.0
+	)
+	gut.p(
+		"GENERATED_CHUNK_PROFILE: avg %.3f ms, max %.3f ms"
+		% [average_msec, float(max_usec) / 1000.0]
+	)
+	assert_lt(float(max_usec) / 1000.0, 50.0,
+		"a single generated chunk stays below the seam frame ceiling")
+	layer.queue_free()
+	await wait_physics_frames(1)
+
 func test_generated_biome_upward_cliff_profiles() -> void:
 	for biome_id_value in GENERATED_BIOME_THEMES:
 		var biome_id := biome_id_value as StringName

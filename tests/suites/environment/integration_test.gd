@@ -187,6 +187,41 @@ func test_full_region_streaming() -> void:
 	assert_eq(retained_chunk_keys, initial_chunk_keys,
 		"hysteresis keeps old chunks resident during its grace interval")
 
+	if current_tile_layer != null:
+		current_tile_layer.evict_chunks_except([])
+	var approach_camera_rect := Rect2(
+		Vector2(1080.0, 1080.0),
+		Vector2(24.0, 24.0)
+	)
+	streamer.prepare_area(approach_camera_rect)
+	streamer.prepare_area(distant_camera_rect)
+	var distant_visible_keys: Array[StringName] = []
+	for streamed_region_id in streamer.get_streamed_region_ids():
+		var distant_visible_coords: Array[Vector2i] = (
+			streamer.get_chunk_coords_for_world_rect(
+				streamed_region_id,
+				distant_camera_rect,
+				0
+			)
+		)
+		for coord in distant_visible_coords:
+			distant_visible_keys.append(StringName(
+				"%s:%d:%d" % [
+					String(streamed_region_id),
+					coord.x,
+					coord.y
+				]
+			))
+	var pending_chunk_keys: Array[StringName] = (
+		streamer.get_pending_visual_chunk_keys()
+	)
+	assert_false(pending_chunk_keys.is_empty(),
+		"the distant visible target leaves visual work pending")
+	if not pending_chunk_keys.is_empty():
+		assert_true(distant_visible_keys.has(pending_chunk_keys[0]),
+			"an already-pending chunk is promoted when it enters the camera (%s in %s)"
+			% [String(pending_chunk_keys[0]), str(distant_visible_keys)])
+
 	var neighbor_id := _first_neighbor_with_content(graph, biome_manager, current_cell.id)
 	assert_false(neighbor_id.is_empty(), "at least one connected neighbor has generated content")
 	if not neighbor_id.is_empty():
@@ -284,6 +319,52 @@ func test_isometric_streaming_performance() -> void:
 	for enemy in spawned_enemies:
 		if is_instance_valid(enemy):
 			enemy.queue_free()
+
+# --- prefetch direzionale durante movimento camera --------------------------
+
+func test_directional_chunk_prefetch() -> void:
+	var streamer: WorldRegionStreamer = (
+		_scene.node(&"world_region_streamer") as WorldRegionStreamer
+	)
+	var camera := _scene.main.get_node_or_null("Camera2D") as Camera2D
+	assert_not_null(streamer, "world region streamer is available")
+	assert_not_null(camera, "main camera is available")
+	if streamer == null or camera == null:
+		return
+	assert_true(_scene.start_survival({
+		"world_seed": 641005,
+		"biome_map_width": 3,
+		"biome_map_height": 3,
+		"extra_edge_chance": 0.5
+	}), "survival starts for directional prefetch profiling")
+	await wait_physics_frames(2)
+	camera.set_process(false)
+	camera.position_smoothing_enabled = false
+	var start_position := camera.global_position
+	var max_visible_missing := 0
+	var observed_commit_msec := 0.0
+	for frame_index in range(90):
+		camera.global_position = (
+			start_position + Vector2(float(frame_index + 1) * 16.0, 0.0)
+		)
+		await wait_physics_frames(1)
+		var stats := streamer.get_streaming_stats()
+		max_visible_missing = maxi(
+			max_visible_missing,
+			int(stats.get("visible_missing_chunks", 0))
+		)
+		observed_commit_msec = maxf(
+			observed_commit_msec,
+			float(stats.get("last_frame_chunk_commit_msec", 0.0))
+		)
+	gut.p(
+		"DIRECTIONAL_STREAM_PROFILE: visible_missing=%d max_commit=%.3f ms"
+		% [max_visible_missing, observed_commit_msec]
+	)
+	assert_eq(max_visible_missing, 0,
+		"directional prefetch keeps every camera chunk resident while moving")
+	assert_lt(observed_commit_msec, 50.0,
+		"directional chunk commits stay below the seam frame ceiling")
 
 # --- assenza di renderer/gate legacy nel percorso standard ------------------
 # (milestone_10_legacy_cleanup)
@@ -672,6 +753,11 @@ func test_zombie_biome_transition() -> void:
 		assert_not_null(cell, "current region exists at step %d" % step)
 		if cell == null:
 			break
+		assert_true(
+			await _wait_for_streamed_region_full(streamer, cell.id),
+			"%s reaches FULL before its debug transition assertions"
+			% String(cell.id)
+		)
 		var biome_id := cell.biome_id
 		seen_biomes[biome_id] = true
 		var biome := biome_manager.get_current_biome() as BiomeDefinition
@@ -994,6 +1080,21 @@ func test_zombie_fall_hazard() -> void:
 	assert_false(health.has_invulnerability_source(fall_source), "stopping survival leaves no fall invulnerability token")
 
 # --- helper di asserzione (porting dei test legacy) -------------------------
+
+func _wait_for_streamed_region_full(
+	streamer: WorldRegionStreamer,
+	region_id: StringName
+) -> bool:
+	if streamer == null:
+		return false
+	for _frame in range(900):
+		if (
+			streamer.get_content_level(region_id)
+			== WorldRegionStreamer.ContentLevel.FULL
+		):
+			return true
+		await wait_process_frames(1)
+	return false
 
 func _assert_neighbor_gameplay_queries(streamer, biome_manager: BiomeManager,
 		obstacle_system: ObstacleSystem, hazard_system: HazardSystem, neighbor_id: StringName) -> void:

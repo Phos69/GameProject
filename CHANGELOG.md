@@ -50,6 +50,16 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Changed
 
+- Ottimizzato lo streaming visuale in movimento: il bake delle superfici
+  generated raggruppa le run di tutti i materiali in una sola scansione del
+  chunk, riducendo il micro-benchmark `20x20` da circa 188 ms a circa 19 ms.
+  La coda viene ora aggiornata dalla camera prima del commit e riprioritizzata
+  ogni frame, promuovendo i job che entrano in camera e la direzione di marcia.
+- `WorldRegionStreamer.get_streaming_stats()` espone anche chunk visibili
+  mancanti e tempi last/max/average dei commit, mentre
+  `get_pending_visual_chunk_keys()` rende osservabile l'ordine effettivo della
+  coda visuale. `BiomeTileLayer` separa ora conteggio logico totale, cache
+  risolta e tile residenti anche mentre un worker e in corso.
 - `WorldRegionStreamer` usa ora `WorldRuntime.active_regions` come autorita
   gameplay, aggiunge e rimuove solo il delta di regioni e conserva
   temporaneamente quelle contenenti player, nemici, boss o hazard runtime.

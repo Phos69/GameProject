@@ -277,9 +277,16 @@ func get_quality_preset() -> StringName:
 	return quality_preset
 
 func get_visual_tile_count() -> int:
+	if layout != null:
+		return layout.zone_size.x * layout.zone_size.y
+	return _tile_id_cache.size()
+
+func get_cached_visual_tile_count() -> int:
 	return _tile_id_cache.size()
 
 func get_loaded_visual_tile_count() -> int:
+	if _is_building:
+		return 0
 	var result := 0
 	for node_value in _chunk_nodes.values():
 		var chunk := node_value as Node2D
@@ -893,16 +900,10 @@ func _build_visual_chunk(chunk_rect: Rect2i, scale: float) -> void:
 	)
 	if _uses_themed_ground():
 		_ground_underlay_mesh = _build_forest_underlay_mesh(scale, chunk_rect)
-		for texture_id in _surface_texture_ids:
-			if not (_forest_surface_textures.get(texture_id) is Texture2D):
-				continue
-			var surface_mesh := _build_forest_surface_mesh(
-				scale,
-				texture_id,
-				chunk_rect
-			)
-			if surface_mesh != null and surface_mesh.get_surface_count() > 0:
-				_forest_surface_meshes[texture_id] = surface_mesh
+		_forest_surface_meshes = _build_forest_surface_meshes(
+			scale,
+			chunk_rect
+		)
 	for y in range(
 		chunk_rect.position.y,
 		chunk_rect.position.y + chunk_rect.size.y
@@ -1161,38 +1162,57 @@ func _build_forest_underlay_mesh(
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	return mesh
 
-func _build_forest_surface_mesh(
+func _build_forest_surface_meshes(
 	scale: float,
-	texture_id: StringName,
 	chunk_rect: Rect2i
-) -> ArrayMesh:
-	var surface_runs: Array[Rect2i] = []
+) -> Dictionary:
+	var runs_by_texture := {}
 	var start_x := chunk_rect.position.x
 	var end_x := chunk_rect.position.x + chunk_rect.size.x
 	for y in range(
 		chunk_rect.position.y,
 		chunk_rect.position.y + chunk_rect.size.y
 	):
-		var run_start := -1
-		for x in range(start_x, end_x + 1):
-			var uses_texture := (
-				x < end_x
-				and _surface_texture_id_for_cell(
+		var run_start := start_x
+		var run_texture_id := _surface_texture_id_for_cell(
+			Vector2i(start_x, y),
+			get_resolved_tile_id(Vector2i(start_x, y))
+		)
+		for x in range(start_x + 1, end_x + 1):
+			var next_texture_id := &""
+			if x < end_x:
+				next_texture_id = _surface_texture_id_for_cell(
 					Vector2i(x, y),
 					get_resolved_tile_id(Vector2i(x, y))
-				) == texture_id
-			)
-			if uses_texture and run_start < 0:
-				run_start = x
-			elif not uses_texture and run_start >= 0:
-				surface_runs.append(Rect2i(run_start, y, x - run_start, 1))
-				run_start = -1
-	return FOREST_GROUND_MESH_BUILDER_SCRIPT.build_mesh(
-		surface_runs,
-		layout.zone_size,
-		scale,
-		_forest_surface_texture_world_size(texture_id)
-	)
+				)
+			if x < end_x and next_texture_id == run_texture_id:
+				continue
+			if (
+				not run_texture_id.is_empty()
+				and _forest_surface_textures.get(run_texture_id) is Texture2D
+			):
+				if not runs_by_texture.has(run_texture_id):
+					runs_by_texture[run_texture_id] = []
+				(runs_by_texture[run_texture_id] as Array).append(
+					Rect2i(run_start, y, x - run_start, 1)
+				)
+			run_start = x
+			run_texture_id = next_texture_id
+	var result := {}
+	for texture_id_value in runs_by_texture.keys():
+		var texture_id := StringName(texture_id_value)
+		var typed_runs: Array[Rect2i] = []
+		for run_value in runs_by_texture[texture_id] as Array:
+			typed_runs.append(run_value as Rect2i)
+		var surface_mesh := FOREST_GROUND_MESH_BUILDER_SCRIPT.build_mesh(
+			typed_runs,
+			layout.zone_size,
+			scale,
+			_forest_surface_texture_world_size(texture_id)
+		)
+		if surface_mesh != null and surface_mesh.get_surface_count() > 0:
+			result[texture_id] = surface_mesh
+	return result
 
 func _forest_surface_texture_world_size(texture_id: StringName) -> float:
 	if _uses_generated_theme():

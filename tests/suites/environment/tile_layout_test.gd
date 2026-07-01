@@ -177,6 +177,8 @@ func test_layer_chunking() -> void:
 	assert_eq(covered_cells.size(), expected_tile_count,
 		"i chunk coprono l'intera regione 150x150 senza celle mancanti")
 	assert_eq(layer.get_visual_tile_count(), expected_tile_count, "il tile layer cachea tutte le celle visive")
+	assert_eq(layer.get_cached_visual_tile_count(), expected_tile_count,
+		"il bake sincrono distingue la cache completa dal totale logico")
 	assert_eq(layer.get_missing_asset_count(), 0, "la cache del tile layer non ha celle senza asset")
 	assert_false(layer.uses_procedural_fallback(), "il tile layer non usa il fallback procedurale")
 	assert_gt(layer.get_suppressed_void_texture_count(), 0, "il tile layer omette le celle void pure dal mesh testurizzato")

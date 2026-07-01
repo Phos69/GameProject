@@ -21,6 +21,12 @@ var _pending_keys: Dictionary = {}
 var _eviction_deadlines: Dictionary = {}
 var _last_camera_center := Vector2.INF
 var _movement_direction := Vector2.ZERO
+var _last_frame_commit_count: int = 0
+var _last_frame_commit_msec: float = 0.0
+var _max_chunk_commit_msec: float = 0.0
+var _total_chunk_commit_msec: float = 0.0
+var _total_chunk_commit_count: int = 0
+var _visible_missing_chunk_count: int = 0
 
 func configure(
 	next_graph: WorldGraph,
@@ -61,10 +67,22 @@ func clear() -> void:
 	_eviction_deadlines.clear()
 	_last_camera_center = Vector2.INF
 	_movement_direction = Vector2.ZERO
+	_last_frame_commit_count = 0
+	_last_frame_commit_msec = 0.0
+	_max_chunk_commit_msec = 0.0
+	_total_chunk_commit_msec = 0.0
+	_total_chunk_commit_count = 0
+	_visible_missing_chunk_count = 0
 
 func process(entries: Dictionary, viewport: Viewport) -> void:
-	_process_pending(entries)
+	_last_frame_commit_count = 0
+	_last_frame_commit_msec = 0.0
+	# Refresh first so stale requests are removed and chunks that just entered
+	# the camera/direction of travel are promoted before this frame's commit.
 	refresh(entries, viewport)
+	_process_pending(entries)
+	if _last_frame_commit_count > 0:
+		refresh(entries, viewport, true)
 
 func prepare_area(
 	entries: Dictionary,
@@ -113,9 +131,24 @@ func get_streaming_stats() -> Dictionary:
 		"visible_visual_chunks": visible_chunk_keys.size(),
 		"pending_chunks": _pending_requests.size(),
 		"scheduled_chunk_unloads": _eviction_deadlines.size(),
+		"visible_missing_chunks": _visible_missing_chunk_count,
+		"last_frame_chunk_commits": _last_frame_commit_count,
+		"last_frame_chunk_commit_msec": _last_frame_commit_msec,
+		"max_chunk_commit_msec": _max_chunk_commit_msec,
+		"average_chunk_commit_msec": (
+			_total_chunk_commit_msec / float(_total_chunk_commit_count)
+			if _total_chunk_commit_count > 0
+			else 0.0
+		),
 		"chunk_commit_budget_msec": commit_budget_msec,
 		"max_chunk_commits_per_frame": max_commits_per_frame
 	}
+
+func get_pending_chunk_keys() -> Array[StringName]:
+	var result: Array[StringName] = []
+	for request in _pending_requests:
+		result.append(StringName(request.get("key", &"")))
+	return result
 
 func get_chunk_coords_for_world_rect(
 	entries: Dictionary,
@@ -146,8 +179,9 @@ func refresh(
 	_update_movement_direction(world_rect.get_center())
 	var next_loaded_keys: Array[StringName] = []
 	var next_visible_keys: Array[StringName] = []
-	var desired_request_keys := {}
+	var desired_request_priorities := {}
 	var resident_keys := {}
+	var visible_missing_count := 0
 	for region_id in _ordered_region_ids(entries):
 		var entry := entries.get(String(region_id), {}) as Dictionary
 		var tile_layer := entry.get("tile_layer") as BiomeTileLayer
@@ -189,7 +223,8 @@ func refresh(
 			visible_coords,
 			entries,
 			world_rect,
-			desired_request_keys
+			desired_request_priorities,
+			0
 		)
 		_queue_requests(
 			region_id,
@@ -197,7 +232,8 @@ func refresh(
 			loaded_coords,
 			entries,
 			world_rect,
-			desired_request_keys
+			desired_request_priorities,
+			1
 		)
 		_queue_requests(
 			region_id,
@@ -205,7 +241,8 @@ func refresh(
 			prefetch_coords,
 			entries,
 			world_rect,
-			desired_request_keys
+			desired_request_priorities,
+			2
 		)
 		tile_layer.set_active_chunk_coords(visible_coords)
 		for coord in tile_layer.get_resident_chunk_coords():
@@ -215,7 +252,14 @@ func refresh(
 		for coord in visible_coords:
 			if tile_layer.has_chunk(coord):
 				next_visible_keys.append(_make_chunk_key(region_id, coord))
-	_prune_pending_requests(desired_request_keys)
+			else:
+				visible_missing_count += 1
+	_prune_pending_requests(desired_request_priorities)
+	_sort_pending_requests(
+		desired_request_priorities,
+		entries,
+		world_rect.get_center()
+	)
 	for deadline_key in _eviction_deadlines.keys().duplicate():
 		if not resident_keys.has(deadline_key):
 			_eviction_deadlines.erase(deadline_key)
@@ -225,10 +269,12 @@ func refresh(
 		not force
 		and next_loaded_keys == loaded_chunk_keys
 		and next_visible_keys == visible_chunk_keys
+		and visible_missing_count == _visible_missing_chunk_count
 	):
 		return
 	loaded_chunk_keys = next_loaded_keys
 	visible_chunk_keys = next_visible_keys
+	_visible_missing_chunk_count = visible_missing_count
 	visual_chunks_changed.emit(
 		loaded_chunk_keys.size(),
 		_pending_requests.size()
@@ -283,11 +329,20 @@ func _process_pending(entries: Dictionary, ignore_budget: bool = false) -> void:
 			or tile_layer.has_chunk(coord)
 		):
 			continue
+		var chunk_started_usec := Time.get_ticks_usec()
 		if tile_layer.ensure_chunk(coord):
+			var chunk_elapsed_msec := (
+				float(Time.get_ticks_usec() - chunk_started_usec) / 1000.0
+			)
 			committed += 1
-	if committed > 0:
-		# The caller performs the regular refresh in the same process tick.
-		visible_chunk_keys.clear()
+			_last_frame_commit_count += 1
+			_last_frame_commit_msec += chunk_elapsed_msec
+			_max_chunk_commit_msec = maxf(
+				_max_chunk_commit_msec,
+				chunk_elapsed_msec
+			)
+			_total_chunk_commit_msec += chunk_elapsed_msec
+			_total_chunk_commit_count += 1
 
 func _queue_requests(
 	region_id: StringName,
@@ -295,7 +350,8 @@ func _queue_requests(
 	coords: Array[Vector2i],
 	entries: Dictionary,
 	world_rect: Rect2,
-	desired_request_keys: Dictionary
+	desired_request_priorities: Dictionary,
+	priority_tier: int
 ) -> void:
 	var prioritized_coords := coords.duplicate()
 	prioritized_coords.sort_custom(
@@ -314,7 +370,10 @@ func _queue_requests(
 	)
 	for coord in prioritized_coords:
 		var key := _make_chunk_key(region_id, coord)
-		desired_request_keys[key] = true
+		desired_request_priorities[key] = mini(
+			int(desired_request_priorities.get(key, priority_tier)),
+			priority_tier
+		)
 		if tile_layer.has_chunk(coord):
 			continue
 		if _pending_keys.has(key):
@@ -357,15 +416,53 @@ func _apply_retention_policy(
 			_eviction_deadlines.erase(key)
 	return result
 
-func _prune_pending_requests(desired_request_keys: Dictionary) -> void:
+func _prune_pending_requests(desired_request_priorities: Dictionary) -> void:
 	var retained_requests: Array[Dictionary] = []
 	for request in _pending_requests:
 		var key := StringName(request.get("key", &""))
-		if desired_request_keys.has(key):
+		if desired_request_priorities.has(key):
 			retained_requests.append(request)
 		else:
 			_pending_keys.erase(key)
 	_pending_requests = retained_requests
+
+func _sort_pending_requests(
+	desired_request_priorities: Dictionary,
+	entries: Dictionary,
+	camera_center: Vector2
+) -> void:
+	_pending_requests.sort_custom(
+		func(a: Dictionary, b: Dictionary) -> bool:
+			var a_key := StringName(a.get("key", &""))
+			var b_key := StringName(b.get("key", &""))
+			var a_tier := int(desired_request_priorities.get(a_key, 99))
+			var b_tier := int(desired_request_priorities.get(b_key, 99))
+			if a_tier != b_tier:
+				return a_tier < b_tier
+			var a_region_id := StringName(a.get("region_id", &""))
+			var b_region_id := StringName(b.get("region_id", &""))
+			var a_region_rank := 0 if a_region_id == current_region_id else 1
+			var b_region_rank := 0 if b_region_id == current_region_id else 1
+			if a_region_rank != b_region_rank:
+				return a_region_rank < b_region_rank
+			var a_coord: Vector2i = a.get("coord", Vector2i.ZERO)
+			var b_coord: Vector2i = b.get("coord", Vector2i.ZERO)
+			var a_priority := _chunk_priority(
+				entries,
+				a_region_id,
+				a_coord,
+				camera_center
+			)
+			var b_priority := _chunk_priority(
+				entries,
+				b_region_id,
+				b_coord,
+				camera_center
+			)
+			if not is_equal_approx(a_priority, b_priority):
+				return a_priority < b_priority
+			return String(a_key) < String(b_key)
+	)
 
 func _update_movement_direction(camera_center: Vector2) -> void:
 	if _last_camera_center != Vector2.INF:

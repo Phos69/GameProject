@@ -801,12 +801,22 @@ multi-bioma.
   16x16), senza creare nodi per-tile. Ogni primitiva ground appartiene a un
   solo chunk; cliff, rocce e overhang restano geometria globale del layer e
   leggono il layout completo, evitando duplicati ai bordi. Il layer distingue
-  tile totali, tile visuali residenti e chunk visibili.
+  tile logici totali, tile gia risolti nella cache, tile visuali residenti e
+  chunk visibili; un worker in corso non espone il conteggio parziale come
+  copertura totale.
   In Zombie Survival il rettangolo camera e visibile, +1 e caricato, +2 viene
   prefabbricato e i residenti entro +3 vengono conservati; oltre +3 il rilascio
-  avviene dopo 2 secondi. Il commit main-thread e limitato a due chunk e 2 ms
-  per frame. Infinite Arena riusa lo stesso tipo di chunk, ma prepara l'intera
-  regione all'avvio senza `WorldRuntime`.
+  avviene dopo 2 secondi. Lo scheduler ammette al massimo due chunk e non avvia
+  un secondo job dopo 2 ms; un singolo bake atomico puo superare tale budget ed
+  e quindi esposto dalle metriche. Il controller legge e riprioritizza prima la
+  camera, poi esegue il commit: visible, regione corrente e direzione di
+  movimento precedono il prefetch rimasto in coda. Le superfici generated
+  vengono classificate in una
+  sola scansione per chunk e solo dopo convertite nelle mesh dei materiali
+  effettivamente presenti. `get_streaming_stats()` espone
+  `visible_missing_chunks` e tempi last/max/average dei commit. Infinite Arena
+  riusa lo stesso tipo di chunk, ma prepara l'intera regione all'avvio senza
+  `WorldRuntime`.
   Nel bioma forestale il baker pre-bake-a run rettangolari con UV world-space
   per prato, sentiero in terra, strada asfaltata e le tre transizioni tra tali
   materiali, evitando di ripetere un rombo completo per cella.

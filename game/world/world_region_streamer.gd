@@ -212,6 +212,9 @@ func is_area_ready(world_rect: Rect2 = Rect2()) -> bool:
 func get_loaded_visual_chunk_keys() -> Array[StringName]:
 	return _chunk_visibility.loaded_chunk_keys.duplicate()
 
+func get_pending_visual_chunk_keys() -> Array[StringName]:
+	return _chunk_visibility.get_pending_chunk_keys()
+
 func get_streaming_stats() -> Dictionary:
 	var stats := {
 		"gameplay_regions": get_streamed_region_ids().size(),
