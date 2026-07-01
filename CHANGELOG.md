@@ -116,6 +116,9 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Fixed
 
+- `boss_telegraph_visual_qa.gd` attende ora che le regioni streaming siano FULL,
+  i tile layer abbiano finito il bake e i chunk visibili/prefetch siano residenti
+  prima di salvare gli screenshot dei telegraph boss.
 - Rimossi i seam bianchi regolari dai biomi Survival con asset generati: le
   surface terrain ripetute vengono caricate con un trim runtime di 2 px sul
   bordo chiaro e le mesh dei run generati usano un piccolo overdraw senza
@@ -165,6 +168,8 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Validation
 
+- `./tools/run_visual_qa.ps1 -SkipImport -Filter boss_telegraph`: 1 Visual QA,
+  passa.
 - `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/assets -Select generated_texture`:
   20 test, 1446 assert, passa.
 - `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/assets`: 59
