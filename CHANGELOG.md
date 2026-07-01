@@ -1,1378 +1,181 @@
 # CHANGELOG
 
+Registro sintetico delle modifiche principali. I dettagli operativi chiusi sono
+consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
+`docs/documentation_inventory.md` e nei report tecnici sotto `docs/`.
+
 ## Unreleased
-
-### Fixed
-
-- Eliminato il residuo finale di shutdown della suite rapida GUT: i test che
-  bootano `main.tscn` caricano `main_scene_fixture.gd` senza cache persistente,
-  non passano piu la risorsa `Script` agli assert GUT e rilasciano il fixture
-  locale dopo `teardown()`. La quick completa passa con stderr vuoto.
-- Pulita la suite soak GUT: `.gutconfig.soak.json` usa gli hook pre/post di test,
-  `ten_wave_test.gd` libera scena e cache statiche in teardown, e il run soak
-  completo passa senza warning di shutdown.
-- Esteso il post-hook GUT al cleanup di manifest isometrici, cache texture SVG e
-  metriche oggetto, con API dedicate su `IsometricEnvironmentManifest` e
-  `IsometricEnvironmentObject`.
-- Ridotti i riferimenti statici nei test GUT piu pesanti (`balance`,
-  `encounters`, `diagnostics`, `ten_wave`) tramite lazy loading e costanti locali,
-  rendendo i run mirati piu puliti al teardown.
-- `BiomeMapDebugOverlay` non trattiene piu celle e label dopo l'uscita dal tree e
-  non dipende da classi globali per costanti diagnostiche semplici.
-- `InfiniteArenaMode` rispetta un override esplicito di `async_world_build`,
-  mantenendo async di default nelle run reali ma consentendo setup sincroni nei
-  test metrici.
-- `HUDManager` nasconde subito pannello, barra e warning del boss quando il boss
-  viene sconfitto.
-- Ridotti i warning GUT di shutdown legati ai dati mondo: `WorldDataCache`
-  spezza i link ciclici dei `world_data` su clear/overwrite/evizione,
-  `BiomeWorldGenerator` ripulisce anche i mondi adottati da cache e il test
-  golden rilascia gli snapshot codec/fetch usati direttamente.
-- Allineati gli UID script nelle scene vendorizzate di GUT ai `.gd.uid`
-  tracciati, rimuovendo i warning Godot `ext_resource, invalid UID` all'avvio
-  del runner.
-- `ProjectileSystem` aggancia i proiettili al parent locale quando
-  `current_scene` non e disponibile, eliminando gli orphans nei test GUT
-  sintetici di combat/progressione; il test RPG ripulisce i proiettili delle
-  super ranged dopo gli assert di spawn.
-- Cleanup warning GUT generici: `character_select_test.gd`,
-  `manifest_contract_test.gd` e `void_cliff_asset_test.gd` liberano subito i
-  nodi creati nei test, rimuovendo i warning `Test script has ... unfreed
-  children` dai run mirati.
-- `tools/run_gut.ps1` preserva l'exit code Godot anche sotto redirezione dei log
-  evitando che lo stderr nativo interrompa gli audit warning locali.
 
 ### Added
 
-- Aggiunto `docs/testing/gut_warning_cleanup_plan.md` con baseline e sequenza di
-  cleanup per deprecazioni GUT, warning generici, orphans, UID addon e leak di
-  shutdown.
-
-- Cutover finale GUT: `tools/run_gut.sh` e `tools/run_gut.ps1` ora eseguono di
-  default la suite rapida completa (`.gutconfig.json`), mantengono un'opzione
-  golden esplicita, generano un report JUnit in `build/test_logs/` e stampano un
-  riepilogo PASS/FAIL con config ed exit code. Il Visual QA delle aree rocciose
-  vive in `tests/visual_qa/rock_area_visual_qa.gd`.
-
-- Riscrittura test M8 — area A8 Game Modes & Waves migrata a GUT (13/13 file →
-  3 suite sotto `tests/suites/modes/`): `core_modes_test.gd` (survival wave loop
-  con boss/ammo/multiplayer, tower defense, dungeon ramificato con shop/boss,
-  grafo deterministico), `zombie_modes_test.gd` (revamp foundation, market
-  post-boss, contratto del mondo survival, infinite arena di default con build
-  async, ambiente arena con props esplosivi) e `encounters_test.gd` (helper
-  wave-cycle, encounter casuali, mini-eventi biome, menu/save/audio/avvio
-  modalità). 13 test/577 assert verdi.
-- Aggiunto `RectilinearRockAreaMeshBuilder`: le `large_rock` void-first da
-  `15x15` a `30x30` celle non scalano piu il PNG 3x3. Ogni `rock_rect` diventa un
-  plateau rialzato (il void cliff specchiato verso l'alto): la corona cobble e
-  sollevata di `RAISE_HEIGHT_CELLS` e rientra in un mesa, mentre tre pareti
-  continue (fronte sud + due fianchi obliqui in `LATERAL_LEAN_RATIO`) salgono dal
-  prato fino al bordo. Niente piu fenditure/lip disegnate a mano ne bordo a
-  zig-zag: il dettaglio arriva solo dalle texture corona/parete, quindi la
-  superficie resta priva di linee procedurali. Il nodo oggetto conserva solo
-  collisione e debug `F9`. QA reale in
-  `tests/visual_qa/rock_area_visual_qa.gd`.
-- `RockAreaOccluderVisual` ridisegna esattamente la corona sollevata (stesso
-  rettangolo rientrato del builder) per il Y-sort, mascherando i player dietro la
-  roccia senza coprire le pareti che vivono nel `BiomeTileLayer`.
-- Aggiunto `rock_plateau_top_generated.png` (corona cobble world-space) e
-  `rock_cliff_face_upward_generated.png` (pareti a colonne) come materiali
-  dedicati delle masse rocciose, con shading per lato (fronte chiaro, est
-  illuminato, ovest in ombra) e gradiente verso la base.
-- Riscrittura test M7 — area A7 Characters, RPG & Progression migrata a GUT
-  (12/12 file → 3 suite sotto `tests/suites/progression/`):
-  `rpg_progression_test.gd` (stat di classe e formule di danno, XP da kill/wave,
-  passive, adrenalina/super delle 4 classi base, registry data-driven, classi
-  avanzate mago/domatrice/licantropo con companion e beast night),
-  `character_select_test.gd` (flusso survival, personaggio condiviso da tutte le
-  modalità, UI safe-area multi-risoluzione + navigazione, selezione indipendente
-  per-player) e `downed_revive_test.gd` (downed/revive su survival/dungeon/tower e
-  helper PlayerQuery). Nuovo `tests/support/player_stub.gd` per i player sintetici
-  (GUT richiede script-risorsa reali per inst_to_dict). 12 test/269 assert verdi.
-- Riscrittura test M6 — area A6 Enemies & Bosses migrata a GUT (9/9 file → 2 suite
-  sotto `tests/suites/enemies/`): `enemies_test.gd` (nemici tematici per biome +
-  hazard, wave director scaling, bordi/rifiuti/fallback dello spawner, varianti
-  runner/tank, nemico ranged con telegraph, marker direzionali off-screen) e
-  `boss_test.gd` (flusso della boss wave con pattern/fasi/market, telegraph degli
-  attacchi, registry multi-boss con compatibilità di modalità). Ogni test riusa il
-  boot di main.tscn via la fixture condivisa. 9 test/253 assert verdi.
-- Riscrittura test M5 — area A5 Combat, Weapons & Drops migrata a GUT (15/15 file
-  → 4 suite sotto `tests/suites/combat/`): `combat_test.gd` (combat su main.tscn,
-  risoluzione melee vs proiettile, contratti di hitbox), `weapon_catalog_test.gd`
-  (armi base per personaggio, ammo/reload world HUD, inventario/catalogo 30 armi,
-  drop, input mapping, effetti elementali), `weapon_visual_test.gd` (identità
-  visiva: id di shape stabili, silhouette uniche via signature poligonali, palette
-  e VFX tematici — niente confronto di pixel) e `drops_test.gd` (loop drop nemico,
-  progressione da kill/level-up, identità tower attraverso le modalità, status
-  effect ambientali). 20 test/1639 assert verdi. I Visual QA delle armi restano
-  differiti a M-FINAL.
-- Riscrittura test M4 (completata) — area A4 Assets & Manifests migrata a GUT
-  (11/11 file → 7 suite sotto `tests/suites/assets/`). Oltre al primo batch
-  (manifest/pipeline/character/fallback), il secondo batch aggiunge:
-  `generated_texture_test.gd` (forest_grass + void_cliff_generated_texture +
-  forest_isometric_texture_transition: contratti delle texture generate, mesh di
-  cliff/bordo, resolver forest su mappa 3x3 e consumo via BiomeTileLayer),
-  `object_asset_test.gd` (milestone_10_object_asset: contratti object_scenes,
-  silhouette runtime via SVG loader, factory IsometricEnvironmentObject,
-  integrazione ObstacleSystem, supply crate) e `void_cliff_asset_test.gd`
-  (milestone_10_void_cliff_asset: contratti void/transition, resolver delle
-  transizioni di bordo, mesh di giunzione, fall zone per lato e hazard runtime su
-  3x3 condivisa). Assert su esistenza/contratto e tileability strutturale, non su
-  qualità artistica dei pixel (Visual QA differiti). 49 test/7218 assert verdi.
-- Riscrittura test M3 — area A3 Obstacles & Collision migrata a GUT (4/4 file →
-  2 suite sotto `tests/suites/obstacles/`): `collision_test.gd`
-  (milestone_4_obstacle_collision: shape/flag dal manifest, collisione runtime
-  rectangle/circle/open, layer/mask dei proiettili, query jumpable/non-jumpable,
-  chiavi stabili, proiettile fermato dal muro) e `footprint_contract_test.gd`
-  (obstacle_rendering_contract + obstacle_3x3 + scalable_obstacle: footprint a
-  slot, layout autoriali/generati, oggetto runtime + Y-sort, identità void/cliff,
-  feature 3x3, rocce scalabili, e il controllo su `main.tscn` isolato nell'ultimo
-  test via fixture condivisa). Il manifest si carica una volta in before_all; i
-  layout 500x500 si costruiscono solo nei test che li verificano. 15 test/490
-  assert verdi (~30s). I Visual QA degli ostacoli restano differiti a M-FINAL.
-- Riscrittura test M2 — area A2 Environment, Streaming & Graph migrata a GUT
-  (20/20 file → 6 suite sotto `tests/suites/environment/`):
-  `world_graph_streaming_test.gd` (grafo, connettivita multi-seed, streaming,
-  persistenza save v6), `tile_layout_test.gd` (tile layer asset-driven, props dei
-  blocchi, muri perimetrali), `fall_test.gd` (fall boundary, dodge sui varchi),
-  `passage_tile_test.gd` (tile/connettori dei passaggi, dati di connessione del
-  grafo), `exploration_map_test.gd` (fog ed esplorazione) e `integration_test.gd`
-  (il cluster di 10 file che bootavano `main.tscn`: streaming completo
-  regione+vicini, profilo prestazioni isometrico, assenza di renderer/gate legacy,
-  attraversamento dei varchi senza portali, transizione che segue il movimento
-  fisico, inseguimento di un nemico attraverso il seam, generazione deterministica
-  del mondo a biomi + transizione via comando, transizioni multi-step con
-  terreno/loot/HUD, ambiente generato (ostacoli/casse/corridoio) e fall hazard
-  completo (danno/respawn/invulnerabilità, dodge sul void, morte da void con
-  segnali audio/drop)). Le prime cinque suite costruiscono la megamappa una sola
-  volta in before_all; `integration_test.gd` istanzia `main.tscn` UNA volta (nuova
-  fixture condivisa `tests/support/main_scene_fixture.gd`, riusabile dalle aree
-  future che bootano la scena) e riavvia survival per test ripristinando i tunable
-  in before_each. Il cluster di integrazione passa da 10 boot di `main.tscn` a 1.
-  10 test/1062 assert verdi per `integration_test.gd`.
-- Riscrittura test M1 — area A1 World Generation & Determinism migrata a GUT
-  (vedi `test_rewrite_roadmap.md`). 11 file legacy (`golden_seed_default`,
-  `biome_roster`, `persistent_world_generation`,
-  `isometric_biome_generation_rewrite`, `isometric_biome_terrain_coverage`, e i 6
-  `voidfirst_*`) accorpati in 3 suite GUT sotto `tests/suites/world_gen/` con
-  helper condiviso `tests/support/world_gen_helpers.gd`. La mappa 3x3 e il layout
-  void-first si costruiscono una sola volta per suite (before_all) e il
-  determinismo è accorpato. Baseline locale: ~230s (11 boot) → ~130s (1 boot),
-  1.8x sull'area (compute-bound). I file legacy A1 sono stati rimossi; 4 file che
-  la bozza includeva in A1 (`biome_world_generation`, `biome_obstacle_generation`,
-  `biome_status_effects`, `biome_mini_events`) sono stati ricondotti alle aree
-  A2/A4/A5/A8 e migreranno lì.
-- Fondazione GUT (Milestone M0 della riscrittura test, vedi
-  `test_rewrite_roadmap.md`): vendorizzato `addons/gut/` (GUT 9.6.0, per Godot
-  4.6), nuova cartella `tests/suites/` raccolta in un solo processo Godot via
-  `.gutconfig.json`. Aggiunta la fixture condivisa
-  `tests/support/golden_world_fixture.gd` (costruisce il mondo golden una volta e
-  lo riusa nella suite) e la suite di bootstrap `tests/suites/_sanity/`. Wrapper
-  locali `tools/run_gut.sh` / `tools/run_gut.ps1`. La CI ora esegue il doppio
-  runner: suite legacy `extends SceneTree` (in dismissione) + suite GUT (in
-  crescita).
+- Aggiunto il server MCP locale read-only in `tools/mcp-server/`, separato dal
+  runtime Godot. Usa Node.js/TypeScript, `@modelcontextprotocol/sdk` e transport
+  `stdio`.
+- Aggiunti gli script npm root `mcp:start`, `mcp:dev`, `mcp:build`,
+  `mcp:test` e `mcp:smoke`, delegati al package `tools/mcp-server/`.
+- Esposti 9 tool MCP: `repo_overview`, `list_project_files`,
+  `read_project_context`, `search_project`, `game_system_summary`,
+  `roadmap_context`, `run_safe_check`, `asset_inventory` e `codex_task_brief`.
+- Esposti 5 prompt MCP operativi: `audit_isometric_generation`,
+  `improve_zombie_mode`, `implement_roadmap_milestone`,
+  `refactor_gameplay_system` e `asset_quality_pass`.
+- Aggiunto `docs/documentation_inventory.md` come inventario dei Markdown vivi,
+  storici e rimossi dopo il cleanup documentale.
 
 ### Changed
 
-- Rimossa la deprecazione `wait_frames()` dai test GUT sotto `tests/suites/**`:
-  le attese esistenti usano direttamente `wait_physics_frames()`, equivalente al
-  comportamento precedente del wrapper deprecato.
+- Compattato questo changelog: il delta corrente resta in `Unreleased`, mentre
+  la cronologia storica e stata ridotta a baseline archiviate e rimandi ai
+  documenti proprietari.
+- Riorganizzati README, ROADMAP, TODO e ARCHITECTURE intorno allo stato reale
+  post-roadmap: baseline archiviate, backlog aperto minimo, contratti runtime e
+  policy di retention documentale.
+- Finalizzato il cutover GUT: i wrapper `tools/run_gut.sh` e
+  `tools/run_gut.ps1` eseguono la suite rapida completa, mantengono il sottoinsieme
+  golden e producono report JUnit in `build/test_logs/`.
+- Rafforzato il cleanup delle suite GUT rapide e soak: fixture main scene senza
+  cache persistente, teardown espliciti, rilascio cache mondo/manifest/texture e
+  minori riferimenti statici nei test pesanti.
+- Chiarito il contratto MCP in `README.md` e `ARCHITECTURE.md`: il server lavora
+  dentro la root progetto, legge solo contesto testuale, blocca traversal e file
+  sensibili, limita ricerche/output e consente solo safe check allowlisted.
+
+### Fixed
+
+- Eliminati i residui di shutdown della suite rapida GUT legati a fixture,
+  risorse `Script`, children non liberati, cache statiche, dati mondo ciclici,
+  UID GUT vendorizzati e proiettili orfani nei test sintetici.
+- `tools/run_gut.ps1` preserva l'exit code Godot anche sotto redirezione log,
+  evitando falsi fallimenti negli audit warning locali.
+- `HUDManager` nasconde subito pannello, barra e warning del boss quando il boss
+  viene sconfitto.
+- `InfiniteArenaMode` rispetta un override esplicito di `async_world_build`,
+  mantenendo async di default nelle run reali e setup sincroni nei test metrici.
 
 ### Removed
 
-- Rimossi i portali legacy `BiomeTransitionGate` e tutto il macchinario di spawn
-  gate da `BiomeTransitionSystem`, che resta solo come API imperativa
-  `transition_to()` per debug/smoke (il cambio regione nel runtime standard e di
-  `RegionSeamSystem`). Eliminato `tests/milestone_6_open_passage_smoke_test.gd` e
-  aggiornati i test che interrogavano `get_active_gates()`.
-- Rimossi i ground procedurali legacy `BiomeRegionGround` e `BiomeTerrainPatch`:
-  `TerrainGenerator` costruisce sempre il `BiomeTileLayer` asset-driven (anche nel
-  percorso mono-regione di Infinite Arena). I `fallback_path` del manifest sono
-  ripuntati su `biome_tile_layer.gd` e i test relativi aggiornati; documentati
-  anche i cliff mesh builder come fallback tecnici (fix di un rosso pre-esistente
-  introdotto dal commit forest-cliffs).
-- Rimosso il renderer legacy `MultiRegionRenderer` e il suo
-  `tests/milestone_8_multi_region_smoke_test.gd`. `WorldRegionStreamer` e l'unico
-  produttore di contenuto regione: `ZombieModeController` non istanzia piu il
-  vecchio neighbor-ground placeholder ne il fallback `_render_neighbor_regions`.
+- Rimossi Markdown storici completati, prompt grezzi, roadmap duplicate e file
+  milestone obsoleti. Le informazioni ancora utili sono consolidate in
+  `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
+  `CHANGELOG.md`, `docs/documentation_inventory.md` e nei report correnti.
+- Ripulito `TODO.md` dalle sezioni chiuse e storiche: resta solo backlog aperto
+  con obiettivo, milestone collegata, file coinvolti, criteri di accettazione e
+  test richiesti.
 
-### Added
+### Validation
 
-- Retry veloce: ripetere una run con lo stesso seed non rigenera ne' ri-bakea il
-  mondo. `GameModeManager.retry_active_mode()` parcheggia il mondo costruito
-  (`stop_mode(keep_world=true)`); `ZombieModeController` lo riusa se il contesto
-  combacia (`can_reuse_world`/`_world_parked`) e resetta solo il gameplay
-  (ondate/nemici/player via `game_mode_started`). Un contesto diverso ricostruisce,
-  uno stop completo libera il parcheggio. Aggiunto
-  `tests/world_reuse_retry_smoke_test.gd`.
-- Cache di sessione delle texture isometriche nel loader SVG
-  (`IsometricSvgTextureLoader`): ogni SVG viene rasterizzato una sola volta per
-  `(path, size)` e riusato da tile layer, streaming regioni, cambi bioma e run
-  successive invece di essere ricaricato ogni volta. Aggiunto
-  `tests/isometric_texture_cache_smoke_test.gd`.
-- Barra di caricamento con progresso determinato per fasi (`WorldLoadingScreen`:
-  `set_phase`/`complete` + percentuale): `Preparazione mondo` -> `Generazione mondo`
-  -> `Costruzione terreno` -> 100%. `Zombie Survival` ora costruisce la megamappa
-  `3x3` su worker thread dietro la barra come gia faceva `Infinite Arena`, cosi la
-  finestra non si blocca; l'async e attivo nelle run reali e resta sincrono in
-  headless per i test deterministici. `Dungeon` e `Tower Defense` mostrano lo
-  stesso overlay come breve transizione d'ingresso tramite
-  `WorldLoadingScreen.show_brief()` (anch'essa solo nelle run reali). Aggiunto
-  `tests/world_loading_screen_smoke_test.gd`.
-- Seed golden unico condiviso tra gioco e test: `GameConstants.GOLDEN_WORLD_SEED`
-  e la sorgente di verita del default di `WorldGenerationSeed`, con helper
-  `tests/support/golden_world.gd` e `tests/golden_seed_default_smoke_test.gd` che
-  ancora il contratto "default del gioco == mondo golden".
-- Aggiornata la checklist manuale repo-fix Milestone 13 con workflow standard
-  per import, `fast`, `slow`, visual QA, asset check, export PCK, export EXE e
-  build smoke.
-- Aggiunti `tests/milestone_12_balance_metrics_smoke_test.gd` e
-  `tests/milestone_12_zombie_balance_metrics_smoke_test.gd` per validare
-  durata wave, nemici vivi, drop, danni, boss, spawn edge e varianti bioma in
-  `Infinite Arena` e `Zombie Survival`.
-- Aggiunto `tests/milestone_11_weapon_drop_progression_smoke_test.gd` per
-  validare in un loop survival reale pickup armi, switch inventario,
-  ammo/reload, kill zombie, drop fisico, XP RPG, level-up, passiva e feedback.
-- Aggiunto `tests/milestone_10_asset_fallback_policy_smoke_test.gd` per
-  verificare fallback policy, assenza di path `placeholder`/`generic`, asset
-  path standard presenti e survival asset-driven senza visual legacy.
-- Aggiunto `docs/repo_fix_milestone_10_asset_fallback_policy.md` con
-  classificazione dei fallback tecnici, temporanei e vietati nel percorso
-  standard.
-- Aggiunto `BiomeObstaclePainter` per isolare il disegno procedurale dei muri
-  perimetrali e delle boundary tematiche dal nodo runtime `BiomeObstacle`.
-- Aggiunto `IsometricTileResolverUtils` per hashing stabile, membership in
-  rettangoli e verifica path asset usati dal resolver tile isometrico.
-- Aggiunto `tests/all_modes_character_system_smoke_test.gd` che verifica che
-  Dungeon e Tower Defense applichino il personaggio RPG scelto (come Zombie
-  Survival) e che senza roster il player torni al profilo generico.
-- Aggiunte le texture raster finali `cliff_face_texture` e
-  `cliff_lip_texture`, generate come materiali seamless condivisi dai cliff
-  void orientati.
-- Aggiunti `tests/void_cliff_generated_texture_smoke_test.gd` e
-  `tests/void_cliff_generated_visual_qa.gd`, con tavola delle 14 varianti in
-  `build/qa/void_cliffs/void_cliff_generated_variants.png`.
-- Aggiunto `tests/void_cliff_runtime_visual_qa.gd`, che avvia `main.tscn` in
-  Survival e salva `build/qa/void_cliffs/void_cliff_runtime_game.png`; il fronte
-  cliff v2 usa forme piu ampie e luminose per restare leggibile a scala gioco.
-- Aggiunti `forest_grass_generated.png` e `grass_cliff_edge_generated.png`:
-  `BiomeTileLayer` applica il prato seamless con UV world-space e usa il nuovo
-  raccordo prato-roccia sulle creste cliff; la mesh terreno e isolata in
-  `IsometricForestGroundMeshBuilder`. Incluso lo smoke
-  `tests/forest_grass_generated_texture_smoke_test.gd` e lo screenshot runtime
-  `build/qa/void_cliffs/forest_grass_cliff_runtime_game.png`.
-- Aggiunti i materiali raster seamless per `forest_path` (terra e sassi),
-  `forest_road` (asfalto) e le transizioni `grass_to_path`, `grass_to_road` e
-  `path_to_road`; la variante v2 terra-asfalto riduce la ripetizione nei
-  raccordi stretti. Aggiunta la tavola
-  `build/qa/forest_surfaces/forest_surface_materials.png` e tre catture runtime.
-- Aggiunto `tests/character_select_independent_smoke_test.gd` che verifica la
-  selezione indipendente: il pad del Giocatore 2 muove e conferma il proprio
-  slot senza toccare focus, cursore e scelta del Giocatore 1.
-- Aggiunti i marker direzionali ai bordi schermo per i minion fuori dalla
-  visuale (`OffscreenEnemyMarkers`): frecce ancorate al bordo del viewport con
-  colore tematico per bioma, dimensione e opacita derivate dalla distanza dal
-  party, esclusione dei nemici on-screen e dei boss, cap sul numero di marker e
-  rispetto di high contrast e reduced motion. Incluso
-  `tests/offscreen_enemy_markers_smoke_test.gd`.
-- Aggiunto il mercato ricorrente della zombie survival dopo le boss wave 5,
-  10, 15 e successive, con blocco spawn, wallet party condiviso, offerte
-  casuali dal catalogo, cura, refill ammo, acquisti arma per-player e ready
-  multiplayer. Inclusi `docs/zombie_market.md` e
-  `tests/zombie_market_smoke_test.gd`.
-- Aggiunti gli ostacoli `forest_tree` e `large_rock` con asset PNG trasparenti
-  originali, footprint manifest `3x3`, collisione rettangolare completa e
-  piazzamento garantito nella `infected_plains` generata.
-- Aggiunti `tests/obstacle_3x3_smoke_test.gd` e
-  `tests/obstacle_3x3_visual_qa.gd`, con screenshot gameplay/footprint in
-  `build/qa/obstacle_3x3/`.
-- Aggiunti `tests/player_world_hud_layout_smoke_test.gd` e
-  `tests/player_world_hud_visual_qa.gd` per verificare il contratto del nuovo
-  layout e confrontare quattro stati di vita, carica super e glow ready.
-- Aggiunta la modalita `Infinite Arena` come default/quick play con mode id
-  dedicato, menu entry, Continue/save default, hotkey `F1`, status HUD e ciclo
-  risultati.
-- Aggiunto `tests/infinite_arena_default_mode_smoke_test.gd` per verificare
-  arena unica `500x500`, perimetro murato, assenza di WorldRuntime/streaming,
-  assenza di Character Select e cleanup al ritorno menu.
-- Aggiunto `tests/zombie_survival_world_contract_smoke_test.gd` per bloccare il
-  contratto survival standard `3x3`, profilo arena `1x1` esplicito e override
-  dimensioni mappa.
-- Aggiunti `repo_status_report.md` e `repo_fix_roadmap.md` con analisi dello
-  stato repo, fallimenti test confermati e roadmap operativa di stabilizzazione.
-- Aggiunto `WeaponVisualRenderer` per centralizzare fallback, shape target e
-  silhouette proiettile derivate da `WeaponVisualData`.
-- Aggiunte silhouette pickup per le 30 armi del catalogo drop tramite
-  `pickup_shape_id` e geometrie condivise in `WeaponVisualRenderer`.
-- Aggiunto `tests/weapon_pickup_visual_identity_smoke_test.gd` per verificare
-  pickup arma distinti, fallback missing, high contrast e reduced motion.
-- Aggiunto `tests/weapon_visual_identity_qa.gd` con screenshot QA della griglia
-  pickup W2 in `build/qa/weapon_visual_identity_pickup_grid.png`.
-- Aggiunto `tests/weapon_held_hud_visual_identity_smoke_test.gd` per verificare
-  shape held/HUD condivise, campione di 12 armi e fallback legacy.
-- Aggiunto `tests/weapon_projectile_vfx_identity_smoke_test.gd` per verificare
-  profili projectile/muzzle/impact non nulli, shape projectile distinte e
-  consumo runtime da `Projectile`/`GameplayEffects`.
-- Aggiunto `tests/weapon_melee_visual_identity_smoke_test.gd` per verificare
-  slash shape, hit effect tematici, separazione hitbox/visual e fallback legacy
-  delle armi melee RPG.
-- Aggiunto `tests/weapon_visual_catalog_smoke_test.gd` per verificare sulle 30
-  armi profili unici, palette esplicite e shape pickup/held/HUD/projectile o
-  slash risolte senza fallback generici.
-- Aggiunto `weapon_catalog_visual_palette.gd` come tabella presentazionale
-  dedicata per le palette body, accent e glow delle 30 armi catalogo.
-- Aggiunti `weapon_visual_identity_qa_board.gd` e
-  `weapon_visual_identity_survival_qa.gd` per comporre tavole QA isolate e uno
-  scenario survival affollato senza concentrare il test in un mega-file.
-- Aggiunto `docs/weapon_visual_identity_validation_report.md` con architettura,
-  lista armi, file coinvolti, test, screenshot, asset e debiti residui W0-W8.
-- Aggiunti profili projectile procedurali per le 20 armi firearm/elemental del
-  catalogo, inclusi bullet pesante, pellet shotgun, granata, rail beam,
-  fireball, ice lance, lightning bolt, acid flask, spore cloud, seismic pulse e
-  void orb.
-- Aggiunti profili slash e hit effect procedurali per le 10 armi melee del
-  catalogo: quick stab, machete cleave, heavy axe cleave, broad sweep, hammer
-  shockwave, spear thrust, katana dash cut, spiked impact, scythe crescent e
-  shield bash.
-- Esteso `WeaponVisualData` con ID visuali opzionali per pickup, held, HUD,
-  projectile, slash, impact e muzzle, piu family, outline/glow, scale e percorsi
-  sprite non obbligatori.
-- Aggiunto `EntityVoidFallComponent`, condiviso da player e zombie, con stato
-  `falling`, lock del movimento e animazione di discesa, scala e alpha prima
-  dell'impatto.
-- Esteso `tests/zombie_fall_hazard_smoke_test.gd` con dodge su void/terreno,
-  danno singolo post-animazione e morte zombie senza drop o XP.
-- Aggiunti `WeaponInstance`, `PlayerWeaponInventory`, `WeaponCatalog` e
-  `WeaponEffectResolver`: inventario persistente per-player, 30 nuove armi
-  (10 da fuoco, 10 melee, 10 elementali) ed effetti AOE/status/chain/hazard.
-- Aggiunto `tests/weapon_inventory_catalog_smoke_test.gd` per persistenza
-  ammo/reload/cooldown, ciclo base weapon, D-pad per slot, unicita drop di run,
-  pool esaurito e smoke melee/fuoco/ghiaccio/esplosione/stun.
-- Aggiunto `isometric_biome_generation_rewrite_roadmap.md` con audit della
-  generazione biomi, stato R1 e prossimo ciclo R2 su pareti/void perimetrale.
-- Aggiunto `tests/isometric_biome_generation_rewrite_smoke_test.gd` per coprire
-  chunk `500x500`, base void/fall zone, strade larghe 40, sentieri medi larghi
-  20, blocchi interni, passaggi fisici e spawn/crate su celle walkable.
-- Aggiunto `RegionSeamSystem` per aggiornare la regione survival corrente dalla
-  posizione world-space del party e dai `WorldRegionConnection` aperti, senza
-  istanziare portali o trigger di transizione. Aggiunto
-  `tests/milestone_10_no_portal_transition_smoke_test.gd`.
-- Aggiunto `WorldRegionStreamer` per istanziare regione corrente e vicini
-  connessi come contenuto gameplay `FULL` con tile layer, ostacoli, hazard/fall
-  zone e crate. Aggiunto
-  `tests/milestone_10_full_region_streaming_smoke_test.gd`.
-- Aggiunto metadata regione per gli zombie (`spawn_region_id`,
-  `current_region_id`, `last_seen_player_region_id`) e smoke
-  `tests/milestone_10_cross_biome_chase_smoke_test.gd` per il chase
-  cross-bioma.
-- Aggiunto `tests/milestone_10_legacy_cleanup_smoke_test.gd` per bloccare il
-  ritorno di visual legacy nel bootstrap survival asset-driven.
-- Aggiunti `tests/milestone_10_isometric_final_visual_qa.gd` e
-  `tests/milestone_10_isometric_performance_smoke_test.gd` per chiudere la QA
-  visuale/performance finale della roadmap asset isometrica.
-- Aggiunto il primo sistema completo di texture isometriche forestali per il
-  bioma base `infected_plains`: grass, tall grass, path, road, void, cliff edge,
-  mountain wall e transizioni `grass_to_*`, `path_to_road`,
-  `ground_to_void_cliff` e `ground_to_mountain_wall`.
-- Aggiunto `tests/forest_isometric_texture_transition_smoke_test.gd` per
-  validare contratti manifest, asset SVG, transizioni emesse dal layout
-  generato, tall grass walkable e dettaglio texture nel `BiomeTileLayer`.
-- Aggiunto `tests/starter_biome_vertical_slice_smoke_test.gd` per validare il
-  vertical slice del bioma base: strade edge-to-edge, sentieri, casa,
-  vegetazione densa impassabile, fiume con bridge, seed/debug summary e
-  contratti manifest non generici.
-- Aggiunti asset SVG base-complete per `abandoned_car` e `dense_vegetation`
-  nel set isometrico `infected_plains`.
-- Aggiunti 14 tile SVG dedicati per i cliff: bordi north/south/east/west,
-  angoli interni/esterni e due raccordi diagonali. Il nuovo
-  `IsometricCliffMeshBuilder` pre-bake-a faccia verticale, creste, fenditure,
-  gradiente profondo sfumato nel void senza creare nodi per-tile.
-- Aggiunto `PlayerWorldHudVisual`, pacchetto HUD world-space child del player
-  con P1-P4, HP, livello con gauge EXP circolare, slot condiviso ammo/reload e
-  barra super verticale ready/non-ready.
+- `npm run mcp:build`: passa.
+- `npm run mcp:test`: passa con 4 file test e 13 test totali.
+- `npm run mcp:smoke`: passa e lista 9 tool MCP e 5 prompt.
+- Nota locale: `npm run mcp:smoke` stampa un warning npm su
+  `metrics-registry`; non blocca build, test o smoke.
 
-### Changed
+## Baseline Archiviata
 
-- README, ROADMAP, TODO, ARCHITECTURE e GAME_DESIGN documentano lo stato reale
-  M13: export PCK Windows verificato, export EXE/build smoke bloccati
-  localmente dai template Godot `4.6.3` mancanti e `REL-001` ancora aperta per
-  release pubblicabile.
-- `tools/run_tests.ps1` e `tools/run_tests.sh` classificano
-  `milestone_13_weapon_tower_visual` e `milestone_17_run_results` come test
-  `slow`, per mantenere la suite `fast` sotto il timeout standard senza
-  indebolire i guardrail.
-- `tools/run_tests.ps1` e `tools/run_tests.sh` classificano i nuovi guardrail
-  metrici M12 come test `slow`.
-- I test M12/ten-wave/soak/cross-biome usano context o radius mirati per
-  mantenere deterministica la validazione headless di wave, boss, biomi e
-  streaming.
-- `tools/run_tests.ps1` e `tools/run_tests.sh` classificano il nuovo guardrail
-  M11 weapon/drop/progressione come test `slow`.
-- `tools/run_tests.ps1` e `tools/run_tests.sh` classificano il nuovo guardrail
-  asset/fallback M10 come test `slow`.
-- La documentazione repo-fix M10 ora esplicita che la survival standard non
-  deve usare `BiomeRegionGround`, `BiomeTerrainPatch`, `MultiRegionRenderer`,
-  `NeighborGround_*`, `BiomeTransitionGate` o fallback generici non documentati.
-- Il sistema personaggi RPG e ora condiviso da tutte le modalita di gioco e non
-  solo da Zombie Survival. La logica di selezione/applicazione del roster
-  (`selected_character_id`, `selected_character_ids_by_slot`, applicazione su
-  spawn) e stata estratta da `SurvivalMode` a `BaseGameMode` (`modes/shared`),
-  cosi Infinite Arena, Dungeon e Tower Defense applicano stat, passiva e super
-  del personaggio scelto. Nel menu ogni modalita di gioco passa ora dalla
-  schermata di selezione personaggio (titolo e pulsante di avvio adattati alla
-  modalita) prima di partire.
-- `IsometricCliffMeshBuilder` produce ora UV world-space e una mesh dedicata
-  per il lip: lati N/S/E/W, angoli interni/esterni e diagonali consumano gli
-  stessi materiali senza cuciture, dissolvendosi nel void uniforme. Collisione
-  e caduta restano in `BiomeFallZone`/`HazardSystem`.
-- Ridotti i lookup globali nei percorsi player/HUD/spawner: `HUDManager` usa
-  NodePath/cache locali, `PlayerManager` inietta dipendenze nei
-  `PlayerController` e `ZombieModeController` inietta obstacle/hazard/world
-  refs in `ZombieSpawner`; i fallback a gruppi restano per scene isolate.
-- `WeaponVisualRenderer` mantiene le API presentazionali pubbliche ma delega le
-  geometrie statiche di pickup, dettagli e projectile a
-  `WeaponVisualShapeLibrary`, riducendo il file principale sotto 500 LOC senza
-  cambiare combat, hitbox o bilanciamento.
-- `IsometricSvgTextureLoader` mantiene l'API `load_texture` ma delega i
-  fallback rasterizzati per SVG/object/void/slot a
-  `IsometricSvgFallbackTextureBuilder`, riducendo il loader a 136 LOC senza
-  cambiare manifest o contratti asset runtime.
-- `IsometricTileResolver` mantiene API e costanti pubbliche ma sposta ID,
-  sezioni e liste statiche in `IsometricTileCatalog` e helper puri in
-  `IsometricTileResolverUtils`, restando sotto 1000 LOC senza cambiare la
-  responsabilita di risoluzione per-cella.
-- `BiomeObstacle` mantiene collisione, metadata manifest e dispatch dei draw
-  mode, ma delega a `BiomeObstaclePainter` i blocchi presentazionali piu grandi
-  per muri perimetrali e boundary tematiche.
-- `HUDManager` ora mostra il `StatusPanel` persistente solo in Tower Defense,
-  con titolo modalita, core, crediti, wave, nemici e reward recente; Survival e
-  Infinite Arena mantengono nascosto il pannello standard.
-- `ZombieSpawner` ora valida spawn preview e spawn effettivi con lo stesso
-  contratto camera-edge: motivo di scarto, report tentativi, walkable, hazard,
-  blocker, fallback stream-aware sulle regioni caricate e punti arena usati
-  solo se validi. La regressione 10 wave resta su spawn edge attraverso tutti e
-  cinque i biomi.
-- Allineati `README.md`, `repo_fix_roadmap.md`, `ROADMAP.md`, `TODO.md`,
-  `ARCHITECTURE.md` e `GAME_DESIGN.md` al contratto della Character Select con
-  selezione indipendente per giocatore.
-- La character selection passa da hot-seat a selezione indipendente per
-  giocatore: tastiera/mouse/pad 0 pilotano il Giocatore 1 col focus Godot,
-  mentre ogni pad aggiuntivo (device N) muove il cursore del proprio slot N+1 e
-  conferma in autonomia, senza rubare il cursore agli altri. Le card mostrano
-  un anello colorato per ciascun cursore in hover e i pip di commit per slot.
-  `MenuNavigationController` ha un `device_filter` opzionale per instradare
-  l'input di ogni pad al solo cursore di competenza.
-- `WaveManager` espone un blocco generico tra reward e intermission;
-  `ProgressionManager` espone la spesa atomica del denaro comune e
-  `WeaponSystem` refill mirati che preservano le istanze inventario.
-- Separata l'arma base dall'inventario equipaggiabile: `RB`/`Spazio` attacca
-  con la base, `LB`/`F` usa l'arma raccolta selezionata e il D-pad cicla solo
-  le armi raccolte. Una speciale vuota non forza piu il fallback o lo switch
-  dell'arma attiva; ammo, reload e cooldown delle due sorgenti restano
-  indipendenti.
-- Ridisegnato il `PlayerWorldHudVisual`: il livello con gauge EXP sostituisce
-  P1-P4, la vita occupa le due righe superiori con soglie
-  verde/arancio/rosso, la super e una barra verticale blu sul bordo destro e il
-  faceplate emette glow quando e pronta; aumentata inoltre la leggibilita delle
-  etichette HP, ammo e reload.
-- Estesa la QA asset ostacoli a sorgenti PNG oltre agli SVG, mantenendo i check
-  su trasparenza, copertura della silhouette e downscale runtime deterministico.
-- `Zombie Survival` resta una modalita separata con megamappa `3x3`, biomi
-  connessi e mappa esplorazione; `F7` e il menu dedicato la avviano passando da
-  Character Select.
-- Il context `arena_boundary_mode = "walled"` converte i bordi senza vicino in
-  muri fisici e disabilita i void/fall pocket interni del profilo arena.
-- `ZombieModeController` non forza piu la survival standard a `1x1`: usa il
-  default `3x3` multi-bioma di `BiomeMapGenerator` e riserva l'arena compatta
-  al context `single_biome_arena`.
-- `tools/run_tests.ps1` e `tools/run_tests.sh` supportano categorie
-  `all`/`fast`/`slow`/`soak`/`visual`, log in `build/test_logs/` e filtro senza
-  match con exit code non zero.
-- `Projectile` delega poligono e glow al renderer visuale condiviso mantenendo
-  invariati i profili legacy quando i nuovi campi sono vuoti.
-- `DropPickup` passa `WeaponData.visual_data` a `DropPickupVisual` per i drop
-  arma; i pickup non-arma mantengono le icone dedicate esistenti.
-- `WeaponCatalog` genera un profilo visuale runtime per ogni arma catalogo con
-  shape pickup e glow rarita senza cambiare il profilo projectile legacy.
-- `WeaponCatalog` assegna anche `held_shape_id`, `hud_shape_id` e dimensioni
-  visuali per differenziare massa/lunghezza delle 30 armi catalogo.
-- `WeaponCatalog` assegna `profile_id` e palette specifici per `weapon_id` a
-  tutte le 30 armi, mantenendo i dati colore fuori dalla factory catalogo.
-- `PlayerVisual` e `WeaponIcon` delegano silhouette arma e HUD a
-  `WeaponVisualRenderer`, eliminando i match locali sui profili visuali.
-- `WeaponCatalog` assegna ora profili projectile/muzzle/impact specifici alle
-  armi firearm/elemental del catalogo senza cambiare valori di bilanciamento.
-- `GameplayEffects` legge muzzle kind, impact kind, colore, size e shake dal
-  profilo visuale del proiettile invece di usare sempre il feedback `hit`
-  generico.
-- `WeaponEffectResolver` mantiene invariato il ground hazard runtime ma
-  differenzia il disegno di ampolla acida e spore tossiche.
-- `MeleeAttack` risolve lo slash style dal profilo visuale condiviso e disegna
-  slash distinti senza cambiare shape collisione, danno o timing.
-- `GameplayEffects` legge ora kind, colore, size e shake degli hit melee da
-  `WeaponVisualRenderer`, rimuovendo le eccezioni specifiche per `rpg_axe` e
-  `rpg_sword`.
-- `tests/weapon_visual_identity_qa.gd` produce anche
-  `build/qa/weapon_visual_identity_held_hud_grid.png`.
-- `tests/weapon_visual_identity_qa.gd` produce ora cinque tavole isolate e tre
-  screenshot survival per default, reduced motion e high contrast, con controlli
-  pixel su contenuto, separazione e firme colore/forma.
-- `ObstacleLayoutGenerator` normalizza gli oggetti non-border al footprint del
-  manifest prima delle query di spazio; collisione, posizione, base visiva e
-  dimensione SVG derivano ora dallo stesso rettangolo logico, senza scale
-  casuali. Rimossi gli SVG legacy sostituiti dalle varianti footprint-specific.
-- `HazardSystem` risolve ora `walkable`, `hazard`, `fall_zone` e `void` dalla
-  classificazione della cella world-space; oltrepassare un semplice border non
-  causa piu danno se la cella sotto l'entita non e void.
-- Player e zombie usano stati espliciti di dodge/fall. Il dodge attraversa il
-  void senza trigger intermedi e verifica il terreno solo al termine; il danno
-  player viene applicato una volta a fine caduta.
-- Le morti zombie con `death_reason = void` terminano dopo l'animazione e
-  saltano in modo centralizzato XP, drop, risorse e hazard on-death.
-- I pickup arma aggiungono un'istanza all'inventario invece di sovrascrivere
-  la speciale corrente; i duplicati diventano ammo/denaro, il D-pad su/giu
-  cambia arma per-player e l'HUD mostra selezione, lista inventario ed effetti.
-- `DropSystem` mantiene un registry globale degli ID arma apparsi nella run e
-  converte in ammo le richieste quando il catalogo e esaurito.
-- Corretto il raccordo delle mesh cliff agli angoli: le facce laterali non
-  duplicano piu il segmento condiviso e interpolano la profondita verso la
-  faccia north/south; anche i tile laterali precedenti vengono limitati alla
-  quota del join, eliminando i cunei che invadevano terreno o void. L'underlay
-  fra i diamanti cliff e separato dal void puro e usa un grigio neutro coerente
-  con l'edge. Rimossi la riga di foschia e il secondo pass shadow, che produceva
-  sovrapposizioni simili a un riflesso: la faccia termina ora direttamente nel
-  colore del void.
-- Character Select ora supporta navigazione griglia a quattro direzioni con
-  wrapping su card valide e avvio survival tramite `Start`/`pause` solo quando
-  gli slot attivi hanno una selezione completa; lo `Start` di controller non
-  attivi continua a servire il join locale.
-- L'HUD gameplay sposta caricatore, reload, livello/EXP e super nel pacchetto
-  sopra-player; le schede P1-P4 agli angoli restano per ritratto, arma,
-  riserva/stato speciale, statistiche, passive e status senza duplicare il
-  caricatore.
-- Rimosso dal gameplay il riquadro status persistente, inclusi progresso party,
-  stato ondata survival e riepilogo bioma; gli annunci temporanei restano nel
-  canale HUD esistente.
-- `ObstacleLayoutGenerator` scala la rete bioma: le strade principali passano
-  a 40 celle, i sentieri medi a 20 celle e i passaggi fisici generati a 40
-  celle, mantenendo il valore storico da 10 come base di scala.
-- La generazione biomi survival usa ora chunk logici `500x500` e una megamappa
-  default `3x3`; `BiomeMapGenerator` mantiene override di debug per dimensione
-  e numero regioni.
-- `BiomeEnvironmentLayout` non considera piu walkable ogni cella non occupata:
-  il layout parte da void e scava `floor_rects`, strade, passaggi e blocchi
-  interni, con cache terrain `PackedByteArray` per query su 250.000 celle.
-- `ObstacleLayoutGenerator` genera una rete orizzontale/verticale con strade
-  principali larghe 40, sentieri bioma medi larghi 20, blocchi interni
-  classificati e fall zone per void/partial void.
-- `ObstacleLayoutGenerator` garantisce nel bioma base una road network
-  edge-to-edge, almeno una `ruined_house`, vegetazione densa bloccante, dettagli
-  strada e un attraversamento acqua/ponte deterministico quando il seed lo
-  richiede; il layout espone `generation_summary` per debug.
-- `MapValidationSystem` blocca il void nel flood-fill e verifica che spawn e
-  crate siano su terrain walkable; `ZombieSpawner` rifiuta le celle streamate
-  non walkable.
-- `MapValidationSystem` tratta `deep_water` come bloccante salvo bridge,
-  valida strade principali edge-to-edge e attraversamenti d'acqua dichiarati
-  come fiume, senza rendere obbligatorio un ponte per le pozze tematiche locali.
-- `BiomeTransitionSystem` resta una API legacy/debug per `transition_to()`, ma
-  non genera piu `BiomeTransitionGate` nella survival standard; gli smoke di
-  open passage e transizione bioma validano ora il contratto senza gate runtime.
-- `ZombieModeController` usa lo streamer multi-regione quando
-  `enable_multi_region_render` e attivo; `TerrainGenerator`, `ObstacleSystem`,
-  `HazardSystem` e `ResourceCrateSystem` registrano i nodi streamati per
-  mantenere query, danno da caduta, safe position e ledger crate centralizzati.
-- `EnemySystem` assegna la regione di spawn dalla posizione world-space e
-  `ZombieSpawner` valida le posizioni camera-edge contro le regioni streamate;
-  gli zombie gia vivi non vengono despawnati o resettati al cambio bioma.
-- `ZombieModeController` non crea piu `MultiRegionRenderer` durante la
-  risoluzione componenti standard: il renderer storico resta fallback/debug
-  lazy-only se lo streamer gameplay non e disponibile.
-- `IsometricTileResolver` risolve `infected_plains` con tile forestali
-  neighbor-aware, mantenendo i passage tile prioritari e senza cambiare
-  classificazione terrain, pathfinding, hazard o collisioni.
-- `IsometricTileResolver` risolve ora le celle `fall_zone` dal vicinato in
-  varianti cliff orientate; `BiomeTileLayer` usa il risultato per separare in
-  modo netto terreno calpestabile e caduta anche su angoli e raccordi.
-- `BiomeTileLayer` pre-bake-a linee di dettaglio per grass, tall grass, path,
-  road, transizioni e cliff, cosi il ground forestale non dipende da
-  placeholder piatti o da nodi per-tile.
-- `BiomeTileLayer` esclude ora `void_depth` e `forest_void` dalla mesh a rombi
-  e dal reticolo: il void resta uniforme, mentre bordo e faccia cliff
-  mantengono i dettagli di profondita.
-- Il void uniforme usa ora il colore condiviso dal `VoidBackdrop` fuori-mappa;
-  il resolver ignora `TERRAIN_BORDER` come sorgente di cliff, i blocchi
-  `full_void` che raggiungono il perimetro vengono estesi fino al limite
-  esterno e il relativo intervallo viene sottratto dai wall segment.
-- Il pass texture forestale usa ora ombre, dettagli e underlay scuri relativi
-  al tipo di tile: verde bosco per erba/void/cliff e marrone scuro per
-  path/road. Il reticolo sul ground forestale e disattivato per eliminare gli
-  spazi neri tra i rombi calpestabili.
-- `assets/environment/isometric/manifest.json` v8 punta il tile set base a
-  `tiles/forest/forest_tileset.svg` e registra 122 SVG ambiente verificati dalla
-  pipeline asset, incluse le transizioni cliff orientate.
+Questa sezione compatta le milestone chiuse. Le regole di gioco vivono in
+`GAME_DESIGN.md`, i contratti runtime in `ARCHITECTURE.md`, lo stato attuale in
+`README.md`, il backlog aperto in `TODO.md` e la direzione in `ROADMAP.md`.
 
-### Fixed
+### Fondazione e Modalita Base
 
-- Ripristinato `tests/milestone_10_passage_tile_smoke_test.gd`: i connector di
-  passaggio del resolver isometrico hanno priorita sulle road decorative
-  sovrapposte e restano coerenti con il `passage_type`.
-- Stabilizzati gli smoke M13 repo-fix per starter senza blocchi interni,
-  ostacoli/crate in regioni streamate e recovery temporizzate RPG sotto carico.
-- Ripristinato il burrone in finta prospettiva sui lati verticali dei cliff
-  forestali: `RectilinearCliffFaceMeshBuilder` ora sghemba le pareti laterali
-  (est/ovest) verso l'interno del void (`LATERAL_VOID_SLOPE`) invece di disegnare
-  una striscia piatta axis-aligned, recuperando l'inclinazione delle vecchie
-  facce diamante EDGE E/W. Pareti lontana e vicina restano dritte.
-- Rimosse le barre verdi che tracciavano il perimetro dei cliff forestali, da
-  due cause distinte. (1) I bordi del `IsometricCliffBorderMeshBuilder` ora
-  campionano solo la fascia rocciosa pura dei raster
-  (`HORIZONTAL_ROCK_UV_START`/`VERTICAL_ROCK_UV_START`) invece di partire dal
-  rapporto geometrico erba-roccia, dove il muschio verde della transizione
-  restava visibile; la geometria delle strisce e invariata. (2) Le celle di
-  cresta `TILE_FOREST_CLIFF_EDGE`/`TILE_GROUND_TO_VOID_CLIFF` in `BiomeTileLayer`
-  sono ora coperte dal prato seamless invece di disegnare un rombo isometrico
-  verde del terreno fuori dal bordo roccioso: il prato arriva al bordo del void
-  e la roccia resta interamente di competenza delle mesh border/face dedicate.
-- Corretto il raccordo prato-cliff: il nuovo
-  `grass_cliff_edge_generated_v2.png` usa una separazione lineare erba-roccia,
-  affiancata da `grass_cliff_edge_vertical_generated.png`;
-  `IsometricCliffBorderMeshBuilder` applica realmente due bordi orizzontali e
-  due verticali ai fall interni, mentre quelli perimetrali mantengono solo il
-  lato rivolto al terreno. Negli angoli non viene sovrapposto un tile dedicato:
-  il bordo orizzontale possiede la giunzione e il verticale termina alla sua
-  profondita rocciosa; la mesh verticale campiona solo la parte rocciosa interna
-  al void. Anche quella orizzontale esclude la propria porzione erba: il ground
-  resta l'unico proprietario del prato e nessun edge puo lasciare cap scuri agli
-  estremi. `RectilinearCliffFaceMeshBuilder` sostituisce inoltre nel forestale
-  le facce inclinate per-cell con pannelli continui su/giu e destra/sinistra;
-  la geometria legacy resta fallback non forestale. Croci, quadrati e denti
-  angolari risultano eliminati. Collisioni e caduta restano invariate.
-- Corretto il profilo `Infinite Arena` murato: il context `walled` raggiunge
-  anche la pipeline starter void-first, che riempie il void residuo come floor
-  invece di generare chasm/fall zone interne.
-- Corretto il flusso Character Select del menu: `MainMenu` espone di nuovo un
-  `CharacterDetailPanel` aggiornato dal focus della card roster, e lo smoke
-  Milestone RPG 1 ha un timeout di guardrail per non restare appeso su errori.
-- Corretto `PlayerHudCard`: la card d'angolo non crea piu barre reload o XP
-  duplicate; caricatore, reload, EXP e super restano nel world-space HUD sopra
-  il player.
-- Corretto `tools/run_tests.ps1`: il runner PowerShell cattura ora exit code
-  reale, stdout/stderr, timeout e log persistenti senza false-fail su test PASS.
-- Corretto il QA visuale isometrico: le catture sui biomi remoti ora spostano
-  il player su una cella sicura adiacente al focus e azzerano lo smoothing
-  camera; una verifica di dettaglio world-space impedisce ai frame neri di
-  risultare PASS.
-- Corretto il loader runtime degli SVG ambiente isometrici: ora rasterizza il
-  contenuto SVG trasparente quando disponibile, scarta import opachi e usa un
-  fallback isometrico specifico per categoria oggetto invece della sagoma
-  placeholder generica.
+- Inizializzati repository Git, progetto Godot 4.x testuale, scena principale
+  pseudo-isometrica, input tastiera/joypad, player controller, camera di gruppo,
+  multiplayer locale 1-4 player e HUD slot.
+- Completati combat, health, projectile, nemici, drop, loot table, progressione
+  party, pickup fisici e inventario armi per-player.
+- Completate le tre modalita principali: zombie survival a ondate con boss,
+  dungeon procedurale lineare con boss finale e tower defense con core, crediti,
+  torri e boss wave.
+- Aggiunti menu principale, pausa, settings, save JSON versionati, autosave,
+  unlock persistenti, export preset Windows e build smoke.
 
-### Performance
+### Visual Gameplay, UX e Accessibilita
 
-- Il profilo `balanced` con mondo `3x3`, tre regioni streamate e 28 nemici
-  resta nel budget dopo il nuovo cliff pass: 16,59 ms medi su target 35 ms.
-- Ridotto drasticamente il costo di rendering del terreno isometrico in modalità
-  zombie, che era il principale collo di bottiglia del framerate (non il
-  caricamento dei tile). Il renderer `gl_compatibility` ridisegna ogni frame
-  l'intera command-list di un canvas item, quindi le ≈40.000 celle della griglia
-  200x200 producevano ~40.000 `draw_polyline` antialiased + ~40.000
-  `draw_colored_polygon` per frame.
-  - `BiomeTileLayer` ora pre-cuoce il terreno una sola volta in
-    `_rebuild_ground_geometry()`: un'unica `ArrayMesh` vertex-coloured per i
-    riempimenti (una sola `draw_mesh`) più una singola `draw_multiline` non
-    antialiased per la griglia. Il costo per frame passa da ~80.000 comandi a 2,
-    indipendentemente dal numero di tile.
-  - `BiomeRegionGround` (ground delle regioni vicine) accorpa i contorni in una
-    sola `draw_multiline` non antialiased invece di una `draw_polyline` per cella.
+- Completato il primo pass di leggibilita survival: arena desaturata, survivor e
+  zombie procedurali, pickup grafici, effetti di sparo/hit/morte/raccolta,
+  annunci centrali e HUD per-player.
+- Aggiunti telegraph modulari boss, visual dedicati per `Wave Warden` e
+  `Rift Architect`, proiettili boss distinti, effetti morte boss e pannello vita
+  boss responsive.
+- Aggiunti runner, tank e shooter ranged con silhouette, statistiche, loot,
+  windup e telegraph.
+- Aggiunti downed/revive locale, risultati run condivisi, retry, cambio
+  modalita, menu pausa, audio bus/cue/fallback, impostazioni video/controlli e
+  preset visuali default/comfort/high contrast.
+- Aggiunta pipeline asset con fallback controllati, attribuzioni e QA visuale
+  manuale per le aree principali.
 
-### Documentation
+### Zombie Survival e Mondo Isometrico
 
-- Aggiunto `weapon_visual_identity_roadmap.md`, roadmap operativa derivata da
-  `prompt.md` per il pass completo di identita visuale delle 30 armi del
-  catalogo, con milestone su contratto visuale, pickup reali, held/HUD,
-  projectile/VFX, melee slash, QA e regressioni. Tracciato il backlog come
-  `WVIS-001` in `TODO.md`.
-- Chiusa la Milestone W0 di `weapon_visual_identity_roadmap.md` con inventario
-  visuale delle 30 armi, mapping dei tre profili generici correnti, reference
-  da preservare e checklist manuale in
-  `docs/testing/weapon_visual_identity_checklist.md`.
-- Chiusa la Milestone W1 di `weapon_visual_identity_roadmap.md` con contratto
-  visuale condiviso esteso e renderer proiettili centralizzato.
-- Chiusa la Milestone W2 di `weapon_visual_identity_roadmap.md` con pickup arma
-  riconoscibili a terra e smoke dedicato.
-- Chiusa la Milestone W3 di `weapon_visual_identity_roadmap.md` con held weapon
-  e HUD allineati al renderer condiviso.
-- Chiusa la Milestone W4 di `weapon_visual_identity_roadmap.md` con
-  proiettili, muzzle, impact e ground hazard temizzati per le armi
-  firearm/elemental.
-- Chiusa la Milestone W5 di `weapon_visual_identity_roadmap.md` con slash e hit
-  effect melee temizzati e smoke dedicato.
-- Chiusa la Milestone W6 di `weapon_visual_identity_roadmap.md` con profili e
-  palette specifici per tutte le 30 armi e smoke catalogo completo.
-- Chiusa la Milestone W7 di `weapon_visual_identity_roadmap.md` con QA visuale
-  end-to-end, preset accessibilita e regressione performance verdi.
-- Chiusa la Milestone W8 e il backlog `WVIS-001`: contratto, game design,
-  README, report finale e reference storica sono allineati allo stato runtime.
-- Consolidato il backlog operativo in `TODO.md`, separando backlog aperto,
-  follow-up e reference storiche completate senza riaprire milestone concluse.
-- Aggiornato `docs/latest_commit_validation_report.md` con audit documentale
-  Milestone 0, baseline test nota e stato del debito shutdown headless.
-- Aggiornato il report di validazione con la Milestone 1 di
-  `todo_roadmap.md`, inclusi loop shutdown headless, smoke prioritari e residui
-  QA visuali fuori scope.
-- Aggiornati TODO, roadmap operativa, checklist manuale e report di validazione
-  con la chiusura della Milestone 2 di `todo_roadmap.md` sui mini-eventi bioma.
-- Aggiornati TODO, roadmap operativa, design, architettura, checklist manuali e
-  report di validazione con la chiusura della Milestone 7 di `todo_roadmap.md`
-  su tuning melee, super starter e classi RPG avanzate.
-- Aggiunto `docs/isometric_generation_audit_roadmap.md` con audit mirato della
-  migrazione isometrica, gap analysis su terrain/biomi/asset/connessioni e
-  roadmap dedicata tracciata in `TODO.md` come `ISO-001`.
-- Chiusa la Milestone 1 della roadmap isometrica con stato aggiornato in
-  `docs/isometric_generation_audit_roadmap.md`, `TODO.md` e `ROADMAP.md`.
-- Chiusa la Milestone 2 della roadmap isometrica con stato aggiornato in
-  `docs/isometric_generation_audit_roadmap.md`, `TODO.md`, `ROADMAP.md` e
-  `ARCHITECTURE.md`; aggiunta checklist manuale dedicata e prossimo passo
-  `ISO-001` spostato alla Milestone 3 sugli ostacoli/props isometrici.
-- Chiusa la Milestone 3 della roadmap isometrica con stato aggiornato in
-  `docs/isometric_generation_audit_roadmap.md`, `TODO.md`, `ROADMAP.md`,
-  `README.md`, `ARCHITECTURE.md` e checklist manuale; prossimo passo
-  `ISO-001` spostato alla Milestone 4 sulle collisioni coerenti.
-- Chiusa la Milestone 5 della roadmap isometrica con stato aggiornato in
-  `docs/isometric_generation_audit_roadmap.md`, `TODO.md`, `ROADMAP.md`,
-  `README.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md` e checklist manuale;
-  Milestone 4 resta aperta come recupero sulle collisioni coerenti.
-- Chiusa la Milestone 4 della roadmap isometrica con stato aggiornato in
-  `docs/isometric_generation_audit_roadmap.md`, `TODO.md`, `ROADMAP.md`,
-  `ARCHITECTURE.md` e checklist manuale; prossimo passo `ISO-001` spostato
-  alla Milestone 6 sulle connessioni aperte tra biomi.
-- Chiusa la Milestone 6 della roadmap isometrica con stato aggiornato in
-  `docs/isometric_generation_audit_roadmap.md`, `TODO.md`, `ROADMAP.md`,
-  `ARCHITECTURE.md` e checklist manuale; prossimo passo `ISO-001` spostato
-  alla Milestone 7 sul grafo biomi completamente connesso.
-- Chiusa la Milestone 8 della roadmap isometrica (megamappa persistente) con
-  decisione esplicita per la continuita fisica multi-regione; stato aggiornato
-  in `docs/isometric_generation_audit_roadmap.md`, `TODO.md`, `ROADMAP.md`,
-  `ARCHITECTURE.md` e checklist manuale.
-- Chiusa la Milestone 7 della roadmap isometrica (grafo biomi completamente
-  connesso) con report di connettivita nel debug overlay e test multi-seed;
-  stato aggiornato in `docs/isometric_generation_audit_roadmap.md`, `TODO.md`,
-  `ROADMAP.md`, `ARCHITECTURE.md` e checklist manuale.
-- Chiusa la Milestone 9 della roadmap isometrica (mappa territori esplorati) con
-  marker active regions, passaggi tematizzati e high contrast sulla mappa; stato
-  aggiornato in `docs/isometric_generation_audit_roadmap.md`, `TODO.md`,
-  `ROADMAP.md`, `ARCHITECTURE.md` e checklist manuale.
-- Chiusa la Milestone 10.1 della roadmap asset isometrica con manifest ambiente
-  v7, sezioni asset-driven, fallback policy esplicita, documentazione asset e
-  report di validazione aggiornati.
-- Chiusa la Milestone 10.2 della roadmap asset isometrica con pipeline locale,
-  generatore SVG headless, struttura cartelle ambiente e asset base
-  asset-driven in-repo.
-- Chiusa la Milestone 10.3 della roadmap asset isometrica con `BiomeTileLayer`,
-  resolver deterministico per ogni cella `200x200`, tile `void_edge_near`,
-  soppressione dei patch terreno legacy in modalita asset e smoke dedicato.
-- Chiusa la Milestone 10.4 della roadmap asset isometrica con strade,
-  raccordi, entry/exit e passaggi asset-driven, continuita globale tra regioni
-  e smoke dedicato sui passaggi.
-- Chiusa la Milestone 10.5 della roadmap asset isometrica con oggetti e
-  ostacoli slot-based, factory asset-driven, crate su sprite da manifest e
-  smoke dedicato sugli object scene.
-- Iterato il pass isometrico ambiente: le strade generate usano ora celle route
-  diagonali asset-driven (`road_cell_tags`) per diramarsi lungo gli assi
-  isometrici invece di corsie orizzontali/verticali; il resolver mantiene i
-  rettangoli solo per aperture e compatibilita.
-- Rigenerati gli SVG interni ambiente con sfondo trasparente e silhouette
-  dedicate per case, cabine, laboratori, recinti, muri, barili, relitti,
-  tronchi, ponti e crate, rimuovendo il placeholder unico a forma di casetta
-  generica dagli `object_scenes`.
-- Chiusa la Milestone 10.11 della roadmap asset isometrica con screenshot QA,
-  performance su mappa `7x7`, suite smoke finale e spostamento di `ISO-001` tra
-  le reference completate.
-- Documentato il sistema texture forestali in
-  `docs/forest_isometric_texture_system.md`, con contratto ID, regole di
-  risoluzione, procedura per estendere altri biomi, checklist manuale e smoke
-  test dedicati.
-- Aggiornati TODO, roadmap rewrite isometrico, architettura, design, asset
-  README, attribution e report di validazione con la chiusura di `ISO-RW-001`
-  e del primo pass forestale.
+- Completato il revamp zombie con controller dedicato, biomi, wave director,
+  spawner camera-edge, transizioni fisiche, hazard, casse e sistemi ambientali.
+- Aggiunta megamappa seed-based `3x3` con regioni `500x500`, grafo connesso,
+  passaggi fisici, stato esplorazione salvabile, mappa consultabile e streaming
+  regione corrente piu vicini.
+- Classificato il terreno come walkable, obstacle, hazard, border, void o
+  fall zone; dodge/roll attraversa piccoli gap/fall zone ma rifiuta hazard
+  ambientali.
+- Rimossi i portali legacy `BiomeTransitionGate`, `MultiRegionRenderer` e i
+  ground procedurali legacy dal percorso standard; `RegionSeamSystem` e
+  `WorldRegionStreamer` sono i contratti runtime attivi.
+- Aggiunti layout data-driven per Pianura, Tossico, Infuocato, Neve e Palude,
+  undici varianti zombie tematiche, crate tematiche, mini-eventi, status bioma e
+  hazard ambientali.
 
-### Changed
+### Asset Isometrici e Ostacoli
 
-- `TerrainGenerator` usa `BiomeTileLayer` come ground primario asset-driven
-  quando `use_asset_tile_layer` e attivo; `BiomeRegionGround` e
-  `BiomeTerrainPatch` restano fallback tecnici controllati.
-- `IsometricTileResolver` distingue tile terrain e passage per strade,
-  curve/edge/intersezioni, entry/exit di passaggio e connector dedicati; i
-  connector di passaggio hanno priorita sulle road decorative sovrapposte.
-- `BiomeTransitionGate` non comunica piu la direzione con draw runtime: il draw
-  resta solo debug opzionale, mentre apertura e direzione sono leggibili dai
-  tile di passaggio.
-- `ObstacleSystem` istanzia ora gli ostacoli tramite
-  `IsometricEnvironmentObjectFactory`: il percorso normale usa
-  `IsometricEnvironmentObject` con `Sprite2D`, ombra, anchor, collisione e
-  `sort_offset` dal manifest; `BiomeObstacle` resta fallback tecnico esplicito.
-- `SupplyCrateVisual` usa il contratto `object_scenes/supply_crate` e mostra uno
-  sprite asset-backed, mantenendo il vecchio draw solo se il loader non riesce a
-  produrre una texture.
-- `BiomeObstacle` costruisce ora la collisione dal manifest: `collision_shape`
-  (`rectangle`/`circle`/`open`) guida shape runtime e `contains_global_position`,
-  `blocks_movement`/`blocks_projectiles` guidano i bit di `collision_layer` e
-  `is_jumpable_gap_anchor` espone `is_jumpable_obstacle()`. Gli ostacoli che
-  bloccano i proiettili stanno sul nuovo collision layer `32`; `projectile.tscn`
-  e `boss_projectile.tscn` leggono quel layer e il `Projectile` condiviso si
-  ferma sui muri solidi prima di applicare danno.
-- `ObstacleSystem` espone le query `is_position_blocked_by_non_jumpable` e
-  `is_position_jumpable_obstacle` (il dodge usa la prima per la traiettoria) e
-  assegna a ogni ostacolo una chiave stabile via
-  `ObstacleSystem.make_obstacle_key()`, pronta per il ledger ostacoli distrutti.
-- Aggiunto `tests/milestone_4_obstacle_collision_smoke_test.gd` e aggiornata
-  l'assertion layer in `tests/zombie_environment_milestone_smoke_test.gd` al
-  controllo bitwise del bit movimento.
-- `BiomeTransitionGate` e ora dimensionato e orientato dalla larghezza/lato del
-  passaggio e tematizzato per `passage_type` (`road`/`bridge`/`snow_pass`/
-  `broken_gate`/`burned_road`) con freccia direzione-aware;
-  `BiomeTransitionSystem` propaga tipo e span del passaggio al gate. Aggiunto
-  `tests/milestone_6_open_passage_smoke_test.gd` ed esteso
-  `tests/open_passage_transition_smoke_test.gd` con l'allineamento gate/passaggio.
+- Evoluto `assets/environment/isometric/manifest.json` fino al contratto asset
+  v9 con tile set, terrain, edge, void, object scenes, passage tiles, asset set
+  di bioma e fallback policy esplicita.
+- Resi asset-driven ground, strade, connector, passaggi, cliff, fall zone,
+  ostacoli, crate e oggetti ambientali senza rendere obbligatori asset esterni.
+- Aggiunti loader SVG runtime, materiali raster generati, cliff seamless,
+  texture forestali, plateau rocciosi scalabili, occluder Y-sort e footprint
+  slot-based per collisione, spawn blocker e debug `F9`.
+- La fallback policy vieta placeholder generici impliciti nel percorso survival
+  standard; eventuali fallback tecnici devono essere documentati nel manifest e
+  coperti da smoke o asset check.
 
-### Added
+### RPG, Armi e Mercato
 
-- `MultiRegionRenderer` (`game/world/multi_region_renderer.gd`): prototipo del
-  renderer multi-regione che istanzia la regione corrente piu i vicini connessi
-  a offset da `WorldRegion.world_origin`, con i vicini come ground visuale e le
-  regioni lontane non istanziate. `ZombieModeController` lo invoca a ogni cambio
-  regione (gated da `enable_multi_region_render`) e lo pulisce a `stop_run()`.
-  Aggiunto `tests/milestone_8_multi_region_smoke_test.gd`.
-- `WorldGraph.get_connectivity_report()` e report grafo/active regions in
-  `BiomeMapDebugOverlay` (toggle `F8`); aggiunto
-  `tests/milestone_7_graph_connectivity_smoke_test.gd` con garanzia di
-  connettivita su 100 seed e regola di fog.
-- `ExplorationMapPanel` mostra marker per le active/loaded regions, passaggi noti
-  tematizzati per `passage_type` e consuma `apply_visual_settings` (high
-  contrast); `HUDManager` gli passa le active regions. Esteso
-  `tests/exploration_map_smoke_test.gd`.
-- `IsometricEnvironmentManifest` legge ora il contratto v7 del manifest
-  ambiente: `tile_sets`, `tile_variants`, `terrain_tiles`, `edge_tiles`,
-  `void_tiles`, `object_scenes`, `passage_tiles`, `biome_asset_sets` e
-  `fallback_policy`, normalizzando ogni asset con path, status, footprint,
-  anchor, collisione, blocchi e attribution. Aggiunto
-  `tests/milestone_10_asset_manifest_v7_smoke_test.gd`.
-- `tools/generate_isometric_environment_assets.gd` genera SVG testuali
-  asset-driven dal manifest v7, con dry-run, write, check e guardia anti
-  overwrite per asset `final`. Aggiunti 74 SVG ambiente e
-  `tests/milestone_10_asset_pipeline_smoke_test.gd`.
-- `tests/milestone_10_passage_tile_smoke_test.gd` valida contratti tile
-  passaggi, span sui quattro lati, overlap con fall/wall, coordinate globali dei
-  connector e serializzazione `WorldRegionConnection`.
-- `IsometricEnvironmentObject`, la relativa scena base e
-  `IsometricSvgTextureLoader` convertono gli SVG generati in texture runtime
-  quando Godot headless non dispone dell'import editor; aggiunto
-  `tests/milestone_10_object_asset_smoke_test.gd`.
+- Aggiunta Character Select pre-run con profili RPG data-driven, nomi propri,
+  palette, preview, portrait opzionali e selezione indipendente per giocatore.
+- Aggiunti `RpgCharacterData`, `RpgCharacterRegistry`, `RpgPlayerComponent`,
+  stat classe, XP per-run, level-up, passive automatiche, adrenalina e super.
+- Differenziate le armi base RPG: arco, pistola, ascia, spada, bastone, fionda
+  e artigli; ranged usa projectile, melee usa hitbox temporanee con wind-up,
+  active window, recovery, trail e anti-multihit.
+- Esteso il catalogo a 30 armi drop con identita visuale specifica per pickup,
+  held/HUD, projectile, slash e impact. Il pass WVIS W0-W8 e chiuso e validato
+  nei preset visuali e nello scenario survival affollato.
+- Aggiunto mercato zombie post-boss con offerte arma uniche, acquisti su wallet
+  party, refill/cura validati, ready dei player vivi e blocco wave condiviso.
 
-### Fixed
+### QA, Tooling e Performance
 
-- I telegraph dei mini-eventi bioma conservano ora l'ID evento reale
-  (`toxic_leak`, `fire_breakout`, `whiteout`, `marsh_emergence`) invece di
-  riusare ID generici, rendendo QA/debug e preset visuali coerenti.
-- `whiteout` e il malus del `cursed_crate` applicano status solo ai player che
-  restano dentro l'area annunciata dal telegraph, rendendo il rischio evitabile.
-- Le crate di encounter gia in `queue_free` non bloccano piu il posizionamento
-  del reward dell'evento successivo nello stesso frame di cleanup/test.
-- Stabilizzato lo shutdown headless: `AudioManager` in headless simula fallback
-  e stream opzionali senza istanziare player audio runtime, mentre
-  `shutdown_audio()` libera voice pool e generatori procedurali.
-- Ripulito il lifecycle della generazione biomi: helper procedurali senza scena
-  convertiti a `RefCounted`, dati world/celle azzerati tra run e
-  `BiomeManager` ripristina i layout base al cleanup.
-- Resi cancellabili i telegraph degli encounter casuali tramite `Timer`
-  figli tracciati e liberati in cleanup, evitando timer pendenti durante lo
-  shutdown dei test.
-- Allineati i runner headless piu fragili a teardown esplicito delle scene e a
-  un helper condiviso di lifecycle per evitare risorse trattenute a fine test.
-- Rimossa la dipendenza statica da `VisualSettingsManager` nei consumer visuali
-  isolati, usando sincronizzazione locale dal gruppo quando disponibile.
-- Berserker, Spadaccino e Licantropo non usano piu projectile runtime per
-  ascia, spada e artigli: i colpi base passano da hitbox melee temporanee
-  ruotate nella direzione di mira.
-- Resa la Character Select clampata al viewport con safe-area e scroll,
-  evitando tagli di card, slot player, dossier e azioni a risoluzioni o aspect
-  ratio stretti.
-- Uniformato il caricamento preview dei personaggi nel menu: le card usano
-  prima portrait HUD/full dedicati, poi `gameplay_sprite_path` e infine un
-  fallback procedurale coerente con palette e arma.
-- Corretto `SupplyCrate` rinviando l'apertura automatica da `body_entered`,
-  evitando errori Godot di modifica dello stato physics durante il flush delle
-  query.
-- Allineati gli smoke test al flusso corrente: Character Select prima della
-  survival, profili RPG avanzati, fall boundary procedurali multipli, runner
-  `SceneTree` differiti e proiettili torre che possono essere liberati prima
-  delle asserzioni finali.
-- Documentata la rigenerazione della cache locale `.godot/` richiesta dopo
-  clone o pull su una nuova macchina prima dell'avvio runtime headless.
-- Corretto il parse di `RpgCharacterData` rinominando il campo export interno
-  `class_name`, riservato da GDScript, e mantenendo invariato il profilo
-  pubblico usato da menu e HUD.
-- `MeleeAttack` applica ora il `hitstop` configurato in `WeaponData`, mantenendo
-  separato il runtime melee dal percorso proiettili.
-- Briciola usa valori assistivi bounded per danno/cadenza anche durante
-  `Branco di Rottami`, mentre `Notte Bestiale` espone e visualizza una recovery
-  leggibile al termine della trasformazione.
+- Vendorizzato GUT 9.6.0 e migrata la suite da runner legacy `extends SceneTree`
+  a un unico processo Godot con suite sotto `tests/suites/**`.
+- Completata la migrazione GUT M0-M8: world generation, environment/streaming,
+  ostacoli/collisioni, asset/manifest, combat/weapons/drops, enemies/bosses,
+  RPG/progression e game modes/waves.
+- Aggiunti smoke e guardrail per asset fallback, weapon drop progression,
+  balance metrics, ten-wave, soak, world loading, retry con riuso mondo e cache
+  texture isometriche.
+- Ottimizzato il rendering isometrico: `BiomeTileLayer` pre-cuoce il terreno in
+  mesh/linee aggregate, riducendo drasticamente i comandi canvas per frame nei
+  profili survival multi-regione.
+- Documentati workflow di import Godot, GUT quick/golden/area, soak, visual QA,
+  asset check, export PCK/EXE e build smoke.
 
-### Added
+## Roadmap Aperta
 
-- I mini-eventi bioma avanzati generano reward crate tematiche reali quando
-  `ResourceCrateSystem` e disponibile: tossico, fuoco, gelo e palude usano
-  loot coerente con il bioma.
-- Esteso il manifest ambiente isometrico a v3 con copertura degli
-  `obstacle_id` generati proceduralmente e mapping categoria esposto dal
-  generatore.
-- Esteso `tests/isometric_environment_manifest_smoke_test.gd` con generazione
-  `5x5` reale e verifica manifest/categorie per ogni `layout.obstacle_id`.
-- Esteso il manifest ambiente isometrico a v4 con sezione `terrain`, tag
-  strada/passaggio generati, draw mode procedurali e preset `sample_step` del
-  ground.
-- `BiomeTerrainPatch` ora usa draw mode dedicati per strade, passaggi,
-  ponti, neve, cancelli rotti e strade bruciate, evitando il fallback dirt per
-  i tag generati.
-- `BiomeRegionGround` supporta `sample_step` configurabile e
-  `BiomeMapDebugOverlay` espone conteggi aggregati delle classi terrain.
-- Esteso `tests/isometric_biome_terrain_coverage_smoke_test.gd` per validare
-  manifest terrain, draw mode, preset, tag generati e classificazione `200x200`.
-- Esteso il manifest ambiente isometrico a v5 con `object_visuals`, draw mode
-  procedurali dedicati per gli ostacoli generati e validazione del fallback
-  generico esplicito.
-- `BiomeObstacle` ora legge il draw mode dal manifest e disegna varianti
-  dedicate per pipe stack, auto bruciate, blocchi di ghiaccio, alberi morti,
-  edifici/baite/case sommerse, barili tossici, muri/barriere tematiche, log e
-  walkway senza cambiare collisioni o spawn blocker.
-- Estesi `tests/isometric_environment_manifest_smoke_test.gd` e
-  `tests/biome_obstacle_generation_smoke_test.gd` per vietare fallback generici
-  impliciti sugli ID generati e verificare categorie distinguibili per bioma.
-- Esteso il manifest ambiente isometrico a v6 con border tematici generati,
-  `fall_zone` procedurale cliff/depth e draw mode dedicati per
-  `toxic_boundary_wall`, `lava_boundary`, `ice_boundary` e
-  `deep_water_boundary`.
-- `BiomeObstacle` disegna border tematici per tossico, lava, ghiaccio e acqua
-  profonda, mentre `BiomeFallZone` espone stili cliff/depth per bioma.
-- `HazardSystem` espone query separate `is_position_fall_zone()` e
-  `is_position_environment_hazard()` mantenendo `is_position_hazardous()` come
-  query aggregata.
-- Estesi gli smoke `isometric_environment_manifest`, `fall_boundary_visual_logic`,
-  `player_dodge_gap` e `zombie_fall_hazard` per coprire manifest v6, border
-  tematici, fall query e hazard ambientali non attraversabili.
-- Estesa la copertura smoke di `random_encounter` e `biome_mini_events` con
-  cooldown/frequenza, reward crate, high contrast, reduced motion e status
-  evitabile.
-- Aggiunto `tests/headless_shutdown_loop_test.gd` per verificare 100 cicli di
-  istanza/free della scena principale in headless.
-- Aggiunto `tests/test_scene_lifecycle.gd` come helper di teardown differito
-  riusabile dai runner headless.
-- Esteso `WeaponData` con `attack_type`, campi melee (`melee_shape`,
-  `melee_range`, `melee_width`, `melee_arc_degrees`, `windup_time`,
-  `active_time`, `recovery_time`, `knockback`, `trail_style`, `effect_key` e
-  `sound_key`) e helper di risoluzione.
-- Aggiunto `MeleeAttack`, un runtime world-space per swing melee con wind-up,
-  finestra attiva, anti-multihit per bersaglio, knockback leggero e trail
-  procedurale.
-- Aggiunto `tests/rpg_melee_attack_resolution_smoke_test.gd` per verificare
-  che arco generi projectile mentre ascia e spada danneggiano senza emettere
-  `projectile_spawned`.
-- Estesa la copertura smoke RPG su rischio/beneficio starter, recovery super,
-  frenzy di Briciola e VFX super distinti per starter e classi avanzate.
-- Character Select e dossier mostrano ora il tipo di attacco arma
-  projectile/melee e la preview gameplay disegna micro-feedback dedicati per
-  arco, pistola, ascia e spada.
-- `GameplayEffects`, `PlayerVisual` e `AudioEventRouter` consumano i segnali
-  melee per slash trail, impatti dedicati, shake leggero e cue procedurali
-  distinti.
-- Aggiunto `MenuNavigationController` riusabile per focus circolare,
-  input D-pad/stick con cooldown, Back/B e cambio tab LB/RB nei menu.
-- Settings ora supporta LB/RB per cambiare tab in modo circolare e rifocalizza
-  un controllo valido della tab attiva.
-- La preview gameplay della Character Select carica ora l'asset indicato da
-  `gameplay_sprite_path` quando disponibile, mantenendo il fallback
-  procedurale se il file non e leggibile.
-- Character Select RPG rifatta come schermata completa con card grafiche,
-  quattro slot player, pannello dossier, preview gameplay procedurale,
-  barre stat HP/ATK/DEF/SPD/RNG, highlight focus/hover e conferma esplicita
-  `Start Zombie Survival`.
-- Aggiunti i controlli UI `CharacterSelectCard`,
-  `CharacterDetailPanel` e `CharacterGameplayPreview`, piu il campo
-  `style_description` e il path `gameplay_sprite_path` nei profili
-  `RpgCharacterData` per sostituire in futuro preview e sprite con asset
-  definitivi senza cambiare menu o gameplay.
-- Aggiunto `tests/character_select_ui_smoke_test.gd` per validare struttura,
-  preview e selezione della nuova Character Select anche senza avviare la
-  scena principale.
-- Character Select ora mostra una griglia di icone personaggio e quattro slot
-  player: ogni slot attivo conserva il proprio personaggio, portrait,
-  statistiche, passiva e super prima di avviare la survival.
-- `SurvivalMode` accetta `context.character_ids_by_slot` per applicare profili
-  RPG diversi ai player locali, mantenendo `context.character_id` come fallback
-  compatibile con debug e test esistenti.
-- Spostati e collegati i portrait PNG di `Mira Vento`, `Bruna Spaccaferro`,
-  `Nina Bullone` e `Rocco Lunastorta` in `assets/characters/<id>/rendered/`
-  per l'uso data-driven nel Character Select.
-- Completata la Roadmap Megamappa Persistente Isometrica come primo pass integrato.
-- Aggiunto `game/world/` con `WorldGraph`, `WorldRegion`, `WorldRegionConnection`, `WorldExplorationState`, `PersistentWorldState` e `WorldRuntime`.
-- `BiomeMapGenerator` ora genera una griglia seed-based `5x5` di territori `200x200` tramite spanning tree ed edge extra, garantendo grafo connesso e percorsi alternativi.
-- Aggiunti passaggi fisici aperti tra regioni confinanti, target region sugli edge e transizioni senza teletrasporto nel flusso standard.
-- Aggiunta classificazione completa del terreno `200x200` per walkable, obstacle, hazard, border, void e fall zone, con validazione grafo/passaggi/classificazione in `MapValidationSystem`.
-- Aggiunti `BiomeRegionGround`, fall boundary esterni coerenti con lati senza vicino e blocchi fisici sui lati con regione adiacente non collegata.
-- Aggiunta mappa esplorazione HUD con unknown/fog, discovered, visited, cleared, marker regione corrente e input `M`/joypad `Back`.
-- Esteso il save alla versione 6 con stato mondo/esplorazione persistente.
-- Aggiunto `PlayerDodgeComponent` con input `Shift`/`Ctrl` e joypad `B`, cooldown, invulnerabilita breve, blocco fuoco durante roll e validazione gap/landing.
-- Aggiunto manifest iniziale `assets/environment/isometric/manifest.json` per censire ostacoli, props, hazard, passaggi e fall boundary da convertire in asset isometrici.
-- Aggiunti smoke test per connettivita grafo, persistenza mondo, passaggi aperti, copertura terreno, fall boundary, dodge/gap e mappa esplorazione.
-- Aggiunti `PauseMenu`, `SettingsPanel` e `VideoSettingsManager`: `Start`/`P` apre la pausa durante una run, il main menu espone Settings con tab Audio/Video/Controls, video supporta fullscreen/borderless/risoluzione/VSync/FPS e i controlli joypad sono rimappabili e persistiti in save v5.
-- Aggiunto smoke test `tests/pause_settings_smoke_test.gd` per pausa, settings condivisi, persistenza video e binding joypad.
-- Convertiti gli asset personaggio RPG da PNG binari a SVG testuali, aggiornando manifest e profili `.tres` per rendere la PR compatibile con ambienti che non accettano file binari.
-- Aggiunto primo set asset completo per `Licantropo` / `Rocco Lunastorta`: portrait rendered, portrait HUD, sprite isometrico, sprite sheet animabile, icone artigli/passiva/super e manifest in `assets/characters/licantropo/`.
-- Aggiornato l'indice personaggi per marcare tutti i personaggi RPG come `base_complete` e proporre `ranger_quality_pass` come primo miglioramento qualitativo.
-- Aggiunto primo set asset completo per `Domatrice` / `Nina Bullone`: portrait rendered, portrait HUD, sprite isometrico, sprite sheet animabile, icone fionda/passiva/super, Briciola visuale e manifest in `assets/characters/domatrice/`.
-- Aggiornato l'indice personaggi per marcare `domatrice` come `base_complete` e proporre `licantropo` come prossimo pass asset.
-- Aggiunto primo set asset completo per `Mago` / `Elio Braciastella`: portrait rendered, portrait HUD, sprite isometrico, sprite sheet animabile con cast, icone bastone/passiva/super e manifest in `assets/characters/mago/`.
-- Aggiornato l'indice personaggi per marcare `mago` come `base_complete` e proporre `domatrice` come prossimo pass asset.
-- Aggiunto primo set asset completo per `Spadaccino` / `Kael Guardia`: portrait rendered, portrait HUD, sprite isometrico, sprite sheet animabile, icone spada/passiva/super e manifest in `assets/characters/spadaccino/`.
-- Aggiornato l'indice personaggi per marcare `spadaccino` come `base_complete` e proporre `mago` come prossimo pass asset.
-- Aggiunto primo set asset completo per `Berserker` / `Bruna Spaccaferro`: portrait rendered, portrait HUD, sprite isometrico, sprite sheet animabile, icone ascia/passiva/super e manifest in `assets/characters/berserker/`.
-- Aggiornato l'indice personaggi per marcare `berserker` come `base_complete` e proporre `spadaccino` come prossimo pass asset.
-- Aggiunto primo set asset completo per `Pistoliere` / `Dante Ferraglia`: portrait rendered, portrait HUD, sprite isometrico, sprite sheet animabile, icone pistola/passiva/super e manifest in `assets/characters/pistoliere/`.
-- Aggiornato l'indice personaggi per marcare `pistoliere` come `base_complete` e proporre `berserker` come prossimo pass asset.
-- Aggiunto primo set asset completo per `Ranger` / `Mira Vento`: portrait rendered, portrait HUD, sprite isometrico, sprite sheet animabile, icone arma/abilita e manifest in `assets/characters/ranger/`.
-- Creato indice generale `assets/characters/index.json` per tracciare copertura asset e prossimo personaggio consigliato.
-- Iterazione sulla generazione biomi zombie survival: aggiunti corridoi secondari, cover, strettoie e ostacoli grandi specifici per Pianura Infetta, Tossico, Infuocato, Neve e Palude nella pipeline seed-based.
-- La validazione layout ora segnala anche spawn player e casse sovrapposti a ostacoli, hazard o fall zone; lo smoke test dei biomi verifica identita navigazionale e placement validi.
-- Iterazione sugli encounter zombie survival: gli encounter casuali ora rispettano seed mondo, cooldown per ondata, stato critico/boss, posizioni validate e reward crate reali per survivor cache/cursed crate.
-- Esteso `BiomeMapDebugOverlay` con riepilogo runtime di bioma corrente, validazione, conteggi ostacoli/hazard/casse e ultimo encounter; aggiunto smoke test dedicato.
-- Aggiunti telegraph world-space per `cursed_crate` e `hazard_burst`, con warning accessibile prima di status/hazard e snapshot debug del numero di telegraph pendenti.
-- Aggiunto tuning threat/reward agli encounter: party size, conteggi nemici/hazard, durata/raggio hazard, moltiplicatori elite e crate reward ora derivano da bioma, wave e threat score.
-- Aggiunti mini-eventi encounter specifici per bioma avanzato: `toxic_leak`, `fire_breakout`, `whiteout` e `marsh_emergence`, riusando telegraph, hazard, status e spawn nemici esistenti.
-- Aggiunto smoke test `biome_mini_events_smoke_test.gd` per verificare mini-eventi, telegraph, threat score e tuning dei quattro biomi avanzati.
-- Completata la Roadmap Motore di Generazione Mappe e Biomi come primo motore procedurale integrato.
-- Aggiunti `WorldGenerationSeed`, `BiomeWorldGenerator`, `BiomeMapGenerator`, `BorderGenerator`, `BiomePassageGenerator`, `BiomeTerrainGenerator`, `ObstacleLayoutGenerator`, `FallBoundaryGenerator` e `MapValidationSystem`.
-- La zombie survival genera a inizio run una mappa globale seed-based con celle bioma `200x200`, bordi con passaggi condivisi, fall boundary sui lati esterni e layout interni validati.
-- I layout bioma generati includono strade, corridoi, case/ostacoli grandi, casse, hazard tematici e dati di validazione flood-fill.
-- `BiomeManager` espone seed, firma di generazione, cella corrente e mappa generata; `BiomeTransitionSystem` usa i passaggi generati per creare i gate runtime.
-- Aggiunto `BiomeMapDebugOverlay` con seed corrente, riepilogo celle e richieste di rigenerazione stesso/nuovo seed.
-- Aggiunto smoke test `tests/biome_world_generation_smoke_test.gd` per determinismo, confini, fall zone, validazione e integrazione survival.
-- Completata integralmente la Roadmap Revamp Modalita Zombie fino alla Milestone Z12.
-- Aggiunti quattro layout data-driven avanzati per Tossico, Infuocato, Neve e Palude, con terreno, ostacoli, casse, hazard e confini fisici dedicati.
-- Aggiunti `BiomeTransitionSystem` e `BiomeTransitionGate` per attraversare in sequenza tutti i cinque biomi durante la stessa run.
-- Esteso `HazardSystem` con danno periodico, rallentamenti, status temporanei e hazard runtime, preservando la fall zone da 20 HP.
-- Aggiunti undici profili `BiomeEnemyProfile` per zombie tossici, infuocati, ghiacciati e paludosi senza duplicare l'AI condivisa.
-- Aggiunte casse comuni, mediche, militari e tematiche con loot tag, visuali e feedback HUD specifici.
-- Esteso `WaveDirector` con scaling per party, tempo sopravvissuto, distanza dal bioma iniziale e modificatore drop.
-- Aggiunti HUD, annunci, cue audio ed effetti per cambio bioma, pericoli ambientali e status attivi.
-- Aggiunti smoke test per transizioni, zombie tematici, dieci ondate, soak da dieci minuti simulati e QA visuale dei cinque biomi.
-- Completata Roadmap Revamp Modalita Zombie Milestone Z5 con fall zone, danno ambientale e recupero sicuro.
-- Aggiunto `BiomeFallZone`, generato dal layout della Pianura Infetta e registrato come hazard/spawn blocker.
-- `HazardSystem` salva l'ultima posizione sicura, applica 20 HP, riposiziona il player e concede invulnerabilita temporanea dedicata.
-- `HealthComponent` supporta sorgenti di invulnerabilita componibili e `HealthSystem` puo ignorarle solo su richiesta esplicita.
-- Aggiunti feedback visuali, camera shake e cue audio `player_fell`.
-- Aggiunto `zombie_fall_hazard_smoke_test.gd` per danno, respawn, invulnerabilita, feedback, spawn validation e cleanup.
-- Completata Roadmap Revamp Modalita Zombie Milestone Z4 con terreno, casse e ostacoli nella Pianura Infetta.
-- Aggiunto `BiomeEnvironmentLayout` per placement data-driven di patch terreno, ostacoli e casse.
-- `TerrainGenerator` applica la palette bioma e genera decorazioni non collidenti.
-- `ObstacleSystem` genera rocce, recinti, barriera, rudere e confine parziale come `StaticBody2D` e spawn blocker.
-- `ResourceCrateSystem` genera casse comuni e mediche con loot table dedicate tramite i sistemi drop esistenti.
-- Aggiunto `zombie_environment_milestone_smoke_test.gd` per layout, collisioni, corridoi, casse, pathing minimo e cleanup.
-- Completata Roadmap Revamp Modalita Zombie Milestone Z3 con verifica dei biomi dati e delle wave contestuali.
-- Aggiunto `zombie_biome_wave_director_smoke_test.gd` per validare cinque biomi, partenza nella Pianura Infetta e modificatori tossici su wave/roster/scaling.
-- Completata Roadmap Revamp Modalita Zombie Milestone Z2 con smoke test dello spawn dai bordi camera.
-- `ZombieSpawner` espone parametri per gruppo, tick, ritardo gruppi, helper `is_position_outside_camera_view()` e validazione fuori camera.
-- `ObstacleSystem` e `HazardSystem` riconoscono zone leggere `Node2D` con metadata `zone_radius` per validare spawn blocker e fall zone.
-- Aggiunto `zombie_spawner_edge_smoke_test.gd` per bordi nord/sud/est/ovest, distanza dal player, hazard, ostacoli e fallback.
-- Avviata Roadmap Revamp Modalita Zombie con Milestone Z1: fondamenta modulari.
-- Aggiunti `ZombieModeController`, `BiomeManager`, `BiomeDefinition`, `WaveDirector`, `ZombieSpawner` e stub ambientali per terreno, casse, ostacoli e hazard.
-- Aggiunte definizioni dati per Pianura Infetta, Tossico, Infuocato, Neve e Palude con palette, roster, risorse, ostacoli e moltiplicatori iniziali.
-- `WaveManager` ora delega composizione wave e spawn position ai componenti zombie, mantenendo fallback ai punti arena esistenti.
-- Aggiunto smoke test `zombie_revamp_foundation_smoke_test.gd`.
-- Completata Roadmap RPG Mode Milestone 12 con feedback polish per level-up e super.
-- `GameplayEffects` ora genera effetti dedicati `rpg_level_up` e `rpg_super` dai segnali RPG.
-- `AudioEventRouter` collega level-up e super RPG a cue procedurali dedicati.
-- Aggiunto smoke test `milestone_rpg_12_feedback_smoke_test.gd`.
-- Completata Roadmap RPG Mode Milestone 11 con configurazione personaggi data-driven.
-- Aggiunto `RpgCharacterData` e quattro risorse in `game/rpg/characters/`.
-- `RpgCharacterRegistry` ora carica i profili dalle risorse mantenendo la stessa API pubblica.
-- Aggiunto smoke test `milestone_rpg_11_data_driven_smoke_test.gd`.
-- Completata Roadmap RPG Mode Milestone 10 con primo pass di bilanciamento classi/armi.
-- Aggiustati profili e armi RPG per rendere Ranger, Pistoliere, Berserker e Spadaccino piu distinti.
-- Aggiunto smoke test `milestone_rpg_10_balance_smoke_test.gd` con criteri relativi di identita classe.
-- Completata Roadmap RPG Mode Milestone 9 con HUD RPG piu grafico e leggibile.
-- Aggiunto `RpgHudIcon` procedurale per ritratto classe e icona super senza asset esterni.
-- `PlayerHudCard` ora mostra ritratto personaggio, icona super ready, HP, ammo pips, XP, adrenalina e buff passivi in una scheda stabile.
-- Aggiunto smoke test `milestone_rpg_9_hud_smoke_test.gd`.
-- Completata Roadmap RPG Mode Milestone 8 con adrenalina e super per le quattro classi.
-- `RpgPlayerComponent` ora gestisce adrenalina, ready state, attivazione super e timer dedicati.
-- Aggiunto `RpgSuperResolver` per Pioggia di Frecce, Scarica Finale, Terremoto di Sangue e Lama Fantasma.
-- `HealthSystem`, kill XP e reward wave alimentano l'adrenalina da hit, danno subito, kill e fine ondata.
-- Aggiunto input super con `Q` per tastiera e joypad `Y`.
-- Le schede HUD mostrano barra adrenalina e stato della super.
-- Aggiunto smoke test `milestone_rpg_8_adrenaline_super_smoke_test.gd`.
-- Completata Roadmap RPG Mode Milestone 7 con passive automatiche per le quattro classi.
-- `RpgPlayerComponent` ora applica Occhio del Predatore, Mano Veloce, Furia di Sangue e Guardia Perfetta.
-- `WeaponSystem` legge il moltiplicatore fire rate temporaneo del Pistoliere dopo il reload.
-- Le schede HUD mostrano il buff passivo attivo quando entra in funzione.
-- Aggiunto smoke test `milestone_rpg_7_passives_smoke_test.gd`.
-- Completata Roadmap RPG Mode Milestone 6 con XP al killer e XP di fine ondata.
-- `HealthSystem` conserva la sorgente dell'ultimo danno per assegnare XP on-kill.
-- Zombie e boss assegnano XP direttamente al `RpgPlayerComponent` del killer.
-- `WaveManager` assegna XP wave uguale ai player RPG vivi.
-- Rimosso il drop XP fisico dalle loot table zombie survival.
-- Aggiunto smoke test `milestone_rpg_6_xp_level_smoke_test.gd`.
-- Completata Roadmap RPG Mode Milestone 5 con ammo/reload leggibili per arma.
-- Le schede HUD ora mostrano pips ammo grafici e una barra reload stabile.
-- `WeaponSystem` espone `get_reload_ratio()` e applica `reload_speed` del profilo RPG.
-- Aggiunto smoke test `milestone_rpg_5_ammo_reload_smoke_test.gd`.
-- Completata Roadmap RPG Mode Milestone 4 con hitbox arma configurabili.
-- Esteso `WeaponData` con `hitbox_type`, `hitbox_size` e `max_hit_count`.
-- `Projectile` ora crea shape circle, rectangle, capsule o arc separate dal visual.
-- Ascia e spada supportano colpi multi-hit tramite `max_hit_count`.
-- Aggiunto smoke test `milestone_rpg_4_hitbox_smoke_test.gd`.
-- Completata Roadmap RPG Mode Milestone 3 con armi base differenziate per le quattro classi.
-- Aggiunti `rpg_bow`, `rpg_pistol`, `rpg_axe` e `rpg_sword` come `WeaponData` con range, scatter, danno, ammo e reload distinti.
-- Esteso `WeaponData` con `max_range` e `scatter_degrees`, applicati da `WeaponSystem` e `Projectile`.
-- Aggiunti profili visuali procedurali per arco, pistola, ascia e spada.
-- Aggiunto smoke test `milestone_rpg_3_weapons_smoke_test.gd`.
-- Completata Roadmap RPG Mode Milestone 2 con statistiche classe, progressione per-run e formule danno.
-- Esteso `RpgPlayerComponent` con livello, XP, HP/attacco/difesa scalati e risoluzione danni.
-- Collegati `HealthSystem`, proiettili e attacchi nemici alla sorgente del danno.
-- Estese le schede HUD player con livello, classe, XP bar e riga ATK/DEF/SPD.
-- Aggiunto smoke test `milestone_rpg_2_stats_smoke_test.gd`.
-- Avviata roadmap RPG Mode con Milestone 1: selezione personaggio pre-run per la survival.
-- Aggiunti `RpgCharacterRegistry` e `RpgPlayerComponent` come contratto iniziale per classi, arma base, passiva e super.
-- Aggiunto pannello `Character Select` nel menu prima dell'avvio zombie survival.
-- Aggiunto smoke test `milestone_rpg_1_character_select_smoke_test.gd`.
-- Completata Milestone 21 con accessibilita, profiling e pipeline asset.
-- Aggiunto `VisualSettingsManager` con preset default, comfort e contrast.
-- Aggiunti controlli menu per flash, glow, trail, shake e scala testo HUD.
-- Aggiunti high contrast, reduced motion e marker geometrici player.
-- Esteso il save alla versione 4 con round-trip delle impostazioni visuali.
-- Collegati proiettili, effetti, camera, HUD, telegraph e visual ai profili.
-- Aggiunti documenti import/fallback e registro attribuzioni in `assets/`.
-- Aggiunti smoke test M21, profiling affollato e quattro QA a 1280x720.
-- Completata Milestone 20 con arena survival, biomi e props data-driven.
-- Aggiunti `BiomePalette`, `SurvivalArenaProfile` e `SurvivalArenaManager`.
-- Aggiunti layout `Industrial Crossroads` e `Rift Foundry`.
-- Aggiunti gate spawn non collidenti con impulso sugli spawn reali.
-- Aggiunti barili esplosivi con collisione proiettile, warning e danno ad area.
-- Estesi projectile ed effetti per props damageable e detonazioni ambientali.
-- Aggiunti smoke, stress test e QA M20 a quattro player.
-- Completata Milestone 19 con secondo boss e registro configurabile.
-- Aggiunto `Rift Architect` con fase 2, lane sweep e cross burst.
-- Aggiunti compatibilita boss per modalita e rifiuti tipizzati.
-- Aggiunti `Rift Repeater`, loot dedicato e HUD boss generico.
-- Aggiunti smoke test registry e QA dei due telegraph Rift.
-- Completata Milestone 18 con bus audio, cue sostituibili e mix persistente.
-- Aggiunti `AudioCueData`, `AudioVoicePool` e `AudioEventRouter`.
-- Aggiunti bus UI, armi, nemici, boss, ambiente, musica e SFX.
-- Aggiunti fallback distinti, pitch variation, priorita e limite voci.
-- Aggiunti cue per shooter, wave, downed, revive e risultati.
-- Esteso il menu con slider Master, Music e SFX.
-- Esteso il save alla versione 3 con impostazioni audio.
-- Aggiunti smoke test M18 e QA menu a 1280x720.
-- Completata Milestone 17 con risultati condivisi e flussi di fine run.
-- Aggiunto `RunSessionTracker` per durata, XP, denaro e unlock della sessione.
-- Aggiunto `RunResultsScreen` con retry, cambio modalita e menu.
-- Esteso `GameModeManager` con stato risultati, context di retry e cambio modalita.
-- Aggiunto salvataggio sincrono prima del ritorno al menu.
-- Aggiunti smoke test M17 e QA visuale a 1280x720.
-- Completata Milestone 16 con stato downed e revive locale.
-- Esteso `HealthComponent` con downed opzionale, revive e stato incapacitated.
-- Aggiunto `ReviveSystem` con raggio, input tenuto, progresso e interruzione.
-- Aggiunti posa downed, anello world-space e stato dedicato nelle schede HUD.
-- Estese le condizioni di sconfitta party a survival, dungeon e tower defense.
-- Aggiunti smoke test M16 e QA visuale a quattro player.
-- Completata Milestone 15 con lo zombie ranged `Shooter`.
-- Aggiunto `RangedEnemy` con distanza preferita, ritirata, windup e mira bloccata.
-- Aggiunto telegraph world-space con corsia e countdown prima del proiettile.
-- Aggiunti silhouette shooter, loot dedicato e profilo proiettile verde/ciano.
-- Estesa la composizione survival con shooter deterministici dalla wave 4.
-- Aggiunti smoke test M15 e QA visuale a quattro player.
-- Completata Milestone 14 come chiusura del visual gameplay pass.
-- Aggiunto `WaveWardenVisual` segmentato e animato per fase, mira, hit e carica.
-- Aggiunti profili aimed/radial con glow e trail per i proiettili del boss.
-- Aggiunto effetto world-space dedicato alla morte del `Wave Warden`.
-- Aggiunto `CombatAnnouncement` per wave, reward, boss, overdrive e fine run.
-- Aggiunto pannello boss centrato e responsive.
-- Aggiunti smoke test M14 e QA finale in quattro tavole a 1280x720.
-- Completata Milestone 13 con identita grafica data-driven per armi e torri.
-- Aggiunto `WeaponVisualData` per condividere profilo tra arma, HUD, proiettile e muzzle flash.
-- Aggiunti profili distinti per `Starter Pistol`, `Prototype Blaster`, `Wave Cannon` e torre.
-- Aggiunte icone HUD arma generate dal profilo equipaggiato.
-- Aggiunti forma, scala, glow e trail configurabili per i proiettili player e torre.
-- Aggiunto `DefenseTowerVisual` con base esagonale, doppia canna, tracking, idle scan e rinculo.
-- Aggiunti smoke test M13 e QA visuale per armi/player e torri a 1280x720.
-- Completata Milestone 12 con varianti zombie runner e tank.
-- Aggiunte scene enemy data-driven con statistiche, collisioni e loot dedicati.
-- Esteso `ZombieVisual` con silhouette basic, runner e tank.
-- Aggiunta composizione deterministica delle ondate survival per archetipo.
-- Aggiunti smoke test varianti e QA couch multiplayer a 1280x720.
-- Completata Milestone 11 con telegraph modulari del `Wave Warden`.
-- Aggiunti warning world-space con countdown per raffica mirata e radiale.
-- Aggiunti avvisi HUD e cue audio per pattern boss e cambio fase.
-- Aggiunto impulso visuale per la fase 2 e direzione mirata bloccata al warning.
-- Aggiunti smoke test telegraph e QA visuale a 1280x720.
-- Completata Milestone 10 come primo pass di leggibilita visuale della survival.
-- Aggiunta arena pseudo-isometrica desaturata con usura, corsie e barricate.
-- Aggiunti visual modulari e animati proceduralmente per survivor e zombie.
-- Sostituite le etichette dei pickup e della supply crate con icone grafiche.
-- Aggiunte schede HUD per-player con vita, arma e munizioni.
-- Aggiunto `GameplayEffects` per sparo, hit, morte e raccolta.
-- Aggiunti smoke test visuale e QA survival a 1280x720.
-- Aggiunta `Starter Pistol` con riserva infinita, caricatore e reload invariati.
-- Esteso `WeaponSystem` con fallback permanente e stato separato dell'arma speciale.
-- Aggiunto fallback shot automatico quando una speciale esaurisce caricatore e riserva.
-- Aggiunta distribuzione completa dei pickup ammo alle speciali di tutti i player vivi.
-- Aggiunte supply crate configurabili via `LootTable` con ammo e cura.
-- Aggiunto `SurvivalAmmoDirector` con soglia low-ammo, cooldown e fonte garantita boss.
-- Aggiunti feedback HUD/audio per low ammo, reload, fallback e ammo condivisa.
-- Estesi gli smoke test combat, drop, survival e boss per il nuovo contratto ammo.
-- Inizializzato repository Git.
-- Creato progetto Godot 4.x testuale.
-- Creata struttura cartelle per core, input, multiplayer, player, camera, combat, modalita, drop, progressione, UI, audio e salvataggi.
-- Aggiunta scena principale pseudo-isometrica.
-- Aggiunto player controllabile con movimento fluido.
-- Aggiunto input manager con supporto tastiera e joypad player 1.
-- Aggiunta camera che segue il gruppo player.
-- Aggiunti stub modulari per sistemi futuri: armi, projectile system, health system, nemici, boss, wave, dungeon, tower defense, drop, loot table e progressione.
-- Creata documentazione iniziale di repository, architettura, design, roadmap e workflow IA.
-- Completata Milestone 2 come prototipo minimo di multiplayer locale 1-4 player.
-- Aggiunto join/leave locale con `Start`/`Back` joypad e fallback debug `F2`-`F4`.
-- Collegato `PlayerManager` agli slot attivi per spawn/despawn dinamico.
-- Aggiunti colori per slot player e HUD con slot locali attivi.
-- Aggiornata documentazione di roadmap, architettura, design, README, TODO e checklist manuale.
-- Completata Milestone 3 come prototipo minimo di combat.
-- Aggiunta risorsa `WeaponData` e pistola base configurabile.
-- Aggiunti caricatore, riserva munizioni e ricarica indipendenti per-player.
-- Aggiunto input ricarica con `R` e pulsante joypad `X`.
-- Collegati proiettili, collisioni, danni, `HealthSystem` e `HealthComponent`.
-- Aggiunti bersagli statici damageable con barra vita nella scena principale.
-- Esteso HUD con vita e munizioni per ogni player.
-- Aggiunto smoke test headless per combat e regressione multiplayer a due player.
-- Aggiornata documentazione per stato Milestone 3, contratti combat e backlog futuro.
-- Completata Milestone 4 come prototipo minimo di nemici e drop.
-- Aggiunto `BasicEnemy` melee con stati idle, chase, attack e dead.
-- Aggiunti targeting del player vivo piu vicino e retarget su join/leave.
-- Esteso `EnemySystem` con spawn, contenitore, registro e segnale morte.
-- Integrati attacchi nemici e morte con `HealthSystem` e `HealthComponent`.
-- Aggiunti `DropEntry` e loot table tipizzate configurabili.
-- Aggiunti pickup fisici per esperienza, denaro, munizioni, vita e armi.
-- Centralizzata in `DropSystem` l'applicazione delle ricompense party e per-player.
-- Aggiunto `Prototype Blaster` come primo drop arma equipaggiabile.
-- Aggiunti due nemici iniziali alla scena principale.
-- Aggiunto smoke test headless enemy/drop con regressione multiplayer locale.
-- Aggiornata documentazione per stato Milestone 4, contratti enemy/drop e prossima Milestone 5.
-- Completata Milestone 5 come prototipo minimo zombie survival.
-- Trasformato `WaveManager` in una macchina a stati con intermissione, spawn, combat e reward.
-- Aggiunti spawn scaglionato, conteggio crescente e tracking dei nemici della wave.
-- Aggiunto scaling configurabile di vita, velocita e danno per ondata.
-- Aggiunte boss wave ogni cinque ondate con zombie potenziati e richiesta al `BossSystem`.
-- Collegati `SurvivalMode` e `GameModeManager` per avvio e arresto della modalita.
-- Aggiunta condizione di sconfitta quando tutti i player attivi sono morti.
-- Aggiunte ricompense di denaro, munizioni e cura tra le ondate.
-- Esteso HUD con countdown, indice ondata, boss marker, nemici rimasti e ricompense.
-- Rimossi gli spawn dimostrativi statici dalla scena principale in favore del loop survival.
-- Aggiunto smoke test headless su tre ondate con scaling, reward, boss hook e join multiplayer.
-- Aggiornata documentazione per stato Milestone 5 e prossima Milestone 6.
-- Completata Milestone 6 come prototipo minimo boss system.
-- Aggiunto boss `Wave Warden` con targeting multiplayer e movimento a distanza.
-- Aggiunte fase 1 con raffiche mirate e fase 2 con raffiche radiali alternate.
-- Aggiunta scena proiettile boss ostile integrata con `ProjectileSystem` e `HealthSystem`.
-- Esteso `BossSystem` con scena predefinita, contenitore, boss attivo e notifica sconfitta.
-- Integrato il boss reale nella quinta ondata survival con due zombie di scorta.
-- Esteso `WaveManager` per contare e attendere il boss prima di completare la wave.
-- Aggiunta barra vita boss con nome, fase e valori correnti.
-- Aggiunta loot table boss con drop garantito `Wave Cannon`.
-- Aggiunto smoke test headless boss con due player, pattern, fase, HUD, drop e prosecuzione.
-- Aggiornata documentazione per stato Milestone 6 e prossima Milestone 7.
-- Completata Milestone 7 come prototipo minimo dungeon procedurale.
-- Reso `DungeonGenerator` deterministico da seed con celle uniche e link sequenziali.
-- Aggiunta `DungeonRoom` riusabile con pareti, spawn party e portale bloccabile.
-- Esteso `DungeonMode` con start, combat, loot e boss room.
-- Aggiunti spawn e scaling progressivi dei nemici nelle stanze combat.
-- Aggiunta loot table dungeon garantita per XP, denaro, munizioni e vita.
-- Integrato il boss finale dungeon tramite `GameModeManager` e `BossSystem`.
-- Esteso HUD con seed, stanza corrente, stato uscita e nemici rimasti.
-- Aggiunte hotkey debug `F1` survival e `F5` dungeon.
-- Corretto lo stop di survival per ripulire nemici e boss prima del cambio modalita.
-- Aggiunto smoke test headless dungeon su generazione, transizioni, combat, loot, boss e ritorno a survival.
-- Aggiornata documentazione per stato Milestone 7 e prossima Milestone 8.
-- Completata Milestone 8 come prototipo minimo tower defense.
-- Aggiunta arena dedicata con percorso a waypoint, core da difendere e tre slot costruzione.
-- Aggiunto `TowerDefenseEnemy` con scaling, danno al core, health e drop condivisi.
-- Esteso `EnemySystem` con registrazione di scene nemico per ID.
-- Esteso `TowerDefenseManager` con reset run, crediti e acquisto centralizzato delle torri.
-- Aggiunti `TowerBuildSlot` e input `interact` con `E`/joypad `A`.
-- Aggiunta `DefenseTower` con targeting automatico e sparo tramite `ProjectileSystem`.
-- Implementato ciclo ondate tower defense con spawn progressivo, ricompense e sconfitta core.
-- Estratta la macchina a stati in `TowerDefenseWaveController` per mantenere modulare la modalita.
-- Integrato il `Wave Warden` nelle boss wave tower defense tramite percorso opzionale.
-- Aggiunti hotkey `F6` e stato HUD per core, crediti, wave e nemici.
-- Reso differito lo spawn dei drop da morte per evitare modifiche al physics server durante le collisioni.
-- Aggiunto smoke test headless tower defense e verificata l'intera suite Milestone 3-8.
-- Aggiornata documentazione per stato Milestone 8 e prossima Milestone 9.
-- Avviata Milestone 9 con stato iniziale `menu` al posto dell'avvio automatico survival.
-- Aggiunto menu principale navigabile da tastiera e joypad per survival, dungeon e tower defense.
-- Aggiunti `Continue`, ritorno al menu con `Esc` e sospensione input gameplay nel menu.
-- Implementato `SaveManager` JSON versionato con autosave, validazione e ultima modalita.
-- Esteso `ProgressionManager` con serializzazione e ripristino controllato.
-- Aggiunto feedback audio UI procedurale senza asset esterni.
-- Aggiunto preset export `Windows Desktop`.
-- Generato e avviato headless `build/iso_local_sandbox.pck`.
-- Aggiunto smoke test Milestone 9 per menu, save/load, autosave, dati non validi e selezione modalita.
-- Aggiornati i test survival, boss e dungeon per il nuovo bootstrap da menu.
-- Verificata la suite headless Milestone 3-9 con Godot `4.6.3`.
-- Tentato export Windows; la generazione e bloccata dai template export Godot `4.6.3` assenti nell'ambiente.
-- Installati i template export Windows Godot `4.6.3` dopo verifica SHA-512 ufficiale.
-- Generata la build release `build/iso_local_sandbox.exe` con PCK separato.
-- Aggiunto `BuildRuntimeSmoke` avviabile dalla release con `--build-smoke`.
-- Aggiunto QA visuale ripetibile per menu, focus joypad, survival e ritorno al menu.
-- Corretto il menu aggiungendo joypad `A` all'azione globale `ui_accept`.
-- Esteso `AudioManager` con segnale e conteggio delle frame audio generate.
-- Verificati controller XInput reale, driver audio WASAPI e feedback focus/conferma.
-- Esclusi `tests/` e `build/` dal pacchetto release.
-- Verificata la suite headless Milestone 3-9 e lo smoke della build con exit code `0`.
-- Completata Milestone 9 come prototipo minimo.
-- Aggiunto unlock persistente `Field Kit` al livello party 2 con 20 HP bonus a inizio run.
-- Esteso il save JSON alla versione 2 con lista unlock e migrazione compatibile dei save v1.
-- Aggiunto reset salute idempotente per nuove run e player entrati durante il gameplay.
-- Aggiunto `GameModeManager.game_mode_started` per coprire anche il restart della stessa modalita.
-- Aggiunto feedback audio procedurale condiviso per sparo, impatto valido e pickup.
-- Estesi `Projectile` e `ProjectileSystem` con il contratto di impatto risolto.
-- Mostrato lo stato unlock nel menu principale.
-- Estesi smoke test Milestone 9, combat, drop e survival per i nuovi contratti.
-- Verificata nuovamente la suite headless completa Milestone 3-9.
-- Rigenerati EXE/PCK Windows e completato lo smoke della release con exit code `0`.
-- Ripetuto il QA visuale del menu a 1280x720 con controller XInput e audio WASAPI.
+Il backlog operativo resta in `TODO.md`. Le categorie aperte sono:
 
-### Changed
-
-- Il roll/dodge considera attraversabili solo piccoli gap/fall zone; hazard
-  ambientali come lava, gas e acqua profonda bloccano traiettoria e landing.
-- Le transizioni bioma della survival usano ora passaggi aperti e aggiornamento regione; il teletrasporto resta solo come fallback esplicito.
-- `BiomeMapGenerator` mantiene celle `200x200` ma produce topologia a grafo connesso invece della progressione percepita come sequenza di portali.
-- Allineati i runner boss e stress a un teardown esplicito delle scene.
-- Aggiunta chiusura idempotente dei player audio e degli stream procedurali.
-- Documentato il crash headless intermittente di Godot 4.6.3 gia presente nel
-  commit di partenza e separato dalle regressioni funzionali M15-M21.
-- Aggiornata `ROADMAP_VISUAL_GAMEPLAY.md` con stato e risultati del ciclo
-  completato M15-M21.
-- Sostituiti i poligoni statici del `Wave Warden` con un visual modulare.
-- Gli annunci importanti mantengono precedenza sull'intermissione successiva.
-- Sostituito il visual statico della torre con un componente animato senza cambiare targeting o bilanciamento.
-- Il flash di volata usa colore e dimensione del profilo del proiettile generato.
-- Nascosti i bersagli combat debug durante il gameplay normale.
-- Ridotta la saturazione dello sfondo survival per aumentare il contrasto degli attori.
-- I drop ammo sostengono solo le armi speciali; la fallback non dipende dai drop.
-- Le ricompense ammo survival vengono applicate agli slot speciali dei player vivi.
-- Ridotto il fire rate della `Starter Pistol` da 7 a 6 colpi al secondo.
-- Aumentato il fire rate del `Prototype Blaster` da 4 a 4,5 colpi al secondo.
-- Ogni nuova run ripristina la vita dei player prima di applicare gli unlock persistenti.
-- Aggiunti nomi propri, palette e path artistici data-driven ai quattro profili RPG zombie survival.
-- Aggiornati Character Select, HUD e visual procedurale player per distinguere Mira, Dante, Bruna e Kael senza cambiare meccaniche.
-- Aggiunta checklist visuale per validare silhouette, palette e sostituzione asset definitivi.
-- Aggiunte tre classi RPG avanzate: Mago, Domatrice con Briciola e Licantropo trasformabile.
-- Aggiunti weapon data, palette placeholder, passive e super prototipali per Elio, Nina e Rocco.
+- `UIUX-001`: polish menu, HUD, Character Select, status, mappa, boss, audio e
+  leggibilita multi-risoluzione.
+- `BOSS-001`: nuovo boss o estensione contenuta dei pattern esistenti.
+- `TD-001`: una sola espansione tower defense a scope minimo.
+- `QA-001`: maggiore copertura automatica dei sistemi critici.
+- `BAL-001`: playtest end-to-end, tuning data-driven e profiling.
+- `REL-001`: export Windows ripetibile, build smoke, attribuzioni e firma
+  digitale se toolchain/certificato sono disponibili.

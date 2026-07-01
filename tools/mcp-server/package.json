@@ -1,0 +1,30 @@
+{
+  "name": "@iso-local-sandbox/mcp-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Read-only MCP server for the Iso Local Sandbox Godot project.",
+  "bin": {
+    "gameproject-mcp": "dist/src/server.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/src/server.js",
+    "dev": "tsx src/server.ts",
+    "test": "vitest run",
+    "smoke": "npm run build && node dist/scripts/list_tools_smoke.js",
+    "check": "npm run build && npm run test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.21.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

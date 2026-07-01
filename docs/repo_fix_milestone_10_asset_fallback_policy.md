@@ -2,7 +2,7 @@
 
 Data: 2026-06-21
 
-Questa nota chiude la Milestone 10 di `repo_fix_roadmap.md`: asset, terrain,
+Questa nota chiude la Milestone 10 del pass repo-fix: asset, terrain,
 ostacoli, void/cliff e fallback hanno ora un contratto verificabile senza
 dipendere da asset esterni obbligatori.
 

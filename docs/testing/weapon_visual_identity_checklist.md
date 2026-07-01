@@ -1,6 +1,6 @@
 # Weapon Visual Identity Checklist
 
-Checklist manuale per il pass WVIS-001 derivato da `prompt.md`.
+Checklist manuale per il pass WVIS-001.
 
 ## Scope
 

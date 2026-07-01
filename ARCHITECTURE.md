@@ -1092,6 +1092,33 @@ Per mantenere il progetto gestibile:
 - mantenere milestone e TODO aggiornati;
 - preferire scene/test manuali ripetibili.
 
+### Server MCP locale di progetto
+
+Il repository include un server MCP locale in `tools/mcp-server/`, separato dal
+runtime Godot. Il server usa Node.js/TypeScript, `@modelcontextprotocol/sdk` e
+transport `stdio`; serve Codex e altri agenti con contesto strutturato sulla
+repo senza introdurre dipendenze nel gioco.
+
+Contratto operativo:
+
+- il server lavora solo dentro la root del progetto, rilevata automaticamente o
+  tramite `PROJECT_MCP_ROOT`;
+- i tool sono read-only salvo `run_safe_check`, che esegue solo comandi
+  allowlisted e non accetta shell arbitraria;
+- `read_project_context` valida path relativi, assoluti in-root e `res://`,
+  blocca traversal e non legge file sensibili;
+- `search_project` limita dimensione file, numero risultati e ignora cache,
+  build output, vendor pesanti e lockfile non richiesti;
+- `repo_overview`, `game_system_summary`, `roadmap_context`,
+  `asset_inventory` e `codex_task_brief` ricavano il contesto dai file reali
+  della repo, non da supposizioni hardcoded;
+- i prompt MCP in `tools/mcp-server/src/prompts.ts` sono template operativi per
+  audit isometrico, zombie mode, milestone roadmap, refactor gameplay e asset
+  quality pass.
+
+La documentazione, gli script e l'esempio di configurazione Codex vivono in
+`tools/mcp-server/README.md` e `tools/mcp-server/codex.config.example.toml`.
+
 ## Contratto iterazione status biome survival
 
 `BiomeStatusRuntime` e il runtime unico dei malus ambientali e tematici: espone `apply_status(status_id, duration, intensity, source)`, `clear_status(status_id)`, `has_status(status_id)` e snapshot per HUD. `HazardSystem` lo possiede e resta la facciata usata da hazard, nemici, encounter e HUD; alla chiusura run resetta moltiplicatori movimento e status temporanei.

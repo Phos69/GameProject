@@ -8,6 +8,8 @@ export.cfg
 build/
 dist/
 exports/
+node_modules/
+coverage/
 
 # OS/editor noise
 .DS_Store

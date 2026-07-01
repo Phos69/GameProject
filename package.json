@@ -1,0 +1,10 @@
+{
+  "private": true,
+  "scripts": {
+    "mcp:start": "npm --prefix tools/mcp-server run start",
+    "mcp:dev": "npm --prefix tools/mcp-server run dev",
+    "mcp:build": "npm --prefix tools/mcp-server run build",
+    "mcp:test": "npm --prefix tools/mcp-server run test",
+    "mcp:smoke": "npm --prefix tools/mcp-server run smoke"
+  }
+}

@@ -162,6 +162,23 @@ godot --headless --path . --script res://tools/generate_isometric_environment_as
 > deprecati e ora inoltrano a GUT. I Visual QA vivono in `tests/visual_qa/`,
 > i soak/stress in `tests/suites/soak/`.
 
+## Server MCP locale
+
+Il tooling IA del progetto include un server MCP read-only in
+`tools/mcp-server/`. Espone contesto strutturato su architettura, roadmap,
+asset, ricerca e safe check allowlisted tramite transport `stdio`, senza
+modificare il runtime Godot. Script principali:
+
+```text
+npm run mcp:build
+npm run mcp:test
+npm run mcp:smoke
+npm run mcp:start
+```
+
+Installazione, configurazione Codex ed elenco tool sono documentati in
+`tools/mcp-server/README.md`.
+
 Export Windows:
 
 ```text
@@ -212,6 +229,11 @@ prompts/             prompt operativi per task IA futuri
 assets/              sprite, tileset, audio, font, UI e manifest isometrici
 tests/               test e checklist automatizzabili futuri
 ```
+
+La policy di retention dei Markdown vive in
+`docs/documentation_inventory.md`: le roadmap storiche completate sono
+consolidate in `ROADMAP.md`, `CHANGELOG.md` e nei report tecnici invece di
+restare come file separati. `TODO.md` contiene solo backlog aperto.
 
 ## Stato attuale
 
@@ -386,19 +408,17 @@ Completato:
 - struttura modulare per multiplayer, modalita, combat, proiettili, health, drop, boss, progressione e UI;
 - documentazione iniziale.
 
-Non ancora completato:
+## Roadmap attiva
 
-- ulteriori boss e pattern avanzati;
-- dungeon ramificati, shop, biomi e selezione stanza;
-- asset definitivi e ulteriori pass di bilanciamento;
-- firma digitale dell'eseguibile Windows.
+Il backlog aperto e categorizzato in `ROADMAP.md` e dettagliato in `TODO.md`:
 
-## Prossimi obiettivi post-roadmap
-
-1. Espandere il dungeon con diramazioni, shop e biomi dedicati.
-2. Sostituire gradualmente i placeholder con asset licenziati.
-3. Affinare bilanciamento e performance del revamp zombie dopo playtest reali.
-4. Firmare digitalmente la build pubblica.
+- `UIUX-001`: polish menu, HUD, Character Select, status, mappa, boss, audio e
+  leggibilita multi-risoluzione.
+- `BOSS-001` e `TD-001`: espansioni contenute di boss e tower defense, senza
+  duplicare sistemi condivisi.
+- `QA-001` e `BAL-001`: test automatici critici, playtest, tuning e profiling.
+- `REL-001`: export Windows, build smoke, attribuzioni e firma digitale se la
+  toolchain e disponibile.
 
 La copertura dell'iterazione biome survival vive ora nelle suite GUT
 (`tests/suites/world_gen`, `environment`, `assets`, `modes`, `ui_audio`); vedi la

@@ -1,5 +1,10 @@
 # Latest Commit Validation Report
 
+Nota retention 2026-07-01: questo file e un report storico. Puo citare roadmap,
+prompt e milestone Markdown rimossi durante il cleanup documentale; per la
+documentazione operativa corrente usare `README.md`, `TODO.md`, `ROADMAP.md` e
+`docs/documentation_inventory.md`.
+
 ## Forest isometric texture pass - 2026-06-18
 - Branch: `feat/iso-milestone-10-complete`
 - Scope validato: primo sistema completo di texture isometriche per il bioma

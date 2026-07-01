@@ -67,7 +67,6 @@ Validazione dedicata:
 
 Documentazione aggiornata: `README.md`, `ROADMAP.md`, `TODO.md`,
 `ARCHITECTURE.md`, `GAME_DESIGN.md`, `CHANGELOG.md`,
-`weapon_visual_identity_roadmap.md` e
 `docs/testing/weapon_visual_identity_checklist.md`.
 
 ## Armi aggiornate
