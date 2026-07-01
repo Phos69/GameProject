@@ -1,7 +1,11 @@
+# Replace <REPO_ROOT> with the absolute path to your local clone
+# (e.g. C:\\Git\\GameProject or /home/you/GameProject). It is the only
+# machine-specific value: `--prefix` is relative to `cwd`, and the server
+# auto-detects the project root from its own location.
 [mcp_servers.gameproject]
 command = "npm"
-args = ["--prefix", "E:\\AI_TEST\\GameProject\\tools\\mcp-server", "run", "start"]
-cwd = "E:\\AI_TEST\\GameProject"
+args = ["--prefix", "tools/mcp-server", "run", "start"]
+cwd = "<REPO_ROOT>"
 startup_timeout_sec = 20
 tool_timeout_sec = 120
 enabled = true

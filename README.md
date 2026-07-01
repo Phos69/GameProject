@@ -29,7 +29,7 @@ Godot e stato scelto perche offre scene 2D, input controller, UI, audio, packagi
 
 1. Installa Godot 4.x stable.
 2. Apri Godot.
-3. Importa/apri la cartella del progetto: `e:\AI_TEST\GameProject`.
+3. Importa/apri la cartella del progetto (la tua copia locale del repository).
 4. Avvia la scena principale con Play.
 
 Scena principale:

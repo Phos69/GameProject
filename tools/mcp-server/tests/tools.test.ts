@@ -21,8 +21,22 @@ describe("MCP tool handlers", () => {
       "roadmap_context",
       "run_safe_check",
       "asset_inventory",
-      "codex_task_brief"
+      "codex_task_brief",
+      "git_context"
     ]));
+  });
+
+  it("runs read-only git status without arbitrary shell", async () => {
+    const status = parseToolText(await callProjectTool(root, "git_context", { command: "status" }));
+    expect(status.command).toBe("status");
+    // status/log/diff are the only allowed subcommands; git.exe on win32.
+    expect(status.args[0]).toBe("status");
+  });
+
+  it("rejects unsupported git commands", async () => {
+    const response = await callProjectTool(root, "git_context", { command: "push" });
+    expect(response.isError).toBe(true);
+    expect(parseToolText(response).error).toContain("Unsupported git command");
   });
 
   it("builds a repository overview from real files", async () => {

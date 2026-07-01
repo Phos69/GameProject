@@ -1165,14 +1165,17 @@ repo senza introdurre dipendenze nel gioco.
 
 Contratto operativo:
 
-- il server lavora solo dentro la root del progetto, rilevata automaticamente o
-  tramite `PROJECT_MCP_ROOT`;
+- il server lavora solo dentro la root del progetto, rilevata risalendo fino al
+  marker `project.godot` (indipendente da posizione del clone e profondità di
+  build) oppure tramite `PROJECT_MCP_ROOT`;
 - i tool sono read-only salvo `run_safe_check`, che esegue solo comandi
   allowlisted e non accetta shell arbitraria;
 - `read_project_context` valida path relativi, assoluti in-root e `res://`,
   blocca traversal e non legge file sensibili;
 - `search_project` limita dimensione file, numero risultati e ignora cache,
   build output, vendor pesanti e lockfile non richiesti;
+- `git_context` espone solo status/log/diff read-only via sottocomandi git
+  allowlisted, senza shell arbitraria, con path validato e output troncato;
 - `repo_overview`, `game_system_summary`, `roadmap_context`,
   `asset_inventory` e `codex_task_brief` ricavano il contesto dai file reali
   della repo, non da supposizioni hardcoded;

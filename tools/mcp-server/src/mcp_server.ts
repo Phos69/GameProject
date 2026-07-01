@@ -18,6 +18,7 @@ import {
 } from "./repo_analysis.js";
 import { searchProject } from "./search.js";
 import { listSafeChecks, runSafeCheck } from "./safe_checks.js";
+import { gitContext } from "./git.js";
 
 export type ToolResponse = {
   content: Array<{ type: "text"; text: string }>;
@@ -114,6 +115,21 @@ export const TOOL_DEFINITIONS = [
       required: ["goal"],
       additionalProperties: false
     }
+  },
+  {
+    name: "git_context",
+    description: "Read-only git inspection: working-tree status, recent commit log or diff. Runs only allowlisted git subcommands, never arbitrary shell.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        command: { type: "string", description: "One of: status, log, diff." },
+        maxCount: { type: "number", description: "log only: number of commits to return. Capped by the server." },
+        staged: { type: "boolean", description: "diff only: show staged changes (--cached) instead of the working tree." },
+        path: { type: "string", description: "log/diff only: optional repo-relative path to scope the result." }
+      },
+      required: ["command"],
+      additionalProperties: false
+    }
   }
 ] as const;
 
@@ -153,6 +169,8 @@ export async function callProjectTool(root: string, name: string, args: Record<s
         return jsonContent(await assetInventory(root));
       case "codex_task_brief":
         return jsonContent(await codexTaskBrief(root, args));
+      case "git_context":
+        return jsonContent(await gitContext(root, args));
       default:
         return jsonContent({ error: `Unknown tool '${name}'.` }, true);
     }

@@ -9,7 +9,7 @@ Server MCP locale read-only per `Iso Local Sandbox`. Espone a Codex e ad altri c
 - Linguaggio: TypeScript
 - SDK: `@modelcontextprotocol/sdk`
 - Transport: `stdio`
-- Root progetto: rilevata automaticamente salendo a `E:\AI_TEST\GameProject`; override opzionale con `PROJECT_MCP_ROOT`.
+- Root progetto: rilevata automaticamente risalendo dalla posizione del server fino alla cartella che contiene `project.godot` (la root del repo), indipendentemente da dove è clonato; override opzionale con `PROJECT_MCP_ROOT`.
 
 Il server non viene caricato da Godot e non modifica il runtime del gioco.
 
@@ -56,22 +56,22 @@ npm run dev
 
 Codex legge i server MCP da `config.toml`. Puoi usare la configurazione globale `~/.codex/config.toml` oppure una configurazione di progetto `.codex/config.toml` se il progetto e trusted. Non modificare automaticamente la configurazione globale: copia uno degli esempi sotto nel file che preferisci.
 
-Esempio `config.toml`:
+Esempio `config.toml` (sostituisci `<REPO_ROOT>` con il path assoluto del tuo clone locale, es. `C:\\Git\\GameProject`; è l'unico valore specifico della macchina, perché `--prefix` è relativo a `cwd` e la root del progetto viene rilevata da sola):
 
 ```toml
 [mcp_servers.gameproject]
 command = "npm"
-args = ["--prefix", "E:\\AI_TEST\\GameProject\\tools\\mcp-server", "run", "start"]
-cwd = "E:\\AI_TEST\\GameProject"
+args = ["--prefix", "tools/mcp-server", "run", "start"]
+cwd = "<REPO_ROOT>"
 startup_timeout_sec = 20
 tool_timeout_sec = 120
 enabled = true
 ```
 
-Esempio CLI:
+Esempio CLI (esegui dalla root del repo):
 
 ```powershell
-codex mcp add gameproject -- npm --prefix E:\AI_TEST\GameProject\tools\mcp-server run start
+codex mcp add gameproject -- npm --prefix tools/mcp-server run start
 ```
 
 Nel TUI Codex puoi usare `/mcp` per controllare che il server sia attivo.
@@ -235,6 +235,27 @@ Input:
 
 Output: file probabilmente coinvolti, sistemi impattati, rischi, test consigliati, criteri di accettazione e primi passi.
 
+### `git_context`
+
+Ispezione git read-only. Esegue solo sottocomandi allowlisted (`status`, `log`, `diff`), mai shell libera.
+
+Input:
+
+```json
+{
+  "command": "log",
+  "maxCount": 20,
+  "path": "game/modes/zombie",
+  "staged": false
+}
+```
+
+- `status`: stato del working tree in formato porcelain (stabile e indipendente dalla lingua).
+- `log`: ultimi commit (`maxCount` con cap lato server), opzionalmente ristretti a `path`.
+- `diff`: diff del working tree, oppure staged con `staged: true`; opzionalmente ristretto a `path`.
+
+Il path è repo-relative, validato contro il traversal e passato dopo `--`. Output troncato al limite del server.
+
 ## Prompt MCP
 
 Il server espone questi template:
@@ -269,4 +290,4 @@ Manual/smoke MCP:
 npm run mcp:smoke
 ```
 
-Output atteso: lista dei 9 tool e dei 5 prompt.
+Output atteso: lista dei 10 tool e dei 5 prompt.

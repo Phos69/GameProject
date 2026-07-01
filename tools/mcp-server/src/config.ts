@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -179,11 +180,32 @@ export const AREA_PREFIXES: Record<string, string[]> = {
   ]
 };
 
+// Marker file that identifies the repository root regardless of clone location.
+export const PROJECT_ROOT_MARKER = "project.godot";
+
+// Ascend from `startDir` until the project marker is found. This keeps root
+// detection independent of the machine and of how deep the running file is
+// nested (dev `src/` vs built `dist/src/`), which a fixed `../../..` cannot.
+export function findProjectRoot(startDir: string): string | undefined {
+  let current = path.resolve(startDir);
+  for (let depth = 0; depth < 20; depth++) {
+    if (fs.existsSync(path.join(current, PROJECT_ROOT_MARKER))) {
+      return current;
+    }
+    const parent = path.dirname(current);
+    if (parent === current) {
+      break;
+    }
+    current = parent;
+  }
+  return undefined;
+}
+
 export function defaultProjectRoot(): string {
   if (process.env.PROJECT_MCP_ROOT) {
     return path.resolve(process.env.PROJECT_MCP_ROOT);
   }
 
   const here = path.dirname(fileURLToPath(import.meta.url));
-  return path.resolve(here, "../../..");
+  return findProjectRoot(here) ?? path.resolve(here, "../../..");
 }
