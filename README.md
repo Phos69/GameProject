@@ -153,6 +153,7 @@ godot --headless -s res://addons/gut/gut_cmdln.gd -gconfig=res://.gutconfig.soak
 
 # Visual QA: tool a parte, richiedono rendering reale/GPU (non headless).
 tools/run_visual_qa.sh            # vedi docs/testing/visual_qa.md
+./tools/run_visual_qa.ps1
 
 # Asset check isometrico.
 godot --headless --path . --script res://tools/generate_isometric_environment_assets.gd -- --check

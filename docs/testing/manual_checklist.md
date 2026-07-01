@@ -1140,6 +1140,41 @@ godot --path . --rendering-method gl_compatibility --script res://tests/visual_q
 ./tools/run_gut.ps1 -GutDir res://tests/suites/assets -Select generated_texture
 ```
 
+## Biome Rendering Review
+
+QA mirata da usare quando si ritocca la resa grafica dei biomi Survival
+(`BiomeTileLayer`, `IsometricTileResolver`, manifest/asset catalog,
+obstacle/cliff renderer o asset generati). Il tool produce screenshot in
+`build/qa/biome_rendering_review/` usando seed `641004`, `772031` e `918273` a
+`1280x720` e `960x540`.
+
+- Eseguire il runner mirato:
+
+```text
+./tools/run_visual_qa.ps1 -Filter biome
+```
+
+- Per ogni difetto annotare: seed, bioma, screenshot, categoria, file/sistema
+  probabile, criterio di fix e test da rieseguire.
+- Categorie da usare: `seam/tiling`, `palette`, `cliff/void`, `passaggio`,
+  `ostacolo/Y-sort`, `hazard`, `leggibilita attori`, `performance`.
+- Controllare per ogni bioma: centro regione, passaggio, fall/cliff,
+  ostacolo/hazard e scena con player piu roster tematico.
+- Correggere una categoria per volta, senza cambiare collisioni, pathfinding,
+  danno o regole bioma salvo bug concreto documentato.
+- Dopo un micro-fix rilanciare il Visual QA mirato e la suite GUT piu vicina:
+
+```text
+./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/assets
+./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/environment
+./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/obstacles
+```
+
+Accettazione del pass: nessun white matte, checkerboard, fallback generico,
+seam evidente o passaggio disallineato; cliff/void distinguibili da muri e
+terreno walkable; ostacoli grandi con base e Y-sort coerenti; player, zombie,
+pickup e hazard leggibili sopra il terreno.
+
 ## Regressione Milestone 10.4 - strade e passaggi asset-driven
 
 QA visuale e runtime da eseguire dopo modifiche a `BiomePassage`,

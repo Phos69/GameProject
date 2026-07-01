@@ -66,8 +66,41 @@ func test_forest_runtime_consumption() -> void:
 		assert_true(asset_path.contains("_generated") and asset_path.ends_with(".png"), "forest tile layer exposes %s generated path" % String(asset_id))
 	assert_true(layer.has_cliff_art_textures(), "forest tile layer loads grass-cliff edge")
 	assert_gt(layer.get_cliff_transition_count(), 0, "forest void builds textured cliff transitions")
+	assert_eq(layer._surface_mesh_overdraw_pixels(), 0.0, "forest legacy surface keeps exact mesh bounds")
 	layer.queue_free()
 	await wait_physics_frames(1)
+
+func test_surface_mesh_overdraw_expands_vertices_without_moving_uvs() -> void:
+	var run := Rect2i(Vector2i(1, 2), Vector2i(3, 1))
+	var base_mesh := IsometricForestGroundMeshBuilder.build_mesh(
+		[run],
+		Vector2i(8, 8),
+		24.0,
+		128.0
+	)
+	var overdraw_mesh := IsometricForestGroundMeshBuilder.build_mesh(
+		[run],
+		Vector2i(8, 8),
+		24.0,
+		128.0,
+		1.5
+	)
+	var base_bounds := _mesh_bounds(base_mesh)
+	var overdraw_bounds := _mesh_bounds(overdraw_mesh)
+	assert_true(
+		overdraw_bounds.position.is_equal_approx(base_bounds.position - Vector2(1.5, 1.5))
+		and overdraw_bounds.end.is_equal_approx(base_bounds.end + Vector2(1.5, 1.5)),
+		"surface mesh overdraw covers subpixel seams around the run"
+	)
+	var base_uvs := (
+		base_mesh.surface_get_arrays(0)[Mesh.ARRAY_TEX_UV]
+		as PackedVector2Array
+	)
+	var overdraw_uvs := (
+		overdraw_mesh.surface_get_arrays(0)[Mesh.ARRAY_TEX_UV]
+		as PackedVector2Array
+	)
+	assert_eq(overdraw_uvs, base_uvs, "surface mesh overdraw leaves world-space UVs unchanged")
 
 const GENERATED_BIOME_THEMES: Dictionary = {
 	&"toxic_wastes": &"urban_ruins",
@@ -307,6 +340,30 @@ func test_generated_biome_runtime_consumption() -> void:
 			layer.get_rendered_surface_material_ids().size(),
 			0,
 			"%s produces non-empty generated surface meshes" % String(biome_id)
+		)
+		assert_gt(
+			layer._surface_mesh_overdraw_pixels(),
+			0.0,
+			"%s generated surface mesh uses seam-covering overdraw"
+			% String(biome_id)
+		)
+		var first_rendered_id := layer.get_rendered_surface_material_ids()[0]
+		var runtime_texture := (
+			layer._forest_surface_textures.get(first_rendered_id) as Texture2D
+		)
+		var source_path := String(
+			layer.get_forest_surface_art_asset_paths().get(first_rendered_id, "")
+		)
+		var source_image := Image.new()
+		var source_load_error := source_image.load(
+			ProjectSettings.globalize_path(source_path)
+		)
+		assert_eq(source_load_error, OK, "%s source surface image loads" % String(biome_id))
+		assert_eq(
+			runtime_texture.get_width(),
+			source_image.get_width() - 4,
+			"%s trims the bright generated surface border at runtime"
+			% String(biome_id)
 		)
 		var selected_material_ids: Dictionary = {}
 		var selected_material_paths: Dictionary = {}

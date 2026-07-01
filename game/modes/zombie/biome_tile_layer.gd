@@ -40,6 +40,8 @@ const ROCK_CLIFF_FACE_TEXTURE_ID := &"rock_cliff_face_texture"
 const LARGE_ROCK_OBJECT_ID := &"large_rock"
 const FOREST_GRASS_TEXTURE_ID := &"forest_grass"
 const FOREST_SURFACE_TEXTURE_WORLD_SIZE := 256.0
+const GENERATED_SURFACE_RUN_OVERDRAW_PIXELS := 1.5
+const GENERATED_SURFACE_TEXTURE_EDGE_TRIM_PIXELS := 2
 const FOREST_SURFACE_TEXTURE_IDS: Array[StringName] = [
 	&"forest_grass",
 	&"forest_path",
@@ -734,6 +736,40 @@ func _load_generated_texture(asset_path: String) -> Texture2D:
 		Vector2i(512, 512)
 	)
 
+func _load_generated_surface_texture(asset_path: String) -> Texture2D:
+	var texture := _load_generated_texture(asset_path)
+	if texture == null:
+		return null
+	return _trim_repeating_surface_texture(texture)
+
+func _trim_repeating_surface_texture(texture: Texture2D) -> Texture2D:
+	var image := texture.get_image()
+	if image == null or image.is_empty():
+		return texture
+	var trim := GENERATED_SURFACE_TEXTURE_EDGE_TRIM_PIXELS
+	if image.get_width() <= trim * 2 or image.get_height() <= trim * 2:
+		return texture
+	if image.is_compressed():
+		var decompress_error := image.decompress()
+		if decompress_error != OK:
+			return texture
+	var cropped_size := Vector2i(
+		image.get_width() - trim * 2,
+		image.get_height() - trim * 2
+	)
+	var cropped := Image.create(
+		cropped_size.x,
+		cropped_size.y,
+		false,
+		image.get_format()
+	)
+	cropped.blit_rect(
+		image,
+		Rect2i(Vector2i(trim, trim), cropped_size),
+		Vector2i.ZERO
+	)
+	return ImageTexture.create_from_image(cropped)
+
 func _load_rock_art_texture() -> void:
 	_rock_top_texture = null
 	_rock_cliff_face_texture = null
@@ -780,7 +816,7 @@ func _load_forest_surface_art_textures() -> void:
 		for asset_path in GENERATED_ART_CATALOG.get_all_surface_asset_paths(biome_id):
 			var material_id := GENERATED_ART_CATALOG.material_id_from_path(asset_path)
 			_forest_surface_art_asset_paths[material_id] = asset_path
-			var texture := _load_generated_texture(asset_path)
+			var texture := _load_generated_surface_texture(asset_path)
 			if texture == null:
 				continue
 			_forest_surface_textures[material_id] = texture
@@ -1208,7 +1244,8 @@ func _build_forest_surface_meshes(
 			typed_runs,
 			layout.zone_size,
 			scale,
-			_forest_surface_texture_world_size(texture_id)
+			_forest_surface_texture_world_size(texture_id),
+			_surface_mesh_overdraw_pixels()
 		)
 		if surface_mesh != null and surface_mesh.get_surface_count() > 0:
 			result[texture_id] = surface_mesh
@@ -1225,6 +1262,11 @@ func _forest_surface_texture_world_size(texture_id: StringName) -> float:
 		# checkerboard along long junction runs.
 		return 128.0
 	return FOREST_SURFACE_TEXTURE_WORLD_SIZE
+
+func _surface_mesh_overdraw_pixels() -> float:
+	if _uses_generated_theme():
+		return GENERATED_SURFACE_RUN_OVERDRAW_PIXELS
+	return 0.0
 
 func _append_underlay_run(
 	vertices: PackedVector2Array,

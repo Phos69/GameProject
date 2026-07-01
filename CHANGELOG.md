@@ -17,6 +17,12 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
   `set_current_region`, `prepare_area`, `is_area_ready`,
   `get_loaded_visual_chunk_keys` e `get_streaming_stats`, con test
   deterministici per mapping camera/chunk, copertura e attraversamento.
+- Aggiunto `tests/visual_qa/biome_rendering_review_visual_qa.gd`, harness
+  mirato per catturare i cinque biomi Survival con seed fissi, doppia
+  risoluzione, focus su centro, passaggi, cliff/void, ostacoli/hazard e roster
+  tematico, con controlli leggeri su tile layer, fallback e dettaglio immagine.
+- Aggiunto `tools/run_visual_qa.ps1`, runner Windows/PowerShell per i Visual QA
+  con filtro per nome, import opzionale e log per script in `build/qa_logs/`.
 - Aggiunto `IsoGridConfig` come contratto centrale per la nuova griglia
   isometrica: tile logico `3x3` legacy, scala world `24.0`, biomi `150x150`
   (`450x450` equivalenti legacy) e costanti condivise per strade, passaggi,
@@ -105,6 +111,10 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Fixed
 
+- Rimossi i seam bianchi regolari dai biomi Survival con asset generati: le
+  surface terrain ripetute vengono caricate con un trim runtime di 2 px sul
+  bordo chiaro e le mesh dei run generati usano un piccolo overdraw senza
+  spostare gli UV, lasciando invariati collisioni, pathfinding e regole bioma.
 - Preservati tile `*_entry` dei passaggi anche con apertura profonda una sola
   cella: il resolver assegna l'entry alla prima cella interna del connector e
   mantiene `*_exit` sul bordo esterno.
@@ -138,6 +148,24 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Validation
 
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/assets -Select generated_texture`:
+  16 test, 586 assert, passa.
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/assets`: 55
+  test, 7465 assert, passa.
+- `./tools/run_visual_qa.ps1 -SkipImport -Filter biome_rendering_review`: 1
+  Visual QA, passa; rigenerate 150 catture in
+  `build/qa/biome_rendering_review/`.
+- `godot --version`: `4.6.3.stable.official.7d41c59c4`.
+- `godot --headless --path . --import`: passa.
+- `godot --headless --path . --script res://tools/prepare_generated_biome_assets.gd -- --check`:
+  passa.
+- `godot --headless --path . --script res://tools/generate_isometric_environment_assets.gd -- --check`:
+  passa, `checked=130`.
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/environment`: 34
+  test, 2164 assert, passa.
+- `./tools/run_visual_qa.ps1 -SkipImport -Filter biome`: 3 Visual QA, passa;
+  `biome_rendering_review_visual_qa.gd` genera 150 PNG sotto
+  `build/qa/biome_rendering_review/`.
 - `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/world_gen`: 48
   test, 350 assert, passa.
 - `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/obstacles`: 16

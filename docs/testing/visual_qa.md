@@ -18,6 +18,16 @@ tools/run_visual_qa.sh
 tools/run_visual_qa.sh weapon
 ```
 
+Su Windows/PowerShell:
+
+```powershell
+# Tutti i Visual QA
+./tools/run_visual_qa.ps1
+
+# QA mirata ai biomi survival
+./tools/run_visual_qa.ps1 -Filter biome
+```
+
 In ambienti senza display usare xvfb:
 
 ```bash
@@ -25,13 +35,14 @@ xvfb-run -a tools/run_visual_qa.sh
 ```
 
 Variabili utili: `GODOT` (binario), `QA_RENDER` (default `gl_compatibility`),
-`SKIP_IMPORT=1` (salta l'import), `QA_LOG_DIR` (cartella log).
+`SKIP_IMPORT=1` (salta l'import nello script Bash), `QA_LOG_DIR` (cartella log
+Bash). In PowerShell usare anche `-SkipImport` e `-OutputLogDir`.
 
 ## Elenco dei tool
 
 | Area | File |
 | --- | --- |
-| Ambiente / bioma | `zombie_biome_visual_qa.gd`, `forest_surface_generated_visual_qa.gd`, `milestone_10_isometric_final_visual_qa.gd` |
+| Ambiente / bioma | `biome_rendering_review_visual_qa.gd`, `zombie_biome_visual_qa.gd`, `forest_surface_generated_visual_qa.gd`, `milestone_10_isometric_final_visual_qa.gd` |
 | Ostacoli / asset | `obstacle_3x3_visual_qa.gd`, `obstacle_asset_visual_qa.gd`, `rock_area_visual_qa.gd`, `void_cliff_generated_visual_qa.gd`, `void_cliff_runtime_visual_qa.gd` |
 | Armi | `weapon_visual_identity_qa.gd`, `weapon_visual_identity_qa_board.gd`, `weapon_visual_identity_survival_qa.gd`, `weapon_tower_visual_qa.gd` |
 | Nemici / boss | `enemy_variants_visual_qa.gd`, `ranged_enemy_visual_qa.gd`, `boss_telegraph_visual_qa.gd`, `rift_architect_visual_qa.gd` |

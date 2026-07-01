@@ -8,7 +8,8 @@ static func build_mesh(
 	runs: Array[Rect2i],
 	zone_size: Vector2i,
 	logical_scale: float,
-	texture_world_size: float
+	texture_world_size: float,
+	overdraw_pixels: float = 0.0
 ) -> ArrayMesh:
 	if runs.is_empty() or texture_world_size <= 0.0:
 		return null
@@ -25,7 +26,8 @@ static func build_mesh(
 			run,
 			zone_size,
 			logical_scale,
-			texture_world_size
+			texture_world_size,
+			overdraw_pixels
 		)
 	if vertices.is_empty():
 		return null
@@ -47,7 +49,8 @@ static func _append_run(
 	run: Rect2i,
 	zone_size: Vector2i,
 	logical_scale: float,
-	texture_world_size: float
+	texture_world_size: float,
+	overdraw_pixels: float
 ) -> void:
 	if run.size.x <= 0 or run.size.y <= 0:
 		return
@@ -56,11 +59,16 @@ static func _append_run(
 	var right := (float(run.end.x) - zone_offset.x) * logical_scale
 	var top := (float(run.position.y) - zone_offset.y) * logical_scale
 	var bottom := (float(run.end.y) - zone_offset.y) * logical_scale
+	var overdraw := maxf(overdraw_pixels, 0.0)
+	var draw_left := left - overdraw
+	var draw_right := right + overdraw
+	var draw_top := top - overdraw
+	var draw_bottom := bottom + overdraw
 	var base := vertices.size()
-	vertices.append(Vector2(left, top))
-	vertices.append(Vector2(right, top))
-	vertices.append(Vector2(right, bottom))
-	vertices.append(Vector2(left, bottom))
+	vertices.append(Vector2(draw_left, draw_top))
+	vertices.append(Vector2(draw_right, draw_top))
+	vertices.append(Vector2(draw_right, draw_bottom))
+	vertices.append(Vector2(draw_left, draw_bottom))
 	for _index in range(4):
 		colors.append(Color.WHITE)
 	uvs.append(Vector2(left, top) / texture_world_size)
