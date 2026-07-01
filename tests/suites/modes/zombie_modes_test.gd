@@ -8,26 +8,25 @@ extends GutTest
 ##   tests/zombie_survival_world_contract_smoke_test.gd  (sintetico)
 ##   tests/infinite_arena_default_mode_smoke_test.gd     (main.tscn, async)
 
-const MainSceneFixture = preload("res://tests/support/main_scene_fixture.gd")
-
 var _async_world_ready: bool = false
 
 # --- foundation: biome/wave/spawner + wave loop (zombie_revamp_foundation) ---
 
 func test_zombie_revamp_foundation() -> void:
-	var scene := MainSceneFixture.new()
+	var scene = _new_main_scene_fixture()
 	assert_true(scene.boot(self), "main scene can be loaded")
 	await wait_physics_frames(2)
-	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
-	var survival_mode := scene.node(&"survival_mode") as SurvivalMode
-	var wave_manager := scene.node(&"wave_manager") as WaveManager
-	var health_system := scene.node(&"health_system") as HealthSystem
+	var game_mode_manager: GameModeManager = scene.node(&"game_mode_manager") as GameModeManager
+	var survival_mode: SurvivalMode = scene.node(&"survival_mode") as SurvivalMode
+	var wave_manager: WaveManager = scene.node(&"wave_manager") as WaveManager
+	var health_system: HealthSystem = scene.node(&"health_system") as HealthSystem
 	var biome_manager = scene.node(&"biome_manager")
 	var wave_director = scene.node(&"wave_director")
 	var zombie_spawner = scene.node(&"zombie_spawner")
 	if game_mode_manager == null or survival_mode == null or wave_manager == null or health_system == null or biome_manager == null or wave_director == null or zombie_spawner == null:
 		assert_true(false, "revamp foundation systems are available")
 		scene.teardown()
+		scene = null
 		return
 
 	assert_gte(biome_manager.get_available_biome_ids().size(), 5, "biome manager registers the planned biome set")
@@ -62,26 +61,28 @@ func test_zombie_revamp_foundation() -> void:
 
 	survival_mode.stop_mode()
 	scene.teardown()
+	scene = null
 	await wait_physics_frames(1)
 
 # --- market post-boss (zombie_market) ---------------------------------------
 
 func test_zombie_market() -> void:
-	var scene := MainSceneFixture.new()
+	var scene = _new_main_scene_fixture()
 	assert_true(scene.boot(self), "main scene loads with the survival market")
 	await wait_physics_frames(2)
-	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
-	var survival_mode := scene.node(&"survival_mode") as SurvivalMode
-	var wave_manager := scene.node(&"wave_manager") as WaveManager
-	var market := scene.node(&"survival_market_controller") as SurvivalMarketController
-	var market_ui := scene.node(&"survival_market_ui") as SurvivalMarketUI
-	var progression := scene.node(&"progression_manager") as ProgressionManager
-	var player_manager := scene.node(&"player_manager") as PlayerManager
-	var multiplayer := scene.node(&"local_multiplayer_manager") as LocalMultiplayerManager
-	var health_system := scene.node(&"health_system") as HealthSystem
+	var game_mode_manager: GameModeManager = scene.node(&"game_mode_manager") as GameModeManager
+	var survival_mode: SurvivalMode = scene.node(&"survival_mode") as SurvivalMode
+	var wave_manager: WaveManager = scene.node(&"wave_manager") as WaveManager
+	var market: SurvivalMarketController = scene.node(&"survival_market_controller") as SurvivalMarketController
+	var market_ui: SurvivalMarketUI = scene.node(&"survival_market_ui") as SurvivalMarketUI
+	var progression: ProgressionManager = scene.node(&"progression_manager") as ProgressionManager
+	var player_manager: PlayerManager = scene.node(&"player_manager") as PlayerManager
+	var multiplayer: LocalMultiplayerManager = scene.node(&"local_multiplayer_manager") as LocalMultiplayerManager
+	var health_system: HealthSystem = scene.node(&"health_system") as HealthSystem
 	if game_mode_manager == null or survival_mode == null or wave_manager == null or market == null or market_ui == null or progression == null or player_manager == null or multiplayer == null or health_system == null:
 		assert_true(false, "market systems are available")
 		scene.teardown()
+		scene = null
 		return
 
 	survival_mode.stop_mode()
@@ -178,10 +179,11 @@ func test_zombie_market() -> void:
 	assert_true(not market.is_run_active and not market.is_market_open and market.get_weapon_offers().is_empty(), "new-run cleanup resets market state and offers")
 	_teardown_market(scene, multiplayer)
 
-func _teardown_market(scene: MainSceneFixture, multiplayer: LocalMultiplayerManager) -> void:
+func _teardown_market(scene, multiplayer: LocalMultiplayerManager) -> void:
 	if multiplayer != null:
 		multiplayer.deactivate_slot(2)
 	scene.teardown()
+	scene = null
 	await wait_physics_frames(1)
 
 # --- contratto del mondo survival (zombie_survival_world_contract) ----------
@@ -272,22 +274,23 @@ func _assert_walled_infinite_arena_profile(biome_manager: BiomeManager) -> void:
 # --- infinite arena come modalità di default (infinite_arena_default_mode) ---
 
 func test_infinite_arena_default() -> void:
-	var scene := MainSceneFixture.new()
+	var scene = _new_main_scene_fixture()
 	assert_true(scene.boot(self), "main scene can be loaded")
 	await wait_physics_frames(2)
 	await wait_physics_frames(1)
-	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
-	var main_menu := scene.node(&"main_menu") as MainMenu
-	var save_manager := scene.node(&"save_manager") as SaveManager
+	var game_mode_manager: GameModeManager = scene.node(&"game_mode_manager") as GameModeManager
+	var main_menu: MainMenu = scene.node(&"main_menu") as MainMenu
+	var save_manager: SaveManager = scene.node(&"save_manager") as SaveManager
 	var infinite_arena_mode = scene.node(&"infinite_arena_mode")
-	var survival_mode := scene.node(&"survival_mode") as SurvivalMode
-	var biome_manager := scene.node(&"biome_manager") as BiomeManager
-	var world_runtime := scene.node(&"world_runtime") as WorldRuntime
-	var streamer := scene.node(&"world_region_streamer") as WorldRegionStreamer
-	var hud := scene.node(&"hud_manager") as HUDManager
+	var survival_mode: SurvivalMode = scene.node(&"survival_mode") as SurvivalMode
+	var biome_manager: BiomeManager = scene.node(&"biome_manager") as BiomeManager
+	var world_runtime: WorldRuntime = scene.node(&"world_runtime") as WorldRuntime
+	var streamer: WorldRegionStreamer = scene.node(&"world_region_streamer") as WorldRegionStreamer
+	var hud: HUDManager = scene.node(&"hud_manager") as HUDManager
 	if game_mode_manager == null or main_menu == null or save_manager == null or infinite_arena_mode == null or survival_mode == null or biome_manager == null or world_runtime == null or streamer == null:
 		assert_true(false, "infinite arena systems are available")
 		scene.teardown()
+		scene = null
 		return
 
 	assert_true(game_mode_manager.has_mode(GameConstants.MODE_INFINITE_ARENA), "game mode manager exposes infinite arena")
@@ -324,6 +327,7 @@ func test_infinite_arena_default() -> void:
 	assert_false(survival_mode.is_running, "shared survival runtime stops on menu return")
 
 	scene.teardown()
+	scene = null
 	await wait_physics_frames(1)
 
 func _assert_infinite_arena_world(biome_manager: BiomeManager) -> void:
@@ -345,13 +349,13 @@ func _assert_infinite_arena_world(biome_manager: BiomeManager) -> void:
 	assert_true(layout.fall_zone_rects.is_empty(), "Infinite Arena layout has no fall boundary")
 	assert_true(bool(layout.validation_report.get("is_valid", false)), "Infinite Arena layout passes validation")
 
-func _assert_arena_terrain_is_solid(scene: MainSceneFixture) -> void:
-	var hazard_system := scene.node(&"hazard_system") as HazardSystem
+func _assert_arena_terrain_is_solid(scene) -> void:
+	var hazard_system: HazardSystem = scene.node(&"hazard_system") as HazardSystem
 	assert_not_null(hazard_system, "hazard system is available in Infinite Arena")
 	if hazard_system == null:
 		return
 	assert_false(hazard_system.is_void_at_world_position(Vector2.ZERO), "Infinite Arena spawn center is solid ground, not void")
-	var player := scene.node(&"players") as Node2D
+	var player: Node2D = scene.node(&"players") as Node2D
 	if player != null:
 		assert_false(hazard_system.is_void_at_world_position(player.global_position), "Infinite Arena player spawn is not classified as void")
 
@@ -410,3 +414,11 @@ func _find_menu_button(main_menu: MainMenu, label_text: String) -> Button:
 		if button != null and button.text == label_text:
 			return button
 	return null
+func _new_main_scene_fixture():
+	var script := ResourceLoader.load(
+		"res://tests/support/main_scene_fixture.gd",
+		"",
+		ResourceLoader.CACHE_MODE_IGNORE
+	) as Script
+	assert_true(script != null, "main scene fixture script loads")
+	return script.new() if script != null else null

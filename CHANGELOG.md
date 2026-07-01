@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- Eliminato il residuo finale di shutdown della suite rapida GUT: i test che
+  bootano `main.tscn` caricano `main_scene_fixture.gd` senza cache persistente,
+  non passano piu la risorsa `Script` agli assert GUT e rilasciano il fixture
+  locale dopo `teardown()`. La quick completa passa con stderr vuoto.
 - Pulita la suite soak GUT: `.gutconfig.soak.json` usa gli hook pre/post di test,
   `ten_wave_test.gd` libera scena e cache statiche in teardown, e il run soak
   completo passa senza warning di shutdown.

@@ -9,24 +9,23 @@ extends GutTest
 ##   tests/milestone_15_ranged_enemy_smoke_test.gd
 ##   tests/offscreen_enemy_markers_smoke_test.gd
 
-const MainSceneFixture = preload("res://tests/support/main_scene_fixture.gd")
-
 var _shooter_projectiles: Array[Projectile] = []
 
 # --- nemici tematici per biome + hazard runtime (zombie_biome_enemy) --------
 
 func test_biome_themed_enemies() -> void:
-	var scene := MainSceneFixture.new()
+	var scene = _new_main_scene_fixture()
 	assert_true(scene.boot(self), "main scene can be loaded")
 	await wait_physics_frames(2)
-	var enemy_system := scene.node(&"enemy_system") as EnemySystem
-	var health_system := scene.node(&"health_system") as HealthSystem
-	var hazard_system := scene.node(&"hazard_system") as HazardSystem
-	var transition_system := scene.node(&"biome_transition_system") as BiomeTransitionSystem
-	var player := scene.node(&"players") as PlayerController
+	var enemy_system: EnemySystem = scene.node(&"enemy_system") as EnemySystem
+	var health_system: HealthSystem = scene.node(&"health_system") as HealthSystem
+	var hazard_system: HazardSystem = scene.node(&"hazard_system") as HazardSystem
+	var transition_system: BiomeTransitionSystem = scene.node(&"biome_transition_system") as BiomeTransitionSystem
+	var player: PlayerController = scene.node(&"players") as PlayerController
 	if enemy_system == null or health_system == null or hazard_system == null or transition_system == null or player == null:
 		assert_true(false, "biome enemy systems are available")
 		scene.teardown()
+		scene = null
 		return
 	assert_true(scene.start_survival(), "survival starts for thematic enemy validation")
 	await wait_physics_frames(1)
@@ -87,20 +86,22 @@ func test_biome_themed_enemies() -> void:
 
 	scene.stop_survival()
 	scene.teardown()
+	scene = null
 	await wait_physics_frames(1)
 
 # --- definizioni biome + wave director (zombie_biome_wave_director) ---------
 
 func test_wave_director_biome_scaling() -> void:
-	var scene := MainSceneFixture.new()
+	var scene = _new_main_scene_fixture()
 	assert_true(scene.boot(self), "main scene can be loaded")
 	await wait_physics_frames(2)
 	var biome_manager = scene.node(&"biome_manager")
 	var wave_director = scene.node(&"wave_director")
-	var wave_manager := scene.node(&"wave_manager") as WaveManager
+	var wave_manager: WaveManager = scene.node(&"wave_manager") as WaveManager
 	if biome_manager == null or wave_director == null or wave_manager == null:
 		assert_true(false, "biome/wave systems are available")
 		scene.teardown()
+		scene = null
 		return
 
 	for biome_id in [&"infected_plains", &"toxic_wastes", &"burning_fields", &"frozen_outskirts", &"drowned_marsh"]:
@@ -141,19 +142,21 @@ func test_wave_director_biome_scaling() -> void:
 	wave_manager.stop_run(true)
 
 	scene.teardown()
+	scene = null
 	await wait_physics_frames(1)
 
 # --- spawner: bordi, rifiuti, fallback (zombie_spawner_edge) ----------------
 
 func test_spawner_edges_and_rejection() -> void:
-	var scene := MainSceneFixture.new()
+	var scene = _new_main_scene_fixture()
 	assert_true(scene.boot(self), "main scene can be loaded")
 	await wait_physics_frames(2)
 	var spawner = scene.node(&"zombie_spawner")
-	var player := scene.node(&"players") as Node2D
+	var player: Node2D = scene.node(&"players") as Node2D
 	if spawner == null or player == null:
 		assert_true(false, "spawner and player are available")
 		scene.teardown()
+		scene = null
 		return
 
 	spawner.spawn_group_radius = 0.0
@@ -206,21 +209,23 @@ func test_spawner_edges_and_rejection() -> void:
 	spawner.max_spawn_attempts = old_attempts
 
 	scene.teardown()
+	scene = null
 	await wait_physics_frames(1)
 
 # --- varianti nemico runner/tank (milestone_12_enemy_variants) --------------
 
 func test_enemy_variants() -> void:
-	var scene := MainSceneFixture.new()
+	var scene = _new_main_scene_fixture()
 	assert_true(scene.boot(self), "main scene can be loaded")
 	await wait_physics_frames(3)
-	var enemy_system := scene.node(&"enemy_system") as EnemySystem
-	var wave_manager := scene.node(&"wave_manager") as WaveManager
-	var player_manager := scene.node(&"player_manager") as PlayerManager
-	var health_system := scene.node(&"health_system") as HealthSystem
+	var enemy_system: EnemySystem = scene.node(&"enemy_system") as EnemySystem
+	var wave_manager: WaveManager = scene.node(&"wave_manager") as WaveManager
+	var player_manager: PlayerManager = scene.node(&"player_manager") as PlayerManager
+	var health_system: HealthSystem = scene.node(&"health_system") as HealthSystem
 	if enemy_system == null or wave_manager == null or player_manager == null or health_system == null:
 		assert_true(false, "variant systems are available")
 		scene.teardown()
+		scene = null
 		return
 
 	assert_true(enemy_system.registered_enemy_scenes.has(&"survival_runner"), "runner scene is registered by enemy ID")
@@ -228,6 +233,7 @@ func test_enemy_variants() -> void:
 	var player := player_manager.players.get(1) as PlayerController
 	if player == null:
 		scene.teardown()
+		scene = null
 		return
 	player.global_position = Vector2.ZERO
 	var player_health := player.get_node("HealthComponent") as HealthComponent
@@ -238,6 +244,7 @@ func test_enemy_variants() -> void:
 	if basic == null or runner == null or tank == null:
 		assert_true(false, "all variants spawn")
 		scene.teardown()
+		scene = null
 		return
 	basic.set_physics_process(false)
 	runner.set_physics_process(false)
@@ -302,6 +309,7 @@ func test_enemy_variants() -> void:
 
 	wave_manager.stop_run(true)
 	scene.teardown()
+	scene = null
 	await wait_physics_frames(1)
 
 func wave_frames_setup(wave_manager: WaveManager) -> void:
@@ -320,23 +328,25 @@ func wave_frames_setup(wave_manager: WaveManager) -> void:
 
 func test_ranged_enemy() -> void:
 	_shooter_projectiles = []
-	var scene := MainSceneFixture.new()
+	var scene = _new_main_scene_fixture()
 	assert_true(scene.boot(self), "main scene can be loaded")
 	await wait_physics_frames(3)
-	var enemy_system := scene.node(&"enemy_system") as EnemySystem
-	var projectile_system := scene.node(&"projectile_system") as ProjectileSystem
-	var player_manager := scene.node(&"player_manager") as PlayerManager
-	var health_system := scene.node(&"health_system") as HealthSystem
-	var wave_manager := scene.node(&"wave_manager") as WaveManager
+	var enemy_system: EnemySystem = scene.node(&"enemy_system") as EnemySystem
+	var projectile_system: ProjectileSystem = scene.node(&"projectile_system") as ProjectileSystem
+	var player_manager: PlayerManager = scene.node(&"player_manager") as PlayerManager
+	var health_system: HealthSystem = scene.node(&"health_system") as HealthSystem
+	var wave_manager: WaveManager = scene.node(&"wave_manager") as WaveManager
 	if enemy_system == null or projectile_system == null or player_manager == null or health_system == null or wave_manager == null:
 		assert_true(false, "ranged systems are available")
 		scene.teardown()
+		scene = null
 		return
 
 	assert_true(enemy_system.registered_enemy_scenes.has(&"survival_shooter"), "shooter scene is registered by enemy ID")
 	var player := player_manager.players.get(1) as PlayerController
 	if player == null:
 		scene.teardown()
+		scene = null
 		return
 	player.global_position = Vector2(180.0, 0.0)
 	var player_health := player.health_component
@@ -345,6 +355,7 @@ func test_ranged_enemy() -> void:
 	assert_not_null(shooter, "ranged zombie spawns through EnemySystem")
 	if shooter == null:
 		scene.teardown()
+		scene = null
 		return
 	shooter.set_physics_process(false)
 	shooter.target = player
@@ -396,25 +407,28 @@ func test_ranged_enemy() -> void:
 	if projectile_system.projectile_spawned.is_connected(_on_shooter_projectile_spawned):
 		projectile_system.projectile_spawned.disconnect(_on_shooter_projectile_spawned)
 	scene.teardown()
+	scene = null
 	await wait_physics_frames(1)
 
 # --- marker direzionali off-screen (offscreen_enemy_markers) ----------------
 
 func test_offscreen_enemy_markers() -> void:
-	var scene := MainSceneFixture.new()
+	var scene = _new_main_scene_fixture()
 	assert_true(scene.boot(self), "main scene loads")
 	for _frame in range(6):
 		await wait_physics_frames(1)
-	var hud := scene.node(&"hud_manager") as HUDManager
-	var enemy_system := scene.node(&"enemy_system") as EnemySystem
+	var hud: HUDManager = scene.node(&"hud_manager") as HUDManager
+	var enemy_system: EnemySystem = scene.node(&"enemy_system") as EnemySystem
 	if hud == null or enemy_system == null:
 		assert_true(false, "hud and enemy system are available")
 		scene.teardown()
+		scene = null
 		return
 	var markers := hud.offscreen_enemy_markers
 	assert_not_null(markers, "hud creates the offscreen enemy markers node")
 	if markers == null:
 		scene.teardown()
+		scene = null
 		return
 
 	assert_true(markers.compute_markers().is_empty(), "no minion yields no marker")
@@ -450,6 +464,7 @@ func test_offscreen_enemy_markers() -> void:
 	assert_true(markers.high_contrast and markers.reduced_motion, "visual settings toggle high contrast and reduced motion")
 
 	scene.teardown()
+	scene = null
 	await wait_physics_frames(1)
 
 # --- helper -----------------------------------------------------------------
@@ -479,7 +494,7 @@ func _edge_match(edge: StringName, position: Vector2, visible_rect: Rect2) -> bo
 			return position.x < visible_rect.position.x
 	return false
 
-func _count_xp_pickups(scene: MainSceneFixture, amount: int) -> int:
+func _count_xp_pickups(scene, amount: int) -> int:
 	var count := 0
 	for pickup in scene.nodes(&"drop_pickups"):
 		if pickup is DropPickup:
@@ -498,3 +513,11 @@ func _wait_for_wave_combat(wave_manager: WaveManager, wave_index: int) -> bool:
 func _on_shooter_projectile_spawned(projectile: Node) -> void:
 	if projectile is Projectile and projectile.get("source_id") == &"enemy_shooter":
 		_shooter_projectiles.append(projectile as Projectile)
+func _new_main_scene_fixture():
+	var script := ResourceLoader.load(
+		"res://tests/support/main_scene_fixture.gd",
+		"",
+		ResourceLoader.CACHE_MODE_IGNORE
+	) as Script
+	assert_true(script != null, "main scene fixture script loads")
+	return script.new() if script != null else null

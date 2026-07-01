@@ -11,13 +11,11 @@ extends GutTest
 ##   tests/milestone_10_isometric_performance_smoke_test.gd
 ##   tests/milestone_10_legacy_cleanup_smoke_test.gd
 
-const MainSceneFixture = preload("res://tests/support/main_scene_fixture.gd")
-
 const PERFORMANCE_ENEMY_IDS: Array[StringName] = [
 	&"survival_zombie", &"survival_runner", &"survival_tank", &"survival_shooter"
 ]
 
-var _scene: MainSceneFixture
+var _scene
 var _default_spawn_interval: float = 0.0
 var _default_seam_cooldown: float = 0.0
 var _default_transition_cooldown: float = 0.0
@@ -31,16 +29,16 @@ var _spawned_drop_count: int = 0
 var _void_enemy_death_reason: StringName = &""
 
 func before_all() -> void:
-	_scene = MainSceneFixture.new()
+	_scene = _new_main_scene_fixture()
 	assert_true(_scene.boot(self), "main scene can be loaded")
 	await wait_physics_frames(3)
-	var wave_manager := _scene.node(&"wave_manager") as WaveManager
+	var wave_manager: WaveManager = _scene.node(&"wave_manager") as WaveManager
 	if wave_manager != null:
 		_default_spawn_interval = wave_manager.spawn_interval
 	var seam_system = _scene.node(&"region_seam_system")
 	if seam_system != null:
 		_default_seam_cooldown = float(seam_system.get("transition_cooldown"))
-	var transition_system := _scene.node(&"biome_transition_system") as BiomeTransitionSystem
+	var transition_system: BiomeTransitionSystem = _scene.node(&"biome_transition_system") as BiomeTransitionSystem
 	if transition_system != null:
 		_default_transition_cooldown = transition_system.transition_cooldown
 		_default_move_party = transition_system.move_party_on_transition
@@ -53,10 +51,10 @@ func before_all() -> void:
 
 func before_each() -> void:
 	# Ripristina i tunable che i singoli test mutano, così l'ordine non conta.
-	var wave_manager := _scene.node(&"wave_manager") as WaveManager
+	var wave_manager: WaveManager = _scene.node(&"wave_manager") as WaveManager
 	if wave_manager != null:
 		wave_manager.spawn_interval = _default_spawn_interval
-	var local_multiplayer := _scene.node(&"local_multiplayer_manager") as LocalMultiplayerManager
+	var local_multiplayer: LocalMultiplayerManager = _scene.node(&"local_multiplayer_manager") as LocalMultiplayerManager
 	if local_multiplayer != null:
 		for slot in [4, 3, 2]:
 			local_multiplayer.deactivate_slot(slot)
@@ -64,7 +62,7 @@ func before_each() -> void:
 	if seam_system != null:
 		seam_system.set("transition_cooldown", _default_seam_cooldown)
 		seam_system.set("cooldown_timer", 0.0)
-	var transition_system := _scene.node(&"biome_transition_system") as BiomeTransitionSystem
+	var transition_system: BiomeTransitionSystem = _scene.node(&"biome_transition_system") as BiomeTransitionSystem
 	if transition_system != null:
 		transition_system.transition_cooldown = _default_transition_cooldown
 		transition_system.move_party_on_transition = _default_move_party
@@ -96,12 +94,12 @@ func after_all() -> void:
 
 func test_full_region_streaming() -> void:
 	var streamer = _scene.node(&"world_region_streamer")
-	var biome_manager := _scene.node(&"biome_manager") as BiomeManager
-	var world_runtime := _scene.node(&"world_runtime") as WorldRuntime
-	var terrain_generator := _scene.node(&"terrain_generator") as TerrainGenerator
-	var obstacle_system := _scene.node(&"obstacle_system") as ObstacleSystem
-	var hazard_system := _scene.node(&"hazard_system") as HazardSystem
-	var crate_system := _scene.node(&"resource_crate_system") as ResourceCrateSystem
+	var biome_manager: BiomeManager = _scene.node(&"biome_manager") as BiomeManager
+	var world_runtime: WorldRuntime = _scene.node(&"world_runtime") as WorldRuntime
+	var terrain_generator: TerrainGenerator = _scene.node(&"terrain_generator") as TerrainGenerator
+	var obstacle_system: ObstacleSystem = _scene.node(&"obstacle_system") as ObstacleSystem
+	var hazard_system: HazardSystem = _scene.node(&"hazard_system") as HazardSystem
+	var crate_system: ResourceCrateSystem = _scene.node(&"resource_crate_system") as ResourceCrateSystem
 	assert_not_null(streamer, "world region streamer is available")
 	assert_not_null(terrain_generator, "terrain generator is available")
 	assert_not_null(world_runtime, "world runtime is available")
@@ -150,11 +148,11 @@ func test_full_region_streaming() -> void:
 # (milestone_10_isometric_performance)
 
 func test_isometric_streaming_performance() -> void:
-	var local_multiplayer := _scene.node(&"local_multiplayer_manager") as LocalMultiplayerManager
-	var player_manager := _scene.node(&"player_manager") as PlayerManager
-	var wave_manager := _scene.node(&"wave_manager") as WaveManager
-	var biome_manager := _scene.node(&"biome_manager") as BiomeManager
-	var enemy_system := _scene.node(&"enemy_system") as EnemySystem
+	var local_multiplayer: LocalMultiplayerManager = _scene.node(&"local_multiplayer_manager") as LocalMultiplayerManager
+	var player_manager: PlayerManager = _scene.node(&"player_manager") as PlayerManager
+	var wave_manager: WaveManager = _scene.node(&"wave_manager") as WaveManager
+	var biome_manager: BiomeManager = _scene.node(&"biome_manager") as BiomeManager
+	var enemy_system: EnemySystem = _scene.node(&"enemy_system") as EnemySystem
 	var streamer = _scene.node(&"world_region_streamer")
 	assert_not_null(local_multiplayer, "local multiplayer manager is available")
 	assert_not_null(enemy_system, "enemy system is available")
@@ -183,7 +181,7 @@ func test_isometric_streaming_performance() -> void:
 			else BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE.x * BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE.y)
 		assert_eq(int(counts.get("tiles", 0)), expected_tiles, "%s has the full 500x500 tile layer" % String(region_id))
 
-	var tile_layers := _scene.nodes(&"biome_tile_layers")
+	var tile_layers = _scene.nodes(&"biome_tile_layers")
 	assert_gte(tile_layers.size(), streamed_ids.size(), "streamed regions expose chunked tile layers")
 	for layer_node in tile_layers:
 		var tile_layer := layer_node as BiomeTileLayer
@@ -240,9 +238,9 @@ func test_isometric_streaming_performance() -> void:
 func test_no_legacy_renderer_or_gates() -> void:
 	_assert_source_audit()
 
-	var biome_manager := _scene.node(&"biome_manager") as BiomeManager
-	var terrain_generator := _scene.node(&"terrain_generator") as TerrainGenerator
-	var transition_system := _scene.node(&"biome_transition_system") as BiomeTransitionSystem
+	var biome_manager: BiomeManager = _scene.node(&"biome_manager") as BiomeManager
+	var terrain_generator: TerrainGenerator = _scene.node(&"terrain_generator") as TerrainGenerator
+	var transition_system: BiomeTransitionSystem = _scene.node(&"biome_transition_system") as BiomeTransitionSystem
 	var streamer = _scene.node(&"world_region_streamer")
 	assert_not_null(terrain_generator, "terrain generator is available")
 	assert_not_null(transition_system, "legacy transition command API is available")
@@ -273,11 +271,11 @@ func test_no_legacy_renderer_or_gates() -> void:
 # (milestone_10_no_portal_transition)
 
 func test_seam_crossing_through_open_passage() -> void:
-	var biome_manager := _scene.node(&"biome_manager") as BiomeManager
-	var world_runtime := _scene.node(&"world_runtime") as WorldRuntime
+	var biome_manager: BiomeManager = _scene.node(&"biome_manager") as BiomeManager
+	var world_runtime: WorldRuntime = _scene.node(&"world_runtime") as WorldRuntime
 	var seam_system = _scene.node(&"region_seam_system")
-	var transition_system := _scene.node(&"biome_transition_system") as BiomeTransitionSystem
-	var player_manager := _scene.node(&"player_manager") as PlayerManager
+	var transition_system: BiomeTransitionSystem = _scene.node(&"biome_transition_system") as BiomeTransitionSystem
+	var player_manager: PlayerManager = _scene.node(&"player_manager") as PlayerManager
 	assert_not_null(seam_system, "region seam system is available")
 	assert_not_null(transition_system, "legacy transition command API is available")
 	assert_not_null(player_manager, "player manager is available")
@@ -328,11 +326,11 @@ func test_seam_crossing_through_open_passage() -> void:
 # (open_passage_transition)
 
 func test_open_passage_follows_physical_movement() -> void:
-	var biome_manager := _scene.node(&"biome_manager") as BiomeManager
-	var world_runtime := _scene.node(&"world_runtime") as WorldRuntime
+	var biome_manager: BiomeManager = _scene.node(&"biome_manager") as BiomeManager
+	var world_runtime: WorldRuntime = _scene.node(&"world_runtime") as WorldRuntime
 	var seam_system = _scene.node(&"region_seam_system")
-	var transition_system := _scene.node(&"biome_transition_system") as BiomeTransitionSystem
-	var player_manager := _scene.node(&"player_manager") as PlayerManager
+	var transition_system: BiomeTransitionSystem = _scene.node(&"biome_transition_system") as BiomeTransitionSystem
+	var player_manager: PlayerManager = _scene.node(&"player_manager") as PlayerManager
 	assert_not_null(seam_system, "region seam system is available")
 	assert_not_null(transition_system, "transition system is available")
 	assert_not_null(player_manager, "player manager is available")
@@ -386,11 +384,11 @@ func test_open_passage_follows_physical_movement() -> void:
 # (milestone_10_cross_biome_chase)
 
 func test_enemy_chases_across_biome_seam() -> void:
-	var biome_manager := _scene.node(&"biome_manager") as BiomeManager
-	var player_manager := _scene.node(&"player_manager") as PlayerManager
-	var enemy_system := _scene.node(&"enemy_system") as EnemySystem
+	var biome_manager: BiomeManager = _scene.node(&"biome_manager") as BiomeManager
+	var player_manager: PlayerManager = _scene.node(&"player_manager") as PlayerManager
+	var enemy_system: EnemySystem = _scene.node(&"enemy_system") as EnemySystem
 	var seam_system = _scene.node(&"region_seam_system")
-	var zombie_spawner := _scene.node(&"zombie_spawner") as ZombieSpawner
+	var zombie_spawner: ZombieSpawner = _scene.node(&"zombie_spawner") as ZombieSpawner
 	var streamer = _scene.node(&"world_region_streamer")
 	var multi_region_renderer = _scene.node(&"multi_region_renderer")
 	assert_not_null(enemy_system, "enemy system is available")
@@ -472,12 +470,12 @@ func test_enemy_chases_across_biome_seam() -> void:
 # (biome_world_generation)
 
 func test_biome_world_generation() -> void:
-	var biome_manager := _scene.node(&"biome_manager") as BiomeManager
-	var obstacle_system := _scene.node(&"obstacle_system") as ObstacleSystem
-	var hazard_system := _scene.node(&"hazard_system") as HazardSystem
-	var crate_system := _scene.node(&"resource_crate_system") as ResourceCrateSystem
-	var transition_system := _scene.node(&"biome_transition_system") as BiomeTransitionSystem
-	var zombie_spawner := _scene.node(&"zombie_spawner") as ZombieSpawner
+	var biome_manager: BiomeManager = _scene.node(&"biome_manager") as BiomeManager
+	var obstacle_system: ObstacleSystem = _scene.node(&"obstacle_system") as ObstacleSystem
+	var hazard_system: HazardSystem = _scene.node(&"hazard_system") as HazardSystem
+	var crate_system: ResourceCrateSystem = _scene.node(&"resource_crate_system") as ResourceCrateSystem
+	var transition_system: BiomeTransitionSystem = _scene.node(&"biome_transition_system") as BiomeTransitionSystem
+	var zombie_spawner: ZombieSpawner = _scene.node(&"zombie_spawner") as ZombieSpawner
 	assert_not_null(biome_manager, "biome manager is available")
 	assert_not_null(transition_system, "transition system is available")
 	assert_not_null(zombie_spawner, "zombie spawner is available")
@@ -544,14 +542,14 @@ func test_biome_world_generation() -> void:
 # (zombie_biome_transition)
 
 func test_zombie_biome_transition() -> void:
-	var biome_manager := _scene.node(&"biome_manager") as BiomeManager
-	var transition_system := _scene.node(&"biome_transition_system") as BiomeTransitionSystem
-	var terrain_generator := _scene.node(&"terrain_generator") as TerrainGenerator
-	var obstacle_system := _scene.node(&"obstacle_system") as ObstacleSystem
-	var crate_system := _scene.node(&"resource_crate_system") as ResourceCrateSystem
+	var biome_manager: BiomeManager = _scene.node(&"biome_manager") as BiomeManager
+	var transition_system: BiomeTransitionSystem = _scene.node(&"biome_transition_system") as BiomeTransitionSystem
+	var terrain_generator: TerrainGenerator = _scene.node(&"terrain_generator") as TerrainGenerator
+	var obstacle_system: ObstacleSystem = _scene.node(&"obstacle_system") as ObstacleSystem
+	var crate_system: ResourceCrateSystem = _scene.node(&"resource_crate_system") as ResourceCrateSystem
 	var streamer = _scene.node(&"world_region_streamer")
 	var multi_region_renderer = _scene.node(&"multi_region_renderer")
-	var hud := _scene.node(&"hud_manager") as HUDManager
+	var hud: HUDManager = _scene.node(&"hud_manager") as HUDManager
 	assert_not_null(transition_system, "transition system is available")
 	assert_not_null(terrain_generator, "terrain generator is available")
 	assert_not_null(hud, "HUD is available")
@@ -623,13 +621,13 @@ func test_zombie_biome_transition() -> void:
 # (zombie_environment_milestone)
 
 func test_zombie_environment_milestone() -> void:
-	var biome_manager := _scene.node(&"biome_manager") as BiomeManager
-	var terrain_generator := _scene.node(&"terrain_generator") as TerrainGenerator
-	var obstacle_system := _scene.node(&"obstacle_system") as ObstacleSystem
-	var resource_crate_system := _scene.node(&"resource_crate_system") as ResourceCrateSystem
-	var hazard_system := _scene.node(&"hazard_system") as HazardSystem
-	var enemy_system := _scene.node(&"enemy_system") as EnemySystem
-	var survival_mode := _scene.survival_mode()
+	var biome_manager: BiomeManager = _scene.node(&"biome_manager") as BiomeManager
+	var terrain_generator: TerrainGenerator = _scene.node(&"terrain_generator") as TerrainGenerator
+	var obstacle_system: ObstacleSystem = _scene.node(&"obstacle_system") as ObstacleSystem
+	var resource_crate_system: ResourceCrateSystem = _scene.node(&"resource_crate_system") as ResourceCrateSystem
+	var hazard_system: HazardSystem = _scene.node(&"hazard_system") as HazardSystem
+	var enemy_system: EnemySystem = _scene.node(&"enemy_system") as EnemySystem
+	var survival_mode = _scene.survival_mode()
 	assert_not_null(terrain_generator, "terrain generator is available")
 	assert_not_null(obstacle_system, "obstacle system is available")
 	assert_not_null(resource_crate_system, "resource crate system is available")
@@ -656,7 +654,7 @@ func test_zombie_environment_milestone() -> void:
 		assert_eq(tile_layer.get_missing_asset_count(), 0, "asset tile layer has no missing visual cells")
 		assert_true(tile_layer.palette == palette, "starting biome palette is applied to the tile layer")
 
-	var player := _scene.node(&"players") as Node2D
+	var player: Node2D = _scene.node(&"players") as Node2D
 	if player != null:
 		player.global_position = Vector2.ZERO
 
@@ -736,14 +734,14 @@ func test_zombie_fall_hazard() -> void:
 	_spawned_drop_count = 0
 	_void_enemy_death_reason = &""
 
-	var hazard_system := _scene.node(&"hazard_system") as HazardSystem
-	var zombie_spawner := _scene.node(&"zombie_spawner") as ZombieSpawner
-	var enemy_system := _scene.node(&"enemy_system") as EnemySystem
-	var drop_system := _scene.node(&"drop_system") as DropSystem
-	var health_system := _scene.node(&"health_system") as HealthSystem
-	var gameplay_effects := _scene.node(&"gameplay_effects") as GameplayEffects
-	var audio_manager := _scene.node(&"audio_manager") as AudioManager
-	var player := _scene.node(&"players") as PlayerController
+	var hazard_system: HazardSystem = _scene.node(&"hazard_system") as HazardSystem
+	var zombie_spawner: ZombieSpawner = _scene.node(&"zombie_spawner") as ZombieSpawner
+	var enemy_system: EnemySystem = _scene.node(&"enemy_system") as EnemySystem
+	var drop_system: DropSystem = _scene.node(&"drop_system") as DropSystem
+	var health_system: HealthSystem = _scene.node(&"health_system") as HealthSystem
+	var gameplay_effects: GameplayEffects = _scene.node(&"gameplay_effects") as GameplayEffects
+	var audio_manager: AudioManager = _scene.node(&"audio_manager") as AudioManager
+	var player: PlayerController = _scene.node(&"players") as PlayerController
 	assert_not_null(hazard_system, "hazard system is available")
 	assert_not_null(drop_system, "drop system is available")
 	assert_not_null(gameplay_effects, "gameplay effects are available")
@@ -924,8 +922,8 @@ func _assert_neighbor_crate_persistence(streamer, graph: WorldGraph, biome_manag
 	crate.opened.emit(crate, null)
 	assert_true(world_runtime.is_region_item_consumed(neighbor_id, PersistentWorldState.CATEGORY_OPENED_CRATES, crate_key),
 		"opening a neighbor crate records it in the neighbor ledger")
-	var environment_container := _scene.main.get_node_or_null("World/EnvironmentProps")
-	var pickup_container := _scene.main.get_node_or_null("World/Pickups")
+	var environment_container = _scene.main.get_node_or_null("World/EnvironmentProps")
+	var pickup_container = _scene.main.get_node_or_null("World/Pickups")
 	streamer.stream_world(graph, current_region_id, biome_manager, world_runtime,
 		environment_container, pickup_container, terrain_generator, obstacle_system, hazard_system, crate_system)
 	await wait_physics_frames(1)
@@ -1189,3 +1187,11 @@ func _on_drop_spawned(_pickup: Node, _drop_data: Dictionary) -> void:
 func _on_test_enemy_died(enemy: Node) -> void:
 	if enemy != null and enemy.has_method("get_death_reason"):
 		_void_enemy_death_reason = StringName(enemy.call("get_death_reason"))
+func _new_main_scene_fixture():
+	var script := ResourceLoader.load(
+		"res://tests/support/main_scene_fixture.gd",
+		"",
+		ResourceLoader.CACHE_MODE_IGNORE
+	) as Script
+	assert_true(script != null, "main scene fixture script loads")
+	return script.new() if script != null else null

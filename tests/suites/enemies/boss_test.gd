@@ -6,8 +6,6 @@ extends GutTest
 ##   tests/milestone_11_boss_telegraph_smoke_test.gd
 ##   tests/milestone_19_boss_registry_smoke_test.gd
 
-const MainSceneFixture = preload("res://tests/support/main_scene_fixture.gd")
-
 var _completed_waves: Array[int] = []
 var _defeated_modes: Array[StringName] = []
 var _patterns: Array[StringName] = []
@@ -25,24 +23,25 @@ func test_boss_wave_flow() -> void:
 	_defeated_modes = []
 	_patterns = []
 	_boss_projectiles = []
-	var scene := MainSceneFixture.new()
+	var scene = _new_main_scene_fixture()
 	assert_true(scene.boot(self), "main scene can be loaded")
 	await wait_physics_frames(2)
 
-	var wave_manager := scene.node(&"wave_manager") as WaveManager
-	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
-	var survival_mode := scene.node(&"survival_mode") as SurvivalMode
-	var local_multiplayer := scene.node(&"local_multiplayer_manager") as LocalMultiplayerManager
-	var player_manager := scene.node(&"player_manager") as PlayerManager
-	var health_system := scene.node(&"health_system") as HealthSystem
-	var boss_system := scene.node(&"boss_system") as BossSystem
-	var projectile_system := scene.node(&"projectile_system") as ProjectileSystem
-	var hud := scene.node(&"hud_manager") as HUDManager
-	var ammo_director := scene.node(&"survival_ammo_director") as SurvivalAmmoDirector
-	var market := scene.node(&"survival_market_controller") as SurvivalMarketController
+	var wave_manager: WaveManager = scene.node(&"wave_manager") as WaveManager
+	var game_mode_manager: GameModeManager = scene.node(&"game_mode_manager") as GameModeManager
+	var survival_mode: SurvivalMode = scene.node(&"survival_mode") as SurvivalMode
+	var local_multiplayer: LocalMultiplayerManager = scene.node(&"local_multiplayer_manager") as LocalMultiplayerManager
+	var player_manager: PlayerManager = scene.node(&"player_manager") as PlayerManager
+	var health_system: HealthSystem = scene.node(&"health_system") as HealthSystem
+	var boss_system: BossSystem = scene.node(&"boss_system") as BossSystem
+	var projectile_system: ProjectileSystem = scene.node(&"projectile_system") as ProjectileSystem
+	var hud: HUDManager = scene.node(&"hud_manager") as HUDManager
+	var ammo_director: SurvivalAmmoDirector = scene.node(&"survival_ammo_director") as SurvivalAmmoDirector
+	var market: SurvivalMarketController = scene.node(&"survival_market_controller") as SurvivalMarketController
 	if wave_manager == null or game_mode_manager == null or survival_mode == null or local_multiplayer == null or player_manager == null or health_system == null or boss_system == null or projectile_system == null or hud == null or ammo_director == null or market == null:
 		assert_true(false, "boss-flow systems are available")
 		scene.teardown()
+		scene = null
 		return
 
 	survival_mode.stop_mode()
@@ -155,28 +154,30 @@ func test_boss_telegraph() -> void:
 	_patterns = []
 	_audio_feedback = []
 	_boss_projectiles = []
-	var scene := MainSceneFixture.new()
+	var scene = _new_main_scene_fixture()
 	assert_true(scene.boot(self), "main scene can be loaded")
 	await wait_physics_frames(3)
-	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
-	var boss_system := scene.node(&"boss_system") as BossSystem
-	var projectile_system := scene.node(&"projectile_system") as ProjectileSystem
-	var player_manager := scene.node(&"player_manager") as PlayerManager
-	var health_system := scene.node(&"health_system") as HealthSystem
-	var audio_manager := scene.node(&"audio_manager") as AudioManager
-	var hud := scene.node(&"hud_manager") as HUDManager
+	var game_mode_manager: GameModeManager = scene.node(&"game_mode_manager") as GameModeManager
+	var boss_system: BossSystem = scene.node(&"boss_system") as BossSystem
+	var projectile_system: ProjectileSystem = scene.node(&"projectile_system") as ProjectileSystem
+	var player_manager: PlayerManager = scene.node(&"player_manager") as PlayerManager
+	var health_system: HealthSystem = scene.node(&"health_system") as HealthSystem
+	var audio_manager: AudioManager = scene.node(&"audio_manager") as AudioManager
+	var hud: HUDManager = scene.node(&"hud_manager") as HUDManager
 	if game_mode_manager == null or boss_system == null or projectile_system == null or player_manager == null or health_system == null or audio_manager == null or hud == null:
 		assert_true(false, "boss telegraph systems are available")
 		scene.teardown()
+		scene = null
 		return
 
 	game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL)
-	var wave_manager := scene.node(&"wave_manager") as WaveManager
+	var wave_manager: WaveManager = scene.node(&"wave_manager") as WaveManager
 	if wave_manager != null:
 		wave_manager.initial_delay = 100.0
 	var player := player_manager.players.get(1) as PlayerController
 	if player == null:
 		scene.teardown()
+		scene = null
 		return
 	audio_manager.gameplay_feedback_generated.connect(_on_audio_feedback)
 	projectile_system.projectile_spawned.connect(_on_boss_projectile_spawned)
@@ -244,17 +245,18 @@ func test_boss_registry() -> void:
 	_rift_projectiles = []
 	_rejected_requests = []
 	_defeated_details = []
-	var scene := MainSceneFixture.new()
+	var scene = _new_main_scene_fixture()
 	assert_true(scene.boot(self), "main scene can be loaded")
 	await wait_physics_frames(3)
-	var boss_system := scene.node(&"boss_system") as BossSystem
-	var player_manager := scene.node(&"player_manager") as PlayerManager
-	var projectile_system := scene.node(&"projectile_system") as ProjectileSystem
-	var health_system := scene.node(&"health_system") as HealthSystem
-	var hud := scene.node(&"hud_manager") as HUDManager
+	var boss_system: BossSystem = scene.node(&"boss_system") as BossSystem
+	var player_manager: PlayerManager = scene.node(&"player_manager") as PlayerManager
+	var projectile_system: ProjectileSystem = scene.node(&"projectile_system") as ProjectileSystem
+	var health_system: HealthSystem = scene.node(&"health_system") as HealthSystem
+	var hud: HUDManager = scene.node(&"hud_manager") as HUDManager
 	if boss_system == null or player_manager == null or projectile_system == null or health_system == null or hud == null:
 		assert_true(false, "boss registry systems are available")
 		scene.teardown()
+		scene = null
 		return
 
 	boss_system.boss_request_rejected.connect(_on_boss_request_rejected)
@@ -324,10 +326,11 @@ func test_boss_registry() -> void:
 
 # --- helper -----------------------------------------------------------------
 
-func _teardown_boss(scene: MainSceneFixture, local_multiplayer: LocalMultiplayerManager) -> void:
+func _teardown_boss(scene, local_multiplayer: LocalMultiplayerManager) -> void:
 	if local_multiplayer != null:
 		local_multiplayer.deactivate_slot(2)
 	scene.teardown()
+	scene = null
 	await wait_physics_frames(1)
 
 func _wait_for_boss_wave(wave_manager: WaveManager) -> bool:
@@ -358,13 +361,13 @@ func _wait_for_pattern_count(expected_count: int) -> bool:
 		await wait_physics_frames(1)
 	return false
 
-func _find_weapon_pickup(scene: MainSceneFixture, weapon_id: StringName) -> DropPickup:
+func _find_weapon_pickup(scene, weapon_id: StringName) -> DropPickup:
 	for pickup in scene.nodes(&"drop_pickups"):
 		if pickup is DropPickup and StringName((pickup as DropPickup).drop_data.get("weapon_id", &"")) == weapon_id:
 			return pickup
 	return null
 
-func _count_weapon_pickups(scene: MainSceneFixture, weapon_id: StringName) -> int:
+func _count_weapon_pickups(scene, weapon_id: StringName) -> int:
 	var count := 0
 	for pickup in scene.nodes(&"drop_pickups"):
 		if pickup is DropPickup and StringName((pickup as DropPickup).drop_data.get("weapon_id", &"")) == weapon_id:
@@ -418,3 +421,11 @@ func _on_boss_request_rejected(mode_id: StringName, boss_id: StringName, reason:
 
 func _on_boss_defeated_detailed(mode_id: StringName, boss_id: StringName, display_name: String) -> void:
 	_defeated_details.append({"mode_id": mode_id, "boss_id": boss_id, "display_name": display_name})
+func _new_main_scene_fixture():
+	var script := ResourceLoader.load(
+		"res://tests/support/main_scene_fixture.gd",
+		"",
+		ResourceLoader.CACHE_MODE_IGNORE
+	) as Script
+	assert_true(script != null, "main scene fixture script loads")
+	return script.new() if script != null else null

@@ -8,20 +8,18 @@ extends GutTest
 ## artificialmente wave_director.run_elapsed e tiene puliti i nemici per coprire
 ## dieci minuti simulati con tutte e cinque le transizioni bioma.
 
-const MainSceneFixture = preload("res://tests/support/main_scene_fixture.gd")
-
 func test_accelerated_ten_minute_soak() -> void:
-	var scene := MainSceneFixture.new()
+	var scene = _new_main_scene_fixture()
 	assert_true(scene.boot(self), "main scene can be loaded")
 	await wait_physics_frames(2)
 
-	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
-	var survival_mode := scene.node(&"survival_mode") as SurvivalMode
-	var wave_manager := scene.node(&"wave_manager") as WaveManager
-	var health_system := scene.node(&"health_system") as HealthSystem
-	var wave_director := scene.node(&"wave_director") as WaveDirector
-	var biome_manager := scene.node(&"biome_manager") as BiomeManager
-	var transition_system := scene.node(&"biome_transition_system") as BiomeTransitionSystem
+	var game_mode_manager: GameModeManager = scene.node(&"game_mode_manager") as GameModeManager
+	var survival_mode: SurvivalMode = scene.node(&"survival_mode") as SurvivalMode
+	var wave_manager: WaveManager = scene.node(&"wave_manager") as WaveManager
+	var health_system: HealthSystem = scene.node(&"health_system") as HealthSystem
+	var wave_director: WaveDirector = scene.node(&"wave_director") as WaveDirector
+	var biome_manager: BiomeManager = scene.node(&"biome_manager") as BiomeManager
+	var transition_system: BiomeTransitionSystem = scene.node(&"biome_transition_system") as BiomeTransitionSystem
 	assert_not_null(game_mode_manager, "game mode manager is available")
 	assert_not_null(survival_mode, "survival mode is available")
 	assert_not_null(wave_manager, "wave manager is available")
@@ -35,6 +33,7 @@ func test_accelerated_ten_minute_soak() -> void:
 		or transition_system == null
 	):
 		scene.teardown()
+		scene = null
 		return
 
 	wave_manager.initial_delay = 0.05
@@ -85,4 +84,13 @@ func test_accelerated_ten_minute_soak() -> void:
 	Engine.time_scale = 1.0
 	survival_mode.stop_mode()
 	scene.teardown()
+	scene = null
 	await wait_physics_frames(1)
+func _new_main_scene_fixture():
+	var script := ResourceLoader.load(
+		"res://tests/support/main_scene_fixture.gd",
+		"",
+		ResourceLoader.CACHE_MODE_IGNORE
+	) as Script
+	assert_true(script != null, "main scene fixture script loads")
+	return script.new() if script != null else null

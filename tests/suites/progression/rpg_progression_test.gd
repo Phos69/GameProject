@@ -9,21 +9,20 @@ extends GutTest
 ##   tests/milestone_rpg_11_data_driven_smoke_test.gd (solo dati registry)
 ##   tests/milestone_rpg_13_new_classes_smoke_test.gd (scena sintetica)
 
-const MainSceneFixture = preload("res://tests/support/main_scene_fixture.gd")
-
 var _projectile_spawn_count: int = 0
 
 # --- stat di classe e formule di danno (milestone_rpg_2_stats) --------------
 
 func test_class_stats_and_damage() -> void:
-	var scene := MainSceneFixture.new()
+	var scene = _new_main_scene_fixture()
 	assert_true(scene.boot(self), "main scene can be loaded")
 	await wait_physics_frames(2)
-	var player_manager := scene.node(&"player_manager") as PlayerManager
-	var health_system := scene.node(&"health_system") as HealthSystem
+	var player_manager: PlayerManager = scene.node(&"player_manager") as PlayerManager
+	var health_system: HealthSystem = scene.node(&"health_system") as HealthSystem
 	if player_manager == null or health_system == null:
 		assert_true(false, "stats systems are available")
 		scene.teardown()
+		scene = null
 		return
 	assert_true(scene.start_survival({"character_id": &"berserker"}), "survival starts as berserker")
 	await wait_physics_frames(2)
@@ -31,6 +30,7 @@ func test_class_stats_and_damage() -> void:
 	var player_one := player_manager.players.get(1) as PlayerController
 	if player_one == null:
 		scene.teardown()
+		scene = null
 		return
 	var rpg_component := player_one.get_node("RpgPlayerComponent") as RpgPlayerComponent
 	var health_component := player_one.get_node("HealthComponent") as HealthComponent
@@ -56,21 +56,23 @@ func test_class_stats_and_damage() -> void:
 
 	scene.stop_survival()
 	scene.teardown()
+	scene = null
 	await wait_physics_frames(1)
 
 # --- XP da kill e wave reward (milestone_rpg_6_xp_level) --------------------
 
 func test_xp_from_kills_and_waves() -> void:
-	var scene := MainSceneFixture.new()
+	var scene = _new_main_scene_fixture()
 	assert_true(scene.boot(self), "main scene can be loaded")
 	await wait_physics_frames(2)
-	var player_manager := scene.node(&"player_manager") as PlayerManager
-	var enemy_system := scene.node(&"enemy_system") as EnemySystem
-	var health_system := scene.node(&"health_system") as HealthSystem
-	var wave_manager := scene.node(&"wave_manager") as WaveManager
+	var player_manager: PlayerManager = scene.node(&"player_manager") as PlayerManager
+	var enemy_system: EnemySystem = scene.node(&"enemy_system") as EnemySystem
+	var health_system: HealthSystem = scene.node(&"health_system") as HealthSystem
+	var wave_manager: WaveManager = scene.node(&"wave_manager") as WaveManager
 	if player_manager == null or enemy_system == null or health_system == null or wave_manager == null:
 		assert_true(false, "xp systems are available")
 		scene.teardown()
+		scene = null
 		return
 	assert_true(scene.start_survival({"character_id": &"ranger"}), "survival starts as ranger")
 	await wait_physics_frames(2)
@@ -78,6 +80,7 @@ func test_xp_from_kills_and_waves() -> void:
 	var player := player_manager.players.get(1) as PlayerController
 	if player == null:
 		scene.teardown()
+		scene = null
 		return
 	var rpg_component := player.get_node("RpgPlayerComponent") as RpgPlayerComponent
 	assert_eq(rpg_component.experience, 0, "RPG XP starts at zero")
@@ -86,6 +89,7 @@ func test_xp_from_kills_and_waves() -> void:
 	assert_not_null(enemy, "survival zombie can be spawned")
 	if enemy == null:
 		scene.teardown()
+		scene = null
 		return
 	health_system.apply_damage(enemy, 9999, player, &"test_kill")
 	await wait_physics_frames(1)
@@ -99,6 +103,7 @@ func test_xp_from_kills_and_waves() -> void:
 
 	scene.stop_survival()
 	scene.teardown()
+	scene = null
 	await wait_physics_frames(1)
 
 # --- registry data-driven dei personaggi (milestone_rpg_11_data_driven) -----
@@ -361,7 +366,7 @@ func _spawn_enemy(parent: Node, enemy_scene: PackedScene, position: Vector2) -> 
 	parent.add_child(enemy)
 	return enemy
 
-func _count_xp_pickups(scene: MainSceneFixture) -> int:
+func _count_xp_pickups(scene) -> int:
 	var count := 0
 	for pickup in scene.nodes(&"drop_pickups"):
 		if pickup is DropPickup and StringName((pickup as DropPickup).drop_data.get("type", &"")) == GameConstants.DROP_EXPERIENCE:
@@ -383,3 +388,11 @@ func _free_test_node(node: Node) -> void:
 	if parent != null:
 		parent.remove_child(node)
 	node.free()
+func _new_main_scene_fixture():
+	var script := ResourceLoader.load(
+		"res://tests/support/main_scene_fixture.gd",
+		"",
+		ResourceLoader.CACHE_MODE_IGNORE
+	) as Script
+	assert_true(script != null, "main scene fixture script loads")
+	return script.new() if script != null else null

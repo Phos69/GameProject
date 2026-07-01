@@ -7,8 +7,6 @@ extends GutTest
 ##   tests/dungeon_smoke_test.gd         (main.tscn)
 ##   tests/dungeon_graph_smoke_test.gd   (DungeonGenerator sintetico)
 
-const MainSceneFixture = preload("res://tests/support/main_scene_fixture.gd")
-
 var _completed_waves: Array[int] = []
 var _boss_waves: Array[int] = []
 var _boss_requests: Array[StringName] = []
@@ -22,22 +20,23 @@ func test_survival_wave_flow() -> void:
 	_completed_waves = []
 	_boss_waves = []
 	_boss_requests = []
-	var scene := MainSceneFixture.new()
+	var scene = _new_main_scene_fixture()
 	assert_true(scene.boot(self), "main scene can be loaded")
 	await wait_physics_frames(2)
-	var wave_manager := scene.node(&"wave_manager") as WaveManager
-	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
-	var survival_mode := scene.node(&"survival_mode") as SurvivalMode
-	var local_multiplayer := scene.node(&"local_multiplayer_manager") as LocalMultiplayerManager
-	var player_manager := scene.node(&"player_manager") as PlayerManager
-	var health_system := scene.node(&"health_system") as HealthSystem
-	var progression := scene.node(&"progression_manager") as ProgressionManager
-	var hud := scene.node(&"hud_manager") as HUDManager
-	var boss_system := scene.node(&"boss_system") as BossSystem
-	var ammo_director := scene.node(&"survival_ammo_director") as SurvivalAmmoDirector
+	var wave_manager: WaveManager = scene.node(&"wave_manager") as WaveManager
+	var game_mode_manager: GameModeManager = scene.node(&"game_mode_manager") as GameModeManager
+	var survival_mode: SurvivalMode = scene.node(&"survival_mode") as SurvivalMode
+	var local_multiplayer: LocalMultiplayerManager = scene.node(&"local_multiplayer_manager") as LocalMultiplayerManager
+	var player_manager: PlayerManager = scene.node(&"player_manager") as PlayerManager
+	var health_system: HealthSystem = scene.node(&"health_system") as HealthSystem
+	var progression: ProgressionManager = scene.node(&"progression_manager") as ProgressionManager
+	var hud: HUDManager = scene.node(&"hud_manager") as HUDManager
+	var boss_system: BossSystem = scene.node(&"boss_system") as BossSystem
+	var ammo_director: SurvivalAmmoDirector = scene.node(&"survival_ammo_director") as SurvivalAmmoDirector
 	if wave_manager == null or game_mode_manager == null or survival_mode == null or local_multiplayer == null or player_manager == null or health_system == null or progression == null or hud == null or boss_system == null or ammo_director == null:
 		assert_true(false, "survival wave systems are available")
 		scene.teardown()
+		scene = null
 		return
 
 	survival_mode.stop_mode()
@@ -58,6 +57,7 @@ func test_survival_wave_flow() -> void:
 	var player_one := player_manager.players.get(1) as PlayerController
 	if player_one == null:
 		scene.teardown()
+		scene = null
 		return
 	var player_one_health := player_one.get_node("HealthComponent") as HealthComponent
 	var player_one_weapon := player_one.get_node("WeaponSystem") as WeaponSystem
@@ -149,10 +149,11 @@ func test_survival_wave_flow() -> void:
 	assert_false(wave_manager.run_active, "stopping survival stops the wave loop")
 	_teardown_survival(scene, local_multiplayer)
 
-func _teardown_survival(scene: MainSceneFixture, local_multiplayer: LocalMultiplayerManager) -> void:
+func _teardown_survival(scene, local_multiplayer: LocalMultiplayerManager) -> void:
 	if local_multiplayer != null:
 		local_multiplayer.deactivate_slot(2)
 	scene.teardown()
+	scene = null
 	await wait_physics_frames(1)
 
 # --- tower defense (tower_defense) ------------------------------------------
@@ -160,23 +161,25 @@ func _teardown_survival(scene: MainSceneFixture, local_multiplayer: LocalMultipl
 func test_tower_defense_flow() -> void:
 	_td_completed_waves = []
 	_tower_shots = 0
-	var scene := MainSceneFixture.new()
+	var scene = _new_main_scene_fixture()
 	assert_true(scene.boot(self), "main scene can be loaded")
 	await wait_physics_frames(2)
-	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
-	var survival_mode := scene.node(&"survival_mode") as SurvivalMode
-	var tower_defense_mode := scene.node(&"tower_defense_mode") as TowerDefenseMode
-	var tower_defense_manager := scene.node(&"tower_defense_manager") as TowerDefenseManager
-	var boss_system := scene.node(&"boss_system") as BossSystem
-	var hud := scene.node(&"hud_manager") as HUDManager
+	var game_mode_manager: GameModeManager = scene.node(&"game_mode_manager") as GameModeManager
+	var survival_mode: SurvivalMode = scene.node(&"survival_mode") as SurvivalMode
+	var tower_defense_mode: TowerDefenseMode = scene.node(&"tower_defense_mode") as TowerDefenseMode
+	var tower_defense_manager: TowerDefenseManager = scene.node(&"tower_defense_manager") as TowerDefenseManager
+	var boss_system: BossSystem = scene.node(&"boss_system") as BossSystem
+	var hud: HUDManager = scene.node(&"hud_manager") as HUDManager
 	if game_mode_manager == null or survival_mode == null or tower_defense_mode == null or tower_defense_manager == null or boss_system == null or hud == null:
 		assert_true(false, "tower defense systems are available")
 		scene.teardown()
+		scene = null
 		return
 	var wave_controller: TowerDefenseWaveController = tower_defense_mode.wave_controller
 	if wave_controller == null:
 		assert_true(false, "tower defense wave controller is available")
 		scene.teardown()
+		scene = null
 		return
 	wave_controller.initial_delay = 0.0
 	wave_controller.intermission_duration = 0.08
@@ -259,20 +262,21 @@ func test_tower_defense_flow() -> void:
 
 func test_dungeon_flow() -> void:
 	_completed_runs = []
-	var scene := MainSceneFixture.new()
+	var scene = _new_main_scene_fixture()
 	assert_true(scene.boot(self), "main scene can be loaded")
 	await wait_physics_frames(2)
-	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
-	var survival_mode := scene.node(&"survival_mode") as SurvivalMode
-	var dungeon_mode := scene.node(&"dungeon_mode") as DungeonMode
-	var dungeon_generator := scene.node(&"dungeon_generator") as DungeonGenerator
-	var player_manager := scene.node(&"player_manager") as PlayerManager
-	var health_system := scene.node(&"health_system") as HealthSystem
-	var boss_system := scene.node(&"boss_system") as BossSystem
-	var hud := scene.node(&"hud_manager") as HUDManager
+	var game_mode_manager: GameModeManager = scene.node(&"game_mode_manager") as GameModeManager
+	var survival_mode: SurvivalMode = scene.node(&"survival_mode") as SurvivalMode
+	var dungeon_mode: DungeonMode = scene.node(&"dungeon_mode") as DungeonMode
+	var dungeon_generator: DungeonGenerator = scene.node(&"dungeon_generator") as DungeonGenerator
+	var player_manager: PlayerManager = scene.node(&"player_manager") as PlayerManager
+	var health_system: HealthSystem = scene.node(&"health_system") as HealthSystem
+	var boss_system: BossSystem = scene.node(&"boss_system") as BossSystem
+	var hud: HUDManager = scene.node(&"hud_manager") as HUDManager
 	if game_mode_manager == null or survival_mode == null or dungeon_mode == null or dungeon_generator == null or player_manager == null or health_system == null or boss_system == null or hud == null:
 		assert_true(false, "dungeon systems are available")
 		scene.teardown()
+		scene = null
 		return
 
 	var layout_a := dungeon_generator.generate_layout(4242, 8)
@@ -352,7 +356,7 @@ func test_dungeon_flow() -> void:
 	survival_mode.stop_mode()
 	_teardown_simple(scene)
 
-func _test_shop(scene: MainSceneFixture, dungeon_mode: DungeonMode, buyer: Node) -> void:
+func _test_shop(scene, dungeon_mode: DungeonMode, buyer: Node) -> void:
 	var offers := dungeon_mode.get_shop_offers()
 	assert_gte(offers.size(), 2, "shop presents at least two offers")
 	var credits_before := dungeon_mode.run_credits
@@ -361,7 +365,7 @@ func _test_shop(scene: MainSceneFixture, dungeon_mode: DungeonMode, buyer: Node)
 		if int(offers[index].get("cost", 0)) < int(offers[cheapest_index].get("cost", 0)):
 			cheapest_index = index
 	var cost := int(offers[cheapest_index].get("cost", 0))
-	var pickups_before := scene.nodes(&"drop_pickups").size()
+	var pickups_before = scene.nodes(&"drop_pickups").size()
 	assert_true(dungeon_mode.purchase_offer(cheapest_index, buyer), "an affordable offer can be purchased")
 	assert_eq(dungeon_mode.run_credits, credits_before - cost, "purchase spends exactly the offer cost")
 	await wait_physics_frames(1)
@@ -399,8 +403,9 @@ func _check_layout(generator: DungeonGenerator, seed_value: int, room_count: int
 
 # --- helper -----------------------------------------------------------------
 
-func _teardown_simple(scene: MainSceneFixture) -> void:
+func _teardown_simple(scene) -> void:
 	scene.teardown()
+	scene = null
 	await wait_physics_frames(1)
 
 func _freeze_and_kill_wave(wave_manager: WaveManager, health_system: HealthSystem) -> void:
@@ -503,7 +508,7 @@ func _status_panel_avoids_player_cards(hud: HUDManager) -> bool:
 			return false
 	return true
 
-func _has_pickup_type(scene: MainSceneFixture, drop_type: StringName) -> bool:
+func _has_pickup_type(scene, drop_type: StringName) -> bool:
 	for pickup in scene.nodes(&"drop_pickups"):
 		if pickup is DropPickup and StringName((pickup as DropPickup).drop_data.get("type", &"")) == drop_type:
 			return true
@@ -562,3 +567,11 @@ func _on_tower_fired(_target: Node, _projectile: Node) -> void:
 
 func _on_dungeon_completed(seed_value: int, _room_count: int) -> void:
 	_completed_runs.append(seed_value)
+func _new_main_scene_fixture():
+	var script := ResourceLoader.load(
+		"res://tests/support/main_scene_fixture.gd",
+		"",
+		ResourceLoader.CACHE_MODE_IGNORE
+	) as Script
+	assert_true(script != null, "main scene fixture script loads")
+	return script.new() if script != null else null

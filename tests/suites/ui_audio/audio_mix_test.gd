@@ -4,7 +4,6 @@ extends GutTest
 ## Migra:
 ##   tests/milestone_18_audio_mix_smoke_test.gd  (boot main.tscn, survival + cue)
 
-const MainSceneFixture = preload("res://tests/support/main_scene_fixture.gd")
 const TEMP_SAVE_PATH := "user://ui_audio_audio_mix_test.json"
 
 var _cue_events: Array[Dictionary] = []
@@ -12,19 +11,19 @@ var _cue_events: Array[Dictionary] = []
 func test_audio_mix_and_cues() -> void:
 	_cue_events = []
 	_remove_temporary_save()
-	var scene := MainSceneFixture.new()
+	var scene = _new_main_scene_fixture()
 	assert_true(scene.boot(self), "main scene can be loaded")
 	await wait_physics_frames(3)
 
-	var audio_manager := scene.node(&"audio_manager") as AudioManager
-	var save_manager := scene.node(&"save_manager") as SaveManager
-	var main_menu := scene.node(&"main_menu") as MainMenu
-	var local_multiplayer := scene.node(&"local_multiplayer_manager") as LocalMultiplayerManager
-	var player_manager := scene.node(&"player_manager") as PlayerManager
-	var enemy_system := scene.node(&"enemy_system") as EnemySystem
-	var revive_system := scene.node(&"revive_system")
-	var wave_manager := scene.node(&"wave_manager") as WaveManager
-	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
+	var audio_manager: AudioManager = scene.node(&"audio_manager") as AudioManager
+	var save_manager: SaveManager = scene.node(&"save_manager") as SaveManager
+	var main_menu: MainMenu = scene.node(&"main_menu") as MainMenu
+	var local_multiplayer: LocalMultiplayerManager = scene.node(&"local_multiplayer_manager") as LocalMultiplayerManager
+	var player_manager: PlayerManager = scene.node(&"player_manager") as PlayerManager
+	var enemy_system: EnemySystem = scene.node(&"enemy_system") as EnemySystem
+	var revive_system = scene.node(&"revive_system")
+	var wave_manager: WaveManager = scene.node(&"wave_manager") as WaveManager
+	var game_mode_manager: GameModeManager = scene.node(&"game_mode_manager") as GameModeManager
 	assert_not_null(audio_manager, "audio manager is available")
 	assert_not_null(save_manager, "save manager is available")
 	assert_not_null(main_menu, "main menu is available")
@@ -46,6 +45,7 @@ func test_audio_mix_and_cues() -> void:
 		or game_mode_manager == null
 	):
 		scene.teardown()
+		scene = null
 		_remove_temporary_save()
 		return
 
@@ -157,6 +157,7 @@ func test_audio_mix_and_cues() -> void:
 	if audio_manager.cue_played.is_connected(_on_cue_played):
 		audio_manager.cue_played.disconnect(_on_cue_played)
 	scene.teardown()
+	scene = null
 	await wait_physics_frames(1)
 	_remove_temporary_save()
 
@@ -192,3 +193,11 @@ func _remove_temporary_save() -> void:
 		var path: String = TEMP_SAVE_PATH + str(suffix)
 		if FileAccess.file_exists(path):
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+func _new_main_scene_fixture():
+	var script := ResourceLoader.load(
+		"res://tests/support/main_scene_fixture.gd",
+		"",
+		ResourceLoader.CACHE_MODE_IGNORE
+	) as Script
+	assert_true(script != null, "main scene fixture script loads")
+	return script.new() if script != null else null

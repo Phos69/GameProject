@@ -8,21 +8,20 @@ extends GutTest
 ##   tests/character_select_ui_smoke_test.gd               (MainMenu standalone)
 ##   tests/character_select_independent_smoke_test.gd      (MainMenu standalone)
 
-const MainSceneFixture = preload("res://tests/support/main_scene_fixture.gd")
-
 # --- flusso survival: scelta -> conferma -> applicazione (milestone_rpg_1) ---
 
 func test_character_select_flow() -> void:
-	var scene := MainSceneFixture.new()
+	var scene = _new_main_scene_fixture()
 	assert_true(scene.boot(self), "main scene can be loaded")
 	await wait_physics_frames(2)
-	var main_menu := scene.node(&"main_menu") as MainMenu
-	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
-	var player_manager := scene.node(&"player_manager") as PlayerManager
-	var local_multiplayer := scene.node(&"local_multiplayer_manager") as LocalMultiplayerManager
+	var main_menu: MainMenu = scene.node(&"main_menu") as MainMenu
+	var game_mode_manager: GameModeManager = scene.node(&"game_mode_manager") as GameModeManager
+	var player_manager: PlayerManager = scene.node(&"player_manager") as PlayerManager
+	var local_multiplayer: LocalMultiplayerManager = scene.node(&"local_multiplayer_manager") as LocalMultiplayerManager
 	if main_menu == null or game_mode_manager == null or player_manager == null or local_multiplayer == null:
 		assert_true(false, "character select systems are available")
 		scene.teardown()
+		scene = null
 		return
 
 	local_multiplayer.activate_slot(2)
@@ -70,20 +69,22 @@ func test_character_select_flow() -> void:
 
 	local_multiplayer.deactivate_slot(2)
 	scene.teardown()
+	scene = null
 	await wait_physics_frames(1)
 
 # --- il personaggio è condiviso da tutte le modalità (all_modes_character) ---
 
 func test_all_modes_apply_character() -> void:
-	var scene := MainSceneFixture.new()
+	var scene = _new_main_scene_fixture()
 	assert_true(scene.boot(self), "main scene can be loaded")
 	await wait_physics_frames(2)
 	await wait_physics_frames(1)
-	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
-	var player_manager := scene.node(&"player_manager") as PlayerManager
+	var game_mode_manager: GameModeManager = scene.node(&"game_mode_manager") as GameModeManager
+	var player_manager: PlayerManager = scene.node(&"player_manager") as PlayerManager
 	if game_mode_manager == null or player_manager == null:
 		assert_true(false, "mode/player systems are available")
 		scene.teardown()
+		scene = null
 		return
 
 	await _verify_mode_applies_character(game_mode_manager, player_manager, GameConstants.MODE_DUNGEON, &"berserker", {"character_id": &"berserker", "seed": 4242, "room_count": 6})
@@ -93,6 +94,7 @@ func test_all_modes_apply_character() -> void:
 	game_mode_manager.set_mode(GameConstants.MODE_MENU)
 	await wait_physics_frames(1)
 	scene.teardown()
+	scene = null
 	await wait_physics_frames(1)
 
 func _verify_mode_applies_character(game_mode_manager: GameModeManager, player_manager: PlayerManager, mode_id: StringName, character_id: StringName, context: Dictionary) -> void:
@@ -298,3 +300,11 @@ func _free_test_node(node: Node) -> void:
 	if parent != null:
 		parent.remove_child(node)
 	node.free()
+func _new_main_scene_fixture():
+	var script := ResourceLoader.load(
+		"res://tests/support/main_scene_fixture.gd",
+		"",
+		ResourceLoader.CACHE_MODE_IGNORE
+	) as Script
+	assert_true(script != null, "main scene fixture script loads")
+	return script.new() if script != null else null

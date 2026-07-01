@@ -7,8 +7,6 @@ extends GutTest
 ##   tests/rpg_melee_attack_resolution_smoke_test.gd  (scena sintetica)
 ##   tests/milestone_rpg_4_hitbox_smoke_test.gd  (dati arma + proiettile)
 
-const MainSceneFixture = preload("res://tests/support/main_scene_fixture.gd")
-
 var _feedback_events: Array[StringName] = []
 var _projectile_spawn_count: int = 0
 var _last_melee_attack: Node
@@ -17,18 +15,19 @@ var _last_melee_attack: Node
 
 func test_combat_targets_and_ammo() -> void:
 	_feedback_events = []
-	var scene := MainSceneFixture.new()
+	var scene = _new_main_scene_fixture()
 	assert_true(scene.boot(self), "main scene can be loaded")
 	await wait_physics_frames(2)
 
-	var local_multiplayer := scene.node(&"local_multiplayer_manager") as LocalMultiplayerManager
-	var player_manager := scene.node(&"player_manager") as PlayerManager
-	var audio_manager := scene.node(&"audio_manager") as AudioManager
+	var local_multiplayer: LocalMultiplayerManager = scene.node(&"local_multiplayer_manager") as LocalMultiplayerManager
+	var player_manager: PlayerManager = scene.node(&"player_manager") as PlayerManager
+	var audio_manager: AudioManager = scene.node(&"audio_manager") as AudioManager
 	assert_not_null(local_multiplayer, "local multiplayer manager is available")
 	assert_not_null(player_manager, "player manager is available")
 	assert_not_null(audio_manager, "audio manager is available")
 	if local_multiplayer == null or player_manager == null or audio_manager == null:
 		scene.teardown()
+		scene = null
 		return
 	audio_manager.gameplay_feedback_generated.connect(_on_gameplay_feedback_generated)
 
@@ -38,7 +37,7 @@ func test_combat_targets_and_ammo() -> void:
 
 	var player_one := player_manager.players.get(1) as PlayerController
 	var player_two := player_manager.players.get(2) as PlayerController
-	var target := scene.main.get_node_or_null("World/CombatTargets/TargetEast") as CombatTarget
+	var target: CombatTarget = scene.main.get_node_or_null("World/CombatTargets/TargetEast") as CombatTarget
 	assert_not_null(player_one, "player one is spawned")
 	assert_not_null(player_two, "player two is spawned")
 	assert_not_null(target, "combat target is spawned")
@@ -90,12 +89,13 @@ func test_combat_targets_and_ammo() -> void:
 
 	_teardown_combat(audio_manager, local_multiplayer, scene)
 
-func _teardown_combat(audio_manager: AudioManager, local_multiplayer: LocalMultiplayerManager, scene: MainSceneFixture) -> void:
+func _teardown_combat(audio_manager: AudioManager, local_multiplayer: LocalMultiplayerManager, scene) -> void:
 	if audio_manager != null and audio_manager.gameplay_feedback_generated.is_connected(_on_gameplay_feedback_generated):
 		audio_manager.gameplay_feedback_generated.disconnect(_on_gameplay_feedback_generated)
 	if local_multiplayer != null:
 		local_multiplayer.deactivate_slot(2)
 	scene.teardown()
+	scene = null
 	await wait_physics_frames(1)
 
 # --- risoluzione melee vs proiettile (scena sintetica) ----------------------
@@ -235,3 +235,11 @@ func _clear_projectiles(parent: Node) -> void:
 	for child in parent.get_children():
 		if child is Projectile:
 			child.queue_free()
+func _new_main_scene_fixture():
+	var script := ResourceLoader.load(
+		"res://tests/support/main_scene_fixture.gd",
+		"",
+		ResourceLoader.CACHE_MODE_IGNORE
+	) as Script
+	assert_true(script != null, "main scene fixture script loads")
+	return script.new() if script != null else null

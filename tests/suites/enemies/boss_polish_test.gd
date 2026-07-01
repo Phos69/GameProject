@@ -8,24 +8,22 @@ extends GutTest
 ## il visual modulare del Wave Warden, i profili dei proiettili boss e gli effetti
 ## di morte, piu il riavvio pulito di dungeon/tower dopo il flusso survival.
 
-const MainSceneFixture = preload("res://tests/support/main_scene_fixture.gd")
-
 var _boss_projectiles: Array[Projectile] = []
 
 func test_boss_feedback_and_announcements() -> void:
 	_boss_projectiles = []
-	var scene := MainSceneFixture.new()
+	var scene = _new_main_scene_fixture()
 	assert_true(scene.boot(self), "main scene can be loaded")
 	await wait_physics_frames(3)
 
-	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
-	var wave_manager := scene.node(&"wave_manager") as WaveManager
-	var boss_system := scene.node(&"boss_system") as BossSystem
-	var player_manager := scene.node(&"player_manager") as PlayerManager
-	var projectile_system := scene.node(&"projectile_system") as ProjectileSystem
-	var health_system := scene.node(&"health_system") as HealthSystem
-	var gameplay_effects := scene.node(&"gameplay_effects") as GameplayEffects
-	var hud := scene.node(&"hud_manager") as HUDManager
+	var game_mode_manager: GameModeManager = scene.node(&"game_mode_manager") as GameModeManager
+	var wave_manager: WaveManager = scene.node(&"wave_manager") as WaveManager
+	var boss_system: BossSystem = scene.node(&"boss_system") as BossSystem
+	var player_manager: PlayerManager = scene.node(&"player_manager") as PlayerManager
+	var projectile_system: ProjectileSystem = scene.node(&"projectile_system") as ProjectileSystem
+	var health_system: HealthSystem = scene.node(&"health_system") as HealthSystem
+	var gameplay_effects: GameplayEffects = scene.node(&"gameplay_effects") as GameplayEffects
+	var hud: HUDManager = scene.node(&"hud_manager") as HUDManager
 	assert_not_null(game_mode_manager, "game mode manager is available")
 	assert_not_null(wave_manager, "wave manager is available")
 	assert_not_null(boss_system, "boss system is available")
@@ -40,6 +38,7 @@ func test_boss_feedback_and_announcements() -> void:
 		or gameplay_effects == null or hud == null
 	):
 		scene.teardown()
+		scene = null
 		return
 
 	wave_manager.initial_delay = 100.0
@@ -58,6 +57,7 @@ func test_boss_feedback_and_announcements() -> void:
 	assert_not_null(player, "player one is available as boss target")
 	if player == null:
 		scene.teardown()
+		scene = null
 		return
 	player.global_position = Vector2(300.0, 0.0)
 
@@ -67,6 +67,7 @@ func test_boss_feedback_and_announcements() -> void:
 	if boss == null:
 		_disconnect_projectiles(projectile_system)
 		scene.teardown()
+		scene = null
 		return
 	boss.set_physics_process(false)
 	boss.target = player
@@ -118,6 +119,7 @@ func test_boss_feedback_and_announcements() -> void:
 
 	_disconnect_projectiles(projectile_system)
 	scene.teardown()
+	scene = null
 	await wait_physics_frames(1)
 
 # --- helper -----------------------------------------------------------------
@@ -150,3 +152,11 @@ func _on_projectile_spawned(projectile: Node) -> void:
 func _disconnect_projectiles(projectile_system: ProjectileSystem) -> void:
 	if projectile_system != null and projectile_system.projectile_spawned.is_connected(_on_projectile_spawned):
 		projectile_system.projectile_spawned.disconnect(_on_projectile_spawned)
+func _new_main_scene_fixture():
+	var script := ResourceLoader.load(
+		"res://tests/support/main_scene_fixture.gd",
+		"",
+		ResourceLoader.CACHE_MODE_IGNORE
+	) as Script
+	assert_true(script != null, "main scene fixture script loads")
+	return script.new() if script != null else null

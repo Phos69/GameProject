@@ -7,8 +7,6 @@ extends GutTest
 ##   tests/milestone_13_weapon_tower_visual_smoke_test.gd  (boot + survival + tower)
 ##   tests/biome_status_effects_smoke_test.gd  (scena sintetica)
 
-const MainSceneFixture = preload("res://tests/support/main_scene_fixture.gd")
-
 var _feedback_events: Array[StringName] = []
 var _spawned_projectiles: Array[Projectile] = []
 var _tower_shots: Array[Projectile] = []
@@ -18,21 +16,22 @@ var _tower_shot_profiles: Array[StringName] = []
 
 func test_enemy_drop_loop() -> void:
 	_feedback_events = []
-	var scene := MainSceneFixture.new()
+	var scene = _new_main_scene_fixture()
 	assert_true(scene.boot(self), "main scene can be loaded")
 	await wait_physics_frames(2)
 
-	var local_multiplayer := scene.node(&"local_multiplayer_manager") as LocalMultiplayerManager
-	var player_manager := scene.node(&"player_manager") as PlayerManager
-	var enemy_system := scene.node(&"enemy_system") as EnemySystem
-	var drop_system := scene.node(&"drop_system") as DropSystem
-	var health_system := scene.node(&"health_system") as HealthSystem
-	var progression := scene.node(&"progression_manager") as ProgressionManager
-	var audio_manager := scene.node(&"audio_manager") as AudioManager
+	var local_multiplayer: LocalMultiplayerManager = scene.node(&"local_multiplayer_manager") as LocalMultiplayerManager
+	var player_manager: PlayerManager = scene.node(&"player_manager") as PlayerManager
+	var enemy_system: EnemySystem = scene.node(&"enemy_system") as EnemySystem
+	var drop_system: DropSystem = scene.node(&"drop_system") as DropSystem
+	var health_system: HealthSystem = scene.node(&"health_system") as HealthSystem
+	var progression: ProgressionManager = scene.node(&"progression_manager") as ProgressionManager
+	var audio_manager: AudioManager = scene.node(&"audio_manager") as AudioManager
 	for n in [local_multiplayer, player_manager, enemy_system, drop_system, health_system, progression, audio_manager]:
 		assert_not_null(n, "combat system is available")
 	if local_multiplayer == null or player_manager == null or enemy_system == null or drop_system == null or health_system == null or progression == null or audio_manager == null:
 		scene.teardown()
+		scene = null
 		return
 	audio_manager.gameplay_feedback_generated.connect(_on_gameplay_feedback_generated)
 
@@ -88,7 +87,7 @@ func test_enemy_drop_loop() -> void:
 	await wait_physics_frames(1)
 	assert_true(enemy_system.get_active_enemies().is_empty(), "dead enemy is removed from EnemySystem")
 
-	var pickups := scene.nodes(&"drop_pickups")
+	var pickups = scene.nodes(&"drop_pickups")
 	assert_eq(pickups.size(), 1, "enemy death spawns the guaranteed XP pickup")
 	if pickups.size() == 1:
 		var xp_pickup := pickups[0] as DropPickup
@@ -117,7 +116,7 @@ func test_enemy_drop_loop() -> void:
 	assert_eq(weapon_one.reserve_ammo, reserve_one_before + 7, "ammo applies to the collector special weapon")
 	assert_eq(weapon_two.reserve_ammo, reserve_two_before + 7, "ammo is shared with another living player special weapon")
 	await wait_physics_frames(1)
-	var hud := scene.node(&"hud_manager") as HUDManager
+	var hud: HUDManager = scene.node(&"hud_manager") as HUDManager
 	assert_true(hud != null and hud.pickup_feedback_text == "AMMO SHARED +7", "HUD queues shared ammo pickup feedback")
 	assert_true(drop_system.collect_drop({"type": GameConstants.DROP_HEALTH, "amount": 5}, player_one), "health drop can be collected by a damaged player")
 	assert_eq(player_health.current_health, 97, "health drop heals the collector")
@@ -132,20 +131,21 @@ func test_enemy_drop_loop() -> void:
 
 func test_weapon_drop_progression() -> void:
 	_feedback_events = []
-	var scene := MainSceneFixture.new()
+	var scene = _new_main_scene_fixture()
 	assert_true(scene.boot(self), "main scene can be loaded")
 	await wait_physics_frames(4)
 
-	var player_manager := scene.node(&"player_manager") as PlayerManager
-	var enemy_system := scene.node(&"enemy_system") as EnemySystem
-	var drop_system := scene.node(&"drop_system") as DropSystem
-	var health_system := scene.node(&"health_system") as HealthSystem
-	var progression := scene.node(&"progression_manager") as ProgressionManager
-	var audio_manager := scene.node(&"audio_manager") as AudioManager
-	var gameplay_effects := scene.node(&"gameplay_effects") as GameplayEffects
+	var player_manager: PlayerManager = scene.node(&"player_manager") as PlayerManager
+	var enemy_system: EnemySystem = scene.node(&"enemy_system") as EnemySystem
+	var drop_system: DropSystem = scene.node(&"drop_system") as DropSystem
+	var health_system: HealthSystem = scene.node(&"health_system") as HealthSystem
+	var progression: ProgressionManager = scene.node(&"progression_manager") as ProgressionManager
+	var audio_manager: AudioManager = scene.node(&"audio_manager") as AudioManager
+	var gameplay_effects: GameplayEffects = scene.node(&"gameplay_effects") as GameplayEffects
 	if player_manager == null or enemy_system == null or drop_system == null or health_system == null or progression == null or audio_manager == null or gameplay_effects == null:
 		assert_true(false, "all combat/progression systems are available")
 		scene.teardown()
+		scene = null
 		return
 	audio_manager.gameplay_feedback_generated.connect(_on_gameplay_feedback_generated)
 	assert_true(scene.start_survival({"character_id": &"ranger", "single_biome_arena": true, "arena_boundary_mode": "walled", "world_seed": 20260621}), "survival arena starts")
@@ -231,19 +231,20 @@ func test_weapon_tower_visual_identity() -> void:
 	_spawned_projectiles = []
 	_tower_shots = []
 	_tower_shot_profiles = []
-	var scene := MainSceneFixture.new()
+	var scene = _new_main_scene_fixture()
 	assert_true(scene.boot(self), "main scene can be loaded")
 	await wait_physics_frames(3)
 
-	var local_multiplayer := scene.node(&"local_multiplayer_manager") as LocalMultiplayerManager
-	var player_manager := scene.node(&"player_manager") as PlayerManager
-	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
-	var projectile_system := scene.node(&"projectile_system") as ProjectileSystem
-	var tower_defense_mode := scene.node(&"tower_defense_mode") as TowerDefenseMode
-	var hud := scene.node(&"hud_manager") as HUDManager
+	var local_multiplayer: LocalMultiplayerManager = scene.node(&"local_multiplayer_manager") as LocalMultiplayerManager
+	var player_manager: PlayerManager = scene.node(&"player_manager") as PlayerManager
+	var game_mode_manager: GameModeManager = scene.node(&"game_mode_manager") as GameModeManager
+	var projectile_system: ProjectileSystem = scene.node(&"projectile_system") as ProjectileSystem
+	var tower_defense_mode: TowerDefenseMode = scene.node(&"tower_defense_mode") as TowerDefenseMode
+	var hud: HUDManager = scene.node(&"hud_manager") as HUDManager
 	if local_multiplayer == null or player_manager == null or game_mode_manager == null or projectile_system == null or tower_defense_mode == null or hud == null:
 		assert_true(false, "tower/weapon systems are available")
 		scene.teardown()
+		scene = null
 		return
 
 	for player_slot in range(2, 5):
@@ -370,18 +371,20 @@ func test_biome_status_effects() -> void:
 
 # --- helper -----------------------------------------------------------------
 
-func _teardown_drops(audio_manager: AudioManager, local_multiplayer: LocalMultiplayerManager, scene: MainSceneFixture) -> void:
+func _teardown_drops(audio_manager: AudioManager, local_multiplayer: LocalMultiplayerManager, scene) -> void:
 	if audio_manager != null and audio_manager.gameplay_feedback_generated.is_connected(_on_gameplay_feedback_generated):
 		audio_manager.gameplay_feedback_generated.disconnect(_on_gameplay_feedback_generated)
 	if local_multiplayer != null:
 		local_multiplayer.deactivate_slot(2)
 	scene.teardown()
+	scene = null
 	await wait_physics_frames(1)
 
-func _teardown_tower(projectile_system: ProjectileSystem, scene: MainSceneFixture) -> void:
+func _teardown_tower(projectile_system: ProjectileSystem, scene) -> void:
 	if projectile_system != null and projectile_system.projectile_spawned.is_connected(_on_projectile_spawned):
 		projectile_system.projectile_spawned.disconnect(_on_projectile_spawned)
 	scene.teardown()
+	scene = null
 	await wait_physics_frames(1)
 
 func _make_loot(drop_type: StringName, amount: int) -> LootTable:
@@ -394,14 +397,14 @@ func _make_loot(drop_type: StringName, amount: int) -> LootTable:
 	loot.entries = [entry]
 	return loot
 
-func _count_xp_pickups(scene: MainSceneFixture) -> int:
+func _count_xp_pickups(scene) -> int:
 	var count := 0
 	for pickup in scene.nodes(&"drop_pickups"):
 		if pickup is DropPickup and StringName((pickup as DropPickup).drop_data.get("type", &"")) == GameConstants.DROP_EXPERIENCE:
 			count += 1
 	return count
 
-func _find_pickup(scene: MainSceneFixture, drop_type: StringName) -> DropPickup:
+func _find_pickup(scene, drop_type: StringName) -> DropPickup:
 	for pickup in scene.nodes(&"drop_pickups"):
 		if pickup is DropPickup and StringName((pickup as DropPickup).drop_data.get("type", &"")) == drop_type:
 			return pickup
@@ -440,3 +443,11 @@ func _on_tower_fired(_target: Node, projectile: Node) -> void:
 		var shot := projectile as Projectile
 		_tower_shots.append(shot)
 		_tower_shot_profiles.append(shot.visual_data.profile_id if shot.visual_data != null else &"")
+func _new_main_scene_fixture():
+	var script := ResourceLoader.load(
+		"res://tests/support/main_scene_fixture.gd",
+		"",
+		ResourceLoader.CACHE_MODE_IGNORE
+	) as Script
+	assert_true(script != null, "main scene fixture script loads")
+	return script.new() if script != null else null

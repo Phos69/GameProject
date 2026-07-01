@@ -86,8 +86,12 @@ func test_ten_wave_run_crosses_biomes() -> void:
 	await _cleanup_scene(scene)
 
 func _new_main_scene_fixture():
-	var script := load("res://tests/support/main_scene_fixture.gd") as Script
-	assert_not_null(script, "main scene fixture script loads")
+	var script := ResourceLoader.load(
+		"res://tests/support/main_scene_fixture.gd",
+		"",
+		ResourceLoader.CACHE_MODE_IGNORE
+	) as Script
+	assert_true(script != null, "main scene fixture script loads")
 	return script.new() if script != null else null
 
 func _cleanup_scene(scene) -> void:
@@ -96,6 +100,7 @@ func _cleanup_scene(scene) -> void:
 	scene.stop_survival()
 	await wait_physics_frames(1)
 	scene.teardown()
+	scene = null
 	await wait_physics_frames(3)
 	WorldDataCache.clear()
 	IsometricEnvironmentManifest.clear_shared()

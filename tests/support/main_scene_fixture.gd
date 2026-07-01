@@ -7,16 +7,25 @@ extends RefCounted
 ## (ri)avviano survival via `start_survival()` per isolare lo stato del mondo.
 ##
 ## Uso tipico:
-##   const MainSceneFixture = preload("res://tests/support/main_scene_fixture.gd")
-##   var _scene: MainSceneFixture
+##   func _new_main_scene_fixture():
+##       var script := ResourceLoader.load(
+##           "res://tests/support/main_scene_fixture.gd",
+##           "",
+##           ResourceLoader.CACHE_MODE_IGNORE
+##       ) as Script
+##       assert_true(script != null, "main scene fixture script loads")
+##       return script.new() if script != null else null
+##
+##   var _scene
 ##   func before_all():
-##       _scene = MainSceneFixture.new()
+##       _scene = _new_main_scene_fixture()
 ##       assert_true(_scene.boot(self))
 ##       await wait_physics_frames(3)
 ##   func after_each():
 ##       _scene.stop_survival()
 ##   func after_all():
 ##       _scene.teardown()
+##       _scene = null
 ##
 ## NB: `set_mode(SURVIVAL)` ricostruisce il mondo solo se la modalita NON e gia in
 ## esecuzione (vedi GameModeManager.set_mode). Per questo i test devono fermare

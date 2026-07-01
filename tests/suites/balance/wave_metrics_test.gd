@@ -65,6 +65,7 @@ func test_infinite_arena_metrics() -> void:
 		or zombie_mode_controller == null or world_runtime == null
 	):
 		scene.teardown()
+		scene = null
 		return
 
 	_wave_manager = wave_manager
@@ -95,6 +96,7 @@ func test_infinite_arena_metrics() -> void:
 	if player == null:
 		_finish_metrics()
 		scene.teardown()
+		scene = null
 		return
 	player.global_position = Vector2.ZERO
 
@@ -131,6 +133,7 @@ func test_infinite_arena_metrics() -> void:
 
 	_finish_metrics()
 	scene.teardown()
+	scene = null
 	await wait_physics_frames(1)
 
 # --- zombie survival (milestone_12_zombie_balance_metrics) -------------------
@@ -167,6 +170,7 @@ func test_zombie_survival_metrics() -> void:
 		or zombie_mode_controller == null or world_runtime == null
 	):
 		scene.teardown()
+		scene = null
 		return
 
 	_wave_manager = wave_manager
@@ -191,6 +195,7 @@ func test_zombie_survival_metrics() -> void:
 	if player == null:
 		_finish_metrics()
 		scene.teardown()
+		scene = null
 		return
 	player.global_position = Vector2.ZERO
 
@@ -232,6 +237,7 @@ func test_zombie_survival_metrics() -> void:
 	_validate_zombie_metrics(wave_manager)
 	_finish_metrics()
 	scene.teardown()
+	scene = null
 	await wait_physics_frames(1)
 
 # --- raccolta metriche condivisa --------------------------------------------
@@ -293,6 +299,9 @@ func _reset_metrics() -> void:
 
 func _finish_metrics() -> void:
 	_metrics_active = false
+	_wave_manager = null
+	_zombie_spawner = null
+	_guaranteed_money_loot = null
 
 func _complete_metric_waves(
 	wave_manager,
@@ -481,8 +490,12 @@ func _expect_biome_definition_variant_window(biome_manager, biome_id: StringName
 # --- helper -----------------------------------------------------------------
 
 func _new_main_scene_fixture():
-	var script := load("res://tests/support/main_scene_fixture.gd") as Script
-	assert_not_null(script, "main scene fixture script loads")
+	var script := ResourceLoader.load(
+		"res://tests/support/main_scene_fixture.gd",
+		"",
+		ResourceLoader.CACHE_MODE_IGNORE
+	) as Script
+	assert_true(script != null, "main scene fixture script loads")
 	return script.new() if script != null else null
 
 func _flatten_enemy_ids(metrics: Dictionary) -> PackedStringArray:

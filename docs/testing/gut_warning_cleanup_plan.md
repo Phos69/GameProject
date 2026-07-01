@@ -33,6 +33,18 @@ Stato dopo il pass cache/soak del 2026-06-30:
 - i run mirati `ui_audio`, `diagnostics`, `ten_wave` e `soak` non producono
   warning GUT/RID/resource.
 
+Stato dopo il pass fixture del 2026-07-01:
+
+- suite rapida completa: 45 script, 220 test, 14549 assert, exit code `0`, senza
+  stderr e senza warning di shutdown;
+- suite soak completa: 4 script, 4 test, 61 assert, exit code `0`, senza warning
+  di shutdown;
+- le suite che bootano `main.tscn` caricano `main_scene_fixture.gd` in modo lazy
+  con `ResourceLoader.CACHE_MODE_IGNORE`, evitano assert diretti sulla risorsa
+  `Script` e azzerano il fixture locale dopo `teardown()`;
+- il residuo verbose su `res://tests/support/main_scene_fixture.gd` e sulla sua
+  istanza `RefCounted` e stato eliminato dal run rapido completo.
+
 ## Obiettivo
 
 Ridurre il rumore dei runner GUT fino a ottenere log locali leggibili, dove i
@@ -149,7 +161,8 @@ Validazione:
 
 ### 5. Leak e resource still in use a shutdown
 
-Stato 2026-06-30: completato sui sorgenti confermati e sul perimetro soak. Il verbose di
+Stato 2026-07-01: completato sui sorgenti confermati, sul perimetro soak e sulla
+suite rapida completa. Il verbose di
 `combat` e `golden_snapshot_bake_test.gd` mostrava cicli `RefCounted` tra
 `BiomeCell`, `BiomePassage` e `BiomeEnvironmentLayout`: i `BiomeCell.neighbors`
 si puntano a vicenda e non vengono liberati dal reference counting se il
@@ -162,9 +175,11 @@ Il test golden rilascia esplicitamente i world_data prodotti da codec/fetch.
 Il pass successivo ha allargato il cleanup alle cache statiche di manifest,
 texture SVG e metriche oggetto, ha aggiunto gli hook pre/post anche alla config
 soak e ha reso `ten_wave_test.gd` responsabile del proprio teardown di scena.
-La suite soak e ora pulita; il run rapido completo resta verde ma conserva un
-residuo cumulativo minimo (`ObjectDB` + `1 resource`) da investigare in una
-tranche dedicata.
+L'ultimo residuo cumulativo della suite rapida era una risorsa
+`main_scene_fixture.gd` trattenuta da istanze `RefCounted` dei test che bootano
+`main.tscn`; le suite ora caricano il fixture senza cache persistente, non lo
+passano piu ad assert GUT come oggetto e rilasciano il riferimento locale subito
+dopo `teardown()`.
 
 Obiettivo: distinguere cleanup correggibile nei test da rumore di engine/addon.
 
@@ -202,10 +217,9 @@ Validazione:
 - `./tools/run_gut.ps1 -SkipImport -Config res://.gutconfig.soak.json -Select ten_wave`:
   1 script, 1 test, 32 assert, exit code `0`, nessun warning in coda.
 - `./tools/run_gut.ps1 -SkipImport -Config res://.gutconfig.soak.json`: 4 script,
-  4 test, 59 assert, exit code `0`, nessun warning in coda.
-- `./tools/run_gut.ps1 -SkipImport`: 45 script, 220 test, 14516 assert, exit
-  code `0`; residuo in coda: `ObjectDB instances leaked` e `1 resources still in
-  use`.
+  4 test, 61 assert, exit code `0`, nessun warning in coda.
+- `./tools/run_gut.ps1 -SkipImport`: 45 script, 220 test, 14549 assert, exit
+  code `0`, nessuno stderr e nessun warning di shutdown in coda.
 
 ### 6. Robustezza runner PowerShell sotto redirezione
 

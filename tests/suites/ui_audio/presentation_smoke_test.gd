@@ -8,22 +8,20 @@ extends GutTest
 ## pixel: quello resta nei Visual QA): HUD card e world HUD, visual modulari di
 ## player/zombie/pickup/crate, e gli effetti di gameplay su sparo/impatto/morte/drop.
 
-const MainSceneFixture = preload("res://tests/support/main_scene_fixture.gd")
-
 func test_presentation_contracts() -> void:
-	var scene := MainSceneFixture.new()
+	var scene = _new_main_scene_fixture()
 	assert_true(scene.boot(self), "main scene can be loaded")
 	await wait_physics_frames(3)
 
-	var player_manager := scene.node(&"player_manager") as PlayerManager
-	var enemy_system := scene.node(&"enemy_system") as EnemySystem
-	var projectile_system := scene.node(&"projectile_system") as ProjectileSystem
-	var drop_system := scene.node(&"drop_system") as DropSystem
-	var health_system := scene.node(&"health_system") as HealthSystem
-	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
-	var hud := scene.node(&"hud_manager") as HUDManager
-	var effects := scene.node(&"gameplay_effects") as GameplayEffects
-	var debug_target := scene.main.get_node_or_null("World/CombatTargets/TargetEast") as CombatTarget
+	var player_manager: PlayerManager = scene.node(&"player_manager") as PlayerManager
+	var enemy_system: EnemySystem = scene.node(&"enemy_system") as EnemySystem
+	var projectile_system: ProjectileSystem = scene.node(&"projectile_system") as ProjectileSystem
+	var drop_system: DropSystem = scene.node(&"drop_system") as DropSystem
+	var health_system: HealthSystem = scene.node(&"health_system") as HealthSystem
+	var game_mode_manager: GameModeManager = scene.node(&"game_mode_manager") as GameModeManager
+	var hud: HUDManager = scene.node(&"hud_manager") as HUDManager
+	var effects: GameplayEffects = scene.node(&"gameplay_effects") as GameplayEffects
+	var debug_target: CombatTarget = scene.main.get_node_or_null("World/CombatTargets/TargetEast") as CombatTarget
 	assert_not_null(player_manager, "player manager is available")
 	assert_not_null(enemy_system, "enemy system is available")
 	assert_not_null(projectile_system, "projectile system is available")
@@ -42,12 +40,14 @@ func test_presentation_contracts() -> void:
 		or hud == null or effects == null
 	):
 		scene.teardown()
+		scene = null
 		return
 
 	var player := player_manager.players.get(1) as PlayerController
 	assert_not_null(player, "player one is spawned")
 	if player == null:
 		scene.teardown()
+		scene = null
 		return
 	var player_visual := player.get_node_or_null("Visual") as PlayerVisual
 	assert_not_null(player_visual, "player uses the modular survivor visual")
@@ -146,6 +146,7 @@ func test_presentation_contracts() -> void:
 	assert_gt(effects.effect_spawn_count, pickup_effects_before, "drop collection creates a pickup effect")
 
 	scene.teardown()
+	scene = null
 	await wait_physics_frames(1)
 
 func _wait_for_player_card(
@@ -164,3 +165,11 @@ func _wait_for_player_card(
 			return card
 		await wait_physics_frames(1)
 	return hud.player_cards.get(player_slot) as PlayerHudCard
+func _new_main_scene_fixture():
+	var script := ResourceLoader.load(
+		"res://tests/support/main_scene_fixture.gd",
+		"",
+		ResourceLoader.CACHE_MODE_IGNORE
+	) as Script
+	assert_true(script != null, "main scene fixture script loads")
+	return script.new() if script != null else null

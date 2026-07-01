@@ -6,8 +6,6 @@ extends GutTest
 ## a un asset reale e non-generico con un fallback documentato, e che il survival
 ## standard non ricada su asset procedurali/placeholder a runtime.
 
-const MainSceneFixture = preload("res://tests/support/main_scene_fixture.gd")
-
 const ASSET_SECTIONS: Array[StringName] = [
 	&"tile_sets", &"tile_variants", &"terrain_tiles", &"edge_tiles",
 	&"void_tiles", &"object_scenes", &"passage_tiles", &"biome_asset_sets"
@@ -71,18 +69,19 @@ func test_standard_contract_paths() -> void:
 	assert_gt(checked_draw_objects, 0, "standard blocking objects have draw metadata checked")
 
 func test_standard_survival_runtime_assets() -> void:
-	var scene := MainSceneFixture.new()
+	var scene = _new_main_scene_fixture()
 	assert_true(scene.boot(self), "main scene loads for standard asset path")
 	await wait_physics_frames(2)
 
-	var biome_manager := scene.node(&"biome_manager") as BiomeManager
-	var terrain_generator := scene.node(&"terrain_generator") as TerrainGenerator
-	var streamer := scene.node(&"world_region_streamer") as WorldRegionStreamer
+	var biome_manager: BiomeManager = scene.node(&"biome_manager") as BiomeManager
+	var terrain_generator: TerrainGenerator = scene.node(&"terrain_generator") as TerrainGenerator
+	var streamer: WorldRegionStreamer = scene.node(&"world_region_streamer") as WorldRegionStreamer
 	assert_not_null(biome_manager, "biome manager is available")
 	assert_not_null(terrain_generator, "terrain generator is available")
 	assert_not_null(streamer, "world region streamer is available")
 	if biome_manager == null or terrain_generator == null or streamer == null:
 		scene.teardown()
+		scene = null
 		await wait_physics_frames(1)
 		return
 
@@ -106,6 +105,7 @@ func test_standard_survival_runtime_assets() -> void:
 
 	scene.stop_survival()
 	scene.teardown()
+	scene = null
 	await wait_physics_frames(1)
 
 # --- helper (porting dei test legacy) ---------------------------------------
@@ -128,10 +128,10 @@ func _assert_standard_contract(section: StringName, asset_id: StringName) -> voi
 	assert_true(_allowed_fallback_paths.has(fallback_path), "%s fallback_path is one of the documented technical fallbacks" % label)
 	assert_false(_path_has_generic_marker(fallback_path), "%s fallback_path is not placeholder/generic" % label)
 
-func _assert_runtime_obstacle_assets(scene: MainSceneFixture) -> void:
+func _assert_runtime_obstacle_assets(scene) -> void:
 	var inspected_asset_objects := 0
 	var checked_runtime_obstacles := 0
-	var obstacle_nodes := scene.nodes(&"environment_obstacles")
+	var obstacle_nodes = scene.nodes(&"environment_obstacles")
 	assert_false(obstacle_nodes.is_empty(), "standard survival streams environment obstacles")
 	for node in obstacle_nodes:
 		if not is_instance_valid(node):
@@ -169,3 +169,11 @@ func _asset_exists(asset_path: String) -> bool:
 	if asset_path.is_empty():
 		return false
 	return ResourceLoader.exists(asset_path) or FileAccess.file_exists(asset_path)
+func _new_main_scene_fixture():
+	var script := ResourceLoader.load(
+		"res://tests/support/main_scene_fixture.gd",
+		"",
+		ResourceLoader.CACHE_MODE_IGNORE
+	) as Script
+	assert_true(script != null, "main scene fixture script loads")
+	return script.new() if script != null else null

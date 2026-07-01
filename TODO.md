@@ -131,10 +131,12 @@ revisione manuale, baseline e consolidamento TODO.
   texture SVG e metriche oggetto vengono svuotate a fine run, e
   `ten_wave_test.gd` libera scena/cache in modo esplicito. Soak completa: 4
   script, 4 test, 59 assert, exit code `0`, nessun warning di shutdown.
-- Avanzamento 2026-06-30: suite rapida completa verde ma non ancora a warning
-  zero assoluto. Ultimo run: 45 script, 220 test, 14516 assert, exit code `0`;
-  residuo in coda `ObjectDB instances leaked` + `1 resources still in use`, da
-  investigare come residuo cumulativo separato.
+- Avanzamento 2026-07-01: suite rapida completa pulita. I test che bootano
+  `main.tscn` caricano `main_scene_fixture.gd` senza cache persistente, evitano
+  assert GUT sulla risorsa `Script` e rilasciano il fixture locale dopo
+  `teardown()`. Ultimo run rapido: 45 script, 220 test, 14549 assert, exit code
+  `0`; ultimo run soak: 4 script, 4 test, 61 assert, exit code `0`; entrambi
+  con stderr vuoto e nessun warning di shutdown.
 - Obiettivo: ridurre il rumore dei runner GUT fino a log locali leggibili e
   warning residui azionabili.
 - Milestone collegata: manutenzione test post-cutover GUT.
@@ -143,8 +145,7 @@ revisione manuale, baseline e consolidamento TODO.
 - Criterio di accettazione: niente `wait_frames()` deprecato nei test GUT,
   warning GUT generici corretti, orphans proiettili corretti nei run sorgente,
   warning UID addon GUT rimossi, leak world-data di shutdown corretti nei run
-  sorgente, soak senza warning di shutdown, report quick/soak aggiornati con
-  eventuali residui documentati.
+  sorgente, quick e soak senza warning di shutdown.
 - Test richiesto: `./tools/run_gut.ps1 -SkipImport`, soak con
   `.gutconfig.soak.json` e run mirati indicati in
   `docs/testing/gut_warning_cleanup_plan.md`.

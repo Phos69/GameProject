@@ -5,7 +5,6 @@ extends GutTest
 ##   tests/pause_settings_smoke_test.gd                       (settings/pausa/rebind)
 ##   tests/milestone_21_visual_settings_performance_smoke_test.gd (profili + budget frame)
 
-const MainSceneFixture = preload("res://tests/support/main_scene_fixture.gd")
 const PAUSE_SAVE_PATH := "user://ui_audio_pause_settings_test.json"
 const VISUAL_SAVE_PATH := "user://ui_audio_visual_settings_test.json"
 const ENEMY_IDS: Array[StringName] = [
@@ -19,17 +18,17 @@ const ENEMY_IDS: Array[StringName] = [
 
 func test_settings_pause_and_rebinding() -> void:
 	_remove_save(PAUSE_SAVE_PATH)
-	var scene := MainSceneFixture.new()
+	var scene = _new_main_scene_fixture()
 	assert_true(scene.boot(self), "main scene can be loaded")
 	await wait_physics_frames(3)
 
-	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
-	var main_menu := scene.node(&"main_menu") as MainMenu
-	var pause_menu := scene.node(&"pause_menu") as PauseMenu
-	var save_manager := scene.node(&"save_manager") as SaveManager
-	var video_settings := scene.node(&"video_settings_manager") as VideoSettingsManager
-	var input_manager := scene.node(&"input_manager") as InputManager
-	var local_multiplayer := scene.node(&"local_multiplayer_manager") as LocalMultiplayerManager
+	var game_mode_manager: GameModeManager = scene.node(&"game_mode_manager") as GameModeManager
+	var main_menu: MainMenu = scene.node(&"main_menu") as MainMenu
+	var pause_menu: PauseMenu = scene.node(&"pause_menu") as PauseMenu
+	var save_manager: SaveManager = scene.node(&"save_manager") as SaveManager
+	var video_settings: VideoSettingsManager = scene.node(&"video_settings_manager") as VideoSettingsManager
+	var input_manager: InputManager = scene.node(&"input_manager") as InputManager
+	var local_multiplayer: LocalMultiplayerManager = scene.node(&"local_multiplayer_manager") as LocalMultiplayerManager
 	assert_not_null(game_mode_manager, "game mode manager is available")
 	assert_not_null(main_menu, "main menu is available")
 	assert_not_null(pause_menu, "pause menu is available")
@@ -47,6 +46,7 @@ func test_settings_pause_and_rebinding() -> void:
 		or local_multiplayer == null
 	):
 		scene.teardown()
+		scene = null
 		_remove_save(PAUSE_SAVE_PATH)
 		return
 
@@ -200,6 +200,7 @@ func test_settings_pause_and_rebinding() -> void:
 	input_manager.reset_joystick_bindings()
 	local_multiplayer.reset_joystick_buttons()
 	scene.teardown()
+	scene = null
 	await wait_physics_frames(1)
 	_remove_save(PAUSE_SAVE_PATH)
 
@@ -207,21 +208,21 @@ func test_settings_pause_and_rebinding() -> void:
 
 func test_visual_settings_and_performance_budget() -> void:
 	_remove_save(VISUAL_SAVE_PATH)
-	var scene := MainSceneFixture.new()
+	var scene = _new_main_scene_fixture()
 	assert_true(scene.boot(self), "main scene can be loaded")
 	await wait_physics_frames(3)
 
-	var visual_settings := scene.node(&"visual_settings_manager") as VisualSettingsManager
-	var save_manager := scene.node(&"save_manager") as SaveManager
-	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
-	var local_multiplayer := scene.node(&"local_multiplayer_manager") as LocalMultiplayerManager
-	var player_manager := scene.node(&"player_manager") as PlayerManager
-	var wave_manager := scene.node(&"wave_manager") as WaveManager
-	var enemy_system := scene.node(&"enemy_system") as EnemySystem
-	var boss_system := scene.node(&"boss_system") as BossSystem
-	var projectile_system := scene.node(&"projectile_system") as ProjectileSystem
-	var hud := scene.node(&"hud_manager") as HUDManager
-	var camera := scene.main.get_node_or_null("Camera2D") as IsometricCameraController
+	var visual_settings: VisualSettingsManager = scene.node(&"visual_settings_manager") as VisualSettingsManager
+	var save_manager: SaveManager = scene.node(&"save_manager") as SaveManager
+	var game_mode_manager: GameModeManager = scene.node(&"game_mode_manager") as GameModeManager
+	var local_multiplayer: LocalMultiplayerManager = scene.node(&"local_multiplayer_manager") as LocalMultiplayerManager
+	var player_manager: PlayerManager = scene.node(&"player_manager") as PlayerManager
+	var wave_manager: WaveManager = scene.node(&"wave_manager") as WaveManager
+	var enemy_system: EnemySystem = scene.node(&"enemy_system") as EnemySystem
+	var boss_system: BossSystem = scene.node(&"boss_system") as BossSystem
+	var projectile_system: ProjectileSystem = scene.node(&"projectile_system") as ProjectileSystem
+	var hud: HUDManager = scene.node(&"hud_manager") as HUDManager
+	var camera: IsometricCameraController = scene.main.get_node_or_null("Camera2D") as IsometricCameraController
 	assert_not_null(visual_settings, "visual settings manager is available")
 	assert_not_null(save_manager, "save manager is available")
 	assert_not_null(game_mode_manager, "game mode manager is available")
@@ -247,6 +248,7 @@ func test_visual_settings_and_performance_budget() -> void:
 		or camera == null
 	):
 		scene.teardown()
+		scene = null
 		_remove_save(VISUAL_SAVE_PATH)
 		return
 
@@ -306,6 +308,7 @@ func test_visual_settings_and_performance_budget() -> void:
 	assert_not_null(player_one, "player one is available")
 	if player_one == null:
 		scene.teardown()
+		scene = null
 		_remove_save(VISUAL_SAVE_PATH)
 		return
 	var move_speed_before := player_one.move_speed
@@ -409,6 +412,7 @@ func test_visual_settings_and_performance_budget() -> void:
 	)
 
 	scene.teardown()
+	scene = null
 	await wait_physics_frames(1)
 	_remove_save(VISUAL_SAVE_PATH)
 
@@ -454,3 +458,11 @@ func _remove_save(path: String) -> void:
 		var full_path: String = path + str(suffix)
 		if FileAccess.file_exists(full_path):
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(full_path))
+func _new_main_scene_fixture():
+	var script := ResourceLoader.load(
+		"res://tests/support/main_scene_fixture.gd",
+		"",
+		ResourceLoader.CACHE_MODE_IGNORE
+	) as Script
+	assert_true(script != null, "main scene fixture script loads")
+	return script.new() if script != null else null

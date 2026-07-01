@@ -4,25 +4,24 @@ extends GutTest
 ## Migra:
 ##   tests/milestone_17_run_results_smoke_test.gd  (boot main.tscn, survival/dungeon/tower)
 
-const MainSceneFixture = preload("res://tests/support/main_scene_fixture.gd")
 const TEMP_SAVE_PATH := "user://ui_audio_run_results_test.json"
 
 func test_run_results_across_modes() -> void:
 	_remove_temporary_save()
-	var scene := MainSceneFixture.new()
+	var scene = _new_main_scene_fixture()
 	assert_true(scene.boot(self), "main scene can be loaded")
 	await wait_physics_frames(3)
 
-	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
-	var result_screen := scene.node(&"run_results_screen") as RunResultsScreen
-	var run_tracker := scene.node(&"run_session_tracker")
-	var progression := scene.node(&"progression_manager") as ProgressionManager
-	var save_manager := scene.node(&"save_manager") as SaveManager
-	var player_manager := scene.node(&"player_manager") as PlayerManager
-	var survival_mode := scene.node(&"survival_mode") as SurvivalMode
-	var dungeon_mode := scene.node(&"dungeon_mode") as DungeonMode
-	var tower_mode := scene.node(&"tower_defense_mode") as TowerDefenseMode
-	var wave_manager := scene.node(&"wave_manager") as WaveManager
+	var game_mode_manager: GameModeManager = scene.node(&"game_mode_manager") as GameModeManager
+	var result_screen: RunResultsScreen = scene.node(&"run_results_screen") as RunResultsScreen
+	var run_tracker = scene.node(&"run_session_tracker")
+	var progression: ProgressionManager = scene.node(&"progression_manager") as ProgressionManager
+	var save_manager: SaveManager = scene.node(&"save_manager") as SaveManager
+	var player_manager: PlayerManager = scene.node(&"player_manager") as PlayerManager
+	var survival_mode: SurvivalMode = scene.node(&"survival_mode") as SurvivalMode
+	var dungeon_mode: DungeonMode = scene.node(&"dungeon_mode") as DungeonMode
+	var tower_mode: TowerDefenseMode = scene.node(&"tower_defense_mode") as TowerDefenseMode
+	var wave_manager: WaveManager = scene.node(&"wave_manager") as WaveManager
 	assert_not_null(game_mode_manager, "game mode manager is available")
 	assert_not_null(result_screen, "run results screen is available")
 	assert_not_null(run_tracker, "run session tracker is available")
@@ -46,6 +45,7 @@ func test_run_results_across_modes() -> void:
 		or wave_manager == null
 	):
 		scene.teardown()
+		scene = null
 		return
 
 	save_manager.save_path = TEMP_SAVE_PATH
@@ -61,6 +61,7 @@ func test_run_results_across_modes() -> void:
 	assert_not_null(player, "player one is available")
 	if player == null:
 		scene.teardown()
+		scene = null
 		_remove_temporary_save()
 		return
 	player.health_component.apply_damage(9999)
@@ -148,6 +149,7 @@ func test_run_results_across_modes() -> void:
 	assert_false(result_screen.is_open(), "menu action hides results")
 
 	scene.teardown()
+	scene = null
 	await wait_physics_frames(1)
 	_remove_temporary_save()
 
@@ -165,3 +167,11 @@ func _poll_idle(cond: Callable, max_frames: int) -> void:
 		if bool(cond.call()):
 			return
 		await get_tree().process_frame
+func _new_main_scene_fixture():
+	var script := ResourceLoader.load(
+		"res://tests/support/main_scene_fixture.gd",
+		"",
+		ResourceLoader.CACHE_MODE_IGNORE
+	) as Script
+	assert_true(script != null, "main scene fixture script loads")
+	return script.new() if script != null else null

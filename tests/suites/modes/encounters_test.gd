@@ -219,6 +219,7 @@ func test_save_and_mode_flow() -> void:
 	if game_mode_manager == null or main_menu == null or save_manager == null or progression == null or player_manager == null or survival_mode == null or dungeon_mode == null or hud == null or audio_manager == null:
 		assert_true(false, "menu/save systems are available")
 		scene.teardown()
+		scene = null
 		return
 
 	assert_eq(game_mode_manager.active_mode_id, MODE_MENU, "the project starts in menu state")
@@ -302,6 +303,7 @@ func test_save_and_mode_flow() -> void:
 	if audio_manager.gameplay_feedback_generated.is_connected(_on_gameplay_feedback_generated):
 		audio_manager.gameplay_feedback_generated.disconnect(_on_gameplay_feedback_generated)
 	scene.teardown()
+	scene = null
 	await wait_physics_frames(1)
 	_remove_temporary_save()
 
@@ -323,13 +325,17 @@ func _free_current_scene_root(scene_root: Node2D) -> void:
 	scene_root.queue_free()
 
 func _new_main_scene_fixture():
-	var script := load("res://tests/support/main_scene_fixture.gd") as Script
-	assert_not_null(script, "main scene fixture script loads")
+	var script := ResourceLoader.load(
+		"res://tests/support/main_scene_fixture.gd",
+		"",
+		ResourceLoader.CACHE_MODE_IGNORE
+	) as Script
+	assert_true(script != null, "main scene fixture script loads")
 	return script.new() if script != null else null
 
 func _new_script_node(path: String) -> Node:
 	var script := load(path) as Script
-	assert_not_null(script, "%s loads" % path)
+	assert_true(script != null, "%s loads" % path)
 	if script == null:
 		return null
 	var node := script.new() as Node

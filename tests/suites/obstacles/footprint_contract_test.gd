@@ -12,7 +12,6 @@ extends GutTest
 ## l'unico che boota la scena ed è isolato nell'ultimo test (via fixture condivisa)
 ## per non sporcare le query a gruppo degli altri.
 
-const MainSceneFixture = preload("res://tests/support/main_scene_fixture.gd")
 const ROCK_AREA_MESH_BUILDER_SCRIPT = preload(
 	"res://game/modes/zombie/rocks/rectilinear_rock_area_mesh_builder.gd"
 )
@@ -353,15 +352,16 @@ func test_rock_area_mesh_builder() -> void:
 # --- main.tscn: obstacle system + Y-sort (ultimo: boota la scena) -----------
 
 func test_main_scene_obstacle_system() -> void:
-	var scene := MainSceneFixture.new()
+	var scene = _new_main_scene_fixture()
 	assert_true(scene.boot(self), "main scene loads after obstacle rendering changes")
 	await wait_physics_frames(2)
 	await wait_physics_frames(1)
-	var system := scene.node(&"obstacle_system") as ObstacleSystem
-	var environment_props := scene.main.get_node_or_null("World/EnvironmentProps") as Node2D
+	var system: ObstacleSystem = scene.node(&"obstacle_system") as ObstacleSystem
+	var environment_props: Node2D = scene.main.get_node_or_null("World/EnvironmentProps") as Node2D
 	assert_not_null(system, "main scene exposes the shared obstacle system")
 	assert_true(environment_props != null and environment_props.y_sort_enabled, "main scene keeps environment obstacles in Y-sort")
 	scene.teardown()
+	scene = null
 	await wait_physics_frames(1)
 
 # --- helper (porting dei test legacy) ---------------------------------------
@@ -379,3 +379,11 @@ func _expect_collision_size(obstacle: Node, expected: Vector2, label: String) ->
 	var collision := obstacle.get_node_or_null("CollisionShape2D") as CollisionShape2D
 	var rectangle := collision.shape as RectangleShape2D if collision != null else null
 	assert_true(rectangle != null and rectangle.size.is_equal_approx(expected), "%s collision matches its instance footprint" % label)
+func _new_main_scene_fixture():
+	var script := ResourceLoader.load(
+		"res://tests/support/main_scene_fixture.gd",
+		"",
+		ResourceLoader.CACHE_MODE_IGNORE
+	) as Script
+	assert_true(script != null, "main scene fixture script loads")
+	return script.new() if script != null else null

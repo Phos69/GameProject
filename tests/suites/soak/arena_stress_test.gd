@@ -7,7 +7,6 @@ extends GutTest
 ## NB: suite di stress, esclusa dal run rapido (.gutconfig.json). Si esegue su
 ## richiesta / notturno via .gutconfig.soak.json o tools/run_gut.sh -gdir.
 
-const MainSceneFixture = preload("res://tests/support/main_scene_fixture.gd")
 const ENEMY_IDS: Array[StringName] = [
 	&"survival_zombie",
 	&"survival_runner",
@@ -16,14 +15,14 @@ const ENEMY_IDS: Array[StringName] = [
 ]
 
 func test_crowded_arena_under_load() -> void:
-	var scene := MainSceneFixture.new()
+	var scene = _new_main_scene_fixture()
 	assert_true(scene.boot(self), "main scene can be loaded for arena stress")
 	await wait_physics_frames(3)
 
-	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
-	var local_multiplayer := scene.node(&"local_multiplayer_manager") as LocalMultiplayerManager
-	var wave_manager := scene.node(&"wave_manager") as WaveManager
-	var enemy_system := scene.node(&"enemy_system") as EnemySystem
+	var game_mode_manager: GameModeManager = scene.node(&"game_mode_manager") as GameModeManager
+	var local_multiplayer: LocalMultiplayerManager = scene.node(&"local_multiplayer_manager") as LocalMultiplayerManager
+	var wave_manager: WaveManager = scene.node(&"wave_manager") as WaveManager
+	var enemy_system: EnemySystem = scene.node(&"enemy_system") as EnemySystem
 	assert_not_null(game_mode_manager, "game mode manager is available")
 	assert_not_null(local_multiplayer, "local multiplayer manager is available")
 	assert_not_null(wave_manager, "wave manager is available")
@@ -33,6 +32,7 @@ func test_crowded_arena_under_load() -> void:
 		or wave_manager == null or enemy_system == null
 	):
 		scene.teardown()
+		scene = null
 		return
 
 	for player_slot in range(2, 5):
@@ -74,4 +74,13 @@ func test_crowded_arena_under_load() -> void:
 	await wait_physics_frames(5)
 
 	scene.teardown()
+	scene = null
 	await wait_physics_frames(1)
+func _new_main_scene_fixture():
+	var script := ResourceLoader.load(
+		"res://tests/support/main_scene_fixture.gd",
+		"",
+		ResourceLoader.CACHE_MODE_IGNORE
+	) as Script
+	assert_true(script != null, "main scene fixture script loads")
+	return script.new() if script != null else null

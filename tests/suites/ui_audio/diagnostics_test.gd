@@ -179,5 +179,5 @@ func _free_current_scene_root(scene_root: Node2D) -> void:
 
 func _new_script_instance(path: String):
 	var script := load(path) as Script
-	assert_not_null(script, "%s loads" % path)
+	assert_true(script != null, "%s loads" % path)
 	return script.new() if script != null else null

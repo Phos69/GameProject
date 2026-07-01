@@ -5,7 +5,6 @@ extends GutTest
 ##   tests/milestone_16_downed_revive_smoke_test.gd  (main.tscn, multiplayer)
 ##   tests/player_query_smoke_test.gd                (player sintetici)
 
-const MainSceneFixture = preload("res://tests/support/main_scene_fixture.gd")
 const PlayerStub = preload("res://tests/support/player_stub.gd")
 
 var _survival_defeat_count: int = 0
@@ -18,22 +17,23 @@ func test_downed_revive_flow() -> void:
 	_survival_defeat_count = 0
 	_dungeon_defeat_count = 0
 	_defense_defeat_count = 0
-	var scene := MainSceneFixture.new()
+	var scene = _new_main_scene_fixture()
 	assert_true(scene.boot(self), "main scene can be loaded")
 	await wait_physics_frames(3)
 
-	var game_mode_manager := scene.node(&"game_mode_manager") as GameModeManager
-	var local_multiplayer := scene.node(&"local_multiplayer_manager") as LocalMultiplayerManager
-	var player_manager := scene.node(&"player_manager") as PlayerManager
-	var revive_system := scene.node(&"revive_system")
-	var survival_mode := scene.node(&"survival_mode") as SurvivalMode
-	var dungeon_mode := scene.node(&"dungeon_mode") as DungeonMode
-	var tower_mode := scene.node(&"tower_defense_mode") as TowerDefenseMode
-	var wave_manager := scene.node(&"wave_manager") as WaveManager
-	var input_manager := scene.node(&"input_manager") as InputManager
+	var game_mode_manager: GameModeManager = scene.node(&"game_mode_manager") as GameModeManager
+	var local_multiplayer: LocalMultiplayerManager = scene.node(&"local_multiplayer_manager") as LocalMultiplayerManager
+	var player_manager: PlayerManager = scene.node(&"player_manager") as PlayerManager
+	var revive_system = scene.node(&"revive_system")
+	var survival_mode: SurvivalMode = scene.node(&"survival_mode") as SurvivalMode
+	var dungeon_mode: DungeonMode = scene.node(&"dungeon_mode") as DungeonMode
+	var tower_mode: TowerDefenseMode = scene.node(&"tower_defense_mode") as TowerDefenseMode
+	var wave_manager: WaveManager = scene.node(&"wave_manager") as WaveManager
+	var input_manager: InputManager = scene.node(&"input_manager") as InputManager
 	if game_mode_manager == null or local_multiplayer == null or player_manager == null or revive_system == null or survival_mode == null or dungeon_mode == null or tower_mode == null or wave_manager == null or input_manager == null:
 		assert_true(false, "downed/revive systems are available")
 		scene.teardown()
+		scene = null
 		return
 
 	survival_mode.survival_defeated.connect(_on_survival_defeated)
@@ -46,7 +46,8 @@ func test_downed_revive_flow() -> void:
 	var player_two := player_manager.players.get(2) as PlayerController
 	if player_one == null or player_two == null:
 		assert_true(false, "two players are active")
-		_teardown(scene, local_multiplayer)
+		await _teardown(scene, local_multiplayer)
+		scene = null
 		return
 
 	game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL)
@@ -114,13 +115,15 @@ func test_downed_revive_flow() -> void:
 	await wait_physics_frames(5)
 	assert_true(_defense_defeat_count == 1 and tower_mode.state == TowerDefenseWaveController.State.DEFEATED, "tower defense also resolves an all-downed party")
 
-	_teardown(scene, local_multiplayer)
+	await _teardown(scene, local_multiplayer)
+	scene = null
 
-func _teardown(scene: MainSceneFixture, local_multiplayer: LocalMultiplayerManager) -> void:
+func _teardown(scene, local_multiplayer: LocalMultiplayerManager) -> void:
 	if local_multiplayer != null:
 		local_multiplayer.deactivate_slot(3)
 		local_multiplayer.deactivate_slot(2)
 	scene.teardown()
+	scene = null
 	await wait_physics_frames(1)
 
 # --- helper condiviso PlayerQuery (player_query) ----------------------------
@@ -187,3 +190,11 @@ func _on_dungeon_defeated(_room_index: int) -> void:
 
 func _on_defense_defeated(_wave_index: int) -> void:
 	_defense_defeat_count += 1
+func _new_main_scene_fixture():
+	var script := ResourceLoader.load(
+		"res://tests/support/main_scene_fixture.gd",
+		"",
+		ResourceLoader.CACHE_MODE_IGNORE
+	) as Script
+	assert_true(script != null, "main scene fixture script loads")
+	return script.new() if script != null else null
