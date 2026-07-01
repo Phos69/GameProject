@@ -8,10 +8,11 @@ extends GutTest
 ##   tests/persistent_world_generation_smoke_test.gd
 ##   tests/biome_roster_smoke_test.gd
 ##
-## Ottimizzazione: l'intera mappa 3x3 (9 chunk 500x500) viene costruita UNA volta
+## Ottimizzazione: l'intera mappa 3x3 viene costruita UNA volta
 ## in before_all e riusata da tutti i test della suite.
 
 const WorldGen = preload("res://tests/support/world_gen_helpers.gd")
+const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
 
 const MAP_SEED := 515151
 const BIOME_IDS := ["infected_plains", "toxic_wastes", "burning_fields", "frozen_outskirts", "drowned_marsh"]
@@ -47,9 +48,11 @@ func test_map_generates_nine_cells() -> void:
 	assert_gte(_sample_cells.size(), 5, "la mappa campiona ogni biome esistente")
 
 func test_generation_constants() -> void:
-	assert_eq(ObstacleLayoutGenerator.ROAD_WIDTH, 40, "strada principale larga 40 celle")
-	assert_eq(ObstacleLayoutGenerator.SECONDARY_ROAD_WIDTH, 20, "percorso secondario largo 20 celle")
-	assert_eq(BiomePassageGenerator.PASSAGE_WIDTH, 40, "passaggio fisico largo 40 celle")
+	assert_eq(BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE, IsoGridConfig.BIOME_SIZE, "regioni logiche 150x150")
+	assert_eq(IsoGridConfig.LEGACY_EQUIVALENT_SIZE_TILES, 450, "150 tile nuovi equivalgono a 450 tile legacy")
+	assert_eq(ObstacleLayoutGenerator.ROAD_WIDTH, IsoGridConfig.ROAD_WIDTH_TILES, "strada principale larga 14 tile nuovi")
+	assert_eq(ObstacleLayoutGenerator.SECONDARY_ROAD_WIDTH, IsoGridConfig.SECONDARY_ROAD_WIDTH_TILES, "percorso secondario largo 7 tile nuovi")
+	assert_eq(BiomePassageGenerator.PASSAGE_WIDTH, IsoGridConfig.PASSAGE_WIDTH_TILES, "passaggio fisico largo 14 tile nuovi")
 
 # --- invarianti di layout per cella campione ------------------------------
 
@@ -60,7 +63,7 @@ func test_sample_cells_layout_invariants() -> void:
 		if layout == null:
 			continue
 		assert_eq(layout.zone_size, BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE,
-			"%s usa il chunk 500x500" % String(cell.id))
+			"%s usa la regione 150x150" % String(cell.id))
 		assert_eq(layout.get_terrain_class_at_cell(layout.player_spawn_cell, cell),
 			BiomeEnvironmentLayout.TERRAIN_WALKABLE,
 			"%s spawn player walkable" % String(cell.id))
@@ -120,7 +123,7 @@ func test_terrain_classification_complete() -> void:
 		var expected_total := layout.zone_size.x * layout.zone_size.y
 		assert_true(bool(report.get("is_complete", false)), "%s classifica ogni tile" % String(cell.id))
 		assert_eq(int(report.get("total", 0)), expected_total,
-			"%s classificazione copre il chunk 500x500" % String(cell.id))
+			"%s classificazione copre tutta la regione" % String(cell.id))
 		var counts := report.get("counts", {}) as Dictionary
 		var sum := 0
 		for value in counts.values():
@@ -235,9 +238,9 @@ func _has_axis_road(layout: BiomeEnvironmentLayout, tag: StringName, width: int,
 		if index >= layout.road_rect_tags.size() or layout.road_rect_tags[index] != tag:
 			continue
 		var rect := layout.road_rects[index]
-		if vertical and rect.size.x == width and rect.size.y >= layout.zone_size.y - 8:
+		if vertical and rect.size.x == width and rect.size.y >= layout.zone_size.y - IsoGridConfig.SIDE_EDGE_MAX_THICKNESS_TILES:
 			return true
-		if not vertical and rect.size.y == width and rect.size.x >= layout.zone_size.x - 8:
+		if not vertical and rect.size.y == width and rect.size.x >= layout.zone_size.x - IsoGridConfig.SIDE_EDGE_MAX_THICKNESS_TILES:
 			return true
 	return false
 
@@ -252,14 +255,14 @@ func _has_main_road_cells(layout: BiomeEnvironmentLayout, vertical: bool) -> boo
 		if not (raw_tags.has(&"main_road") or raw_tags.has("main_road")):
 			continue
 		if vertical:
-			if cell.y <= 2:
+			if cell.y <= IsoGridConfig.SIDE_EDGE_MAX_THICKNESS_TILES:
 				low = true
-			if cell.y >= z.y - 3:
+			if cell.y >= z.y - IsoGridConfig.SIDE_EDGE_MAX_THICKNESS_TILES:
 				high = true
 		else:
-			if cell.x <= 2:
+			if cell.x <= IsoGridConfig.SIDE_EDGE_MAX_THICKNESS_TILES:
 				low = true
-			if cell.x >= z.x - 3:
+			if cell.x >= z.x - IsoGridConfig.SIDE_EDGE_MAX_THICKNESS_TILES:
 				high = true
 	return low and high
 

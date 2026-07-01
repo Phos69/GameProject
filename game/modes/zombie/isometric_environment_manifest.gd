@@ -1,6 +1,8 @@
 extends RefCounted
 class_name IsometricEnvironmentManifest
 
+const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
+
 ## Loader and validator for assets/environment/isometric/manifest.json.
 ##
 ## The manifest is the single source of truth for how environment objects are
@@ -335,7 +337,10 @@ func get_visual_height_tiles(object_id: StringName) -> int:
 		return int((objects[object_id] as Dictionary).get("visual_height_tiles", 0))
 	return 0
 
-func get_native_visual_size(object_id: StringName, logical_tile_scale: float = 8.0) -> Vector2:
+func get_native_visual_size(
+	object_id: StringName,
+	logical_tile_scale: float = IsoGridConfig.LEGACY_TILE_SCALE
+) -> Vector2:
 	var footprint := get_footprint_tiles(object_id)
 	var visual_height := get_visual_height_tiles(object_id)
 	return Vector2(

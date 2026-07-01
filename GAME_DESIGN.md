@@ -597,7 +597,7 @@ Il prototipo e lineare. Diramazioni, shop room, biomi, mappa e scelta del percor
 `Infinite Arena` e il quick play di default. Usa lo stesso loop combat di base
 di survival, ma con un profilo compatto:
 
-- una sola cella `500x500`;
+- una sola cella `150x150` tile logici (`450x450` equivalenti legacy);
 - quattro lati `BLOCKED` con segmenti fisici resi come cliff rocciosi rialzati
   di sette celle; bloccano player, zombie e proiettili ma non applicano caduta;
 - le strade decorative terminano contro il cliff e non creano uscite;
@@ -660,7 +660,7 @@ su 20 minuti.
 Il revamp zombie e completo come prima versione giocabile:
 
 - a inizio run viene generata una megamappa globale seed-based con territori
-  default `3x3` da `500x500`;
+  default `3x3` da `150x150` tile logici;
 - il default `3x3` e il contratto di `Zombie Survival`; l'arena `1x1`
   esiste solo come profilo debug/test tramite `single_biome_arena`, mentre
   `Infinite Arena` usa un mode id separato e context `arena_boundary_mode`;
@@ -713,15 +713,17 @@ Identita dei biomi:
 - i set generati `desert` e `forest` non definiscono oggi un nuovo bioma e
   restano non assegnati;
 - tutti i layout sono deterministici e partono da void: il generatore scava
-  strade principali orizzontali/verticali larghe 40 celle, sentieri tematici
-  medi larghi 20 celle, passaggi fisici larghi 40 celle e blocchi interni;
+  strade principali orizzontali/verticali larghe 14 tile logici, sentieri
+  tematici medi larghi 7 tile logici, passaggi fisici larghi 14 tile logici e
+  blocchi interni;
 - ogni layout generato contiene strade, corridoi e ostacoli grandi che
   influenzano movimento e combattimento invece di restare solo decorazione;
 - case, cabine, laboratori, barriere, barili, relitti, tronchi, ponti,
   vegetazione densa, auto e crate usano sprite trasparenti SVG/PNG con
   silhouette isometrica dedicata, non il placeholder generico unico;
-- `forest_tree` occupa nove slot (`3x3`); le `large_rock` void-first occupano
-  quadrati da `15x15` a `30x30` celle. Entrambi bloccano tutto il relativo
+- `forest_tree` occupa nove slot (`3x3`) e un footprint runtime `4x4` tile
+  logici; le `large_rock` void-first occupano quadrati da `5x5` a `10x10`
+  tile logici. Entrambi bloccano tutto il relativo
   footprint per movimento e proiettili; non sono decorazioni soft. Il player
   a nord della linea centrale della roccia viene coperto dal cliff, quello a
   sud resta davanti; in co-op la relazione viene risolta per ogni player. Top
@@ -738,7 +740,7 @@ Identita dei biomi:
 - `deep_water` e hazard bloccante; i bridge dichiarati dal layout riaprono solo
   le celle coperte e possono ospitare crate/spawn validi se la cella risulta
   walkable;
-- tutto il `500x500` viene classificato come walkable, obstacle, hazard, border,
+- tutto il `150x150` viene classificato come walkable, obstacle, hazard, border,
   void o fall zone;
 - casse e spawn vengono validati contro ostacoli e hazard.
 
@@ -943,7 +945,7 @@ Gli status temporanei ora usano cinque ID canonici: `poison`, `burn`, `bleed`, `
 
 | Bioma | Ostacoli leggibili | Hazard/status | Nemici tematici |
 | --- | --- | --- | --- |
-| Pianura Infetta | case diroccate, alberi 3x3, masse rocciose 15-30 celle, muretti, auto, casse, corridoi larghi | pericolo basso | roster base onboarding |
+| Pianura Infetta | case diroccate, alberi 3x3, masse rocciose 5-10 tile logici, muretti, auto, casse, corridoi larghi | pericolo basso | roster base onboarding |
 | Tossico | cisterne, tubi, pozze, barili chimici | `poison` da pozze/gas | Toxic Zombie, Toxic Exploder |
 | Infuocato | lava, fiamme, auto bruciate, crateri | `burn` da fuoco/lava | Burned Zombie, Fire Runner, Fire Exploder |
 | Neve | ghiaccio, neve alta, rocce ghiacciate | `freeze`/slow | Frozen Zombie, Ice Armored Zombie, Heavy Slow Zombie |

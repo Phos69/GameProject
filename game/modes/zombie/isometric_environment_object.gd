@@ -25,7 +25,7 @@ const MISSING_ASSET_FALLBACK_STATUSES: Array[String] = [
 ]
 
 const CONTENT_ALPHA_THRESHOLD := 0.08
-const LOGICAL_TILE_SCALE := 8.0
+const LEGACY_TILE_SCALE := IsoGridConfig.LEGACY_TILE_SCALE
 
 var asset_path: String = ""
 var anchor_id: StringName = &"iso_floor_center"
@@ -338,7 +338,7 @@ func _scalable_target_size(
 	var base_footprint := manifest.get_footprint_tiles(obstacle_id)
 	if base_footprint.x <= 0:
 		return base_target
-	var base_width_px := float(base_footprint.x) * LOGICAL_TILE_SCALE
+	var base_width_px := float(base_footprint.x) * LEGACY_TILE_SCALE
 	if base_width_px <= 0.0:
 		return base_target
 	var ratio := obstacle_size.x / base_width_px

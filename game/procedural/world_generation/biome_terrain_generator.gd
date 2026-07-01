@@ -1,6 +1,8 @@
 extends Node
 class_name BiomeTerrainGenerator
 
+const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
+
 signal biome_layout_generated(cell: BiomeCell, layout: BiomeEnvironmentLayout)
 
 var obstacle_layout_generator := ObstacleLayoutGenerator.new()
@@ -29,8 +31,8 @@ func generate_layout_for_cell(
 	var layout := BiomeEnvironmentLayout.new()
 	layout.zone_size = biome.get_biome_size()
 	layout.generation_seed = cell.seed
-	layout.logical_tile_scale = 8.0
-	layout.central_corridor_width = 220.0
+	layout.logical_tile_scale = IsoGridConfig.LOGICAL_TILE_SCALE
+	layout.central_corridor_width = IsoGridConfig.DEFAULT_CENTRAL_CORRIDOR_WORLD_WIDTH
 	layout.player_spawn_cell = layout.zone_size / 2
 	# Every physical biome-divider wall uses the same upward-cliff geometry as
 	# Infinite Arena. Fall boundaries remain separate and keep their drop logic.

@@ -50,8 +50,8 @@ del rettangolo logico; `sort_offset` ancora lo sprite al pavimento. Tetti e chio
 possono cosi coprire gli attori dietro senza cambiare ordine durante il movimento.
 
 `forest_tree` resta il riferimento per l'ostacolo singolo `3x3`: occupa nove
-slot e usa collisione rettangolare sull'intero footprint. `large_rock` e invece
-scalabile: il void-first genera rettangoli quadrati da `15x15` a `30x30` celle e
+slot di design e un footprint runtime `4x4` tile logici. `large_rock` e invece
+scalabile: il void-first genera rettangoli quadrati da `5x5` a `10x10` tile logici e
 `RectilinearRockAreaMeshBuilder` trasforma ogni `rock_rect` in un plateau
 rialzato, cioe il void cliff specchiato verso l'alto. La corona cobble
 (`rock_plateau_top_generated.png`) e sollevata di `RAISE_HEIGHT_CELLS` e rientra

@@ -1,6 +1,8 @@
 extends Node
 class_name RegionSeamSystem
 
+const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
+
 signal region_seam_crossed(
 	previous_region_id: StringName,
 	current_region_id: StringName,
@@ -8,7 +10,7 @@ signal region_seam_crossed(
 )
 
 @export_range(0.05, 3.0, 0.05) var transition_cooldown: float = 0.45
-@export_range(0, 12, 1) var crossing_margin_tiles: int = 3
+@export_range(0, 12, 1) var crossing_margin_tiles: int = IsoGridConfig.CROSSING_MARGIN_TILES
 @export var player_group: StringName = &"players"
 
 var biome_manager: BiomeManager
@@ -212,7 +214,7 @@ func _tile_scale_for_region(region_id: StringName) -> float:
 	)
 	if cell != null and cell.generated_layout != null:
 		return cell.generated_layout.logical_tile_scale
-	return 8.0
+	return IsoGridConfig.LOGICAL_TILE_SCALE
 
 func _connection_contains_world_tile(
 	source: WorldRegion,

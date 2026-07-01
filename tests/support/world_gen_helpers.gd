@@ -1,11 +1,12 @@
 extends RefCounted
 ## Helper statici condivisi dalle suite GUT dell'area World Generation (A1).
 ##
-## Centralizzano la costruzione (costosa) dei layout 500x500 e l'accesso ai
+## Centralizzano la costruzione (costosa) dei layout iso e l'accesso ai
 ## BiomeManager, così le suite possono costruire il mondo una sola volta in
 ## before_all e riusarlo tra i test.
 
 const STARTER_BIOME_PATH := "res://game/modes/zombie/biomes/infected_plains.tres"
+const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
 
 ## Carica una BiomeDefinition di zombie mode dal suo id (nome file .tres).
 static func load_biome(biome_id: String) -> BiomeDefinition:
@@ -14,7 +15,7 @@ static func load_biome(biome_id: String) -> BiomeDefinition:
 static func load_starter_biome() -> BiomeDefinition:
 	return load(STARTER_BIOME_PATH) as BiomeDefinition
 
-## Costruisce un layout void-first completo (500x500) per il biome dato e il seed
+## Costruisce un layout void-first completo per il biome dato e il seed
 ## indicato, attraverso ObstacleLayoutGenerator.populate_layout_voidfirst().
 ## È l'operazione costosa: chiamarla il meno possibile (riuso in before_all).
 static func voidfirst_layout(biome: BiomeDefinition, seed_value: int) -> BiomeEnvironmentLayout:
@@ -69,12 +70,13 @@ static func first_cell_per_biome(cells: Array[BiomeCell]) -> Array[BiomeCell]:
 
 ## Cella di sondaggio walkable appena dentro un passaggio (mirror dei test legacy).
 static func passage_probe_cell(passage: BiomePassage, zone_size: Vector2i) -> Vector2i:
+	var edge_depth := IsoGridConfig.PASSAGE_EDGE_DEPTH_TILES
 	match passage.side:
 		&"north":
-			return Vector2i(passage.position, 3)
+			return Vector2i(passage.position, edge_depth)
 		&"south":
-			return Vector2i(passage.position, zone_size.y - 4)
+			return Vector2i(passage.position, zone_size.y - edge_depth - 1)
 		&"west":
-			return Vector2i(3, passage.position)
+			return Vector2i(edge_depth, passage.position)
 		_:
-			return Vector2i(zone_size.x - 4, passage.position)
+			return Vector2i(zone_size.x - edge_depth - 1, passage.position)

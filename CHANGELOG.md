@@ -8,6 +8,12 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Added
 
+- Aggiunto `IsoGridConfig` come contratto centrale per la nuova griglia
+  isometrica: tile logico `3x3` legacy, scala world `24.0`, biomi `150x150`
+  (`450x450` equivalenti legacy) e costanti condivise per strade, passaggi,
+  bordi, rocce e conversione footprint.
+- Aggiunto `docs/iso_grid_scale_migration_report.md` con metriche della
+  migrazione, impatto su cache/snapshot e lista dei test eseguiti.
 - Integrati 191 PNG generati e ripuliti sotto
   `assets/environment/isometric/generated_images/`. I quattro biomi Survival
   avanzati usano set tematici per ground, route, transizioni, cliff verso void e
@@ -35,6 +41,17 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Changed
 
+- Migrata la generazione mondo iso da regioni `500x500` a regioni `150x150`
+  tile logici. Layout, pathfinding, passaggi, fall boundary, streaming,
+  coordinate world, spawn, tile resolver e Infinite Arena usano la nuova scala
+  senza deformare gli asset: le texture restano caricate a dimensione nativa e i
+  footprint legacy vengono convertiti a runtime.
+- Incrementati `WorldSnapshotCodec.FORMAT_VERSION` e
+  `TileBakeCache.FORMAT_VERSION` a `3`, cosi snapshot/cache pre-migrazione
+  vengono ignorati e rigenerati.
+- Il loader texture isometrico carica i raster sorgente quando la cache `.ctex`
+  locale non e stata importata, mantenendo separata la cache raster dalla cache
+  SVG esposta ai test.
 - Compattato questo changelog: il delta corrente resta in `Unreleased`, mentre
   la cronologia storica e stata ridotta a baseline archiviate e rimandi ai
   documenti proprietari.
@@ -53,6 +70,11 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Fixed
 
+- Preservati tile `*_entry` dei passaggi anche con apertura profonda una sola
+  cella: il resolver assegna l'entry alla prima cella interna del connector e
+  mantiene `*_exit` sul bordo esterno.
+- Il carving delle strade void-first non marca piu come strada le celle occupate
+  da rocce scalabili dopo la riscalatura.
 - Corretto il tentativo di skin swamp su `toxic_wastes`: il bioma usa ora il
   tema `urban_ruins`, i duplicati swamp sono stati rimossi e i test verificano
   materiali realmente consumati da mesh non vuote.
@@ -81,6 +103,16 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Validation
 
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/world_gen`: 48
+  test, 350 assert, passa.
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/obstacles`: 16
+  test, 424 assert, passa.
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/environment`: 34
+  test, 2164 assert, passa.
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/modes -Select zombie_modes`:
+  4 test, 1600 assert, passa.
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/assets -Select texture_cache`:
+  1 test, 13 assert, passa.
 - `npm run mcp:build`: passa.
 - `npm run mcp:test`: passa con 4 file test e 13 test totali.
 - `npm run mcp:smoke`: passa e lista 9 tool MCP e 5 prompt.

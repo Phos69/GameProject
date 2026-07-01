@@ -8,6 +8,8 @@ extends GutTest
 ##   tests/zombie_survival_world_contract_smoke_test.gd  (sintetico)
 ##   tests/infinite_arena_default_mode_smoke_test.gd     (main.tscn, async)
 
+const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
+
 var _async_world_ready: bool = false
 
 # --- foundation: biome/wave/spawner + wave loop (zombie_revamp_foundation) ---
@@ -345,7 +347,11 @@ func _assert_infinite_arena_world(biome_manager: BiomeManager) -> void:
 	assert_not_null(start_cell, "Infinite Arena has an active arena cell")
 	if start_cell == null:
 		return
-	assert_eq(Vector2i(start_cell.width, start_cell.height), Vector2i(500, 500), "Infinite Arena cell is 500x500")
+	assert_eq(
+		Vector2i(start_cell.width, start_cell.height),
+		BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE,
+		"Infinite Arena cell uses the shared iso grid size"
+	)
 	assert_true(start_cell.passages.is_empty(), "Infinite Arena has no inter-biome passages")
 	for side in BiomeCell.SIDES:
 		assert_eq(start_cell.get_border(side), BiomeCell.BorderType.BLOCKED, "Infinite Arena %s border is a wall" % String(side))
@@ -392,7 +398,7 @@ func _assert_raised_cliff_layout(layout: BiomeEnvironmentLayout) -> void:
 	assert_eq(
 		layout.wall_height_cells,
 		BiomeEnvironmentLayout.RAISED_CLIFF_HEIGHT_CELLS,
-		"raised arena cliff uses the shared seven-cell height"
+		"raised arena cliff uses the shared height"
 	)
 	for side in BiomeCell.SIDES:
 		var segments := layout.get_wall_segments_for_side(side)
@@ -419,7 +425,7 @@ func _assert_raised_cliff_layout(layout: BiomeEnvironmentLayout) -> void:
 	assert_true(layout.is_wall_segment_cell(Vector2i(layout.zone_size.x - 1, midpoint.y)), "east road terminates at the raised cliff")
 
 func _assert_runtime_raised_cliffs(
-	scene: MainSceneFixture,
+	scene,
 	biome_manager: BiomeManager
 ) -> void:
 	var perimeter_count := 0
@@ -435,7 +441,11 @@ func _assert_runtime_raised_cliffs(
 		)
 		assert_true(obstacle.has_raised_cliff_art(), "runtime raised cliff loads face and crown textures")
 		assert_false(obstacle.uses_perimeter_visual_fallback(), "runtime raised cliff avoids procedural wall fallback")
-		assert_eq(obstacle.get_wall_height(), 56.0, "runtime raised cliff is seven logical cells high")
+		assert_eq(
+			obstacle.get_wall_height(),
+			float(IsoGridConfig.RAISED_CLIFF_HEIGHT_TILES) * IsoGridConfig.LOGICAL_TILE_SCALE,
+			"runtime raised cliff uses the configured logical height"
+		)
 		assert_true(
 			(obstacle.collision_layer & BiomeObstacle.MOVEMENT_BLOCK_LAYER_BIT) != 0,
 			"runtime raised cliff still blocks movement"
@@ -448,7 +458,7 @@ func _assert_runtime_raised_cliffs(
 		var occupied_cells := record.get("occupied_cells", Rect2i()) as Rect2i
 		assert_eq(
 			obstacle.get_perimeter_uv_origin(),
-			Vector2(occupied_cells.position) * 8.0,
+			Vector2(occupied_cells.position) * IsoGridConfig.LOGICAL_TILE_SCALE,
 			"runtime raised cliff UV origin follows its generated wall segment"
 		)
 	var cell := biome_manager.get_current_biome_cell()

@@ -6,16 +6,17 @@ const FALLBACK_TEXTURE_BUILDER := preload(
 	"res://game/modes/zombie/isometric_svg_fallback_texture_builder.gd"
 )
 
-# Session cache keyed by "asset_path@WxH": a rasterized SVG (or its imported
-# texture) is built once and reused across every tile-layer build, region stream,
-# biome change and run, instead of re-rasterizing the same asset every time.
+# Session cache keyed by "asset_path@WxH": a rasterized SVG is built once and
+# reused across every tile-layer build, region stream, biome change and run.
 static var _texture_cache: Dictionary = {}
+static var _raster_texture_cache: Dictionary = {}
 
 static func _cache_key(asset_path: String, texture_size: Vector2i) -> String:
 	return "%s@%dx%d" % [asset_path, texture_size.x, texture_size.y]
 
 static func clear_cache() -> void:
 	_texture_cache.clear()
+	_raster_texture_cache.clear()
 
 static func get_cached_texture_count() -> int:
 	return _texture_cache.size()
@@ -35,7 +36,7 @@ static func load_texture(
 	if asset_path.is_empty():
 		return null
 	if not asset_path.ends_with(".svg"):
-		return load(asset_path) as Texture2D
+		return _load_raster_texture(asset_path)
 	var cache_key := _cache_key(asset_path, texture_size)
 	if _texture_cache.has(cache_key):
 		return _texture_cache[cache_key] as Texture2D
@@ -82,6 +83,34 @@ static func _load_imported_texture(asset_path: String) -> Texture2D:
 		return null
 	var resource := ResourceLoader.load(asset_path)
 	return resource as Texture2D
+
+static func _load_raster_texture(asset_path: String) -> Texture2D:
+	var cache_key := "%s@native" % asset_path
+	if _raster_texture_cache.has(cache_key):
+		return _raster_texture_cache[cache_key] as Texture2D
+	if _imported_texture_available(asset_path):
+		var imported_texture := _load_imported_texture(asset_path)
+		if imported_texture != null:
+			_raster_texture_cache[cache_key] = imported_texture
+			return imported_texture
+	if FileAccess.file_exists(asset_path):
+		var image := Image.new()
+		var error_code := image.load(ProjectSettings.globalize_path(asset_path))
+		if error_code == OK and image.get_width() > 0 and image.get_height() > 0:
+			var source_texture := ImageTexture.create_from_image(image)
+			_raster_texture_cache[cache_key] = source_texture
+			return source_texture
+	return null
+
+static func _imported_texture_available(asset_path: String) -> bool:
+	var import_path := "%s.import" % asset_path
+	if not FileAccess.file_exists(import_path):
+		return ResourceLoader.exists(asset_path)
+	var config := ConfigFile.new()
+	if config.load(import_path) != OK:
+		return false
+	var imported_path := String(config.get_value("remap", "path", ""))
+	return not imported_path.is_empty() and FileAccess.file_exists(imported_path)
 
 static func _load_svg_texture_from_content(
 	content: String,

@@ -15,11 +15,12 @@ extends GutTest
 ## costruiscono layout dedicati.
 
 const WorldGen = preload("res://tests/support/world_gen_helpers.gd")
+const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
 
 # Seed con la tolleranza piu stretta (budget alberi forest-fill 240): se passa
 # qui passa anche per le altre invarianti, che sono strutturali.
 const SHARED_SEED := 246810
-const TREE_FOOTPRINT := Vector2i(12, 12)
+const TREE_FOOTPRINT := Vector2i(4, 4)
 # infected_plains slice of the void-first palette, used to exercise the road
 # tree-lining pass directly (the generator resolves the full palette per biome).
 const _PLAINS_LINE_PALETTE := {"line_vegetation": true, "cluster_id": &"forest_tree"}
@@ -44,7 +45,7 @@ func test_biome_divider_uses_upward_cliff_contract() -> void:
 	assert_eq(
 		_layout.wall_height_cells,
 		BiomeEnvironmentLayout.RAISED_CLIFF_HEIGHT_CELLS,
-		"divider cliffs keep the seven-cell Infinite Arena height"
+		"divider cliffs keep the shared Infinite Arena height"
 	)
 
 # --- rocce (M1) -----------------------------------------------------------
@@ -56,10 +57,13 @@ func test_rocks_placement() -> void:
 	for rect in _layout.rock_rects:
 		if rect.size.x != rect.size.y:
 			all_square = false
-		if rect.size.x < 15 or rect.size.x > 30:
+		if (
+			rect.size.x < IsoGridConfig.VOIDFIRST_ROCK_MIN_SIZE_TILES
+			or rect.size.x > IsoGridConfig.VOIDFIRST_ROCK_MAX_SIZE_TILES
+		):
 			all_in_range = false
 	assert_true(all_square, "ogni roccia e quadrata")
-	assert_true(all_in_range, "ogni lato roccia entro 15..30")
+	assert_true(all_in_range, "ogni lato roccia entro 5..10 tile nuovi")
 	var overlaps := false
 	for i in range(_layout.rock_rects.size()):
 		for j in range(i + 1, _layout.rock_rects.size()):
@@ -90,10 +94,13 @@ func test_forests_placement() -> void:
 	for rect in _layout.forest_rects:
 		if rect.size.x != rect.size.y:
 			all_square = false
-		if rect.size.x < 9 or rect.size.x > 60:
+		if (
+			rect.size.x < IsoGridConfig.VOIDFIRST_FOREST_MIN_SIZE_TILES
+			or rect.size.x > IsoGridConfig.VOIDFIRST_FOREST_MAX_SIZE_TILES
+		):
 			all_in_range = false
 	assert_true(all_square, "ogni foresta e quadrata")
-	assert_true(all_in_range, "ogni lato foresta entro 9..60")
+	assert_true(all_in_range, "ogni lato foresta entro 3..20 tile nuovi")
 	var forest_floor := 0
 	for tag in _layout.floor_rect_tags:
 		if tag == &"forest_tall_grass":
@@ -111,7 +118,7 @@ func test_forest_trees() -> void:
 			all_natural = false
 	assert_gt(trees, 0, "le foreste sono riempite di alberi")
 	assert_lte(trees, 240, "il numero di alberi resta nel budget forest-fill")
-	assert_true(all_natural, "ogni albero usa il footprint naturale 12x12")
+	assert_true(all_natural, "ogni albero usa il footprint logico convertito 4x4")
 
 func test_tree_rock_priority() -> void:
 	var violation := false
@@ -144,7 +151,10 @@ func test_forced_forest_over_rock_keeps_rock_clear() -> void:
 	var layout := BiomeEnvironmentLayout.new()
 	layout.zone_size = BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE
 	layout.generation_seed = 13
-	var rock := Rect2i(Vector2i(120, 120), Vector2i(24, 24))
+	var rock := Rect2i(
+		layout.zone_size / 2 - Vector2i(4, 4),
+		Vector2i(8, 8)
+	)
 	layout.rock_rects.append(rock)
 	layout.obstacle_rects.append(rock)
 	layout.obstacle_ids.append(&"large_rock")
@@ -152,7 +162,10 @@ func test_forced_forest_over_rock_keeps_rock_clear() -> void:
 	layout.obstacle_sizes.append(layout.rect_size_to_world(rock))
 	layout.obstacle_rotations.append(0.0)
 	layout.obstacle_shape_ids.append(&"rectangle")
-	var forest := Rect2i(Vector2i(90, 90), Vector2i(90, 90))
+	var forest := Rect2i(
+		layout.zone_size / 2 - Vector2i(20, 20),
+		Vector2i(40, 40)
+	)
 	layout.forest_rects.append(forest)
 	layout.add_floor_rect(forest, &"forest_tall_grass")
 	var rng := RandomNumberGenerator.new()
@@ -173,7 +186,7 @@ func test_forced_forest_over_rock_keeps_rock_clear() -> void:
 
 func test_roads_reach_edges() -> void:
 	var z := _layout.zone_size
-	var thickness := 3
+	var thickness := IsoGridConfig.SIDE_EDGE_MAX_THICKNESS_TILES
 	assert_true(_band_has_road(_layout, Rect2i(0, 0, thickness, z.y)), "strada raggiunge il bordo ovest")
 	assert_true(_band_has_road(_layout, Rect2i(z.x - thickness, 0, thickness, z.y)), "strada raggiunge il bordo est")
 	assert_true(_band_has_road(_layout, Rect2i(0, 0, z.x, thickness)), "strada raggiunge il bordo nord")
@@ -213,15 +226,27 @@ func test_trail_stops_at_rock() -> void:
 	var layout := BiomeEnvironmentLayout.new()
 	layout.zone_size = BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE
 	layout.generation_seed = 7
-	var rock := Rect2i(Vector2i(160, 240), Vector2i(24, 24))
+	var rock := Rect2i(
+		Vector2i(layout.zone_size.x * 3 / 5, layout.zone_size.y / 2),
+		Vector2i(8, 8)
+	)
 	layout.rock_rects.append(rock)
 	var carved := ObstacleLayoutGenerator.new()._carve_trail(
-		layout, Vector2i(100, 250), Vector2i(1, 0), 7, 240, &"broken_street")
+		layout,
+		Vector2i(layout.zone_size.x / 3, rock.position.y + rock.size.y / 2),
+		Vector2i(1, 0),
+		IsoGridConfig.VOIDFIRST_PATH_WIDTH_TILES,
+		IsoGridConfig.VOIDFIRST_PATH_MAX_LEN_TILES,
+		&"broken_street"
+	)
 	assert_gt(carved, 0, "il sentiero scava verso la roccia")
-	assert_true(layout.has_road_cell(Vector2i(155, 250)), "il sentiero raggiunge le celle prima della roccia")
+	assert_true(
+		layout.has_road_cell(Vector2i(rock.position.x - 1, rock.position.y + rock.size.y / 2)),
+		"il sentiero raggiunge le celle prima della roccia"
+	)
 	var beyond := false
-	for x in range(160, 210):
-		if layout.has_road_cell(Vector2i(x, 250)):
+	for x in range(rock.position.x, mini(rock.position.x + 30, layout.zone_size.x)):
+		if layout.has_road_cell(Vector2i(x, rock.position.y + rock.size.y / 2)):
 			beyond = true
 			break
 	assert_false(beyond, "il sentiero si ferma alla roccia e non la attraversa")
@@ -253,7 +278,10 @@ func test_forest_bounded_road_not_lined() -> void:
 	layout.zone_size = BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE
 	layout.generation_seed = 2
 	_carve_straight_road(layout)
-	layout.forest_rects.append(Rect2i(Vector2i(0, 200), Vector2i(500, 110)))
+	layout.forest_rects.append(Rect2i(
+		Vector2i(0, layout.zone_size.y / 2 - 12),
+		Vector2i(layout.zone_size.x, 24)
+	))
 	ObstacleLayoutGenerator.new()._line_roads_with_trees(layout, _PLAINS_LINE_PALETTE)
 	assert_eq(_count_trees(layout), 0, "una strada gia delimitata da foresta non viene rialberata")
 
@@ -369,7 +397,8 @@ func _rect_in_any(rect: Rect2i, rects: Array[Rect2i]) -> bool:
 	return false
 
 func _rect_near_road(layout: BiomeEnvironmentLayout, rect: Rect2i) -> bool:
-	var band := Rect2i(rect.position - Vector2i(3, 3), rect.size + Vector2i(6, 6))
+	var near := IsoGridConfig.VOIDFIRST_ROAD_LINE_NEAR_TILES
+	var band := Rect2i(rect.position - Vector2i(near, near), rect.size + Vector2i(near * 2, near * 2))
 	for y in range(band.position.y, band.end.y):
 		for x in range(band.position.x, band.end.x):
 			if layout.has_road_cell(Vector2i(x, y)):
@@ -377,8 +406,10 @@ func _rect_near_road(layout: BiomeEnvironmentLayout, rect: Rect2i) -> bool:
 	return false
 
 func _carve_straight_road(layout: BiomeEnvironmentLayout) -> void:
-	for x in range(50, 451):
-		for y in range(247, 254):
+	var half_width := IsoGridConfig.VOIDFIRST_PATH_WIDTH_TILES / 2
+	var center_y := layout.zone_size.y / 2
+	for x in range(IsoGridConfig.BORDER_THICKNESS_TILES, layout.zone_size.x - IsoGridConfig.BORDER_THICKNESS_TILES):
+		for y in range(center_y - half_width, center_y + half_width + 1):
 			layout.add_road_cell(Vector2i(x, y), &"main_road")
 
 func _count_trees(layout: BiomeEnvironmentLayout) -> int:

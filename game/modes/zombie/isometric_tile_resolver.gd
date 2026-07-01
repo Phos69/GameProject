@@ -407,6 +407,12 @@ func _resolve_forest_cell_route_tile_data(
 				TILE_SECTION_PASSAGE,
 				&"passage_exit" if String(endpoint_tile).ends_with("_exit") else &"passage_entry"
 			)
+		if _cell_on_inner_passage_entry(layout, cell):
+			return _tile_data(
+				get_passage_entry_tile_id(passage_tag),
+				TILE_SECTION_PASSAGE,
+				&"passage_entry"
+			)
 		return _tile_data(passage_tag, TILE_SECTION_PASSAGE, &"passage_connector")
 	if _cell_touches_void_or_fall(layout, cell, biome_cell):
 		return _tile_data(
@@ -464,8 +470,15 @@ func _resolve_forest_rect_route_tile_data(
 			)
 		selected_passage_index = index
 	if selected_passage_index >= 0:
+		var selected_passage_tag := _road_tag_for_index(layout, selected_passage_index)
+		if _cell_on_inner_passage_entry(layout, cell):
+			return _tile_data(
+				get_passage_entry_tile_id(selected_passage_tag),
+				TILE_SECTION_PASSAGE,
+				&"passage_entry"
+			)
 		return _tile_data(
-			_road_tag_for_index(layout, selected_passage_index),
+			selected_passage_tag,
 			TILE_SECTION_PASSAGE,
 			&"passage_connector"
 		)
@@ -555,8 +568,15 @@ func _resolve_route_tile_data(
 			)
 		selected_passage_index = index
 	if selected_passage_index >= 0:
+		var selected_passage_tag := _road_tag_for_index(layout, selected_passage_index)
+		if _cell_on_inner_passage_entry(layout, cell):
+			return _tile_data(
+				get_passage_entry_tile_id(selected_passage_tag),
+				TILE_SECTION_PASSAGE,
+				&"passage_entry"
+			)
 		return _tile_data(
-			_road_tag_for_index(layout, selected_passage_index),
+			selected_passage_tag,
 			TILE_SECTION_PASSAGE,
 			&"passage_connector"
 		)
@@ -597,6 +617,12 @@ func _resolve_passage_rect_route_tile_data(
 				&"passage_exit" if String(endpoint_tile).ends_with("_exit") else &"passage_entry"
 			)
 		if RESOLVER_UTILS.cell_inside_any_rect(cell, layout.passage_connector_rects):
+			if _cell_on_inner_passage_entry(layout, cell):
+				return _tile_data(
+					get_passage_entry_tile_id(passage_tag),
+					TILE_SECTION_PASSAGE,
+					&"passage_entry"
+				)
 			return _tile_data(
 				passage_tag,
 				TILE_SECTION_PASSAGE,
@@ -626,6 +652,12 @@ func _resolve_cell_route_tile_data(
 				endpoint_tile,
 				TILE_SECTION_PASSAGE,
 				&"passage_exit" if String(endpoint_tile).ends_with("_exit") else &"passage_entry"
+			)
+		if _cell_on_inner_passage_entry(layout, cell):
+			return _tile_data(
+				get_passage_entry_tile_id(passage_tag),
+				TILE_SECTION_PASSAGE,
+				&"passage_entry"
 			)
 		return _tile_data(passage_tag, TILE_SECTION_PASSAGE, &"passage_connector")
 	if route_tags.size() > 1:
@@ -1110,6 +1142,27 @@ func _cell_on_outer_passage_edge(
 			return true
 		if rect.position.y + rect.size.y >= layout.zone_size.y and cell.y == rect.position.y + rect.size.y - 1:
 			return true
+	return false
+
+func _cell_on_inner_passage_entry(
+	layout: BiomeEnvironmentLayout,
+	cell: Vector2i
+) -> bool:
+	if not RESOLVER_UTILS.cell_inside_any_rect(cell, layout.passage_connector_rects):
+		return false
+	for rect in layout.passage_rects:
+		if rect.position.x <= 0 and rect.size.x <= 1:
+			if cell.x == rect.position.x + rect.size.x and cell.y >= rect.position.y and cell.y < rect.end.y:
+				return true
+		elif rect.position.x + rect.size.x >= layout.zone_size.x and rect.size.x <= 1:
+			if cell.x == rect.position.x - 1 and cell.y >= rect.position.y and cell.y < rect.end.y:
+				return true
+		elif rect.position.y <= 0 and rect.size.y <= 1:
+			if cell.y == rect.position.y + rect.size.y and cell.x >= rect.position.x and cell.x < rect.end.x:
+				return true
+		elif rect.position.y + rect.size.y >= layout.zone_size.y and rect.size.y <= 1:
+			if cell.y == rect.position.y - 1 and cell.x >= rect.position.x and cell.x < rect.end.x:
+				return true
 	return false
 
 func _cell_on_zone_touching_endpoint(

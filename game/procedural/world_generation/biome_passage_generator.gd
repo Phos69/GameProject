@@ -1,8 +1,10 @@
 extends RefCounted
 class_name BiomePassageGenerator
 
+const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
+
 const SIDES_TO_OPEN: Array[StringName] = [&"east", &"south"]
-const PASSAGE_WIDTH := 40
+const PASSAGE_WIDTH := IsoGridConfig.PASSAGE_WIDTH_TILES
 const GENERATED_PASSAGE_TERRAIN_TAG_CATEGORIES: Dictionary = {
 	&"bridge": &"passage",
 	&"broken_gate": &"passage",
@@ -27,10 +29,18 @@ func generate_passages(cells: Array[BiomeCell], seed_value: int) -> void:
 			var rng := RandomNumberGenerator.new()
 			rng.seed = local_seed
 			var width := PASSAGE_WIDTH
-			var safe_margin := maxi(40, width * 3)
+			var axis_size := cell.height if side == &"east" else cell.width
+			var safe_margin := mini(
+				maxi(IsoGridConfig.PASSAGE_SAFE_MARGIN_TILES, width * 3),
+				maxi(axis_size / 2 - 1, width)
+			)
 			var safe_min := safe_margin
-			var safe_max := cell.height - safe_margin
-			var position := rng.randi_range(safe_min, safe_max)
+			var safe_max := axis_size - safe_margin
+			var position := (
+				axis_size / 2
+				if safe_max <= safe_min
+				else rng.randi_range(safe_min, safe_max)
+			)
 			var passage_type := _resolve_passage_type(
 				cell.biome_id,
 				neighbor.biome_id

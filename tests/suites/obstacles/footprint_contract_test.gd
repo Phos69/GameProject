@@ -7,7 +7,7 @@ extends GutTest
 ##   tests/scalable_obstacle_smoke_test.gd
 ##
 ## Il manifest condiviso si carica una sola volta in before_all. I layout generati
-## (BiomeTerrainGenerator su una cella 500x500) sono l'operazione più costosa: si
+## (BiomeTerrainGenerator su una cella iso logica) sono l'operazione più costosa: si
 ## costruiscono dentro i test che li verificano. Il controllo su main.tscn è
 ## l'unico che boota la scena ed è isolato nell'ultimo test (via fixture condivisa)
 ## per non sporcare le query a gruppo degli altri.
@@ -15,6 +15,7 @@ extends GutTest
 const ROCK_AREA_MESH_BUILDER_SCRIPT = preload(
 	"res://game/modes/zombie/rocks/rectilinear_rock_area_mesh_builder.gd"
 )
+const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
 
 const REQUIRED_FOOTPRINTS: Dictionary = {
 	Vector2i(1, 1): &"small_rock",
@@ -32,12 +33,13 @@ const BIOME_IDS: Array[StringName] = [
 ]
 const FEATURE_IDS: Array[StringName] = [&"forest_tree"]
 const EXPECTED_SLOTS := Vector2i(3, 3)
-const EXPECTED_CELLS := Vector2i(12, 12)
-const LOGICAL_TILE_SCALE := 8.0
+const EXPECTED_LEGACY_CELLS := Vector2i(12, 12)
+const EXPECTED_CELLS := Vector2i(4, 4)
+const LOGICAL_TILE_SCALE := IsoGridConfig.LOGICAL_TILE_SCALE
 const ROCK_ID := &"large_rock"
 const NON_SCALABLE_ID := &"small_rock"
-const SMALL_CELLS := Vector2i(15, 15)
-const LARGE_CELLS := Vector2i(30, 30)
+const SMALL_CELLS := Vector2i(5, 5)
+const LARGE_CELLS := Vector2i(10, 10)
 
 var _manifest: IsometricEnvironmentManifest
 
@@ -67,7 +69,7 @@ func test_required_footprints() -> void:
 		assert_true(_manifest.has_object(obstacle_id), "%s footprint object exists" % str(slots))
 		assert_eq(_manifest.get_footprint_slots(obstacle_id), slots, "%s declares its exact slot footprint" % String(obstacle_id))
 		assert_eq(_manifest.get_footprint_tiles(obstacle_id), Vector2i(slots.x * slot_size.x, slots.y * slot_size.y),
-			"%s slot footprint maps exactly to logical cells" % String(obstacle_id))
+			"%s slot footprint maps exactly to legacy asset cells" % String(obstacle_id))
 		var contract := _manifest.get_object_asset_contract(obstacle_id)
 		var asset_path := String(contract.get("asset_path", ""))
 		assert_false(asset_path.is_empty(), "%s has a visible asset" % String(obstacle_id))
@@ -95,8 +97,13 @@ func test_authored_layouts() -> void:
 			var obstacle_id := layout.obstacle_ids[index]
 			if _manifest.get_category(obstacle_id) == &"border":
 				continue
-			assert_true(layout.obstacle_sizes[index].is_equal_approx(Vector2(_manifest.get_footprint_tiles(obstacle_id)) * layout.logical_tile_scale),
-				"%s authored %s size matches its manifest footprint" % [String(biome_id), String(obstacle_id)])
+			assert_true(
+				layout.obstacle_sizes[index].is_equal_approx(
+					Vector2(_manifest.get_footprint_tiles(obstacle_id))
+					* IsoGridConfig.LEGACY_TILE_SCALE
+				),
+				"%s authored %s size matches its legacy asset footprint" % [String(biome_id), String(obstacle_id)]
+			)
 
 func test_void_identity() -> void:
 	var cliff := _manifest.get_object_asset_contract(&"fall_zone")
@@ -112,8 +119,10 @@ func test_runtime_object() -> void:
 	add_child(system)
 	await wait_physics_frames(1)
 	var obstacle_id := &"ruined_house"
-	var footprint := _manifest.get_footprint_tiles(obstacle_id)
-	var world_size := Vector2(footprint) * 8.0
+	var footprint := IsoGridConfig.legacy_size_to_new_tiles(
+		_manifest.get_footprint_tiles(obstacle_id)
+	)
+	var world_size := Vector2(footprint) * LOGICAL_TILE_SCALE
 	var obstacle := system.create_obstacle_instance(obstacle_id, world_size, &"rectangle", 0.0,
 		Color(0.38, 0.32, 0.22, 1.0), Color(0.78, 0.64, 0.28, 1.0))
 	assert_not_null(obstacle, "runtime house object is created")
@@ -168,7 +177,7 @@ func test_3x3_feature_obstacle() -> void:
 	for obstacle_id in FEATURE_IDS:
 		assert_true(_manifest.has_object(obstacle_id), "%s exists" % String(obstacle_id))
 		assert_eq(_manifest.get_footprint_slots(obstacle_id), EXPECTED_SLOTS, "%s occupies exactly 3x3 slots" % String(obstacle_id))
-		assert_eq(_manifest.get_footprint_tiles(obstacle_id), EXPECTED_CELLS, "%s maps 3x3 slots to 12x12 logical cells" % String(obstacle_id))
+		assert_eq(_manifest.get_footprint_tiles(obstacle_id), EXPECTED_LEGACY_CELLS, "%s maps 3x3 slots to 12x12 legacy asset cells" % String(obstacle_id))
 		assert_true(_manifest.blocks_movement(obstacle_id), "%s blocks movement" % String(obstacle_id))
 		assert_true(_manifest.blocks_projectiles(obstacle_id), "%s blocks projectiles" % String(obstacle_id))
 		var contract := _manifest.get_object_asset_contract(obstacle_id)
@@ -223,7 +232,7 @@ func test_3x3_feature_obstacle() -> void:
 		if index < 0:
 			continue
 		var rect := layout.obstacle_rects[index]
-		assert_eq(rect.size, EXPECTED_CELLS, "%s placement owns exactly 12x12 logical cells" % String(obstacle_id))
+		assert_eq(rect.size, EXPECTED_CELLS, "%s placement owns exactly 4x4 logical cells" % String(obstacle_id))
 		assert_true(layout.obstacle_sizes[index].is_equal_approx(Vector2(EXPECTED_CELLS) * LOGICAL_TILE_SCALE), "%s placement and collision share one size" % String(obstacle_id))
 		for sample in [rect.position, rect.position + rect.size / 2, rect.end - Vector2i.ONE]:
 			assert_eq(layout.get_terrain_class_at_cell(sample), BiomeEnvironmentLayout.TERRAIN_OBSTACLE, "%s occupied sample is classified as obstacle" % String(obstacle_id))

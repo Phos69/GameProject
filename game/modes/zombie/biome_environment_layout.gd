@@ -1,14 +1,16 @@
 extends Resource
 class_name BiomeEnvironmentLayout
 
-const DEFAULT_ZONE_SIZE := Vector2i(500, 500)
+const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
+
+const DEFAULT_ZONE_SIZE := IsoGridConfig.BIOME_SIZE
 const PERIMETER_VISUAL_WALL: StringName = &"procedural_wall"
 const PERIMETER_VISUAL_RAISED_CLIFF: StringName = &"raised_cliff"
-const RAISED_CLIFF_HEIGHT_CELLS := 7
+const RAISED_CLIFF_HEIGHT_CELLS := IsoGridConfig.RAISED_CLIFF_HEIGHT_TILES
 
 @export var zone_size: Vector2i = DEFAULT_ZONE_SIZE
 @export var generation_seed: int = 0
-@export var logical_tile_scale: float = 8.0
+@export var logical_tile_scale: float = IsoGridConfig.LOGICAL_TILE_SCALE
 
 @export var terrain_patch_tags: Array[StringName] = []
 @export var terrain_patch_positions: Array[Vector2] = []
@@ -29,13 +31,15 @@ const RAISED_CLIFF_HEIGHT_CELLS := 7
 @export var hazard_rotations: Array[float] = []
 @export var hazard_sides: Array[StringName] = []
 
-@export_range(80.0, 500.0, 10.0) var central_corridor_width: float = 220.0
+@export_range(80.0, 500.0, 10.0) var central_corridor_width: float = (
+	IsoGridConfig.DEFAULT_CENTRAL_CORRIDOR_WORLD_WIDTH
+)
 
 # Explicit perimeter wall contract: the chunk is ringed by tall, isometric
 # vertical walls. Walls are emitted as a contiguous run of tile-sized segments
 # (see ObstacleLayoutGenerator) instead of a single stretched obstacle per side,
 # so the whole perimeter reads as a continuous wall and not just a central tile.
-const PERIMETER_WALL_HEIGHT_CELLS := 5
+const PERIMETER_WALL_HEIGHT_CELLS := IsoGridConfig.PERIMETER_WALL_HEIGHT_TILES
 @export var wall_height_cells: int = PERIMETER_WALL_HEIGHT_CELLS
 @export var perimeter_visual_style: StringName = PERIMETER_VISUAL_WALL
 
@@ -184,8 +188,10 @@ func get_obstacle_record(
 		"type": obstacle_id,
 		"category": source_manifest.get_category(obstacle_id),
 		"footprint_slots": source_manifest.get_footprint_slots(obstacle_id),
+		"legacy_footprint_tiles": source_manifest.get_footprint_tiles(obstacle_id),
 		"footprint_tiles": occupied_cells.size,
 		"occupied_cells": occupied_cells,
+		"logical_tile_scale": logical_tile_scale,
 		"asset_path": String(asset_contract.get("asset_path", "")),
 		"asset_variant": obstacle_id,
 		"visual_height_tiles": source_manifest.get_visual_height_tiles(obstacle_id),
@@ -220,18 +226,23 @@ func validate_obstacle_records(
 		if rect.size.x <= 0 or rect.size.y <= 0:
 			failures.append("%s[%d]: occupied cell rect is empty" % [String(obstacle_id), index])
 			continue
+		var legacy_footprint := source_manifest.get_footprint_tiles(obstacle_id)
+		var expected_logical_footprint := IsoGridConfig.legacy_size_to_new_tiles(
+			legacy_footprint
+		)
 		if (
 			source_manifest.get_category(obstacle_id) != &"border"
 			and not source_manifest.is_scalable(obstacle_id)
-			and rect.size != source_manifest.get_footprint_tiles(obstacle_id)
+			and rect.size != expected_logical_footprint
 		):
 			failures.append(
-				"%s[%d]: logical rect %s differs from manifest footprint %s"
+				"%s[%d]: logical rect %s differs from converted footprint %s (legacy %s)"
 				% [
 					String(obstacle_id),
 					index,
 					str(rect.size),
-					str(source_manifest.get_footprint_tiles(obstacle_id))
+					str(expected_logical_footprint),
+					str(legacy_footprint)
 				]
 			)
 		if not obstacle_positions[index].is_equal_approx(rect_center_to_world(rect)):
@@ -296,7 +307,7 @@ func add_floor_rect(rect: Rect2i, terrain_tag: StringName = &"floor_base") -> vo
 
 func get_floor_tag_at_cell(cell: Vector2i) -> StringName:
 	# Fast path: a per-cell index cache (built with the terrain classification) turns
-	# this from an O(floor_rects) scan into an O(1) lookup. On a 500x500 chunk with
+		# this from an O(floor_rects) scan into an O(1) lookup. On a full iso region with
 	# hundreds of floor rects this is the difference between a multi-second tile-layer
 	# bake and an instant one, since the tile resolver calls it for every cell.
 	if _floor_tag_cache.size() == zone_size.x * zone_size.y:

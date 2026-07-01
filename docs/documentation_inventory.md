@@ -35,6 +35,7 @@ Documenti tecnici ancora utili:
 - `docs/zombie_market.md`
 - `docs/obstacle_rendering.md`
 - `docs/forest_isometric_texture_system.md`
+- `docs/iso_grid_scale_migration_report.md`
 - `docs/repo_fix_milestone_10_asset_fallback_policy.md`
 - `docs/weapon_visual_identity_validation_report.md`
 - `docs/latest_commit_validation_report.md`

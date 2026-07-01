@@ -1,6 +1,8 @@
 extends StaticBody2D
 class_name BiomeObstacle
 
+const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
+
 # Collision layer bits, aligned with the combat contract in ARCHITECTURE.md.
 # Bit 1 keeps obstacles physical blockers for player/zombie movement; bit 6
 # (value 32) is the dedicated environment layer that projectiles read to stop
@@ -18,6 +20,7 @@ var draw_mode: StringName = &"rock"
 var dedicated_draw: bool = true
 var obstacle_size: Vector2 = Vector2(48.0, 40.0)
 var footprint_tiles: Vector2i = Vector2i(6, 5)
+var legacy_footprint_tiles: Vector2i = Vector2i(6, 5)
 var footprint_slots: Vector2i = Vector2i(2, 2)
 var visual_height_tiles: int = 0
 var shape_id: StringName = &"rectangle"
@@ -51,7 +54,8 @@ func configure(
 	blocks_movement = manifest.blocks_movement(obstacle_id)
 	projectile_blocking = manifest.blocks_projectiles(obstacle_id)
 	jumpable = manifest.is_jumpable_gap_anchor(obstacle_id)
-	footprint_tiles = manifest.get_footprint_tiles(obstacle_id)
+	legacy_footprint_tiles = manifest.get_footprint_tiles(obstacle_id)
+	footprint_tiles = IsoGridConfig.legacy_size_to_new_tiles(legacy_footprint_tiles)
 	footprint_slots = manifest.get_footprint_slots(obstacle_id)
 	visual_height_tiles = manifest.get_visual_height_tiles(obstacle_id)
 	obstacle_size = Vector2(
@@ -81,6 +85,7 @@ func configure(
 	sort_anchor_y = clampf(sort_offset, 0.0, obstacle_size.y * 0.5 + 12.0)
 	set_meta("sort_anchor_y", sort_anchor_y)
 	set_meta("footprint_tiles", footprint_tiles)
+	set_meta("legacy_footprint_tiles", legacy_footprint_tiles)
 	set_meta("footprint_slots", footprint_slots)
 	set_meta("visual_height_tiles", visual_height_tiles)
 	set_meta("footprint_contract_aligned", is_footprint_contract_aligned())
@@ -128,7 +133,9 @@ func get_sort_anchor_y() -> float:
 func get_visual_base_size() -> Vector2:
 	return obstacle_size
 
-func is_footprint_contract_aligned(logical_tile_scale: float = 8.0) -> bool:
+func is_footprint_contract_aligned(
+	logical_tile_scale: float = IsoGridConfig.LOGICAL_TILE_SCALE
+) -> bool:
 	# Scalable obstacles (rocks) intentionally use a per-instance footprint, so the
 	# fixed manifest footprint check does not apply to them.
 	if is_perimeter_wall() or IsometricEnvironmentManifest.get_shared().is_scalable(obstacle_id):

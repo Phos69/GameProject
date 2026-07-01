@@ -1,6 +1,8 @@
 extends RefCounted
 class_name BiomePassage
 
+const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
+
 var from_cell_id: StringName = &""
 var to_cell_id: StringName = &""
 var from_biome_id: StringName = &""
@@ -8,7 +10,7 @@ var to_biome_id: StringName = &""
 var side: StringName = &"east"
 var opposite_side: StringName = &"west"
 var position: int = 100
-var width: int = 40
+var width: int = IsoGridConfig.PASSAGE_WIDTH_TILES
 var passage_type: StringName = &"road"
 var from_world_origin: Vector2i = Vector2i.ZERO
 var to_world_origin: Vector2i = Vector2i.ZERO
@@ -30,39 +32,44 @@ func configure(
 	side = source_side
 	opposite_side = BorderGenerator.get_opposite_side(source_side)
 	position = clampi(passage_position, 1, source_cell.height - 2)
-	width = clampi(passage_width, 4, min(source_cell.width, source_cell.height))
+	width = clampi(
+		passage_width,
+		IsoGridConfig.PASSAGE_MIN_WIDTH_TILES,
+		min(source_cell.width, source_cell.height)
+	)
 	passage_type = resolved_type
 	from_world_origin = source_cell.world_origin
 	to_world_origin = target_cell.world_origin
 	seed = passage_seed
 
 func get_local_rect(zone_size: Vector2i) -> Rect2i:
-	var half_width := maxi(width / 2, 2)
+	var half_width := maxi(width / 2, IsoGridConfig.PASSAGE_MIN_WIDTH_TILES)
+	var edge_depth := IsoGridConfig.PASSAGE_EDGE_DEPTH_TILES
 	match side:
 		&"north":
 			return Rect2i(
 				Vector2i(position - half_width, 0),
-				Vector2i(width, 3)
+				Vector2i(width, edge_depth)
 			)
 		&"south":
 			return Rect2i(
-				Vector2i(position - half_width, zone_size.y - 3),
-				Vector2i(width, 3)
+				Vector2i(position - half_width, zone_size.y - edge_depth),
+				Vector2i(width, edge_depth)
 			)
 		&"west":
 			return Rect2i(
 				Vector2i(0, position - half_width),
-				Vector2i(3, width)
+				Vector2i(edge_depth, width)
 			)
 		_:
 			return Rect2i(
-				Vector2i(zone_size.x - 3, position - half_width),
-				Vector2i(3, width)
+				Vector2i(zone_size.x - edge_depth, position - half_width),
+				Vector2i(edge_depth, width)
 			)
 
 func get_connector_rect(zone_size: Vector2i) -> Rect2i:
 	var center := zone_size / 2
-	var half_width := maxi(width / 2, 2)
+	var half_width := maxi(width / 2, IsoGridConfig.PASSAGE_MIN_WIDTH_TILES)
 	match side:
 		&"north":
 			return Rect2i(
@@ -175,7 +182,7 @@ static func from_dict(data: Dictionary) -> BiomePassage:
 	passage.side = StringName(data.get("side", &"east"))
 	passage.opposite_side = StringName(data.get("opposite_side", &"west"))
 	passage.position = int(data.get("position", 100))
-	passage.width = int(data.get("width", 40))
+	passage.width = int(data.get("width", IsoGridConfig.PASSAGE_WIDTH_TILES))
 	passage.passage_type = StringName(data.get("passage_type", &"road"))
 	passage.from_world_origin = data.get("from_world_origin", Vector2i.ZERO)
 	passage.to_world_origin = data.get("to_world_origin", Vector2i.ZERO)

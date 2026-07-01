@@ -14,6 +14,7 @@ extends GutTest
 const PERFORMANCE_ENEMY_IDS: Array[StringName] = [
 	&"survival_zombie", &"survival_runner", &"survival_tank", &"survival_shooter"
 ]
+const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
 
 var _scene
 var _default_spawn_interval: float = 0.0
@@ -179,7 +180,7 @@ func test_isometric_streaming_performance() -> void:
 		var region := biome_manager.get_world_graph().get_region(region_id)
 		var expected_tiles := (region.size_tiles.x * region.size_tiles.y if region != null
 			else BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE.x * BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE.y)
-		assert_eq(int(counts.get("tiles", 0)), expected_tiles, "%s has the full 500x500 tile layer" % String(region_id))
+		assert_eq(int(counts.get("tiles", 0)), expected_tiles, "%s has the full iso tile layer" % String(region_id))
 
 	var tile_layers = _scene.nodes(&"biome_tile_layers")
 	assert_gte(tile_layers.size(), streamed_ids.size(), "streamed regions expose chunked tile layers")
@@ -504,7 +505,7 @@ func test_biome_world_generation() -> void:
 	var base_layout := (start_cell.generated_layout if start_cell != null else null)
 	assert_not_null(base_layout, "starting biome has a generated layout")
 	if base_layout != null:
-		assert_eq(base_layout.zone_size, BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE, "starting biome is generated as 500x500 logical cells")
+		assert_eq(base_layout.zone_size, BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE, "starting biome uses the shared iso grid size")
 		assert_true(not base_layout.rock_rects.is_empty() and not base_layout.forest_rects.is_empty(), "base biome (void-first) contains rocks and forests")
 		assert_true((not base_layout.road_rects.is_empty() or not base_layout.get_road_cells().is_empty()) and not base_layout.crate_cells.is_empty(),
 			"base biome has roads, corridors and resource crates")
@@ -930,7 +931,7 @@ func _assert_neighbor_crate_persistence(streamer, graph: WorldGraph, biome_manag
 	assert_null(_find_crate_by_region_key(crate_system, neighbor_id, crate_key), "re-streaming skips the opened neighbor crate")
 
 func _validate_cell(cell: BiomeCell) -> void:
-	assert_eq(Vector2i(cell.width, cell.height), BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE, "%s is 500x500" % cell.id)
+	assert_eq(Vector2i(cell.width, cell.height), BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE, "%s uses the shared iso grid size" % cell.id)
 	assert_ne(cell.seed, 0, "%s has a local deterministic seed" % cell.id)
 	assert_not_null(cell.generated_layout, "%s has generated terrain" % cell.id)
 	if cell.generated_layout != null:
@@ -946,7 +947,7 @@ func _validate_cell(cell: BiomeCell) -> void:
 				"%s %s border is fall or blocked by graph topology" % [cell.id, side])
 	if cell.generated_layout != null:
 		var classification := cell.generated_layout.get_classification_report()
-		assert_true(bool(classification.get("is_complete", false)), "%s has complete 500x500 terrain classification" % cell.id)
+		assert_true(bool(classification.get("is_complete", false)), "%s has complete terrain classification" % cell.id)
 
 func _has_blocked_boundary(obstacle_system: ObstacleSystem) -> bool:
 	for obstacle in obstacle_system.get_active_obstacles():
@@ -1088,7 +1089,11 @@ func _first_connection_for_cell(graph: WorldGraph, cell: BiomeCell) -> WorldRegi
 
 func _blocked_border_position(graph: WorldGraph, cell: BiomeCell) -> Vector2:
 	var region := graph.get_region(cell.id)
-	var scale := (cell.generated_layout.logical_tile_scale if cell.generated_layout != null else 8.0)
+	var scale := (
+		cell.generated_layout.logical_tile_scale
+		if cell.generated_layout != null
+		else IsoGridConfig.LOGICAL_TILE_SCALE
+	)
 	for side in BiomeCell.SIDES:
 		if region != null and not graph.get_connected_region_ids(cell.id).has(region.get_neighbor_region_id(side)):
 			return _position_outside_side(side, cell, scale)

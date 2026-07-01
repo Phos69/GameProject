@@ -1,8 +1,10 @@
 extends RefCounted
 class_name FallBoundaryGenerator
 
+const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
+
 const SIDES: Array[StringName] = [&"north", &"south", &"east", &"west"]
-const FALL_THICKNESS := 6
+const FALL_THICKNESS := IsoGridConfig.FALL_BOUNDARY_THICKNESS_TILES
 
 func apply_fall_boundaries(
 	cell: BiomeCell,

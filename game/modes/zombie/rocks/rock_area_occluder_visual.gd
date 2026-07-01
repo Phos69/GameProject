@@ -1,14 +1,15 @@
 extends Node2D
 class_name RockAreaOccluderVisual
 
+const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
+
 const SVG_TEXTURE_LOADER = preload(
 	"res://game/modes/zombie/isometric_svg_texture_loader.gd"
 )
 
-const LOGICAL_TILE_SCALE := 8.0
 # Kept in sync with RectilinearRockAreaMeshBuilder: the crown is lifted this many
 # cells and the lateral walls lean in by this ratio of the lift.
-const RAISE_HEIGHT_CELLS := 7.0
+const RAISE_HEIGHT_CELLS: float = IsoGridConfig.RAISED_CLIFF_HEIGHT_TILES
 const LATERAL_LEAN_RATIO := 0.42
 const TEXTURE_REPEAT_WORLD_SIZE := 256.0
 
@@ -62,7 +63,7 @@ func _rebuild_mesh() -> void:
 	# paints. The ascending walls live in the layer behind the entities, so they are
 	# intentionally excluded here to avoid pasting the crown texture over them.
 	var collision_top := -footprint_size.y * 0.5
-	var raise := RAISE_HEIGHT_CELLS * LOGICAL_TILE_SCALE
+	var raise := RAISE_HEIGHT_CELLS * IsoGridConfig.LOGICAL_TILE_SCALE
 	var lean := minf(raise * LATERAL_LEAN_RATIO, footprint_size.x * 0.3)
 	var top := collision_top - raise
 	var bottom := collision_top - raise + footprint_size.y

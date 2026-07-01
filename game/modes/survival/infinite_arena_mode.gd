@@ -2,7 +2,7 @@ extends BaseGameMode
 class_name InfiniteArenaMode
 
 @export var survival_mode_path: NodePath = NodePath("../SurvivalMode")
-@export var arena_size: Vector2i = Vector2i(500, 500)
+@export var arena_size: Vector2i = BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE
 
 var survival_mode: SurvivalMode
 
@@ -63,7 +63,7 @@ func _build_arena_context(context: Dictionary) -> Dictionary:
 	resolved["arena_boundary_mode"] = "walled"
 	resolved["disable_world_runtime"] = true
 	resolved["disable_region_streaming"] = true
-	# Build the 500x500 arena chunk on a worker thread behind a loading screen so the
+	# Build the arena chunk on a worker thread behind a loading screen so the
 	# window never freezes while it generates and bakes. Tests can still opt out
 	# explicitly when they need a deterministic synchronous setup.
 	if (

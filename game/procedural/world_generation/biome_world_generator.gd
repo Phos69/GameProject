@@ -23,7 +23,7 @@ func generate_world(
 	_ensure_components()
 	clear_world()
 	# Cache hit: riusa lo snapshot (clone gia indipendente) senza rigenerare ne'
-	# ri-bakeare i layout 500x500 (la parte costosa).
+	# ri-bakeare i layout iso completi (la parte costosa).
 	var cached := WorldDataCache.fetch(context)
 	if not cached.is_empty():
 		_adopt_cached_world(context, cached)

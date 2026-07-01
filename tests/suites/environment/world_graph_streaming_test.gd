@@ -54,7 +54,7 @@ func test_graph_structure() -> void:
 	if _graph == null:
 		return
 	assert_eq(_graph.regions.size(), 9, "il grafo contiene 9 regioni persistenti")
-	assert_eq(_graph.region_size, BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE, "le regioni sono 500x500")
+	assert_eq(_graph.region_size, BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE, "le regioni usano la griglia iso condivisa")
 	assert_eq(_graph.start_region_id, &"biome_0_0", "la regione di partenza e stabile all'origine")
 	assert_true(_graph.is_graph_connected(), "il grafo e completamente connesso")
 	assert_true(_graph.get_unreachable_region_ids().is_empty(), "nessuna regione isolata")

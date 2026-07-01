@@ -6,6 +6,7 @@ extends GutTest
 ## Build 3x3 condivisa in before_all (seed 641004).
 
 const WorldGen = preload("res://tests/support/world_gen_helpers.gd")
+const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
 
 const WORLD_CONTEXT := {
 	"world_seed": 641004, "biome_map_width": 3, "biome_map_height": 3,
@@ -132,12 +133,13 @@ func _assert_passage_rects(cell: BiomeCell, layout: BiomeEnvironmentLayout, pass
 	var local_rect := passage.get_local_rect(zone_size)
 	var connector_rect := passage.get_connector_rect(zone_size)
 	var expected_span := passage.width
+	var expected_edge_depth := IsoGridConfig.PASSAGE_EDGE_DEPTH_TILES
 	if passage.side == &"north" or passage.side == &"south":
 		assert_eq(local_rect.size.x, expected_span, "%s %s larghezza apertura == span passaggio" % [String(cell.id), String(passage.side)])
-		assert_eq(local_rect.size.y, 3, "%s %s apertura mantiene la profondita di bordo" % [String(cell.id), String(passage.side)])
+		assert_eq(local_rect.size.y, expected_edge_depth, "%s %s apertura mantiene la profondita di bordo" % [String(cell.id), String(passage.side)])
 	else:
 		assert_eq(local_rect.size.y, expected_span, "%s %s altezza apertura == span passaggio" % [String(cell.id), String(passage.side)])
-		assert_eq(local_rect.size.x, 3, "%s %s apertura mantiene la profondita di bordo" % [String(cell.id), String(passage.side)])
+		assert_eq(local_rect.size.x, expected_edge_depth, "%s %s apertura mantiene la profondita di bordo" % [String(cell.id), String(passage.side)])
 	assert_true(_rect_inside_any(local_rect, layout.passage_rects), "%s %s passage rect registrato" % [String(cell.id), String(passage.side)])
 	assert_eq(passage.get_global_local_rect(zone_size), Rect2i(cell.world_origin + local_rect.position, local_rect.size),
 		"%s %s apertura locale ha coordinate globali" % [String(cell.id), String(passage.side)])

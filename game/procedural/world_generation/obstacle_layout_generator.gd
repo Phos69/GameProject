@@ -1,59 +1,61 @@
 extends RefCounted
 class_name ObstacleLayoutGenerator
 
-const ROAD_WIDTH := 40
-const SECONDARY_ROAD_WIDTH := 20
-const BORDER_THICKNESS := 4
+const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
+
+const ROAD_WIDTH := IsoGridConfig.ROAD_WIDTH_TILES
+const SECONDARY_ROAD_WIDTH := IsoGridConfig.SECONDARY_ROAD_WIDTH_TILES
+const BORDER_THICKNESS := IsoGridConfig.BORDER_THICKNESS_TILES
 # Perimeter walls are tiled as a contiguous run of segments so the whole side
 # reads as a continuous isometric wall instead of a single centred sprite.
-const WALL_SEGMENT_LENGTH := 12
-const WALL_MIN_SEGMENT := 5
+const WALL_SEGMENT_LENGTH := IsoGridConfig.WALL_SEGMENT_LENGTH_TILES
+const WALL_MIN_SEGMENT := IsoGridConfig.WALL_MIN_SEGMENT_TILES
 # Small thematic props scattered inside internal blocks for ambient detail.
 const MAX_BLOCK_PROPS := 64
-const PROP_BLOCK_MARGIN := 4
-const MIN_RECT_GAP := 2
+const PROP_BLOCK_MARGIN := IsoGridConfig.PROP_BLOCK_MARGIN_TILES
+const MIN_RECT_GAP := IsoGridConfig.MIN_RECT_GAP_TILES
 const BLOCK_INSET := 0
-const MIN_BLOCK_SIZE := 32
-const STARTER_RIVER_WIDTH := 22
-const STARTER_BRIDGE_EXTRA_WIDTH := 14
+const MIN_BLOCK_SIZE := IsoGridConfig.MIN_BLOCK_SIZE_TILES
+const STARTER_RIVER_WIDTH := IsoGridConfig.STARTER_RIVER_WIDTH_TILES
+const STARTER_BRIDGE_EXTRA_WIDTH := IsoGridConfig.STARTER_BRIDGE_EXTRA_WIDTH_TILES
 
 # --- Void-first generation (rocks -> forests -> roads -> tree borders -> void
 # lottery). The chunk starts as pure void and each pass carves into it. ---
-const VOIDFIRST_ROCK_MIN_SIZE := 15
-const VOIDFIRST_ROCK_MAX_SIZE := 30
+const VOIDFIRST_ROCK_MIN_SIZE := IsoGridConfig.VOIDFIRST_ROCK_MIN_SIZE_TILES
+const VOIDFIRST_ROCK_MAX_SIZE := IsoGridConfig.VOIDFIRST_ROCK_MAX_SIZE_TILES
 const VOIDFIRST_ROCK_MIN_COUNT := 10
 const VOIDFIRST_ROCK_MAX_COUNT := 16
-const VOIDFIRST_ROCK_GAP := 3
-const VOIDFIRST_ROCK_MARGIN := 6
+const VOIDFIRST_ROCK_GAP := IsoGridConfig.VOIDFIRST_ROCK_GAP_TILES
+const VOIDFIRST_ROCK_MARGIN := IsoGridConfig.VOIDFIRST_ROCK_MARGIN_TILES
 const VOIDFIRST_ROCK_ATTEMPTS := 600
-const VOIDFIRST_FOREST_MIN_SIZE := 9
-const VOIDFIRST_FOREST_MAX_SIZE := 60
+const VOIDFIRST_FOREST_MIN_SIZE := IsoGridConfig.VOIDFIRST_FOREST_MIN_SIZE_TILES
+const VOIDFIRST_FOREST_MAX_SIZE := IsoGridConfig.VOIDFIRST_FOREST_MAX_SIZE_TILES
 const VOIDFIRST_FOREST_MIN_COUNT := 4
 const VOIDFIRST_FOREST_MAX_COUNT := 7
 const VOIDFIRST_FOREST_ATTEMPTS := 120
-const VOIDFIRST_FOREST_EDGE_MARGIN := 4
+const VOIDFIRST_FOREST_EDGE_MARGIN := IsoGridConfig.VOIDFIRST_FOREST_EDGE_MARGIN_TILES
 # Trees fill a forest on a jittered grid; spacing > footprint keeps walkable gaps
 # between trunks so roads/paths can cross and zombies can navigate the interior.
-const VOIDFIRST_TREE_SPACING := 17
-const VOIDFIRST_TREE_JITTER := 4
+const VOIDFIRST_TREE_SPACING := IsoGridConfig.VOIDFIRST_TREE_SPACING_TILES
+const VOIDFIRST_TREE_JITTER := IsoGridConfig.VOIDFIRST_TREE_JITTER_TILES
 const VOIDFIRST_MAX_TREES := 240
 # Roads route on a coarse grid (cell = step logical cells) that treats rocks as
 # solid, so the carved corridor goes around rocks and through forests.
-const VOIDFIRST_ROUTE_STEP := 5
-const VOIDFIRST_ROAD_ROCK_CLEARANCE := ROAD_WIDTH / 2 + VOIDFIRST_ROUTE_STEP + 2
+const VOIDFIRST_ROUTE_STEP := IsoGridConfig.VOIDFIRST_ROUTE_STEP_TILES
+const VOIDFIRST_ROAD_ROCK_CLEARANCE := IsoGridConfig.VOIDFIRST_ROAD_ROCK_CLEARANCE_TILES
 # Trails (sentieri) are narrow routes that cross forests but stop at the first rock.
-const VOIDFIRST_PATH_WIDTH := 7
-const VOIDFIRST_PATH_MAX_LEN := 240
+const VOIDFIRST_PATH_WIDTH := IsoGridConfig.VOIDFIRST_PATH_WIDTH_TILES
+const VOIDFIRST_PATH_MAX_LEN := IsoGridConfig.VOIDFIRST_PATH_MAX_LEN_TILES
 const VOIDFIRST_PATH_COUNT := 3
 # Roads crossing open void get a tree lining where they are not already bounded by
 # a rock or forest ("confine").
-const VOIDFIRST_ROAD_LINE_SPACING := 12
-const VOIDFIRST_ROAD_LINE_NEAR := 3
-const VOIDFIRST_ROAD_LINE_CONFINE := 6
+const VOIDFIRST_ROAD_LINE_SPACING := IsoGridConfig.VOIDFIRST_ROAD_LINE_SPACING_TILES
+const VOIDFIRST_ROAD_LINE_NEAR := IsoGridConfig.VOIDFIRST_ROAD_LINE_NEAR_TILES
+const VOIDFIRST_ROAD_LINE_CONFINE := IsoGridConfig.VOIDFIRST_ROAD_LINE_CONFINE_TILES
 const VOIDFIRST_MAX_LINE_TREES := 220
 # Void lottery: the leftover void is split into floor / chasm patches at a fixed
 # ratio of 1 chasm : 3 walkable.
-const VOIDFIRST_VOID_PATCH := 16
+const VOIDFIRST_VOID_PATCH := IsoGridConfig.VOIDFIRST_VOID_PATCH_TILES
 const VOIDFIRST_VOID_CHASM_DIVISOR := 4
 
 const GENERATED_OBSTACLE_CATEGORIES: Dictionary = {
@@ -169,7 +171,10 @@ func _add_voidfirst_crates(
 	var crate_ids := _crate_ids(biome.biome_id)
 	var anchor := layout.player_spawn_cell
 	var offsets: Array[Vector2i] = [
-		Vector2i(-28, 0), Vector2i(28, 0), Vector2i(0, -28), Vector2i(0, 28)
+		Vector2i(-IsoGridConfig.VOIDFIRST_CRATE_OFFSET_TILES, 0),
+		Vector2i(IsoGridConfig.VOIDFIRST_CRATE_OFFSET_TILES, 0),
+		Vector2i(0, -IsoGridConfig.VOIDFIRST_CRATE_OFFSET_TILES),
+		Vector2i(0, IsoGridConfig.VOIDFIRST_CRATE_OFFSET_TILES)
 	]
 	for index in range(offsets.size()):
 		_add_crate(layout, crate_ids[index % crate_ids.size()], anchor + offsets[index])
@@ -178,7 +183,7 @@ func _voidfirst_center_reserved(layout: BiomeEnvironmentLayout) -> Rect2i:
 	# Keep the chunk centre clear of rocks so the main-road cross, player spawn and
 	# crates always sit on walkable road.
 	var center := layout.zone_size / 2
-	var half := 38
+	var half := IsoGridConfig.CENTER_RESERVED_HALF_TILES
 	return Rect2i(center - Vector2i(half, half), Vector2i(half * 2, half * 2))
 
 # Pick a guaranteed-walkable spawn: the centre if it is road, else the nearest
@@ -211,7 +216,7 @@ func _carve_passages(layout: BiomeEnvironmentLayout, cell: BiomeCell) -> void:
 		_add_road_rect(layout, passage_rect, passage.passage_type)
 		_add_road_rect(layout, connector_rect, passage.passage_type)
 
-# M1 — place at least VOIDFIRST_ROCK_MIN_COUNT square rocks (side 15..30) on the
+# M1 — place at least VOIDFIRST_ROCK_MIN_COUNT square rocks (side 5..10) on the
 # void canvas, non-overlapping and clear of passage corridors. Deterministic from
 # the cell seed. Rocks are scalable obstacles so their art/collision match the
 # chosen side.
@@ -282,7 +287,6 @@ func _scatter_biome_masses(
 ) -> int:
 	if scatter_ids.is_empty():
 		return 0
-	var manifest := IsometricEnvironmentManifest.get_shared()
 	var target := rng.randi_range(VOIDFIRST_ROCK_MIN_COUNT, VOIDFIRST_ROCK_MAX_COUNT)
 	var placed := 0
 	var attempts := 0
@@ -290,7 +294,7 @@ func _scatter_biome_masses(
 	while placed < target and attempts < VOIDFIRST_ROCK_ATTEMPTS:
 		attempts += 1
 		var obstacle_id := scatter_ids[placed % scatter_ids.size()] as StringName
-		var footprint := manifest.get_footprint_tiles(obstacle_id)
+		var footprint := _logical_footprint_tiles(obstacle_id)
 		if footprint.x <= 0 or footprint.y <= 0:
 			continue
 		var hi_x := layout.zone_size.x - lo - footprint.x
@@ -351,9 +355,7 @@ func _fill_forests_with_trees(
 	rng: RandomNumberGenerator,
 	cluster_id: StringName
 ) -> int:
-	var footprint := IsometricEnvironmentManifest.get_shared().get_footprint_tiles(
-		cluster_id
-	)
+	var footprint := _logical_footprint_tiles(cluster_id)
 	var tree_count := 0
 	for forest_rect in layout.forest_rects:
 		if tree_count >= VOIDFIRST_MAX_TREES:
@@ -659,9 +661,7 @@ func _line_roads_with_trees(layout: BiomeEnvironmentLayout, palette: Dictionary)
 	if not bool(palette["line_vegetation"]):
 		return 0
 	var cluster_id := palette["cluster_id"] as StringName
-	var footprint := IsometricEnvironmentManifest.get_shared().get_footprint_tiles(
-		cluster_id
-	)
+	var footprint := _logical_footprint_tiles(cluster_id)
 	var added := 0
 	var lo := BORDER_THICKNESS
 	var max_x := layout.zone_size.x - lo - footprint.x
@@ -917,14 +917,32 @@ func _add_starter_water_crossing(
 		return
 	var river_y := _select_starter_river_y(layout, rng)
 	var river_band := Rect2i(
-		Vector2i(0, river_y - STARTER_RIVER_WIDTH / 2 - 6),
-		Vector2i(layout.zone_size.x, STARTER_RIVER_WIDTH + 12)
+		Vector2i(
+			0,
+			river_y - STARTER_RIVER_WIDTH / 2 - IsoGridConfig.STARTER_RIVER_PADDING_TILES
+		),
+		Vector2i(
+			layout.zone_size.x,
+			STARTER_RIVER_WIDTH + IsoGridConfig.STARTER_RIVER_PADDING_TILES * 2
+		)
 	)
 	var segment_width := int(ceil(float(layout.zone_size.x) / 3.0))
-	var offsets: Array[int] = [0, -5, 4]
+	var offsets: Array[int] = [
+		0,
+		-IsoGridConfig.legacy_cells_to_new_tiles(5),
+		IsoGridConfig.legacy_cells_to_new_tiles(4)
+	]
 	for index in range(3):
-		var start_x := clampi(index * segment_width - 4, 0, layout.zone_size.x)
-		var end_x := clampi((index + 1) * segment_width + 4, 0, layout.zone_size.x)
+		var start_x := clampi(
+			index * segment_width - IsoGridConfig.STARTER_BRIDGE_PADDING_TILES,
+			0,
+			layout.zone_size.x
+		)
+		var end_x := clampi(
+			(index + 1) * segment_width + IsoGridConfig.STARTER_BRIDGE_PADDING_TILES,
+			0,
+			layout.zone_size.x
+		)
 		if end_x <= start_x:
 			continue
 		var offset_y := offsets[index % offsets.size()]
@@ -949,8 +967,14 @@ func _select_starter_river_y(
 	for offset in range(candidates.size()):
 		var river_y := candidates[(start_index + offset) % candidates.size()]
 		var river_band := Rect2i(
-			Vector2i(0, river_y - STARTER_RIVER_WIDTH / 2 - 6),
-			Vector2i(layout.zone_size.x, STARTER_RIVER_WIDTH + 12)
+			Vector2i(
+				0,
+				river_y - STARTER_RIVER_WIDTH / 2 - IsoGridConfig.STARTER_RIVER_PADDING_TILES
+			),
+			Vector2i(
+				layout.zone_size.x,
+				STARTER_RIVER_WIDTH + IsoGridConfig.STARTER_RIVER_PADDING_TILES * 2
+			)
 		)
 		if _starter_river_band_is_clear(layout, river_band):
 			return river_y
@@ -981,11 +1005,11 @@ func _add_bridge_rects_over_water(
 		var bridge_rect := Rect2i(
 			Vector2i(
 				road_rect.position.x - STARTER_BRIDGE_EXTRA_WIDTH / 2,
-				river_band.position.y - 3
+				river_band.position.y - IsoGridConfig.STARTER_BRIDGE_PADDING_TILES
 			),
 			Vector2i(
 				road_rect.size.x + STARTER_BRIDGE_EXTRA_WIDTH,
-				river_band.size.y + 6
+				river_band.size.y + IsoGridConfig.STARTER_BRIDGE_PADDING_TILES * 2
 			)
 		)
 		_add_road_rect(layout, bridge_rect, &"bridge")
@@ -996,8 +1020,14 @@ func _add_bridge_rects_over_water(
 	_add_road_rect(
 		layout,
 		Rect2i(
-			Vector2i(center_x - (ROAD_WIDTH + STARTER_BRIDGE_EXTRA_WIDTH) / 2, river_band.position.y - 3),
-			Vector2i(ROAD_WIDTH + STARTER_BRIDGE_EXTRA_WIDTH, river_band.size.y + 6)
+			Vector2i(
+				center_x - (ROAD_WIDTH + STARTER_BRIDGE_EXTRA_WIDTH) / 2,
+				river_band.position.y - IsoGridConfig.STARTER_BRIDGE_PADDING_TILES
+			),
+			Vector2i(
+				ROAD_WIDTH + STARTER_BRIDGE_EXTRA_WIDTH,
+				river_band.size.y + IsoGridConfig.STARTER_BRIDGE_PADDING_TILES * 2
+			)
 		),
 		&"bridge"
 	)
@@ -1008,10 +1038,25 @@ func _add_cover_cluster(
 	anchor: Vector2i,
 	horizontal: bool
 ) -> void:
-	var first := Rect2i(anchor, Vector2i(13, 6) if horizontal else Vector2i(6, 13))
+	var first_size := (
+		IsoGridConfig.legacy_size_to_new_tiles(Vector2i(13, 6))
+		if horizontal
+		else IsoGridConfig.legacy_size_to_new_tiles(Vector2i(6, 13))
+	)
+	var second_size := (
+		IsoGridConfig.legacy_size_to_new_tiles(Vector2i(10, 5))
+		if horizontal
+		else IsoGridConfig.legacy_size_to_new_tiles(Vector2i(5, 10))
+	)
+	var second_offset := (
+		IsoGridConfig.legacy_size_to_new_tiles(Vector2i(18, 8))
+		if horizontal
+		else IsoGridConfig.legacy_size_to_new_tiles(Vector2i(8, 18))
+	)
+	var first := Rect2i(anchor, first_size)
 	var second := Rect2i(
-		anchor + (Vector2i(18, 8) if horizontal else Vector2i(8, 18)),
-		Vector2i(10, 5) if horizontal else Vector2i(5, 10)
+		anchor + second_offset,
+		second_size
 	)
 	_add_obstacle_if_clear(layout, obstacle_id, first, &"rectangle", 0.0)
 	_add_obstacle_if_clear(layout, obstacle_id, second, &"rectangle", 0.0)
@@ -1073,14 +1118,17 @@ func _add_choke_pair(
 	_add_obstacle_if_clear(
 		layout,
 		obstacle_id,
-		Rect2i(anchor, Vector2i(8, 18)),
+		Rect2i(anchor, _legacy_rect_size(8, 18)),
 		&"rectangle",
 		rotation_radians
 	)
 	_add_obstacle_if_clear(
 		layout,
 		obstacle_id,
-		Rect2i(anchor + Vector2i(28, -6), Vector2i(8, 18)),
+		Rect2i(
+			anchor + Vector2i(_legacy_cells(28), -_legacy_cells(6)),
+			_legacy_rect_size(8, 18)
+		),
 		&"rectangle",
 		-rotation_radians
 	)
@@ -1429,6 +1477,8 @@ func _add_diagonal_road(
 				var cell_delta := cell - center
 				if Vector2(float(cell_delta.x), float(cell_delta.y)).length() > float(radius) + 0.35:
 					continue
+				if _cell_inside_any_rect(cell, layout.rock_rects):
+					continue
 				layout.add_road_cell(cell, tag)
 				touched[_route_cell_key(layout, cell)] = true
 	if touched.is_empty():
@@ -1471,9 +1521,19 @@ func _add_large_obstacles(
 		if block_kind == &"dense_vegetation":
 			_add_dense_vegetation_cluster(layout, block_rect, rng)
 			continue
+		var min_size := _legacy_rect_size(12, 10)
+		var max_candidate := _legacy_rect_size(34, 28)
 		var size := Vector2i(
-			clampi(rng.randi_range(18, 34), 12, maxi(block_rect.size.x - 10, 12)),
-			clampi(rng.randi_range(14, 28), 10, maxi(block_rect.size.y - 10, 10))
+			clampi(
+				rng.randi_range(_legacy_cells(18), max_candidate.x),
+				min_size.x,
+				maxi(block_rect.size.x - _legacy_cells(10), min_size.x)
+			),
+			clampi(
+				rng.randi_range(_legacy_cells(14), max_candidate.y),
+				min_size.y,
+				maxi(block_rect.size.y - _legacy_cells(10), min_size.y)
+			)
 		)
 		var obstacle_rect := _centered_rect(block_rect, size)
 		_add_obstacle_if_clear(
@@ -1492,13 +1552,13 @@ func _add_dense_vegetation_cluster(
 	var cluster_size := Vector2i(
 		clampi(
 			int(float(block_rect.size.x) * rng.randf_range(0.46, 0.64)),
-			18,
-			maxi(block_rect.size.x - 8, 18)
+			_legacy_cells(18),
+			maxi(block_rect.size.x - _legacy_cells(8), _legacy_cells(18))
 		),
 		clampi(
 			int(float(block_rect.size.y) * rng.randf_range(0.46, 0.64)),
-			16,
-			maxi(block_rect.size.y - 8, 16)
+			_legacy_cells(16),
+			maxi(block_rect.size.y - _legacy_cells(8), _legacy_cells(16))
 		)
 	)
 	var centered := _centered_rect(block_rect, cluster_size)
@@ -1529,8 +1589,14 @@ func _add_starter_roadside_details(
 		return
 	var center := layout.zone_size / 2
 	var car_rects: Array[Rect2i] = [
-		Rect2i(center + Vector2i(-105, ROAD_WIDTH / 2 + 12), Vector2i(16, 8)),
-		Rect2i(center + Vector2i(82, -ROAD_WIDTH / 2 - 26), Vector2i(17, 8))
+		Rect2i(
+			center + Vector2i(-_legacy_cells(105), ROAD_WIDTH / 2 + _legacy_cells(12)),
+			_legacy_rect_size(16, 8)
+		),
+		Rect2i(
+			center + Vector2i(_legacy_cells(82), -ROAD_WIDTH / 2 - _legacy_cells(26)),
+			_legacy_rect_size(17, 8)
+		)
 	]
 	for index in range(car_rects.size()):
 		_add_obstacle_if_clear(
@@ -1545,8 +1611,17 @@ func _add_starter_roadside_details(
 			continue
 		var block_rect := layout.block_rects[index]
 		var fence_rect := Rect2i(
-			block_rect.position + Vector2i(8, maxi(block_rect.size.y - 10, 8)),
-			Vector2i(maxi(mini(block_rect.size.x - 16, 22), 10), 4)
+			block_rect.position + Vector2i(
+				_legacy_cells(8),
+				maxi(block_rect.size.y - _legacy_cells(10), _legacy_cells(8))
+			),
+			Vector2i(
+				maxi(
+					mini(block_rect.size.x - _legacy_cells(16), _legacy_cells(22)),
+					_legacy_cells(10)
+				),
+				_legacy_cells(4)
+			)
 		)
 		_add_obstacle_if_clear(
 			layout,
@@ -1578,8 +1653,16 @@ func _ensure_starter_dense_obstacle(
 				continue
 			var block_rect := layout.block_rects[index]
 			var cluster_size := Vector2i(
-				clampi(int(float(block_rect.size.x) * 0.38), 16, maxi(block_rect.size.x - 10, 16)),
-				clampi(int(float(block_rect.size.y) * 0.34), 14, maxi(block_rect.size.y - 10, 14))
+				clampi(
+					int(float(block_rect.size.x) * 0.38),
+					_legacy_cells(16),
+					maxi(block_rect.size.x - _legacy_cells(10), _legacy_cells(16))
+				),
+				clampi(
+					int(float(block_rect.size.y) * 0.34),
+					_legacy_cells(14),
+					maxi(block_rect.size.y - _legacy_cells(10), _legacy_cells(14))
+				)
 			)
 			var centered := _centered_rect(block_rect, cluster_size)
 			var offsets: Array[Vector2i] = [
@@ -1647,10 +1730,8 @@ func _place_feature_obstacle_in_block(
 	obstacle_id: StringName,
 	block_rect: Rect2i
 ) -> bool:
-	var footprint := IsometricEnvironmentManifest.get_shared().get_footprint_tiles(
-		obstacle_id
-	)
-	var margin := 6
+	var footprint := _logical_footprint_tiles(obstacle_id)
+	var margin := _legacy_cells(6)
 	if block_rect.size.x < footprint.x + margin * 2 or block_rect.size.y < footprint.y + margin * 2:
 		return false
 	var max_position := block_rect.position + block_rect.size - footprint - Vector2i.ONE * margin
@@ -1674,9 +1755,7 @@ func _place_feature_obstacle_at_fallback(
 	layout: BiomeEnvironmentLayout,
 	obstacle_id: StringName
 ) -> bool:
-	var footprint := IsometricEnvironmentManifest.get_shared().get_footprint_tiles(
-		obstacle_id
-	)
+	var footprint := _logical_footprint_tiles(obstacle_id)
 	var ratios: Array[Vector2] = [
 		Vector2(0.16, 0.16),
 		Vector2(0.84, 0.16),
@@ -1730,8 +1809,16 @@ func _ensure_starter_house_obstacle(
 				continue
 			var block_rect := layout.block_rects[index]
 			var house_size := Vector2i(
-				clampi(28, 18, maxi(block_rect.size.x - 12, 18)),
-				clampi(24, 16, maxi(block_rect.size.y - 12, 16))
+				clampi(
+					_legacy_cells(28),
+					_legacy_cells(18),
+					maxi(block_rect.size.x - _legacy_cells(12), _legacy_cells(18))
+				),
+				clampi(
+					_legacy_cells(24),
+					_legacy_cells(16),
+					maxi(block_rect.size.y - _legacy_cells(12), _legacy_cells(16))
+				)
 			)
 			var centered := _centered_rect(block_rect, house_size)
 			var offsets: Array[Vector2i] = [
@@ -1776,13 +1863,19 @@ func _add_secondary_obstacles(
 		var block_rect := layout.block_rects[index]
 		var horizontal := rng.randi_range(0, 1) == 0
 		var size := (
-			Vector2i(rng.randi_range(10, 18), 4)
+			Vector2i(rng.randi_range(_legacy_cells(10), _legacy_cells(18)), _legacy_cells(4))
 			if horizontal
-			else Vector2i(4, rng.randi_range(10, 18))
+			else Vector2i(_legacy_cells(4), rng.randi_range(_legacy_cells(10), _legacy_cells(18)))
 		)
 		var offset := Vector2i(
-			rng.randi_range(6, maxi(block_rect.size.x - size.x - 6, 6)),
-			rng.randi_range(6, maxi(block_rect.size.y - size.y - 6, 6))
+			rng.randi_range(
+				_legacy_cells(6),
+				maxi(block_rect.size.x - size.x - _legacy_cells(6), _legacy_cells(6))
+			),
+			rng.randi_range(
+				_legacy_cells(6),
+				maxi(block_rect.size.y - size.y - _legacy_cells(6), _legacy_cells(6))
+			)
 		)
 		var rect := Rect2i(block_rect.position + offset, size)
 		_add_obstacle_if_clear(
@@ -1834,7 +1927,13 @@ func _add_block_props(
 				placed += 1
 
 func _prop_attempts_for_kind(kind: StringName, block_rect: Rect2i) -> int:
-	var area_budget := int(float(block_rect.size.x * block_rect.size.y) / 1100.0)
+	var equivalent_legacy_area := (
+		block_rect.size.x
+		* block_rect.size.y
+		* IsoGridConfig.NEW_TILE_SCALE
+		* IsoGridConfig.NEW_TILE_SCALE
+	)
+	var area_budget := int(float(equivalent_legacy_area) / 1100.0)
 	var density := 2
 	match kind:
 		&"forest":
@@ -1879,7 +1978,7 @@ func _add_prop_if_clear(
 	return true
 
 func _prop_size(prop_id: StringName, _rng: RandomNumberGenerator) -> Vector2i:
-	return IsometricEnvironmentManifest.get_shared().get_footprint_tiles(prop_id)
+	return _logical_footprint_tiles(prop_id)
 
 func _small_prop_ids(biome_id: StringName) -> Array[StringName]:
 	# Only contract-complete, biome-whitelisted ids so props always render with a
@@ -2006,8 +2105,8 @@ func _road_gaps_for_side(
 				finish = rect.end.y
 		if not touches_side:
 			continue
-		start = clampi(start - 2, 0, axis_limit)
-		finish = clampi(finish + 2, 0, axis_limit)
+		start = clampi(start - IsoGridConfig.WALL_GAP_PADDING_TILES, 0, axis_limit)
+		finish = clampi(finish + IsoGridConfig.WALL_GAP_PADDING_TILES, 0, axis_limit)
 		if finish > start:
 			gaps.append(Vector2i(start, finish))
 	return gaps
@@ -2040,10 +2139,16 @@ func _road_cell_gaps_for_side(
 			if run_start < 0:
 				run_start = axis
 		elif run_start >= 0:
-			gaps.append(Vector2i(clampi(run_start - 2, 0, axis_limit), clampi(axis + 2, 0, axis_limit)))
+			gaps.append(Vector2i(
+				clampi(run_start - IsoGridConfig.WALL_GAP_PADDING_TILES, 0, axis_limit),
+				clampi(axis + IsoGridConfig.WALL_GAP_PADDING_TILES, 0, axis_limit)
+			))
 			run_start = -1
 	if run_start >= 0:
-		gaps.append(Vector2i(clampi(run_start - 2, 0, axis_limit), axis_limit))
+		gaps.append(Vector2i(
+			clampi(run_start - IsoGridConfig.WALL_GAP_PADDING_TILES, 0, axis_limit),
+			axis_limit
+		))
 	return gaps
 
 func _void_gaps_for_side(
@@ -2110,8 +2215,16 @@ func _passage_gaps_for_side(
 	if cell.get_border(side) != BiomeCell.BorderType.CONNECTED:
 		return gaps
 	for passage in cell.get_passages_for_side(side):
-		var start := clampi(passage.position - passage.width / 2 - 2, 0, axis_limit)
-		var finish := clampi(passage.position + passage.width / 2 + 2, 0, axis_limit)
+		var start := clampi(
+			passage.position - passage.width / 2 - IsoGridConfig.WALL_GAP_PADDING_TILES,
+			0,
+			axis_limit
+		)
+		var finish := clampi(
+			passage.position + passage.width / 2 + IsoGridConfig.WALL_GAP_PADDING_TILES,
+			0,
+			axis_limit
+		)
 		if finish > start:
 			gaps.append(Vector2i(start, finish))
 	gaps.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return a.x < b.x)
@@ -2186,6 +2299,17 @@ func _add_obstacle_if_clear(
 	_add_obstacle(layout, obstacle_id, canonical_rect, shape_id, rotation_radians)
 	return true
 
+func _legacy_rect_size(width: int, height: int, minimum: int = 1) -> Vector2i:
+	return IsoGridConfig.legacy_size_to_new_tiles(Vector2i(width, height), minimum)
+
+func _legacy_cells(value: int, minimum: int = 1) -> int:
+	return IsoGridConfig.legacy_cells_to_new_tiles(value, minimum)
+
+func _logical_footprint_tiles(object_id: StringName) -> Vector2i:
+	return IsoGridConfig.legacy_size_to_new_tiles(
+		IsometricEnvironmentManifest.get_shared().get_footprint_tiles(object_id)
+	)
+
 func _contains_any_crate(rect: Rect2i, crate_cells: Array[Vector2i]) -> bool:
 	for crate_cell in crate_cells:
 		if rect.has_point(crate_cell):
@@ -2202,7 +2326,7 @@ func _canonical_obstacle_rect(obstacle_id: StringName, requested: Rect2i) -> Rec
 	# size instead of inheriting generator randomness.
 	if manifest.get_category(obstacle_id) == &"border" or manifest.is_scalable(obstacle_id):
 		return requested
-	var footprint := manifest.get_footprint_tiles(obstacle_id)
+	var footprint := _logical_footprint_tiles(obstacle_id)
 	var center := requested.position + requested.size / 2
 	return Rect2i(center - footprint / 2, footprint)
 
@@ -2213,10 +2337,10 @@ func _add_crates(
 	var crate_ids := _crate_ids(biome.biome_id)
 	var center := layout.zone_size / 2
 	var cells: Array[Vector2i] = [
-		center + Vector2i(-42, 0),
-		center + Vector2i(42, 0),
-		center + Vector2i(0, -42),
-		center + Vector2i(0, 42)
+		center + Vector2i(-IsoGridConfig.LEGACY_CRATE_OFFSET_TILES, 0),
+		center + Vector2i(IsoGridConfig.LEGACY_CRATE_OFFSET_TILES, 0),
+		center + Vector2i(0, -IsoGridConfig.LEGACY_CRATE_OFFSET_TILES),
+		center + Vector2i(0, IsoGridConfig.LEGACY_CRATE_OFFSET_TILES)
 	]
 	for index in range(cells.size()):
 		_add_crate(layout, crate_ids[index % crate_ids.size()], cells[index])
@@ -2227,17 +2351,17 @@ func _add_theme_hazards(
 ) -> void:
 	match biome.biome_id:
 		&"toxic_wastes":
-			_add_hazard_at_ratio(layout, &"toxic_puddle", Vector2(0.42, 0.22), Vector2i(26, 14))
-			_add_hazard_at_ratio(layout, &"gas_cloud", Vector2(0.74, 0.78), Vector2i(30, 18))
+			_add_hazard_at_ratio(layout, &"toxic_puddle", Vector2(0.42, 0.22), _legacy_rect_size(26, 14))
+			_add_hazard_at_ratio(layout, &"gas_cloud", Vector2(0.74, 0.78), _legacy_rect_size(30, 18))
 		&"burning_fields":
-			_add_hazard_at_ratio(layout, &"lava_crack", Vector2(0.36, 0.76), Vector2i(34, 10))
-			_add_hazard_at_ratio(layout, &"fire_zone", Vector2(0.72, 0.24), Vector2i(20, 20))
+			_add_hazard_at_ratio(layout, &"lava_crack", Vector2(0.36, 0.76), _legacy_rect_size(34, 10))
+			_add_hazard_at_ratio(layout, &"fire_zone", Vector2(0.72, 0.24), _legacy_rect_size(20, 20))
 		&"frozen_outskirts":
-			_add_hazard_at_ratio(layout, &"slippery_ice", Vector2(0.34, 0.74), Vector2i(34, 20))
-			_add_hazard_at_ratio(layout, &"deep_snow_slow", Vector2(0.74, 0.22), Vector2i(28, 24))
+			_add_hazard_at_ratio(layout, &"slippery_ice", Vector2(0.34, 0.74), _legacy_rect_size(34, 20))
+			_add_hazard_at_ratio(layout, &"deep_snow_slow", Vector2(0.74, 0.22), _legacy_rect_size(28, 24))
 		&"drowned_marsh":
-			_add_hazard_at_ratio(layout, &"deep_water", Vector2(0.30, 0.74), Vector2i(38, 22))
-			_add_hazard_at_ratio(layout, &"mud_slow", Vector2(0.74, 0.26), Vector2i(28, 22))
+			_add_hazard_at_ratio(layout, &"deep_water", Vector2(0.30, 0.74), _legacy_rect_size(38, 22))
+			_add_hazard_at_ratio(layout, &"mud_slow", Vector2(0.74, 0.26), _legacy_rect_size(28, 22))
 		_:
 			pass
 
@@ -2583,10 +2707,11 @@ func _fit_rect_inside(
 	size: Vector2i,
 	container: Rect2i
 ) -> Rect2i:
-	var min_x := container.position.x + 4
-	var min_y := container.position.y + 4
-	var max_x := maxi(container.end.x - size.x - 4, min_x)
-	var max_y := maxi(container.end.y - size.y - 4, min_y)
+	var margin := _legacy_cells(4)
+	var min_x := container.position.x + margin
+	var min_y := container.position.y + margin
+	var max_x := maxi(container.end.x - size.x - margin, min_x)
+	var max_y := maxi(container.end.y - size.y - margin, min_y)
 	return Rect2i(
 		Vector2i(
 			clampi(position.x, min_x, max_x),
@@ -2599,15 +2724,16 @@ func _passage_inner_anchor(
 	passage: BiomePassage,
 	zone_size: Vector2i
 ) -> Vector2i:
+	var edge_depth := IsoGridConfig.PASSAGE_EDGE_DEPTH_TILES
 	match passage.side:
 		&"north":
-			return Vector2i(passage.position, 3)
+			return Vector2i(passage.position, edge_depth)
 		&"south":
-			return Vector2i(passage.position, zone_size.y - 4)
+			return Vector2i(passage.position, zone_size.y - edge_depth - 1)
 		&"west":
-			return Vector2i(3, passage.position)
+			return Vector2i(edge_depth, passage.position)
 		_:
-			return Vector2i(zone_size.x - 4, passage.position)
+			return Vector2i(zone_size.x - edge_depth - 1, passage.position)
 
 func _intersects_route(layout: BiomeEnvironmentLayout, rect: Rect2i) -> bool:
 	if _intersects_any(rect, layout.road_rects):

@@ -1,6 +1,8 @@
 extends RefCounted
 class_name WorldRegionConnection
 
+const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
+
 var connection_id: StringName = &""
 var from_region_id: StringName = &""
 var to_region_id: StringName = &""
@@ -9,7 +11,7 @@ var to_biome_id: StringName = &""
 var side: StringName = &"east"
 var opposite_side: StringName = &"west"
 var passage_position: int = 100
-var passage_width: int = 40
+var passage_width: int = IsoGridConfig.PASSAGE_WIDTH_TILES
 var passage_type: StringName = &"road"
 var local_rect: Rect2i = Rect2i()
 var connector_local_rect: Rect2i = Rect2i()
@@ -117,7 +119,10 @@ static func from_save_data(data: Dictionary) -> WorldRegionConnection:
 	connection.side = StringName(data.get("side", "east"))
 	connection.opposite_side = StringName(data.get("opposite_side", "west"))
 	connection.passage_position = int(data.get("passage_position", 100))
-	connection.passage_width = int(data.get("passage_width", 40))
+	connection.passage_width = int(data.get(
+		"passage_width",
+		IsoGridConfig.PASSAGE_WIDTH_TILES
+	))
 	connection.passage_type = StringName(data.get("passage_type", "road"))
 	connection.entry_tile_id = StringName(data.get("entry_tile_id", "road_entry"))
 	connection.exit_tile_id = StringName(data.get("exit_tile_id", "road_exit"))

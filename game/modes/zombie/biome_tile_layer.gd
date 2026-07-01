@@ -114,7 +114,7 @@ var _transition_lines: PackedVector2Array = PackedVector2Array()
 var _depth_lines: PackedVector2Array = PackedVector2Array()
 var _suppressed_void_texture_count: int = 0
 # Optional worker thread that bakes the (CPU-heavy) tile cache + ground geometry
-# off the main thread so the game does not freeze while a 500x500 chunk is built.
+# off the main thread so the game does not freeze while a full iso region is built.
 var _build_thread: Thread
 var _is_building: bool = false
 # Chiave del tile-bake su disco (TileBakeCache): un hit salta l'intero loop di

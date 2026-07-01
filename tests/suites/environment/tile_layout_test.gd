@@ -12,6 +12,7 @@ extends GutTest
 ## TerrainGenerator) costruiscono scene/layout dedicati.
 
 const WorldGen = preload("res://tests/support/world_gen_helpers.gd")
+const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
 
 const MAP_SEED := 515151
 
@@ -162,7 +163,7 @@ func test_layer_chunking() -> void:
 	var expected_tile_count := cell.generated_layout.zone_size.x * cell.generated_layout.zone_size.y
 	var expected_chunk_count := int(ceil(float(cell.generated_layout.zone_size.x) / 20.0)) * int(ceil(float(cell.generated_layout.zone_size.y) / 20.0))
 	assert_eq(layer.get_chunk_size(), 20, "il tile layer balanced usa chunk 20x20")
-	assert_eq(layer.get_chunk_count(), expected_chunk_count, "il tile layer chunka l'intera regione 500x500")
+	assert_eq(layer.get_chunk_count(), expected_chunk_count, "il tile layer chunka l'intera regione logica")
 	assert_eq(layer.get_visual_tile_count(), expected_tile_count, "il tile layer cachea tutte le celle visive")
 	assert_eq(layer.get_missing_asset_count(), 0, "la cache del tile layer non ha celle senza asset")
 	assert_false(layer.uses_procedural_fallback(), "il tile layer non usa il fallback procedurale")
@@ -254,7 +255,11 @@ func test_perimeter_walls() -> void:
 		if layout == null:
 			continue
 		assert_false(layout.wall_segment_rects.is_empty(), "%s registra segmenti di muro perimetrale espliciti" % String(cell.id))
-		assert_gte(layout.wall_height_cells, 4, "%s muri perimetrali con contratto verticale alto" % String(cell.id))
+		assert_gte(
+			layout.wall_height_cells,
+			IsoGridConfig.RAISED_CLIFF_HEIGHT_TILES,
+			"%s muri perimetrali con contratto verticale alto" % String(cell.id)
+		)
 		for side in BiomeCell.SIDES:
 			var segments := layout.get_wall_segments_for_side(side)
 			var border_type := cell.get_border(side)
