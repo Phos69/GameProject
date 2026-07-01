@@ -205,6 +205,175 @@ func test_generated_biome_catalog_contract() -> void:
 			"%s maps cliff 11 to the short cap" % String(biome_id)
 		)
 
+func test_frozen_surface_selection_uses_coherent_materials() -> void:
+	var biome_id := &"frozen_outskirts"
+	for sample in range(128):
+		var ground_path := BiomeGeneratedArtCatalog.select_surface_asset_path(
+			biome_id,
+			BiomeGeneratedArtCatalog.ROLE_GROUND,
+			85001 + sample,
+			Vector2i(sample * 5, sample * 7)
+		)
+		assert_false(
+			ground_path.contains("detail_decal"),
+			"frozen ground avoids full-surface detail decals"
+		)
+		assert_false(
+			ground_path.contains("base_ground_variation_04"),
+			"frozen ground avoids ice-sheet blocks as the base surface"
+		)
+	var coherent_roles: Array[StringName] = [
+		BiomeGeneratedArtCatalog.ROLE_PATH,
+		BiomeGeneratedArtCatalog.ROLE_ROAD,
+		BiomeGeneratedArtCatalog.ROLE_GROUND_TO_PATH,
+		BiomeGeneratedArtCatalog.ROLE_GROUND_TO_ROAD,
+	]
+	for role in coherent_roles:
+		var first := BiomeGeneratedArtCatalog.select_surface_asset_path(
+			biome_id,
+			role,
+			94117,
+			Vector2i(16, 24)
+		)
+		var adjacent := BiomeGeneratedArtCatalog.select_surface_asset_path(
+			biome_id,
+			role,
+			94117,
+			Vector2i(17, 25)
+		)
+		assert_eq(
+			adjacent,
+			first,
+			"frozen %s keeps the same material within one macro patch"
+			% String(role)
+		)
+
+func test_swamp_surface_selection_uses_coherent_materials() -> void:
+	var biome_id := &"drowned_marsh"
+	for sample in range(128):
+		var ground_path := BiomeGeneratedArtCatalog.select_surface_asset_path(
+			biome_id,
+			BiomeGeneratedArtCatalog.ROLE_GROUND,
+			86011 + sample,
+			Vector2i(sample * 5, sample * 7)
+		)
+		assert_false(
+			ground_path.contains("detail_decal"),
+			"swamp ground avoids full-surface detail decals"
+		)
+		assert_false(
+			ground_path.contains("base_ground_variation_02")
+			or ground_path.contains("base_ground_variation_03"),
+			"swamp ground avoids moss/lily feature blocks as the base surface"
+		)
+	var coherent_roles: Array[StringName] = [
+		BiomeGeneratedArtCatalog.ROLE_PATH,
+		BiomeGeneratedArtCatalog.ROLE_ROAD,
+		BiomeGeneratedArtCatalog.ROLE_GROUND_TO_PATH,
+		BiomeGeneratedArtCatalog.ROLE_GROUND_TO_ROAD,
+	]
+	for role in coherent_roles:
+		var first := BiomeGeneratedArtCatalog.select_surface_asset_path(
+			biome_id,
+			role,
+			94223,
+			Vector2i(24, 32)
+		)
+		var adjacent := BiomeGeneratedArtCatalog.select_surface_asset_path(
+			biome_id,
+			role,
+			94223,
+			Vector2i(25, 33)
+		)
+		assert_eq(
+			adjacent,
+			first,
+			"swamp %s keeps the same material within one macro patch"
+			% String(role)
+		)
+
+func test_toxic_surface_selection_uses_coherent_materials() -> void:
+	var biome_id := &"toxic_wastes"
+	for sample in range(128):
+		var ground_path := BiomeGeneratedArtCatalog.select_surface_asset_path(
+			biome_id,
+			BiomeGeneratedArtCatalog.ROLE_GROUND,
+			87031 + sample,
+			Vector2i(sample * 5, sample * 7)
+		)
+		assert_false(
+			ground_path.contains("detail_decal"),
+			"toxic ground avoids white-backed detail decals"
+		)
+	var coherent_roles: Array[StringName] = [
+		BiomeGeneratedArtCatalog.ROLE_PATH,
+		BiomeGeneratedArtCatalog.ROLE_ROAD,
+		BiomeGeneratedArtCatalog.ROLE_GROUND_TO_PATH,
+		BiomeGeneratedArtCatalog.ROLE_GROUND_TO_ROAD,
+	]
+	for role in coherent_roles:
+		var first := BiomeGeneratedArtCatalog.select_surface_asset_path(
+			biome_id,
+			role,
+			94337,
+			Vector2i(32, 40)
+		)
+		var adjacent := BiomeGeneratedArtCatalog.select_surface_asset_path(
+			biome_id,
+			role,
+			94337,
+			Vector2i(33, 41)
+		)
+		assert_eq(
+			adjacent,
+			first,
+			"toxic %s keeps the same material within one macro patch"
+			% String(role)
+		)
+
+func test_burning_surface_selection_uses_coherent_materials() -> void:
+	var biome_id := &"burning_fields"
+	for sample in range(128):
+		var ground_path := BiomeGeneratedArtCatalog.select_surface_asset_path(
+			biome_id,
+			BiomeGeneratedArtCatalog.ROLE_GROUND,
+			88013 + sample,
+			Vector2i(sample * 5, sample * 7)
+		)
+		assert_false(
+			ground_path.contains("detail_decal"),
+			"burning ground avoids full-surface lava detail decals"
+		)
+		assert_false(
+			ground_path.contains("base_ground_variation_04"),
+			"burning ground avoids flowing-lava feature blocks as the base surface"
+		)
+	var coherent_roles: Array[StringName] = [
+		BiomeGeneratedArtCatalog.ROLE_PATH,
+		BiomeGeneratedArtCatalog.ROLE_ROAD,
+		BiomeGeneratedArtCatalog.ROLE_GROUND_TO_PATH,
+		BiomeGeneratedArtCatalog.ROLE_GROUND_TO_ROAD,
+	]
+	for role in coherent_roles:
+		var first := BiomeGeneratedArtCatalog.select_surface_asset_path(
+			biome_id,
+			role,
+			94451,
+			Vector2i(40, 48)
+		)
+		var adjacent := BiomeGeneratedArtCatalog.select_surface_asset_path(
+			biome_id,
+			role,
+			94451,
+			Vector2i(41, 49)
+		)
+		assert_eq(
+			adjacent,
+			first,
+			"burning %s keeps the same material within one macro patch"
+			% String(role)
+		)
+
 func test_generated_biome_catalog_deterministically_covers_active_assets() -> void:
 	var selected_paths: Dictionary = {}
 	var expected_paths: Dictionary = {}

@@ -105,6 +105,11 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 - Rafforzato il cleanup delle suite GUT rapide e soak: fixture main scene senza
   cache persistente, teardown espliciti, rilascio cache mondo/manifest/texture e
   minori riferimenti statici nei test pesanti.
+- I temi generati `frozen_tundra`, `swamp`, `urban_ruins` e `volcanic` usano
+  ora selezione surface coerente a macro-celle anche per path/road/transizioni.
+  Neve, palude, tossico e fuoco escludono detail/feature tile dal pool ground
+  pieno. `TileBakeCache.FORMAT_VERSION` sale a `8` per rigenerare le mappe
+  `material_asset_*` persistite.
 - Chiarito il contratto MCP in `README.md` e `ARCHITECTURE.md`: il server lavora
   dentro la root progetto, legge solo contesto testuale, blocca traversal e file
   sensibili, limita ricerche/output e consente solo safe check allowlisted.
@@ -115,6 +120,18 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
   surface terrain ripetute vengono caricate con un trim runtime di 2 px sul
   bordo chiaro e le mesh dei run generati usano un piccolo overdraw senza
   spostare gli UV, lasciando invariati collisioni, pathfinding e regole bioma.
+- Reso piu armonico `frozen_outskirts`: passaggi e ground non alternano piu
+  materiali neve/ghiaccio per-cella o detail decal a piena superficie, riducendo
+  i blocchi ad alto contrasto nelle catture QA.
+- Reso piu armonico `drowned_marsh`: il ground runtime non usa piu detail decal
+  o tile pieni di muschio/ninfee come superficie base, riducendo il mosaico
+  acqua/fango/vegetazione nelle catture QA.
+- Reso piu armonico `toxic_wastes`: i detail `urban_ruins` con sfondo chiaro
+  non vengono piu usati come ground pieno, eliminando i grandi blocchi bianchi
+  tra cemento, strada e cliff nelle catture QA.
+- Reso piu armonico `burning_fields`: detail lava e la base a lava fluida non
+  vengono piu usati come ground pieno, riducendo i riquadri ad alto contrasto e
+  lasciando la lava come accento/feature.
 - Preservati tile `*_entry` dei passaggi anche con apertura profonda una sola
   cella: il resolver assegna l'entry alla prima cella interna del connector e
   mantiene `*_exit` sul bordo esterno.
@@ -149,9 +166,11 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 ### Validation
 
 - `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/assets -Select generated_texture`:
-  16 test, 586 assert, passa.
-- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/assets`: 55
-  test, 7465 assert, passa.
+  20 test, 1446 assert, passa.
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/assets`: 59
+  test, 8325 assert, passa.
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/world_gen -Select golden_snapshot_bake`:
+  4 test, 18 assert, passa.
 - `./tools/run_visual_qa.ps1 -SkipImport -Filter biome_rendering_review`: 1
   Visual QA, passa; rigenerate 150 catture in
   `build/qa/biome_rendering_review/`.

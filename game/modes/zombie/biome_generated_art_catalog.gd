@@ -5,6 +5,16 @@ const ASSET_ROOT := "res://assets/environment/isometric/generated_images"
 const EXPECTED_TOTAL_ASSET_COUNT := 191
 const EXPECTED_ACTIVE_ASSET_COUNT := 129
 const SURFACE_MACRO_CELL_SIZE := 8
+const COHERENT_SURFACE_SAMPLE_THEMES: Array[StringName] = [
+	&"frozen_tundra",
+	&"swamp",
+	&"urban_ruins",
+	&"volcanic",
+]
+const GROUND_DETAIL_POOL_THEMES: Array[StringName] = [
+	&"desert",
+	&"forest",
+]
 
 const ROLE_GROUND: StringName = &"ground"
 const ROLE_PATH: StringName = &"path"
@@ -178,7 +188,8 @@ static func select_surface_asset_path(
 	if pool.is_empty():
 		return ""
 	var sample_cell := cell
-	if role == ROLE_GROUND:
+	var theme_id := get_theme_id_for_biome(biome_id)
+	if role == ROLE_GROUND or COHERENT_SURFACE_SAMPLE_THEMES.has(theme_id):
 		sample_cell = Vector2i(
 			floori(float(cell.x) / float(SURFACE_MACRO_CELL_SIZE)),
 			floori(float(cell.y) / float(SURFACE_MACRO_CELL_SIZE))
@@ -299,11 +310,14 @@ static func _surface_pool(
 	if role == &"path_to_road":
 		resolved_role = ROLE_GROUND_TO_ROAD
 	var pool := get_asset_paths_for_role(biome_id, resolved_role)
-	if resolved_role == ROLE_GROUND:
+	if resolved_role == ROLE_GROUND and _ground_pool_accepts_detail(biome_id):
 		pool.append_array(get_asset_paths_for_role(biome_id, ROLE_DETAIL))
 	if pool.is_empty() and resolved_role != ROLE_GROUND:
 		pool = get_asset_paths_for_role(biome_id, ROLE_GROUND)
 	return pool
+
+static func _ground_pool_accepts_detail(biome_id: StringName) -> bool:
+	return GROUND_DETAIL_POOL_THEMES.has(get_theme_id_for_biome(biome_id))
 
 static func _ensure_profiles() -> void:
 	if not _profiles.is_empty():
@@ -353,10 +367,11 @@ static func _append_directory_assets(
 			file_names.append(file_name)
 	file_names.sort()
 	for file_name in file_names:
+		var theme_id := StringName(profile.get(&"theme_id", &""))
 		var role := (
 			_cliff_role_for_file(file_name)
 			if cliff_assets
-			else _surface_role_for_file(file_name)
+			else _surface_role_for_file(theme_id, file_name)
 		)
 		if role.is_empty():
 			continue
@@ -364,7 +379,28 @@ static func _append_directory_assets(
 		paths.append(directory_path.path_join(file_name))
 		profile[role] = paths
 
-static func _surface_role_for_file(file_name: String) -> StringName:
+static func _surface_role_for_file(
+	theme_id: StringName,
+	file_name: String
+) -> StringName:
+	if (
+		theme_id == &"frozen_tundra"
+		and file_name.contains("base_ground_variation_04")
+	):
+		return ROLE_DETAIL
+	if (
+		theme_id == &"swamp"
+		and (
+			file_name.contains("base_ground_variation_02")
+			or file_name.contains("base_ground_variation_03")
+		)
+	):
+		return ROLE_DETAIL
+	if (
+		theme_id == &"volcanic"
+		and file_name.contains("base_ground_variation_04")
+	):
+		return ROLE_DETAIL
 	if file_name.contains("transition_ground_to_path"):
 		return ROLE_GROUND_TO_PATH
 	if file_name.contains("transition_ground_to_road"):
