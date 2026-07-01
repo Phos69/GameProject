@@ -2,8 +2,9 @@ extends RefCounted
 class_name TileBakeCache
 
 ## Cache su disco (user://) dell'output COSTOSO del bake dei tile di un
-## BiomeTileLayer: le quattro mappe per-cella risolte dal resolver
-## (tile_id/section/role/asset_path) + il conteggio asset mancanti.
+## BiomeTileLayer: le sei mappe per-cella risolte dal resolver
+## (tile_id/section/role/asset_path/material_asset_id/material_asset_path)
+## + il conteggio asset mancanti.
 ##
 ## Il resolver per-cella e' la parte dominante del bake (vedi il commento in
 ## BiomeEnvironmentLayout.get_floor_tag_at_cell: "the difference between a
@@ -17,7 +18,7 @@ class_name TileBakeCache
 ## residuo, perche' richiede catturare tutto lo stato di render letto da _draw().
 
 # Bump quando cambia il formato serializzato o il significato delle mappe.
-const FORMAT_VERSION: int = 1
+const FORMAT_VERSION: int = 2
 const DIR: String = "user://world_cache/bake/"
 const EXT: String = ".bin"
 
@@ -44,7 +45,8 @@ static func make_key(
 	]
 
 # Ritorna il payload {tile_id, tile_section, tile_role, asset_path,
-# missing_asset_count, cell_count} o {} se assente/incompatibile.
+# material_asset_id, material_asset_path, missing_asset_count, cell_count}
+# o {} se assente/incompatibile.
 static func fetch(key: String, expected_cell_count: int) -> Dictionary:
 	if not _enabled or key.is_empty():
 		return {}

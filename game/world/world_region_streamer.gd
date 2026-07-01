@@ -243,7 +243,8 @@ func _stream_obstacles(
 		ObstacleSystem.configure_perimeter_obstacle_visual(
 			obstacle,
 			layout,
-			index
+			index,
+			biome.biome_id
 		)
 		obstacle.set_meta("region_id", region_id)
 		if index < layout.obstacle_rects.size():

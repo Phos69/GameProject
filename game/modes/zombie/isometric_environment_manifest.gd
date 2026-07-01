@@ -516,6 +516,13 @@ func _normalize_asset_contract(section: StringName, entry: Dictionary) -> Dictio
 		"fallback_path": String(entry.get("fallback_path", default_fallback)),
 		"fallback_reason": String(entry.get("fallback_reason", terrain_style.get("fallback", ""))),
 		"tile_set": StringName(str(entry.get("tile_set", ""))),
+		"generated_theme_id": StringName(str(entry.get("generated_theme_id", ""))),
+		"generated_surface_roles": _normalize_string_name_array(
+			entry.get("generated_surface_roles", [])
+		),
+		"generated_cliff_roles": _normalize_string_name_array(
+			entry.get("generated_cliff_roles", [])
+		),
 		"terrain_tiles": _normalize_string_name_array(entry.get("terrain_tiles", [])),
 		"object_scenes": _normalize_string_name_array(entry.get("object_scenes", [])),
 		"edge_tiles": _normalize_string_name_array(entry.get("edge_tiles", [])),

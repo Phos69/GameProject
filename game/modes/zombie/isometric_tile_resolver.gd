@@ -3,6 +3,9 @@ class_name IsometricTileResolver
 
 const TILE_CATALOG := preload("res://game/modes/zombie/isometric_tile_catalog.gd")
 const RESOLVER_UTILS := preload("res://game/modes/zombie/isometric_tile_resolver_utils.gd")
+const GENERATED_ART_CATALOG := preload(
+	"res://game/modes/zombie/biome_generated_art_catalog.gd"
+)
 
 const TILE_FLOOR_BASE := TILE_CATALOG.TILE_FLOOR_BASE
 const TILE_FLOOR_VARIANT_01 := TILE_CATALOG.TILE_FLOOR_VARIANT_01
@@ -113,16 +116,33 @@ func resolve_tile_data(
 	quality_preset: StringName = &"balanced",
 	biome_cell: BiomeCell = null
 ) -> Dictionary:
+	var resolved := _resolve_tile_data_unskinned(
+		layout,
+		cell,
+		biome_id,
+		quality_preset,
+		biome_cell
+	)
+	return _apply_generated_material(resolved, layout, cell, biome_id)
+
+func _resolve_tile_data_unskinned(
+	layout: BiomeEnvironmentLayout,
+	cell: Vector2i,
+	biome_id: StringName,
+	quality_preset: StringName,
+	biome_cell: BiomeCell
+) -> Dictionary:
 	if layout == null:
 		return _tile_data(&"", &"", &"missing")
 	var terrain_class := layout.get_terrain_class_at_cell(cell, biome_cell)
-	if _is_forest_biome(biome_id):
+	if _uses_themed_surface(biome_id):
 		var forest_data := _resolve_forest_tile_data(
 			layout,
 			cell,
 			terrain_class,
 			quality_preset,
-			biome_cell
+			biome_cell,
+			biome_id
 		)
 		if not forest_data.is_empty():
 			return forest_data
@@ -275,7 +295,8 @@ func _resolve_forest_tile_data(
 	cell: Vector2i,
 	terrain_class: StringName,
 	quality_preset: StringName,
-	biome_cell: BiomeCell
+	biome_cell: BiomeCell,
+	biome_id: StringName
 ) -> Dictionary:
 	match terrain_class:
 		BiomeEnvironmentLayout.TERRAIN_VOID:
@@ -293,9 +314,17 @@ func _resolve_forest_tile_data(
 			if _cell_inside_wall_segments(layout, cell):
 				return _tile_data(TILE_FOREST_MOUNTAIN_WALL, &"edge_tiles", &"forest_mountain_wall")
 		BiomeEnvironmentLayout.TERRAIN_HAZARD:
+			if not _is_forest_biome(biome_id):
+				return _resolve_forest_floor_tile_data(
+					layout,
+					cell,
+					quality_preset,
+					biome_cell,
+					biome_id
+				)
 			return {}
 
-	var route_data := _resolve_route_tile_data(layout, cell, FOREST_BIOME_ID, biome_cell)
+	var route_data := _resolve_route_tile_data(layout, cell, biome_id, biome_cell)
 	if not route_data.is_empty():
 		return route_data
 	# Obstacle-occupied cells render with the exact same floor logic as the
@@ -306,14 +335,21 @@ func _resolve_forest_tile_data(
 		terrain_class == BiomeEnvironmentLayout.TERRAIN_WALKABLE
 		or terrain_class == BiomeEnvironmentLayout.TERRAIN_OBSTACLE
 	):
-		return _resolve_forest_floor_tile_data(layout, cell, quality_preset, biome_cell)
+		return _resolve_forest_floor_tile_data(
+			layout,
+			cell,
+			quality_preset,
+			biome_cell,
+			biome_id
+		)
 	return {}
 
 func _resolve_forest_floor_tile_data(
 	layout: BiomeEnvironmentLayout,
 	cell: Vector2i,
 	quality_preset: StringName,
-	biome_cell: BiomeCell
+	biome_cell: BiomeCell,
+	biome_id: StringName
 ) -> Dictionary:
 	if _cell_touches_void_or_fall(layout, cell, biome_cell):
 		return _tile_data(
@@ -347,7 +383,7 @@ func _resolve_forest_floor_tile_data(
 			&"grass_to_tall_grass"
 		)
 	return _tile_data(
-		_resolve_forest_grass_variant(layout, cell, quality_preset),
+		_resolve_forest_grass_variant(layout, cell, quality_preset, biome_id),
 		TILE_SECTION_TERRAIN,
 		&"forest_grass"
 	)
@@ -485,7 +521,7 @@ func _resolve_route_tile_data(
 		return passage_rect_data
 	var cell_route_tags := layout.get_road_tags_at_cell(cell)
 	if not cell_route_tags.is_empty():
-		if _is_forest_biome(biome_id):
+		if _uses_themed_surface(biome_id):
 			return _resolve_forest_cell_route_tile_data(layout, cell, cell_route_tags, biome_cell)
 		return _resolve_cell_route_tile_data(layout, cell, cell_route_tags)
 	var matching_indices: Array[int] = []
@@ -494,7 +530,7 @@ func _resolve_route_tile_data(
 			matching_indices.append(index)
 	if matching_indices.is_empty():
 		return {}
-	if _is_forest_biome(biome_id):
+	if _uses_themed_surface(biome_id):
 		return _resolve_forest_rect_route_tile_data(
 			layout,
 			cell,
@@ -663,7 +699,8 @@ func _resolve_terrain_route_role(tile_id: StringName) -> StringName:
 func _resolve_forest_grass_variant(
 	layout: BiomeEnvironmentLayout,
 	cell: Vector2i,
-	quality_preset: StringName
+	quality_preset: StringName,
+	biome_id: StringName = FOREST_BIOME_ID
 ) -> StringName:
 	var variants: Array[StringName] = []
 	match quality_preset:
@@ -674,7 +711,11 @@ func _resolve_forest_grass_variant(
 		_:
 			variants = [TILE_FOREST_GRASS, TILE_FOREST_GRASS_VARIANT_01, TILE_FOREST_GRASS_VARIANT_02]
 	var index := posmod(
-		RESOLVER_UTILS.stable_cell_hash(layout.generation_seed, FOREST_BIOME_ID, cell),
+		RESOLVER_UTILS.stable_cell_hash(
+			layout.generation_seed,
+			FOREST_BIOME_ID if _is_forest_biome(biome_id) else biome_id,
+			cell
+		),
 		variants.size()
 	)
 	return variants[index]
@@ -682,11 +723,24 @@ func _resolve_forest_grass_variant(
 func _is_forest_biome(biome_id: StringName) -> bool:
 	return biome_id == FOREST_BIOME_ID
 
+func _uses_themed_surface(biome_id: StringName) -> bool:
+	return (
+		_is_forest_biome(biome_id)
+		or GENERATED_ART_CATALOG.has_generated_theme(biome_id)
+	)
+
 func _is_forest_main_tag(tag: StringName) -> bool:
 	return tag == TILE_MAIN_ROAD or tag == TILE_FOREST_ROAD
 
 func _is_forest_path_tag(tag: StringName) -> bool:
-	return tag == TILE_BROKEN_STREET or tag == TILE_FOREST_PATH
+	return (
+		tag == TILE_BROKEN_STREET
+		or tag == TILE_FOREST_PATH
+		or tag == TILE_SERVICE_LANE
+		or tag == TILE_ASH_LANE
+		or tag == TILE_PACKED_SNOW_PATH
+		or tag == TILE_WOODEN_WALKWAY
+	)
 
 func _array_has_forest_main(tags: Array[StringName]) -> bool:
 	for tag in tags:
@@ -959,6 +1013,56 @@ func _void_neighbor_is_ground(
 		and terrain_class != BiomeEnvironmentLayout.TERRAIN_FALL_ZONE
 	)
 
+func _apply_generated_material(
+	tile_data: Dictionary,
+	layout: BiomeEnvironmentLayout,
+	cell: Vector2i,
+	biome_id: StringName
+) -> Dictionary:
+	if (
+		tile_data.is_empty()
+		or not GENERATED_ART_CATALOG.has_generated_theme(biome_id)
+	):
+		return tile_data
+	var tile_id := StringName(tile_data.get("tile_id", &""))
+	var material_role := _generated_surface_role(tile_id)
+	if material_role.is_empty():
+		return tile_data
+	var generation_seed := layout.generation_seed if layout != null else 0
+	var asset_path := GENERATED_ART_CATALOG.select_surface_asset_path(
+		biome_id,
+		material_role,
+		generation_seed,
+		cell
+	)
+	if asset_path.is_empty():
+		return tile_data
+	var result := tile_data.duplicate(true)
+	result["material_asset_id"] = (
+		GENERATED_ART_CATALOG.material_id_from_path(asset_path)
+	)
+	result["material_asset_path"] = asset_path
+	result["asset_path"] = asset_path
+	return result
+
+func _generated_surface_role(tile_id: StringName) -> StringName:
+	if is_void_transition_tile_id(tile_id):
+		return GENERATED_ART_CATALOG.ROLE_GROUND
+	if _is_passage_endpoint_tile(tile_id) or PASSAGE_ROUTE_TILE_IDS.has(tile_id):
+		return GENERATED_ART_CATALOG.ROLE_PATH
+	match tile_id:
+		TILE_FOREST_GRASS, TILE_FOREST_GRASS_VARIANT_01, TILE_FOREST_GRASS_VARIANT_02, TILE_FOREST_TALL_GRASS, TILE_GRASS_TO_TALL_GRASS, TILE_FOREST_CLIFF_EDGE, TILE_FOREST_MOUNTAIN_WALL, TILE_GROUND_TO_VOID_CLIFF, TILE_GROUND_TO_MOUNTAIN_WALL:
+			return GENERATED_ART_CATALOG.ROLE_GROUND
+		TILE_FOREST_PATH:
+			return GENERATED_ART_CATALOG.ROLE_PATH
+		TILE_FOREST_ROAD:
+			return GENERATED_ART_CATALOG.ROLE_ROAD
+		TILE_GRASS_TO_PATH:
+			return GENERATED_ART_CATALOG.ROLE_GROUND_TO_PATH
+		TILE_GRASS_TO_ROAD, TILE_PATH_TO_ROAD:
+			return GENERATED_ART_CATALOG.ROLE_GROUND_TO_ROAD
+	return &""
+
 func _tile_data(tile_id: StringName, section: StringName, role: StringName) -> Dictionary:
 	var asset_path := ""
 	if manifest != null and not tile_id.is_empty() and not section.is_empty():
@@ -969,7 +1073,9 @@ func _tile_data(tile_id: StringName, section: StringName, role: StringName) -> D
 		"tile_id": tile_id,
 		"section": section,
 		"role": role,
-		"asset_path": asset_path
+		"asset_path": asset_path,
+		"material_asset_id": &"",
+		"material_asset_path": "",
 	}
 
 func _is_passage_type(tile_id: StringName) -> bool:
@@ -1018,4 +1124,3 @@ func _cell_on_zone_touching_endpoint(
 		or (rect_end.x >= zone_size.x - 1 and cell.x == rect_end.x)
 		or (rect_end.y >= zone_size.y - 1 and cell.y == rect_end.y)
 	)
-

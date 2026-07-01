@@ -27,6 +27,9 @@ const SVG_TEXTURE_LOADER = preload(
 const TILE_BAKE_CACHE = preload(
 	"res://game/modes/zombie/tile_bake_cache.gd"
 )
+const GENERATED_ART_CATALOG = preload(
+	"res://game/modes/zombie/biome_generated_art_catalog.gd"
+)
 const CLIFF_FACE_TEXTURE_ID := &"cliff_face_texture"
 const CLIFF_LIP_TEXTURE_ID := &"cliff_lip_texture"
 const CLIFF_LIP_VERTICAL_TEXTURE_ID := &"cliff_lip_vertical_texture"
@@ -66,22 +69,6 @@ const FOREST_PASSAGE_SURFACE_TILE_IDS: Array[StringName] = [
 	&"bridge", &"bridge_entry", &"bridge_exit",
 	&"snow_pass", &"snow_pass_entry", &"snow_pass_exit"
 ]
-# Per-biome ground "theme": maps each surface texture slot (FOREST_SURFACE_TEXTURE_IDS)
-# to the manifest terrain-tiles id that supplies its art for that biome. The resolver
-# emits the same forest_* tile ids for every biome, so a theme just re-skins those six
-# slots with biome textures. infected_plains is implicit (identity: each slot uses its
-# own forest_* asset).
-const SURFACE_THEMES: Dictionary = {
-	&"toxic_wastes": {
-		&"forest_grass": &"swamp_grass",
-		&"forest_path": &"swamp_path",
-		&"forest_road": &"swamp_road",
-		&"grass_to_path": &"swamp_grass_to_path",
-		&"grass_to_road": &"swamp_grass_to_road",
-		&"path_to_road": &"swamp_path_to_road"
-	}
-}
-
 var layout: BiomeEnvironmentLayout
 var palette: BiomePalette
 var biome_id: StringName = &""
@@ -95,6 +82,8 @@ var _tile_id_cache: Dictionary = {}
 var _tile_section_cache: Dictionary = {}
 var _tile_role_cache: Dictionary = {}
 var _asset_path_cache: Dictionary = {}
+var _material_asset_id_cache: Dictionary = {}
+var _material_asset_path_cache: Dictionary = {}
 var _missing_asset_count: int = 0
 # The whole static ground is baked once into meshes instead of issuing one draw
 # command per cell every frame. Godot re-walks a canvas item's full command list
@@ -114,7 +103,9 @@ var _rock_top_texture: Texture2D
 var _rock_cliff_face_texture: Texture2D
 var _forest_surface_textures: Dictionary = {}
 var _forest_surface_art_asset_paths: Dictionary = {}
+var _surface_texture_ids: Array[StringName] = []
 var _cliff_art_asset_paths: Dictionary = {}
+var _cliff_variant_textures: Dictionary = {}
 var _rock_art_asset_paths: Dictionary = {}
 var _grid_points: PackedVector2Array = PackedVector2Array()
 var _texture_dark_lines: PackedVector2Array = PackedVector2Array()
@@ -220,6 +211,8 @@ func _tile_cache_payload() -> Dictionary:
 		"tile_section": _tile_section_cache,
 		"tile_role": _tile_role_cache,
 		"asset_path": _asset_path_cache,
+		"material_asset_id": _material_asset_id_cache,
+		"material_asset_path": _material_asset_path_cache,
 		"missing_asset_count": _missing_asset_count
 	}
 
@@ -228,6 +221,8 @@ func _apply_tile_cache_payload(payload: Dictionary) -> void:
 	_tile_section_cache = payload.get("tile_section", {}) as Dictionary
 	_tile_role_cache = payload.get("tile_role", {}) as Dictionary
 	_asset_path_cache = payload.get("asset_path", {}) as Dictionary
+	_material_asset_id_cache = payload.get("material_asset_id", {}) as Dictionary
+	_material_asset_path_cache = payload.get("material_asset_path", {}) as Dictionary
 	_missing_asset_count = int(payload.get("missing_asset_count", 0))
 
 func _finalize_threaded_build() -> void:
@@ -278,7 +273,7 @@ func has_cliff_art_textures() -> bool:
 
 func has_forest_cliff_border_art() -> bool:
 	return (
-		_uses_forest_ground()
+		_uses_themed_ground()
 		and _cliff_lip_texture != null
 		and _cliff_lip_vertical_texture != null
 	)
@@ -319,12 +314,24 @@ func get_rock_art_asset_paths() -> Dictionary:
 	return _rock_art_asset_paths.duplicate(true)
 
 func has_forest_ground_art_texture() -> bool:
+	if _uses_generated_theme():
+		return not _surface_texture_ids.is_empty()
 	return _forest_surface_textures.get(FOREST_GRASS_TEXTURE_ID) is Texture2D
 
 func get_forest_ground_art_asset_path() -> String:
+	if _uses_generated_theme() and not _surface_texture_ids.is_empty():
+		return String(
+			_forest_surface_art_asset_paths.get(_surface_texture_ids[0], "")
+		)
 	return String(_forest_surface_art_asset_paths.get(FOREST_GRASS_TEXTURE_ID, ""))
 
 func has_forest_surface_art_textures() -> bool:
+	if _uses_generated_theme():
+		return (
+			not _surface_texture_ids.is_empty()
+			and _surface_texture_ids.size()
+			== GENERATED_ART_CATALOG.get_all_surface_asset_paths(biome_id).size()
+		)
 	for texture_id in FOREST_SURFACE_TEXTURE_IDS:
 		if not (_forest_surface_textures.get(texture_id) is Texture2D):
 			return false
@@ -378,6 +385,33 @@ func get_resolved_asset_path(cell: Vector2i) -> String:
 		return ""
 	return resolver.resolve_asset_path(layout, cell, biome_id, quality_preset)
 
+func get_resolved_material_asset_id(cell: Vector2i) -> StringName:
+	var key := _cell_key(cell)
+	if _material_asset_id_cache.has(key):
+		return StringName(_material_asset_id_cache[key])
+	var data := resolver.resolve_tile_data(layout, cell, biome_id, quality_preset)
+	return StringName(data.get("material_asset_id", &""))
+
+func get_resolved_material_asset_path(cell: Vector2i) -> String:
+	var key := _cell_key(cell)
+	if _material_asset_path_cache.has(key):
+		return String(_material_asset_path_cache[key])
+	var data := resolver.resolve_tile_data(layout, cell, biome_id, quality_preset)
+	return String(data.get("material_asset_path", ""))
+
+func get_loaded_surface_texture_ids() -> Array[StringName]:
+	return _surface_texture_ids.duplicate()
+
+func get_rendered_surface_material_ids() -> Array[StringName]:
+	var result: Array[StringName] = []
+	for material_id in _surface_texture_ids:
+		if _forest_surface_meshes.get(material_id) is ArrayMesh:
+			result.append(material_id)
+	return result
+
+func get_loaded_cliff_variant_count() -> int:
+	return _cliff_variant_textures.size()
+
 func has_visual_tile_for_cell(cell: Vector2i) -> bool:
 	return _asset_path_exists(get_resolved_asset_path(cell))
 
@@ -387,7 +421,7 @@ func _draw() -> void:
 	# black gaps between playable tiles.
 	if _ground_underlay_mesh != null:
 		draw_mesh(_ground_underlay_mesh, null)
-	for texture_id in FOREST_SURFACE_TEXTURE_IDS:
+	for texture_id in _surface_texture_ids:
 		var surface_mesh := _forest_surface_meshes.get(texture_id) as ArrayMesh
 		var surface_texture := _forest_surface_textures.get(texture_id) as Texture2D
 		if surface_mesh != null and surface_texture != null:
@@ -477,6 +511,36 @@ func _load_cliff_art_textures() -> void:
 	_cliff_lip_texture = null
 	_cliff_lip_vertical_texture = null
 	_cliff_art_asset_paths.clear()
+	_cliff_variant_textures.clear()
+	if _uses_generated_theme():
+		var generation_seed := layout.generation_seed if layout != null else 0
+		var face_path := GENERATED_ART_CATALOG.select_cliff_asset_path(
+			biome_id,
+			GENERATED_ART_CATALOG.ROLE_CLIFF_FACE,
+			generation_seed
+		)
+		var horizontal_path := GENERATED_ART_CATALOG.select_cliff_asset_path(
+			biome_id,
+			GENERATED_ART_CATALOG.ROLE_CLIFF_LIP_HORIZONTAL,
+			generation_seed
+		)
+		var vertical_path := GENERATED_ART_CATALOG.select_cliff_asset_path(
+			biome_id,
+			GENERATED_ART_CATALOG.ROLE_CLIFF_LIP_VERTICAL,
+			generation_seed
+		)
+		_cliff_art_asset_paths[CLIFF_FACE_TEXTURE_ID] = face_path
+		_cliff_art_asset_paths[CLIFF_LIP_TEXTURE_ID] = horizontal_path
+		_cliff_art_asset_paths[CLIFF_LIP_VERTICAL_TEXTURE_ID] = vertical_path
+		_cliff_face_texture = _load_generated_texture(face_path)
+		_cliff_lip_texture = _load_generated_texture(horizontal_path)
+		_cliff_lip_vertical_texture = _load_generated_texture(vertical_path)
+		for asset_path in GENERATED_ART_CATALOG.get_all_cliff_asset_paths(biome_id):
+			var material_id := GENERATED_ART_CATALOG.material_id_from_path(asset_path)
+			var texture := _load_generated_texture(asset_path)
+			if texture != null:
+				_cliff_variant_textures[material_id] = texture
+		return
 	if manifest == null:
 		return
 	_cliff_face_texture = _load_cliff_art_texture(CLIFF_FACE_TEXTURE_ID)
@@ -489,6 +553,16 @@ func _load_cliff_art_texture(asset_id: StringName) -> Texture2D:
 	var contract := manifest.get_void_asset_contract(asset_id)
 	var asset_path := String(contract.get("asset_path", ""))
 	_cliff_art_asset_paths[asset_id] = asset_path
+	if asset_path.is_empty():
+		return null
+	return SVG_TEXTURE_LOADER.load_texture(
+		asset_path,
+		palette.prop_color if palette != null else Color(0.32, 0.30, 0.27, 1.0),
+		palette.floor_color if palette != null else Color(0.44, 0.48, 0.31, 1.0),
+		Vector2i(512, 512)
+	)
+
+func _load_generated_texture(asset_path: String) -> Texture2D:
 	if asset_path.is_empty():
 		return null
 	return SVG_TEXTURE_LOADER.load_texture(
@@ -537,7 +611,18 @@ func _load_rock_art_texture() -> void:
 func _load_forest_surface_art_textures() -> void:
 	_forest_surface_textures.clear()
 	_forest_surface_art_asset_paths.clear()
+	_surface_texture_ids.clear()
 	if manifest == null or not _uses_themed_ground():
+		return
+	if _uses_generated_theme():
+		for asset_path in GENERATED_ART_CATALOG.get_all_surface_asset_paths(biome_id):
+			var material_id := GENERATED_ART_CATALOG.material_id_from_path(asset_path)
+			_forest_surface_art_asset_paths[material_id] = asset_path
+			var texture := _load_generated_texture(asset_path)
+			if texture == null:
+				continue
+			_forest_surface_textures[material_id] = texture
+			_surface_texture_ids.append(material_id)
 		return
 	for texture_id in FOREST_SURFACE_TEXTURE_IDS:
 		var contract := manifest.get_terrain_asset_contract(_themed_surface_asset_id(texture_id))
@@ -553,6 +638,7 @@ func _load_forest_surface_art_textures() -> void:
 		)
 		if texture != null:
 			_forest_surface_textures[texture_id] = texture
+			_surface_texture_ids.append(texture_id)
 
 func _rebuild_ground_geometry() -> void:
 	_ground_mesh = null
@@ -583,7 +669,7 @@ func _rebuild_ground_geometry() -> void:
 	var grid := PackedVector2Array()
 	if _uses_themed_ground():
 		_ground_underlay_mesh = _build_forest_underlay_mesh(scale)
-		for texture_id in FOREST_SURFACE_TEXTURE_IDS:
+		for texture_id in _surface_texture_ids:
 			if not (_forest_surface_textures.get(texture_id) is Texture2D):
 				continue
 			var surface_mesh := _build_forest_surface_mesh(scale, texture_id)
@@ -600,7 +686,7 @@ func _rebuild_ground_geometry() -> void:
 					_suppressed_void_texture_count += 1
 					continue
 				var center := _cell_center_to_world(cell)
-				if _uses_generated_forest_surface(tile_id):
+				if _uses_generated_forest_surface(cell, tile_id):
 					_append_cliff_transition_mesh(cell, tile_id, center, half_w, half_h, scale)
 					continue
 				var top := center + Vector2(0.0, -half_h)
@@ -657,7 +743,8 @@ func _rebuild_ground_geometry() -> void:
 			layout.fall_zone_rects,
 			fall_zone_sides,
 			layout.zone_size,
-			scale
+			scale,
+			_uses_generated_theme()
 		)
 		if _rectilinear_cliff_face_mesh_builder != null:
 			_rectilinear_cliff_face_mesh_builder.build(
@@ -695,12 +782,23 @@ func _get_fall_zone_sides() -> Array[StringName]:
 		sides.append(side)
 	return sides
 
-func _uses_generated_forest_surface(tile_id: StringName) -> bool:
-	var texture_id := _forest_surface_texture_id(tile_id)
+func _uses_generated_forest_surface(
+	cell: Vector2i,
+	tile_id: StringName
+) -> bool:
+	var texture_id := _surface_texture_id_for_cell(cell, tile_id)
 	return (
 		not texture_id.is_empty()
 		and _forest_surface_textures.get(texture_id) is Texture2D
 	)
+
+func _surface_texture_id_for_cell(
+	cell: Vector2i,
+	tile_id: StringName
+) -> StringName:
+	if _uses_generated_theme():
+		return get_resolved_material_asset_id(cell)
+	return _forest_surface_texture_id(tile_id)
 
 func _forest_surface_texture_id(tile_id: StringName) -> StringName:
 	if resolver != null and resolver.is_void_transition_tile_id(tile_id):
@@ -800,7 +898,8 @@ func _build_forest_surface_mesh(scale: float, texture_id: StringName) -> ArrayMe
 		for x in range(layout.zone_size.x + 1):
 			var uses_texture := (
 				x < layout.zone_size.x
-				and _forest_surface_texture_id(
+				and _surface_texture_id_for_cell(
+					Vector2i(x, y),
 					get_resolved_tile_id(Vector2i(x, y))
 				) == texture_id
 			)
@@ -817,6 +916,10 @@ func _build_forest_surface_mesh(scale: float, texture_id: StringName) -> ArrayMe
 	)
 
 func _forest_surface_texture_world_size(texture_id: StringName) -> float:
+	if _uses_generated_theme():
+		var texture_name := String(texture_id)
+		if texture_name.contains("transition_"):
+			return 128.0
 	if FOREST_TRANSITION_TEXTURE_IDS.has(texture_id):
 		# Transition cells are one logical cell wide. A shorter repeat period makes
 		# both source materials survive mipmapped downscale without creating a
@@ -895,19 +998,19 @@ func _forest_underlay_color(key: StringName) -> Color:
 func _uses_forest_ground() -> bool:
 	return biome_id == IsometricTileResolver.FOREST_BIOME_ID
 
-func _surface_theme() -> Dictionary:
-	return SURFACE_THEMES.get(biome_id, {})
+func _uses_generated_theme() -> bool:
+	return GENERATED_ART_CATALOG.has_generated_theme(biome_id)
 
 # True when the biome renders a textured ground surface: forest art for the forest
 # biome, or a per-biome surface theme. Gates surface-texture loading and the
 # underlay/surface meshes. Rock-area and forest cliff-border art stay forest-only.
 func _uses_themed_ground() -> bool:
-	return _uses_forest_ground() or not _surface_theme().is_empty()
+	return _uses_forest_ground() or _uses_generated_theme()
 
 # Manifest terrain-tiles id supplying a surface slot's texture for the current biome,
 # defaulting to the slot id itself (forest identity).
 func _themed_surface_asset_id(slot: StringName) -> StringName:
-	return _surface_theme().get(slot, slot)
+	return slot
 
 func _should_draw_grid() -> bool:
 	return not _uses_themed_ground()
@@ -929,6 +1032,8 @@ func _rebuild_tile_cache() -> void:
 	_tile_section_cache.clear()
 	_tile_role_cache.clear()
 	_asset_path_cache.clear()
+	_material_asset_id_cache.clear()
+	_material_asset_path_cache.clear()
 	_missing_asset_count = 0
 	if layout == null or resolver == null:
 		return
@@ -941,7 +1046,17 @@ func _rebuild_tile_cache() -> void:
 			var section := StringName(tile_data.get("section", &""))
 			var role := StringName(tile_data.get("role", &""))
 			var cached_asset_path := String(tile_data.get("asset_path", ""))
-			var contract_key := "%s:%s" % [String(section), String(tile_id)]
+			var material_asset_id := StringName(
+				tile_data.get("material_asset_id", &"")
+			)
+			var material_asset_path := String(
+				tile_data.get("material_asset_path", "")
+			)
+			var contract_key := (
+				cached_asset_path
+				if not cached_asset_path.is_empty()
+				else "%s:%s" % [String(section), String(tile_id)]
+			)
 			if not asset_exists_by_contract.has(contract_key):
 				asset_exists_by_contract[contract_key] = _asset_path_exists(cached_asset_path)
 			var key := _cell_key(cell)
@@ -949,6 +1064,8 @@ func _rebuild_tile_cache() -> void:
 			_tile_section_cache[key] = section
 			_tile_role_cache[key] = role
 			_asset_path_cache[key] = cached_asset_path
+			_material_asset_id_cache[key] = material_asset_id
+			_material_asset_path_cache[key] = material_asset_path
 			if not bool(asset_exists_by_contract[contract_key]):
 				_missing_asset_count += 1
 

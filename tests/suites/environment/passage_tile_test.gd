@@ -201,9 +201,17 @@ func _layout_emits_road_connector(cell: BiomeCell, layout: BiomeEnvironmentLayou
 	return false
 
 func _is_road_connector_tile(tile_id: StringName) -> bool:
-	return tile_id == IsometricTileResolver.TILE_ROAD_EDGE or tile_id == IsometricTileResolver.TILE_ROAD_INTERSECTION \
-		or tile_id == IsometricTileResolver.TILE_ROAD_CURVE_NORTH or tile_id == IsometricTileResolver.TILE_ROAD_CURVE_EAST \
-		or tile_id == IsometricTileResolver.TILE_ROAD_CURVE_SOUTH or tile_id == IsometricTileResolver.TILE_ROAD_CURVE_WEST
+	return (
+		tile_id == IsometricTileResolver.TILE_ROAD_EDGE
+		or tile_id == IsometricTileResolver.TILE_ROAD_INTERSECTION
+		or tile_id == IsometricTileResolver.TILE_ROAD_CURVE_NORTH
+		or tile_id == IsometricTileResolver.TILE_ROAD_CURVE_EAST
+		or tile_id == IsometricTileResolver.TILE_ROAD_CURVE_SOUTH
+		or tile_id == IsometricTileResolver.TILE_ROAD_CURVE_WEST
+		or tile_id == IsometricTileResolver.TILE_GRASS_TO_PATH
+		or tile_id == IsometricTileResolver.TILE_GRASS_TO_ROAD
+		or tile_id == IsometricTileResolver.TILE_PATH_TO_ROAD
+	)
 
 func _is_passage_tag(tag: StringName) -> bool:
 	return tag == &"road" or tag == &"bridge" or tag == &"snow_pass" or tag == &"broken_gate" or tag == &"burned_road"

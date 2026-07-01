@@ -66,7 +66,7 @@ func test_resolver_coverage() -> void:
 	var saw_passage_endpoint := false
 	var saw_void_edge := false
 	var saw_void_depth := false
-	var saw_hazard_floor := false
+	var advanced_hazard_missing_material := 0
 	var asset_exists_by_tile_id: Dictionary = {}
 	var road_tile_errors: PackedStringArray = []
 	for cell in _sample_cells:
@@ -87,7 +87,14 @@ func test_resolver_coverage() -> void:
 			for x in range(layout.zone_size.x):
 				var probe := Vector2i(x, y)
 				var terrain_class := layout.get_terrain_class_at_cell(probe, cell)
-				var tile_id := _resolver.resolve_tile_id(layout, probe, biome_id, &"balanced", cell)
+				var tile_data := _resolver.resolve_tile_data(
+					layout,
+					probe,
+					biome_id,
+					&"balanced",
+					cell
+				)
+				var tile_id := StringName(tile_data.get("tile_id", &""))
 				if not asset_exists_by_tile_id.has(tile_id):
 					asset_exists_by_tile_id[tile_id] = _asset_exists(String(_resolver.resolve_tile_contract(tile_id).get("asset_path", "")))
 				saw_tile_ids[tile_id] = true
@@ -99,8 +106,14 @@ func test_resolver_coverage() -> void:
 					saw_void_edge = true
 				elif tile_id == IsometricTileResolver.TILE_VOID_DEPTH:
 					saw_void_depth = true
-				elif tile_id == IsometricTileResolver.TILE_HAZARD_FLOOR:
-					saw_hazard_floor = true
+				if (
+					terrain_class == BiomeEnvironmentLayout.TERRAIN_HAZARD
+					and biome_id != IsometricTileResolver.FOREST_BIOME_ID
+					and StringName(
+						tile_data.get("material_asset_id", &"")
+					).is_empty()
+				):
+					advanced_hazard_missing_material += 1
 				if tile_id.is_empty() or not bool(asset_exists_by_tile_id[tile_id]):
 					missing_any += 1
 				if terrain_class == BiomeEnvironmentLayout.TERRAIN_WALKABLE:
@@ -121,14 +134,25 @@ func test_resolver_coverage() -> void:
 	var void_depth_probe := _resolver.resolve_tile_id(_cells[0].generated_layout, Vector2i(-1, -1), _cells[0].biome_id, &"balanced", _cells[0])
 	assert_eq(void_depth_probe, IsometricTileResolver.TILE_VOID_DEPTH, "celle fuori bound risolvono a void_depth")
 	assert_gte(saw_biome_ids.size(), 5, "la coverage del resolver include 5 biome id")
-	assert_true(saw_tile_ids.has(IsometricTileResolver.TILE_FLOOR_BASE), "resolver emette floor_base")
-	assert_true(saw_tile_ids.has(IsometricTileResolver.TILE_FLOOR_VARIANT_01), "resolver emette floor_variant_01")
-	assert_true(saw_tile_ids.has(IsometricTileResolver.TILE_FLOOR_VARIANT_02), "resolver emette floor_variant_02")
+	assert_false(
+		saw_tile_ids.has(IsometricTileResolver.TILE_FLOOR_BASE)
+		or saw_tile_ids.has(IsometricTileResolver.TILE_FLOOR_VARIANT_01)
+		or saw_tile_ids.has(IsometricTileResolver.TILE_FLOOR_VARIANT_02),
+		"i biomi tematizzati non ricadono nei floor generici"
+	)
+	assert_true(
+		saw_tile_ids.has(IsometricTileResolver.TILE_FOREST_GRASS),
+		"il resolver emette il contratto ground testurizzato condiviso"
+	)
 	assert_true(saw_route_tile, "resolver emette route tile per road e passage rects")
 	assert_true(saw_passage_endpoint, "resolver emette tile endpoint per le aperture di bordo")
 	assert_true(saw_void_edge, "resolver emette tile di transizione cliff neighbor-aware")
 	assert_true(saw_void_depth or void_depth_probe == IsometricTileResolver.TILE_VOID_DEPTH, "resolver emette void_depth")
-	assert_true(saw_hazard_floor, "resolver emette hazard_floor per le celle hazard")
+	assert_eq(
+		advanced_hazard_missing_material,
+		0,
+		"ogni hazard avanzato censito usa un materiale generato"
+	)
 
 func test_layer_chunking() -> void:
 	var cell := _cells[0]

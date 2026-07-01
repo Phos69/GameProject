@@ -4,6 +4,9 @@ class_name PerimeterCliffVisualProfile
 const TEXTURE_LOADER := preload(
 	"res://game/modes/zombie/isometric_svg_texture_loader.gd"
 )
+const GENERATED_ART_CATALOG := preload(
+	"res://game/modes/zombie/biome_generated_art_catalog.gd"
+)
 const FACE_TEXTURE_ID := &"rock_cliff_face_texture"
 const TOP_OBJECT_ID := &"large_rock"
 const TEXTURE_SIZE := Vector2i(512, 512)
@@ -23,7 +26,8 @@ func configure(
 	height_cells: int,
 	logical_tile_scale: float,
 	primary_color: Color,
-	accent_color: Color
+	accent_color: Color,
+	biome_id: StringName = &""
 ) -> void:
 	style = next_style
 	side = next_side
@@ -36,7 +40,7 @@ func configure(
 	top_texture = null
 	asset_paths.clear()
 	if style == BiomeEnvironmentLayout.PERIMETER_VISUAL_RAISED_CLIFF:
-		_load_textures(primary_color, accent_color)
+		_load_textures(primary_color, accent_color, biome_id)
 
 func has_raised_cliff_art() -> bool:
 	return (
@@ -51,7 +55,40 @@ func uses_fallback() -> bool:
 		and not has_raised_cliff_art()
 	)
 
-func _load_textures(primary_color: Color, accent_color: Color) -> void:
+func _load_textures(
+	primary_color: Color,
+	accent_color: Color,
+	biome_id: StringName
+) -> void:
+	if GENERATED_ART_CATALOG.has_generated_theme(biome_id):
+		var face_path := GENERATED_ART_CATALOG.select_cliff_asset_path(
+			biome_id,
+			GENERATED_ART_CATALOG.ROLE_CLIFF_FACE,
+			0
+		)
+		var top_path := GENERATED_ART_CATALOG.select_surface_asset_path(
+			biome_id,
+			GENERATED_ART_CATALOG.ROLE_GROUND,
+			0,
+			Vector2i.ZERO
+		)
+		asset_paths = {
+			&"face": face_path,
+			&"top": top_path,
+		}
+		face_texture = TEXTURE_LOADER.load_texture(
+			face_path,
+			primary_color,
+			accent_color,
+			TEXTURE_SIZE
+		)
+		top_texture = TEXTURE_LOADER.load_texture(
+			top_path,
+			primary_color,
+			accent_color,
+			TEXTURE_SIZE
+		)
+		return
 	var manifest := IsometricEnvironmentManifest.get_shared()
 	var face_path := String(
 		manifest.get_void_asset_contract(FACE_TEXTURE_ID).get("asset_path", "")

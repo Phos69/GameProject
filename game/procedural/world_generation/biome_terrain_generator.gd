@@ -32,13 +32,14 @@ func generate_layout_for_cell(
 	layout.logical_tile_scale = 8.0
 	layout.central_corridor_width = 220.0
 	layout.player_spawn_cell = layout.zone_size / 2
-	if _is_walled_arena_context(context):
-		layout.perimeter_visual_style = (
-			BiomeEnvironmentLayout.PERIMETER_VISUAL_RAISED_CLIFF
-		)
-		layout.wall_height_cells = (
-			BiomeEnvironmentLayout.RAISED_CLIFF_HEIGHT_CELLS
-		)
+	# Every physical biome-divider wall uses the same upward-cliff geometry as
+	# Infinite Arena. Fall boundaries remain separate and keep their drop logic.
+	layout.perimeter_visual_style = (
+		BiomeEnvironmentLayout.PERIMETER_VISUAL_RAISED_CLIFF
+	)
+	layout.wall_height_cells = (
+		BiomeEnvironmentLayout.RAISED_CLIFF_HEIGHT_CELLS
+	)
 
 	# All biomes share the void-first pipeline (rocks/masses -> vegetation clusters
 	# -> hub+spokes roads -> tree borders -> void lottery), skinned per biome via the
@@ -67,10 +68,3 @@ func generate_layout_for_cell(
 	else:
 		call_deferred("emit_signal", &"biome_layout_generated", cell, layout)
 	return layout
-
-func _is_walled_arena_context(context: Dictionary) -> bool:
-	var mode := String(context.get(
-		"arena_boundary_mode",
-		context.get(&"arena_boundary_mode", "")
-	))
-	return mode == "walled" or mode == "blocked"

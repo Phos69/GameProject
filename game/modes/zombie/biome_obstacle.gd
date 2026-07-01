@@ -162,7 +162,8 @@ func configure_perimeter_visual(
 	next_side: StringName,
 	next_uv_origin: Vector2,
 	height_cells: int,
-	logical_tile_scale: float
+	logical_tile_scale: float,
+	biome_id: StringName = &""
 ) -> void:
 	perimeter_cliff_profile.configure(
 		next_style,
@@ -171,7 +172,8 @@ func configure_perimeter_visual(
 		height_cells,
 		logical_tile_scale,
 		primary_color,
-		accent_color
+		accent_color,
+		biome_id
 	)
 	texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 	set_meta("perimeter_visual_style", perimeter_cliff_profile.style)

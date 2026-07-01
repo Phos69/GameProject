@@ -29,6 +29,12 @@ static func voidfirst_layout(biome: BiomeDefinition, seed_value: int) -> BiomeEn
 	var layout := BiomeEnvironmentLayout.new()
 	layout.zone_size = BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE
 	layout.generation_seed = seed_value
+	layout.perimeter_visual_style = (
+		BiomeEnvironmentLayout.PERIMETER_VISUAL_RAISED_CLIFF
+	)
+	layout.wall_height_cells = (
+		BiomeEnvironmentLayout.RAISED_CLIFF_HEIGHT_CELLS
+	)
 	ObstacleLayoutGenerator.new().populate_layout_voidfirst(layout, cell, biome)
 	return layout
 

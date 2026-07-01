@@ -35,6 +35,18 @@ func before_all() -> void:
 	if _biome != null:
 		_layout = WorldGen.voidfirst_layout(_biome, SHARED_SEED)
 
+func test_biome_divider_uses_upward_cliff_contract() -> void:
+	assert_eq(
+		_layout.perimeter_visual_style,
+		BiomeEnvironmentLayout.PERIMETER_VISUAL_RAISED_CLIFF,
+		"physical biome-divider walls use the upward-cliff renderer"
+	)
+	assert_eq(
+		_layout.wall_height_cells,
+		BiomeEnvironmentLayout.RAISED_CLIFF_HEIGHT_CELLS,
+		"divider cliffs keep the seven-cell Infinite Arena height"
+	)
+
 # --- rocce (M1) -----------------------------------------------------------
 
 func test_rocks_placement() -> void:

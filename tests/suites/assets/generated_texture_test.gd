@@ -69,38 +69,342 @@ func test_forest_runtime_consumption() -> void:
 	layer.queue_free()
 	await wait_physics_frames(1)
 
-# toxic_wastes skins the shared themed-ground surface slots with swamp art (the
-# resolver still emits the forest_* tile ids, so each surface slot must resolve to a
-# swamp_* texture instead of falling back to flat palette colour).
-const SWAMP_SLOT_TEXTURES: Dictionary = {
-	&"forest_grass": "swamp_grass_generated.png",
-	&"forest_path": "swamp_path_generated.png",
-	&"forest_road": "swamp_road_generated.png",
-	&"grass_to_path": "swamp_grass_to_path_generated.png",
-	&"grass_to_road": "swamp_grass_to_road_generated.png",
-	&"path_to_road": "swamp_path_to_road_generated.png"
+const GENERATED_BIOME_THEMES: Dictionary = {
+	&"toxic_wastes": &"urban_ruins",
+	&"burning_fields": &"volcanic",
+	&"frozen_outskirts": &"frozen_tundra",
+	&"drowned_marsh": &"swamp",
+}
+const GENERATED_BIOME_PASSAGE_TAGS: Dictionary = {
+	&"toxic_wastes": &"broken_gate",
+	&"burning_fields": &"burned_road",
+	&"frozen_outskirts": &"snow_pass",
+	&"drowned_marsh": &"bridge",
 }
 
-func test_swamp_runtime_consumption() -> void:
-	var palette := load("res://game/modes/zombie/biomes/toxic_wastes_palette.tres") as BiomePalette
-	var layout := BiomeEnvironmentLayout.new()
-	layout.zone_size = Vector2i(16, 16)
-	layout.generation_seed = 990077
-	layout.add_floor_rect(Rect2i(Vector2i.ZERO, layout.zone_size), &"open_block")
-	layout.rebuild_terrain_classification()
-	var layer := BiomeTileLayer.new()
-	add_child(layer)
-	layer.configure(layout, palette, &"toxic_wastes", &"quality", 16, null, _manifest, false)
-	await wait_physics_frames(1)
-	assert_true(layer.has_forest_surface_art_textures(), "toxic_wastes tile layer loads every swamp surface texture")
-	var paths := layer.get_forest_surface_art_asset_paths()
-	for slot_value in SWAMP_SLOT_TEXTURES.keys():
-		var slot := slot_value as StringName
-		var asset_path := String(paths.get(slot, ""))
-		assert_true(asset_path.ends_with(SWAMP_SLOT_TEXTURES[slot]),
-			"toxic_wastes slot %s uses %s (got %s)" % [String(slot), SWAMP_SLOT_TEXTURES[slot], asset_path])
-	layer.queue_free()
-	await wait_physics_frames(1)
+func test_generated_biome_catalog_contract() -> void:
+	var failures := BiomeGeneratedArtCatalog.validate_catalog()
+	assert_true(
+		failures.is_empty(),
+		"generated biome catalog is complete: %s" % "; ".join(failures)
+	)
+	assert_eq(
+		BiomeGeneratedArtCatalog.get_total_asset_count(),
+		191,
+		"all generated PNG files are catalogued"
+	)
+	assert_eq(
+		BiomeGeneratedArtCatalog.get_active_asset_count(),
+		129,
+		"all PNG files for the four active themes are catalogued"
+	)
+	assert_eq(
+		BiomeGeneratedArtCatalog.get_unassigned_theme_ids(),
+		[&"desert", &"forest"],
+		"desert and replacement forest art remain explicitly unassigned"
+	)
+	var legacy_swamp_directory := DirAccess.open(
+		"res://assets/environment/isometric/tiles/swamp/textures"
+	)
+	assert_true(
+		legacy_swamp_directory == null
+		or legacy_swamp_directory.get_files().is_empty(),
+		"the nine temporary swamp duplicates are removed"
+	)
+	for biome_id_value in GENERATED_BIOME_THEMES:
+		var biome_id := biome_id_value as StringName
+		assert_eq(
+			BiomeGeneratedArtCatalog.get_theme_id_for_biome(biome_id),
+			GENERATED_BIOME_THEMES[biome_id],
+			"%s resolves its intended generated theme" % String(biome_id)
+		)
+		var set_contract := _manifest.get_biome_asset_set_contract(biome_id)
+		assert_eq(
+			StringName(set_contract.get("generated_theme_id", &"")),
+			GENERATED_BIOME_THEMES[biome_id],
+			"%s manifest records the same generated theme" % String(biome_id)
+		)
+		assert_eq(
+			String(set_contract.get("status", "")),
+			"final",
+			"%s generated pool is final" % String(biome_id)
+		)
+		assert_eq(
+			String(set_contract.get("source", "")),
+			"openai_image_generation",
+			"%s generated pool keeps provenance" % String(biome_id)
+		)
+		assert_eq(
+			String(set_contract.get("license", "")),
+			"Project original",
+			"%s generated pool keeps its license" % String(biome_id)
+		)
+		assert_eq(
+			BiomeGeneratedArtCatalog.get_asset_paths_for_role(
+				biome_id,
+				BiomeGeneratedArtCatalog.ROLE_CLIFF_FACE
+			).size(),
+			2,
+			"%s maps cliff 01/02 to face variants" % String(biome_id)
+		)
+		assert_eq(
+			BiomeGeneratedArtCatalog.get_asset_paths_for_role(
+				biome_id,
+				BiomeGeneratedArtCatalog.ROLE_CLIFF_OUTER_CORNER
+			).size(),
+			4,
+			"%s maps cliff 05-08 to outer corners" % String(biome_id)
+		)
+		assert_eq(
+			BiomeGeneratedArtCatalog.get_asset_paths_for_role(
+				biome_id,
+				BiomeGeneratedArtCatalog.ROLE_CLIFF_INNER_CORNER
+			).size(),
+			2,
+			"%s maps cliff 09/10 to mirrorable inner corners" % String(biome_id)
+		)
+		assert_eq(
+			BiomeGeneratedArtCatalog.get_asset_paths_for_role(
+				biome_id,
+				BiomeGeneratedArtCatalog.ROLE_CLIFF_CAP
+			).size(),
+			1,
+			"%s maps cliff 11 to the short cap" % String(biome_id)
+		)
+
+func test_generated_biome_catalog_deterministically_covers_active_assets() -> void:
+	var selected_paths: Dictionary = {}
+	var expected_paths: Dictionary = {}
+	for biome_id_value in GENERATED_BIOME_THEMES:
+		var biome_id := biome_id_value as StringName
+		for asset_path in BiomeGeneratedArtCatalog.get_all_surface_asset_paths(
+			biome_id
+		):
+			expected_paths[asset_path] = true
+		for asset_path in BiomeGeneratedArtCatalog.get_all_cliff_asset_paths(
+			biome_id
+		):
+			expected_paths[asset_path] = true
+		for role in BiomeGeneratedArtCatalog.SURFACE_ROLES:
+			for sample in range(1024):
+				var cell := Vector2i(sample * 8, sample * 13)
+				var selected := (
+					BiomeGeneratedArtCatalog.select_surface_asset_path(
+						biome_id,
+						role,
+						73001 + sample,
+						cell
+					)
+				)
+				selected_paths[selected] = true
+				if sample == 0:
+					assert_eq(
+						selected,
+						BiomeGeneratedArtCatalog.select_surface_asset_path(
+							biome_id,
+							role,
+							73001 + sample,
+							cell
+						),
+						"surface selection is deterministic"
+					)
+		for role in BiomeGeneratedArtCatalog.CLIFF_ROLES:
+			for sample in range(256):
+				var selected := (
+					BiomeGeneratedArtCatalog.select_cliff_asset_path(
+						biome_id,
+						role,
+						91003,
+						sample
+					)
+				)
+				selected_paths[selected] = true
+				if sample == 0:
+					assert_eq(
+						selected,
+						BiomeGeneratedArtCatalog.select_cliff_asset_path(
+							biome_id,
+							role,
+							91003,
+							sample
+						),
+						"cliff selection is deterministic"
+					)
+	selected_paths.erase("")
+	assert_eq(expected_paths.size(), 129, "active themes expose 129 unique PNGs")
+	assert_eq(
+		selected_paths.size(),
+		expected_paths.size(),
+		"deterministic selectors can reach every active generated PNG"
+	)
+	for asset_path in expected_paths:
+		assert_true(
+			selected_paths.has(asset_path),
+			"active generated asset is selectable: %s" % asset_path
+		)
+
+func test_generated_biome_runtime_consumption() -> void:
+	for biome_id_value in GENERATED_BIOME_THEMES:
+		var biome_id := biome_id_value as StringName
+		var palette_path := (
+			"res://game/modes/zombie/biomes/%s_palette.tres"
+			% String(biome_id)
+		)
+		var palette := load(palette_path) as BiomePalette
+		var layout := BiomeEnvironmentLayout.new()
+		layout.zone_size = Vector2i(24, 24)
+		layout.generation_seed = 990077 + String(biome_id).hash()
+		layout.add_floor_rect(
+			Rect2i(Vector2i.ZERO, layout.zone_size),
+			&"open_block"
+		)
+		layout.road_rects.append(
+			Rect2i(Vector2i(2, 10), Vector2i(20, 3))
+		)
+		layout.road_rect_tags.append(&"main_road")
+		layout.road_rects.append(
+			Rect2i(Vector2i(10, 2), Vector2i(3, 20))
+		)
+		layout.road_rect_tags.append(&"broken_street")
+		layout.road_rects.append(
+			Rect2i(Vector2i(18, 2), Vector2i(3, 5))
+		)
+		layout.road_rect_tags.append(
+			GENERATED_BIOME_PASSAGE_TAGS[biome_id] as StringName
+		)
+		layout.add_hazard_rect(
+			Rect2i(Vector2i(3, 3), Vector2i(3, 3)),
+			&"test_hazard"
+		)
+		layout.add_fall_zone_rect(
+			Rect2i(Vector2i(9, 9), Vector2i(6, 6)),
+			&"internal"
+		)
+		layout.rebuild_terrain_classification()
+		var layer := BiomeTileLayer.new()
+		add_child(layer)
+		layer.configure(
+			layout,
+			palette,
+			biome_id,
+			&"quality",
+			24,
+			null,
+			_manifest,
+			false
+		)
+		await wait_physics_frames(1)
+		assert_true(
+			layer.has_forest_surface_art_textures(),
+			"%s loads every generated surface texture" % String(biome_id)
+		)
+		assert_eq(
+			layer.get_loaded_surface_texture_ids().size(),
+			BiomeGeneratedArtCatalog.get_all_surface_asset_paths(biome_id).size(),
+			"%s exposes every surface material" % String(biome_id)
+		)
+		assert_gt(
+			layer.get_rendered_surface_material_ids().size(),
+			0,
+			"%s produces non-empty generated surface meshes" % String(biome_id)
+		)
+		var selected_material_ids: Dictionary = {}
+		var selected_material_paths: Dictionary = {}
+		for y in range(layout.zone_size.y):
+			for x in range(layout.zone_size.x):
+				var cell := Vector2i(x, y)
+				var selected_id := layer.get_resolved_material_asset_id(cell)
+				if not selected_id.is_empty():
+					selected_material_ids[selected_id] = true
+					selected_material_paths[
+						layer.get_resolved_material_asset_path(cell)
+					] = true
+		var expected_theme_fragment := (
+			"/%s/" % String(GENERATED_BIOME_THEMES[biome_id])
+		)
+		for selected_path in selected_material_paths:
+			assert_true(
+				String(selected_path).contains(expected_theme_fragment),
+				"%s resolver never falls back outside its generated theme: %s"
+				% [String(biome_id), String(selected_path)]
+			)
+		assert_true(
+			layer.get_resolved_material_asset_path(
+				Vector2i(4, 4)
+			).contains(expected_theme_fragment),
+			"%s hazard underlay uses its generated theme" % String(biome_id)
+		)
+		assert_true(
+			layer.get_resolved_material_asset_path(
+				Vector2i(19, 3)
+			).contains(expected_theme_fragment),
+			"%s passage surface uses its generated theme" % String(biome_id)
+		)
+		var rendered_material_ids: Dictionary = {}
+		for rendered_id in layer.get_rendered_surface_material_ids():
+			rendered_material_ids[rendered_id] = true
+		assert_eq(
+			rendered_material_ids.size(),
+			selected_material_ids.size(),
+			"%s builds one non-empty mesh for every selected material"
+			% String(biome_id)
+		)
+		for selected_id in selected_material_ids:
+			assert_true(
+				rendered_material_ids.has(selected_id),
+				"%s renders selected material %s"
+				% [String(biome_id), String(selected_id)]
+			)
+		assert_eq(
+			layer.get_loaded_cliff_variant_count(),
+			11,
+			"%s loads face, lip, corner and cap cliff art" % String(biome_id)
+		)
+		var probe := Vector2i(3, 3)
+		var material_path := layer.get_resolved_material_asset_path(probe)
+		assert_true(
+			material_path.contains(
+				"/%s/" % String(GENERATED_BIOME_THEMES[biome_id])
+			),
+			"%s ground resolves to its generated theme: %s"
+			% [String(biome_id), material_path]
+		)
+		assert_true(
+			layer.get_resolved_material_asset_id(probe) != &"",
+			"%s cache exposes the selected material id" % String(biome_id)
+		)
+		layer.queue_free()
+		await wait_physics_frames(1)
+
+func test_generated_biome_upward_cliff_profiles() -> void:
+	for biome_id_value in GENERATED_BIOME_THEMES:
+		var biome_id := biome_id_value as StringName
+		var profile := PerimeterCliffVisualProfile.new()
+		profile.configure(
+			BiomeEnvironmentLayout.PERIMETER_VISUAL_RAISED_CLIFF,
+			&"north",
+			Vector2.ZERO,
+			BiomeEnvironmentLayout.RAISED_CLIFF_HEIGHT_CELLS,
+			8.0,
+			Color("665544"),
+			Color("aa8866"),
+			biome_id
+		)
+		assert_true(
+			profile.has_raised_cliff_art(),
+			"%s upward cliff loads generated face and crown art"
+			% String(biome_id)
+		)
+		var paths := profile.asset_paths
+		var theme_id := String(GENERATED_BIOME_THEMES[biome_id])
+		assert_true(
+			String(paths.get(&"face", "")).contains("/%s/" % theme_id),
+			"%s upward face uses its biome theme" % String(biome_id)
+		)
+		assert_true(
+			String(paths.get(&"top", "")).contains("/%s/" % theme_id),
+			"%s upward crown uses its biome theme" % String(biome_id)
+		)
 
 # --- cliff/void textures e mesh (void_cliff_generated_texture) --------------
 

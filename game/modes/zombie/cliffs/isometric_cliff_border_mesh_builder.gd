@@ -21,6 +21,7 @@ var vertical_mesh: ArrayMesh
 var horizontal_segment_count: int = 0
 var vertical_segment_count: int = 0
 var corner_count: int = 0
+var sample_full_texture: bool = false
 
 func reset() -> void:
 	horizontal_mesh = null
@@ -33,9 +34,11 @@ func build(
 	fall_zone_rects: Array[Rect2i],
 	fall_zone_sides: Array[StringName],
 	zone_size: Vector2i,
-	logical_scale: float
+	logical_scale: float,
+	next_sample_full_texture: bool = false
 ) -> void:
 	reset()
+	sample_full_texture = next_sample_full_texture
 	if fall_zone_rects.is_empty() or logical_scale <= 0.0:
 		return
 	var horizontal := _mesh_buffers()
@@ -131,11 +134,11 @@ func _append_horizontal(
 		top = boundary_y - rock_depth
 		bottom = boundary_y
 		top_v = 1.0
-		bottom_v = HORIZONTAL_ROCK_UV_START
+		bottom_v = 0.0 if sample_full_texture else HORIZONTAL_ROCK_UV_START
 	else:
 		top = boundary_y
 		bottom = boundary_y + rock_depth
-		top_v = HORIZONTAL_ROCK_UV_START
+		top_v = 0.0 if sample_full_texture else HORIZONTAL_ROCK_UV_START
 		bottom_v = 1.0
 	var u_left := left / TEXTURE_REPEAT_WORLD_SIZE
 	var u_right := right / TEXTURE_REPEAT_WORLD_SIZE
@@ -170,11 +173,11 @@ func _append_vertical(
 		left = boundary_x - rock_width
 		right = boundary_x
 		left_u = 1.0
-		right_u = VERTICAL_ROCK_UV_START
+		right_u = 0.0 if sample_full_texture else VERTICAL_ROCK_UV_START
 	else:
 		left = boundary_x
 		right = boundary_x + rock_width
-		left_u = VERTICAL_ROCK_UV_START
+		left_u = 0.0 if sample_full_texture else VERTICAL_ROCK_UV_START
 		right_u = 1.0
 	var v_top := top / TEXTURE_REPEAT_WORLD_SIZE
 	var v_bottom := bottom / TEXTURE_REPEAT_WORLD_SIZE

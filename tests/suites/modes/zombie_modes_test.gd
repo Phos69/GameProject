@@ -247,8 +247,8 @@ func _assert_default_survival_world(biome_manager: BiomeManager) -> void:
 	if start_cell != null and start_cell.generated_layout != null:
 		assert_eq(
 			start_cell.generated_layout.perimeter_visual_style,
-			BiomeEnvironmentLayout.PERIMETER_VISUAL_WALL,
-			"default survival keeps thematic procedural perimeter walls"
+			BiomeEnvironmentLayout.PERIMETER_VISUAL_RAISED_CLIFF,
+			"default survival renders biome-divider walls as raised cliffs"
 		)
 
 func _assert_single_biome_quick_arena(biome_manager: BiomeManager) -> void:
