@@ -31,7 +31,7 @@ var pending_rebind_id: StringName = &""
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	custom_minimum_size = Vector2(620.0, 640.0)
+	custom_minimum_size = Vector2(620.0, 520.0)
 	_create_ui()
 	hide()
 	call_deferred("_initialize")
@@ -74,22 +74,22 @@ func _create_ui() -> void:
 	style.border_color = Color(0.32, 0.74, 0.86, 0.90)
 	style.set_border_width_all(3)
 	style.set_corner_radius_all(8)
-	style.set_content_margin_all(22.0)
+	style.set_content_margin_all(18.0)
 	add_theme_stylebox_override("panel", style)
 
 	var content := VBoxContainer.new()
-	content.add_theme_constant_override("separation", 10)
+	content.add_theme_constant_override("separation", 8)
 	add_child(content)
 
 	var title := Label.new()
 	title.text = "SETTINGS"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 25)
+	title.add_theme_font_size_override("font_size", 24)
 	title.modulate = Color(0.55, 0.88, 1.0, 1.0)
 	content.add_child(title)
 
 	tab_container = TabContainer.new()
-	tab_container.custom_minimum_size = Vector2(560.0, 500.0)
+	tab_container.custom_minimum_size = Vector2(560.0, 380.0)
 	tab_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	tab_container.tab_changed.connect(_on_tab_changed)
 	content.add_child(tab_container)
@@ -100,7 +100,7 @@ func _create_ui() -> void:
 
 	back_button = Button.new()
 	back_button.text = "Back"
-	back_button.custom_minimum_size = Vector2(440.0, 46.0)
+	back_button.custom_minimum_size = Vector2(440.0, 42.0)
 	back_button.pressed.connect(close)
 	back_button.focus_entered.connect(_play_focus)
 	content.add_child(back_button)
@@ -131,9 +131,11 @@ func _create_audio_tab() -> void:
 func _create_video_tab() -> void:
 	var tab := VBoxContainer.new()
 	tab.name = "Video"
-	tab.add_theme_constant_override("separation", 10)
 	tab_container.add_child(tab)
 	tab_indices[&"video"] = tab_container.get_child_count() - 1
+
+	var list := _create_scroll_list(tab)
+	list.add_theme_constant_override("separation", 8)
 
 	var display_mode := _create_option_row("Display", &"display_mode")
 	for spec in [
@@ -147,7 +149,7 @@ func _create_video_tab() -> void:
 			spec[1]
 		)
 	display_mode.item_selected.connect(_on_display_mode_selected)
-	tab.add_child(display_mode.get_parent())
+	list.add_child(display_mode.get_parent())
 
 	var resolution := _create_option_row("Resolution", &"resolution")
 	for size in VideoSettingsManager.RESOLUTION_PRESETS:
@@ -157,7 +159,7 @@ func _create_video_tab() -> void:
 			size
 		)
 	resolution.item_selected.connect(_on_resolution_selected)
-	tab.add_child(resolution.get_parent())
+	list.add_child(resolution.get_parent())
 
 	var frame_limit := _create_option_row("Frame limit", &"max_fps")
 	for limit in VideoSettingsManager.FPS_LIMITS:
@@ -167,18 +169,18 @@ func _create_video_tab() -> void:
 			limit
 		)
 	frame_limit.item_selected.connect(_on_frame_limit_selected)
-	tab.add_child(frame_limit.get_parent())
+	list.add_child(frame_limit.get_parent())
 
-	tab.add_child(_create_video_toggle("Borderless", &"borderless"))
-	tab.add_child(_create_video_toggle("VSync", &"vsync"))
-	tab.add_child(HSeparator.new())
-	tab.add_child(_create_visual_slider("Flash", &"flash_intensity", 0.0, 1.0, 0.05))
-	tab.add_child(_create_visual_slider("Glow", &"glow_intensity", 0.0, 1.0, 0.05))
-	tab.add_child(_create_visual_slider("Trails", &"trail_intensity", 0.0, 1.0, 0.05))
-	tab.add_child(_create_visual_slider("Camera shake", &"camera_shake_intensity", 0.0, 1.0, 0.05))
-	tab.add_child(_create_visual_slider("HUD text", &"hud_text_scale", 0.8, 1.2, 0.05))
-	tab.add_child(_create_visual_toggle("High contrast", &"high_contrast"))
-	tab.add_child(_create_visual_toggle("Reduced motion", &"reduced_motion"))
+	list.add_child(_create_video_toggle("Borderless", &"borderless"))
+	list.add_child(_create_video_toggle("VSync", &"vsync"))
+	list.add_child(HSeparator.new())
+	list.add_child(_create_visual_slider("Flash", &"flash_intensity", 0.0, 1.0, 0.05))
+	list.add_child(_create_visual_slider("Glow", &"glow_intensity", 0.0, 1.0, 0.05))
+	list.add_child(_create_visual_slider("Trails", &"trail_intensity", 0.0, 1.0, 0.05))
+	list.add_child(_create_visual_slider("Camera shake", &"camera_shake_intensity", 0.0, 1.0, 0.05))
+	list.add_child(_create_visual_slider("HUD text", &"hud_text_scale", 0.8, 1.2, 0.05))
+	list.add_child(_create_visual_toggle("High contrast", &"high_contrast"))
+	list.add_child(_create_visual_toggle("Reduced motion", &"reduced_motion"))
 
 	var presets := HBoxContainer.new()
 	presets.add_theme_constant_override("separation", 8)
@@ -195,7 +197,7 @@ func _create_video_tab() -> void:
 		button.focus_entered.connect(_play_focus)
 		presets.add_child(button)
 		video_focus_controls.append(button)
-	tab.add_child(presets)
+	list.add_child(presets)
 
 func _create_controls_tab() -> void:
 	var tab := VBoxContainer.new()
@@ -205,8 +207,9 @@ func _create_controls_tab() -> void:
 	tab_indices[&"controls"] = tab_container.get_child_count() - 1
 
 	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(540.0, 420.0)
+	scroll.custom_minimum_size = Vector2(540.0, 330.0)
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.follow_focus = true
 	tab.add_child(scroll)
 
 	var list := VBoxContainer.new()
@@ -242,6 +245,21 @@ func _create_controls_tab() -> void:
 			)),
 			&"local_multiplayer"
 		))
+
+func _create_scroll_list(parent: Control) -> VBoxContainer:
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(540.0, 330.0)
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	scroll.follow_focus = true
+	parent.add_child(scroll)
+
+	var list := VBoxContainer.new()
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(list)
+	return list
 
 func _create_volume_row(label_text: String, bus_name: StringName) -> Control:
 	var row := HBoxContainer.new()

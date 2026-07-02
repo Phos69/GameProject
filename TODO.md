@@ -26,10 +26,11 @@ Regole per nuove voci:
   HP/ammo piu leggibili. Restano menu, HUD globale, audio e QA completa
   multi-risoluzione.
 - Audit visuale 2026-07-01: `docs/visual_qa_report_2026-07-01.md` rileva
-  Settings tagliato a 1280x720, HUD sovradimensionato, Character Select
-  incompleto, scale crate/ostacoli incoerenti e leggibilita disomogenea delle
-  armi. Le priorita `UI-VIS-FIX`, `ART-VIS-FIX` e `WEAPON-VIS-FIX` restano
-  aperte dentro questa milestone.
+  HUD sovradimensionato, Character Select incompleto, scale crate/ostacoli
+  incoerenti e leggibilita disomogenea delle armi. `VIS-001` Settings tagliato
+  e chiuso dal follow-up UI-VIS-FIX del 2026-07-02; `UI-VIS-FIX` resta aperto
+  per gerarchia HUD, Character Select e boss HUD. Le priorita `ART-VIS-FIX` e
+  `WEAPON-VIS-FIX` restano aperte dentro questa milestone.
 - Obiettivo: rifinire menu, HUD, Character Select, status, mappa, boss, feedback
   audio e leggibilita senza cambiare regole di gioco.
 - Milestone collegata: post-roadmap UI/UX Milestone 8.

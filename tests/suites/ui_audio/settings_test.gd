@@ -104,6 +104,28 @@ func test_settings_pause_and_rebinding() -> void:
 		"legacy visual settings entry opens the video tab"
 	)
 	main_menu._close_visual_settings()
+	var root := get_tree().root
+	var original_root_size := root.size
+	var original_content_scale := root.content_scale_size
+	for resolution in [
+		Vector2i(1280, 720),
+		Vector2i(1024, 768),
+		Vector2i(960, 540)
+	]:
+		root.content_scale_size = resolution
+		root.size = resolution
+		await wait_physics_frames(1)
+		main_menu._open_visual_settings()
+		await wait_physics_frames(1)
+		assert_true(
+			_settings_panel_fits_viewport(main_menu.settings_panel),
+			"settings panel and Back fit the viewport at %dx%d"
+			% [resolution.x, resolution.y]
+		)
+		main_menu._close_visual_settings()
+	root.content_scale_size = original_content_scale
+	root.size = original_root_size
+	await wait_physics_frames(1)
 
 	assert_true(video_settings.set_resolution(Vector2i(1600, 900)), "video resolution can be changed")
 	assert_true(video_settings.set_max_fps(120), "frame limit can be changed")
@@ -444,6 +466,15 @@ func _action_has_button(action_name: StringName, device_id: int, button_index: i
 			if button_event.device == device_id and button_event.button_index == button_index:
 				return true
 	return false
+
+func _settings_panel_fits_viewport(settings_panel: SettingsPanel) -> bool:
+	if settings_panel == null or settings_panel.back_button == null:
+		return false
+	var viewport_rect := Rect2(Vector2.ZERO, get_tree().root.get_visible_rect().size)
+	return (
+		viewport_rect.encloses(settings_panel.get_global_rect())
+		and viewport_rect.encloses(settings_panel.back_button.get_global_rect())
+	)
 
 func _read_save(path: String) -> Dictionary:
 	var file := FileAccess.open(path, FileAccess.READ)

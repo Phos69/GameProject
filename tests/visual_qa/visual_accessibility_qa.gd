@@ -80,18 +80,37 @@ func _run() -> void:
 	DirAccess.make_dir_recursive_absolute(
 		ProjectSettings.globalize_path(OUTPUT_DIRECTORY)
 	)
-	main_menu._open_visual_settings()
+	for resolution in [
+		Vector2i(1280, 720),
+		Vector2i(1024, 768),
+		Vector2i(960, 540)
+	]:
+		_apply_resolution(resolution)
+		await process_frame
+		main_menu._open_visual_settings()
+		await process_frame
+		await process_frame
+		_expect(
+			main_menu.settings_panel != null
+			and main_menu.settings_panel.visible,
+			"video settings panel marker is visible at %dx%d"
+			% [resolution.x, resolution.y]
+		)
+		_expect(
+			_settings_panel_fits_viewport(main_menu.settings_panel),
+			"settings panel safe-area fits %dx%d" % [
+				resolution.x,
+				resolution.y
+			]
+		)
+		if resolution == Vector2i(1280, 720):
+			_expect(
+				await _capture("milestone_21_visual_settings_menu.png"),
+				"visual settings menu screenshot is captured"
+			)
+		main_menu._close_visual_settings()
+	_apply_resolution(Vector2i(1280, 720))
 	await process_frame
-	_expect(
-		main_menu.settings_panel != null
-		and main_menu.settings_panel.visible,
-		"video settings panel marker is visible"
-	)
-	_expect(
-		await _capture("milestone_21_visual_settings_menu.png"),
-		"visual settings menu screenshot is captured"
-	)
-	main_menu._close_visual_settings()
 
 	for player_slot in range(2, 5):
 		local_multiplayer.activate_slot(player_slot)
@@ -235,6 +254,19 @@ func _spawn_projectile_samples(projectile_system: ProjectileSystem) -> void:
 		) as Projectile
 		if projectile != null:
 			projectile.lifetime = 30.0
+
+func _apply_resolution(resolution: Vector2i) -> void:
+	root.content_scale_size = resolution
+	root.size = resolution
+
+func _settings_panel_fits_viewport(settings_panel: SettingsPanel) -> bool:
+	if settings_panel == null or settings_panel.back_button == null:
+		return false
+	var viewport_rect := Rect2(Vector2.ZERO, root.get_visible_rect().size)
+	return (
+		viewport_rect.encloses(settings_panel.get_global_rect())
+		and viewport_rect.encloses(settings_panel.back_button.get_global_rect())
+	)
 
 func _capture(file_name: String) -> bool:
 	await process_frame

@@ -58,6 +58,9 @@
 - Master, Music e SFX sono nel tab Audio e non nella pagina principale.
 - Il tab Video permette di selezionare finestra/fullscreen, borderless, risoluzione, VSync e limite framerate.
 - Il tab Video conserva anche preset e slider visual/accessibilita.
+- A 1280x720, 1024x768 e 960x540 il pannello Settings resta interamente dentro
+  la safe area: la tab Video scorre internamente e il pulsante Back resta
+  sempre visibile.
 - Il tab Controls permette di riassegnare movimento, mira, attacco base,
   attacco equipaggiato, reload, super, interact, pause, join e leave joypad.
 - Un binding gameplay joypad modificato viene applicato a tutti gli slot locali.

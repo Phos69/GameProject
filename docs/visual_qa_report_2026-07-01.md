@@ -73,6 +73,27 @@ Validazione finale:
 - 150/150 catture review superano il controllo di copertura world;
 - 25 log senza `FAIL`, errori, leak o risorse residue.
 
+## Follow-up UI-VIS-FIX - 2026-07-02
+
+**PASS parziale per la safe area Settings.** Il finding `VIS-001` e chiuso; la
+gerarchia HUD, Character Select e boss HUD restano aperti dentro `UI-VIS-FIX`.
+
+- `SettingsPanel` usa ora dimensioni minime compatte e mantiene Back fuori
+  dallo scroll.
+- La tab Video e la tab Controls scorrono internamente e seguono il focus
+  joypad/tastiera, evitando clipping dei controlli inferiori.
+- La regressione GUT `ui_audio/settings_test.gd` verifica pannello e Back a
+  `1280x720`, `1024x768` e `960x540`.
+- La QA visuale `visual_accessibility_qa.gd` ripete la stessa safe-area e
+  rigenera `build/qa/milestone_21_visual_settings_menu.png`.
+
+Validazione finale:
+
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/ui_audio`:
+  **12/12 test**, 263 assert;
+- `./tools/run_visual_qa.ps1 -SkipImport -Filter visual_accessibility`:
+  **1 OK, 0 falliti**.
+
 ## Ambiente e metodo
 
 - Branch: `master` (`origin/master` avanti di 2 commit al termine della QA).
@@ -98,6 +119,9 @@ Le severita usate nel report sono:
 ## Incongruenze visuali del prodotto
 
 ### VIS-001 - Alta - Settings tagliato a 1280x720
+
+Stato 2026-07-02: **CHIUSO da UI-VIS-FIX safe area**. Il testo seguente
+conserva l'evidenza dell'audit originario.
 
 La pagina `Video` supera l'altezza del viewport. Il bordo inferiore e il
 pulsante `Back` sono tagliati; il testo del pulsante e visibile solo in parte.
@@ -417,6 +441,8 @@ Evidenza:
 
 ### 3. UI-VIS-FIX - Ripristinare safe area e gerarchia HUD
 
+- Stato 2026-07-02: `VIS-001` chiuso per Settings; restano HUD
+  sovradimensionato, Character Select e gerarchia boss/HUD.
 - Obiettivo: eliminare clipping e ridurre l'occlusione del campo di gioco.
 - Milestone collegata: `UIUX-001`.
 - File/sistemi: `game/ui/`, `game/settings/`, Character Select, boss HUD.

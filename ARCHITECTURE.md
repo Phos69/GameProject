@@ -313,7 +313,9 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `SupplyCrate`: contenitore fisico configurato da `LootTable` per ammo e cura.
 - `ProgressionManager`: XP, livello, denaro, unlock party e bonus di inizio run.
 - `SettingsPanel`: pannello UI condiviso con tab Audio, Video e Controls;
-  usa `MenuNavigationController` per focus circolare, Back e tab LB/RB.
+  usa `MenuNavigationController` per focus circolare, Back e tab LB/RB. Le tab
+  lunghe scorrono internamente e lasciano Back fuori dallo scroll, cosi il
+  pannello resta dentro la safe area a `1280x720`, `1024x768` e `960x540`.
 - `PauseMenu`: overlay durante le run; usa `SceneTree.paused` e resta attivo
   insieme alla propria UI.
 - `HUDManager`: UI prototipo per HUD gameplay, boss, annunci, mappa
@@ -426,7 +428,8 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `LocalMultiplayerManager` serializza separatamente i pulsanti joypad di
   join e leave.
 - `SettingsPanel` e l'unico punto UI per modificare audio, video e controlli,
-  sia dal main menu sia dal pause menu.
+  sia dal main menu sia dal pause menu; i controlli lunghi devono restare
+  navigabili via focus anche quando la tab e scrollata.
 
 ## Contratto presentazione visuale
 

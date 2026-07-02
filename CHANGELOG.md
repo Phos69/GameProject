@@ -144,6 +144,10 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Fixed
 
+- Chiuso `VIS-001` del report QA visuale: `SettingsPanel` usa dimensioni
+  minime piu compatte, tab Video/Controls con scroll interno che segue il focus
+  e Back sempre fuori dallo scroll, con guardrail a 1280x720, 1024x768 e
+  960x540.
 - Normalizzato in modo sistematico il caricamento runtime dei cliff PNG
   generati: facce, lip e varianti dei biomi avanzati ora tagliano il bordo
   chiaro, propagano i colori nei pixel alpha e condividono la stessa policy tra
@@ -233,6 +237,11 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Validation
 
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/ui_audio`: 12
+  test, 263 assert, passa.
+- `./tools/run_visual_qa.ps1 -SkipImport -Filter visual_accessibility`: 1
+  Visual QA, passa; il log conferma safe area Settings a 1280x720, 1024x768 e
+  960x540.
 - `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/environment`:
   37 test, 8.954 assert, passa; il profilo movimento/zoom mantiene
   `visible_missing_chunks == 0` e commit massimo osservato 8,271 ms.
