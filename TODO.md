@@ -91,6 +91,11 @@ Regole per nuove voci:
 
 ### BAL-001 - Bilanciamento, performance e playtest end-to-end
 
+- Stato WORLD-VIS-FIX 2026-07-02: chiusi i finding `VIS-003`/`VIS-004`.
+  Infinite Arena distingue raised cliff e chasm, ogni contatto ground/void ha
+  coverage cliff automatica, ostacoli/crate non possono occupare fall zone e il
+  profilo renderizzato attraversa un seam con zoom variabile mantenendo zero
+  chunk visibili mancanti. Restano tuning, soak e playtest lunghi di `BAL-001`.
 - Obiettivo: affinare valori data-driven e performance dopo playtest reali su
   survival, dungeon, tower defense, RPG, biomi e boss.
 - Milestone collegata: post-roadmap bilanciamento Milestone 11.

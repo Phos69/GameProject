@@ -67,6 +67,8 @@ func test_resolver_coverage() -> void:
 	var saw_passage_endpoint := false
 	var saw_void_edge := false
 	var saw_void_depth := false
+	var cliff_contact_count := 0
+	var unresolved_cliff_contacts := PackedStringArray()
 	var advanced_hazard_missing_material := 0
 	var asset_exists_by_tile_id: Dictionary = {}
 	var road_tile_errors: PackedStringArray = []
@@ -107,6 +109,19 @@ func test_resolver_coverage() -> void:
 					saw_void_edge = true
 				elif tile_id == IsometricTileResolver.TILE_VOID_DEPTH:
 					saw_void_depth = true
+				if (
+					(
+						terrain_class == BiomeEnvironmentLayout.TERRAIN_VOID
+						or terrain_class == BiomeEnvironmentLayout.TERRAIN_FALL_ZONE
+					)
+					and _cell_touches_solid_terrain(layout, probe, cell)
+				):
+					cliff_contact_count += 1
+					if not _resolver.is_void_transition_tile_id(tile_id):
+						unresolved_cliff_contacts.append(
+							"%s %s -> %s"
+							% [String(cell.id), str(probe), String(tile_id)]
+						)
 				if (
 					terrain_class == BiomeEnvironmentLayout.TERRAIN_HAZARD
 					and biome_id != IsometricTileResolver.FOREST_BIOME_ID
@@ -149,6 +164,16 @@ func test_resolver_coverage() -> void:
 	assert_true(saw_passage_endpoint, "resolver emette tile endpoint per le aperture di bordo")
 	assert_true(saw_void_edge, "resolver emette tile di transizione cliff neighbor-aware")
 	assert_true(saw_void_depth or void_depth_probe == IsometricTileResolver.TILE_VOID_DEPTH, "resolver emette void_depth")
+	assert_gt(
+		cliff_contact_count,
+		0,
+		"la coverage include contatti ground/void"
+	)
+	assert_true(
+		unresolved_cliff_contacts.is_empty(),
+		"ogni contatto ground/void risolve a un cliff (%s)"
+		% ", ".join(unresolved_cliff_contacts)
+	)
 	assert_eq(
 		advanced_hazard_missing_material,
 		0,
@@ -186,7 +211,23 @@ func test_layer_chunking() -> void:
 	assert_eq(layer.get_missing_asset_count(), 0, "la cache del tile layer non ha celle senza asset")
 	assert_false(layer.uses_procedural_fallback(), "il tile layer non usa il fallback procedurale")
 	assert_gt(layer.get_suppressed_void_texture_count(), 0, "il tile layer omette le celle void pure dal mesh testurizzato")
-	assert_gt(layer.get_cliff_transition_count(), 0, "il tile layer pre-bake le facce cliff per le transizioni fall-zone")
+	var expected_cliff_transitions := 0
+	for y in range(cell.generated_layout.zone_size.y):
+		for x in range(cell.generated_layout.zone_size.x):
+			if _resolver.is_void_transition_tile_id(
+				layer.get_resolved_tile_id(Vector2i(x, y))
+			):
+				expected_cliff_transitions += 1
+	assert_gt(
+		expected_cliff_transitions,
+		0,
+		"il layout contiene transizioni fall-zone"
+	)
+	assert_eq(
+		layer.get_cliff_transition_count(),
+		expected_cliff_transitions,
+		"il tile layer costruisce una faccia cliff per ogni transizione"
+	)
 	var probe := _find_first_floor_cell(cell.generated_layout, cell)
 	assert_eq(layer.get_resolved_tile_id(probe), _resolver.resolve_tile_id(cell.generated_layout, probe, cell.biome_id, &"balanced", cell),
 		"la cache del tile layer combacia col resolver su una cella floor stabile")
@@ -271,6 +312,66 @@ func test_block_props() -> void:
 			assert_false(_any_intersects_rects(rect, layout.fall_zone_rects), "%s prop %s fuori dalle fall zone" % [String(cell.id), String(obstacle_id)])
 		assert_gte(prop_count, 3, "%s sparge props tematici nei blocchi (trovati %d)" % [String(cell.id), prop_count])
 		assert_true(bool(layout.validation_report.get("is_valid", false)), "%s resta valido con i block props" % String(cell.id))
+
+func test_object_placements_avoid_fall_zones() -> void:
+	for cell in _cells:
+		var layout := cell.generated_layout
+		assert_not_null(layout, "%s ha layout per validare gli oggetti" % String(cell.id))
+		if layout == null:
+			continue
+		for obstacle_index in range(layout.obstacle_rects.size()):
+			var obstacle_id := (
+				layout.obstacle_ids[obstacle_index]
+				if obstacle_index < layout.obstacle_ids.size()
+				else &"unknown"
+			)
+			assert_false(
+				_any_intersects_rects(
+					layout.obstacle_rects[obstacle_index],
+					layout.fall_zone_rects
+				),
+				"%s ostacolo %s fuori dal void"
+				% [String(cell.id), String(obstacle_id)]
+			)
+		for crate_cell in layout.crate_cells:
+			assert_eq(
+				layout.get_terrain_class_at_cell(crate_cell, cell),
+				BiomeEnvironmentLayout.TERRAIN_WALKABLE,
+				"%s crate %s su terreno walkable"
+				% [String(cell.id), str(crate_cell)]
+			)
+
+	var invalid_layout := BiomeEnvironmentLayout.new()
+	invalid_layout.zone_size = Vector2i(12, 12)
+	invalid_layout.player_spawn_cell = Vector2i(1, 1)
+	invalid_layout.add_floor_rect(
+		Rect2i(Vector2i.ZERO, invalid_layout.zone_size),
+		&"floor_base"
+	)
+	invalid_layout.obstacle_ids.append(&"small_rock")
+	invalid_layout.obstacle_rects.append(
+		Rect2i(Vector2i(4, 4), Vector2i(2, 2))
+	)
+	invalid_layout.add_fall_zone_rect(
+		Rect2i(Vector2i(4, 4), Vector2i(2, 2)),
+		&"internal"
+	)
+	var invalid_cell := BiomeCell.new()
+	invalid_cell.configure(
+		&"invalid_object_void",
+		&"infected_plains",
+		Vector2i.ZERO,
+		invalid_layout.zone_size,
+		17
+	)
+	var placement_errors := MapValidationSystem.new()._find_invalid_placements(
+		invalid_cell,
+		invalid_layout
+	)
+	assert_true(
+		placement_errors.has("obstacle_inside_fall_zone:small_rock:0"),
+		"la validazione rifiuta un ostacolo sospeso nel void"
+	)
 
 # --- muri perimetrali (perimeter_wall) ------------------------------------
 
@@ -386,6 +487,26 @@ func _cell_inside_any_rect(cell: Vector2i, rects: Array[Rect2i]) -> bool:
 	for rect in rects:
 		if rect.has_point(cell):
 			return true
+	return false
+
+func _cell_touches_solid_terrain(
+	layout: BiomeEnvironmentLayout,
+	cell: Vector2i,
+	biome_cell: BiomeCell
+) -> bool:
+	for y in range(-1, 2):
+		for x in range(-1, 2):
+			if x == 0 and y == 0:
+				continue
+			var terrain_class := layout.get_terrain_class_at_cell(
+				cell + Vector2i(x, y),
+				biome_cell
+			)
+			if (
+				terrain_class != BiomeEnvironmentLayout.TERRAIN_VOID
+				and terrain_class != BiomeEnvironmentLayout.TERRAIN_FALL_ZONE
+			):
+				return true
 	return false
 
 func _rect_inside_any(rect: Rect2i, rects: Array[Rect2i]) -> bool:

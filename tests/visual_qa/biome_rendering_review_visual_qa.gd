@@ -35,6 +35,7 @@ const WORLD_CONTEXT_BASE := {
 	"async_world_build": false
 }
 const MIN_DETAIL_RATIO := 0.035
+const MIN_WORLD_COVERAGE_RATIO := 0.30
 const INVALID_FOCUS_POSITION := Vector2(1.0e20, 1.0e20)
 
 var failures := PackedStringArray()
@@ -349,6 +350,11 @@ func _capture_focus(
 			_image_has_world_detail(image),
 			"%s capture has enough visible detail" % file_name
 		)
+		_expect(
+			_image_has_world_coverage(image),
+			"%s capture has enough rendered world coverage"
+			% file_name
+		)
 		var output_absolute := ProjectSettings.globalize_path(
 			OUTPUT_DIR.path_join(_resolution_slug(resolution))
 		)
@@ -541,6 +547,22 @@ func _image_has_world_detail(image: Image) -> bool:
 	return (
 		sampled > 0
 		and float(contrast_samples) / float(sampled) >= MIN_DETAIL_RATIO
+	)
+
+func _image_has_world_coverage(image: Image) -> bool:
+	var sampled := 0
+	var world_samples := 0
+	var start_y := image.get_height() / 4
+	for y in range(start_y, image.get_height(), 8):
+		for x in range(0, image.get_width(), 8):
+			var color := image.get_pixel(x, y)
+			sampled += 1
+			if maxf(color.r, maxf(color.g, color.b)) >= 0.035:
+				world_samples += 1
+	return (
+		sampled > 0
+		and float(world_samples) / float(sampled)
+		>= MIN_WORLD_COVERAGE_RATIO
 	)
 
 func _path_has_generic_marker(path: String) -> bool:

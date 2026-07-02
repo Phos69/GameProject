@@ -187,7 +187,9 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `WorldChunkVisibilityController`: policy camera/chunk separata dal lifecycle
   gameplay. Mantiene visibile il rettangolo camera, prepara gli anelli +1/+2,
   trattiene il +3 con isteresi e ordina i commit per regione corrente,
-  distanza e direzione di movimento.
+  distanza e direzione di movimento. Un tile layer visibile ancora in build
+  contribuisce a `visible_missing_chunks` e rende `is_area_ready()` falso,
+  evitando readiness positive sopra un backdrop non ancora costruito.
 - `BiomeTileChunkBaker` e `BiomeTileChunk`: commit main-thread dei dati visuali
   e nodo CanvasItem proprietario delle mesh, texture e linee di un chunk.
 - `GeneratedBiomeTextureTools`: normalizzazione condivisa dei PNG generati usati
@@ -225,9 +227,10 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `FallBoundaryGenerator`: trasforma i lati senza vicino in `fall_zone` data-driven con il contratto di danno ambientale esistente.
 - `MapValidationSystem`: valida con flood-fill spawn, corridoi, passaggi, casse
   raggiungibili, grafo connesso, passaggi non ostruiti, void non attraversabile
-  e classificazione completa del `75x75`. `deep_water` blocca pathfinding
-  salvo celle bridge; i crossing d'acqua richiedono bridge solo nei layout che
-  dichiarano un fiume nello `generation_summary`.
+  e classificazione completa del `75x75`; rifiuta inoltre ostacoli fuori regione
+  o sovrapposti alle fall zone. `deep_water` blocca pathfinding salvo celle
+  bridge; i crossing d'acqua richiedono bridge solo nei layout che dichiarano
+  un fiume nello `generation_summary`.
 - `BiomeMapDebugOverlay`: espone seed corrente, riepilogo celle/passaggi,
   metriche di generazione (strade, sentieri, case, vegetazione densa, bridge,
   fiumi, acqua, auto, fence), classi terrain aggregate, il report di
@@ -1160,10 +1163,13 @@ Modalita previste:
   eseguiti direttamente.
 - `tests/visual_qa/helpers/visual_qa_runtime.gd` rende valida una cattura
   gameplay solo dopo la rimozione del loading overlay, la presenza del marker
-  specifico, il completamento del terreno e
-  `WorldRegionStreamer.visible_missing_chunks == 0` stabile per due frame.
+  specifico, il completamento del terreno, area prefetch pronta, code regioni/
+  contenuti drenate e `WorldRegionStreamer.visible_missing_chunks == 0` stabile
+  per tre frame; prima di restituire attende inoltre due
+  `RenderingServer.frame_post_draw`.
 - Il review biomi disabilita temporaneamente il polling di `RegionSeamSystem`
-  durante i teleport QA, prepara i chunk per ogni focus e verifica entrambe le
+  durante i teleport QA, prepara i chunk per il rettangolo camera target,
+  richiede almeno il 30% di copertura world non-nera e verifica entrambe le
   risoluzioni prima di salvare sotto `build/qa/`.
 - Ogni entry point aggiornato libera scena, cache mondo, manifest e texture
   condivise prima di terminare, mantenendo i log privi di leak.

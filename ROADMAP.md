@@ -59,6 +59,9 @@ evitare sovrapposizioni.
   dungeon, tower defense, RPG, biomi e boss. Il profilo Zombie Survival
   `1280x720`, balanced/generated art, 4 player e 28 nemici deve misurare
   p95 normale <= 33,3 ms, seam <= 50 ms e nessun chunk mancante in camera.
+- Il pass `WORLD-VIS-FIX` e completato: raised cliff e fall zone hanno semantica
+  distinta, placement e contatti ground/void sono coperti da guardrail e il
+  profilo movimento/zoom non perde chunk visibili. Soak e tuning restano aperti.
 - Le evidenze visuali dei mini-eventi bioma e dei set generated biome art
   rientrano qui; `BIO-001` non va riaperto salvo bug o tuning concreto.
 

@@ -35,6 +35,44 @@ Validazione finale:
 - ispezione della contact sheet root: nessuna schermata di loading;
 - 25 log senza `FAIL`, errori, leak `ObjectDB` o risorse residue.
 
+## Follow-up WORLD-VIS-FIX - 2026-07-02
+
+**PASS per cliff, placement e copertura viewport.** I finding `VIS-003` e
+`VIS-004` sono chiusi; seam dei materiali e scala/stile degli oggetti restano
+separati in `ART-VIS-FIX`.
+
+- Il perimetro `walled` di Infinite Arena usa solo raised cliff solidi e non
+  genera fall zone; i chasm interni restano una feature intenzionale.
+- La coverage automatica verifica ogni contatto ground/void sui cinque biomi e
+  richiede una mesh cliff per ogni tile di transizione.
+- `MapValidationSystem` rifiuta ostacoli fuori regione o sovrapposti alle fall
+  zone; le crate restano ammesse solo su terreno walkable.
+- `visible_missing_chunks` include ora i chunk visibili di un tile layer ancora
+  in build, eliminando il falso zero che poteva dichiarare pronta una scena
+  incompleta.
+- Il contratto Visual QA richiede anche area prefetch pronta, nessuna regione o
+  contenuto pendente, tre frame logici stabili e due frame renderizzati
+  `post_draw` prima dello screenshot.
+- La QA isometrica attraversa un seam con movimento continuo per 90 frame e
+  zoom fino a `0.68`, senza teleport nel tratto profilato e con zero chunk
+  visibili mancanti.
+- Il review biomi rifiuta catture con meno del 30% di copertura world non-nera,
+  impedendo che HUD/props isolati facciano passare una viewport incompleta.
+
+Le aree nere rimaste nelle catture sono `fall_zone`/chasm deterministici con
+bordo cliff, non tile non caricate. Il void profondo resta volutamente uniforme
+e senza texture ripetuta.
+
+Validazione finale:
+
+- suite `environment`: **37/37 test**, 8.954 assert;
+- suite `world_gen`: **48/48 test**, 352 assert;
+- `void_cliff`: **7/7 test**, 594 assert;
+- `zombie_modes`: **4/4 test**, 1.616 assert;
+- Visual QA completa: **25 OK, 0 falliti**, 47 PNG root e 150 PNG review;
+- 150/150 catture review superano il controllo di copertura world;
+- 25 log senza `FAIL`, errori, leak o risorse residue.
+
 ## Ambiente e metodo
 
 - Branch: `master` (`origin/master` avanti di 2 commit al termine della QA).
@@ -96,6 +134,9 @@ continuo; le route sembrano overlay tecnici.
 
 ### VIS-003 - Alta - Muri e voragini comunicano la stessa semantica
 
+Stato 2026-07-02: **CHIUSO da WORLD-VIS-FIX**. Il testo seguente conserva
+l'evidenza dell'audit originario.
+
 L'Infinite Arena deve usare un perimetro `walled`, ma la suite rileva
 `Infinite Arena cliffs are not fall zones` come failure. Le catture mostrano
 pareti perimetrali con nero oltre il bordo e numerosi riquadri neri interni:
@@ -112,6 +153,9 @@ Impatto: il player non puo distinguere un muro invalicabile da una fall zone
 che infligge danno e consente il roll solo entro regole specifiche.
 
 ### VIS-004 - Alta - Vuoto nero senza bordo e oggetti sospesi
+
+Stato 2026-07-02: **CHIUSO da WORLD-VIS-FIX**. Il testo seguente conserva
+l'evidenza dell'audit originario.
 
 Molte catture `1280x720` mostrano grandi aree nere adiacenti al terreno senza
 un cliff continuo. In alcuni casi pickup, marker o props restano visibili nel
@@ -357,6 +401,8 @@ Evidenza:
 
 ### 2. WORLD-VIS-FIX - Correggere cliff, void e copertura viewport
 
+- Stato 2026-07-02: **completato**; evidenze e validazione nel follow-up
+  `WORLD-VIS-FIX` in testa al report.
 - Obiettivo: separare chiaramente muro e caduta e impedire buchi/oggetti nel
   vuoto.
 - Milestone collegata: `BAL-001`.

@@ -144,6 +144,20 @@ func is_area_ready(
 ) -> bool:
 	if world_rect.size.x <= 0.0 or world_rect.size.y <= 0.0:
 		world_rect = get_visible_world_rect(viewport)
+	for entry_key in entries.keys():
+		var region_id := StringName(entry_key)
+		var visible_coords := _chunk_coords_for_region_rect(
+			entries,
+			region_id,
+			world_rect,
+			prefetch_margin_chunks
+		)
+		if visible_coords.is_empty():
+			continue
+		var entry := entries.get(String(region_id), {}) as Dictionary
+		var tile_layer := entry.get("tile_layer") as BiomeTileLayer
+		if tile_layer == null or tile_layer.is_building():
+			return false
 	for key in _chunk_keys_for_world_rect(
 		entries,
 		world_rect,
@@ -221,14 +235,18 @@ func refresh(
 	for region_id in _ordered_region_ids(entries):
 		var entry := entries.get(String(region_id), {}) as Dictionary
 		var tile_layer := entry.get("tile_layer") as BiomeTileLayer
-		if tile_layer == null or tile_layer.is_building():
-			continue
 		var visible_coords := _chunk_coords_for_region_rect(
 			entries,
 			region_id,
 			world_rect,
 			0
 		)
+		if tile_layer == null or tile_layer.is_building():
+			# A visible region whose tile layer is not ready is missing all of
+			# its intersecting chunks. Skipping it produced a false zero while
+			# gameplay objects could already be present over an empty backdrop.
+			visible_missing_count += visible_coords.size()
+			continue
 		var loaded_coords := _chunk_coords_for_region_rect(
 			entries,
 			region_id,

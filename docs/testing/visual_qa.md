@@ -13,9 +13,12 @@ Gli entry point vivono in `tests/visual_qa/` e sono script standalone
 Ogni cattura gameplay usa il contratto condiviso
 `helpers/visual_qa_runtime.gd`: attende la rimozione di
 `WorldLoadingScreen`, il marker specifico dello scenario, il completamento del
-terreno e, quando lo streaming e attivo, `visible_missing_chunks == 0` stabile
-per due frame. Il cleanup dello stesso helper libera scena e cache statiche
-prima dell'uscita.
+terreno e, quando lo streaming e attivo, area prefetch pronta, code regioni e
+contenuti drenate e `visible_missing_chunks == 0` stabile per tre frame, seguiti
+da due frame renderizzati `post_draw`. Il review biomi richiede inoltre almeno
+il 30% di copertura world non-nera. La QA isometrica finale profila un
+attraversamento seam continuo con zoom dinamico. Il cleanup dello stesso helper
+libera scena e cache statiche prima dell'uscita.
 
 ## Esecuzione
 

@@ -137,6 +137,7 @@ func _run() -> void:
 	await _capture_cross_biome_chase(
 		biome_manager,
 		seam_system,
+		streamer,
 		enemy_system,
 		player
 	)
@@ -322,6 +323,7 @@ func _spawn_biome_roster(
 func _capture_cross_biome_chase(
 	biome_manager: BiomeManager,
 	seam_system,
+	streamer,
 	enemy_system: EnemySystem,
 	player: PlayerController
 ) -> void:
@@ -365,6 +367,10 @@ func _capture_cross_biome_chase(
 	enemy.move_speed = 180.0
 	enemy.target_refresh_interval = 0.01
 	enemy.target = player
+	# Keep the chase actor deterministic while the world/zoom profile moves the
+	# player. The enemy traversal starts only after the party reaches the target
+	# region, so pathfinding timing cannot alter the streaming measurement.
+	enemy.set_physics_process(false)
 	var first_chase_ready: Dictionary = (
 		await VISUAL_QA_RUNTIME.wait_for_capture_ready(
 			self,
@@ -384,12 +390,23 @@ func _capture_cross_biome_chase(
 		await _capture("cross_biome_chase_sequence_01.png"),
 		"cross_biome_chase_sequence_01.png screenshot is captured"
 	)
-	_move_node(player, crossing_position)
-	seam_system.cooldown_timer = 0.0
-	seam_system.try_update_region_for_position(crossing_position)
-	await process_frame
-	_move_node(player, crossing_position + direction * 260.0)
-	_snap_camera(player.global_position)
+	var motion_profile: Dictionary = await _move_through_connection(
+		player,
+		seam_system,
+		streamer,
+		crossing_position,
+		direction,
+		connection.to_region_id
+	)
+	_expect(
+		bool(motion_profile.get("crossed", false)),
+		"continuous chase movement crosses the open biome seam"
+	)
+	_expect(
+		int(motion_profile.get("max_visible_missing_chunks", -1)) == 0,
+		"continuous movement and zoom keep visible_missing_chunks at zero"
+	)
+	enemy.set_physics_process(true)
 	for _frame in range(180):
 		await physics_frame
 		if (
@@ -424,6 +441,65 @@ func _capture_cross_biome_chase(
 		await _capture("cross_biome_chase_sequence_02.png"),
 		"cross_biome_chase_sequence_02.png screenshot is captured"
 	)
+
+func _move_through_connection(
+	player: PlayerController,
+	seam_system,
+	streamer,
+	crossing_position: Vector2,
+	direction: Vector2,
+	target_region_id: StringName
+) -> Dictionary:
+	var camera := root.get_camera_2d()
+	if camera == null:
+		return {
+			"crossed": false,
+			"max_visible_missing_chunks": -1
+		}
+	var camera_was_processing := camera.is_processing()
+	var original_zoom := camera.zoom
+	var start_position := crossing_position - direction * 70.0
+	var end_position := crossing_position + direction * 260.0
+	var max_visible_missing_chunks := 0
+	var crossed := false
+	camera.set_process(false)
+	for frame_index in range(90):
+		var progress := float(frame_index + 1) / 90.0
+		var next_position := start_position.lerp(
+			end_position,
+			progress
+		)
+		_move_node(player, next_position)
+		camera.global_position = next_position
+		camera.zoom = Vector2.ONE * lerpf(
+			original_zoom.x,
+			0.68,
+			sin(progress * PI)
+		)
+		camera.reset_smoothing()
+		if (
+			not crossed
+			and (next_position - crossing_position).dot(direction) >= 0.0
+		):
+			seam_system.cooldown_timer = 0.0
+			seam_system.try_update_region_for_position(next_position)
+		await process_frame
+		crossed = (
+			crossed
+			or StringName(streamer.current_region_id) == target_region_id
+		)
+		var stats: Dictionary = streamer.get_streaming_stats()
+		max_visible_missing_chunks = maxi(
+			max_visible_missing_chunks,
+			int(stats.get("visible_missing_chunks", 0))
+		)
+	camera.zoom = original_zoom
+	camera.set_process(camera_was_processing)
+	_snap_camera(end_position)
+	return {
+		"crossed": crossed,
+		"max_visible_missing_chunks": max_visible_missing_chunks
+	}
 
 func _first_connection_for_cell(
 	graph: WorldGraph,

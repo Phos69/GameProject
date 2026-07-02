@@ -7,7 +7,8 @@ extends RefCounted
 ## present and (for streamed worlds) every visible chunk is committed.
 
 const DEFAULT_TIMEOUT_MSEC := 150000
-const STABLE_READY_FRAMES := 2
+const STABLE_READY_FRAMES := 3
+const DRAW_SETTLE_FRAMES := 2
 const ISOMETRIC_SVG_TEXTURE_LOADER = preload(
 	"res://game/modes/zombie/isometric_svg_texture_loader.gd"
 )
@@ -22,13 +23,16 @@ static func wait_for_capture_ready(
 	var deadline := Time.get_ticks_msec() + maxi(timeout_msec, 1)
 	var next_diagnostic_msec := Time.get_ticks_msec() + 5000
 	var stable_frames := 0
+	var capture_world_rect := _capture_world_rect(tree)
 	var result := _capture_readiness(
 		tree,
 		scenario_marker,
 		require_streaming,
-		require_terrain
+		require_terrain,
+		capture_world_rect
 	)
 	while Time.get_ticks_msec() < deadline:
+		capture_world_rect = _capture_world_rect(tree)
 		if require_streaming:
 			var streamer := tree.get_first_node_in_group(
 				"world_region_streamer"
@@ -42,17 +46,30 @@ static func wait_for_capture_ready(
 					)
 				) > 0
 			):
-				streamer.prepare_area()
+				streamer.prepare_area(capture_world_rect)
 		result = _capture_readiness(
 			tree,
 			scenario_marker,
 			require_streaming,
-			require_terrain
+			require_terrain,
+			capture_world_rect
 		)
 		if bool(result.get("ready", false)):
 			stable_frames += 1
 			if stable_frames >= STABLE_READY_FRAMES:
-				return result
+				for _draw_frame in range(DRAW_SETTLE_FRAMES):
+					await RenderingServer.frame_post_draw
+				capture_world_rect = _capture_world_rect(tree)
+				result = _capture_readiness(
+					tree,
+					scenario_marker,
+					require_streaming,
+					require_terrain,
+					capture_world_rect
+				)
+				if bool(result.get("ready", false)):
+					return result
+				stable_frames = 0
 		else:
 			stable_frames = 0
 		if Time.get_ticks_msec() >= next_diagnostic_msec:
@@ -84,8 +101,18 @@ static func describe_failure(result: Dictionary) -> String:
 	if bool(result.get("streaming_required", false)):
 		if not bool(result.get("streamer_active", false)):
 			blockers.append("streamer inactive")
-		if not bool(result.get("streaming_ready", false)):
+		if not bool(result.get("streaming_area_ready", false)):
 			blockers.append("streamed area pending")
+		if int(result.get("pending_regions", 0)) > 0:
+			blockers.append(
+				"pending_regions=%d"
+				% int(result.get("pending_regions", 0))
+			)
+		if int(result.get("pending_content", 0)) > 0:
+			blockers.append(
+				"pending_content=%d"
+				% int(result.get("pending_content", 0))
+			)
 		if int(result.get("visible_missing_chunks", -1)) != 0:
 			blockers.append(
 				"visible_missing_chunks=%d"
@@ -120,7 +147,8 @@ static func _capture_readiness(
 	tree: SceneTree,
 	scenario_marker: Callable,
 	require_streaming: bool,
-	require_terrain: bool
+	require_terrain: bool,
+	capture_world_rect: Rect2
 ) -> Dictionary:
 	var marker_ready := (
 		scenario_marker.is_null()
@@ -136,8 +164,10 @@ static func _capture_readiness(
 	var stats: Dictionary = {}
 	var streamer_active := false
 	var streaming_ready := not require_streaming
+	var streaming_area_ready := not require_streaming
 	if streamer != null:
 		stats = streamer.get_streaming_stats()
+		streaming_area_ready = streamer.is_area_ready(capture_world_rect)
 		streamer_active = (
 			int(stats.get("gameplay_regions", 0)) > 0
 			and int(stats.get("loaded_visual_chunks", 0)) > 0
@@ -147,7 +177,10 @@ static func _capture_readiness(
 			not require_streaming
 			or (
 				streamer_active
+				and streaming_area_ready
 				and int(stats.get("visible_missing_chunks", -1)) == 0
+				and int(stats.get("pending_regions", 0)) == 0
+				and int(stats.get("pending_content", 0)) == 0
 			)
 		)
 	var loading_overlay := has_loading_overlay(tree)
@@ -165,12 +198,35 @@ static func _capture_readiness(
 		"streaming_required": require_streaming,
 		"streamer_active": streamer_active,
 		"streaming_ready": streaming_ready,
+		"streaming_area_ready": streaming_area_ready,
+		"pending_regions": int(stats.get("pending_regions", 0)),
+		"pending_content": int(stats.get("pending_content", 0)),
 		"visible_missing_chunks": int(
 			stats.get("visible_missing_chunks", -1 if require_streaming else 0)
 		),
 		"streaming_stats": stats,
 		"timed_out": false
 	}
+
+static func _capture_world_rect(tree: SceneTree) -> Rect2:
+	if tree == null or tree.root == null:
+		return Rect2()
+	var camera := tree.root.get_camera_2d()
+	if camera == null:
+		return Rect2()
+	var viewport_size := tree.root.get_visible_rect().size
+	var camera_zoom := Vector2(
+		maxf(camera.zoom.x, 0.01),
+		maxf(camera.zoom.y, 0.01)
+	)
+	var world_size := Vector2(
+		viewport_size.x / camera_zoom.x,
+		viewport_size.y / camera_zoom.y
+	)
+	return Rect2(
+		camera.global_position - world_size * 0.5,
+		world_size
+	)
 
 static func _is_terrain_ready(tree: SceneTree) -> bool:
 	var terrain_generator := tree.get_first_node_in_group(

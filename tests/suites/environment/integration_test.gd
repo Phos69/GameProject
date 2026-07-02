@@ -341,11 +341,19 @@ func test_directional_chunk_prefetch() -> void:
 	camera.set_process(false)
 	camera.position_smoothing_enabled = false
 	var start_position := camera.global_position
+	var start_zoom := camera.zoom
 	var max_visible_missing := 0
 	var observed_commit_msec := 0.0
 	for frame_index in range(90):
+		var progress := float(frame_index + 1) / 90.0
 		camera.global_position = (
 			start_position + Vector2(float(frame_index + 1) * 16.0, 0.0)
+		)
+		var zoom_out_weight := sin(progress * PI)
+		camera.zoom = Vector2.ONE * lerpf(
+			start_zoom.x,
+			0.68,
+			zoom_out_weight
 		)
 		await wait_physics_frames(1)
 		var stats := streamer.get_streaming_stats()
@@ -358,13 +366,48 @@ func test_directional_chunk_prefetch() -> void:
 			float(stats.get("last_frame_chunk_commit_msec", 0.0))
 		)
 	gut.p(
-		"DIRECTIONAL_STREAM_PROFILE: visible_missing=%d max_commit=%.3f ms"
+		"DIRECTIONAL_STREAM_PROFILE: visible_missing=%d max_commit=%.3f ms min_zoom=0.68"
 		% [max_visible_missing, observed_commit_msec]
 	)
+	var terrain_generator := (
+		_scene.node(&"terrain_generator") as TerrainGenerator
+	)
+	var current_tile_layer: BiomeTileLayer = null
+	if terrain_generator != null:
+		current_tile_layer = terrain_generator.get_active_tile_layer()
+	assert_not_null(
+		current_tile_layer,
+		"directional profile exposes the current tile layer"
+	)
+	var building_visible_missing := 0
+	var building_area_ready := true
+	if current_tile_layer != null:
+		current_tile_layer.set("_is_building", true)
+		building_area_ready = streamer.prepare_area()
+		building_visible_missing = int(
+			streamer.get_streaming_stats().get(
+				"visible_missing_chunks",
+				0
+			)
+		)
+		current_tile_layer.set("_is_building", false)
+		streamer.prepare_area()
+	camera.global_position = start_position
+	camera.zoom = start_zoom
+	camera.set_process(true)
 	assert_eq(max_visible_missing, 0,
-		"directional prefetch keeps every camera chunk resident while moving")
+		"directional prefetch keeps every camera chunk resident while moving and zooming")
 	assert_lt(observed_commit_msec, 50.0,
 		"directional chunk commits stay below the seam frame ceiling")
+	assert_false(
+		building_area_ready,
+		"a visible tile layer still in build is not reported ready"
+	)
+	assert_gt(
+		building_visible_missing,
+		0,
+		"a visible tile layer still in build contributes missing chunks"
+	)
 
 # --- assenza di renderer/gate legacy nel percorso standard ------------------
 # (milestone_10_legacy_cleanup)

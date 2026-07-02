@@ -171,6 +171,7 @@ func _find_invalid_placements(
 	layout: BiomeEnvironmentLayout
 ) -> PackedStringArray:
 	var failures := PackedStringArray()
+	var zone_rect := Rect2i(Vector2i.ZERO, layout.zone_size)
 	var spawn := _clamp_cell(layout.player_spawn_cell, layout.zone_size)
 	if layout.get_terrain_class_at_cell(spawn, cell) != BiomeEnvironmentLayout.TERRAIN_WALKABLE:
 		failures.append("player_spawn_not_walkable")
@@ -193,6 +194,25 @@ func _find_invalid_placements(
 			failures.append("crate_inside_fall_zone:%s" % str(crate_cell))
 		if _cell_inside_non_bridge_hazard(clamped_crate, layout):
 			failures.append("crate_inside_hazard:%s" % str(crate_cell))
+	for obstacle_index in range(layout.obstacle_rects.size()):
+		var obstacle_rect := layout.obstacle_rects[obstacle_index]
+		var obstacle_id := (
+			layout.obstacle_ids[obstacle_index]
+			if obstacle_index < layout.obstacle_ids.size()
+			else &"unknown"
+		)
+		var obstacle_label := "%s:%d" % [
+			String(obstacle_id),
+			obstacle_index
+		]
+		if not zone_rect.encloses(obstacle_rect):
+			failures.append(
+				"obstacle_outside_zone:%s" % obstacle_label
+			)
+		if _rect_intersects_any(obstacle_rect, layout.fall_zone_rects):
+			failures.append(
+				"obstacle_inside_fall_zone:%s" % obstacle_label
+			)
 	return failures
 
 func _find_invalid_fall_boundaries(

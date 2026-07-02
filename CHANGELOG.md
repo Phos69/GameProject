@@ -87,6 +87,9 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
   fisso di frame; il review biomi sospende il seam automatico durante i
   teleport controllati e valida `visible_missing_chunks == 0` a entrambe le
   risoluzioni.
+- Il contratto Visual QA attende anche area prefetch pronta e code regioni/
+  contenuti drenate; la QA isometrica finale attraversa un seam in 90 frame con
+  zoom dinamico fino a `0.68`.
 - Ottimizzato lo streaming visuale in movimento: il bake delle superfici
   generated raggruppa le run di tutti i materiali in una sola scansione del
   chunk, riducendo il costo rispetto alla scansione per-materiale.
@@ -160,6 +163,16 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 - Riallineati i focus Visual QA alla griglia `6x6`: le regioni non iniziali
   inquadrano una cella walkable centrale e i sentieri larghi due tile accettano
   `grass_to_path` come campione runtime quando non esiste un core interno.
+- Corretto il falso zero di `visible_missing_chunks` per le regioni visibili
+  con tile layer ancora in build; `is_area_ready()` resta falso finche il layer
+  non puo fornire i chunk richiesti.
+- Eliminata la race residua tra readiness logica e rendering viewport: il
+  contratto condiviso prepara il rettangolo della posizione camera target,
+  richiede tre frame stabili e attende due `frame_post_draw`. Il review biomi
+  rifiuta inoltre immagini con copertura world non-nera inferiore al 30%.
+- Rafforzata la validazione mondo: ostacoli fuori regione o sovrapposti alle
+  fall zone vengono rifiutati, ogni contatto ground/void deve risolvere a un
+  cliff e ogni transizione deve produrre la relativa mesh.
 - `boss_telegraph_visual_qa.gd` attende ora che le regioni streaming siano FULL,
   i tile layer abbiano finito il bake e i chunk visibili/prefetch siano residenti
   prima di salvare gli screenshot dei telegraph boss.
@@ -220,6 +233,19 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Validation
 
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/environment`:
+  37 test, 8.954 assert, passa; il profilo movimento/zoom mantiene
+  `visible_missing_chunks == 0` e commit massimo osservato 8,271 ms.
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/world_gen`:
+  48 test, 352 assert, passa.
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/assets -Select void_cliff`:
+  7 test, 594 assert, passa.
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/modes -Select zombie_modes`:
+  4 test, 1.616 assert, passa.
+- `./tools/run_visual_qa.ps1 -SkipImport`: WORLD-VIS-FIX finale, 25 entry point,
+  25 OK e 0 falliti; rigenerati 47 PNG root e 150 PNG review biomi. Tutte le
+  150 viste superano la coverage world e i 25 log non contengono failure,
+  errori, leak o risorse residue.
 - `./tools/run_visual_qa.ps1 -SkipImport`: 25 entry point standalone, 25 OK,
   0 falliti, exit code `0`; rigenerati 47 PNG root e 150 PNG review biomi.
   La contact sheet root non contiene loading e i 25 log non riportano failure,
