@@ -96,23 +96,7 @@ func get_spawn_rejection_reason(position: Vector2, _biome = null) -> StringName:
 	return &""
 
 func get_visible_world_rect() -> Rect2:
-	var viewport := get_viewport()
-	if viewport == null:
-		return Rect2()
-	var camera := viewport.get_camera_2d()
-	if camera == null:
-		return Rect2()
-	var viewport_size := viewport.get_visible_rect().size
-	var camera_zoom := Vector2(
-		maxf(camera.zoom.x, 0.01),
-		maxf(camera.zoom.y, 0.01)
-	)
-	var world_size := Vector2(
-		viewport_size.x / camera_zoom.x,
-		viewport_size.y / camera_zoom.y
-	)
-	var center := camera.get_screen_center_position()
-	return Rect2(center - world_size * 0.5, world_size)
+	return WorldChunkVisibilityController.get_visible_world_rect(get_viewport())
 
 func is_position_outside_camera_view(position: Vector2) -> bool:
 	var visible_rect := get_visible_world_rect()

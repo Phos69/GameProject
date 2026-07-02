@@ -27,6 +27,10 @@ enum State {
 @export var kill_experience: int = 5
 @export var attack_cooldown: float = 0.85
 @export var target_refresh_interval: float = 0.20
+## Cadenza di risoluzione della regione corrente (propria e del target). Le
+## regioni sono larghe decine di tile, quindi il tracking non serve per-frame;
+## il primo tick dopo lo spawn e' comunque immediato (timer parte a zero).
+@export var region_tracking_interval: float = 0.25
 @export var health_bar_width: float = 44.0
 @export var health_bar_y: float = -30.0
 @export var loot_table: LootTable = preload("res://game/drops/default_enemy_loot.tres")
@@ -61,9 +65,11 @@ var spawn_region_id: StringName = &""
 var current_region_id: StringName = &""
 var last_seen_player_region_id: StringName = &""
 var death_reason: StringName = &"combat"
+var region_tracking_timer: float = 0.0
 var _pathfinder: EnemyPathfinder
 var _obstacle_system: ObstacleSystem
 var _hazard_system: HazardSystem
+var _seam_system: Node
 
 func _ready() -> void:
 	add_to_group("enemies")
@@ -118,7 +124,10 @@ func _physics_process(delta: float) -> void:
 		if attack_timer <= 0.0:
 			_attack_target()
 	move_and_slide()
-	_update_region_tracking()
+	region_tracking_timer = maxf(region_tracking_timer - delta, 0.0)
+	if region_tracking_timer <= 0.0:
+		region_tracking_timer = region_tracking_interval
+		_update_region_tracking()
 	_update_visual()
 
 func get_state_name() -> StringName:
@@ -445,8 +454,13 @@ func _spawn_death_hazard() -> void:
 		}
 	)
 
+func _get_seam_system() -> Node:
+	if _seam_system == null or not is_instance_valid(_seam_system):
+		_seam_system = get_tree().get_first_node_in_group("region_seam_system")
+	return _seam_system
+
 func _update_region_tracking() -> void:
-	var seam_system := get_tree().get_first_node_in_group("region_seam_system")
+	var seam_system := _get_seam_system()
 	if (
 		seam_system != null
 		and seam_system.has_method("get_region_id_for_world_position")
@@ -461,7 +475,7 @@ func _update_region_tracking() -> void:
 func _update_last_seen_player_region() -> void:
 	if target == null:
 		return
-	var seam_system := get_tree().get_first_node_in_group("region_seam_system")
+	var seam_system := _get_seam_system()
 	if (
 		seam_system == null
 		or not seam_system.has_method("get_region_id_for_world_position")

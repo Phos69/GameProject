@@ -41,6 +41,8 @@ var safe_update_timer: float = 0.0
 var fall_cooldowns: Dictionary = {}
 var invulnerability_timers: Dictionary = {}
 var status_runtime: BiomeStatusRuntime
+var _biome_manager_ref: BiomeManager
+var _seam_system_ref: Node
 
 func _ready() -> void:
 	add_to_group("hazard_system")
@@ -186,11 +188,26 @@ func is_position_hazardous(position: Vector2) -> bool:
 func is_position_fall_zone(position: Vector2) -> bool:
 	return is_void_at_world_position(position)
 
+func _get_biome_manager() -> BiomeManager:
+	if _biome_manager_ref == null or not is_instance_valid(_biome_manager_ref):
+		_biome_manager_ref = get_tree().get_first_node_in_group(
+			"biome_manager"
+		) as BiomeManager
+	return _biome_manager_ref
+
+func _get_seam_system() -> Node:
+	if _seam_system_ref == null or not is_instance_valid(_seam_system_ref):
+		_seam_system_ref = get_tree().get_first_node_in_group(
+			"region_seam_system"
+		)
+	return _seam_system_ref
+
 func get_terrain_at_world_position(position: Vector2) -> StringName:
-	var biome_manager := get_tree().get_first_node_in_group(
-		"biome_manager"
-	) as BiomeManager
-	var seam_system := get_tree().get_first_node_in_group("region_seam_system")
+	# Query chiamata per-frame per ogni player/nemico (_check_void_entities) e per
+	# campione dal pathfinder: i riferimenti ai sistemi sono cache-ati invece di
+	# risolvere i gruppi a ogni chiamata.
+	var biome_manager := _get_biome_manager()
+	var seam_system := _get_seam_system()
 	if (
 		biome_manager != null
 		and seam_system != null
@@ -656,21 +673,7 @@ func _on_runtime_status_changed(
 	player_status_changed.emit(player, status_ids)
 
 func _node_contains_position(node: Node, position: Vector2) -> bool:
-	if (
-		node == null
-		or not is_instance_valid(node)
-		or node.is_queued_for_deletion()
-	):
-		return false
-	if node.has_method("contains_global_position"):
-		return bool(node.contains_global_position(position))
-	if node is Node2D:
-		var radius := float(node.get_meta("zone_radius", 32.0))
-		return (
-			(node as Node2D).global_position.distance_squared_to(position)
-			<= radius * radius
-		)
-	return false
+	return ObstacleSystem.node_contains_position(node, position)
 
 func _is_position_inside_group(position: Vector2, group_name: StringName) -> bool:
 	for node in get_tree().get_nodes_in_group(group_name):

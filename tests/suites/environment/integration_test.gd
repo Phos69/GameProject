@@ -1128,7 +1128,7 @@ func _assert_neighbor_crate_persistence(streamer, graph: WorldGraph, biome_manag
 		"opening a neighbor crate records it in the neighbor ledger")
 	var environment_container = _scene.main.get_node_or_null("World/EnvironmentProps")
 	var pickup_container = _scene.main.get_node_or_null("World/Pickups")
-	streamer.stream_world(graph, current_region_id, biome_manager, world_runtime,
+	streamer.start_world(graph, current_region_id, biome_manager, world_runtime,
 		environment_container, pickup_container, terrain_generator, obstacle_system, hazard_system, crate_system)
 	await wait_physics_frames(1)
 	assert_null(_find_crate_by_region_key(crate_system, neighbor_id, crate_key), "re-streaming skips the opened neighbor crate")

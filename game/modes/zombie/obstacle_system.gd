@@ -91,7 +91,7 @@ func is_position_blocked_by_non_jumpable(position: Vector2) -> bool:
 
 func is_position_jumpable_obstacle(position: Vector2) -> bool:
 	for blocker in get_tree().get_nodes_in_group("environment_obstacles"):
-		if _is_jumpable(blocker) and _node_contains_position(blocker, position):
+		if _is_jumpable(blocker) and node_contains_position(blocker, position):
 			return true
 	return false
 
@@ -133,7 +133,7 @@ func _is_position_blocked(position: Vector2, skip_jumpable: bool) -> bool:
 		for blocker in get_tree().get_nodes_in_group(group):
 			if skip_jumpable and _is_jumpable(blocker):
 				continue
-			if _node_contains_position(blocker, position):
+			if node_contains_position(blocker, position):
 				return true
 	return false
 
@@ -145,7 +145,9 @@ func _is_jumpable(node: Node) -> bool:
 		and bool(node.is_jumpable_obstacle())
 	)
 
-func _node_contains_position(node: Node, position: Vector2) -> bool:
+# Test di appartenenza condiviso da ostacoli e hazard (HazardSystem delega qui):
+# footprint esplicita via contains_global_position, altrimenti raggio zone_radius.
+static func node_contains_position(node: Node, position: Vector2) -> bool:
 	if (
 		node == null
 		or not is_instance_valid(node)
@@ -157,8 +159,6 @@ func _node_contains_position(node: Node, position: Vector2) -> bool:
 	if node is Node2D:
 		var radius := float(node.get_meta("zone_radius", 32.0))
 		return (node as Node2D).global_position.distance_squared_to(position) <= radius * radius
-	if node is CollisionObject2D and node is Node2D:
-		return (node as Node2D).global_position.distance_squared_to(position) <= 32.0 * 32.0
 	return false
 
 func _generate_obstacles() -> void:
@@ -202,7 +202,7 @@ func _generate_obstacles() -> void:
 		if obstacle == null:
 			continue
 		obstacle.name = "%s%d" % [
-			_pascal_case(String(obstacle_id)),
+			BiomeHazardCatalog.pascal_case(String(obstacle_id)),
 			index + 1
 		]
 		obstacle.obstacle_key = make_obstacle_key(
@@ -326,9 +326,3 @@ func _sort_offset_for(obstacle_id: StringName) -> float:
 func _apply_debug_visibility(obstacle: Node) -> void:
 	if obstacle != null and obstacle.has_method("set_debug_footprint_visible"):
 		obstacle.call("set_debug_footprint_visible", debug_footprints_visible)
-
-func _pascal_case(value: String) -> String:
-	var result := ""
-	for part in value.split("_", false):
-		result += part.capitalize()
-	return result

@@ -581,19 +581,10 @@ func has_visual_tile_for_cell(cell: Vector2i) -> bool:
 	return _asset_path_exists(get_resolved_asset_path(cell))
 
 func _draw() -> void:
-	# The ground is pre-baked in _rebuild_ground_geometry(): a mesh for the
-	# filled diamonds and, for forest terrain, a coloured underlay that removes
-	# black gaps between playable tiles.
-	if not _uses_chunk_nodes:
-		if _ground_underlay_mesh != null:
-			draw_mesh(_ground_underlay_mesh, null)
-		for texture_id in _surface_texture_ids:
-			var surface_mesh := _forest_surface_meshes.get(texture_id) as ArrayMesh
-			var surface_texture := _forest_surface_textures.get(texture_id) as Texture2D
-			if surface_mesh != null and surface_texture != null:
-				draw_mesh(surface_mesh, surface_texture)
-		if _ground_mesh != null:
-			draw_mesh(_ground_mesh, null)
+	# Il terreno (underlay/superfici/diamanti/dettagli/griglia) e' disegnato dai
+	# BiomeTileChunk figli: _rebuild_ground_geometry() attiva sempre la modalita'
+	# a chunk. Qui restano solo le feature di livello regione (rocce, cliff,
+	# fessure), che non vengono spezzate sui confini dei chunk.
 	if has_rock_area_art():
 		# The ascending walls are drawn first; the raised crown is drawn afterwards
 		# so it masks the hidden upper wall triangles, mirroring how the void ground
@@ -637,14 +628,6 @@ func _draw() -> void:
 		and _cliff_lip_texture != null
 	):
 		draw_mesh(_cliff_mesh_builder.lip_mesh, _cliff_lip_texture)
-	if not _uses_chunk_nodes and _texture_dark_lines.size() >= 2:
-		draw_multiline(_texture_dark_lines, Color(0.09, 0.18, 0.075, 0.34), 1.0)
-	if not _uses_chunk_nodes and _texture_light_lines.size() >= 2:
-		draw_multiline(_texture_light_lines, Color(0.70, 0.76, 0.42, 0.24), 1.0)
-	if not _uses_chunk_nodes and _transition_lines.size() >= 2:
-		draw_multiline(_transition_lines, Color(0.24, 0.15, 0.075, 0.42), 1.2)
-	if not _uses_chunk_nodes and _depth_lines.size() >= 2:
-		draw_multiline(_depth_lines, Color(0.12, 0.22, 0.14, 0.48), 1.4)
 	if (
 		not has_forest_cliff_border_art()
 		and _cliff_mesh_builder != null
@@ -669,8 +652,6 @@ func _draw() -> void:
 			Color(palette.floor_color.lightened(0.46), lip_alpha),
 			lip_width
 		)
-	if not _uses_chunk_nodes and _should_draw_grid() and _grid_points.size() >= 2:
-		draw_multiline(_grid_points, Color(palette.grid_color, 0.12))
 
 func _load_cliff_art_textures() -> void:
 	_cliff_face_texture = null
@@ -1425,9 +1406,10 @@ func _rebuild_tile_cache() -> void:
 			if not bool(asset_exists_by_contract[contract_key]):
 				_missing_asset_count += 1
 
-func _resolve_chunk_size(next_chunk_size: int, preset: StringName) -> int:
-	if next_chunk_size > 0:
-		return next_chunk_size
+## Fonte unica preset->chunk size, condivisa con WorldChunkVisibilityController:
+## se divergessero, le coordinate chunk del controller non mapperebbero piu' sui
+## nodi chunk del layer.
+static func chunk_size_for_preset(preset: StringName) -> int:
 	match preset:
 		&"performance":
 			return PERFORMANCE_CHUNK_SIZE
@@ -1435,6 +1417,11 @@ func _resolve_chunk_size(next_chunk_size: int, preset: StringName) -> int:
 			return QUALITY_CHUNK_SIZE
 		_:
 			return DEFAULT_CHUNK_SIZE
+
+func _resolve_chunk_size(next_chunk_size: int, preset: StringName) -> int:
+	if next_chunk_size > 0:
+		return next_chunk_size
+	return chunk_size_for_preset(preset)
 
 func _cell_center_to_world(cell: Vector2i) -> Vector2:
 	return (

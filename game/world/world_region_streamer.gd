@@ -132,31 +132,6 @@ func start_world(
 	)
 	return set_current_region(center_region_id)
 
-func stream_world(
-	next_graph: WorldGraph,
-	center_region_id: StringName,
-	next_biome_manager: BiomeManager,
-	next_world_runtime: WorldRuntime,
-	next_environment_container: Node,
-	next_pickup_container: Node,
-	next_terrain_generator: TerrainGenerator,
-	next_obstacle_system: ObstacleSystem,
-	next_hazard_system: HazardSystem,
-	next_resource_crate_system: ResourceCrateSystem
-) -> bool:
-	return start_world(
-		next_graph,
-		center_region_id,
-		next_biome_manager,
-		next_world_runtime,
-		next_environment_container,
-		next_pickup_container,
-		next_terrain_generator,
-		next_obstacle_system,
-		next_hazard_system,
-		next_resource_crate_system
-	)
-
 func set_current_region(region_id: StringName) -> bool:
 	if not _is_streaming or graph == null:
 		return false
@@ -485,7 +460,10 @@ func _stream_obstacles(
 		)
 		if obstacle == null:
 			continue
-		obstacle.name = "%s%d" % [_pascal_case(String(obstacle_id)), index + 1]
+		obstacle.name = "%s%d" % [
+			BiomeHazardCatalog.pascal_case(String(obstacle_id)),
+			index + 1
+		]
 		obstacle.obstacle_key = _region_obstacle_key(region_id, index, obstacle_id)
 		parent.add_child(obstacle)
 		if manifest != null and not manifest.blocks_movement(obstacle_id):
@@ -777,10 +755,7 @@ func _on_visual_chunks_changed(
 	visual_chunks_changed.emit(loaded_count, pending_count)
 
 func _layout_for_region(region: WorldRegion) -> BiomeEnvironmentLayout:
-	if region.generated_layout != null:
-		return region.generated_layout
-	var cell := biome_manager.get_cell_by_region_id(region.region_id) as BiomeCell
-	return cell.generated_layout if cell != null else null
+	return biome_manager.get_layout_for_region(region)
 
 func _offset_for_region(region: WorldRegion, tile_scale: float) -> Vector2:
 	var anchor := graph.get_region(anchor_region_id)
@@ -799,9 +774,3 @@ func _region_obstacle_key(
 			String(ObstacleSystem.make_obstacle_key(&"streamed", index, obstacle_id))
 		]
 	)
-
-func _pascal_case(value: String) -> String:
-	var result := ""
-	for part in value.split("_", false):
-		result += part.capitalize()
-	return result

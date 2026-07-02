@@ -221,8 +221,6 @@ func refresh(
 			region_id,
 			tile_layer,
 			visible_coords,
-			entries,
-			world_rect,
 			desired_request_priorities,
 			0
 		)
@@ -230,8 +228,6 @@ func refresh(
 			region_id,
 			tile_layer,
 			loaded_coords,
-			entries,
-			world_rect,
 			desired_request_priorities,
 			1
 		)
@@ -239,8 +235,6 @@ func refresh(
 			region_id,
 			tile_layer,
 			prefetch_coords,
-			entries,
-			world_rect,
 			desired_request_priorities,
 			2
 		)
@@ -280,7 +274,7 @@ func refresh(
 		_pending_requests.size()
 	)
 
-func get_visible_world_rect(viewport: Viewport) -> Rect2:
+static func get_visible_world_rect(viewport: Viewport) -> Rect2:
 	if viewport == null:
 		return Rect2()
 	var camera := viewport.get_camera_2d()
@@ -348,27 +342,14 @@ func _queue_requests(
 	region_id: StringName,
 	tile_layer: BiomeTileLayer,
 	coords: Array[Vector2i],
-	entries: Dictionary,
-	world_rect: Rect2,
 	desired_request_priorities: Dictionary,
 	priority_tier: int
 ) -> void:
-	var prioritized_coords := coords.duplicate()
-	prioritized_coords.sort_custom(
-		func(a: Vector2i, b: Vector2i) -> bool:
-			return _chunk_priority(
-				entries,
-				region_id,
-				a,
-				world_rect.get_center()
-			) < _chunk_priority(
-				entries,
-				region_id,
-				b,
-				world_rect.get_center()
-			)
-	)
-	for coord in prioritized_coords:
+	# Niente ordinamento qui: l'ordine di inserimento e' irrilevante perche' ogni
+	# refresh riordina l'intera coda con _sort_pending_requests (tier, regione,
+	# distanza dalla camera). Il caso comune - tutti i chunk gia' residenti - resta
+	# una passata lineare senza allocazioni.
+	for coord in coords:
 		var key := _make_chunk_key(region_id, coord)
 		desired_request_priorities[key] = mini(
 			int(desired_request_priorities.get(key, priority_tier)),
@@ -402,9 +383,12 @@ func _apply_retention_policy(
 ) -> Array[Vector2i]:
 	var result: Array[Vector2i] = []
 	var now := Time.get_ticks_msec()
+	var retained_lookup := {}
+	for coord in retain_coords:
+		retained_lookup[coord] = true
 	for coord in tile_layer.get_resident_chunk_coords():
 		var key := _make_chunk_key(region_id, coord)
-		if retain_coords.has(coord):
+		if retained_lookup.has(coord):
 			_eviction_deadlines.erase(key)
 			result.append(coord)
 			continue
@@ -573,21 +557,14 @@ func _chunk_coords_for_region_rect(
 	return result
 
 func _layout_for_region(region: WorldRegion) -> BiomeEnvironmentLayout:
-	if region == null:
+	if biome_manager == null:
 		return null
-	if region.generated_layout != null:
-		return region.generated_layout
-	var cell := biome_manager.get_cell_by_region_id(region.region_id) as BiomeCell
-	return cell.generated_layout if cell != null else null
+	return biome_manager.get_layout_for_region(region)
 
+# Deve corrispondere alla dimensione chunk scelta dal BiomeTileLayer, altrimenti
+# le coordinate chunk del controller non mappano piu' sui nodi del layer.
 func _chunk_size_for_quality() -> int:
-	match quality_preset:
-		&"performance":
-			return BiomeTileLayer.PERFORMANCE_CHUNK_SIZE
-		&"quality":
-			return BiomeTileLayer.QUALITY_CHUNK_SIZE
-		_:
-			return BiomeTileLayer.DEFAULT_CHUNK_SIZE
+	return BiomeTileLayer.chunk_size_for_preset(quality_preset)
 
 func _make_chunk_key(
 	region_id: StringName,

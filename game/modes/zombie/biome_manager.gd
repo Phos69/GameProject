@@ -272,6 +272,17 @@ func get_cell_by_region_id(region_id: StringName) -> BiomeCell:
 			return cell
 	return null
 
+## Layout generato di una regione: preferisce il layout salvato sulla regione,
+## altrimenti quello della cella biome corrispondente. Fonte unica per streamer
+## e chunk-visibility controller.
+func get_layout_for_region(region: WorldRegion) -> BiomeEnvironmentLayout:
+	if region == null:
+		return null
+	if region.generated_layout != null:
+		return region.generated_layout
+	var cell := get_cell_by_region_id(region.region_id)
+	return cell.generated_layout if cell != null else null
+
 func _apply_cell_layout_to_definition(cell: BiomeCell) -> void:
 	if cell == null or cell.generated_layout == null:
 		return
