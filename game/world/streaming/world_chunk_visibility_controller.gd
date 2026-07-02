@@ -27,6 +27,12 @@ var _max_chunk_commit_msec: float = 0.0
 var _total_chunk_commit_msec: float = 0.0
 var _total_chunk_commit_count: int = 0
 var _visible_missing_chunk_count: int = 0
+# I set di coordinate per tier cambiano solo quando la camera attraversa un
+# confine di chunk (i margini sono multipli esatti del passo chunk, quindi ogni
+# tier trasla della stessa firma): tra un attraversamento e l'altro il refresh
+# per-frame ricalcolava set identici. String(region key) -> Rect2i firma.
+var _refresh_requested: bool = true
+var _refresh_signatures: Dictionary = {}
 
 func configure(
 	next_graph: WorldGraph,
@@ -40,22 +46,38 @@ func configure(
 	next_commit_budget_msec: float,
 	next_max_commits_per_frame: int
 ) -> void:
+	var normalized_render_margin := maxi(next_render_margin_chunks, 0)
+	var normalized_prefetch_margin := maxi(
+		next_prefetch_margin_chunks,
+		normalized_render_margin
+	)
+	var normalized_retain_margin := maxi(
+		next_retain_margin_chunks,
+		normalized_prefetch_margin
+	)
+	if (
+		graph != next_graph
+		or biome_manager != next_biome_manager
+		or current_region_id != next_current_region_id
+		or quality_preset != next_quality_preset
+		or render_margin_chunks != normalized_render_margin
+		or prefetch_margin_chunks != normalized_prefetch_margin
+		or retain_margin_chunks != normalized_retain_margin
+	):
+		_refresh_requested = true
 	graph = next_graph
 	biome_manager = next_biome_manager
 	current_region_id = next_current_region_id
 	quality_preset = next_quality_preset
-	render_margin_chunks = maxi(next_render_margin_chunks, 0)
-	prefetch_margin_chunks = maxi(
-		next_prefetch_margin_chunks,
-		render_margin_chunks
-	)
-	retain_margin_chunks = maxi(
-		next_retain_margin_chunks,
-		prefetch_margin_chunks
-	)
+	render_margin_chunks = normalized_render_margin
+	prefetch_margin_chunks = normalized_prefetch_margin
+	retain_margin_chunks = normalized_retain_margin
 	unload_grace_msec = maxi(roundi(next_unload_grace_seconds * 1000.0), 0)
 	commit_budget_msec = maxf(next_commit_budget_msec, 0.1)
 	max_commits_per_frame = maxi(next_max_commits_per_frame, 1)
+
+func mark_dirty() -> void:
+	_refresh_requested = true
 
 func clear() -> void:
 	graph = null
@@ -73,13 +95,19 @@ func clear() -> void:
 	_total_chunk_commit_msec = 0.0
 	_total_chunk_commit_count = 0
 	_visible_missing_chunk_count = 0
+	_refresh_requested = true
+	_refresh_signatures.clear()
 
 func process(entries: Dictionary, viewport: Viewport) -> void:
 	_last_frame_commit_count = 0
 	_last_frame_commit_msec = 0.0
-	# Refresh first so stale requests are removed and chunks that just entered
-	# the camera/direction of travel are promoted before this frame's commit.
-	refresh(entries, viewport)
+	# Refresh completo solo quando l'esito puo' cambiare: firma camera/chunk
+	# diversa, eviction in scadenza o richiesta esplicita (mark_dirty, cambio
+	# regione, build completata). Con la camera dentro lo stesso chunk il
+	# refresh e' un no-op e saltarlo elimina il costo fisso per-frame dello
+	# streaming (allocazioni chiavi, sort, scansione dei chunk residenti).
+	if _should_refresh(entries, viewport):
+		refresh(entries, viewport)
 	_process_pending(entries)
 	if _last_frame_commit_count > 0:
 		refresh(entries, viewport, true)
@@ -176,6 +204,14 @@ func refresh(
 		world_rect = get_visible_world_rect(viewport)
 	if world_rect.size.x <= 0.0 or world_rect.size.y <= 0.0:
 		return
+	_refresh_requested = false
+	_refresh_signatures.clear()
+	for entry_key in entries.keys():
+		_refresh_signatures[entry_key] = _region_refresh_signature(
+			entries,
+			StringName(entry_key),
+			world_rect
+		)
 	_update_movement_direction(world_rect.get_center())
 	var next_loaded_keys: Array[StringName] = []
 	var next_visible_keys: Array[StringName] = []
@@ -272,6 +308,67 @@ func refresh(
 	visual_chunks_changed.emit(
 		loaded_chunk_keys.size(),
 		_pending_requests.size()
+	)
+
+func _should_refresh(entries: Dictionary, viewport: Viewport) -> bool:
+	if _refresh_requested:
+		return true
+	if graph == null or biome_manager == null:
+		return false
+	if not _eviction_deadlines.is_empty():
+		var now := Time.get_ticks_msec()
+		for deadline in _eviction_deadlines.values():
+			if now >= int(deadline):
+				return true
+	var world_rect := get_visible_world_rect(viewport)
+	if world_rect.size.x <= 0.0 or world_rect.size.y <= 0.0:
+		return false
+	if entries.size() != _refresh_signatures.size():
+		return true
+	for entry_key in entries.keys():
+		if (
+			not _refresh_signatures.has(entry_key)
+			or _refresh_signatures[entry_key]
+			!= _region_refresh_signature(entries, StringName(entry_key), world_rect)
+		):
+			return true
+	return false
+
+# Firma del rect camera in coordinate chunk (pre-clamp) per una regione: Rect2i
+# con position = chunk minimo e size = chunk massimo. I margini di tier sono
+# multipli esatti del passo chunk, quindi ogni tier trasla di un numero intero
+# di chunk rispetto a questa firma: se non cambia, nessun set per-tier cambia.
+func _region_refresh_signature(
+	entries: Dictionary,
+	region_id: StringName,
+	world_rect: Rect2
+) -> Rect2i:
+	var region := graph.get_region(region_id) if graph != null else null
+	var layout := _layout_for_region(region)
+	if layout == null or layout.logical_tile_scale <= 0.0:
+		return Rect2i(0, 0, -1, -1)
+	var entry := entries.get(String(region_id), {}) as Dictionary
+	var offset: Vector2 = entry.get("offset", Vector2.ZERO)
+	var scale := layout.logical_tile_scale
+	var half_zone := Vector2(layout.zone_size) * 0.5
+	var min_cell := Vector2i(
+		floori((world_rect.position.x - offset.x) / scale + half_zone.x),
+		floori((world_rect.position.y - offset.y) / scale + half_zone.y)
+	)
+	var max_cell := Vector2i(
+		ceili((world_rect.end.x - offset.x) / scale + half_zone.x),
+		ceili((world_rect.end.y - offset.y) / scale + half_zone.y)
+	)
+	var chunk := float(_chunk_size_for_quality())
+	return Rect2i(
+		Vector2i(
+			floori(float(min_cell.x) / chunk),
+			floori(float(min_cell.y) / chunk)
+		),
+		Vector2i(
+			floori(float(max_cell.x - 1) / chunk),
+			floori(float(max_cell.y - 1) / chunk)
+		)
 	)
 
 static func get_visible_world_rect(viewport: Viewport) -> Rect2:

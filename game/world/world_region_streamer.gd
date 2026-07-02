@@ -22,6 +22,7 @@ const WORLD_CHUNK_VISIBILITY_CONTROLLER_SCRIPT = preload(
 @export_range(0, 8, 1) var retain_margin_chunks: int = 3
 @export_range(0.1, 8.0, 0.1) var chunk_commit_budget_msec: float = 2.0
 @export_range(1, 8, 1) var max_chunk_commits_per_frame: int = 2
+@export_range(0.1, 8.0, 0.1) var content_commit_budget_msec: float = 1.5
 
 var graph: WorldGraph
 var biome_manager: BiomeManager
@@ -37,8 +38,12 @@ var anchor_region_id: StringName = &""
 var manifest: IsometricEnvironmentManifest
 var _is_streaming: bool = false
 var _pending_region_ids: Array[StringName] = []
+# {"region_id": StringName, "kind": &"obstacle"|&"hazard"|&"crate", "index": int,
+# "phase": int, "distance": float} — vedi _queue_region_content.
+var _pending_content: Array[Dictionary] = []
 var _unload_deadlines: Dictionary = {}
 var _chunk_visibility: WorldChunkVisibilityController
+var _seam_system: Node
 
 # String(region_id) -> { "level": int, "offset": Vector2, "env_root": Node2D,
 # "pickup_root": Node2D, "tiles": int, "obstacles": int, "hazards": int,
@@ -61,6 +66,7 @@ func _process(_delta: float) -> void:
 	if not _is_streaming:
 		return
 	_process_pending_regions()
+	_process_pending_content()
 	_process_scheduled_unloads()
 	_configure_chunk_visibility()
 	_chunk_visibility.process(_entries, get_viewport())
@@ -194,6 +200,7 @@ func get_streaming_stats() -> Dictionary:
 	var stats := {
 		"gameplay_regions": get_streamed_region_ids().size(),
 		"pending_regions": _pending_region_ids.size(),
+		"pending_content": _pending_content.size(),
 		"scheduled_unloads": _unload_deadlines.size()
 	}
 	stats.merge(_chunk_visibility.get_streaming_stats(), true)
@@ -207,7 +214,9 @@ func clear() -> void:
 		_unstream_region(StringName(key))
 	_entries.clear()
 	_pending_region_ids.clear()
+	_pending_content.clear()
 	_unload_deadlines.clear()
+	_seam_system = null
 	if _chunk_visibility != null:
 		_chunk_visibility.clear()
 	graph = null
@@ -373,9 +382,18 @@ func _stream_region(
 		is_current,
 		async_tiles
 	)
-	var obstacle_count := _stream_obstacles(env_root, layout, biome, region.region_id)
-	var hazard_count := _stream_hazards(env_root, layout, biome, region.region_id)
-	var crate_count := _stream_crates(pickup_root, layout, biome, region.region_id, offset)
+	# Percorso sincrono (avvio run): tutto il contenuto e' pronto nello stesso
+	# frame. Percorso asincrono (regione entrata nel raggio durante il gameplay):
+	# ostacoli/hazard/casse vengono accodati e committati con un budget per frame
+	# da _process_pending_content, per non concentrare decine di istanziazioni
+	# con collider nel frame del cambio zona.
+	var obstacle_count := 0
+	var hazard_count := 0
+	var crate_count := 0
+	if not async_tiles:
+		obstacle_count = _stream_obstacles(env_root, layout, biome, region.region_id)
+		hazard_count = _stream_hazards(env_root, layout, biome, region.region_id)
+		crate_count = _stream_crates(pickup_root, layout, biome, region.region_id, offset)
 	_entries[String(region.region_id)] = {
 		"level": ContentLevel.DATA_ONLY if async_tiles else ContentLevel.FULL,
 		"offset": offset,
@@ -385,13 +403,23 @@ func _stream_region(
 		"tiles": layout.zone_size.x * layout.zone_size.y,
 		"obstacles": obstacle_count,
 		"hazards": hazard_count,
-		"crates": crate_count
+		"crates": crate_count,
+		"tiles_built": not async_tiles,
+		"content_remaining": 0
 	}
-	if async_tiles and tile_layer != null:
-		tile_layer.build_completed.connect(
-			_on_region_tile_build_completed.bind(region.region_id),
-			CONNECT_ONE_SHOT
+	if async_tiles:
+		var entry := _entries[String(region.region_id)] as Dictionary
+		entry["content_remaining"] = _queue_region_content(
+			region.region_id,
+			layout,
+			biome,
+			offset
 		)
+		if tile_layer != null:
+			tile_layer.build_completed.connect(
+				_on_region_tile_build_completed.bind(region.region_id),
+				CONNECT_ONE_SHOT
+			)
 
 func _stream_tile_layer(
 	parent: Node,
@@ -429,59 +457,71 @@ func _stream_obstacles(
 	if obstacle_system == null:
 		return 0
 	var count := 0
-	for index in range(layout.obstacle_positions.size()):
-		if index >= layout.obstacle_ids.size():
-			break
-		var obstacle_id := layout.obstacle_ids[index]
-		if not biome.obstacle_ids.has(obstacle_id):
-			continue
-		var size := (
-			layout.obstacle_sizes[index]
-			if index < layout.obstacle_sizes.size()
-			else Vector2(48.0, 32.0)
-		)
-		var rotation_radians := (
-			layout.obstacle_rotations[index]
-			if index < layout.obstacle_rotations.size()
-			else 0.0
-		)
-		var shape_id := (
-			layout.obstacle_shape_ids[index]
-			if index < layout.obstacle_shape_ids.size()
-			else &"rectangle"
-		)
-		var obstacle := obstacle_system.create_obstacle_instance(
-			obstacle_id,
-			size,
-			shape_id,
-			rotation_radians,
-			biome.palette.prop_color,
-			biome.palette.hazard_color
-		)
-		if obstacle == null:
-			continue
-		obstacle.name = "%s%d" % [
-			BiomeHazardCatalog.pascal_case(String(obstacle_id)),
-			index + 1
-		]
-		obstacle.obstacle_key = _region_obstacle_key(region_id, index, obstacle_id)
-		parent.add_child(obstacle)
-		if manifest != null and not manifest.blocks_movement(obstacle_id):
-			obstacle.remove_from_group("spawn_blockers")
-			obstacle.remove_from_group("environment_obstacles")
-		obstacle.position = layout.obstacle_positions[index]
-		ObstacleSystem.configure_perimeter_obstacle_visual(
-			obstacle,
-			layout,
-			index,
-			biome.biome_id
-		)
-		obstacle.set_meta("region_id", region_id)
-		if index < layout.obstacle_rects.size():
-			obstacle.set_meta("obstacle_record", layout.get_obstacle_record(index, manifest))
-		obstacle_system.register_streamed_obstacle(obstacle, obstacle_id)
-		count += 1
+	for index in range(
+		mini(layout.obstacle_positions.size(), layout.obstacle_ids.size())
+	):
+		if _commit_obstacle(parent, layout, biome, region_id, index):
+			count += 1
 	return count
+
+func _commit_obstacle(
+	parent: Node,
+	layout: BiomeEnvironmentLayout,
+	biome: BiomeDefinition,
+	region_id: StringName,
+	index: int
+) -> bool:
+	if obstacle_system == null or parent == null or not is_instance_valid(parent):
+		return false
+	var obstacle_id := layout.obstacle_ids[index]
+	if not biome.obstacle_ids.has(obstacle_id):
+		return false
+	var size := (
+		layout.obstacle_sizes[index]
+		if index < layout.obstacle_sizes.size()
+		else Vector2(48.0, 32.0)
+	)
+	var rotation_radians := (
+		layout.obstacle_rotations[index]
+		if index < layout.obstacle_rotations.size()
+		else 0.0
+	)
+	var shape_id := (
+		layout.obstacle_shape_ids[index]
+		if index < layout.obstacle_shape_ids.size()
+		else &"rectangle"
+	)
+	var obstacle := obstacle_system.create_obstacle_instance(
+		obstacle_id,
+		size,
+		shape_id,
+		rotation_radians,
+		biome.palette.prop_color,
+		biome.palette.hazard_color
+	)
+	if obstacle == null:
+		return false
+	obstacle.name = "%s%d" % [
+		BiomeHazardCatalog.pascal_case(String(obstacle_id)),
+		index + 1
+	]
+	obstacle.obstacle_key = _region_obstacle_key(region_id, index, obstacle_id)
+	parent.add_child(obstacle)
+	if manifest != null and not manifest.blocks_movement(obstacle_id):
+		obstacle.remove_from_group("spawn_blockers")
+		obstacle.remove_from_group("environment_obstacles")
+	obstacle.position = layout.obstacle_positions[index]
+	ObstacleSystem.configure_perimeter_obstacle_visual(
+		obstacle,
+		layout,
+		index,
+		biome.biome_id
+	)
+	obstacle.set_meta("region_id", region_id)
+	if index < layout.obstacle_rects.size():
+		obstacle.set_meta("obstacle_record", layout.get_obstacle_record(index, manifest))
+	obstacle_system.register_streamed_obstacle(obstacle, obstacle_id)
+	return true
 
 func _stream_hazards(
 	parent: Node,
@@ -492,43 +532,55 @@ func _stream_hazards(
 	if hazard_system == null:
 		return 0
 	var count := 0
-	for index in range(layout.hazard_positions.size()):
-		if index >= layout.hazard_ids.size():
-			break
-		var hazard_id := layout.hazard_ids[index]
-		if not biome.hazard_ids.has(hazard_id):
-			continue
-		var size := (
-			layout.hazard_sizes[index]
-			if index < layout.hazard_sizes.size()
-			else Vector2(150.0, 72.0)
-		)
-		var rotation_radians := (
-			layout.hazard_rotations[index]
-			if index < layout.hazard_rotations.size()
-			else 0.0
-		)
-		var hazard := hazard_system.create_hazard_instance(
-			hazard_id,
-			size,
-			rotation_radians,
-			biome,
-			layout,
-			index,
-			layout.hazard_positions[index]
-		)
-		if hazard == null:
-			continue
-		hazard.name = "%s%d" % [
-			BiomeHazardCatalog.pascal_case(String(hazard_id)),
-			index + 1
-		]
-		parent.add_child(hazard)
-		hazard.position = layout.hazard_positions[index]
-		hazard.set_meta("region_id", region_id)
-		hazard_system.register_streamed_hazard(hazard, hazard_id)
-		count += 1
+	for index in range(
+		mini(layout.hazard_positions.size(), layout.hazard_ids.size())
+	):
+		if _commit_hazard(parent, layout, biome, region_id, index):
+			count += 1
 	return count
+
+func _commit_hazard(
+	parent: Node,
+	layout: BiomeEnvironmentLayout,
+	biome: BiomeDefinition,
+	region_id: StringName,
+	index: int
+) -> bool:
+	if hazard_system == null or parent == null or not is_instance_valid(parent):
+		return false
+	var hazard_id := layout.hazard_ids[index]
+	if not biome.hazard_ids.has(hazard_id):
+		return false
+	var size := (
+		layout.hazard_sizes[index]
+		if index < layout.hazard_sizes.size()
+		else Vector2(150.0, 72.0)
+	)
+	var rotation_radians := (
+		layout.hazard_rotations[index]
+		if index < layout.hazard_rotations.size()
+		else 0.0
+	)
+	var hazard := hazard_system.create_hazard_instance(
+		hazard_id,
+		size,
+		rotation_radians,
+		biome,
+		layout,
+		index,
+		layout.hazard_positions[index]
+	)
+	if hazard == null:
+		return false
+	hazard.name = "%s%d" % [
+		BiomeHazardCatalog.pascal_case(String(hazard_id)),
+		index + 1
+	]
+	parent.add_child(hazard)
+	hazard.position = layout.hazard_positions[index]
+	hazard.set_meta("region_id", region_id)
+	hazard_system.register_streamed_hazard(hazard, hazard_id)
+	return true
 
 func _stream_crates(
 	parent: Node,
@@ -540,26 +592,43 @@ func _stream_crates(
 	if parent == null or resource_crate_system == null:
 		return 0
 	var count := 0
-	for index in range(layout.crate_positions.size()):
-		if index >= layout.crate_ids.size():
-			break
-		var crate_id := layout.crate_ids[index]
-		if not biome.crate_ids.has(crate_id):
-			continue
-		var crate_key := StringName("layout_%d" % index)
-		if resource_crate_system.is_layout_crate_consumed_for_region(region_id, crate_key):
-			continue
-		var global_position := offset + layout.crate_positions[index]
-		if not resource_crate_system.is_crate_position_valid(global_position):
-			continue
-		var crate := resource_crate_system.create_layout_crate(crate_id, index, region_id)
-		if crate == null:
-			continue
-		parent.add_child(crate)
-		crate.position = layout.crate_positions[index]
-		resource_crate_system.register_streamed_crate(crate, crate_id)
-		count += 1
+	for index in range(
+		mini(layout.crate_positions.size(), layout.crate_ids.size())
+	):
+		if _commit_crate(parent, layout, biome, region_id, offset, index):
+			count += 1
 	return count
+
+func _commit_crate(
+	parent: Node,
+	layout: BiomeEnvironmentLayout,
+	biome: BiomeDefinition,
+	region_id: StringName,
+	offset: Vector2,
+	index: int
+) -> bool:
+	if (
+		resource_crate_system == null
+		or parent == null
+		or not is_instance_valid(parent)
+	):
+		return false
+	var crate_id := layout.crate_ids[index]
+	if not biome.crate_ids.has(crate_id):
+		return false
+	var crate_key := StringName("layout_%d" % index)
+	if resource_crate_system.is_layout_crate_consumed_for_region(region_id, crate_key):
+		return false
+	var global_position := offset + layout.crate_positions[index]
+	if not resource_crate_system.is_crate_position_valid(global_position):
+		return false
+	var crate := resource_crate_system.create_layout_crate(crate_id, index, region_id)
+	if crate == null:
+		return false
+	parent.add_child(crate)
+	crate.position = layout.crate_positions[index]
+	resource_crate_system.register_streamed_crate(crate, crate_id)
+	return true
 
 func _collect_active_region_ids(center_region_id: StringName) -> Array[StringName]:
 	var result: Array[StringName] = [center_region_id]
@@ -620,12 +689,172 @@ func _has_running_tile_worker() -> bool:
 			return true
 	return false
 
+func _queue_region_content(
+	region_id: StringName,
+	layout: BiomeEnvironmentLayout,
+	biome: BiomeDefinition,
+	offset: Vector2
+) -> int:
+	# Le fasi replicano l'ordine del percorso sincrono (ostacoli -> hazard ->
+	# casse: la validita' di una cassa puo' dipendere dagli hazard gia' piazzati);
+	# dentro ogni fase si parte dagli oggetti piu' vicini alla camera, cosi' i
+	# collider attorno al varco appena attraversato diventano solidi per primi.
+	var reference := WorldChunkVisibilityController.get_visible_world_rect(
+		get_viewport()
+	).get_center()
+	var items: Array[Dictionary] = []
+	if obstacle_system != null:
+		for index in range(
+			mini(layout.obstacle_positions.size(), layout.obstacle_ids.size())
+		):
+			if not biome.obstacle_ids.has(layout.obstacle_ids[index]):
+				continue
+			items.append(_content_item(
+				region_id,
+				&"obstacle",
+				index,
+				0,
+				reference.distance_squared_to(offset + layout.obstacle_positions[index])
+			))
+	if hazard_system != null:
+		for index in range(
+			mini(layout.hazard_positions.size(), layout.hazard_ids.size())
+		):
+			if not biome.hazard_ids.has(layout.hazard_ids[index]):
+				continue
+			items.append(_content_item(
+				region_id,
+				&"hazard",
+				index,
+				1,
+				reference.distance_squared_to(offset + layout.hazard_positions[index])
+			))
+	if resource_crate_system != null:
+		for index in range(
+			mini(layout.crate_positions.size(), layout.crate_ids.size())
+		):
+			if not biome.crate_ids.has(layout.crate_ids[index]):
+				continue
+			items.append(_content_item(
+				region_id,
+				&"crate",
+				index,
+				2,
+				reference.distance_squared_to(offset + layout.crate_positions[index])
+			))
+	items.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		if int(a["phase"]) != int(b["phase"]):
+			return int(a["phase"]) < int(b["phase"])
+		return float(a["distance"]) < float(b["distance"])
+	)
+	_pending_content.append_array(items)
+	return items.size()
+
+func _content_item(
+	region_id: StringName,
+	kind: StringName,
+	index: int,
+	phase: int,
+	distance: float
+) -> Dictionary:
+	return {
+		"region_id": region_id,
+		"kind": kind,
+		"index": index,
+		"phase": phase,
+		"distance": distance
+	}
+
+func _process_pending_content() -> void:
+	if _pending_content.is_empty():
+		return
+	var started_usec := Time.get_ticks_usec()
+	var committed := 0
+	var drained_region_ids: Array[StringName] = []
+	while not _pending_content.is_empty():
+		if (
+			committed > 0
+			and float(Time.get_ticks_usec() - started_usec) / 1000.0
+			>= content_commit_budget_msec
+		):
+			break
+		var item := _pending_content.pop_front() as Dictionary
+		var region_id := StringName(item.get("region_id", &""))
+		var entry := _entries.get(String(region_id), {}) as Dictionary
+		if entry.is_empty():
+			continue
+		committed += 1
+		entry["content_remaining"] = maxi(
+			int(entry.get("content_remaining", 0)) - 1,
+			0
+		)
+		var region := graph.get_region(region_id) if graph != null else null
+		var layout: BiomeEnvironmentLayout = null
+		var biome: BiomeDefinition = null
+		if region != null and biome_manager != null:
+			layout = _layout_for_region(region)
+			biome = biome_manager.get_biome_definition(region.biome_id) as BiomeDefinition
+		if layout != null and biome != null:
+			var index := int(item.get("index", -1))
+			match StringName(item.get("kind", &"")):
+				&"obstacle":
+					if _commit_obstacle(
+						entry.get("env_root") as Node,
+						layout,
+						biome,
+						region_id,
+						index
+					):
+						entry["obstacles"] = int(entry.get("obstacles", 0)) + 1
+				&"hazard":
+					if _commit_hazard(
+						entry.get("env_root") as Node,
+						layout,
+						biome,
+						region_id,
+						index
+					):
+						entry["hazards"] = int(entry.get("hazards", 0)) + 1
+				&"crate":
+					if _commit_crate(
+						entry.get("pickup_root") as Node,
+						layout,
+						biome,
+						region_id,
+						entry.get("offset", Vector2.ZERO) as Vector2,
+						index
+					):
+						entry["crates"] = int(entry.get("crates", 0)) + 1
+		if int(entry.get("content_remaining", 0)) <= 0:
+			drained_region_ids.append(region_id)
+	if drained_region_ids.is_empty():
+		return
+	_finalize_hazards()
+	for region_id in drained_region_ids:
+		if _try_promote_region_full(region_id):
+			_emit_streamed_regions_changed()
+
+# FULL richiede sia il tile layer costruito sia la coda contenuti drenata: i
+# consumer (spawner, test) leggono FULL come "gameplay completo nella regione".
+func _try_promote_region_full(region_id: StringName) -> bool:
+	var entry := _entries.get(String(region_id), {}) as Dictionary
+	if entry.is_empty():
+		return false
+	if not bool(entry.get("tiles_built", false)):
+		return false
+	if int(entry.get("content_remaining", 0)) > 0:
+		return false
+	if int(entry.get("level", ContentLevel.NONE)) == ContentLevel.FULL:
+		return false
+	entry["level"] = ContentLevel.FULL
+	return true
+
 func _on_region_tile_build_completed(region_id: StringName) -> void:
 	var entry := _entries.get(String(region_id), {}) as Dictionary
 	if entry.is_empty():
 		return
-	entry["level"] = ContentLevel.FULL
-	_entries[String(region_id)] = entry
+	entry["tiles_built"] = true
+	_try_promote_region_full(region_id)
 	if region_id == current_region_id:
 		_mark_current_tile_layer(region_id)
 	_finalize_hazards()
@@ -637,16 +866,20 @@ func _process_scheduled_unloads() -> void:
 	if _unload_deadlines.is_empty():
 		return
 	var now := Time.get_ticks_msec()
+	# Una sola passata sui nodi che pinnano invece di una per deadline: con il
+	# chase persistente il costo era O(deadline x nemici) a ogni frame proprio
+	# durante il movimento tra zone.
+	var pinned_region_ids := _collect_pinned_region_ids()
 	for key in _unload_deadlines.keys().duplicate():
 		var region_id := StringName(key)
-		if _is_region_pinned(region_id):
+		if pinned_region_ids.has(region_id):
 			_unload_deadlines[key] = (
 				now + int(unload_grace_seconds * 1000.0)
 			)
 			continue
 		if _is_region_tile_building(region_id):
 			_unload_deadlines[key] = (
-				Time.get_ticks_msec() + int(unload_grace_seconds * 1000.0)
+				now + int(unload_grace_seconds * 1000.0)
 			)
 			continue
 		if now < int(_unload_deadlines[key]):
@@ -661,10 +894,12 @@ func _is_region_tile_building(region_id: StringName) -> bool:
 	var tile_layer := entry.get("tile_layer") as BiomeTileLayer
 	return tile_layer != null and tile_layer.is_building()
 
-func _is_region_pinned(region_id: StringName) -> bool:
-	var seam_system := get_tree().get_first_node_in_group("region_seam_system")
+# region_id -> true per ogni regione occupata da un nodo che blocca l'unload.
+func _collect_pinned_region_ids() -> Dictionary:
+	var pinned := {}
+	var seam_system := _resolve_seam_system()
 	if seam_system == null or not seam_system.has_method("get_region_id_for_world_position"):
-		return false
+		return pinned
 	for group_name in [
 		&"players",
 		&"enemies",
@@ -680,9 +915,14 @@ func _is_region_pinned(region_id: StringName) -> bool:
 					(node as Node2D).global_position
 				)
 			)
-			if node_region_id == region_id:
-				return true
-	return false
+			if not node_region_id.is_empty():
+				pinned[node_region_id] = true
+	return pinned
+
+func _resolve_seam_system() -> Node:
+	if _seam_system == null or not is_instance_valid(_seam_system):
+		_seam_system = get_tree().get_first_node_in_group("region_seam_system")
+	return _seam_system
 
 func _unstream_region(region_id: StringName) -> void:
 	var key := String(region_id)
@@ -716,6 +956,16 @@ func _unstream_region(region_id: StringName) -> void:
 		pickup_root.queue_free()
 	_entries.erase(key)
 	_pending_region_ids.erase(region_id)
+	if not _pending_content.is_empty():
+		var retained_items: Array[Dictionary] = []
+		for item in _pending_content:
+			if StringName(item.get("region_id", &"")) != region_id:
+				retained_items.append(item)
+		_pending_content = retained_items
+	# Il controller di visibilita' salta i refresh quando la firma camera/chunk
+	# non cambia: una regione rimossa deve forzarne uno al prossimo process.
+	if _chunk_visibility != null:
+		_chunk_visibility.mark_dirty()
 
 func _mark_current_tile_layer(region_id: StringName) -> void:
 	if terrain_generator == null:
