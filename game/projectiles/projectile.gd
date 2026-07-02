@@ -163,10 +163,13 @@ func _try_hit_target(target: Node) -> void:
 	var applied_damage := 0
 	var health_system = get_tree().get_first_node_in_group("health_system")
 	if health_system != null and health_system.has_method("apply_damage"):
+		# Lo shooter puo' essere gia' stato liberato (nemico morto con proiettile
+		# ancora in volo): un riferimento freed non e' un Node valido come source.
+		var damage_source: Node = owner_node if is_instance_valid(owner_node) else null
 		applied_damage = health_system.apply_damage(
 			target,
 			damage,
-			owner_node,
+			damage_source,
 			source_id,
 			global_position
 		)
