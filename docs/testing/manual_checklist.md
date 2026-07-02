@@ -1135,6 +1135,10 @@ godot --headless --path . --script res://tools/generate_isometric_environment_as
 - In Survival attraversare `toxic_wastes`, `burning_fields`,
   `frozen_outskirts` e `drowned_marsh`; verificare rispettivamente
   `urban_ruins`, `volcanic`, `frozen_tundra` e `swamp`.
+- In `toxic_wastes`, verificare sui seed `641004`, `772031` e `918273` che il
+  ground non cambi variante a macro-celle, che il repeat specchiato non mostri
+  bordi rettangolari e che i contatti terrain/path/road usino direttamente la
+  superficie route senza fasce di transizione.
 - Su una seam tra due biomi controllare entrambi i lati: ogni raised cliff usa
   il tema della regione proprietaria, resta alto due tile logiche e non chiude il
   varco fisico.
@@ -1146,6 +1150,7 @@ godot --headless --path . --script res://tools/generate_isometric_environment_as
 ```text
 godot --headless --path . --script res://tools/prepare_generated_biome_assets.gd -- --check
 godot --path . --rendering-method gl_compatibility --script res://tests/visual_qa/generated_biome_art_visual_qa.gd
+./tools/run_visual_qa.ps1 -SkipImport -Filter biome_art_toxic_wastes
 ./tools/run_gut.ps1 -GutDir res://tests/suites/assets -Select generated_texture
 ```
 

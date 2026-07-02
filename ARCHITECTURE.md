@@ -194,8 +194,10 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
   e nodo CanvasItem proprietario delle mesh, texture e linee di un chunk.
 - `GeneratedBiomeTextureTools`: normalizzazione condivisa dei PNG generati usati
   in repeat runtime; applica crop dei bordi chiari, fix dei pixel alpha e la
-  stessa policy a ground, cliff/void e raised cliff perimetrali senza cambiare
-  classificazione, collisioni o pathfinding.
+  stessa policy a ground, cliff/void e raised cliff perimetrali. Per
+  `toxic_wastes` compone inoltre un atlas specchiato 2x2 a densita nativa,
+  evitando pannelli ripetuti senza cambiare classificazione, collisioni o
+  pathfinding.
 - `WorldGenerationSeed`: seed globale di run e derivazione deterministica degli stream RNG per mappa, terreno, ostacoli, bordi, loot e spawn.
 - `BiomeWorldGenerator`: orchestratore della pipeline procedurale globale per mappa biomi, layout per cella e debug seed.
 - `WorldDataCache`: cache LRU in memoria e su disco dei `world_data` generati.
@@ -847,8 +849,13 @@ multi-bioma.
   `burning_fields -> volcanic`, `frozen_outskirts -> frozen_tundra` e
   `drowned_marsh -> swamp`. Il resolver conserva `tile_id`, `section` e
   `role`, aggiunge `material_asset_id`/`material_asset_path` e il layer
-  raggruppa le mesh per tale materiale. `desert` e il set sostitutivo `forest`
-  sono validati dal catalogo ma non hanno un consumer runtime.
+  raggruppa le mesh per tale materiale. `urban_ruins` seleziona un materiale
+  stabile per ruolo sull'intera regione e risolve le celle di transizione
+  direttamente a path/road; gli asset transition restano catalogati ma non
+  sono superfici runtime del Tossico. Il cambio di significato delle mappe
+  `material_asset_*` invalida la `TileBakeCache` tramite format version `12`.
+  `desert` e il set sostitutivo `forest` sono validati dal catalogo ma non
+  hanno un consumer runtime.
   `IsometricCliffMeshBuilder` mantiene le 14 geometrie neighbor-aware per il
   fallback non forestale. Nel forestale `RectilinearCliffFaceMeshBuilder`
   sostituisce le facce per-cell con quattro pannelli continui per ogni fall

@@ -1060,6 +1060,10 @@ func _apply_generated_material(
 	var material_role := _generated_surface_role(tile_id)
 	if material_role.is_empty():
 		return tile_data
+	material_role = GENERATED_ART_CATALOG.resolve_runtime_surface_role(
+		biome_id,
+		material_role
+	)
 	var generation_seed := layout.generation_seed if layout != null else 0
 	var asset_path := GENERATED_ART_CATALOG.select_surface_asset_path(
 		biome_id,

@@ -43,6 +43,7 @@ const ROCK_CLIFF_FACE_TEXTURE_ID := &"rock_cliff_face_texture"
 const LARGE_ROCK_OBJECT_ID := &"large_rock"
 const FOREST_GRASS_TEXTURE_ID := &"forest_grass"
 const FOREST_SURFACE_TEXTURE_WORLD_SIZE := 256.0
+const TOXIC_SURFACE_TEXTURE_WORLD_SIZE := 1024.0
 const GENERATED_SURFACE_RUN_OVERDRAW_PIXELS := 1.5
 const FOREST_SURFACE_TEXTURE_IDS: Array[StringName] = [
 	&"forest_grass",
@@ -1256,6 +1257,8 @@ func _build_forest_surface_meshes(
 
 func _forest_surface_texture_world_size(texture_id: StringName) -> float:
 	if _uses_generated_theme():
+		if biome_id == &"toxic_wastes":
+			return TOXIC_SURFACE_TEXTURE_WORLD_SIZE
 		var texture_name := String(texture_id)
 		if texture_name.contains("transition_"):
 			return 128.0

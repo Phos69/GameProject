@@ -186,6 +186,13 @@ riclassificazioni" per le pozze). QA dedicata:
 Obiettivo: eliminare il look a blocchi grigi e rendere route, terreno e pozze
 tossiche separabili senza aumentare saturazione in modo aggressivo.
 
+Stato 2026-07-02: primo pass terreno/route eseguito. `urban_ruins` mantiene un
+materiale stabile per ruolo su tutta la regione, normalizza i raster in atlas
+specchiati 2x2 alla densita nativa e usa direttamente path/road sui contatti,
+senza texture di transizione intermedia. La QA dedicata copre tre seed, due
+risoluzioni e sei viste con zero chunk mancanti. Il bioma resta aperto per il
+finding trasversale `VIS-005`: scala e stile di crate/oggetti.
+
 File probabili:
 
 - `game/modes/zombie/biome_generated_art_catalog.gd`

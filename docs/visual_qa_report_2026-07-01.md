@@ -151,6 +151,28 @@ superfici `forest_path` e `forest_road` per i contatti route/terrain. Aggiunta
 QA dedicata `biome_art_infected_plains_visual_qa.gd` e variazione flip/tinta
 deterministica per `forest_tree`.
 
+## Follow-up ART-VIS-FIX toxic_wastes - 2026-07-02
+
+**PASS parziale per terreno e route.** `urban_ruins` non alterna piu varianti
+ogni macro-cella: seleziona un materiale stabile per ruolo sulla regione,
+compone atlas specchiati 2x2 con bordi continui e mantiene la densita nativa.
+Le celle terrain/path/road usano direttamente path o road invece delle texture
+di transizione intermedie.
+
+La QA dedicata `biome_art_toxic_wastes_visual_qa.gd` cattura i seed `641004`,
+`772031` e `918273` a `1280x720` e `960x540`, con viste center, passage,
+fall/cliff, obstacle/hazard, player roster e route transition. Le 36 catture
+passano con `visible_missing_chunks == 0`; il pass resta aperto per la scala
+crate/oggetti di `VIS-005`.
+
+Validazione mirata:
+
+- suite `assets`: **64/64 test**, 8.644 assert;
+- suite `environment`: **37/37 test**, 8.954 assert;
+- suite `world_gen`: **48/48 test**, 352 assert;
+- QA `biome_art_toxic_wastes`: **1 OK, 0 falliti**, 36 PNG;
+- review completo dei cinque biomi: **1 OK, 0 falliti**, 150 PNG.
+
 ## Follow-up UI-VIS-FIX - 2026-07-02
 
 **PASS parziale per la safe area Settings.** Il finding `VIS-001` e chiuso; la

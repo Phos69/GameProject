@@ -128,6 +128,10 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
   - `BiomeTileLayer`/`BiomeTileChunk` usano filtering con mipmap e le texture
     generate normalizzate generano mipmap: elimina lo speckle delle strip
     cliff minificate sui bordi dei chasm.
+  - `toxic_wastes` (`urban_ruins`) usa un materiale stabile per regione e
+    ruolo, atlas runtime 2x2 specchiati con bordi armonizzati e repeat a
+    scala nativa. `TileBakeCache.FORMAT_VERSION` sale a `12` per invalidare i
+    vecchi `material_asset_id` persistiti.
 - Pianura Infetta non renderizza piu `grass_to_path`, `grass_to_road` e
   `path_to_road` come texture intermedie: le celle di contatto usano
   direttamente le superfici `forest_path` o `forest_road`, mantenendo un taglio

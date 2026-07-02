@@ -21,6 +21,8 @@ const FOCUS_PASSAGE := &"passage"
 const FOCUS_CLIFF := &"fall_cliff"
 const FOCUS_OBSTACLE := &"obstacle_hazard"
 const FOCUS_ACTORS := &"actors"
+const FOCUS_PLAYER_ROSTER := &"player_roster"
+const FOCUS_ROUTE_TRANSITION := &"route_transition"
 const FOCUSES: Array[StringName] = [
 	FOCUS_CENTER,
 	FOCUS_PASSAGE,
@@ -53,7 +55,7 @@ func _initialize() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
-	var output_absolute := ProjectSettings.globalize_path(OUTPUT_DIR)
+	var output_absolute := ProjectSettings.globalize_path(_get_output_dir())
 	_expect(
 		DirAccess.make_dir_recursive_absolute(output_absolute) == OK,
 		"biome rendering review output directory is available"
@@ -73,9 +75,9 @@ func _run() -> void:
 		return
 	if wave_manager != null:
 		wave_manager.initial_delay = 100.0
-	for seed in REVIEW_SEEDS:
+	for seed in _get_review_seeds():
 		await _start_review_world(seed)
-		for biome_id in BIOMES:
+		for biome_id in _get_review_biomes():
 			await _review_biome(seed, biome_id)
 		_stop_survival()
 		await _wait_process_frames(2)
@@ -154,7 +156,7 @@ func _wait_until_world_ready() -> void:
 	)
 
 func _all_biomes_generated() -> bool:
-	for biome_id in BIOMES:
+	for biome_id in _get_review_biomes():
 		if _first_cell_for_biome(biome_id) == null:
 			return false
 	return true
@@ -178,7 +180,7 @@ func _review_biome(
 	)
 	_assert_tile_layers_have_assets(biome_id, seed)
 	_assert_runtime_obstacles_have_assets(biome_id, seed)
-	for focus in FOCUSES:
+	for focus in _get_focuses():
 		await _capture_focus(seed, cell, focus)
 	_clear_review_enemies()
 
@@ -308,9 +310,13 @@ func _capture_focus(
 	var player := player_manager.players.get(1) as PlayerController
 	if player != null:
 		_move_node(player, focus_position)
-	if focus == FOCUS_ACTORS:
+	if focus == FOCUS_ACTORS or focus == FOCUS_PLAYER_ROSTER:
 		_spawn_biome_roster(cell.biome_id, focus_position)
-	for resolution in REVIEW_RESOLUTIONS:
+	var camera := root.get_camera_2d()
+	var original_zoom := camera.zoom if camera != null else Vector2.ONE
+	if camera != null and focus == FOCUS_ROUTE_TRANSITION:
+		camera.zoom = original_zoom * 1.35
+	for resolution in _get_review_resolutions():
 		_apply_resolution(resolution)
 		_snap_camera(focus_position)
 		var capture_ready: Dictionary = (
@@ -356,7 +362,7 @@ func _capture_focus(
 			% file_name
 		)
 		var output_absolute := ProjectSettings.globalize_path(
-			OUTPUT_DIR.path_join(_resolution_slug(resolution))
+			_get_output_dir().path_join(_resolution_slug(resolution))
 		)
 		_expect(
 			DirAccess.make_dir_recursive_absolute(output_absolute) == OK,
@@ -366,6 +372,8 @@ func _capture_focus(
 			image.save_png(output_absolute.path_join(file_name)) == OK,
 			"%s screenshot is saved" % file_name
 		)
+	if camera != null:
+		camera.zoom = original_zoom
 
 func _focus_position(cell: BiomeCell, focus: StringName) -> Vector2:
 	var layout := cell.generated_layout
@@ -394,7 +402,11 @@ func _focus_position(cell: BiomeCell, focus: StringName) -> Vector2:
 				return offset + layout.obstacle_positions.front()
 			if not layout.rock_rects.is_empty():
 				return offset + layout.rect_center_to_world(layout.rock_rects.front())
-		FOCUS_CENTER, FOCUS_ACTORS:
+		FOCUS_ROUTE_TRANSITION:
+			var route_cell := _find_route_transition_cell(layout, cell)
+			if route_cell != Vector2i(-1, -1):
+				return offset + layout.logical_to_world(route_cell)
+		FOCUS_CENTER, FOCUS_ACTORS, FOCUS_PLAYER_ROSTER:
 			var actor_cell := _find_walkable_cell_near_center(layout, cell)
 			if actor_cell != Vector2i(-1, -1):
 				return offset + layout.logical_to_world(actor_cell)
@@ -409,12 +421,65 @@ func _focus_marker_is_ready(
 	return (
 		biome_manager.get_current_region_id() == cell.id
 		and (
-			focus != FOCUS_ACTORS
+			(focus != FOCUS_ACTORS and focus != FOCUS_PLAYER_ROSTER)
 			or get_nodes_in_group(
 				"biome_rendering_review_enemies"
 			).size() > 0
 		)
 	)
+
+func _find_route_transition_cell(
+	layout: BiomeEnvironmentLayout,
+	cell: BiomeCell
+) -> Vector2i:
+	var center := Vector2(layout.zone_size) * 0.5
+	var best_cell := Vector2i(-1, -1)
+	var best_distance := INF
+	for y in range(layout.zone_size.y):
+		for x in range(layout.zone_size.x):
+			var candidate := Vector2i(x, y)
+			if not _layout_has_route_at(layout, candidate):
+				continue
+			if (
+				layout.get_terrain_class_at_cell(candidate, cell)
+				!= BiomeEnvironmentLayout.TERRAIN_WALKABLE
+			):
+				continue
+			var touches_ground := false
+			for offset in IsometricTileResolver.CARDINAL_OFFSETS:
+				var neighbor := candidate + offset
+				if (
+					neighbor.x < 0
+					or neighbor.y < 0
+					or neighbor.x >= layout.zone_size.x
+					or neighbor.y >= layout.zone_size.y
+				):
+					continue
+				if (
+					not _layout_has_route_at(layout, neighbor)
+					and layout.get_terrain_class_at_cell(neighbor, cell)
+					== BiomeEnvironmentLayout.TERRAIN_WALKABLE
+				):
+					touches_ground = true
+					break
+			if not touches_ground:
+				continue
+			var distance := Vector2(candidate).distance_squared_to(center)
+			if distance < best_distance:
+				best_distance = distance
+				best_cell = candidate
+	return best_cell
+
+func _layout_has_route_at(
+	layout: BiomeEnvironmentLayout,
+	cell: Vector2i
+) -> bool:
+	if layout.has_road_cell(cell):
+		return true
+	for road_rect in layout.road_rects:
+		if road_rect.has_point(cell):
+			return true
+	return false
 
 func _first_non_fall_hazard_focus(
 	layout: BiomeEnvironmentLayout,
@@ -588,9 +653,27 @@ func _finish() -> void:
 	_stop_survival()
 	var exit_code := 0
 	if failures.is_empty():
-		print("BIOME_RENDERING_REVIEW_VISUAL_QA: PASS")
+		print("%s: PASS" % _get_result_label())
 	else:
 		exit_code = 1
-		print("BIOME_RENDERING_REVIEW_VISUAL_QA: FAIL (%d)" % failures.size())
+		print("%s: FAIL (%d)" % [_get_result_label(), failures.size()])
 	await VISUAL_QA_RUNTIME.cleanup_scene(self)
 	quit(exit_code)
+
+func _get_output_dir() -> String:
+	return OUTPUT_DIR
+
+func _get_review_biomes() -> Array[StringName]:
+	return BIOMES.duplicate()
+
+func _get_review_seeds() -> Array[int]:
+	return REVIEW_SEEDS.duplicate()
+
+func _get_review_resolutions() -> Array[Vector2i]:
+	return REVIEW_RESOLUTIONS.duplicate()
+
+func _get_focuses() -> Array[StringName]:
+	return FOCUSES.duplicate()
+
+func _get_result_label() -> String:
+	return "BIOME_RENDERING_REVIEW_VISUAL_QA"

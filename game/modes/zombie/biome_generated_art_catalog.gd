@@ -11,6 +11,9 @@ const COHERENT_SURFACE_SAMPLE_THEMES: Array[StringName] = [
 	&"urban_ruins",
 	&"volcanic",
 ]
+const REGION_COHERENT_SURFACE_SAMPLE_THEMES: Array[StringName] = [
+	&"urban_ruins",
+]
 const GROUND_DETAIL_POOL_THEMES: Array[StringName] = [
 	&"desert",
 	&"forest",
@@ -189,7 +192,9 @@ static func select_surface_asset_path(
 		return ""
 	var sample_cell := cell
 	var theme_id := get_theme_id_for_biome(biome_id)
-	if role == ROLE_GROUND or COHERENT_SURFACE_SAMPLE_THEMES.has(theme_id):
+	if REGION_COHERENT_SURFACE_SAMPLE_THEMES.has(theme_id):
+		sample_cell = Vector2i.ZERO
+	elif role == ROLE_GROUND or COHERENT_SURFACE_SAMPLE_THEMES.has(theme_id):
 		sample_cell = Vector2i(
 			floori(float(cell.x) / float(SURFACE_MACRO_CELL_SIZE)),
 			floori(float(cell.y) / float(SURFACE_MACRO_CELL_SIZE))
@@ -202,6 +207,20 @@ static func select_surface_asset_path(
 		sample_cell.y,
 	]
 	return pool[posmod(key.hash(), pool.size())]
+
+static func resolve_runtime_surface_role(
+	biome_id: StringName,
+	role: StringName
+) -> StringName:
+	if biome_id != &"toxic_wastes":
+		return role
+	match role:
+		ROLE_GROUND_TO_PATH:
+			return ROLE_PATH
+		ROLE_GROUND_TO_ROAD:
+			return ROLE_ROAD
+		_:
+			return role
 
 static func select_cliff_asset_path(
 	biome_id: StringName,

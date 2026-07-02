@@ -363,6 +363,16 @@ func test_toxic_surface_selection_uses_coherent_materials() -> void:
 			or ground_path.contains("base_ground_variation_03"),
 			"toxic ground uses the coherent grey rubble pair as its base surface"
 		)
+		assert_eq(
+			ground_path,
+			BiomeGeneratedArtCatalog.select_surface_asset_path(
+				biome_id,
+				BiomeGeneratedArtCatalog.ROLE_GROUND,
+				87031 + sample,
+				Vector2i(sample * 5 + 97, sample * 7 + 131)
+			),
+			"toxic ground keeps one material across the region"
+		)
 	var coherent_roles: Array[StringName] = [
 		BiomeGeneratedArtCatalog.ROLE_PATH,
 		BiomeGeneratedArtCatalog.ROLE_ROAD,
@@ -380,14 +390,30 @@ func test_toxic_surface_selection_uses_coherent_materials() -> void:
 			biome_id,
 			role,
 			94337,
-			Vector2i(33, 41)
+			Vector2i(69, 77)
 		)
 		assert_eq(
 			adjacent,
 			first,
-			"toxic %s keeps the same material within one macro patch"
+			"toxic %s keeps the same material across the region"
 			% String(role)
 		)
+	assert_eq(
+		BiomeGeneratedArtCatalog.resolve_runtime_surface_role(
+			biome_id,
+			BiomeGeneratedArtCatalog.ROLE_GROUND_TO_PATH
+		),
+		BiomeGeneratedArtCatalog.ROLE_PATH,
+		"toxic ground/path transitions render with the path surface"
+	)
+	assert_eq(
+		BiomeGeneratedArtCatalog.resolve_runtime_surface_role(
+			biome_id,
+			BiomeGeneratedArtCatalog.ROLE_GROUND_TO_ROAD
+		),
+		BiomeGeneratedArtCatalog.ROLE_ROAD,
+		"toxic ground/road transitions render with the road surface"
+	)
 
 func test_burning_surface_selection_uses_coherent_materials() -> void:
 	var biome_id := &"burning_fields"
@@ -589,10 +615,22 @@ func test_generated_biome_runtime_consumption() -> void:
 		var expected_surface_trim := (
 			_expected_generated_surface_texture_trim_pixels(biome_id)
 		)
+		var expected_runtime_width := (
+			source_image.get_width() - expected_surface_trim * 2
+		)
+		if (
+			biome_id == &"toxic_wastes"
+			and (
+				source_path.contains("base_ground_variation")
+				or source_path.contains("path_variation")
+				or source_path.contains("road_variation")
+			)
+		):
+			expected_runtime_width *= 2
 		assert_eq(
 			runtime_texture.get_width(),
-			source_image.get_width() - expected_surface_trim * 2,
-			"%s trims the bright generated surface border at runtime"
+			expected_runtime_width,
+			"%s normalizes the generated surface dimensions at runtime"
 			% String(biome_id)
 		)
 		if biome_id == &"burning_fields":
@@ -606,6 +644,18 @@ func test_generated_biome_runtime_consumption() -> void:
 			_assert_marsh_routes_are_lifted(layer, expected_surface_trim)
 		if biome_id == &"burning_fields":
 			_assert_volcanic_embers_are_damped(layer, expected_surface_trim)
+		if biome_id == &"toxic_wastes":
+			var toxic_runtime_image := runtime_texture.get_image()
+			assert_lte(
+				_edge_seam_score(toxic_runtime_image),
+				0.04,
+				"toxic_wastes runtime surface harmonizes opposite edges"
+			)
+			assert_eq(
+				layer._forest_surface_texture_world_size(first_rendered_id),
+				BiomeTileLayer.TOXIC_SURFACE_TEXTURE_WORLD_SIZE,
+				"toxic_wastes uses a broad repeat period"
+			)
 		if biome_id == &"frozen_outskirts":
 			var frozen_runtime_image := runtime_texture.get_image()
 			assert_lte(
@@ -673,6 +723,12 @@ func test_generated_biome_runtime_consumption() -> void:
 				"%s renders selected material %s"
 				% [String(biome_id), String(selected_id)]
 			)
+		if biome_id == &"toxic_wastes":
+			for rendered_id in rendered_material_ids:
+				assert_false(
+					String(rendered_id).contains("transition_ground_"),
+					"toxic_wastes does not render intermediate transition textures"
+				)
 		assert_eq(
 			layer.get_loaded_cliff_variant_count(),
 			11,

@@ -57,10 +57,14 @@ static func cliff_edge_trim_pixels(_biome_id: StringName) -> int:
 static func should_harmonize_surface_edges(biome_id: StringName) -> bool:
 	# frozen_outskirts: i bordi chiari della neve formavano una griglia bianca
 	# regolare a ogni repeat world-UV (ART-VIS-FIX, VIS-002).
-	return biome_id == &"burning_fields" or biome_id == &"frozen_outskirts"
+	return (
+		biome_id == &"burning_fields"
+		or biome_id == &"frozen_outskirts"
+		or biome_id == &"toxic_wastes"
+	)
 
 static func should_harmonize_cliff_edges(biome_id: StringName) -> bool:
-	return biome_id == &"burning_fields"
+	return biome_id == &"burning_fields" or biome_id == &"toxic_wastes"
 
 static func cliff_texture_downscale(biome_id: StringName) -> float:
 	if biome_id == &"drowned_marsh":
@@ -85,6 +89,11 @@ static func normalize_surface_texture(
 		should_harmonize_surface_edges(biome_id),
 		BURNING_FIELDS_EDGE_BLEND_PIXELS
 	)
+	if (
+		biome_id == &"toxic_wastes"
+		and _toxic_surface_uses_mirrored_atlas(asset_path)
+	):
+		normalized = _build_mirrored_repeat_atlas(normalized)
 	if biome_id == &"frozen_outskirts":
 		normalized = _harmonize_frozen_surface_texture(normalized, asset_path)
 	if biome_id == &"drowned_marsh":
@@ -168,6 +177,47 @@ static func _normalize_repeating_texture_uncached(
 	# mipmap il sampling salta righe e produce speckle (ART-VIS-FIX, VIS-002).
 	normalized.generate_mipmaps()
 	return ImageTexture.create_from_image(normalized)
+
+static func _build_mirrored_repeat_atlas(texture: Texture2D) -> Texture2D:
+	if texture == null:
+		return null
+	var source := texture.get_image()
+	if source == null or source.is_empty():
+		return texture
+	if source.is_compressed():
+		var decompress_error := source.decompress()
+		if decompress_error != OK:
+			return texture
+	source.convert(Image.FORMAT_RGBA8)
+	var source_size := source.get_size()
+	var atlas := Image.create(
+		source_size.x * 2,
+		source_size.y * 2,
+		false,
+		Image.FORMAT_RGBA8
+	)
+	for y in range(atlas.get_height()):
+		var source_y := (
+			y
+			if y < source_size.y
+			else atlas.get_height() - 1 - y
+		)
+		for x in range(atlas.get_width()):
+			var source_x := (
+				x
+				if x < source_size.x
+				else atlas.get_width() - 1 - x
+			)
+			atlas.set_pixel(x, y, source.get_pixel(source_x, source_y))
+	atlas.fix_alpha_edges()
+	return ImageTexture.create_from_image(atlas)
+
+static func _toxic_surface_uses_mirrored_atlas(asset_path: String) -> bool:
+	return (
+		asset_path.contains("base_ground_variation")
+		or asset_path.contains("path_variation")
+		or asset_path.contains("road_variation")
+	)
 
 static func _copy_or_crop_image(image: Image, trim: int) -> Image:
 	var safe_trim := maxi(trim, 0)
