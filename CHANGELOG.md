@@ -63,6 +63,12 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Changed
 
+- Ricalibrato il rendering dei cliff verso void per la griglia `6x6`: il lip
+  rettilineo resta stretto e termina sulla prima cella di caduta, mentre le
+  facce perimetrali scendono nel void senza comprimersi nella fall strip.
+- Allineata la conversione `world_to_logical()` di `BiomeEnvironmentLayout`
+  alla griglia `75x75`, evitando che il centro delle fall-zone perimetrali
+  venga rimappato una tile piu interno rispetto alla collisione.
 - Ottimizzato lo streaming visuale in movimento: il bake delle superfici
   generated raggruppa le run di tutti i materiali in una sola scansione del
   chunk, riducendo il costo rispetto alla scansione per-materiale.

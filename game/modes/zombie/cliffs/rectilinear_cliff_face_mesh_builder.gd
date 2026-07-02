@@ -8,6 +8,8 @@ class_name RectilinearCliffFaceMeshBuilder
 ## perspective, the same trick the legacy diamond EDGE E/W faces used.
 
 const TEXTURE_REPEAT_WORLD_SIZE := 128.0
+const PERIMETER_FACE_DEPTH_TILES := 1.15
+const PERIMETER_MIN_FACE_DEPTH := 42.0
 # Horizontal lean of the lateral walls as a fraction of their drop depth. 0.0 is a
 # flat vertical strip; ~0.5 ≈ 27° from vertical, matching IsometricCliffMeshBuilder.
 const LATERAL_VOID_SLOPE := 0.5
@@ -54,17 +56,13 @@ func _append_faces(
 	side: StringName,
 	logical_scale: float
 ) -> void:
-	var far_depth := minf(
-		maxf(logical_scale * 5.0, 24.0),
-		rect.size.y * 0.55
-	)
-	var near_depth := minf(
-		maxf(logical_scale * 0.8, 5.0),
-		rect.size.y * 0.20
-	)
+	var far_depth := _far_face_depth(rect, side, logical_scale)
+	var near_depth := _near_face_depth(rect, side, logical_scale)
 	# Lateral walls descend roughly as deep as the far wall so the ravine reads at the
 	# same scale on every side; the lean is capped so a narrow pit cannot fold over.
 	var lateral_drop := minf(far_depth, rect.size.y * 0.5)
+	if _is_perimeter_side(side):
+		lateral_drop = far_depth
 	var lateral_slant := minf(lateral_drop * LATERAL_VOID_SLOPE, rect.size.x * 0.42)
 	match side:
 		&"north":
@@ -139,6 +137,25 @@ func _append_faces(
 				near_depth,
 				-1.0
 			)
+
+func _far_face_depth(rect: Rect2, side: StringName, logical_scale: float) -> float:
+	if _is_perimeter_side(side):
+		return maxf(logical_scale * PERIMETER_FACE_DEPTH_TILES, PERIMETER_MIN_FACE_DEPTH)
+	return minf(
+		maxf(logical_scale * 5.0, 24.0),
+		rect.size.y * 0.55
+	)
+
+func _near_face_depth(rect: Rect2, side: StringName, logical_scale: float) -> float:
+	if _is_perimeter_side(side):
+		return maxf(logical_scale * PERIMETER_FACE_DEPTH_TILES, PERIMETER_MIN_FACE_DEPTH)
+	return minf(
+		maxf(logical_scale * 0.8, 5.0),
+		rect.size.y * 0.20
+	)
+
+func _is_perimeter_side(side: StringName) -> bool:
+	return side == &"north" or side == &"south" or side == &"east" or side == &"west"
 
 func _append_horizontal_face(
 	buffers: Dictionary,

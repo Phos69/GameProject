@@ -881,6 +881,14 @@ func test_rectangular_border_meshes() -> void:
 	builder.build([Rect2i(Vector2i(0, 0), Vector2i(16, 3))], [&"north"], Vector2i(16, 16), 8.0)
 	assert_true(builder.horizontal_segment_count == 1 and builder.vertical_segment_count == 0 and builder.corner_count == 2,
 		"perimeter fall zone draws only the edge facing walkable terrain")
+	builder.build([Rect2i(Vector2i(0, 0), Vector2i(16, 1))], [&"north"], Vector2i(16, 16), 48.0)
+	var perimeter_h := _mesh_bounds(builder.horizontal_mesh)
+	var fall_boundary_y := (1.0 - 8.0) * 48.0
+	assert_true(
+		is_equal_approx(perimeter_h.end.y, fall_boundary_y)
+		and perimeter_h.size.y <= 18.0,
+		"perimeter cliff rim stays narrow and ends at the fall boundary"
+	)
 
 func test_rectilinear_face_meshes() -> void:
 	var builder := RectilinearCliffFaceMeshBuilder.new()
@@ -891,6 +899,22 @@ func test_rectilinear_face_meshes() -> void:
 	assert_eq(_mesh_sheared_quad_count(builder.face_mesh), 2, "both side walls (east/west) lean toward the void interior")
 	var bounds := _mesh_bounds(builder.face_mesh)
 	assert_true(bounds.position.is_equal_approx(Vector2(-32.0, -24.0)) and bounds.end.is_equal_approx(Vector2(16.0, 8.0)), "rectilinear cliff faces stay inside the fall rectangle")
+	builder.build([Rect2i(Vector2i(0, 0), Vector2i(16, 1))], [&"north"], Vector2i(16, 16), 48.0)
+	var north_bounds := _mesh_bounds(builder.face_mesh)
+	var north_fall_boundary_y := (1.0 - 8.0) * 48.0
+	assert_true(
+		is_equal_approx(north_bounds.end.y, north_fall_boundary_y)
+		and north_bounds.size.y >= 48.0,
+		"perimeter north cliff face starts at the fall boundary and keeps readable depth"
+	)
+	builder.build([Rect2i(Vector2i(0, 15), Vector2i(16, 1))], [&"south"], Vector2i(16, 16), 48.0)
+	var south_bounds := _mesh_bounds(builder.face_mesh)
+	var south_fall_boundary_y := (15.0 - 8.0) * 48.0
+	assert_true(
+		is_equal_approx(south_bounds.position.y, south_fall_boundary_y)
+		and south_bounds.size.y >= 48.0,
+		"perimeter south cliff face starts at the fall boundary and keeps readable depth"
+	)
 
 func test_tile_layer_consumes_cliff_textures() -> void:
 	var palette := load("res://game/modes/zombie/biomes/infected_plains_palette.tres") as BiomePalette

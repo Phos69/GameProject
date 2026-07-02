@@ -161,8 +161,9 @@ func has_generated_map_data() -> bool:
 	)
 
 func logical_to_world(cell: Vector2i) -> Vector2:
+	var half_tiles := zone_size / 2
 	return (
-		Vector2(cell.x - zone_size.x / 2, cell.y - zone_size.y / 2)
+		Vector2(cell.x - half_tiles.x, cell.y - half_tiles.y)
 		* logical_tile_scale
 	)
 
@@ -257,9 +258,10 @@ func validate_obstacle_records(
 	return failures
 
 func world_to_logical(position: Vector2) -> Vector2i:
+	var half_tiles := zone_size / 2
 	return Vector2i(
-		roundi(position.x / logical_tile_scale + float(zone_size.x) * 0.5),
-		roundi(position.y / logical_tile_scale + float(zone_size.y) * 0.5)
+		roundi(position.x / logical_tile_scale + float(half_tiles.x)),
+		roundi(position.y / logical_tile_scale + float(half_tiles.y))
 	)
 
 func is_world_position_inside_zone(position: Vector2) -> bool:

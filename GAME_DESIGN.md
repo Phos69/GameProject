@@ -775,7 +775,9 @@ Regole hazard:
   possiede la giunzione e quello verticale termina prima del raccordo, senza
   aloni grigi, tile quadrati, zig-zag o edge che proseguono a croce. La faccia e
   costruita con pannelli continui orizzontali e verticali, non con i lati
-  inclinati dei rombi per-cell; viene ripetuta con UV world-space e dissolta verso il
+  inclinati dei rombi per-cell; sui bordi perimetrali la cresta coincide con la
+  prima cella di caduta e la faccia scende nel void invece di occupare terreno
+  che sembra solido. Viene ripetuta con UV world-space e dissolta verso il
   colore uniforme del void; la grafica non modifica danno o attraversabilita;
 - il void profondo non mostra texture o reticoli ripetuti: resta uniforme e
   usa lo stesso colore del fuori-mappa e viene definito visivamente dal cliff

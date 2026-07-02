@@ -2,11 +2,12 @@ extends RefCounted
 class_name IsometricCliffBorderMeshBuilder
 
 ## Builds a continuous orthogonal rim around rectangular fall zones. The
-## The rectilinear face builder owns the descending rock faces; this builder
+## rectilinear face builder owns the descending rock faces; this builder
 ## owns the clearly readable grass-to-rock crest and its geometric joins.
 
 const HORIZONTAL_GRASS_RATIO := 0.65
 const VERTICAL_GRASS_RATIO := 0.56
+const RIM_WIDTH_TILES := 0.75
 # The rock strip geometry is anchored by the *_GRASS_RATIO constants above, but the
 # UV sampling starts deeper into the texture: the grass->rock transition of both
 # source materials keeps green moss right around the geometric ratio, which read as
@@ -45,7 +46,7 @@ func build(
 	var vertical := _mesh_buffers()
 	var zone_bounds := Rect2i(Vector2i.ZERO, zone_size)
 	var zone_offset := Vector2(zone_size) * 0.5
-	var border_width := maxf(logical_scale * 2.0, 12.0)
+	var border_width := maxf(logical_scale * RIM_WIDTH_TILES, 12.0)
 	for rect_index in range(fall_zone_rects.size()):
 		var source_rect := fall_zone_rects[rect_index]
 		var rect := source_rect.intersection(zone_bounds)

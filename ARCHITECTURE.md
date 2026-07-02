@@ -766,6 +766,9 @@ multi-bioma.
 - Ogni bioma legge `BiomeEnvironmentLayout` per terreno, ostacoli, casse e hazard senza placement hardcoded nei controller.
 - Ogni `BiomeEnvironmentLayout` espone una classificazione completa del `75x75`
   usata da validazione, dodge/gap, spawn, streaming e debug.
+- Le conversioni `logical_to_world()`/`world_to_logical()` usano lo stesso
+  centro griglia intero (`zone_size / 2`), cosi anche regioni dispari `75x75`
+  rimappano i centri di fall strip e ostacoli alla cella logica originale.
 - `BiomeEnvironmentLayout.get_floor_tag_at_cell()` espone anche il tag visuale
   dei floor rect scavati, cosi il resolver puo distinguere tall grass, path e
   altre superfici senza cambiare la classe terrain walkable.
@@ -844,10 +847,13 @@ multi-bioma.
   le pareti laterali (est/ovest) sono sghembate verso l'interno del void
   (`LATERAL_VOID_SLOPE`) per rendere il burrone in finta prospettiva, come le
   vecchie facce diamante EDGE E/W. Tutte campionano `cliff_face_texture` e la
-  dissolvono verso il void. `IsometricCliffBorderMeshBuilder` costruisce il
-  lip con bordi raster distinti: due orizzontali, due verticali e quattro join
+  dissolvono verso il void. Nei fall perimetrali da una tile la faccia puo
+  estendersi oltre la fall strip, ma il bordo alto resta ancorato al confine
+  terreno/caduta. `IsometricCliffBorderMeshBuilder` costruisce il lip con
+  bordi raster distinti: due orizzontali, due verticali e quattro join
   geometrici; i fall perimetrali emettono solo il lato rivolto al terreno in
-  base a `hazard_sides`. Le celle geometriche di transizione
+  base a `hazard_sides` e usano un rim sub-tile. Le celle geometriche di
+  transizione
   mantengono il prato fino alla cresta, evitando un underlay grigio rettangolare
   e una linea a zig-zag sopra la faccia. Non esiste una mesh corner sovrapposta:
   il bordo orizzontale possiede la giunzione e il verticale termina alla sua

@@ -770,6 +770,9 @@ e `high_contrast`.
 - Inquadrare bordi north/south/east/west, un angolo interno, uno esterno e un
   raccordo diagonale: devono avere cresta continua, faccia verticale, linee di
   discesa, ombra profonda e foschia senza celle nere o transizioni ambigue.
+- Avvicinarsi lentamente al bordo di una fall zone perimetrale: la prima cella
+  che innesca la caduta deve coincidere con la cresta visiva del cliff, senza
+  un bordo largo che sembri ancora terreno solido.
 - Verificare che la faccia rocciosa generata non riparta visibilmente a ogni
   cella: crepe e strati devono proseguire lungo segmenti adiacenti; il lip
   pietra/terra/erba deve restare continuo anche sugli angoli.

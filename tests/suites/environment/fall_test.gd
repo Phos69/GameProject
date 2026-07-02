@@ -9,6 +9,7 @@ extends GutTest
 ## migra nella suite di integrazione environment.)
 
 const WorldGen = preload("res://tests/support/world_gen_helpers.gd")
+const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
 
 const BORDER_IDS: Array[StringName] = [
 	&"boundary_fence", &"toxic_boundary_wall", &"lava_boundary", &"ice_boundary", &"deep_water_boundary"
@@ -56,6 +57,44 @@ func test_fall_boundaries() -> void:
 	var graph := _manager.get_world_graph()
 	assert_true(graph != null and bool(graph.validate_physical_passages().get("is_valid", false)),
 		"la logica fall boundary mantiene coerenti i passaggi fisici")
+
+func test_odd_sized_fall_zone_centers_map_to_perimeter_cells() -> void:
+	var layout := BiomeEnvironmentLayout.new()
+	layout.zone_size = IsoGridConfig.BIOME_SIZE
+	layout.logical_tile_scale = IsoGridConfig.LOGICAL_TILE_SCALE
+	var thickness := IsoGridConfig.FALL_BOUNDARY_THICKNESS_TILES
+	layout.add_fall_zone_rect(
+		Rect2i(Vector2i.ZERO, Vector2i(layout.zone_size.x, thickness)),
+		&"north"
+	)
+	layout.add_fall_zone_rect(
+		Rect2i(Vector2i.ZERO, Vector2i(thickness, layout.zone_size.y)),
+		&"west"
+	)
+	layout.rebuild_terrain_classification()
+
+	var north_cell := layout.world_to_logical(layout.hazard_positions[0])
+	var west_cell := layout.world_to_logical(layout.hazard_positions[1])
+	assert_eq(
+		north_cell,
+		Vector2i(layout.zone_size.x / 2, 0),
+		"north fall strip center maps back to the first perimeter row"
+	)
+	assert_eq(
+		west_cell,
+		Vector2i(0, layout.zone_size.y / 2),
+		"west fall strip center maps back to the first perimeter column"
+	)
+	assert_eq(
+		layout.get_terrain_class_at_cell(north_cell),
+		BiomeEnvironmentLayout.TERRAIN_FALL_ZONE,
+		"north fall strip center remains a fall zone terrain cell"
+	)
+	assert_eq(
+		layout.get_terrain_class_at_cell(west_cell),
+		BiomeEnvironmentLayout.TERRAIN_FALL_ZONE,
+		"west fall strip center remains a fall zone terrain cell"
+	)
 
 # --- schivata sui varchi (player_dodge_gap) -------------------------------
 
