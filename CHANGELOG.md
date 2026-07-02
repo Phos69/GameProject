@@ -8,6 +8,12 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Added
 
+- Aggiunto `tests/visual_qa/helpers/visual_qa_runtime.gd`, contratto condiviso
+  per attendere marker scenario, rimozione loading, terreno pronto e zero chunk
+  visibili mancanti, con cleanup esplicito di scena e cache statiche.
+- Aggiunto `docs/visual_qa_report_2026-07-01.md` con ispezione manuale di 225
+  catture, severita, evidenze riproducibili e backlog proposto per UI, mondo,
+  asset, armi e affidabilita del runner Visual QA.
 - Aggiunto lo streaming visuale incrementale della Zombie Survival: il grafo
   `3x3` viene avviato una volta, mentre `BiomeTileChunkBaker`,
   `BiomeTileChunk` e `WorldChunkVisibilityController` mantengono attorno alla
@@ -75,6 +81,12 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 - Allineata la conversione `world_to_logical()` di `BiomeEnvironmentLayout`
   alla griglia `75x75`, evitando che il centro delle fall-zone perimetrali
   venga rimappato una tile piu interno rispetto alla collisione.
+- I runner Visual QA PowerShell e Bash eseguono ora solo i 25 entry point
+  standalone ed escludono i due helper WVIS caricati dall'orchestratore.
+- Gli scenari gameplay Visual QA attendono readiness reale invece di un numero
+  fisso di frame; il review biomi sospende il seam automatico durante i
+  teleport controllati e valida `visible_missing_chunks == 0` a entrambe le
+  risoluzioni.
 - Ottimizzato lo streaming visuale in movimento: il bake delle superfici
   generated raggruppa le run di tutti i materiali in una sola scansione del
   chunk, riducendo il costo rispetto alla scansione per-materiale.
@@ -134,6 +146,20 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
   chiaro, propagano i colori nei pixel alpha e condividono la stessa policy tra
   `BiomeTileLayer` e raised cliff perimetrali, riducendo le strisce bianche tra
   texture cliff di biomi diversi.
+- Eliminate le 26 catture principali ferme sul loading: menu, modalita,
+  enemy/boss, revive, risultati, accessibilita, WVIS crowded e panoramiche
+  bioma verificano ora un marker specifico prima di salvare.
+- Ripristinata la QA isometrica finale con generazione sincrona deterministica;
+  tutte le cinque viste bioma e la sequenza chase vengono rigenerate senza race
+  sul clone della cache mondo.
+- Allineato il test cliff Infinite Arena al contratto runtime: vieta fall zone
+  sul perimetro `walled`, ma ammette i chasm interni condivisi.
+- Stabilizzati revive progress e cliff transition QA, separando il setup
+  visuale dal polling input e verificando le transizioni dopo il commit del
+  relativo chunk.
+- Riallineati i focus Visual QA alla griglia `6x6`: le regioni non iniziali
+  inquadrano una cella walkable centrale e i sentieri larghi due tile accettano
+  `grass_to_path` come campione runtime quando non esiste un core interno.
 - `boss_telegraph_visual_qa.gd` attende ora che le regioni streaming siano FULL,
   i tile layer abbiano finito il bake e i chunk visibili/prefetch siano residenti
   prima di salvare gli screenshot dei telegraph boss.
@@ -194,6 +220,18 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Validation
 
+- `./tools/run_visual_qa.ps1 -SkipImport`: 25 entry point standalone, 25 OK,
+  0 falliti, exit code `0`; rigenerati 47 PNG root e 150 PNG review biomi.
+  La contact sheet root non contiene loading e i 25 log non riportano failure,
+  errori, leak `ObjectDB` o risorse residue.
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/world_gen -Select world_data_cache`:
+  11 test, 34 assert, passa.
+- `./tools/run_visual_qa.ps1`: 27 script eseguiti, 22 OK e 5 falliti; esito
+  complessivo NON PASS. Due failure sono helper lanciati erroneamente come
+  standalone, mentre restano failure reali su cliff Infinite Arena, cache della
+  QA isometrica finale e scenario crowded WVIS. L'ispezione manuale rileva che
+  26 delle 40 catture principali mostrano ancora il loading; dettagli in
+  `docs/visual_qa_report_2026-07-01.md`.
 - `./tools/run_visual_qa.ps1 -SkipImport -Filter boss_telegraph`: 1 Visual QA,
   passa.
 - `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/assets -Select generated_texture`:

@@ -1,6 +1,9 @@
 extends SceneTree
 
 const OUTPUT_DIRECTORY: String = "res://build/qa"
+const VISUAL_QA_RUNTIME = preload(
+	"res://tests/visual_qa/helpers/visual_qa_runtime.gd"
+)
 
 var failures: PackedStringArray = []
 
@@ -34,12 +37,16 @@ func _run() -> void:
 	var enemy_system := get_first_node_in_group(
 		"enemy_system"
 	) as EnemySystem
+	var streamer := get_first_node_in_group(
+		"world_region_streamer"
+	) as WorldRegionStreamer
 	var player := get_first_node_in_group("players") as PlayerController
 	_expect(game_mode_manager != null, "game mode manager is available")
 	_expect(wave_manager != null, "wave manager is available")
 	_expect(biome_manager != null, "biome manager is available")
 	_expect(transition_system != null, "transition system is available")
 	_expect(enemy_system != null, "enemy system is available")
+	_expect(streamer != null, "world region streamer is available")
 	_expect(player != null, "player one is available")
 	if (
 		game_mode_manager == null
@@ -47,6 +54,7 @@ func _run() -> void:
 		or biome_manager == null
 		or transition_system == null
 		or enemy_system == null
+		or streamer == null
 		or player == null
 	):
 		_finish()
@@ -55,8 +63,19 @@ func _run() -> void:
 	wave_manager.initial_delay = 100.0
 	transition_system.transition_cooldown = 0.01
 	game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL)
-	await process_frame
-	await process_frame
+	var world_ready: Dictionary = await VISUAL_QA_RUNTIME.wait_for_capture_ready(
+		self,
+		func() -> bool:
+			return (
+				game_mode_manager.active_mode_id == GameConstants.MODE_SURVIVAL
+				and player.is_inside_tree()
+			)
+	)
+	_expect(
+		bool(world_ready.get("ready", false)),
+		"biome QA world is capture-ready: %s"
+		% VISUAL_QA_RUNTIME.describe_failure(world_ready)
+	)
 	DirAccess.make_dir_recursive_absolute(
 		ProjectSettings.globalize_path(OUTPUT_DIRECTORY)
 	)
@@ -74,11 +93,39 @@ func _run() -> void:
 			transition_system.transition_to(biome_id, &"east")
 			await process_frame
 			await physics_frame
-		player.global_position = Vector2.ZERO
+		var cell := biome_manager.get_current_biome_cell()
+		if cell != null and cell.generated_layout != null:
+			var focus := (
+				streamer.get_region_offset(cell.id)
+				+ cell.generated_layout.logical_to_world(
+					cell.generated_layout.player_spawn_cell
+				)
+			)
+			player.global_position = focus
+			var camera := root.get_camera_2d()
+			if camera != null:
+				camera.global_position = focus
+				camera.reset_smoothing()
 		_clear_qa_enemies()
+		await process_frame
 		_spawn_biome_roster(enemy_system, biome_id)
-		await process_frame
-		await process_frame
+		var capture_ready: Dictionary = (
+			await VISUAL_QA_RUNTIME.wait_for_capture_ready(
+				self,
+				func() -> bool: return _biome_capture_marker_is_ready(
+					biome_manager,
+					biome_id
+				)
+			)
+		)
+		_expect(
+			bool(capture_ready.get("ready", false)),
+			"%s scenario marker is capture-ready: %s"
+			% [
+				biome_id,
+				VISUAL_QA_RUNTIME.describe_failure(capture_ready)
+			]
+		)
 		_expect(
 			await _capture("zombie_biome_%s.png" % String(biome_id)),
 			"%s screenshot is captured" % String(biome_id)
@@ -115,6 +162,15 @@ func _spawn_biome_roster(
 			visual.set_state(&"chase")
 			visual.set_facing(Vector2.DOWN)
 
+func _biome_capture_marker_is_ready(
+	biome_manager: BiomeManager,
+	biome_id: StringName
+) -> bool:
+	return (
+		biome_manager.get_current_biome_id() == biome_id
+		and get_nodes_in_group("biome_qa_enemies").size() > 0
+	)
+
 func _clear_qa_enemies() -> void:
 	for enemy in get_nodes_in_group("biome_qa_enemies"):
 		if is_instance_valid(enemy):
@@ -122,6 +178,8 @@ func _clear_qa_enemies() -> void:
 
 func _capture(file_name: String) -> bool:
 	await process_frame
+	if VISUAL_QA_RUNTIME.has_loading_overlay(self):
+		return false
 	var image := root.get_texture().get_image()
 	if image == null or image.is_empty():
 		return false
@@ -137,9 +195,11 @@ func _expect(condition: bool, message: String) -> void:
 	push_error("FAIL: " + message)
 
 func _finish() -> void:
+	var exit_code := 0
 	if failures.is_empty():
 		print("ZOMBIE_BIOME_VISUAL_QA: PASS")
-		quit(0)
-		return
-	print("ZOMBIE_BIOME_VISUAL_QA: FAIL (%d)" % failures.size())
-	quit(1)
+	else:
+		exit_code = 1
+		print("ZOMBIE_BIOME_VISUAL_QA: FAIL (%d)" % failures.size())
+	await VISUAL_QA_RUNTIME.cleanup_scene(self)
+	quit(exit_code)

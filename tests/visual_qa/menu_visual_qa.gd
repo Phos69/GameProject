@@ -1,6 +1,9 @@
 extends SceneTree
 
 const OUTPUT_DIRECTORY: String = "res://build/qa"
+const VISUAL_QA_RUNTIME = preload(
+	"res://tests/visual_qa/helpers/visual_qa_runtime.gd"
+)
 
 var failures: PackedStringArray = []
 
@@ -72,6 +75,16 @@ func _run() -> void:
 		game_mode_manager.active_mode_id == GameConstants.MODE_INFINITE_ARENA,
 		"simulated joypad A starts Infinite Arena with the selected character"
 	)
+	var infinite_ready: Dictionary = await VISUAL_QA_RUNTIME.wait_for_capture_ready(
+		self,
+		func() -> bool:
+			return (
+				game_mode_manager.active_mode_id
+				== GameConstants.MODE_INFINITE_ARENA
+			),
+		false
+	)
+	_expect_capture_ready(infinite_ready, "Infinite Arena")
 	_expect(
 		await _capture("infinite_arena_started.png"),
 		"Infinite Arena screenshot is captured"
@@ -109,6 +122,15 @@ func _run() -> void:
 		game_mode_manager.active_mode_id == GameConstants.MODE_SURVIVAL,
 		"simulated joypad A confirms selected character and starts survival"
 	)
+	var survival_ready: Dictionary = await VISUAL_QA_RUNTIME.wait_for_capture_ready(
+		self,
+		func() -> bool:
+			return (
+				game_mode_manager.active_mode_id
+				== GameConstants.MODE_SURVIVAL
+			)
+	)
+	_expect_capture_ready(survival_ready, "Zombie Survival")
 	_expect(
 		await _capture("survival_started.png"),
 		"survival screenshot is captured"
@@ -136,6 +158,8 @@ func _focused_button_text() -> String:
 
 func _capture(file_name: String) -> bool:
 	await process_frame
+	if VISUAL_QA_RUNTIME.has_loading_overlay(self):
+		return false
 	if DisplayServer.get_name() == "headless":
 		print("VISUAL_QA_CAPTURE_SKIPPED: ", file_name, " headless display")
 		return true
@@ -149,6 +173,13 @@ func _capture(file_name: String) -> bool:
 		return false
 	var output_path := "%s/%s" % [OUTPUT_DIRECTORY, file_name]
 	return image.save_png(ProjectSettings.globalize_path(output_path)) == OK
+
+func _expect_capture_ready(result: Dictionary, scenario: String) -> void:
+	_expect(
+		bool(result.get("ready", false)),
+		"%s capture state is ready: %s"
+		% [scenario, VISUAL_QA_RUNTIME.describe_failure(result)]
+	)
 
 func _press_joypad_button(button_index: JoyButton) -> void:
 	var pressed := InputEventJoypadButton.new()
@@ -181,9 +212,11 @@ func _expect(condition: bool, message: String) -> void:
 	push_error("FAIL: " + message)
 
 func _finish() -> void:
+	var exit_code := 0
 	if failures.is_empty():
 		print("MENU_VISUAL_QA: PASS")
-		quit(0)
-		return
-	print("MENU_VISUAL_QA: FAIL (%d)" % failures.size())
-	quit(1)
+	else:
+		exit_code = 1
+		print("MENU_VISUAL_QA: FAIL (%d)" % failures.size())
+	await VISUAL_QA_RUNTIME.cleanup_scene(self)
+	quit(exit_code)

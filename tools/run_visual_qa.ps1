@@ -58,6 +58,12 @@ New-Item -ItemType Directory -Force -Path $logDir | Out-Null
 $runStamp = Get-Date -Format "yyyyMMdd_HHmmss"
 
 $qaFiles = Get-ChildItem -Path (Join-Path $projectRoot "tests\visual_qa") -Filter "*.gd" |
+	Where-Object {
+		$_.Name -notin @(
+			"weapon_visual_identity_qa_board.gd",
+			"weapon_visual_identity_survival_qa.gd"
+		)
+	} |
 	Sort-Object Name
 
 if ($qaFiles.Count -eq 0) {

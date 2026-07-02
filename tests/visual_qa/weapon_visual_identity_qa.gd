@@ -1,6 +1,9 @@
 extends SceneTree
 
 const OUTPUT_DIRECTORY := "res://build/qa"
+const VISUAL_QA_RUNTIME = preload(
+	"res://tests/visual_qa/helpers/visual_qa_runtime.gd"
+)
 const PICKUP_SCENE_PATH := "res://game/drops/drop_pickup.tscn"
 const PROJECTILE_SCENE_PATH := "res://game/projectiles/projectile.tscn"
 const QA_BOARD := preload("res://tests/visual_qa/weapon_visual_identity_qa_board.gd")
@@ -417,9 +420,11 @@ func _expect(condition: bool, message: String) -> void:
 	push_error("FAIL: " + message)
 
 func _finish() -> void:
+	var exit_code := 0
 	if failures.is_empty():
 		print("WEAPON_VISUAL_IDENTITY_QA: PASS")
-		quit(0)
-		return
-	print("WEAPON_VISUAL_IDENTITY_QA: FAIL (%d)" % failures.size())
-	quit(1)
+	else:
+		exit_code = 1
+		print("WEAPON_VISUAL_IDENTITY_QA: FAIL (%d)" % failures.size())
+	await VISUAL_QA_RUNTIME.cleanup_scene(self)
+	quit(exit_code)

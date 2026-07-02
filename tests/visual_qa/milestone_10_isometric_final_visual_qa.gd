@@ -2,6 +2,9 @@ extends SceneTree
 
 const OUTPUT_DIRECTORY: String = "res://build/qa"
 const WORLD_SEED: int = 641004
+const VISUAL_QA_RUNTIME = preload(
+	"res://tests/visual_qa/helpers/visual_qa_runtime.gd"
+)
 
 var failures: PackedStringArray = []
 
@@ -57,13 +60,24 @@ func _run() -> void:
 			"world_seed": WORLD_SEED,
 			"biome_map_width": 3,
 			"biome_map_height": 3,
-			"extra_edge_chance": 0.5
+			"extra_edge_chance": 0.5,
+			"async_world_build": false
 		}),
 		"survival starts for final isometric QA"
 	)
-	await process_frame
-	await physics_frame
-	await process_frame
+	var world_ready: Dictionary = await VISUAL_QA_RUNTIME.wait_for_capture_ready(
+		self,
+		func() -> bool:
+			return (
+				biome_manager.get_world_graph() != null
+				and biome_manager.get_generated_biome_map().size() == 9
+			)
+	)
+	_expect(
+		bool(world_ready.get("ready", false)),
+		"final isometric world is capture-ready: %s"
+		% VISUAL_QA_RUNTIME.describe_failure(world_ready)
+	)
 
 	var player := player_manager.players.get(1) as PlayerController
 	_expect(player != null, "player one is available")
@@ -157,9 +171,23 @@ func _capture_biome(
 	_snap_camera(focus_position)
 	_clear_qa_enemies()
 	_spawn_biome_roster(enemy_system, biome_id, focus_position)
-	await process_frame
-	await physics_frame
-	await process_frame
+	var capture_ready: Dictionary = (
+		await VISUAL_QA_RUNTIME.wait_for_capture_ready(
+			self,
+			func() -> bool: return _biome_capture_marker_is_ready(
+				biome_manager,
+				biome_id
+			)
+		)
+	)
+	_expect(
+		bool(capture_ready.get("ready", false)),
+		"%s scenario marker is capture-ready: %s"
+		% [
+			biome_id,
+			VISUAL_QA_RUNTIME.describe_failure(capture_ready)
+		]
+	)
 	_expect(
 		await _capture(file_name),
 		"%s screenshot is captured" % file_name
@@ -190,6 +218,17 @@ func _first_cell_for_biome(
 		if cell.biome_id == biome_id and cell.generated_layout != null:
 			return cell
 	return null
+
+func _biome_capture_marker_is_ready(
+	biome_manager: BiomeManager,
+	biome_id: StringName
+) -> bool:
+	return (
+		biome_manager.get_current_biome_id() == biome_id
+		and get_nodes_in_group(
+			"milestone_10_final_qa_enemies"
+		).size() > 0
+	)
 
 func _get_focus_position(
 	biome_manager: BiomeManager,
@@ -326,7 +365,21 @@ func _capture_cross_biome_chase(
 	enemy.move_speed = 180.0
 	enemy.target_refresh_interval = 0.01
 	enemy.target = player
-	await process_frame
+	var first_chase_ready: Dictionary = (
+		await VISUAL_QA_RUNTIME.wait_for_capture_ready(
+			self,
+			func() -> bool: return _first_chase_marker_is_ready(
+				enemy,
+				player,
+				start_cell
+			)
+		)
+	)
+	_expect(
+		bool(first_chase_ready.get("ready", false)),
+		"first chase marker is capture-ready: %s"
+		% VISUAL_QA_RUNTIME.describe_failure(first_chase_ready)
+	)
 	_expect(
 		await _capture("cross_biome_chase_sequence_01.png"),
 		"cross_biome_chase_sequence_01.png screenshot is captured"
@@ -353,6 +406,20 @@ func _capture_cross_biome_chase(
 		is_instance_valid(enemy) and enemy.current_region_id == connection.to_region_id,
 		"chase screenshot enemy reaches target region"
 	)
+	var second_chase_ready: Dictionary = (
+		await VISUAL_QA_RUNTIME.wait_for_capture_ready(
+			self,
+			func() -> bool: return _second_chase_marker_is_ready(
+				enemy,
+				connection
+			)
+		)
+	)
+	_expect(
+		bool(second_chase_ready.get("ready", false)),
+		"second chase marker is capture-ready: %s"
+		% VISUAL_QA_RUNTIME.describe_failure(second_chase_ready)
+	)
 	_expect(
 		await _capture("cross_biome_chase_sequence_02.png"),
 		"cross_biome_chase_sequence_02.png screenshot is captured"
@@ -369,6 +436,27 @@ func _first_connection_for_cell(
 		if connection.is_open and connection.physical_passage:
 			return connection
 	return null
+
+func _first_chase_marker_is_ready(
+	enemy: BasicEnemy,
+	player: PlayerController,
+	start_cell: BiomeCell
+) -> bool:
+	return (
+		is_instance_valid(enemy)
+		and enemy.target == player
+		and enemy.current_region_id == start_cell.id
+	)
+
+func _second_chase_marker_is_ready(
+	enemy: BasicEnemy,
+	connection: WorldRegionConnection
+) -> bool:
+	return (
+		is_instance_valid(enemy)
+		and not enemy.is_queued_for_deletion()
+		and enemy.current_region_id == connection.to_region_id
+	)
 
 func _direction_for_side(side: StringName) -> Vector2:
 	match side:
@@ -400,6 +488,8 @@ func _clear_qa_enemies() -> void:
 
 func _capture(file_name: String) -> bool:
 	await process_frame
+	if VISUAL_QA_RUNTIME.has_loading_overlay(self):
+		return false
 	var image := root.get_texture().get_image()
 	if image == null or image.is_empty():
 		return false
@@ -439,12 +529,14 @@ func _expect(condition: bool, message: String) -> void:
 	push_error("FAIL: " + message)
 
 func _finish() -> void:
+	var exit_code := 0
 	if failures.is_empty():
 		print("MILESTONE_10_ISOMETRIC_FINAL_VISUAL_QA: PASS")
-		quit(0)
-		return
-	print(
-		"MILESTONE_10_ISOMETRIC_FINAL_VISUAL_QA: FAIL (%d)"
-		% failures.size()
-	)
-	quit(1)
+	else:
+		exit_code = 1
+		print(
+			"MILESTONE_10_ISOMETRIC_FINAL_VISUAL_QA: FAIL (%d)"
+			% failures.size()
+		)
+	await VISUAL_QA_RUNTIME.cleanup_scene(self)
+	quit(exit_code)

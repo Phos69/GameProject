@@ -1,6 +1,9 @@
 extends SceneTree
 
 const OUTPUT_DIRECTORY: String = "res://build/qa"
+const VISUAL_QA_RUNTIME = preload(
+	"res://tests/visual_qa/helpers/visual_qa_runtime.gd"
+)
 
 var failures: PackedStringArray = []
 
@@ -38,10 +41,27 @@ func _run() -> void:
 	wave_manager.spawn_interval = 0.08
 	local_multiplayer.activate_slot(2)
 	game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL)
-	for _frame in range(180):
+	var world_ready: Dictionary = await VISUAL_QA_RUNTIME.wait_for_capture_ready(
+		self,
+		func() -> bool:
+			return (
+				game_mode_manager.active_mode_id == GameConstants.MODE_SURVIVAL
+				and wave_manager.run_active
+			)
+	)
+	_expect(
+		bool(world_ready.get("ready", false)),
+		"survival world is capture-ready: %s"
+		% VISUAL_QA_RUNTIME.describe_failure(world_ready)
+	)
+	for _frame in range(600):
 		if wave_manager.state == WaveManager.State.COMBAT:
 			break
 		await physics_frame
+	_expect(
+		wave_manager.state == WaveManager.State.COMBAT,
+		"survival combat marker is active"
+	)
 	await process_frame
 
 	DirAccess.make_dir_recursive_absolute(
@@ -55,6 +75,8 @@ func _run() -> void:
 
 func _capture(file_name: String) -> bool:
 	await process_frame
+	if VISUAL_QA_RUNTIME.has_loading_overlay(self):
+		return false
 	var image := root.get_texture().get_image()
 	if image == null or image.is_empty():
 		return false
@@ -69,9 +91,11 @@ func _expect(condition: bool, message: String) -> void:
 	push_error("FAIL: " + message)
 
 func _finish() -> void:
+	var exit_code := 0
 	if failures.is_empty():
 		print("SURVIVAL_VISUAL_QA: PASS")
-		quit(0)
-		return
-	print("SURVIVAL_VISUAL_QA: FAIL (%d)" % failures.size())
-	quit(1)
+	else:
+		exit_code = 1
+		print("SURVIVAL_VISUAL_QA: FAIL (%d)" % failures.size())
+	await VISUAL_QA_RUNTIME.cleanup_scene(self)
+	quit(exit_code)

@@ -6,7 +6,16 @@ contesto di rendering (non headless), quindi **vivono fuori dalla suite GUT**
 eseguita in CI e si lanciano su richiesta — localmente o in un job notturno con
 display virtuale (xvfb).
 
-I file vivono in `tests/visual_qa/` (sono script standalone `extends SceneTree`).
+Gli entry point vivono in `tests/visual_qa/` e sono script standalone
+`extends SceneTree`. Gli helper WVIS top-level e gli helper condivisi sotto
+`tests/visual_qa/helpers/` non vengono eseguiti direttamente dal runner.
+
+Ogni cattura gameplay usa il contratto condiviso
+`helpers/visual_qa_runtime.gd`: attende la rimozione di
+`WorldLoadingScreen`, il marker specifico dello scenario, il completamento del
+terreno e, quando lo streaming e attivo, `visible_missing_chunks == 0` stabile
+per due frame. Il cleanup dello stesso helper libera scena e cache statiche
+prima dell'uscita.
 
 ## Esecuzione
 
@@ -50,4 +59,6 @@ Bash). In PowerShell usare anche `-SkipImport` e `-OutputLogDir`.
 | UI / HUD / audio | `menu_visual_qa.gd`, `player_world_hud_visual_qa.gd`, `run_results_visual_qa.gd`, `audio_mix_visual_qa.gd`, `downed_revive_visual_qa.gd`, `visual_accessibility_qa.gd` |
 
 > Nota: `weapon_visual_identity_qa.gd` orchestra `weapon_visual_identity_qa_board.gd`
-> e `weapon_visual_identity_survival_qa.gd` via `preload`.
+> e `weapon_visual_identity_survival_qa.gd` via `preload`; i due helper sono
+> esclusi esplicitamente dai runner PowerShell e Bash. La suite completa esegue
+> 25 entry point standalone.

@@ -1,6 +1,9 @@
 extends SceneTree
 
 const OUTPUT_DIRECTORY: String = "res://build/qa"
+const VISUAL_QA_RUNTIME = preload(
+	"res://tests/visual_qa/helpers/visual_qa_runtime.gd"
+)
 
 var failures: PackedStringArray = []
 
@@ -51,8 +54,19 @@ func _run() -> void:
 	for player_slot in range(2, 5):
 		local_multiplayer.activate_slot(player_slot)
 	game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL)
-	await process_frame
-	await process_frame
+	var world_ready: Dictionary = await VISUAL_QA_RUNTIME.wait_for_capture_ready(
+		self,
+		func() -> bool:
+			return (
+				game_mode_manager.active_mode_id == GameConstants.MODE_SURVIVAL
+				and player_manager.players.size() == 4
+			)
+	)
+	_expect(
+		bool(world_ready.get("ready", false)),
+		"ranged enemy world is capture-ready: %s"
+		% VISUAL_QA_RUNTIME.describe_failure(world_ready)
+	)
 
 	var player_positions := [
 		Vector2(-165.0, 190.0),
@@ -70,9 +84,11 @@ func _run() -> void:
 		[&"survival_runner", Vector2(-80.0, -120.0)],
 		[&"survival_tank", Vector2(110.0, -85.0)]
 	]
+	var spawned_roster: Array[BasicEnemy] = []
 	for spec in roster:
 		var enemy := enemy_system.spawn_enemy(spec[0], spec[1]) as BasicEnemy
 		if enemy != null:
+			spawned_roster.append(enemy)
 			enemy.set_physics_process(false)
 			enemy.visual.set_state(&"chase")
 			enemy.visual.set_facing(Vector2.DOWN)
@@ -90,6 +106,12 @@ func _run() -> void:
 
 	await process_frame
 	await process_frame
+	_expect(
+		spawned_roster.size() == roster.size()
+		and shooter != null
+		and float(shooter.get("windup_timer")) > 0.0,
+		"ranged roster marker includes the active shooter telegraph"
+	)
 	DirAccess.make_dir_recursive_absolute(
 		ProjectSettings.globalize_path(OUTPUT_DIRECTORY)
 	)
@@ -101,6 +123,8 @@ func _run() -> void:
 
 func _capture(file_name: String) -> bool:
 	await process_frame
+	if VISUAL_QA_RUNTIME.has_loading_overlay(self):
+		return false
 	var image := root.get_texture().get_image()
 	if image == null or image.is_empty():
 		return false
@@ -115,9 +139,11 @@ func _expect(condition: bool, message: String) -> void:
 	push_error("FAIL: " + message)
 
 func _finish() -> void:
+	var exit_code := 0
 	if failures.is_empty():
 		print("RANGED_ENEMY_VISUAL_QA: PASS")
-		quit(0)
-		return
-	print("RANGED_ENEMY_VISUAL_QA: FAIL (%d)" % failures.size())
-	quit(1)
+	else:
+		exit_code = 1
+		print("RANGED_ENEMY_VISUAL_QA: FAIL (%d)" % failures.size())
+	await VISUAL_QA_RUNTIME.cleanup_scene(self)
+	quit(exit_code)

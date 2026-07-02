@@ -25,6 +25,11 @@ Regole per nuove voci:
   vita cromatica sulle due righe superiori, super verticale blu con glow e testi
   HP/ammo piu leggibili. Restano menu, HUD globale, audio e QA completa
   multi-risoluzione.
+- Audit visuale 2026-07-01: `docs/visual_qa_report_2026-07-01.md` rileva
+  Settings tagliato a 1280x720, HUD sovradimensionato, Character Select
+  incompleto, scale crate/ostacoli incoerenti e leggibilita disomogenea delle
+  armi. Le priorita `UI-VIS-FIX`, `ART-VIS-FIX` e `WEAPON-VIS-FIX` restano
+  aperte dentro questa milestone.
 - Obiettivo: rifinire menu, HUD, Character Select, status, mappa, boss, feedback
   audio e leggibilita senza cambiare regole di gioco.
 - Milestone collegata: post-roadmap UI/UX Milestone 8.
@@ -67,6 +72,12 @@ Regole per nuove voci:
 
 ### QA-001 - Ampliare i test automatici dei sistemi critici
 
+- Stato Visual QA 2026-07-02: `QA-VIS-FIX` completato. Il runner esegue solo i
+  25 entry point standalone, ogni scenario gameplay attende marker e chunk
+  visibili pronti, la QA isometrica finale passa e la suite completa chiude con
+  exit code `0`. I finding visuali di prodotto restano nelle milestone
+  `UIUX-001` e `BAL-001`; dettagli in
+  `docs/visual_qa_report_2026-07-01.md`.
 - Obiettivo: coprire meglio health, multiplayer, wave, save/load, world runtime
   e lifecycle oltre agli smoke gia presenti.
 - Milestone collegata: post-roadmap QA Milestone 11.

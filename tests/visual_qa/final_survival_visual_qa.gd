@@ -1,6 +1,9 @@
 extends SceneTree
 
 const OUTPUT_DIRECTORY: String = "res://build/qa"
+const VISUAL_QA_RUNTIME = preload(
+	"res://tests/visual_qa/helpers/visual_qa_runtime.gd"
+)
 
 var failures: PackedStringArray = []
 
@@ -68,8 +71,19 @@ func _run() -> void:
 	for player_slot in range(2, 5):
 		local_multiplayer.activate_slot(player_slot)
 	game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL)
-	await process_frame
-	await process_frame
+	var world_ready: Dictionary = await VISUAL_QA_RUNTIME.wait_for_capture_ready(
+		self,
+		func() -> bool:
+			return (
+				game_mode_manager.active_mode_id == GameConstants.MODE_SURVIVAL
+				and player_manager.players.size() == 4
+			)
+	)
+	_expect(
+		bool(world_ready.get("ready", false)),
+		"final survival world is capture-ready: %s"
+		% VISUAL_QA_RUNTIME.describe_failure(world_ready)
+	)
 
 	var player_positions: Array[Vector2] = [
 		Vector2(-180.0, 80.0),
@@ -135,6 +149,11 @@ func _run() -> void:
 	for _frame in range(15):
 		await process_frame
 	_expect(
+		enemies.size() == enemy_ids.size()
+		and hud.combat_announcement.is_active(),
+		"wave presentation marker is active"
+	)
+	_expect(
 		await _capture("milestone_14_wave_presentation.png"),
 		"four-player wave presentation is captured"
 	)
@@ -165,6 +184,11 @@ func _run() -> void:
 	for _frame in range(12):
 		await process_frame
 	_expect(
+		boss.pending_pattern_id == &"aimed_volley"
+		and boss.telegraph_timer > 0.0,
+		"phase one marker shows the aimed telegraph"
+	)
+	_expect(
 		await _capture("milestone_14_boss_phase_one.png"),
 		"phase one boss presentation is captured"
 	)
@@ -182,6 +206,12 @@ func _run() -> void:
 	for _frame in range(12):
 		await process_frame
 	_expect(
+		boss.pending_pattern_id == &"radial_burst"
+		and boss.telegraph_timer > 0.0
+		and boss.phase_index == 2,
+		"phase two marker shows the radial telegraph"
+	)
+	_expect(
 		await _capture("milestone_14_boss_phase_two.png"),
 		"phase two boss presentation is captured"
 	)
@@ -191,6 +221,12 @@ func _run() -> void:
 	for _frame in range(12):
 		await process_frame
 	_expect(
+		not is_instance_valid(boss)
+		or boss.is_queued_for_deletion()
+		or boss.is_dead,
+		"boss defeat marker is active"
+	)
+	_expect(
 		await _capture("milestone_14_boss_defeat.png"),
 		"boss defeat presentation is captured"
 	)
@@ -198,6 +234,8 @@ func _run() -> void:
 
 func _capture(file_name: String) -> bool:
 	await process_frame
+	if VISUAL_QA_RUNTIME.has_loading_overlay(self):
+		return false
 	var image := root.get_texture().get_image()
 	if image == null or image.is_empty():
 		return false
@@ -212,9 +250,11 @@ func _expect(condition: bool, message: String) -> void:
 	push_error("FAIL: " + message)
 
 func _finish() -> void:
+	var exit_code := 0
 	if failures.is_empty():
 		print("FINAL_SURVIVAL_VISUAL_QA: PASS")
-		quit(0)
-		return
-	print("FINAL_SURVIVAL_VISUAL_QA: FAIL (%d)" % failures.size())
-	quit(1)
+	else:
+		exit_code = 1
+		print("FINAL_SURVIVAL_VISUAL_QA: FAIL (%d)" % failures.size())
+	await VISUAL_QA_RUNTIME.cleanup_scene(self)
+	quit(exit_code)

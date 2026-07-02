@@ -1155,7 +1155,18 @@ Modalita previste:
 - `build/*` e `tests/*` sono esclusi dal pacchetto release.
 - `Main` crea `BuildRuntimeSmoke` solo con l'argomento utente `--build-smoke`.
 - Il runner verifica bootstrap menu, focus, D-pad, joypad `A`, audio UI, avvio survival, HUD e ritorno con `Esc`.
-- Il QA visuale usa `tests/menu_visual_qa.gd` e salva catture temporanee in `build/qa/`.
+- Il QA visuale usa 25 entry point `SceneTree` sotto `tests/visual_qa/`; i due
+  helper WVIS top-level vengono caricati solo dall'orchestratore e non sono
+  eseguiti direttamente.
+- `tests/visual_qa/helpers/visual_qa_runtime.gd` rende valida una cattura
+  gameplay solo dopo la rimozione del loading overlay, la presenza del marker
+  specifico, il completamento del terreno e
+  `WorldRegionStreamer.visible_missing_chunks == 0` stabile per due frame.
+- Il review biomi disabilita temporaneamente il polling di `RegionSeamSystem`
+  durante i teleport QA, prepara i chunk per ogni focus e verifica entrambe le
+  risoluzioni prima di salvare sotto `build/qa/`.
+- Ogni entry point aggiornato libera scena, cache mondo, manifest e texture
+  condivise prima di terminare, mantenendo i log privi di leak.
 
 ## Estendibilita IA
 

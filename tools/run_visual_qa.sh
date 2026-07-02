@@ -44,6 +44,18 @@ fi
 shopt -s nullglob
 qa_files=(tests/visual_qa/*.gd)
 shopt -u nullglob
+helper_files=(
+	"weapon_visual_identity_qa_board.gd"
+	"weapon_visual_identity_survival_qa.gd"
+)
+standalone_qa_files=()
+for qa_file in "${qa_files[@]}"; do
+	name="$(basename "$qa_file")"
+	if [[ " ${helper_files[*]} " != *" ${name} "* ]]; then
+		standalone_qa_files+=("$qa_file")
+	fi
+done
+qa_files=("${standalone_qa_files[@]}")
 
 if [ "${#qa_files[@]}" -eq 0 ]; then
 	echo "Nessun Visual QA trovato in tests/visual_qa/*.gd" >&2

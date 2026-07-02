@@ -1,6 +1,9 @@
 extends SceneTree
 
 const OUTPUT_DIRECTORY: String = "res://build/qa"
+const VISUAL_QA_RUNTIME = preload(
+	"res://tests/visual_qa/helpers/visual_qa_runtime.gd"
+)
 const ENEMY_IDS: Array[StringName] = [
 	&"survival_zombie",
 	&"survival_runner",
@@ -80,6 +83,11 @@ func _run() -> void:
 	main_menu._open_visual_settings()
 	await process_frame
 	_expect(
+		main_menu.settings_panel != null
+		and main_menu.settings_panel.visible,
+		"video settings panel marker is visible"
+	)
+	_expect(
 		await _capture("milestone_21_visual_settings_menu.png"),
 		"visual settings menu screenshot is captured"
 	)
@@ -89,8 +97,20 @@ func _run() -> void:
 		local_multiplayer.activate_slot(player_slot)
 	wave_manager.initial_delay = 100.0
 	game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL, {})
-	await process_frame
-	await process_frame
+	var world_ready: Dictionary = await VISUAL_QA_RUNTIME.wait_for_capture_ready(
+		self,
+		func() -> bool:
+			return (
+				game_mode_manager.active_mode_id == GameConstants.MODE_SURVIVAL
+				and player_manager.players.size() == 4
+			)
+	)
+	_expect(
+		bool(world_ready.get("ready", false)),
+		"accessibility world is capture-ready: %s"
+		% VISUAL_QA_RUNTIME.describe_failure(world_ready)
+	)
+	var spawned_enemies: Array[Node] = []
 	for index in range(ENEMY_IDS.size()):
 		var spawn_position := Vector2.RIGHT.rotated(
 			TAU * float(index) / float(ENEMY_IDS.size())
@@ -100,6 +120,7 @@ func _run() -> void:
 			spawn_position.move_toward(Vector2.ZERO, 155.0)
 		)
 		if enemy != null:
+			spawned_enemies.append(enemy)
 			enemy.set_physics_process(false)
 			var visual := enemy.get_node_or_null("Visual") as ZombieVisual
 			if visual != null:
@@ -129,6 +150,25 @@ func _run() -> void:
 		visual_settings.apply_profile(profile_spec[0])
 		await process_frame
 		await process_frame
+		var profile_ready: Dictionary = (
+			await VISUAL_QA_RUNTIME.wait_for_capture_ready(
+				self,
+				func() -> bool: return _profile_scenario_is_ready(
+					visual_settings,
+					profile_spec[0],
+					spawned_enemies,
+					boss
+				)
+			)
+		)
+		_expect(
+			bool(profile_ready.get("ready", false)),
+			"%s scenario marker is capture-ready: %s"
+			% [
+				profile_spec[0],
+				VISUAL_QA_RUNTIME.describe_failure(profile_ready)
+			]
+		)
 		_expect(
 			await _capture(profile_spec[1]),
 			"%s profile screenshot is captured" % profile_spec[0]
@@ -159,6 +199,21 @@ func _spawn_pickup_samples(main: Node) -> void:
 		)
 		parent.add_child(pickup)
 
+func _profile_scenario_is_ready(
+	visual_settings: VisualSettingsManager,
+	profile_id: StringName,
+	spawned_enemies: Array[Node],
+	boss: RiftArchitect
+) -> bool:
+	return (
+		StringName(
+			visual_settings.get_setting(&"profile_id", &"")
+		) == profile_id
+		and spawned_enemies.size() == ENEMY_IDS.size()
+		and boss != null
+		and boss.pending_pattern_id == &"lane_sweep"
+	)
+
 func _spawn_projectile_samples(projectile_system: ProjectileSystem) -> void:
 	var weapon_resources := [
 		"res://game/weapons/starter_pistol.tres",
@@ -183,6 +238,8 @@ func _spawn_projectile_samples(projectile_system: ProjectileSystem) -> void:
 
 func _capture(file_name: String) -> bool:
 	await process_frame
+	if VISUAL_QA_RUNTIME.has_loading_overlay(self):
+		return false
 	var image := root.get_texture().get_image()
 	if image == null or image.is_empty():
 		return false
@@ -198,10 +255,11 @@ func _expect(condition: bool, message: String) -> void:
 	push_error("FAIL: " + message)
 
 func _finish() -> void:
+	var exit_code := 0
 	if failures.is_empty():
 		print("VISUAL_ACCESSIBILITY_QA: PASS")
-		quit(0)
-		return
-	print("VISUAL_ACCESSIBILITY_QA: FAIL (%d)" % failures.size())
-	quit(1)
-
+	else:
+		exit_code = 1
+		print("VISUAL_ACCESSIBILITY_QA: FAIL (%d)" % failures.size())
+	await VISUAL_QA_RUNTIME.cleanup_scene(self)
+	quit(exit_code)

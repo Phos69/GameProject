@@ -1,6 +1,9 @@
 extends SceneTree
 
 const OUTPUT_DIR := "res://build/qa/biome_rendering_review"
+const VISUAL_QA_RUNTIME = preload(
+	"res://tests/visual_qa/helpers/visual_qa_runtime.gd"
+)
 const BIOMES: Array[StringName] = [
 	&"infected_plains",
 	&"toxic_wastes",
@@ -32,7 +35,6 @@ const WORLD_CONTEXT_BASE := {
 	"async_world_build": false
 }
 const MIN_DETAIL_RATIO := 0.035
-const MAX_CAPTURE_WAIT_FRAMES := 3
 const INVALID_FOCUS_POSITION := Vector2(1.0e20, 1.0e20)
 
 var failures := PackedStringArray()
@@ -44,6 +46,7 @@ var enemy_system: EnemySystem
 var player_manager: PlayerManager
 var terrain_generator: TerrainGenerator
 var streamer: WorldRegionStreamer
+var seam_system: Node
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -87,6 +90,9 @@ func _resolve_runtime() -> void:
 	player_manager = get_first_node_in_group("player_manager") as PlayerManager
 	terrain_generator = get_first_node_in_group("terrain_generator") as TerrainGenerator
 	streamer = get_first_node_in_group("world_region_streamer") as WorldRegionStreamer
+	seam_system = get_first_node_in_group("region_seam_system")
+	if seam_system != null:
+		seam_system.set_process(false)
 	_expect(game_mode_manager != null, "game mode manager is available")
 	_expect(survival_mode != null, "survival mode is available")
 	_expect(wave_manager != null, "wave manager is available")
@@ -131,20 +137,20 @@ func _stop_survival() -> void:
 		survival_mode.stop_mode()
 
 func _wait_until_world_ready() -> void:
-	for _attempt in range(900):
-		if (
-			biome_manager != null
-			and streamer != null
-			and terrain_generator != null
-			and biome_manager.get_world_graph() != null
-			and not biome_manager.get_generated_biome_map().is_empty()
-		):
-			var layer := terrain_generator.get_active_tile_layer()
-			if layer != null and not layer.is_building():
-				await _wait_process_frames(2)
-				return
-		await create_timer(0.05).timeout
-	_expect(false, "review world is ready within 45 seconds")
+	var ready: Dictionary = await VISUAL_QA_RUNTIME.wait_for_capture_ready(
+		self,
+		func() -> bool:
+			return (
+				biome_manager != null
+				and biome_manager.get_world_graph() != null
+				and not biome_manager.get_generated_biome_map().is_empty()
+			)
+	)
+	_expect(
+		bool(ready.get("ready", false)),
+		"review world is capture-ready: %s"
+		% VISUAL_QA_RUNTIME.describe_failure(ready)
+	)
 
 func _all_biomes_generated() -> bool:
 	for biome_id in BIOMES:
@@ -184,21 +190,24 @@ func _first_cell_for_biome(biome_id: StringName) -> BiomeCell:
 	return null
 
 func _wait_for_current_region(region_id: StringName, biome_id: StringName) -> void:
-	for _attempt in range(600):
-		var layer := terrain_generator.get_active_tile_layer()
-		if (
-			biome_manager.get_current_region_id() == region_id
-			and layer != null
-			and layer.biome_id == biome_id
-			and not layer.is_building()
-			and streamer.get_content_level(region_id) == WorldRegionStreamer.ContentLevel.FULL
-		):
-			await _wait_process_frames(3)
-			return
-		await create_timer(0.05).timeout
+	var ready: Dictionary = await VISUAL_QA_RUNTIME.wait_for_capture_ready(
+		self,
+		func() -> bool:
+			return (
+				biome_manager.get_current_region_id() == region_id
+				and (
+					streamer.get_content_level(region_id)
+					== WorldRegionStreamer.ContentLevel.FULL
+				)
+			)
+	)
 	_expect(
-		false,
-		"%s current tile layer is ready" % String(biome_id)
+		bool(ready.get("ready", false)),
+		"%s current tile layer is capture-ready: %s"
+		% [
+			String(biome_id),
+			VISUAL_QA_RUNTIME.describe_failure(ready)
+		]
 	)
 
 func _current_region_has_streamed_content(cell: BiomeCell) -> bool:
@@ -303,7 +312,15 @@ func _capture_focus(
 	for resolution in REVIEW_RESOLUTIONS:
 		_apply_resolution(resolution)
 		_snap_camera(focus_position)
-		await _wait_process_frames(MAX_CAPTURE_WAIT_FRAMES)
+		var capture_ready: Dictionary = (
+			await VISUAL_QA_RUNTIME.wait_for_capture_ready(
+				self,
+				func() -> bool: return _focus_marker_is_ready(
+					cell,
+					focus
+				)
+			)
+		)
 		var file_name := "%s_seed_%d_%s_%s_%s.png" % [
 			_resolution_slug(resolution),
 			seed,
@@ -311,6 +328,16 @@ func _capture_focus(
 			String(cell.id),
 			String(focus)
 		]
+		_expect(
+			bool(capture_ready.get("ready", false)),
+			"%s capture state is ready with no missing chunks: %s"
+			% [
+				file_name,
+				VISUAL_QA_RUNTIME.describe_failure(capture_ready)
+			]
+		)
+		if not bool(capture_ready.get("ready", false)):
+			continue
 		var image := root.get_texture().get_image()
 		_expect(
 			image != null and not image.is_empty(),
@@ -361,13 +388,27 @@ func _focus_position(cell: BiomeCell, focus: StringName) -> Vector2:
 				return offset + layout.obstacle_positions.front()
 			if not layout.rock_rects.is_empty():
 				return offset + layout.rect_center_to_world(layout.rock_rects.front())
-		FOCUS_ACTORS:
+		FOCUS_CENTER, FOCUS_ACTORS:
 			var actor_cell := _find_walkable_cell_near_center(layout, cell)
 			if actor_cell != Vector2i(-1, -1):
 				return offset + layout.logical_to_world(actor_cell)
 		_:
 			pass
 	return offset + layout.logical_to_world(layout.player_spawn_cell)
+
+func _focus_marker_is_ready(
+	cell: BiomeCell,
+	focus: StringName
+) -> bool:
+	return (
+		biome_manager.get_current_region_id() == cell.id
+		and (
+			focus != FOCUS_ACTORS
+			or get_nodes_in_group(
+				"biome_rendering_review_enemies"
+			).size() > 0
+		)
+	)
 
 func _first_non_fall_hazard_focus(
 	layout: BiomeEnvironmentLayout,
@@ -393,7 +434,7 @@ func _find_walkable_cell_near_center(
 	layout: BiomeEnvironmentLayout,
 	cell: BiomeCell
 ) -> Vector2i:
-	var center := layout.player_spawn_cell
+	var center := layout.zone_size / 2
 	var best_cell := Vector2i(-1, -1)
 	var best_distance := INF
 	var rect := Rect2i(center - Vector2i(18, 18), Vector2i(36, 36)).intersection(
@@ -523,9 +564,11 @@ func _expect(condition: bool, message: String) -> void:
 func _finish() -> void:
 	_clear_review_enemies()
 	_stop_survival()
+	var exit_code := 0
 	if failures.is_empty():
 		print("BIOME_RENDERING_REVIEW_VISUAL_QA: PASS")
-		quit(0)
-		return
-	print("BIOME_RENDERING_REVIEW_VISUAL_QA: FAIL (%d)" % failures.size())
-	quit(1)
+	else:
+		exit_code = 1
+		print("BIOME_RENDERING_REVIEW_VISUAL_QA: FAIL (%d)" % failures.size())
+	await VISUAL_QA_RUNTIME.cleanup_scene(self)
+	quit(exit_code)

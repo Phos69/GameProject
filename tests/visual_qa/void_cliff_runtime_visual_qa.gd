@@ -5,6 +5,9 @@ const OUTPUT_FILE := "void_cliff_runtime_game.png"
 const FOREST_OUTPUT_FILE := "forest_grass_cliff_runtime_game.png"
 const FOREST_SURFACE_OUTPUT_DIR := "res://build/qa/forest_surfaces"
 const WORLD_SEED := 641004
+const VISUAL_QA_RUNTIME = preload(
+	"res://tests/visual_qa/helpers/visual_qa_runtime.gd"
+)
 
 var failures := PackedStringArray()
 
@@ -54,6 +57,16 @@ func _run() -> void:
 		"single-region survival starts for runtime cliff QA"
 	)
 	await _wait_for_tile_layers()
+	var world_ready: Dictionary = await VISUAL_QA_RUNTIME.wait_for_capture_ready(
+		self,
+		func() -> bool:
+			return not biome_manager.get_generated_biome_map().is_empty()
+	)
+	_expect(
+		bool(world_ready.get("ready", false)),
+		"runtime cliff world is capture-ready: %s"
+		% VISUAL_QA_RUNTIME.describe_failure(world_ready)
+	)
 
 	var layers := get_nodes_in_group("biome_tile_layers")
 	_expect(not layers.is_empty(), "runtime creates the asset-driven tile layer")
@@ -69,11 +82,6 @@ func _run() -> void:
 		_expect(layer.has_forest_ground_art_texture(), "runtime tile layer has generated grass art")
 		_expect(layer.has_forest_surface_art_textures(), "runtime tile layer has every forest surface")
 		var border_counts := layer.get_forest_cliff_border_counts()
-		_expect(
-			layer.get_cliff_transition_count() > 0
-			or int(border_counts.get("faces", 0)) > 0,
-			"runtime tile layer builds cliff geometry"
-		)
 		_expect(
 			int(border_counts.get("total", 0)) > 0,
 			"runtime fall zones build visible straight border segments"
@@ -152,6 +160,10 @@ func _run() -> void:
 		player,
 		camera,
 		surface_output_absolute
+	)
+	_expect(
+		_layers_have_cliff_transitions(layers),
+		"runtime tile layer builds cliff geometry"
 	)
 
 	var survival_mode := get_first_node_in_group("survival_mode") as SurvivalMode
@@ -250,8 +262,26 @@ func _capture_surface_focus(
 	if camera != null:
 		camera.global_position = focus
 		camera.reset_smoothing()
-	for _frame in range(30):
-		await process_frame
+	var capture_ready: Dictionary = (
+		await VISUAL_QA_RUNTIME.wait_for_capture_ready(
+			self,
+			func() -> bool: return _surface_marker_is_ready(
+				player,
+				camera,
+				focus
+			)
+		)
+	)
+	_expect(
+		bool(capture_ready.get("ready", false)),
+		"%s runtime marker is capture-ready: %s"
+		% [
+			sample_key,
+			VISUAL_QA_RUNTIME.describe_failure(capture_ready)
+		]
+	)
+	if not bool(capture_ready.get("ready", false)):
+		return
 	var image := root.get_texture().get_image()
 	_expect(image != null and not image.is_empty(), "%s runtime capture is available" % String(sample_key))
 	if image != null and not image.is_empty():
@@ -259,6 +289,29 @@ func _capture_surface_focus(
 			image.save_png(output_absolute.path_join(file_name)) == OK,
 			"%s runtime screenshot is saved" % String(sample_key)
 		)
+
+func _layers_have_cliff_transitions(layers: Array[Node]) -> bool:
+	for node in layers:
+		var layer := node as BiomeTileLayer
+		if layer == null:
+			continue
+		if layer.get_cliff_transition_count() > 0:
+			return true
+		if int(layer.get_forest_cliff_border_counts().get("faces", 0)) > 0:
+			return true
+	return false
+
+func _surface_marker_is_ready(
+	player: PlayerController,
+	camera: Camera2D,
+	focus: Vector2
+) -> bool:
+	return (
+		player != null
+		and camera != null
+		and player.global_position.is_equal_approx(focus)
+		and camera.global_position.is_equal_approx(focus)
+	)
 
 func _expect(condition: bool, message: String) -> void:
 	if condition:
@@ -268,9 +321,11 @@ func _expect(condition: bool, message: String) -> void:
 	push_error("FAIL: " + message)
 
 func _finish() -> void:
+	var exit_code := 0
 	if failures.is_empty():
 		print("VOID_CLIFF_RUNTIME_VISUAL_QA: PASS")
-		quit(0)
-		return
-	print("VOID_CLIFF_RUNTIME_VISUAL_QA: FAIL (%d)" % failures.size())
-	quit(1)
+	else:
+		exit_code = 1
+		print("VOID_CLIFF_RUNTIME_VISUAL_QA: FAIL (%d)" % failures.size())
+	await VISUAL_QA_RUNTIME.cleanup_scene(self)
+	quit(exit_code)

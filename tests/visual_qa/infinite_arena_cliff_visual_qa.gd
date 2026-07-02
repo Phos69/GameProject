@@ -2,6 +2,9 @@ extends SceneTree
 
 const OUTPUT_DIR := "res://build/qa/infinite_arena_cliffs"
 const WORLD_SEED := 8800555
+const VISUAL_QA_RUNTIME = preload(
+	"res://tests/visual_qa/helpers/visual_qa_runtime.gd"
+)
 
 var failures := PackedStringArray()
 var world_build_ready := false
@@ -62,7 +65,20 @@ func _run() -> void:
 		return
 	var layout := cell.generated_layout
 	_expect(layout.uses_raised_perimeter_cliffs(), "Infinite Arena selects raised cliffs")
-	_expect(layout.fall_zone_rects.is_empty(), "Infinite Arena cliffs are not fall zones")
+	var perimeter_fall_zones := 0
+	for index in range(layout.hazard_ids.size()):
+		if (
+			layout.hazard_ids[index] == &"fall_zone"
+			and (
+				index >= layout.hazard_sides.size()
+				or layout.hazard_sides[index] != &"internal"
+			)
+		):
+			perimeter_fall_zones += 1
+	_expect(
+		perimeter_fall_zones == 0,
+		"Infinite Arena raised perimeter cliffs are not fall zones"
+	)
 	var cliff_count := 0
 	var all_cliffs_have_art := true
 	for node in get_nodes_in_group("environment_obstacles"):
@@ -128,8 +144,26 @@ func _capture_focus(
 	if camera != null:
 		camera.global_position = focus
 		camera.reset_smoothing()
-	for _frame in range(45):
-		await process_frame
+	var capture_ready: Dictionary = (
+		await VISUAL_QA_RUNTIME.wait_for_capture_ready(
+			self,
+			func() -> bool:
+				return (
+					player != null
+					and camera != null
+					and player.global_position.is_equal_approx(focus)
+					and camera.global_position.is_equal_approx(focus)
+				),
+			false
+		)
+	)
+	_expect(
+		bool(capture_ready.get("ready", false)),
+		"%s raised cliff marker is capture-ready: %s"
+		% [label, VISUAL_QA_RUNTIME.describe_failure(capture_ready)]
+	)
+	if not bool(capture_ready.get("ready", false)):
+		return
 	var image := root.get_texture().get_image()
 	_expect(image != null and not image.is_empty(), "%s capture is available" % label)
 	if image == null or image.is_empty():
@@ -150,9 +184,11 @@ func _expect(condition: bool, message: String) -> void:
 	push_error("FAIL: " + message)
 
 func _finish() -> void:
+	var exit_code := 0
 	if failures.is_empty():
 		print("INFINITE_ARENA_CLIFF_VISUAL_QA: PASS")
-		quit(0)
-		return
-	print("INFINITE_ARENA_CLIFF_VISUAL_QA: FAIL (%d)" % failures.size())
-	quit(1)
+	else:
+		exit_code = 1
+		print("INFINITE_ARENA_CLIFF_VISUAL_QA: FAIL (%d)" % failures.size())
+	await VISUAL_QA_RUNTIME.cleanup_scene(self)
+	quit(exit_code)

@@ -1,6 +1,9 @@
 extends SceneTree
 
 const OUTPUT_DIRECTORY: String = "res://build/qa"
+const VISUAL_QA_RUNTIME = preload(
+	"res://tests/visual_qa/helpers/visual_qa_runtime.gd"
+)
 
 var failures: PackedStringArray = []
 
@@ -58,8 +61,19 @@ func _run() -> void:
 	for player_slot in range(2, 5):
 		local_multiplayer.activate_slot(player_slot)
 	game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL)
-	await process_frame
-	await process_frame
+	var survival_ready: Dictionary = await VISUAL_QA_RUNTIME.wait_for_capture_ready(
+		self,
+		func() -> bool:
+			return (
+				game_mode_manager.active_mode_id == GameConstants.MODE_SURVIVAL
+				and player_manager.players.size() == 4
+			)
+	)
+	_expect(
+		bool(survival_ready.get("ready", false)),
+		"weapon scenario world is capture-ready: %s"
+		% VISUAL_QA_RUNTIME.describe_failure(survival_ready)
+	)
 
 	var blaster := load(
 		"res://game/weapons/prototype_blaster.tres"
@@ -130,6 +144,10 @@ func _run() -> void:
 
 	await process_frame
 	await process_frame
+	_expect(
+		qa_projectiles.size() == projectile_positions.size(),
+		"player weapon scenario marker contains three projectiles"
+	)
 	DirAccess.make_dir_recursive_absolute(
 		ProjectSettings.globalize_path(OUTPUT_DIRECTORY)
 	)
@@ -150,8 +168,21 @@ func _run() -> void:
 		GameConstants.MODE_TOWER_DEFENSE,
 		{"initial_delay": 100.0, "starting_credits": 75}
 	)
-	await process_frame
-	await process_frame
+	var tower_mode_ready: Dictionary = await VISUAL_QA_RUNTIME.wait_for_capture_ready(
+		self,
+		func() -> bool:
+			return (
+				game_mode_manager.active_mode_id
+				== GameConstants.MODE_TOWER_DEFENSE
+			),
+		false,
+		false
+	)
+	_expect(
+		bool(tower_mode_ready.get("ready", false)),
+		"tower defense scenario is capture-ready: %s"
+		% VISUAL_QA_RUNTIME.describe_failure(tower_mode_ready)
+	)
 	var tower_a := tower_defense_mode.try_build_at_slot(&"slot_a") as DefenseTower
 	var tower_b := tower_defense_mode.try_build_at_slot(&"slot_b") as DefenseTower
 	var tower_c := tower_defense_mode.try_build_at_slot(&"slot_c") as DefenseTower
@@ -173,6 +204,10 @@ func _run() -> void:
 	await process_frame
 	await process_frame
 	_expect(
+		towers.all(func(tower: DefenseTower) -> bool: return tower != null),
+		"tower scenario marker contains all three defense towers"
+	)
+	_expect(
 		await _capture("milestone_13_defense_towers.png"),
 		"defense tower identity screenshot is captured"
 	)
@@ -180,6 +215,8 @@ func _run() -> void:
 
 func _capture(file_name: String) -> bool:
 	await process_frame
+	if VISUAL_QA_RUNTIME.has_loading_overlay(self):
+		return false
 	var image := root.get_texture().get_image()
 	if image == null or image.is_empty():
 		return false
@@ -194,9 +231,11 @@ func _expect(condition: bool, message: String) -> void:
 	push_error("FAIL: " + message)
 
 func _finish() -> void:
+	var exit_code := 0
 	if failures.is_empty():
 		print("WEAPON_TOWER_VISUAL_QA: PASS")
-		quit(0)
-		return
-	print("WEAPON_TOWER_VISUAL_QA: FAIL (%d)" % failures.size())
-	quit(1)
+	else:
+		exit_code = 1
+		print("WEAPON_TOWER_VISUAL_QA: FAIL (%d)" % failures.size())
+	await VISUAL_QA_RUNTIME.cleanup_scene(self)
+	quit(exit_code)

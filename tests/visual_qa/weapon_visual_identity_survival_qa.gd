@@ -1,6 +1,9 @@
 extends RefCounted
 
 const OUTPUT_DIRECTORY := "res://build/qa"
+const VISUAL_QA_RUNTIME = preload(
+	"res://tests/visual_qa/helpers/visual_qa_runtime.gd"
+)
 const PLAYER_WEAPON_IDS: Array[StringName] = [
 	&"heavy_revolver", &"pump_shotgun", &"demolition_hammer", &"unstable_void"
 ]
@@ -59,8 +62,19 @@ func run(tree: SceneTree, pickup_scene: PackedScene) -> PackedStringArray:
 		local_multiplayer.activate_slot(player_slot)
 	wave_manager.initial_delay = 100.0
 	game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL)
-	await tree.process_frame
-	await tree.process_frame
+	var world_ready: Dictionary = await VISUAL_QA_RUNTIME.wait_for_capture_ready(
+		tree,
+		func() -> bool:
+			return (
+				game_mode_manager.active_mode_id == GameConstants.MODE_SURVIVAL
+				and player_manager.players.size() == 4
+			)
+	)
+	_expect(
+		bool(world_ready.get("ready", false)),
+		"crowded W7 world is capture-ready: %s"
+		% VISUAL_QA_RUNTIME.describe_failure(world_ready)
+	)
 	_configure_players(player_manager)
 	_spawn_enemies(enemy_system)
 	var pickup_parent := main.get_node_or_null("World/Pickups")
@@ -77,6 +91,25 @@ func run(tree: SceneTree, pickup_scene: PackedScene) -> PackedStringArray:
 		await tree.process_frame
 		await tree.process_frame
 		_validate_profile_consumers(profile_id, player_manager, pickup_parent)
+		var profile_ready: Dictionary = (
+			await VISUAL_QA_RUNTIME.wait_for_capture_ready(
+				tree,
+				func() -> bool: return _profile_scenario_is_ready(
+					tree,
+					visual_settings,
+					profile_id,
+					enemy_system
+				)
+			)
+		)
+		_expect(
+			bool(profile_ready.get("ready", false)),
+			"%s crowded scenario marker is capture-ready: %s"
+			% [
+				profile_id,
+				VISUAL_QA_RUNTIME.describe_failure(profile_ready)
+			]
+		)
 		var image := await _capture_image(tree, file_name)
 		_expect(_is_nonempty_image(image), "%s crowded screenshot is non-empty" % profile_id)
 		if image != null:
@@ -195,6 +228,20 @@ func _validate_profile_consumers(
 	elif profile_id == &"high_contrast":
 		_expect(pickup.visual.high_contrast, "high contrast reaches weapon pickups")
 
+func _profile_scenario_is_ready(
+	tree: SceneTree,
+	visual_settings: VisualSettingsManager,
+	profile_id: StringName,
+	enemy_system: EnemySystem
+) -> bool:
+	return (
+		StringName(
+			visual_settings.get_setting(&"profile_id", &"")
+		) == profile_id
+		and enemy_system.get_active_enemies().size() >= 8
+		and tree.get_nodes_in_group("drop_pickups").size() >= 6
+	)
+
 func _first_weapon_pickup(parent: Node) -> DropPickup:
 	if parent == null:
 		return null
@@ -207,6 +254,8 @@ func _first_weapon_pickup(parent: Node) -> DropPickup:
 
 func _capture_image(tree: SceneTree, file_name: String) -> Image:
 	await tree.process_frame
+	if VISUAL_QA_RUNTIME.has_loading_overlay(tree):
+		return null
 	var image := tree.root.get_texture().get_image()
 	if image == null or image.is_empty():
 		return null
