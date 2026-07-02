@@ -14,6 +14,13 @@ class_name EnemyPathfinder
 ##   * The expensive decision (obstacle probing / A*) runs at AI_TICK_INTERVAL,
 ##     not every physics frame; steering toward the chosen aim point is still
 ##     recomputed every frame so motion stays smooth.
+##   * Each instance starts with a deterministic phase offset (from its
+##     instance id), so enemies spawned the same frame spread their ticks over
+##     different frames instead of paying probe/A* all together forever
+##     (measured ~85ms synced spikes with 24 mobs before de-phasing: see
+##     tests/suites/soak/perf_bottleneck_stress_test.gd). Until the first tick
+##     fires (<= AI_TICK_INTERVAL after spawn) the chase steers straight at the
+##     target, same as the "no route within budget" fallback.
 ##   * The line-of-sight probe is bounded to probe_distance ahead, so open-field
 ##     chases only sample a handful of cells per tick.
 ##   * A* is bounded (MAX_EXPANSIONS) and, when the goal is out of budget, returns
@@ -52,6 +59,12 @@ var _aim_point: Vector2 = Vector2.ZERO
 var _aim_is_target: bool = true
 var _has_aim: bool = false
 
+func _init() -> void:
+	# Fase deterministica per-istanza (niente RNG condiviso): distribuisce il
+	# primo tick, e quindi tutti i successivi, nell'intervallo (0, 0.1s].
+	var phase := float(posmod(get_instance_id(), 97) + 1) / 98.0
+	_ai_tick_cooldown = AI_TICK_INTERVAL * phase
+
 func desired_direction(
 	from: Vector2,
 	to: Vector2,
@@ -62,10 +75,14 @@ func desired_direction(
 ) -> Vector2:
 	_ai_tick_cooldown = maxf(_ai_tick_cooldown - delta, 0.0)
 	_recompute_cooldown = maxf(_recompute_cooldown - delta, 0.0)
-	if not _has_aim or _ai_tick_cooldown <= 0.0:
+	if _ai_tick_cooldown <= 0.0:
 		_ai_tick_cooldown = AI_TICK_INTERVAL
 		_evaluate_aim(from, to, level, obstacle_system, hazard_system)
 		_has_aim = true
+	# Prima del primo tick (defasato) non c'e' ancora un aim: dritto al target,
+	# come il fallback "no route within budget".
+	if not _has_aim:
+		return _safe_direction(from, to)
 	# Steer live toward the target when a straight shot is clear (zero lag); when
 	# routing around geometry, steer toward the fixed waypoint chosen this tick.
 	if _aim_is_target:

@@ -24,6 +24,14 @@ const HAZARD_ZONE_SCRIPT = preload(
 	"res://game/modes/zombie/biome_hazard_zone.gd"
 )
 
+## I nemici vengono verificati contro il void a fette rotanti (1/N della
+## popolazione per frame): la query terreno costa ~16µs e per-frame su tutta
+## la popolazione arrivava a ~3.5ms con 192 nemici (vedi
+## tests/suites/soak/perf_bottleneck_stress_test.gd). Copertura completa ogni
+## N frame (~67ms a 60Hz): un nemico oltrepassa il bordo di pochi px prima di
+## cadere. I player restano verificati ogni frame (pochi e gameplay-critici).
+const VOID_CHECK_ENEMY_SLICES: int = 4
+
 @export var environment_container_path: NodePath = NodePath(
 	"../../../../World/EnvironmentProps"
 )
@@ -43,6 +51,7 @@ var invulnerability_timers: Dictionary = {}
 var status_runtime: BiomeStatusRuntime
 var _biome_manager_ref: BiomeManager
 var _seam_system_ref: Node
+var _void_scan_cursor: int = 0
 
 func _ready() -> void:
 	add_to_group("hazard_system")
@@ -651,13 +660,21 @@ func _check_void_entities() -> void:
 			and is_void_at_world_position((player as Node2D).global_position)
 		):
 			trigger_fall(player)
-	for enemy in get_tree().get_nodes_in_group("enemies"):
+	var enemies := get_tree().get_nodes_in_group("enemies")
+	var enemy_count := enemies.size()
+	if enemy_count == 0:
+		_void_scan_cursor = 0
+		return
+	var slice_size := ceili(float(enemy_count) / float(VOID_CHECK_ENEMY_SLICES))
+	for offset in range(mini(slice_size, enemy_count)):
+		var enemy = enemies[(_void_scan_cursor + offset) % enemy_count]
 		if (
 			enemy is Node2D
 			and enemy.has_method("try_start_void_fall")
 			and is_void_at_world_position((enemy as Node2D).global_position)
 		):
 			enemy.call("try_start_void_fall")
+	_void_scan_cursor = (_void_scan_cursor + slice_size) % enemy_count
 
 func _on_runtime_environment_damaged(
 	player: Node,

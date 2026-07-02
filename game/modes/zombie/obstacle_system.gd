@@ -16,12 +16,31 @@ const ISOMETRIC_OBJECT_FACTORY_SCRIPT = preload(
 	"../../../../World/EnvironmentProps"
 )
 
+## Lato di un bucket dell'indice spaziale dei blocker. Piu' grande del footprint
+## tipico (48-150px) cosi' un ostacolo copre pochi bucket e la query resta un
+## singolo lookup del bucket del punto.
+const BLOCKER_BUCKET_SIZE: float = 192.0
+
 var active_biome: BiomeDefinition
 var is_active: bool = false
 var active_obstacles: Array[Node2D] = []
 var manifest: IsometricEnvironmentManifest
 var object_factory: RefCounted
 var debug_footprints_visible: bool = false
+
+# Indice spaziale dei nodi nei gruppi spawn_blockers/environment_obstacles:
+# bucket Vector2i -> Array di blocker la cui AABB conservativa copre il bucket.
+# Le query erano group scan O(N) (~0.7ms con 387 ostacoli streamed) moltiplicate
+# per centinaia di celle da LOS/A* del pathfinder: vedi la suite
+# tests/suites/soak/perf_bottleneck_stress_test.gd.
+# Si ricostruisce pigramente alla prima query quando gli hook di registrazione
+# lo marcano dirty oppure quando cambia il conteggio dei gruppi (nodi aggiunti
+# ai gruppi senza passare da ObstacleSystem, es. fixture nei test). Assunzione:
+# i blocker sono statici; chi muove un blocker gia' indicizzato deve chiamare
+# invalidate_blocker_index().
+var _blocker_buckets: Dictionary = {}
+var _blocker_index_dirty: bool = true
+var _indexed_blocker_group_count: int = -1
 
 func _ready() -> void:
 	add_to_group("obstacle_system")
@@ -90,10 +109,25 @@ func is_position_blocked_by_non_jumpable(position: Vector2) -> bool:
 	return _is_position_blocked(position, true)
 
 func is_position_jumpable_obstacle(position: Vector2) -> bool:
-	for blocker in get_tree().get_nodes_in_group("environment_obstacles"):
-		if _is_jumpable(blocker) and node_contains_position(blocker, position):
+	_ensure_blocker_index()
+	var candidates = _blocker_buckets.get(_bucket_for(position))
+	if candidates == null:
+		return false
+	for blocker in candidates:
+		if blocker == null or not is_instance_valid(blocker):
+			continue
+		if (
+			_is_jumpable(blocker)
+			and blocker.is_in_group("environment_obstacles")
+			and node_contains_position(blocker, position)
+		):
 			return true
 	return false
+
+## Da chiamare se un blocker gia' indicizzato viene spostato o cambia footprint:
+## l'indice si ricostruisce alla query successiva.
+func invalidate_blocker_index() -> void:
+	_blocker_index_dirty = true
 
 func create_obstacle_instance(
 	obstacle_id: StringName,
@@ -120,6 +154,7 @@ func register_streamed_obstacle(
 		return
 	if not active_obstacles.has(obstacle):
 		active_obstacles.append(obstacle)
+	_blocker_index_dirty = true
 	_apply_debug_visibility(obstacle)
 	obstacle_spawned.emit(obstacle, obstacle_id)
 
@@ -127,15 +162,91 @@ func unregister_streamed_obstacle(obstacle: Node2D) -> void:
 	if obstacle == null:
 		return
 	active_obstacles.erase(obstacle)
+	_blocker_index_dirty = true
 
 func _is_position_blocked(position: Vector2, skip_jumpable: bool) -> bool:
-	for group in ["spawn_blockers", "environment_obstacles"]:
-		for blocker in get_tree().get_nodes_in_group(group):
-			if skip_jumpable and _is_jumpable(blocker):
-				continue
-			if node_contains_position(blocker, position):
-				return true
+	_ensure_blocker_index()
+	var candidates = _blocker_buckets.get(_bucket_for(position))
+	if candidates == null:
+		return false
+	for blocker in candidates:
+		if blocker == null or not is_instance_valid(blocker):
+			continue
+		if skip_jumpable and _is_jumpable(blocker):
+			continue
+		if node_contains_position(blocker, position):
+			return true
 	return false
+
+func _ensure_blocker_index() -> void:
+	var group_count := _blocker_group_count()
+	if not _blocker_index_dirty and group_count == _indexed_blocker_group_count:
+		return
+	_rebuild_blocker_index(group_count)
+
+func _blocker_group_count() -> int:
+	var tree := get_tree()
+	if tree == null:
+		return 0
+	return (
+		tree.get_node_count_in_group("spawn_blockers")
+		+ tree.get_node_count_in_group("environment_obstacles")
+	)
+
+func _rebuild_blocker_index(group_count: int) -> void:
+	_blocker_buckets.clear()
+	var tree := get_tree()
+	if tree != null:
+		var seen := {}
+		for group in ["spawn_blockers", "environment_obstacles"]:
+			for blocker in tree.get_nodes_in_group(group):
+				if not blocker is Node2D:
+					continue
+				var blocker_id := blocker.get_instance_id()
+				if seen.has(blocker_id):
+					continue
+				seen[blocker_id] = true
+				_insert_blocker(blocker as Node2D)
+	_indexed_blocker_group_count = group_count
+	_blocker_index_dirty = false
+
+func _insert_blocker(blocker: Node2D) -> void:
+	var extents := _blocker_cover_extents(blocker)
+	var position := blocker.global_position
+	var min_bucket := _bucket_for(position - extents)
+	var max_bucket := _bucket_for(position + extents)
+	for bucket_y in range(min_bucket.y, max_bucket.y + 1):
+		for bucket_x in range(min_bucket.x, max_bucket.x + 1):
+			var key := Vector2i(bucket_x, bucket_y)
+			if not _blocker_buckets.has(key):
+				_blocker_buckets[key] = []
+			(_blocker_buckets[key] as Array).append(blocker)
+
+## AABB world-space conservativa del test di contenimento reale
+## (node_contains_position): rettangolo ruotato per gli ostacoli/zone, cerchio
+## per shape circolari e per il fallback zone_radius dei nodi generici.
+static func _blocker_cover_extents(blocker: Node2D) -> Vector2:
+	var size_value = blocker.get("obstacle_size")
+	if not size_value is Vector2:
+		size_value = blocker.get("zone_size")
+	if size_value is Vector2:
+		var half := (size_value as Vector2) * 0.5
+		if blocker.get("collision_shape_id") == &"circle":
+			return Vector2(maxf(half.x, 8.0), maxf(half.x, 8.0))
+		var cos_r := absf(cos(blocker.global_rotation))
+		var sin_r := absf(sin(blocker.global_rotation))
+		return Vector2(
+			maxf(cos_r * half.x + sin_r * half.y, 8.0),
+			maxf(sin_r * half.x + cos_r * half.y, 8.0)
+		)
+	var radius := maxf(float(blocker.get_meta("zone_radius", 32.0)), 8.0)
+	return Vector2(radius, radius)
+
+func _bucket_for(position: Vector2) -> Vector2i:
+	return Vector2i(
+		floori(position.x / BLOCKER_BUCKET_SIZE),
+		floori(position.y / BLOCKER_BUCKET_SIZE)
+	)
 
 func _is_jumpable(node: Node) -> bool:
 	return (
@@ -226,6 +337,7 @@ func _generate_obstacles() -> void:
 		active_obstacles.append(obstacle)
 		_apply_debug_visibility(obstacle)
 		obstacle_spawned.emit(obstacle, obstacle_id)
+	_blocker_index_dirty = true
 
 func _get_environment_container() -> Node:
 	var container := get_node_or_null(environment_container_path)
@@ -272,6 +384,8 @@ func _clear_runtime() -> void:
 		if is_instance_valid(obstacle):
 			obstacle.queue_free()
 	active_obstacles.clear()
+	_blocker_buckets.clear()
+	_blocker_index_dirty = true
 
 func _prune_runtime() -> void:
 	for obstacle in active_obstacles.duplicate():

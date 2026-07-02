@@ -1059,7 +1059,10 @@ func test_zombie_fall_hazard() -> void:
 		var experience_before := player.rpg_component.experience
 		var drops_before := _spawned_drop_count
 		enemy.global_position = fall_zone.global_position
-		for _frame in range(5):
+		# Lo scan void dei nemici gira a fette rotanti (HazardSystem.
+		# VOID_CHECK_ENEMY_SLICES): copertura completa entro ~4 frame, quindi
+		# il budget di attesa tiene un margine oltre il worst case.
+		for _frame in range(10):
 			await wait_physics_frames(1)
 			if enemy.get_state_name() == &"falling":
 				break
