@@ -24,7 +24,7 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 - Aggiunto `tools/run_visual_qa.ps1`, runner Windows/PowerShell per i Visual QA
   con filtro per nome, import opzionale e log per script in `build/qa_logs/`.
 - Aggiunto `IsoGridConfig` come contratto centrale per la nuova griglia
-  isometrica: tile logico `3x3` legacy, scala world `24.0`, biomi `150x150`
+  isometrica: tile logico `6x6` legacy, scala world `48.0`, biomi `75x75`
   (`450x450` equivalenti legacy) e costanti condivise per strade, passaggi,
   bordi, rocce e conversione footprint.
 - Aggiunto `docs/iso_grid_scale_migration_report.md` con metriche della
@@ -36,7 +36,7 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
   assegnati. `BiomeGeneratedArtCatalog` assegna ruoli e varianti in modo
   deterministico.
 - Infinite Arena rende i quattro lati `BLOCKED` come cliff rocciosi rialzati di
-  sette celle. `BiomeEnvironmentLayout` distingue `procedural_wall` e
+  due tile logiche. `BiomeEnvironmentLayout` distingue `procedural_wall` e
   `raised_cliff`; i segmenti conservano collisioni e Y-sort ma usano materiali
   world-space continui per parete e plateau. Aggiunti guardrail GUT e QA reale
   in `tests/visual_qa/infinite_arena_cliff_visual_qa.gd`.
@@ -65,7 +65,7 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 - Ottimizzato lo streaming visuale in movimento: il bake delle superfici
   generated raggruppa le run di tutti i materiali in una sola scansione del
-  chunk, riducendo il micro-benchmark `20x20` da circa 188 ms a circa 19 ms.
+  chunk, riducendo il costo rispetto alla scansione per-materiale.
   La coda viene ora aggiornata dalla camera prima del commit e riprioritizzata
   ogni frame, promuovendo i job che entrano in camera e la direzione di marcia.
 - `WorldRegionStreamer.get_streaming_stats()` espone anche chunk visibili
@@ -81,15 +81,16 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 - Il bake asincrono di `BiomeTileLayer` produce solo dati CPU nel worker;
   texture, mesh, chunk e scene tree vengono creati sul main thread. Il commit
   visuale e limitato a due chunk e 2 ms per frame, con isteresi di 2 secondi.
-- Migrata la generazione mondo iso da regioni `500x500` a regioni `150x150`
-  tile logici. Layout, pathfinding, passaggi, fall boundary, streaming,
-  coordinate world, spawn, tile resolver e Infinite Arena usano la nuova scala
-  senza deformare gli asset: le texture restano caricate a dimensione nativa e i
-  footprint legacy vengono convertiti a runtime.
-- `WorldSnapshotCodec.FORMAT_VERSION` resta a `3`; incrementato
-  `TileBakeCache.FORMAT_VERSION` a `4`, cosi le cache tile precedenti allo
-  streaming per-chunk vengono ignorate e rigenerate senza cambiare seed, layout
-  o formato save.
+- Raddoppiata la tile logica terrain da `3x3` a `6x6` celle legacy: le regioni
+  passano da `150x150` a `75x75` tile logici, conservando la copertura
+  world-space `450x450` legacy. Strade, passaggi, bordi, ostacoli void-first,
+  chunk (`balanced` 10, `performance` 13, `quality` 8) e helper per larghezze
+  dispari sono stati riallineati alla nuova scala senza cambiare il formato dei
+  save persistenti.
+- Incrementati `WorldSnapshotCodec.FORMAT_VERSION` a `4` e
+  `TileBakeCache.FORMAT_VERSION` a `10`, cosi snapshot e bake tile precedenti
+  alla nuova scala vengono ignorati e rigenerati senza cambiare seed o formato
+  save persistente.
 - Il loader texture isometrico carica i raster sorgente quando la cache `.ctex`
   locale non e stata importata, mantenendo separata la cache raster dalla cache
   SVG esposta ai test.

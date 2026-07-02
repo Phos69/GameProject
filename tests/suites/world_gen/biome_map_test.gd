@@ -48,11 +48,11 @@ func test_map_generates_nine_cells() -> void:
 	assert_gte(_sample_cells.size(), 5, "la mappa campiona ogni biome esistente")
 
 func test_generation_constants() -> void:
-	assert_eq(BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE, IsoGridConfig.BIOME_SIZE, "regioni logiche 150x150")
-	assert_eq(IsoGridConfig.LEGACY_EQUIVALENT_SIZE_TILES, 450, "150 tile nuovi equivalgono a 450 tile legacy")
-	assert_eq(ObstacleLayoutGenerator.ROAD_WIDTH, IsoGridConfig.ROAD_WIDTH_TILES, "strada principale larga 14 tile nuovi")
-	assert_eq(ObstacleLayoutGenerator.SECONDARY_ROAD_WIDTH, IsoGridConfig.SECONDARY_ROAD_WIDTH_TILES, "percorso secondario largo 7 tile nuovi")
-	assert_eq(BiomePassageGenerator.PASSAGE_WIDTH, IsoGridConfig.PASSAGE_WIDTH_TILES, "passaggio fisico largo 14 tile nuovi")
+	assert_eq(BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE, IsoGridConfig.BIOME_SIZE, "regioni logiche 75x75")
+	assert_eq(IsoGridConfig.LEGACY_EQUIVALENT_SIZE_TILES, 450, "75 tile nuovi equivalgono a 450 tile legacy")
+	assert_eq(ObstacleLayoutGenerator.ROAD_WIDTH, IsoGridConfig.ROAD_WIDTH_TILES, "strada principale larga 7 tile nuovi")
+	assert_eq(ObstacleLayoutGenerator.SECONDARY_ROAD_WIDTH, IsoGridConfig.SECONDARY_ROAD_WIDTH_TILES, "percorso secondario largo 4 tile nuovi")
+	assert_eq(BiomePassageGenerator.PASSAGE_WIDTH, IsoGridConfig.PASSAGE_WIDTH_TILES, "passaggio fisico largo 7 tile nuovi")
 
 # --- invarianti di layout per cella campione ------------------------------
 
@@ -63,7 +63,7 @@ func test_sample_cells_layout_invariants() -> void:
 		if layout == null:
 			continue
 		assert_eq(layout.zone_size, BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE,
-			"%s usa la regione 150x150" % String(cell.id))
+			"%s usa la regione 75x75" % String(cell.id))
 		assert_eq(layout.get_terrain_class_at_cell(layout.player_spawn_cell, cell),
 			BiomeEnvironmentLayout.TERRAIN_WALKABLE,
 			"%s spawn player walkable" % String(cell.id))

@@ -30,14 +30,15 @@ func generate_passages(cells: Array[BiomeCell], seed_value: int) -> void:
 			rng.seed = local_seed
 			var width := PASSAGE_WIDTH
 			var axis_size := cell.height if side == &"east" else cell.width
+			var axis_mid := _span_before_center(axis_size)
 			var safe_margin := mini(
 				maxi(IsoGridConfig.PASSAGE_SAFE_MARGIN_TILES, width * 3),
-				maxi(axis_size / 2 - 1, width)
+				maxi(axis_mid - 1, width)
 			)
 			var safe_min := safe_margin
 			var safe_max := axis_size - safe_margin
 			var position := (
-				axis_size / 2
+				axis_mid
 				if safe_max <= safe_min
 				else rng.randi_range(safe_min, safe_max)
 			)
@@ -119,3 +120,6 @@ func _derive_seed(
 		String(side)
 	])
 	return maxi(absi(raw), 1)
+
+func _span_before_center(span: int) -> int:
+	return maxi(floori(float(span) * 0.5), 0)

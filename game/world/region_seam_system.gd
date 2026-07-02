@@ -247,7 +247,7 @@ func _fallback_connection_band_contains(
 	connection: WorldRegionConnection,
 	world_tile: Vector2i
 ) -> bool:
-	var half_width := maxi(connection.passage_width / 2, 1) + crossing_margin_tiles
+	var half_width := maxi(_span_before_center(connection.passage_width), 1) + crossing_margin_tiles
 	var center := source.world_origin + Vector2i(
 		connection.passage_position,
 		connection.passage_position
@@ -287,8 +287,8 @@ func _connection_seam_tile(connection: WorldRegionConnection) -> Vector2i:
 		# The crossing position must sit on the seam (the target cell adjacent to
 		# the source boundary), centred on the passage span -- not the centre of
 		# the connector corridor, which can be many tiles deep inside the target.
-		var center_x := rect.position.x + maxi(rect.size.x / 2, 0)
-		var center_y := rect.position.y + maxi(rect.size.y / 2, 0)
+		var center_x := rect.position.x + _span_before_center(rect.size.x)
+		var center_y := rect.position.y + _span_before_center(rect.size.y)
 		match connection.side:
 			&"east":
 				return Vector2i(rect.position.x, center_y)
@@ -304,3 +304,6 @@ func _connection_seam_tile(connection: WorldRegionConnection) -> Vector2i:
 		connection.passage_position,
 		connection.passage_position
 	)
+
+func _span_before_center(span: int) -> int:
+	return maxi(floori(float(span) * 0.5), 0)

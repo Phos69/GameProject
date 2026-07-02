@@ -3,9 +3,9 @@ class_name BiomeTileLayer
 
 signal build_completed
 
-const DEFAULT_CHUNK_SIZE := 20
-const PERFORMANCE_CHUNK_SIZE := 25
-const QUALITY_CHUNK_SIZE := 16
+const DEFAULT_CHUNK_SIZE := 10
+const PERFORMANCE_CHUNK_SIZE := 13
+const QUALITY_CHUNK_SIZE := 8
 const CLIFF_MESH_BUILDER_SCRIPT = preload(
 	"res://game/modes/zombie/cliffs/isometric_cliff_mesh_builder.gd"
 )

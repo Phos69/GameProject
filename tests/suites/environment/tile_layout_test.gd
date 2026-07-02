@@ -159,10 +159,14 @@ func test_layer_chunking() -> void:
 	var cell := _cells[0]
 	var palette := _palette_for_biome(cell.biome_id)
 	var layer := BiomeTileLayer.new()
-	layer.configure(cell.generated_layout, palette, cell.biome_id, &"balanced", 20, _resolver, _manifest)
+	var balanced_chunk := BiomeTileLayer.chunk_size_for_preset(&"balanced")
+	layer.configure(cell.generated_layout, palette, cell.biome_id, &"balanced", 0, _resolver, _manifest)
 	var expected_tile_count := cell.generated_layout.zone_size.x * cell.generated_layout.zone_size.y
-	var expected_chunk_count := int(ceil(float(cell.generated_layout.zone_size.x) / 20.0)) * int(ceil(float(cell.generated_layout.zone_size.y) / 20.0))
-	assert_eq(layer.get_chunk_size(), 20, "il tile layer balanced usa chunk 20x20")
+	var expected_chunk_count := (
+		int(ceil(float(cell.generated_layout.zone_size.x) / float(balanced_chunk)))
+		* int(ceil(float(cell.generated_layout.zone_size.y) / float(balanced_chunk)))
+	)
+	assert_eq(layer.get_chunk_size(), 10, "il tile layer balanced usa chunk 10x10")
 	assert_eq(layer.get_chunk_count(), expected_chunk_count, "il tile layer chunka l'intera regione logica")
 	assert_eq(layer.get_resident_chunk_count(), expected_chunk_count,
 		"la modalita full-region prepara tutti i chunk")
@@ -172,10 +176,10 @@ func test_layer_chunking() -> void:
 			for x in range(chunk_rect.position.x, chunk_rect.end.x):
 				var covered_cell := Vector2i(x, y)
 				assert_false(covered_cells.has(covered_cell),
-					"ogni cella 150x150 appartiene a un solo chunk")
+					"ogni cella 75x75 appartiene a un solo chunk")
 				covered_cells[covered_cell] = true
 	assert_eq(covered_cells.size(), expected_tile_count,
-		"i chunk coprono l'intera regione 150x150 senza celle mancanti")
+		"i chunk coprono l'intera regione 75x75 senza celle mancanti")
 	assert_eq(layer.get_visual_tile_count(), expected_tile_count, "il tile layer cachea tutte le celle visive")
 	assert_eq(layer.get_cached_visual_tile_count(), expected_tile_count,
 		"il bake sincrono distingue la cache completa dal totale logico")
@@ -207,7 +211,7 @@ func test_layer_chunking() -> void:
 
 	var performance_layer := BiomeTileLayer.new()
 	performance_layer.configure(cell.generated_layout, palette, cell.biome_id, &"performance", 0, _resolver, _manifest)
-	assert_eq(performance_layer.get_chunk_size(), 25, "il preset performance usa chunk piu grandi")
+	assert_eq(performance_layer.get_chunk_size(), 13, "il preset performance usa chunk piu grandi")
 	assert_lt(_resolver.get_floor_variants_for_preset(&"performance").size(), _resolver.get_floor_variants_for_preset(&"quality").size(),
 		"il preset performance riduce le varianti floor rispetto a quality")
 	performance_layer.free()

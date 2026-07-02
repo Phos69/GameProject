@@ -868,6 +868,7 @@ func test_zombie_environment_milestone() -> void:
 
 	for safe_point in [Vector2.ZERO, Vector2(0.0, -180.0), Vector2(0.0, 180.0), Vector2(-120.0, 0.0), Vector2(120.0, 0.0)]:
 		assert_false(obstacle_system.is_position_blocked(safe_point), "central combat corridor remains open at %s" % safe_point)
+		assert_false(hazard_system.is_position_hazardous(safe_point), "central combat corridor avoids hazards at %s" % safe_point)
 
 	if not current_region_obstacles.is_empty():
 		var first_obstacle := current_region_obstacles[0] as Node2D
@@ -897,15 +898,17 @@ func test_zombie_environment_milestone() -> void:
 
 	if player != null:
 		player.global_position = Vector2.ZERO
-	var lane_enemy := enemy_system.spawn_enemy(&"survival_zombie", Vector2(0.0, -430.0)) as BasicEnemy
+	var lane_enemy := enemy_system.spawn_enemy(&"survival_zombie", Vector2(0.0, -180.0)) as BasicEnemy
 	assert_not_null(lane_enemy, "a zombie can spawn in the open north lane")
 	if lane_enemy != null and player != null:
 		var initial_distance := lane_enemy.global_position.distance_to(player.global_position)
 		for _frame in range(90):
 			await wait_physics_frames(1)
-		var final_distance := lane_enemy.global_position.distance_to(player.global_position)
-		assert_lt(final_distance, initial_distance - 80.0, "zombie advances through the preserved central corridor")
-		lane_enemy.queue_free()
+		assert_true(is_instance_valid(lane_enemy), "zombie stays alive while crossing the preserved central corridor")
+		if is_instance_valid(lane_enemy):
+			var final_distance := lane_enemy.global_position.distance_to(player.global_position)
+			assert_lt(final_distance, initial_distance - 80.0, "zombie advances through the preserved central corridor")
+			lane_enemy.queue_free()
 
 	survival_mode.stop_mode()
 	await wait_physics_frames(2)

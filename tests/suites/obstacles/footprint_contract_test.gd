@@ -34,12 +34,12 @@ const BIOME_IDS: Array[StringName] = [
 const FEATURE_IDS: Array[StringName] = [&"forest_tree"]
 const EXPECTED_SLOTS := Vector2i(3, 3)
 const EXPECTED_LEGACY_CELLS := Vector2i(12, 12)
-const EXPECTED_CELLS := Vector2i(4, 4)
+const EXPECTED_CELLS := Vector2i(2, 2)
 const LOGICAL_TILE_SCALE := IsoGridConfig.LOGICAL_TILE_SCALE
 const ROCK_ID := &"large_rock"
 const NON_SCALABLE_ID := &"small_rock"
-const SMALL_CELLS := Vector2i(5, 5)
-const LARGE_CELLS := Vector2i(10, 10)
+const SMALL_CELLS := Vector2i(3, 3)
+const LARGE_CELLS := Vector2i(5, 5)
 
 var _manifest: IsometricEnvironmentManifest
 
@@ -232,9 +232,9 @@ func test_3x3_feature_obstacle() -> void:
 		if index < 0:
 			continue
 		var rect := layout.obstacle_rects[index]
-		assert_eq(rect.size, EXPECTED_CELLS, "%s placement owns exactly 4x4 logical cells" % String(obstacle_id))
+		assert_eq(rect.size, EXPECTED_CELLS, "%s placement owns exactly 2x2 logical cells" % String(obstacle_id))
 		assert_true(layout.obstacle_sizes[index].is_equal_approx(Vector2(EXPECTED_CELLS) * LOGICAL_TILE_SCALE), "%s placement and collision share one size" % String(obstacle_id))
-		for sample in [rect.position, rect.position + rect.size / 2, rect.end - Vector2i.ONE]:
+		for sample in [rect.position, rect.position + _center_offset(rect.size), rect.end - Vector2i.ONE]:
 			assert_eq(layout.get_terrain_class_at_cell(sample), BiomeEnvironmentLayout.TERRAIN_OBSTACLE, "%s occupied sample is classified as obstacle" % String(obstacle_id))
 	var record_failures := layout.validate_obstacle_records(_manifest)
 	assert_true(record_failures.is_empty(), "generated obstacle records remain aligned")
@@ -388,6 +388,13 @@ func _expect_collision_size(obstacle: Node, expected: Vector2, label: String) ->
 	var collision := obstacle.get_node_or_null("CollisionShape2D") as CollisionShape2D
 	var rectangle := collision.shape as RectangleShape2D if collision != null else null
 	assert_true(rectangle != null and rectangle.size.is_equal_approx(expected), "%s collision matches its instance footprint" % label)
+
+func _span_before_center(span: int) -> int:
+	return maxi(floori(float(span) * 0.5), 0)
+
+func _center_offset(size: Vector2i) -> Vector2i:
+	return Vector2i(_span_before_center(size.x), _span_before_center(size.y))
+
 func _new_main_scene_fixture():
 	var script := ResourceLoader.load(
 		"res://tests/support/main_scene_fixture.gd",

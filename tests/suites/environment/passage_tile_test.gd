@@ -197,7 +197,14 @@ func _layout_emits_road_connector(cell: BiomeCell, layout: BiomeEnvironmentLayou
 		if _is_passage_tag(layout.road_rect_tags[index]):
 			continue
 		var rect := layout.road_rects[index]
-		for probe in [rect.position, rect.position + rect.size / 2, rect.position + rect.size - Vector2i.ONE]:
+		for probe in [
+			rect.position,
+			rect.position + Vector2i(
+				_span_before_center(rect.size.x),
+				_span_before_center(rect.size.y)
+			),
+			rect.position + rect.size - Vector2i.ONE
+		]:
 			if _is_road_connector_tile(_resolver.resolve_tile_id(layout, probe, cell.biome_id, &"balanced", cell)):
 				return true
 	return false
@@ -252,35 +259,38 @@ func _opening_span_is_coherent(connection: WorldRegionConnection) -> bool:
 func _outer_probe(rect: Rect2i, side: StringName) -> Vector2i:
 	match side:
 		&"north":
-			return Vector2i(rect.position.x + rect.size.x / 2, rect.position.y)
+			return Vector2i(rect.position.x + _span_before_center(rect.size.x), rect.position.y)
 		&"south":
-			return Vector2i(rect.position.x + rect.size.x / 2, rect.position.y + rect.size.y - 1)
+			return Vector2i(rect.position.x + _span_before_center(rect.size.x), rect.position.y + rect.size.y - 1)
 		&"west":
-			return Vector2i(rect.position.x, rect.position.y + rect.size.y / 2)
+			return Vector2i(rect.position.x, rect.position.y + _span_before_center(rect.size.y))
 		_:
-			return Vector2i(rect.position.x + rect.size.x - 1, rect.position.y + rect.size.y / 2)
+			return Vector2i(rect.position.x + rect.size.x - 1, rect.position.y + _span_before_center(rect.size.y))
 
 func _inner_probe(rect: Rect2i, side: StringName) -> Vector2i:
 	match side:
 		&"north":
-			return Vector2i(rect.position.x + rect.size.x / 2, rect.position.y + 1)
+			return Vector2i(rect.position.x + _span_before_center(rect.size.x), rect.position.y + 1)
 		&"south":
-			return Vector2i(rect.position.x + rect.size.x / 2, rect.position.y + rect.size.y - 2)
+			return Vector2i(rect.position.x + _span_before_center(rect.size.x), rect.position.y + rect.size.y - 2)
 		&"west":
-			return Vector2i(rect.position.x + 1, rect.position.y + rect.size.y / 2)
+			return Vector2i(rect.position.x + 1, rect.position.y + _span_before_center(rect.size.y))
 		_:
-			return Vector2i(rect.position.x + rect.size.x - 2, rect.position.y + rect.size.y / 2)
+			return Vector2i(rect.position.x + rect.size.x - 2, rect.position.y + _span_before_center(rect.size.y))
 
 func _connector_probe_away_from_opening(rect: Rect2i, side: StringName) -> Vector2i:
 	match side:
 		&"north":
-			return Vector2i(rect.position.x + rect.size.x / 2, rect.position.y + 4)
+			return Vector2i(rect.position.x + _span_before_center(rect.size.x), rect.position.y + 4)
 		&"south":
-			return Vector2i(rect.position.x + rect.size.x / 2, rect.position.y + rect.size.y - 5)
+			return Vector2i(rect.position.x + _span_before_center(rect.size.x), rect.position.y + rect.size.y - 5)
 		&"west":
-			return Vector2i(rect.position.x + 4, rect.position.y + rect.size.y / 2)
+			return Vector2i(rect.position.x + 4, rect.position.y + _span_before_center(rect.size.y))
 		_:
-			return Vector2i(rect.position.x + rect.size.x - 5, rect.position.y + rect.size.y / 2)
+			return Vector2i(rect.position.x + rect.size.x - 5, rect.position.y + _span_before_center(rect.size.y))
+
+func _span_before_center(span: int) -> int:
+	return maxi(floori(float(span) * 0.5), 0)
 
 func _entry_id_for_type(passage_type: StringName) -> StringName:
 	match passage_type:

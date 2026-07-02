@@ -701,20 +701,20 @@ godot --headless --path . --script res://tests/dungeon_smoke_test.gd
 godot --headless --path . --script res://tests/tower_defense_smoke_test.gd
 ```
 
-## Regressione ISO-001 Milestone 2 - terrain isometrico 150x150
+## Regressione ISO-001 Milestone 2 - terrain isometrico 75x75
 
 QA visuale da eseguire con seed fisso a `1280x720` e `960x540`, in `default`
 e `high_contrast`.
 
 - Avviare survival con una megamappa default `3x3` e attraversare almeno una regione
   per ciascuno dei cinque biomi.
-- Confermare che ogni regione sia `150x150` tile logici, equivalente a
+- Confermare che ogni regione sia `75x75` tile logici, equivalente a
   `450x450` celle legacy, senza asset allungati o deformati.
 - Confermare che `main_road`, `road`, `broken_street`, `service_lane`,
   `ash_lane`, `packed_snow_path`, `wooden_walkway`, `bridge`, `snow_pass`,
   `broken_gate` e `burned_road` siano leggibili come strade, passaggi, ponti o
   cancelli, non come dirt generico.
-- Verificare che la base `150x150` resti continua e che passaggi e fall zone
+- Verificare che la base `75x75` resti continua e che passaggi e fall zone
   non si sovrappongano visivamente in modo confuso.
 - Attivare l'overlay debug e controllare che i conteggi terrain mostrino
   `walkable`, `obstacle`, `hazard`, `border`, `void` e `fall_zone`.
@@ -1056,7 +1056,7 @@ QA visuale e runtime da eseguire dopo modifiche a ground, manifest v8 o layout
 bioma.
 
 - Avviare survival con seed fisso e confermare che il terreno visibile copra
-  tutta la regione `150x150`, non solo il centro.
+  tutta la regione `75x75`, non solo il centro.
 - Visitare o forzare i cinque biomi (`infected_plains`, `toxic_wastes`,
   `burning_fields`, `frozen_outskirts`, `drowned_marsh`) e acquisire screenshot
   a 1280x720 e 960x540.
@@ -1127,7 +1127,7 @@ godot --headless --path . --script res://tools/generate_isometric_environment_as
   `frozen_outskirts` e `drowned_marsh`; verificare rispettivamente
   `urban_ruins`, `volcanic`, `frozen_tundra` e `swamp`.
 - Su una seam tra due biomi controllare entrambi i lati: ogni raised cliff usa
-  il tema della regione proprietaria, resta alto sette celle e non chiude il
+  il tema della regione proprietaria, resta alto due tile logiche e non chiude il
   varco fisico.
 - Controllare una fall zone interna e un bordo esterno: faccia/lip devono
   seguire il tema, il void puro deve restare uniforme e collisione/caduta
@@ -1222,7 +1222,7 @@ QA visuale e runtime da eseguire dopo modifiche a `ObstacleSystem`,
 - Portare un player sul lato nord: il top prolungato deve coprirlo interamente.
   Sul lato sud il player deve restare davanti alla faccia. In co-op lasciare un
   player per lato contemporaneamente: l'ordinamento deve restare indipendente.
-- Attivare `F9`: i nove slot dell'albero e i rettangoli roccia `5x5`-`10x10`
+- Attivare `F9`: i nove slot dell'albero e i rettangoli roccia `3x3`-`5x5`
   tile logici devono coincidere con la base visuale. Provare tutti i lati con player e
   proiettili, senza passaggi attraverso angoli o collisioni fuori grafica.
 - Confermare che `tests/milestone_10_object_asset_smoke_test.gd` passi anche il
@@ -1412,7 +1412,7 @@ godot --headless --path . --script res://tests/survival_wave_smoke_test.gd
 ## Regressione repo-fix Milestone 12 - bilanciamento zombie
 
 - In `Infinite Arena`, giocare almeno 20 minuti o 10 wave e verificare che il
-  blocco `150x150` resti chiuso, senza world runtime, seam o softlock.
+  blocco `75x75` resti chiuso, senza world runtime, seam o softlock.
 - Confermare che le boss wave partano, finiscano e lascino il loop pronto alla
   wave successiva, con drop leggibili e danni attribuibili.
 - Verificare che runner, tank e shooter compaiano nel mix entro le prime wave

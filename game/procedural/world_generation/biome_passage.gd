@@ -43,54 +43,57 @@ func configure(
 	seed = passage_seed
 
 func get_local_rect(zone_size: Vector2i) -> Rect2i:
-	var half_width := maxi(width / 2, IsoGridConfig.PASSAGE_MIN_WIDTH_TILES)
+	var span_before := _span_before_center(width)
 	var edge_depth := IsoGridConfig.PASSAGE_EDGE_DEPTH_TILES
 	match side:
 		&"north":
 			return Rect2i(
-				Vector2i(position - half_width, 0),
+				Vector2i(position - span_before, 0),
 				Vector2i(width, edge_depth)
 			)
 		&"south":
 			return Rect2i(
-				Vector2i(position - half_width, zone_size.y - edge_depth),
+				Vector2i(position - span_before, zone_size.y - edge_depth),
 				Vector2i(width, edge_depth)
 			)
 		&"west":
 			return Rect2i(
-				Vector2i(0, position - half_width),
+				Vector2i(0, position - span_before),
 				Vector2i(edge_depth, width)
 			)
 		_:
 			return Rect2i(
-				Vector2i(zone_size.x - edge_depth, position - half_width),
+				Vector2i(zone_size.x - edge_depth, position - span_before),
 				Vector2i(edge_depth, width)
 			)
 
 func get_connector_rect(zone_size: Vector2i) -> Rect2i:
 	var center := zone_size / 2
-	var half_width := maxi(width / 2, IsoGridConfig.PASSAGE_MIN_WIDTH_TILES)
+	var span_before := _span_before_center(width)
 	match side:
 		&"north":
 			return Rect2i(
-				Vector2i(position - half_width, 0),
+				Vector2i(position - span_before, 0),
 				Vector2i(width, center.y)
 			)
 		&"south":
 			return Rect2i(
-				Vector2i(position - half_width, center.y),
+				Vector2i(position - span_before, center.y),
 				Vector2i(width, zone_size.y - center.y)
 			)
 		&"west":
 			return Rect2i(
-				Vector2i(0, position - half_width),
+				Vector2i(0, position - span_before),
 				Vector2i(center.x, width)
 			)
 		_:
 			return Rect2i(
-				Vector2i(center.x, position - half_width),
+				Vector2i(center.x, position - span_before),
 				Vector2i(zone_size.x - center.x, width)
 			)
+
+func _span_before_center(span: int) -> int:
+	return maxi(floori(float(span) * 0.5), 0)
 
 func get_global_local_rect(zone_size: Vector2i) -> Rect2i:
 	var local_rect := get_local_rect(zone_size)

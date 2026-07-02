@@ -216,7 +216,7 @@ func _carve_passages(layout: BiomeEnvironmentLayout, cell: BiomeCell) -> void:
 		_add_road_rect(layout, passage_rect, passage.passage_type)
 		_add_road_rect(layout, connector_rect, passage.passage_type)
 
-# M1 — place at least VOIDFIRST_ROCK_MIN_COUNT square rocks (side 5..10) on the
+# M1 — place at least VOIDFIRST_ROCK_MIN_COUNT square rocks (side 3..5) on the
 # void canvas, non-overlapping and clear of passage corridors. Deterministic from
 # the cell seed. Rocks are scalable obstacles so their art/collision match the
 # chosen side.
@@ -596,7 +596,7 @@ func _add_voidfirst_paths(
 	var count := mini(VOIDFIRST_PATH_COUNT, layout.forest_rects.size())
 	for index in range(count):
 		var forest_rect := layout.forest_rects[index]
-		var start := forest_rect.position + forest_rect.size / 2
+		var start := forest_rect.position + _center_offset(forest_rect.size)
 		var direction: Vector2i = directions[rng.randi_range(0, directions.size() - 1)]
 		_carve_trail(layout, start, direction, VOIDFIRST_PATH_WIDTH, VOIDFIRST_PATH_MAX_LEN, trail_tag)
 
@@ -630,10 +630,10 @@ func _carve_trail(
 	return carved
 
 func _trail_band_rect(center: Vector2i, direction: Vector2i, width: int) -> Rect2i:
-	var half := width / 2
+	var span_before := _span_before_center(width)
 	if direction.x != 0:
-		return Rect2i(Vector2i(center.x, center.y - half), Vector2i(1, width))
-	return Rect2i(Vector2i(center.x - half, center.y), Vector2i(width, 1))
+		return Rect2i(Vector2i(center.x, center.y - span_before), Vector2i(1, width))
+	return Rect2i(Vector2i(center.x - span_before, center.y), Vector2i(width, 1))
 
 # Remove forest trees whose footprint overlaps any carved route cell, so roads and
 # trails read as cleared lanes through the woods.
@@ -854,11 +854,11 @@ func refresh_generation_summary(
 func _add_roads(layout: BiomeEnvironmentLayout, cell: BiomeCell) -> void:
 	var zone_size := layout.zone_size
 	var center := zone_size / 2
-	var half_main := ROAD_WIDTH / 2
+	var main_before := _span_before_center(ROAD_WIDTH)
 	_add_road_rect(
 		layout,
 		Rect2i(
-			Vector2i(0, center.y - half_main),
+			Vector2i(0, center.y - main_before),
 			Vector2i(zone_size.x, ROAD_WIDTH)
 		),
 		&"main_road"
@@ -866,7 +866,7 @@ func _add_roads(layout: BiomeEnvironmentLayout, cell: BiomeCell) -> void:
 	_add_road_rect(
 		layout,
 		Rect2i(
-			Vector2i(center.x - half_main, 0),
+			Vector2i(center.x - main_before, 0),
 			Vector2i(ROAD_WIDTH, zone_size.y)
 		),
 		&"main_road"
@@ -919,7 +919,7 @@ func _add_starter_water_crossing(
 	var river_band := Rect2i(
 		Vector2i(
 			0,
-			river_y - STARTER_RIVER_WIDTH / 2 - IsoGridConfig.STARTER_RIVER_PADDING_TILES
+			river_y - _span_before_center(STARTER_RIVER_WIDTH) - IsoGridConfig.STARTER_RIVER_PADDING_TILES
 		),
 		Vector2i(
 			layout.zone_size.x,
@@ -947,7 +947,7 @@ func _add_starter_water_crossing(
 			continue
 		var offset_y := offsets[index % offsets.size()]
 		var water_rect := Rect2i(
-			Vector2i(start_x, river_y + offset_y - STARTER_RIVER_WIDTH / 2),
+			Vector2i(start_x, river_y + offset_y - _span_before_center(STARTER_RIVER_WIDTH)),
 			Vector2i(end_x - start_x, STARTER_RIVER_WIDTH)
 		)
 		layout.add_hazard_rect(water_rect, &"deep_water")
@@ -969,7 +969,7 @@ func _select_starter_river_y(
 		var river_band := Rect2i(
 			Vector2i(
 				0,
-				river_y - STARTER_RIVER_WIDTH / 2 - IsoGridConfig.STARTER_RIVER_PADDING_TILES
+				river_y - _span_before_center(STARTER_RIVER_WIDTH) - IsoGridConfig.STARTER_RIVER_PADDING_TILES
 			),
 			Vector2i(
 				layout.zone_size.x,
@@ -1004,7 +1004,7 @@ func _add_bridge_rects_over_water(
 			continue
 		var bridge_rect := Rect2i(
 			Vector2i(
-				road_rect.position.x - STARTER_BRIDGE_EXTRA_WIDTH / 2,
+				road_rect.position.x - _span_before_center(STARTER_BRIDGE_EXTRA_WIDTH),
 				river_band.position.y - IsoGridConfig.STARTER_BRIDGE_PADDING_TILES
 			),
 			Vector2i(
@@ -1021,7 +1021,7 @@ func _add_bridge_rects_over_water(
 		layout,
 		Rect2i(
 			Vector2i(
-				center_x - (ROAD_WIDTH + STARTER_BRIDGE_EXTRA_WIDTH) / 2,
+				center_x - _span_before_center(ROAD_WIDTH + STARTER_BRIDGE_EXTRA_WIDTH),
 				river_band.position.y - IsoGridConfig.STARTER_BRIDGE_PADDING_TILES
 			),
 			Vector2i(
@@ -1068,7 +1068,7 @@ func _add_secondary_grid_paths(
 	horizontal_ratio: float
 ) -> void:
 	var zone_size := layout.zone_size
-	var half_path := SECONDARY_ROAD_WIDTH / 2
+	var half_path := _span_before_center(SECONDARY_ROAD_WIDTH)
 	var vertical_x := clampi(
 		roundi(float(zone_size.x) * vertical_ratio),
 		BORDER_THICKNESS + half_path,
@@ -1454,7 +1454,7 @@ func _add_diagonal_road(
 	width: int,
 	tag: StringName
 ) -> void:
-	var radius := maxi(width / 2, 1)
+	var radius := maxi(_span_before_center(width), 1)
 	var delta := end - start
 	var steps := maxi(maxi(absi(delta.x), absi(delta.y)), 1)
 	var touched: Dictionary = {}
@@ -1590,11 +1590,11 @@ func _add_starter_roadside_details(
 	var center := layout.zone_size / 2
 	var car_rects: Array[Rect2i] = [
 		Rect2i(
-			center + Vector2i(-_legacy_cells(105), ROAD_WIDTH / 2 + _legacy_cells(12)),
+			center + Vector2i(-_legacy_cells(105), _span_before_center(ROAD_WIDTH) + _legacy_cells(12)),
 			_legacy_rect_size(16, 8)
 		),
 		Rect2i(
-			center + Vector2i(_legacy_cells(82), -ROAD_WIDTH / 2 - _legacy_cells(26)),
+			center + Vector2i(_legacy_cells(82), -_span_before_center(ROAD_WIDTH) - _legacy_cells(26)),
 			_legacy_rect_size(17, 8)
 		)
 	]
@@ -1735,7 +1735,7 @@ func _place_feature_obstacle_in_block(
 	if block_rect.size.x < footprint.x + margin * 2 or block_rect.size.y < footprint.y + margin * 2:
 		return false
 	var max_position := block_rect.position + block_rect.size - footprint - Vector2i.ONE * margin
-	var center_position := block_rect.position + (block_rect.size - footprint) / 2
+	var center_position := block_rect.position + _center_offset(block_rect.size - footprint)
 	var candidates: Array[Vector2i] = [
 		block_rect.position + Vector2i.ONE * margin,
 		Vector2i(max_position.x, block_rect.position.y + margin),
@@ -1771,7 +1771,7 @@ func _place_feature_obstacle_at_fallback(
 			roundi(float(layout.zone_size.x) * ratio.x),
 			roundi(float(layout.zone_size.y) * ratio.y)
 		)
-		var rect := Rect2i(center - footprint / 2, footprint)
+		var rect := Rect2i(center - _center_offset(footprint), footprint)
 		if not _rect_is_walkable(layout, rect):
 			continue
 		if _add_obstacle_if_clear(layout, obstacle_id, rect, &"rectangle", 0.0):
@@ -2215,13 +2215,15 @@ func _passage_gaps_for_side(
 	if cell.get_border(side) != BiomeCell.BorderType.CONNECTED:
 		return gaps
 	for passage in cell.get_passages_for_side(side):
+		var span_before := _span_before_center(passage.width)
+		var span_after := _span_after_center(passage.width)
 		var start := clampi(
-			passage.position - passage.width / 2 - IsoGridConfig.WALL_GAP_PADDING_TILES,
+			passage.position - span_before - IsoGridConfig.WALL_GAP_PADDING_TILES,
 			0,
 			axis_limit
 		)
 		var finish := clampi(
-			passage.position + passage.width / 2 + IsoGridConfig.WALL_GAP_PADDING_TILES,
+			passage.position + span_after + IsoGridConfig.WALL_GAP_PADDING_TILES,
 			0,
 			axis_limit
 		)
@@ -2305,6 +2307,15 @@ func _legacy_rect_size(width: int, height: int, minimum: int = 1) -> Vector2i:
 func _legacy_cells(value: int, minimum: int = 1) -> int:
 	return IsoGridConfig.legacy_cells_to_new_tiles(value, minimum)
 
+func _span_before_center(span: int) -> int:
+	return maxi(floori(float(span) * 0.5), 0)
+
+func _span_after_center(span: int) -> int:
+	return maxi(span - _span_before_center(span), 0)
+
+func _center_offset(size: Vector2i) -> Vector2i:
+	return Vector2i(_span_before_center(size.x), _span_before_center(size.y))
+
 func _logical_footprint_tiles(object_id: StringName) -> Vector2i:
 	return IsoGridConfig.legacy_size_to_new_tiles(
 		IsometricEnvironmentManifest.get_shared().get_footprint_tiles(object_id)
@@ -2327,8 +2338,8 @@ func _canonical_obstacle_rect(obstacle_id: StringName, requested: Rect2i) -> Rec
 	if manifest.get_category(obstacle_id) == &"border" or manifest.is_scalable(obstacle_id):
 		return requested
 	var footprint := _logical_footprint_tiles(obstacle_id)
-	var center := requested.position + requested.size / 2
-	return Rect2i(center - footprint / 2, footprint)
+	var center := requested.position + _center_offset(requested.size)
+	return Rect2i(center - _center_offset(footprint), footprint)
 
 func _add_crates(
 	layout: BiomeEnvironmentLayout,
@@ -2420,7 +2431,7 @@ func _add_hazard_at_ratio(
 	_add_hazard(
 		layout,
 		hazard_id,
-		Rect2i(center - size / 2, size)
+		Rect2i(center - _center_offset(size), size)
 	)
 
 func _large_obstacle_id(biome_id: StringName) -> StringName:
@@ -2686,7 +2697,7 @@ func _inflate_rect(rect: Rect2i, amount: int) -> Rect2i:
 	)
 
 func _inset_rect(rect: Rect2i, amount: int) -> Rect2i:
-	var inset := mini(amount, mini(rect.size.x, rect.size.y) / 2)
+	var inset := mini(amount, _span_before_center(mini(rect.size.x, rect.size.y)))
 	return Rect2i(
 		rect.position + Vector2i(inset, inset),
 		rect.size - Vector2i(inset * 2, inset * 2)
@@ -2698,7 +2709,7 @@ func _centered_rect(container: Rect2i, size: Vector2i) -> Rect2i:
 		mini(size.y, container.size.y)
 	)
 	return Rect2i(
-		container.position + (container.size - clamped_size) / 2,
+		container.position + _center_offset(container.size - clamped_size),
 		clamped_size
 	)
 

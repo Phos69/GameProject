@@ -15,7 +15,7 @@ class_name WorldSnapshotCodec
 
 # Bump quando cambia il formato serializzato: snapshot con format_version diverso
 # vengono ignorati e rigenerati (guardia di drift, lato cache su disco).
-const FORMAT_VERSION: int = 3
+const FORMAT_VERSION: int = 4
 
 static func world_data_to_dict(world_data: Dictionary) -> Dictionary:
 	var cell_dicts: Array = []

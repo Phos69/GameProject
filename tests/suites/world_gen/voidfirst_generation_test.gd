@@ -20,7 +20,7 @@ const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
 # Seed con la tolleranza piu stretta (budget alberi forest-fill 240): se passa
 # qui passa anche per le altre invarianti, che sono strutturali.
 const SHARED_SEED := 246810
-const TREE_FOOTPRINT := Vector2i(4, 4)
+const TREE_FOOTPRINT := Vector2i(2, 2)
 # infected_plains slice of the void-first palette, used to exercise the road
 # tree-lining pass directly (the generator resolves the full palette per biome).
 const _PLAINS_LINE_PALETTE := {"line_vegetation": true, "cluster_id": &"forest_tree"}
@@ -63,7 +63,7 @@ func test_rocks_placement() -> void:
 		):
 			all_in_range = false
 	assert_true(all_square, "ogni roccia e quadrata")
-	assert_true(all_in_range, "ogni lato roccia entro 5..10 tile nuovi")
+	assert_true(all_in_range, "ogni lato roccia entro 3..5 tile nuovi")
 	var overlaps := false
 	for i in range(_layout.rock_rects.size()):
 		for j in range(i + 1, _layout.rock_rects.size()):
@@ -79,7 +79,7 @@ func test_rocks_placement() -> void:
 func test_rocks_classification_and_records() -> void:
 	var all_obstacle := true
 	for rect in _layout.rock_rects:
-		var center := rect.position + rect.size / 2
+		var center := rect.position + _center_offset(rect.size)
 		if _layout.get_terrain_class_at_cell(center) != BiomeEnvironmentLayout.TERRAIN_OBSTACLE:
 			all_obstacle = false
 	assert_true(all_obstacle, "i centri delle rocce classificano come obstacle")
@@ -100,7 +100,7 @@ func test_forests_placement() -> void:
 		):
 			all_in_range = false
 	assert_true(all_square, "ogni foresta e quadrata")
-	assert_true(all_in_range, "ogni lato foresta entro 3..20 tile nuovi")
+	assert_true(all_in_range, "ogni lato foresta entro 2..10 tile nuovi")
 	var forest_floor := 0
 	for tag in _layout.floor_rect_tags:
 		if tag == &"forest_tall_grass":
@@ -118,7 +118,7 @@ func test_forest_trees() -> void:
 			all_natural = false
 	assert_gt(trees, 0, "le foreste sono riempite di alberi")
 	assert_lte(trees, 240, "il numero di alberi resta nel budget forest-fill")
-	assert_true(all_natural, "ogni albero usa il footprint logico convertito 4x4")
+	assert_true(all_natural, "ogni albero usa il footprint logico convertito 2x2")
 
 func test_tree_rock_priority() -> void:
 	var violation := false
@@ -406,11 +406,21 @@ func _rect_near_road(layout: BiomeEnvironmentLayout, rect: Rect2i) -> bool:
 	return false
 
 func _carve_straight_road(layout: BiomeEnvironmentLayout) -> void:
-	var half_width := IsoGridConfig.VOIDFIRST_PATH_WIDTH_TILES / 2
+	var span_before := _span_before_center(IsoGridConfig.ROAD_WIDTH_TILES)
+	var span_after := _span_after_center(IsoGridConfig.ROAD_WIDTH_TILES)
 	var center_y := layout.zone_size.y / 2
 	for x in range(IsoGridConfig.BORDER_THICKNESS_TILES, layout.zone_size.x - IsoGridConfig.BORDER_THICKNESS_TILES):
-		for y in range(center_y - half_width, center_y + half_width + 1):
+		for y in range(center_y - span_before, center_y + span_after):
 			layout.add_road_cell(Vector2i(x, y), &"main_road")
+
+func _span_before_center(span: int) -> int:
+	return maxi(floori(float(span) * 0.5), 0)
+
+func _span_after_center(span: int) -> int:
+	return maxi(span - _span_before_center(span), 0)
+
+func _center_offset(size: Vector2i) -> Vector2i:
+	return Vector2i(_span_before_center(size.x), _span_before_center(size.y))
 
 func _count_trees(layout: BiomeEnvironmentLayout) -> int:
 	var count := 0

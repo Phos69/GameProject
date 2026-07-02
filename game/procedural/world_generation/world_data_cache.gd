@@ -21,8 +21,8 @@ class_name WorldDataCache
 ## "riuso golden" prima falliva: la firma includeva anche le chiavi di gameplay.
 ##
 ## Cap a numero di mondi (LRU): l'entry meno usata di recente viene sfrattata
-## quando si supera il limite. Con la megamappa 3x3 (~13 MB/mondo) il default di 8
-## mondi resta sotto i ~110 MB; regolabile con set_max_worlds().
+## quando si supera il limite. Con la megamappa 3x3 (~3.5 MB/mondo) il default di
+## 8 mondi resta sotto i ~30 MB; regolabile con set_max_worlds().
 ##
 ## Nota test: per le suite che verificano la GENERAZIONE in se (determinismo,
 ## contenuto void-first) disabilitare la cache con set_enabled(false) cosi il

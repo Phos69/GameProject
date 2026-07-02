@@ -37,7 +37,7 @@ const _NEIGHBOR_OFFSETS: Array = [
 	Vector2i(-1, -1)
 ]
 
-## World size of one pathfinding cell (~2 logical tiles of 24px). Coarse enough
+## World size of one pathfinding cell (~1 logical tile at the current iso scale). Coarse enough
 ## to keep node counts low, fine enough to route around obstacle footprints.
 var grid_step: float = 48.0
 ## How far ahead the straight-line probe looks each tick (~3 cells).
