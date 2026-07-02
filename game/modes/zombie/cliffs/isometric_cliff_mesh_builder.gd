@@ -160,6 +160,12 @@ func append_transition(
 						midpoint_drop.y * 0.78
 					)
 				)
+# Ricostruisce face_mesh/lip_mesh da zero con tutti i dati accumulati finora, in
+# un'unica superficie. Usato dal build sincrono dell'intera regione (un'unica
+# chiamata a fine loop) e dai consumer standalone che si aspettano un mesh a
+# superficie singola (es. i test che leggono surface_get_arrays(0)). Non
+# alternare con flush_pending_surface() sulla stessa istanza: build_meshes()
+# non sa nulla delle superfici gia' flushate e le sovrascriverebbe.
 func build_meshes() -> void:
 	face_mesh = _build_textured_mesh(
 		_face_vertices,
@@ -173,6 +179,45 @@ func build_meshes() -> void:
 		_lip_uvs,
 		_lip_indices
 	)
+
+# Aggiunge una superficie al mesh esistente contenente solo i dati accumulati
+# dall'ultimo flush (o dal reset), poi svuota gli accumulatori. Usato dal build
+# a chunk streamati in modo che ogni commit paghi solo per la propria geometria
+# invece di ritriangolare l'intera storia cliff della regione ad ogni chunk.
+func flush_pending_surface() -> void:
+	if not _face_indices.is_empty():
+		face_mesh = _append_or_create_surface(
+			face_mesh, _face_vertices, _face_colors, _face_uvs, _face_indices
+		)
+		_face_vertices = PackedVector2Array()
+		_face_colors = PackedColorArray()
+		_face_uvs = PackedVector2Array()
+		_face_indices = PackedInt32Array()
+	if not _lip_indices.is_empty():
+		lip_mesh = _append_or_create_surface(
+			lip_mesh, _lip_vertices, _lip_colors, _lip_uvs, _lip_indices
+		)
+		_lip_vertices = PackedVector2Array()
+		_lip_colors = PackedColorArray()
+		_lip_uvs = PackedVector2Array()
+		_lip_indices = PackedInt32Array()
+
+func _append_or_create_surface(
+	mesh: ArrayMesh,
+	vertices: PackedVector2Array,
+	colors: PackedColorArray,
+	uvs: PackedVector2Array,
+	indices: PackedInt32Array
+) -> ArrayMesh:
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = vertices
+	arrays[Mesh.ARRAY_COLOR] = colors
+	arrays[Mesh.ARRAY_TEX_UV] = uvs
+	arrays[Mesh.ARRAY_INDEX] = indices
+	var target := mesh if mesh != null else ArrayMesh.new()
+	target.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return target
 
 func _build_textured_mesh(
 	vertices: PackedVector2Array,

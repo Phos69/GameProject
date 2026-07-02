@@ -1053,7 +1053,11 @@ func _build_chunk_for_coord(coord: Vector2i) -> bool:
 	_build_visual_chunk(rect, layout.logical_tile_scale)
 	_uses_chunk_nodes = not _chunk_nodes.is_empty()
 	if not had_cliff_transitions and _cliff_mesh_builder != null:
-		_cliff_mesh_builder.build_meshes()
+		# Aggiunge solo la geometria cliff di questo chunk come nuova superficie
+		# invece di ritriangolare l'intera storia della regione (build_meshes()):
+		# altrimenti il costo per commit cresceva con ogni chunk-con-cliff gia'
+		# visitato mentre si esplora lungo una scogliera.
+		_cliff_mesh_builder.flush_pending_surface()
 		queue_redraw()
 	return has_chunk(coord)
 

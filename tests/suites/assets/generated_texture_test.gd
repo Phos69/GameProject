@@ -811,6 +811,61 @@ func test_transition_meshes() -> void:
 	assert_false(builder.fissure_lines.is_empty(), "procedural fissure detail remains available")
 	_validate_lip_uv_direction(palette)
 
+func test_flush_pending_surface_matches_single_shot_build() -> void:
+	var palette := load("res://game/modes/zombie/biomes/infected_plains_palette.tres") as BiomePalette
+	assert_not_null(palette, "infected plains palette loads for cliff mesh QA")
+	if palette == null:
+		return
+	# Simula lo streaming a chunk: 3 batch flushati uno alla volta, come farebbe
+	# BiomeTileLayer._build_chunk_for_coord() per 3 chunk successivi.
+	var incremental := IsometricCliffMeshBuilder.new()
+	incremental.configure(palette, 424242, true)
+	var batches := [
+		[TRANSITION_IDS[0], TRANSITION_IDS[1]],
+		[TRANSITION_IDS[2], TRANSITION_IDS[3], TRANSITION_IDS[4]],
+		[TRANSITION_IDS[5]]
+	]
+	for batch_index in range(batches.size()):
+		for tile_id in batches[batch_index]:
+			incremental.append_transition(
+				tile_id,
+				Vector2(float(batch_index) * 200.0, 0.0),
+				42.0,
+				22.0
+			)
+		incremental.flush_pending_surface()
+	assert_eq(incremental.face_mesh.get_surface_count(), batches.size(),
+		"each flushed batch adds exactly one face surface")
+	assert_eq(incremental.lip_mesh.get_surface_count(), batches.size(),
+		"each flushed batch adds exactly one lip surface")
+	var surfaces_before := incremental.face_mesh.get_surface_count()
+	incremental.flush_pending_surface()
+	assert_eq(incremental.face_mesh.get_surface_count(), surfaces_before,
+		"flushing with nothing pending is a no-op")
+
+	var single_shot := IsometricCliffMeshBuilder.new()
+	single_shot.configure(palette, 424242, true)
+	for batch_index in range(batches.size()):
+		for tile_id in batches[batch_index]:
+			single_shot.append_transition(
+				tile_id,
+				Vector2(float(batch_index) * 200.0, 0.0),
+				42.0,
+				22.0
+			)
+	single_shot.build_meshes()
+
+	assert_eq(incremental.transition_count, single_shot.transition_count,
+		"transition_count is unaffected by flush strategy")
+	assert_true(
+		_mesh_vertex_multiset_matches(incremental.face_mesh, single_shot.face_mesh),
+		"splitting face geometry across surfaces does not change the rendered geometry"
+	)
+	assert_true(
+		_mesh_vertex_multiset_matches(incremental.lip_mesh, single_shot.lip_mesh),
+		"splitting lip geometry across surfaces does not change the rendered geometry"
+	)
+
 func test_rectangular_border_meshes() -> void:
 	var builder := IsometricCliffBorderMeshBuilder.new()
 	builder.build([Rect2i(Vector2i(4, 5), Vector2i(6, 4))], [&"internal"], Vector2i(16, 16), 8.0)
@@ -1121,6 +1176,32 @@ func _mesh_sheared_quad_count(mesh: ArrayMesh) -> int:
 		if not is_equal_approx(vertices[base].y, vertices[base + 1].y) and not is_equal_approx(vertices[base].x, vertices[base + 1].x):
 			count += 1
 	return count
+
+# Confronta due mesh come insiemi di vertici (vertex+color+uv), ignorando come
+# i triangoli sono distribuiti tra le superfici: prova che spezzare la
+# geometria su piu' superfici (flush incrementale) non cambia cosa viene
+# disegnato rispetto a un'unica build da tutti i dati (build_meshes()).
+func _mesh_vertex_multiset_matches(a: ArrayMesh, b: ArrayMesh) -> bool:
+	var a_entries := _mesh_vertex_entries(a)
+	var b_entries := _mesh_vertex_entries(b)
+	if a_entries.size() != b_entries.size():
+		return false
+	a_entries.sort()
+	b_entries.sort()
+	return a_entries == b_entries
+
+func _mesh_vertex_entries(mesh: ArrayMesh) -> Array[String]:
+	var entries: Array[String] = []
+	if mesh == null:
+		return entries
+	for surface_index in range(mesh.get_surface_count()):
+		var arrays := mesh.surface_get_arrays(surface_index)
+		var vertices := arrays[Mesh.ARRAY_VERTEX] as PackedVector2Array
+		var colors := arrays[Mesh.ARRAY_COLOR] as PackedColorArray
+		var uvs := arrays[Mesh.ARRAY_TEX_UV] as PackedVector2Array
+		for index in range(vertices.size()):
+			entries.append("%s|%s|%s" % [vertices[index], colors[index], uvs[index]])
+	return entries
 
 func _edge_seam_score(image: Image) -> float:
 	if image == null or image.is_empty():
