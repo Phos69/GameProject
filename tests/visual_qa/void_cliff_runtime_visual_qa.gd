@@ -68,13 +68,18 @@ func _run() -> void:
 		)
 		_expect(layer.has_forest_ground_art_texture(), "runtime tile layer has generated grass art")
 		_expect(layer.has_forest_surface_art_textures(), "runtime tile layer has every forest surface")
-		_expect(layer.get_cliff_transition_count() > 0, "runtime tile layer builds cliff transitions")
+		var border_counts := layer.get_forest_cliff_border_counts()
 		_expect(
-			int(layer.get_forest_cliff_border_counts().get("total", 0)) > 0,
+			layer.get_cliff_transition_count() > 0
+			or int(border_counts.get("faces", 0)) > 0,
+			"runtime tile layer builds cliff geometry"
+		)
+		_expect(
+			int(border_counts.get("total", 0)) > 0,
 			"runtime fall zones build visible straight border segments"
 		)
 		_expect(
-			int(layer.get_forest_cliff_border_counts().get("faces", 0)) > 0,
+			int(border_counts.get("faces", 0)) > 0,
 			"runtime forest cliffs replace angled per-cell faces with rectilinear faces"
 		)
 
@@ -220,9 +225,9 @@ func _surface_sample_key(tile_id: StringName) -> StringName:
 	match tile_id:
 		IsometricTileResolver.TILE_FOREST_ROAD:
 			return &"road"
-		IsometricTileResolver.TILE_FOREST_PATH:
+		IsometricTileResolver.TILE_FOREST_PATH, IsometricTileResolver.TILE_GRASS_TO_PATH:
 			return &"path"
-		IsometricTileResolver.TILE_GRASS_TO_PATH, IsometricTileResolver.TILE_GRASS_TO_ROAD, IsometricTileResolver.TILE_PATH_TO_ROAD:
+		IsometricTileResolver.TILE_GRASS_TO_ROAD, IsometricTileResolver.TILE_PATH_TO_ROAD:
 			return &"transition"
 		_:
 			return &""

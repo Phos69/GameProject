@@ -46,8 +46,9 @@ Il prato base usa il raster seamless finale
 orizzontale (void verso il basso) e `grass_cliff_edge_vertical_generated.png`
 per i lati verticali, campionando solo la fascia rocciosa pura
 (`HORIZONTAL_ROCK_UV_START`/`VERTICAL_ROCK_UV_START`) per evitare il seam verde
-del muschio di transizione. Il
-`BiomeTileLayer` estende il prato sulle celle di transizione fino alla cresta;
+del muschio di transizione. Il `BiomeTileLayer` tiene il prato solo sulle celle
+walkable `ground_to_void_cliff`: le celle `void_*` di transizione restano
+fondale void sotto faccia e lip, cosi il terreno non prosegue oltre la cresta;
 `IsometricCliffBorderMeshBuilder` costruisce due bordi orizzontali, due
 verticali e quattro corner per i buchi interni; sui rettangoli perimetrali
 disegna solo il lato a contatto con il terreno, evitando una doppia linea verso
@@ -99,11 +100,11 @@ pre-baked colorato per tipo tile e disattiva il reticolo sul bioma base. In
 questo modo gli spazi tra i rombi calpestabili non mostrano nero: erba/cliff
 usano verdi scuri, path/road marroni scuri. Le linee di dettaglio pre-baked
 restano sopra erba, tall grass, path, road, transizioni e cliff; il
-`forest_void` puro usa solo l'underlay uniforme, senza rombi o reticoli
-ripetuti, usando lo stesso colore del `VoidBackdrop` fuori-mappa. I border perimetrali
-si fermano sia nei corner fall sia lungo ogni tratto in cui un `full_void`
-raggiunge il limite esterno, lasciando solo il fondale void. Non crea nodi per
-tile.
+`forest_void` puro e le celle `void_*` di transizione usano solo fondale void
+sotto la geometria cliff, senza rombi o reticoli ripetuti, usando lo stesso
+colore del `VoidBackdrop` fuori-mappa. I border perimetrali si fermano sia nei
+corner fall sia lungo ogni tratto in cui un `full_void` raggiunge il limite
+esterno, lasciando solo il fondale void. Non crea nodi per tile.
 
 ## Estendere ad altri biomi
 

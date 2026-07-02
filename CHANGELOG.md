@@ -66,6 +66,12 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 - Ricalibrato il rendering dei cliff verso void per la griglia `6x6`: il lip
   rettilineo resta stretto e termina sulla prima cella di caduta, mentre le
   facce perimetrali scendono nel void senza comprimersi nella fall strip.
+- Le celle `void_*` di transizione cliff non ricevono piu materiale terrain o
+  underlay prato: il terreno resta sulle celle walkable `ground_to_void_cliff`,
+  mentre il lato caduta mostra il fondale void sotto face e lip. Questo evita
+  che le texture generated/forest continuino oltre l'edge dopo lo scaling
+  `6x6`. `TileBakeCache.FORMAT_VERSION` sale a `11` per rigenerare le mappe
+  `material_asset_*` persistite.
 - Allineata la conversione `world_to_logical()` di `BiomeEnvironmentLayout`
   alla griglia `75x75`, evitando che il centro delle fall-zone perimetrali
   venga rimappato una tile piu interno rispetto alla collisione.
@@ -94,9 +100,9 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
   dispari sono stati riallineati alla nuova scala senza cambiare il formato dei
   save persistenti.
 - Incrementati `WorldSnapshotCodec.FORMAT_VERSION` a `4` e
-  `TileBakeCache.FORMAT_VERSION` a `10`, cosi snapshot e bake tile precedenti
-  alla nuova scala vengono ignorati e rigenerati senza cambiare seed o formato
-  save persistente.
+  `TileBakeCache.FORMAT_VERSION` fino a `11`, cosi snapshot e bake tile
+  precedenti alla nuova scala o al mapping cliff/void vengono ignorati e
+  rigenerati senza cambiare seed o formato save persistente.
 - Il loader texture isometrico carica i raster sorgente quando la cache `.ctex`
   locale non e stata importata, mantenendo separata la cache raster dalla cache
   SVG esposta ai test.

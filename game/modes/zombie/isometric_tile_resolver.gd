@@ -1079,7 +1079,7 @@ func _apply_generated_material(
 
 func _generated_surface_role(tile_id: StringName) -> StringName:
 	if is_void_transition_tile_id(tile_id):
-		return GENERATED_ART_CATALOG.ROLE_GROUND
+		return &""
 	if _is_passage_endpoint_tile(tile_id) or PASSAGE_ROUTE_TILE_IDS.has(tile_id):
 		return GENERATED_ART_CATALOG.ROLE_PATH
 	match tile_id:

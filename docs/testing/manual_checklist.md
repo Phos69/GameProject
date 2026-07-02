@@ -1101,7 +1101,7 @@ QA visuale e runtime da eseguire dopo modifiche a `infected_plains`,
   transizioni leggibili, senza rettangoli piatti o patch ovali legacy.
 - Camminare vicino a void/fall zone e confermare che `forest_cliff_edge`,
   `forest_void` e `ground_to_void_cliff` siano distinguibili dal terreno
-  walkable.
+  walkable, senza texture terrain che proseguono oltre la cresta del cliff.
 - Controllare i lati con parete: `forest_mountain_wall` e
   `ground_to_mountain_wall` devono leggere come roccia/montagna e non come
   recinto placeholder.

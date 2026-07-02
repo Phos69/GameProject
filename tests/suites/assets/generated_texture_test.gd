@@ -941,6 +941,60 @@ func test_tile_layer_consumes_cliff_textures() -> void:
 	layer.queue_free()
 	await wait_physics_frames(1)
 
+func test_void_transition_cells_do_not_receive_ground_surface() -> void:
+	var resolver := IsometricTileResolver.new(_manifest)
+	var layout := BiomeEnvironmentLayout.new()
+	layout.zone_size = Vector2i(16, 16)
+	layout.generation_seed = 717171
+	layout.add_floor_rect(Rect2i(Vector2i.ZERO, layout.zone_size), &"floor_base")
+	layout.add_fall_zone_rect(Rect2i(Vector2i(6, 6), Vector2i(2, 2)), &"internal")
+	layout.rebuild_terrain_classification()
+
+	var void_cell := Vector2i(6, 6)
+	var ground_cell := Vector2i(5, 6)
+	var void_data := resolver.resolve_tile_data(
+		layout,
+		void_cell,
+		&"toxic_wastes",
+		&"quality"
+	)
+	var ground_data := resolver.resolve_tile_data(
+		layout,
+		ground_cell,
+		&"toxic_wastes",
+		&"quality"
+	)
+	var void_tile := StringName(void_data.get("tile_id", &""))
+	assert_true(
+		resolver.is_void_transition_tile_id(void_tile),
+		"fall-zone edge cell still resolves to an oriented cliff tile"
+	)
+	assert_true(
+		StringName(void_data.get("material_asset_id", &"")).is_empty(),
+		"void transition cell does not inherit generated ground material"
+	)
+	assert_false(
+		StringName(ground_data.get("material_asset_id", &"")).is_empty(),
+		"walkable ground touching void still reaches the cliff crest"
+	)
+
+	var palette := load("res://game/modes/zombie/biomes/toxic_wastes_palette.tres") as BiomePalette
+	var layer := BiomeTileLayer.new()
+	add_child(layer)
+	layer.configure(layout, palette, &"toxic_wastes", &"quality", 16, resolver, _manifest, false)
+	await wait_physics_frames(1)
+	assert_true(
+		layer._surface_texture_id_for_cell(void_cell, void_tile).is_empty(),
+		"tile layer does not bake terrain surface over a void transition"
+	)
+	assert_eq(
+		layer._forest_underlay_key(void_tile),
+		&"void",
+		"void transition underlay stays void-coloured behind the cliff face"
+	)
+	layer.queue_free()
+	await wait_physics_frames(1)
+
 func test_fall_gameplay_unchanged() -> void:
 	var zone := BiomeFallZone.new()
 	add_child(zone)
@@ -1019,9 +1073,12 @@ func test_generated_forest_resolver() -> void:
 	assert_gt(layer.get_suppressed_void_texture_count(), 0, "forest tile layer keeps pure void free of repeated tile texture")
 	assert_eq(layer.get_void_background_color(), ZombieModeController.get_void_background_color(palette), "forest void uses the same color as the off-world backdrop")
 	var cliff_underlay_key := layer._forest_underlay_key(IsometricTileResolver.TILE_VOID_EDGE_WEST)
-	assert_true(cliff_underlay_key == &"grass" and layer._forest_underlay_color(cliff_underlay_key) == layer._forest_underlay_color(&"grass"),
-		"forest cliff transitions keep grass beneath the directional crest")
-	assert_eq(layer._forest_surface_texture_id(IsometricTileResolver.TILE_VOID_EDGE_WEST), &"forest_grass", "forest grass texture reaches the exact cliff crest")
+	assert_true(cliff_underlay_key == &"void" and layer._forest_underlay_color(cliff_underlay_key) == layer.get_void_background_color(),
+		"forest cliff transition cells keep void colour behind the directional crest")
+	assert_true(layer._forest_surface_texture_id(IsometricTileResolver.TILE_VOID_EDGE_WEST).is_empty(),
+		"forest cliff transition cells do not bake grass past the cliff edge")
+	assert_eq(layer._forest_surface_texture_id(IsometricTileResolver.TILE_GROUND_TO_VOID_CLIFF), &"forest_grass",
+		"walkable ground beside void still reaches the cliff crest")
 	assert_gt(layer.get_cliff_transition_count(), 0, "forest tile layer bakes vertical cliff faces")
 	layer.free()
 	biome_manager.queue_free()

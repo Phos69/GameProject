@@ -831,8 +831,9 @@ multi-bioma.
   classi senza raster finale mantengono le proprie mesh colorate. Il
   layer pre-bake-a anche linee di dettaglio per grass, tall grass,
   path, road, transizioni e cliff; le celle pure `void_depth`/`forest_void`
-  restano escluse dalla mesh e dal reticolo, lasciando un fondale uniforme con
-  lo stesso colore condiviso dal `VoidBackdrop` fuori-mappa.
+  e le transizioni `void_*` restano senza surface terrain, lasciando un fondale
+  uniforme con lo stesso colore condiviso dal `VoidBackdrop` fuori-mappa sotto
+  face e lip.
   I biomi avanzati riusano lo stesso percorso geometrico tramite
   `BiomeGeneratedArtCatalog`: `toxic_wastes -> urban_ruins`,
   `burning_fields -> volcanic`, `frozen_outskirts -> frozen_tundra` e
@@ -852,10 +853,10 @@ multi-bioma.
   terreno/caduta. `IsometricCliffBorderMeshBuilder` costruisce il lip con
   bordi raster distinti: due orizzontali, due verticali e quattro join
   geometrici; i fall perimetrali emettono solo il lato rivolto al terreno in
-  base a `hazard_sides` e usano un rim sub-tile. Le celle geometriche di
-  transizione
-  mantengono il prato fino alla cresta, evitando un underlay grigio rettangolare
-  e una linea a zig-zag sopra la faccia. Non esiste una mesh corner sovrapposta:
+  base a `hazard_sides` e usano un rim sub-tile. Le celle walkable
+  `ground_to_void_cliff` mantengono il prato fino alla cresta; le celle
+  `void_*` di transizione restano invece fondale void, cosi le texture terrain
+  non continuano sotto la faccia cliff. Non esiste una mesh corner sovrapposta:
   il bordo orizzontale possiede la giunzione e il verticale termina alla sua
   profondita rocciosa. Entrambe le mesh edge escludono la porzione erba dei
   propri raster e campionano solo roccia dentro la fall zone; il ground resta

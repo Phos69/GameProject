@@ -1099,7 +1099,7 @@ func _surface_texture_id_for_cell(
 
 func _forest_surface_texture_id(tile_id: StringName) -> StringName:
 	if resolver != null and resolver.is_void_transition_tile_id(tile_id):
-		return FOREST_GRASS_TEXTURE_ID
+		return &""
 	if FOREST_GRASS_SURFACE_TILE_IDS.has(tile_id):
 		return FOREST_GRASS_TEXTURE_ID
 	if FOREST_PASSAGE_SURFACE_TILE_IDS.has(tile_id):
@@ -1301,7 +1301,7 @@ func _append_underlay_run(
 
 func _forest_underlay_key(tile_id: StringName) -> StringName:
 	if resolver != null and resolver.is_void_transition_tile_id(tile_id):
-		return &"grass"
+		return &"void"
 	if FOREST_PASSAGE_SURFACE_TILE_IDS.has(tile_id):
 		return &"path"
 	match tile_id:
@@ -1440,9 +1440,7 @@ func _tile_color(tile_id: StringName) -> Color:
 	if _is_passage_endpoint_tile(tile_id):
 		return palette.gate_color.lightened(0.08)
 	if resolver != null and resolver.is_void_transition_tile_id(tile_id):
-		if _uses_forest_ground():
-			return Color(0.12, 0.205, 0.135, 1.0)
-		return palette.background_color.darkened(0.38)
+		return get_void_background_color()
 	match tile_id:
 		IsometricTileResolver.TILE_FOREST_GRASS:
 			return Color(0.20, 0.34, 0.17, 1.0)

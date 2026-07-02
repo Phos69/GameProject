@@ -48,12 +48,14 @@ asset restano caricati e renderizzati alla loro dimensione nativa.
 
 ## Compatibilita cache e save
 
-`WorldSnapshotCodec.FORMAT_VERSION` e stato incrementato a `4` e
-`TileBakeCache.FORMAT_VERSION` a `10`: snapshot e tile bake pre-migrazione
-vengono scartati e rigenerati. I save persistenti non salvano il layout
-completo, ma seed, regione corrente e stato esplorazione; con lo stesso seed la
-topologia resta deterministica, mentre la geometria locale viene rigenerata alla
-nuova scala. Per questo non serve un bump del formato save persistente.
+`WorldSnapshotCodec.FORMAT_VERSION` e stato incrementato a `4` e la migrazione
+scala aveva portato `TileBakeCache.FORMAT_VERSION` a `10`; il fix successivo del
+mapping cliff/void lo porta a `11`, cosi anche i bake con vecchi materiali sulle
+celle `void_*` vengono scartati e rigenerati. I save persistenti non salvano il
+layout completo, ma seed, regione corrente e stato esplorazione; con lo stesso
+seed la topologia resta deterministica, mentre la geometria locale viene
+rigenerata alla nuova scala. Per questo non serve un bump del formato save
+persistente.
 
 ## Validazione
 
