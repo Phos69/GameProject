@@ -14,6 +14,8 @@ extends GutTest
 ##
 ## Esecuzione (solo questa suite):
 ##   tools/run_gut.ps1 -Config res://.gutconfig.soak.json -Select perf_bottleneck
+## Profilo rendering (P4, con finestra — headless non vede _draw/GPU):
+##   godot --path . -s res://addons/gut/gut_cmdln.gd -gconfig=res://.gutconfig.soak.json -gselect=perf_bottleneck -gexit
 
 const ENEMY_IDS: Array[StringName] = [
 	&"survival_zombie", &"survival_runner", &"survival_tank", &"survival_shooter"
@@ -30,9 +32,15 @@ const SETTLE_FRAMES := 6
 var _scene
 
 func before_all() -> void:
+	# In una run con finestra (P4) vsync e cap fps falserebbero i wall time:
+	# li togliamo cosi' il pacing residuo e' solo quello dei physics tick.
+	if DisplayServer.get_name() != "headless":
+		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+		Engine.max_fps = 0
 	_scene = _new_main_scene_fixture()
 	assert_true(_scene.boot(self), "main scene can be loaded for perf diagnostics")
 	await wait_physics_frames(3)
+	gut.p("PERF_DISPLAY: driver=%s" % DisplayServer.get_name())
 
 func after_each() -> void:
 	_scene.stop_survival()
@@ -228,21 +236,25 @@ func test_d_frame_scaling_and_decomposition() -> void:
 		return
 
 	var baseline := await _measure_frames(MEASURE_FRAMES)
-	gut.p("PERF_SCALING: n=0 wall_avg=%.2f ms wall_worst=%.2f ms physics_avg=%.2f ms process_avg=%.2f ms" % [
-		baseline.wall_avg, baseline.wall_worst, baseline.physics_avg, baseline.process_avg
+	gut.p("PERF_SCALING: n=0 wall_avg=%.2f ms wall_worst=%.2f ms physics_avg=%.2f ms process_avg=%.2f ms %s" % [
+		baseline.wall_avg, baseline.wall_worst, baseline.physics_avg, baseline.process_avg,
+		baseline.render_text()
 	])
 
 	for enemy_count in [24, 96, 192]:
 		var enemies := await _spawn_ring(enemy_system, enemy_count)
 		await wait_physics_frames(SETTLE_FRAMES)
 		var full := await _measure_frames(MEASURE_FRAMES)
-		gut.p("PERF_SCALING: n=%d wall_avg=%.2f ms wall_worst=%.2f ms physics_avg=%.2f ms process_avg=%.2f ms" % [
-			enemy_count, full.wall_avg, full.wall_worst, full.physics_avg, full.process_avg
+		gut.p("PERF_SCALING: n=%d wall_avg=%.2f ms wall_worst=%.2f ms physics_avg=%.2f ms process_avg=%.2f ms %s" % [
+			enemy_count, full.wall_avg, full.wall_worst, full.physics_avg, full.process_avg,
+			full.render_text()
 		])
 
 		if enemy_count == 96:
 			# Decomposizione: spegni l'AI (physics_process) → resta visual+sistemi;
-			# poi spegni anche il _process dei visual → resta lo scan dei sistemi.
+			# poi il _process dei visual (stop queue_redraw → niente re-record dei
+			# comandi canvas ma il raster GPU continua); infine nascondi i visual
+			# (niente raster). I delta separano AI / re-record / raster.
 			for enemy in enemies:
 				if is_instance_valid(enemy):
 					enemy.set_physics_process(false)
@@ -253,11 +265,20 @@ func test_d_frame_scaling_and_decomposition() -> void:
 					(enemy.get("visual") as Node).set_process(false)
 			await wait_physics_frames(2)
 			var no_ai_no_visual := await _measure_frames(30)
-			gut.p("PERF_DECOMPOSITION_96: full_wall=%.2f ms no_ai_wall=%.2f ms no_ai_no_visual_wall=%.2f ms (ai~%.2f visual~%.2f resto~%.2f)" % [
-				full.wall_avg, no_ai.wall_avg, no_ai_no_visual.wall_avg,
+			for enemy in enemies:
+				if is_instance_valid(enemy) and enemy.get("visual") != null:
+					(enemy.get("visual") as CanvasItem).visible = false
+			await wait_physics_frames(2)
+			var hidden := await _measure_frames(30)
+			gut.p("PERF_DECOMPOSITION_96: full_wall=%.2f ms no_ai_wall=%.2f ms no_redraw_wall=%.2f ms hidden_wall=%.2f ms (ai~%.2f redraw~%.2f raster~%.2f resto~%.2f)" % [
+				full.wall_avg, no_ai.wall_avg, no_ai_no_visual.wall_avg, hidden.wall_avg,
 				full.wall_avg - no_ai.wall_avg,
 				no_ai.wall_avg - no_ai_no_visual.wall_avg,
-				no_ai_no_visual.wall_avg - baseline.wall_avg
+				no_ai_no_visual.wall_avg - hidden.wall_avg,
+				hidden.wall_avg - baseline.wall_avg
+			])
+			gut.p("PERF_DECOMPOSITION_96_RENDER: full[%s] no_redraw[%s] hidden[%s]" % [
+				full.render_text(), no_ai_no_visual.render_text(), hidden.render_text()
 			])
 
 		if enemy_count == 192 and hazard_system != null:
@@ -279,6 +300,14 @@ func test_d_frame_scaling_and_decomposition() -> void:
 func _start_world() -> void:
 	assert_true(_scene.start_survival(WORLD_CONTEXT.duplicate()), "survival starts for perf diagnostics")
 	await wait_physics_frames(3)
+	# Lo spawn del contenuto regione e' time-sliced: nella run con finestra 3
+	# frame non bastavano e si misurava un mondo senza ostacoli. Attendi che i
+	# blocker siano streammati (bounded per non appendere il test).
+	for _frame in range(240):
+		if get_tree().get_node_count_in_group("spawn_blockers") > 0:
+			break
+		await get_tree().physics_frame
+	await wait_physics_frames(2)
 	# Riproducibilita': se il player muore sotto la massa, i nemici tornano IDLE
 	# (niente target -> niente pathfinding) e la scala misurerebbe il nulla.
 	for player in get_tree().get_nodes_in_group("players"):
@@ -363,14 +392,28 @@ class FrameStats:
 	var wall_worst: float = 0.0
 	var physics_avg: float = 0.0
 	var process_avg: float = 0.0
+	var render_cpu_avg: float = 0.0
+	var render_gpu_avg: float = 0.0
+	var draw_calls_avg: float = 0.0
+
+	func render_text() -> String:
+		return "render_cpu=%.2f ms render_gpu=%.2f ms draw_calls=%d" % [
+			render_cpu_avg, render_gpu_avg, int(draw_calls_avg)
+		]
 
 ## Misura frames physics consecutivi: wall time per frame (include l'eventuale
-## sleep di pacing) + monitor engine (solo lavoro: physics step e process step).
+## sleep di pacing) + monitor engine (physics/process step) + tempi di render
+## del viewport (CPU/GPU, in headless restano 0: il renderer dummy non misura).
 func _measure_frames(frames: int) -> FrameStats:
 	var stats := FrameStats.new()
+	var viewport_rid := get_tree().root.get_viewport_rid()
+	RenderingServer.viewport_set_measure_render_time(viewport_rid, true)
 	var wall_sum := 0.0
 	var physics_sum := 0.0
 	var process_sum := 0.0
+	var render_cpu_sum := 0.0
+	var render_gpu_sum := 0.0
+	var draw_calls_sum := 0.0
 	for _frame in range(frames):
 		var t0 := Time.get_ticks_usec()
 		await get_tree().physics_frame
@@ -379,9 +422,21 @@ func _measure_frames(frames: int) -> FrameStats:
 		stats.wall_worst = maxf(stats.wall_worst, frame_ms)
 		physics_sum += float(Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS)) * 1000.0
 		process_sum += float(Performance.get_monitor(Performance.TIME_PROCESS)) * 1000.0
+		render_cpu_sum += float(
+			RenderingServer.viewport_get_measured_render_time_cpu(viewport_rid)
+		)
+		render_gpu_sum += float(
+			RenderingServer.viewport_get_measured_render_time_gpu(viewport_rid)
+		)
+		draw_calls_sum += float(Performance.get_monitor(
+			Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME
+		))
 	stats.wall_avg = wall_sum / float(frames)
 	stats.physics_avg = physics_sum / float(frames)
 	stats.process_avg = process_sum / float(frames)
+	stats.render_cpu_avg = render_cpu_sum / float(frames)
+	stats.render_gpu_avg = render_gpu_sum / float(frames)
+	stats.draw_calls_avg = draw_calls_sum / float(frames)
 	return stats
 
 func _new_main_scene_fixture():

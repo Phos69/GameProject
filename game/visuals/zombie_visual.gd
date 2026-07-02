@@ -11,10 +11,19 @@ var current_state: StringName = &"idle"
 var flash_intensity: float = 1.0
 var reduced_motion: bool = false
 var biome_theme_id: StringName = &""
+var _screen_notifier: VisibleOnScreenNotifier2D
 
 func _ready() -> void:
 	add_to_group("visual_settings_consumers")
 	VisualSettingsManager.sync_consumer(self)
+	# Ridisegnare ~20 primitive antialiased per mob a ogni frame costa ~60µs
+	# CPU + ~60µs GPU (misura P4 in tests/suites/soak/perf_bottleneck_stress_
+	# test.gd): fuori dalla camera il re-record e' lavoro inutile, quindi il
+	# redraw e' sospeso; animation_time continua ad avanzare, al rientro la
+	# posa riparte coerente.
+	_screen_notifier = VisibleOnScreenNotifier2D.new()
+	_update_notifier_rect()
+	add_child(_screen_notifier)
 
 func apply_visual_settings(settings: Dictionary) -> void:
 	flash_intensity = clampf(
@@ -31,7 +40,8 @@ func _process(delta: float) -> void:
 	if not reduced_motion:
 		animation_time += delta
 	hit_flash_timer = maxf(hit_flash_timer - delta, 0.0)
-	queue_redraw()
+	if _screen_notifier == null or _screen_notifier.is_on_screen():
+		queue_redraw()
 
 func set_motion(current_velocity: Vector2, max_speed: float) -> void:
 	movement_ratio = clampf(
@@ -58,7 +68,17 @@ func configure_biome_style(
 ) -> void:
 	archetype_id = next_archetype_id
 	biome_theme_id = next_theme_id
+	_update_notifier_rect()
 	queue_redraw()
+
+func _update_notifier_rect() -> void:
+	if _screen_notifier == null:
+		return
+	# Silhouette + margine per braccia/telegrafi; l'aura del tema biome arriva
+	# a ~0.62 * larghezza di raggio, il margine la copre.
+	var size := get_silhouette_size()
+	var margin := Vector2(28.0, 28.0)
+	_screen_notifier.rect = Rect2(-size * 0.5 - margin, size + margin * 2.0)
 
 func get_silhouette_size() -> Vector2:
 	match archetype_id:
