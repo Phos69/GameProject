@@ -831,8 +831,10 @@ multi-bioma.
   riusa lo stesso tipo di chunk, ma prepara l'intera regione all'avvio senza
   `WorldRuntime`.
   Nel bioma forestale il baker pre-bake-a run rettangolari con UV world-space
-  per prato, sentiero in terra, strada asfaltata e le tre transizioni tra tali
-  materiali, evitando di ripetere un rombo completo per cella.
+  per prato, sentiero in terra e strada asfaltata. I tile semantici
+  `grass_to_path`, `grass_to_road` e `path_to_road` non stendono texture
+  intermedie: vengono mappati rispettivamente su `forest_path` o `forest_road`
+  per mantenere un taglio netto del materiale orientabile verso il terreno.
   `IsometricForestGroundMeshBuilder` possiede la costruzione delle mesh; le
   classi senza raster finale mantengono le proprie mesh colorate. Il
   layer pre-bake-a anche linee di dettaglio per grass, tall grass,
@@ -891,9 +893,10 @@ multi-bioma.
   `RectilinearRockAreaMeshBuilder`. `BiomeObstacle` resta adapter/fallback
   quando il contratto dichiara esplicitamente un fallback procedurale.
 - Il loader accetta SVG e texture raster importate. `forest_tree` mantiene il
-  PNG trasparente originale; `large_rock` non usa piu una silhouette fissa e
-  rende sull'intero `rock_rect` un plateau rialzato con corona e pareti dedicate.
-  La sorgente visuale non cambia gameplay, collisione o classificazione.
+  PNG trasparente originale e applica solo flip/tinta deterministici per ridurre
+  la ripetizione; `large_rock` non usa piu una silhouette fissa e rende
+  sull'intero `rock_rect` un plateau rialzato con corona e pareti dedicate. La
+  sorgente visuale non cambia gameplay, collisione o classificazione.
 - `RectilinearRockAreaMeshBuilder` costruisce il void cliff specchiato verso
   l'alto: la corona cobble e sollevata di `RAISE_HEIGHT_CELLS` e rientra in un
   mesa, mentre tre pareti continue (fronte sud a tutta larghezza + due fianchi

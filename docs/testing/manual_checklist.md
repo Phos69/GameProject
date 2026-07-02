@@ -1098,10 +1098,12 @@ QA visuale e runtime da eseguire dopo modifiche a `infected_plains`,
   evidenti, e che il raccordo prato-roccia segua lati e angoli delle fosse.
 - Confermare che il sentiero sia terra nuda con sassi, la strada asfalto senza
   segnaletica e i raccordi prato/terra/asfalto non mostrino scacchi o ripetizioni
-  evidenti. Confrontare `build/qa/forest_surfaces/forest_surface_materials.png`
-  e le tre catture `*_runtime.png` nella stessa cartella.
+  evidenti. Il runtime non deve usare `grass_to_path`, `grass_to_road` o
+  `path_to_road` come texture intermedie: i contatti devono leggere come tagli
+  netti delle superfici `forest_path` o `forest_road`.
 - Verificare che gli incroci path/road e i bordi path/grass o road/grass usino
-  transizioni leggibili, senza rettangoli piatti o patch ovali legacy.
+  route leggibili, senza rettangoli piatti, patch ovali legacy o fasce
+  sovrapposte.
 - Camminare vicino a void/fall zone e confermare che `forest_cliff_edge`,
   `forest_void` e `ground_to_void_cliff` siano distinguibili dal terreno
   walkable, senza texture terrain che proseguono oltre la cresta del cliff.
@@ -1119,6 +1121,7 @@ Dettagli del contratto: `docs/forest_isometric_texture_system.md`.
 godot --headless --path . --script res://tests/forest_isometric_texture_transition_smoke_test.gd
 godot --headless --path . --script res://tests/forest_grass_generated_texture_smoke_test.gd
 godot --path . --rendering-method gl_compatibility --script res://tests/forest_surface_generated_visual_qa.gd
+godot --path . --rendering-method gl_compatibility --script res://tests/visual_qa/biome_art_infected_plains_visual_qa.gd
 godot --headless --path . --script res://tests/milestone_10_tile_layer_smoke_test.gd
 godot --headless --path . --script res://tools/generate_isometric_environment_assets.gd -- --check
 ```

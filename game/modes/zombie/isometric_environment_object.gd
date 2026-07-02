@@ -35,6 +35,7 @@ var damage_overlay: Sprite2D
 var rock_area_occluder: RockAreaOccluderVisual
 var procedural_fallback_active: bool = false
 var render_mode: StringName = &"sprite"
+var _asset_variation_pending: bool = false
 
 # Opaque-content metrics (bounds + width profile, texture pixels) keyed by
 # asset_path. The same asset always loads at one deterministic size, so it is
@@ -65,12 +66,22 @@ func configure(
 		next_sort_offset
 	)
 	_apply_asset_contract()
+	_queue_asset_variation()
 	queue_redraw()
 
 func _ready() -> void:
 	super._ready()
 	_ensure_visual_nodes()
 	_apply_asset_contract()
+	_queue_asset_variation()
+
+func _process(_delta: float) -> void:
+	if not _asset_variation_pending:
+		set_process(false)
+		return
+	_asset_variation_pending = false
+	_apply_asset_variation()
+	set_process(false)
 
 func get_asset_path() -> String:
 	return asset_path
@@ -327,6 +338,41 @@ func _position_asset_sprite() -> void:
 		damage_overlay.texture = asset_sprite.texture
 		damage_overlay.scale = asset_sprite.scale
 		damage_overlay.position = asset_sprite.position
+
+func _queue_asset_variation() -> void:
+	if not is_inside_tree():
+		_apply_asset_variation()
+		return
+	_asset_variation_pending = true
+	set_process(true)
+
+func _apply_asset_variation() -> void:
+	if asset_sprite == null:
+		return
+	asset_sprite.flip_h = false
+	asset_sprite.modulate = Color.WHITE
+	if damage_overlay != null:
+		damage_overlay.flip_h = false
+	if obstacle_id != &"forest_tree":
+		return
+	var seed := _asset_variation_seed()
+	asset_sprite.flip_h = seed % 2 == 0
+	var crown_value := 0.94 + float(seed % 7) * 0.018
+	var trunk_value := 0.96 + float(int(seed / 11) % 5) * 0.012
+	asset_sprite.modulate = Color(crown_value, trunk_value, crown_value * 0.92, 1.0)
+	if damage_overlay != null:
+		damage_overlay.flip_h = asset_sprite.flip_h
+
+func _asset_variation_seed() -> int:
+	var position_key := Vector2i(
+		roundi(global_position.x),
+		roundi(global_position.y)
+	)
+	return abs(
+		String(obstacle_id).hash()
+		+ position_key.x * 73856093
+		+ position_key.y * 19349663
+	)
 
 func _scalable_target_size(
 	manifest: IsometricEnvironmentManifest,

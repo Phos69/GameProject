@@ -121,6 +121,59 @@ func test_obstacle_system_integration() -> void:
 	container.queue_free()
 	await wait_physics_frames(1)
 
+func test_forest_tree_variation_is_visual_only() -> void:
+	var factory := ISOMETRIC_OBJECT_FACTORY_SCRIPT.new(_manifest)
+	var tree_size := _size_for(&"forest_tree")
+	var first := factory.create_obstacle(
+		&"forest_tree",
+		tree_size,
+		&"rectangle",
+		0.0,
+		Color(0.28, 0.36, 0.18, 1.0),
+		Color(0.72, 0.56, 0.18, 1.0),
+		_manifest.get_sort_offset(&"forest_tree")
+	)
+	var second := factory.create_obstacle(
+		&"forest_tree",
+		tree_size,
+		&"rectangle",
+		0.0,
+		Color(0.28, 0.36, 0.18, 1.0),
+		Color(0.72, 0.56, 0.18, 1.0),
+		_manifest.get_sort_offset(&"forest_tree")
+	)
+	assert_not_null(first, "first forest_tree creates")
+	assert_not_null(second, "second forest_tree creates")
+	if first == null or second == null:
+		return
+	var first_object := first as IsometricEnvironmentObject
+	var second_object := second as IsometricEnvironmentObject
+	assert_not_null(first_object, "first forest_tree uses isometric object")
+	assert_not_null(second_object, "second forest_tree uses isometric object")
+	if first_object == null or second_object == null:
+		first.queue_free()
+		second.queue_free()
+		return
+	add_child(first)
+	add_child(second)
+	first.global_position = Vector2(120.0, 180.0)
+	second.global_position = Vector2(216.0, 180.0)
+	await wait_physics_frames(2)
+
+	assert_eq(first.obstacle_size, second.obstacle_size, "forest_tree visual variation keeps collision size")
+	assert_true(first.contains_global_position(first.global_position), "first tree still blocks its center")
+	assert_true(second.contains_global_position(second.global_position), "second tree still blocks its center")
+	assert_true(first_object.asset_sprite != null and second_object.asset_sprite != null, "forest_tree sprites are available")
+	if first_object.asset_sprite != null and second_object.asset_sprite != null:
+		assert_true(
+			first_object.asset_sprite.flip_h != second_object.asset_sprite.flip_h
+			or first_object.asset_sprite.modulate != second_object.asset_sprite.modulate,
+			"forest_tree instances get visible flip/tint variation"
+		)
+	first.queue_free()
+	second.queue_free()
+	await wait_physics_frames(1)
+
 func test_supply_crate_asset_visual() -> void:
 	var crate_scene := load("res://game/drops/supply_crate.tscn") as PackedScene
 	assert_not_null(crate_scene, "supply crate scene loads")

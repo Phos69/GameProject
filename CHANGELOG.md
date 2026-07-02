@@ -8,6 +8,14 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Added
 
+- Aggiunto `tests/visual_qa/biome_art_infected_plains_visual_qa.gd`, QA
+  mirata per `ART-VIS-FIX` che cattura Pianura Infetta con crossing
+  road/path, bordo terreno-strada, cliff e cluster di alberi sotto
+  `build/qa/biome_art_fix/infected_plains/`.
+- Aggiunto `docs/biome_art_vis_fix_roadmap.md`, roadmap operativa per
+  `ART-VIS-FIX` con pass per-bioma, QA dedicata, requisiti su texture armoniche
+  senza bordi e transizioni terrain/road tramite immagini orientabili a taglio
+  netto.
 - Aggiunto `tests/visual_qa/helpers/visual_qa_runtime.gd`, contratto condiviso
   per attendere marker scenario, rimozione loading, terreno pronto e zero chunk
   visibili mancanti, con cleanup esplicito di scena e cache statiche.
@@ -69,6 +77,12 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Changed
 
+- Pianura Infetta non renderizza piu `grass_to_path`, `grass_to_road` e
+  `path_to_road` come texture intermedie: le celle di contatto usano
+  direttamente le superfici `forest_path` o `forest_road`, mantenendo un taglio
+  netto verso il terreno. `forest_tree` applica inoltre flip/tinta
+  deterministici per ridurre la ripetizione senza cambiare collisioni o
+  footprint.
 - Ricalibrato il rendering dei cliff verso void per la griglia `6x6`: il lip
   rettilineo resta stretto e termina sulla prima cella di caduta, mentre le
   facce perimetrali scendono nel void senza comprimersi nella fall strip.

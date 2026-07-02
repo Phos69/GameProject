@@ -73,6 +73,15 @@ Validazione finale:
 - 150/150 catture review superano il controllo di copertura world;
 - 25 log senza `FAIL`, errori, leak o risorse residue.
 
+## Follow-up ART-VIS-FIX infected_plains - 2026-07-02
+
+Primo pass sulla Pianura Infetta eseguito. Il finding generale `VIS-002` resta
+aperto per gli altri biomi, ma il caso `path_to_road` della Pianura non viene
+piu renderizzato come fascia intermedia: `BiomeTileLayer` usa direttamente le
+superfici `forest_path` e `forest_road` per i contatti route/terrain. Aggiunta
+QA dedicata `biome_art_infected_plains_visual_qa.gd` e variazione flip/tinta
+deterministica per `forest_tree`.
+
 ## Follow-up UI-VIS-FIX - 2026-07-02
 
 **PASS parziale per la safe area Settings.** Il finding `VIS-001` e chiuso; la
@@ -454,6 +463,10 @@ Evidenza:
 
 ### 4. ART-VIS-FIX - Normalizzare materiali e oggetti
 
+- Piano operativo: `docs/biome_art_vis_fix_roadmap.md` divide il lavoro per
+  bioma, richiede QA dedicata per ciascun pass e formalizza la transizione
+  terrain/road con immagine orientabile a taglio netto invece di texture
+  intermedie.
 - Obiettivo: ridurre seam/tiling e uniformare scala, dettaglio e ombre.
 - Milestone collegata: `UIUX-001` / `BAL-001`.
 - File/sistemi: generated biome art, tile resolver, crate visual, obstacle

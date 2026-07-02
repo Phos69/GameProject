@@ -70,6 +70,47 @@ func test_forest_runtime_consumption() -> void:
 	layer.queue_free()
 	await wait_physics_frames(1)
 
+func test_forest_route_transitions_render_with_route_surfaces() -> void:
+	var palette := load("res://game/modes/zombie/biomes/infected_plains_palette.tres") as BiomePalette
+	var layout := BiomeEnvironmentLayout.new()
+	layout.zone_size = Vector2i(28, 24)
+	layout.generation_seed = 712449
+	layout.add_floor_rect(Rect2i(Vector2i.ZERO, layout.zone_size), &"forest_grass")
+	layout.road_rects.append(Rect2i(Vector2i(3, 10), Vector2i(22, 5)))
+	layout.road_rect_tags.append(&"main_road")
+	layout.road_rects.append(Rect2i(Vector2i(12, 3), Vector2i(4, 18)))
+	layout.road_rect_tags.append(&"broken_street")
+	layout.rebuild_terrain_classification()
+	var layer := BiomeTileLayer.new()
+	add_child(layer)
+	layer.configure(layout, palette, &"infected_plains", &"quality", 14, null, _manifest, false)
+	await wait_physics_frames(1)
+
+	assert_eq(
+		layer._forest_surface_texture_id(IsometricTileResolver.TILE_GRASS_TO_PATH),
+		&"forest_path",
+		"forest grass/path contact renders with the oriented path surface, not an intermediate texture"
+	)
+	assert_eq(
+		layer._forest_surface_texture_id(IsometricTileResolver.TILE_GRASS_TO_ROAD),
+		&"forest_road",
+		"forest grass/road contact renders with the oriented road surface, not an intermediate texture"
+	)
+	assert_eq(
+		layer._forest_surface_texture_id(IsometricTileResolver.TILE_PATH_TO_ROAD),
+		&"forest_road",
+		"forest path/road crossing renders as a crisp road cut"
+	)
+	var rendered_ids := layer.get_rendered_surface_material_ids()
+	assert_true(rendered_ids.has(&"forest_path"), "path surface is rendered")
+	assert_true(rendered_ids.has(&"forest_road"), "road surface is rendered")
+	assert_false(rendered_ids.has(&"grass_to_path"), "grass/path intermediate surface is not rendered")
+	assert_false(rendered_ids.has(&"grass_to_road"), "grass/road intermediate surface is not rendered")
+	assert_false(rendered_ids.has(&"path_to_road"), "path/road intermediate surface is not rendered")
+
+	layer.queue_free()
+	await wait_physics_frames(1)
+
 func test_surface_mesh_overdraw_expands_vertices_without_moving_uvs() -> void:
 	var run := Rect2i(Vector2i(1, 2), Vector2i(3, 1))
 	var base_mesh := IsometricForestGroundMeshBuilder.build_mesh(

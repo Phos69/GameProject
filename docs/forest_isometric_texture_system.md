@@ -65,11 +65,13 @@ prospettiva invece di una striscia piatta; la mesh legacy a rombi resta fallback
 non forestale. Path, road, wall, void e collisioni restano separati.
 
 Sentiero e strada usano rispettivamente
-`forest_dirt_path_generated.png` e `forest_asphalt_generated.png`. I contratti
-`grass_to_path`, `grass_to_road` e `path_to_road` puntano a materiali misti
-dedicati; la variante terra-asfalto v2 usa dettaglio piu omogeneo per evitare
-pattern ripetuti nelle fasce larghe un tile. Tutti i raster sono seamless,
-mipmapped e limitati a 512 px in import.
+`forest_dirt_path_generated.png` e `forest_asphalt_generated.png`. Dal pass
+`ART-VIS-FIX` del 2026-07-02, i tile logici `grass_to_path`,
+`grass_to_road` e `path_to_road` restano nel resolver come semantica di
+contatto, ma il runtime non li stende piu come materiali misti larghi un tile:
+`BiomeTileLayer` li mappa direttamente a `forest_path` o `forest_road`, cosi il
+contatto con il terreno resta un taglio netto della superficie orientabile.
+Tutti i raster sono seamless, mipmapped e limitati a 512 px in import.
 
 ## Regole di risoluzione
 
@@ -81,8 +83,10 @@ mipmapped e limitati a 512 px in import.
   `ObstacleLayoutGenerator`, ma restano `TERRAIN_WALKABLE`.
 - Le strade principali (`main_road`) diventano `forest_road`.
 - I sentieri (`broken_street`) diventano `forest_path`.
-- Il contatto tra strada principale e sentiero diventa `path_to_road`.
-- Il contatto con floor non-route produce `grass_to_path` o `grass_to_road`.
+- Il contatto tra strada principale e sentiero resta marcato come
+  `path_to_road`, ma viene renderizzato con la superficie `forest_road`.
+- Il contatto con floor non-route produce `grass_to_path` o `grass_to_road`;
+  nel rendering diventano rispettivamente `forest_path` e `forest_road`.
 - Il contatto tra erba bassa e tall grass produce `grass_to_tall_grass`.
 - Il contatto con void/fall zone produce `ground_to_void_cliff`.
 - Il contatto con border o wall segment produce `ground_to_mountain_wall`.

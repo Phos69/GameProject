@@ -38,6 +38,9 @@ evitare sovrapposizioni.
 
 - `UIUX-001`: rifinire menu, HUD, Character Select, status, mappa, boss,
   feedback audio e leggibilita multi-risoluzione senza cambiare regole di gioco.
+- `ART-VIS-FIX`: normalizzare i materiali dei cinque biomi uno alla volta
+  seguendo `docs/biome_art_vis_fix_roadmap.md`; primo pass `infected_plains`
+  applicato su route a taglio netto e QA dedicata.
 - Include la decisione sugli asset `final_quality` dei personaggi RPG: o entrano
   nel pass UI/UX, o restano polish opzionale documentato.
 - Non include tuning numerico, nuove regole combat o nuove modalita.

@@ -92,8 +92,11 @@ Il prato forestale finale usa
 su run continue con UV world-space. La stessa cartella contiene
 `forest_dirt_path_generated.png`, `forest_asphalt_generated.png`,
 `grass_to_path_generated.png`, `grass_to_road_generated.png` e
-`path_to_road_generated_v2.png`: il tile layer assegna una mesh distinta a ogni
-classe e usa un periodo UV piu corto per le fasce di transizione. Wall e void
+`path_to_road_generated_v2.png`: i tre asset di transizione restano contratti
+storici e materiale di confronto QA, ma il runtime della Pianura Infetta non li
+usa piu come texture intermedia. Le celle `grass_to_path`, `grass_to_road` e
+`path_to_road` vengono renderizzate direttamente con `forest_path` o
+`forest_road`, ottenendo un taglio netto verso il terreno. Wall e void
 mantengono i rispettivi materiali e colori.
 
 ### Set generati per bioma

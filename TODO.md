@@ -31,6 +31,12 @@ Regole per nuove voci:
   e chiuso dal follow-up UI-VIS-FIX del 2026-07-02; `UI-VIS-FIX` resta aperto
   per gerarchia HUD, Character Select e boss HUD. Le priorita `ART-VIS-FIX` e
   `WEAPON-VIS-FIX` restano aperte dentro questa milestone.
+- Piano operativo `ART-VIS-FIX`: `docs/biome_art_vis_fix_roadmap.md` spezza il
+  rendering biomi in pass per-bioma con QA dedicata, requisiti di transizione
+  terrain/road orientabile e ciclo screenshot -> fix -> verifica. Primo pass
+  `infected_plains` avviato con QA dedicata e rendering route senza texture
+  intermedie; restano da iterare `toxic_wastes`, `frozen_outskirts`,
+  `drowned_marsh` e `burning_fields`.
 - Obiettivo: rifinire menu, HUD, Character Select, status, mappa, boss, feedback
   audio e leggibilita senza cambiare regole di gioco.
 - Milestone collegata: post-roadmap UI/UX Milestone 8.

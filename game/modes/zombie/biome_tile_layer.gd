@@ -1110,11 +1110,9 @@ func _forest_surface_texture_id(tile_id: StringName) -> StringName:
 		IsometricTileResolver.TILE_FOREST_ROAD:
 			return &"forest_road"
 		IsometricTileResolver.TILE_GRASS_TO_PATH:
-			return &"grass_to_path"
-		IsometricTileResolver.TILE_GRASS_TO_ROAD:
-			return &"grass_to_road"
-		IsometricTileResolver.TILE_PATH_TO_ROAD:
-			return &"path_to_road"
+			return &"forest_path"
+		IsometricTileResolver.TILE_GRASS_TO_ROAD, IsometricTileResolver.TILE_PATH_TO_ROAD:
+			return &"forest_road"
 		IsometricTileResolver.TILE_FOREST_CLIFF_EDGE, IsometricTileResolver.TILE_GROUND_TO_VOID_CLIFF:
 			# Crest cells are surfaced as grass so the base ground reaches the void
 			# rect edge; the rock crest and descending wall come from the dedicated
