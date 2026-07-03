@@ -28,7 +28,9 @@ var high_contrast: bool = false
 
 func _ready() -> void:
 	add_to_group("visual_settings_consumers")
-	custom_minimum_size = Vector2(276.0, 184.0)
+	# Larghezza fissa compatta; l'altezza segue il contenuto (VIS-007: la card
+	# 276x184 era per meta' vuota e copriva ~1/3 dello schermo a 960x540).
+	custom_minimum_size = Vector2(240.0, 0.0)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_ui()
 	_apply_style()
@@ -193,7 +195,7 @@ func refresh(player: Node) -> void:
 
 func _build_ui() -> void:
 	var content := VBoxContainer.new()
-	content.add_theme_constant_override("separation", 3)
+	content.add_theme_constant_override("separation", 2)
 	add_child(content)
 
 	var top_row := HBoxContainer.new()
@@ -201,7 +203,7 @@ func _build_ui() -> void:
 	portrait_icon = RpgHudIcon.new()
 	top_row.add_child(portrait_icon)
 	slot_label = Label.new()
-	slot_label.custom_minimum_size = Vector2(62.0, 24.0)
+	slot_label.custom_minimum_size = Vector2(40.0, 24.0)
 	slot_label.add_theme_font_size_override("font_size", 18)
 	top_row.add_child(slot_label)
 	weapon_icon = WeaponIcon.new()
@@ -252,14 +254,14 @@ func _build_ui() -> void:
 	ammo_icon.modulate = Color(1.0, 0.70, 0.24, 1.0)
 	ammo_row.add_child(ammo_icon)
 	ammo_label = Label.new()
-	ammo_label.custom_minimum_size = Vector2(190.0, 20.0)
+	ammo_label.custom_minimum_size = Vector2(146.0, 20.0)
 	ammo_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	ammo_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	ammo_label.add_theme_font_size_override("font_size", 17)
 	ammo_row.add_child(ammo_label)
 
 	inventory_label = Label.new()
-	inventory_label.custom_minimum_size = Vector2(250.0, 16.0)
+	inventory_label.custom_minimum_size = Vector2(204.0, 16.0)
 	inventory_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	inventory_label.add_theme_font_size_override("font_size", 11)
 	inventory_label.modulate = Color(0.66, 0.78, 0.86, 1.0)
@@ -268,14 +270,14 @@ func _build_ui() -> void:
 	content.add_child(inventory_label)
 
 	stats_label = Label.new()
-	stats_label.custom_minimum_size = Vector2(250.0, 17.0)
+	stats_label.custom_minimum_size = Vector2(204.0, 17.0)
 	stats_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	stats_label.add_theme_font_size_override("font_size", 12)
 	stats_label.modulate = Color(0.74, 0.84, 0.92, 1.0)
 	content.add_child(stats_label)
 
 	passive_label = Label.new()
-	passive_label.custom_minimum_size = Vector2(250.0, 16.0)
+	passive_label.custom_minimum_size = Vector2(204.0, 16.0)
 	passive_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	passive_label.add_theme_font_size_override("font_size", 12)
 	passive_label.add_theme_constant_override("outline_size", 2)
@@ -288,7 +290,7 @@ func _build_ui() -> void:
 	content.add_child(passive_label)
 
 	status_label = Label.new()
-	status_label.custom_minimum_size = Vector2(250.0, 16.0)
+	status_label.custom_minimum_size = Vector2(204.0, 16.0)
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status_label.add_theme_font_size_override("font_size", 12)
 	status_label.add_theme_constant_override("outline_size", 2)

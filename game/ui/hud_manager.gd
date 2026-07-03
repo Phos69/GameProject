@@ -57,8 +57,9 @@ const SLOT_COLORS: Array[Color] = [
 	Color(0.52, 0.86, 0.32, 1.0),
 	Color(0.94, 0.78, 0.28, 1.0)
 ]
-const PLAYER_CARD_SIZE: Vector2 = Vector2(276.0, 184.0)
-const PLAYER_CARD_MARGIN: Vector2 = Vector2(18.0, 16.0)
+# Le card sono compatte e ad altezza contenuto (VIS-007): il placement usa
+# solo l'angolo di ancoraggio + grow direction, non una size fissa.
+const PLAYER_CARD_MARGIN: Vector2 = Vector2(16.0, 14.0)
 const STATUS_PANEL_WIDTH: float = 340.0
 
 func _ready() -> void:
@@ -98,12 +99,12 @@ func apply_visual_settings(settings: Dictionary) -> void:
 	if boss_name_label != null:
 		boss_name_label.add_theme_font_size_override(
 			"font_size",
-			roundi(20.0 * hud_text_scale)
+			roundi(17.0 * hud_text_scale)
 		)
 	if boss_warning_label != null:
 		boss_warning_label.add_theme_font_size_override(
 			"font_size",
-			roundi(16.0 * hud_text_scale)
+			roundi(14.0 * hud_text_scale)
 		)
 		boss_warning_label.modulate = (
 			Color.WHITE
@@ -219,7 +220,6 @@ func _create_player_hud() -> void:
 		var card := PlayerHudCard.new()
 		card.name = "Player%dCard" % player_slot
 		card.configure(player_slot, SLOT_COLORS[player_slot - 1])
-		card.custom_minimum_size = PLAYER_CARD_SIZE
 		_place_player_card(card, player_slot)
 		card.hide()
 		player_cards_container.add_child(card)
@@ -237,30 +237,38 @@ func _place_player_card(card: Control, player_slot: int) -> void:
 	if card == null:
 		return
 	card.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	card.grow_horizontal = Control.GROW_DIRECTION_END
+	card.grow_vertical = Control.GROW_DIRECTION_END
 	var left := PLAYER_CARD_MARGIN.x
 	var top := PLAYER_CARD_MARGIN.y
 	match player_slot:
 		2:
-			left = -PLAYER_CARD_MARGIN.x - PLAYER_CARD_SIZE.x
+			left = -PLAYER_CARD_MARGIN.x
 			card.anchor_left = 1.0
 			card.anchor_right = 1.0
+			card.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 		3:
-			top = -PLAYER_CARD_MARGIN.y - PLAYER_CARD_SIZE.y
+			top = -PLAYER_CARD_MARGIN.y
 			card.anchor_top = 1.0
 			card.anchor_bottom = 1.0
+			card.grow_vertical = Control.GROW_DIRECTION_BEGIN
 		4:
-			left = -PLAYER_CARD_MARGIN.x - PLAYER_CARD_SIZE.x
-			top = -PLAYER_CARD_MARGIN.y - PLAYER_CARD_SIZE.y
+			left = -PLAYER_CARD_MARGIN.x
+			top = -PLAYER_CARD_MARGIN.y
 			card.anchor_left = 1.0
 			card.anchor_right = 1.0
 			card.anchor_top = 1.0
 			card.anchor_bottom = 1.0
+			card.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+			card.grow_vertical = Control.GROW_DIRECTION_BEGIN
 		_:
 			pass
+	# Rect a size zero sull'angolo di ancoraggio: il PanelContainer si espande
+	# alla minimum size del contenuto nella direzione di grow.
 	card.offset_left = left
 	card.offset_top = top
-	card.offset_right = left + PLAYER_CARD_SIZE.x
-	card.offset_bottom = top + PLAYER_CARD_SIZE.y
+	card.offset_right = left
+	card.offset_bottom = top
 
 func _find_player_by_slot(players: Array[Node], player_slot: int) -> Node:
 	for player in players:
@@ -402,10 +410,12 @@ func _create_boss_hud() -> void:
 	boss_panel.anchor_top = 0.0
 	boss_panel.anchor_right = 0.5
 	boss_panel.anchor_bottom = 0.0
-	boss_panel.offset_left = -230.0
-	boss_panel.offset_top = 14.0
-	boss_panel.offset_right = 230.0
-	boss_panel.offset_bottom = 104.0
+	# Compatto (VIS-007): barra e testi boss restano leggibili ma la fascia alta
+	# occupata scende da ~90 a ~64 px di design.
+	boss_panel.offset_left = -180.0
+	boss_panel.offset_top = 10.0
+	boss_panel.offset_right = 180.0
+	boss_panel.offset_bottom = 74.0
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color(0.025, 0.018, 0.04, 0.90)
 	panel_style.border_color = Color(0.62, 0.24, 0.76, 0.88)
@@ -414,8 +424,8 @@ func _create_boss_hud() -> void:
 	panel_style.corner_radius_top_right = 10
 	panel_style.corner_radius_bottom_left = 10
 	panel_style.corner_radius_bottom_right = 10
-	panel_style.content_margin_left = 18.0
-	panel_style.content_margin_right = 18.0
+	panel_style.content_margin_left = 12.0
+	panel_style.content_margin_right = 12.0
 	panel_style.content_margin_top = 7.0
 	panel_style.content_margin_bottom = 7.0
 	boss_panel.add_theme_stylebox_override("panel", panel_style)
@@ -428,9 +438,9 @@ func _create_boss_hud() -> void:
 
 	boss_name_label = Label.new()
 	boss_name_label.name = "BossNameLabel"
-	boss_name_label.custom_minimum_size = Vector2(420.0, 25.0)
+	boss_name_label.custom_minimum_size = Vector2(324.0, 22.0)
 	boss_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	boss_name_label.add_theme_font_size_override("font_size", 20)
+	boss_name_label.add_theme_font_size_override("font_size", 17)
 	boss_name_label.add_theme_constant_override("outline_size", 4)
 	boss_name_label.add_theme_color_override(
 		"font_outline_color",
@@ -442,7 +452,7 @@ func _create_boss_hud() -> void:
 
 	boss_health_bar = ProgressBar.new()
 	boss_health_bar.name = "BossHealthBar"
-	boss_health_bar.custom_minimum_size = Vector2(420.0, 20.0)
+	boss_health_bar.custom_minimum_size = Vector2(324.0, 14.0)
 	boss_health_bar.min_value = 0.0
 	boss_health_bar.max_value = 100.0
 	boss_health_bar.show_percentage = false
@@ -467,9 +477,9 @@ func _create_boss_hud() -> void:
 
 	boss_warning_label = Label.new()
 	boss_warning_label.name = "BossWarningLabel"
-	boss_warning_label.custom_minimum_size = Vector2(420.0, 20.0)
+	boss_warning_label.custom_minimum_size = Vector2(324.0, 18.0)
 	boss_warning_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	boss_warning_label.add_theme_font_size_override("font_size", 16)
+	boss_warning_label.add_theme_font_size_override("font_size", 14)
 	boss_warning_label.add_theme_constant_override("outline_size", 3)
 	boss_warning_label.add_theme_color_override(
 		"font_outline_color",

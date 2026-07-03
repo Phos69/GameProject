@@ -340,14 +340,14 @@ func _create_character_select_panel(parent: Control) -> void:
 	margin.add_child(content)
 
 	var title := Label.new()
-	title.text = "CHARACTER SELECT"
+	title.text = "SELEZIONE PERSONAGGI"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 28)
 	title.modulate = Color(0.78, 0.94, 1.0, 1.0)
 	content.add_child(title)
 
 	var subtitle := Label.new()
-	subtitle.text = "Pick a survivor for each active slot, then start the run"
+	subtitle.text = "Scegli un sopravvissuto per ogni slot attivo, poi avvia la partita"
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle.add_theme_font_size_override("font_size", 13)
 	subtitle.modulate = Color(0.72, 0.80, 0.88, 1.0)
@@ -380,15 +380,18 @@ func _create_character_select_panel(parent: Control) -> void:
 	character_roster_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	content.add_child(character_roster_scroll)
 
-	var roster_content := VBoxContainer.new()
+	# Roster e dossier affiancati (VIS-010): la colonna del dossier riempie la
+	# fascia destra e a 1280x720 le due righe di card non attivano la scrollbar.
+	var roster_content := HBoxContainer.new()
 	roster_content.name = "CharacterRosterContent"
 	roster_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	roster_content.add_theme_constant_override("separation", 8)
+	roster_content.add_theme_constant_override("separation", 10)
 	character_roster_scroll.add_child(roster_content)
 
 	character_roster_grid = GridContainer.new()
 	character_roster_grid.columns = 4
 	character_roster_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	character_roster_grid.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	character_roster_grid.add_theme_constant_override("h_separation", 8)
 	character_roster_grid.add_theme_constant_override("v_separation", 8)
 	roster_content.add_child(character_roster_grid)
@@ -413,7 +416,8 @@ func _create_character_select_panel(parent: Control) -> void:
 
 	character_detail_panel = CharacterDetailPanel.new()
 	character_detail_panel.name = "CharacterDetailPanel"
-	character_detail_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	character_detail_panel.size_flags_horizontal = Control.SIZE_SHRINK_END
+	character_detail_panel.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	roster_content.add_child(character_detail_panel)
 
 	var action_row := HBoxContainer.new()
@@ -422,7 +426,7 @@ func _create_character_select_panel(parent: Control) -> void:
 	content.add_child(action_row)
 
 	character_start_button = Button.new()
-	character_start_button.text = "Start Zombie Survival"
+	character_start_button.text = "Avvia Zombie Survival"
 	character_start_button.custom_minimum_size = Vector2(300.0, 46.0)
 	character_start_button.add_theme_font_size_override("font_size", 17)
 	character_start_button.disabled = true
@@ -431,7 +435,7 @@ func _create_character_select_panel(parent: Control) -> void:
 	action_row.add_child(character_start_button)
 
 	character_back_button = Button.new()
-	character_back_button.text = "Back / Esc / B"
+	character_back_button.text = "Indietro / Esc / B"
 	character_back_button.custom_minimum_size = Vector2(240.0, 46.0)
 	character_back_button.add_theme_font_size_override("font_size", 17)
 	character_back_button.pressed.connect(_close_character_select)
@@ -496,6 +500,8 @@ func _create_character_slot_panel(player_slot: int) -> Control:
 	var panel := PanelContainer.new()
 	panel.name = "Player%dSelectionSlot" % player_slot
 	panel.custom_minimum_size = Vector2(240.0, 200.0)
+	# I quattro slot condividono l'intera riga superiore (VIS-010).
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	panel.gui_input.connect(_on_character_slot_gui_input.bind(player_slot))
 
@@ -756,10 +762,10 @@ func _close_character_select(grab_focus: bool = true) -> void:
 func _refresh_character_select_mode_labels() -> void:
 	var mode_label := _mode_label(pending_mode_id)
 	if character_start_button != null:
-		character_start_button.text = "Start %s" % mode_label
+		character_start_button.text = "Avvia %s" % mode_label
 	if character_select_subtitle != null:
 		character_select_subtitle.text = (
-			"Pick a survivor for each active slot, then start %s" % mode_label
+			"Scegli un sopravvissuto per ogni slot attivo, poi avvia %s" % mode_label
 		)
 
 func _select_survival_character(character_id: StringName) -> void:
@@ -945,9 +951,9 @@ func _refresh_character_select_layout() -> void:
 	for card in character_card_buttons:
 		card.custom_minimum_size = Vector2(card_width, 162.0)
 	if character_roster_grid != null:
-		# The roster fills the whole row now that the dossier is gone: fit as many
-		# columns as the width allows and let the cards expand to share the space.
-		var available := maxf(viewport_width - 80.0, card_width)
+		# Le card riempiono lo spazio a sinistra della colonna dossier (292 px +
+		# separazioni): il fit evita sia colonne vuote sia la scrollbar inutile.
+		var available := maxf(viewport_width - 80.0 - 312.0, card_width)
 		var card_count := maxi(character_card_buttons.size(), 1)
 		var fit := int(available / (card_width + 8.0))
 		character_roster_grid.columns = clampi(fit, 1, card_count)
@@ -1042,7 +1048,7 @@ func _refresh_character_slot_view(
 	if player_label != null:
 		player_label.text = "P%d %s" % [
 			player_slot,
-			"READY" if selected else ("ACTIVE" if active else "INACTIVE")
+			"PRONTO" if selected else ("ATTIVO" if active else "LIBERO")
 		]
 		player_label.modulate = _get_character_slot_color(player_slot)
 
@@ -1064,10 +1070,10 @@ func _refresh_character_slot_view(
 	var class_label := view.get("class") as Label
 	var stats_label := view.get("stats") as Label
 	if not active:
-		_set_character_slot_text(name_label, class_label, stats_label, "Slot empty", "", "")
+		_set_character_slot_text(name_label, class_label, stats_label, "Slot libero", "Premi START sul pad per unirti", "")
 		return
 	if shown.is_empty():
-		_set_character_slot_text(name_label, class_label, stats_label, "Choose a character", "", "")
+		_set_character_slot_text(name_label, class_label, stats_label, "Scegli un personaggio", "", "")
 		return
 	_set_character_slot_text(
 		name_label,

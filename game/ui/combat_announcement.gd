@@ -14,15 +14,17 @@ var reduced_motion: bool = false
 func _ready() -> void:
 	add_to_group("visual_settings_consumers")
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Compatto e sotto la fascia della barra boss (VIS-007): insieme non devono
+	# occupare gran parte della banda alta dello schermo.
 	anchor_left = 0.5
-	anchor_top = 0.23
+	anchor_top = 0.26
 	anchor_right = 0.5
-	anchor_bottom = 0.23
-	offset_left = -250.0
-	offset_top = -54.0
-	offset_right = 250.0
-	offset_bottom = 54.0
-	pivot_offset = Vector2(250.0, 54.0)
+	anchor_bottom = 0.26
+	offset_left = -210.0
+	offset_top = -44.0
+	offset_right = 210.0
+	offset_bottom = 44.0
+	pivot_offset = Vector2(210.0, 44.0)
 	_build_ui()
 	hide()
 	VisualSettingsManager.sync_consumer(self)
@@ -38,7 +40,7 @@ func apply_visual_settings(settings: Dictionary) -> void:
 	if title_label != null:
 		title_label.add_theme_font_size_override(
 			"font_size",
-			roundi(28.0 * hud_text_scale)
+			roundi(24.0 * hud_text_scale)
 		)
 	if subtitle_label != null:
 		subtitle_label.add_theme_font_size_override(
@@ -98,7 +100,7 @@ func _build_ui() -> void:
 
 	title_label = Label.new()
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title_label.add_theme_font_size_override("font_size", 28)
+	title_label.add_theme_font_size_override("font_size", 24)
 	title_label.add_theme_constant_override("outline_size", 5)
 	title_label.add_theme_color_override("font_outline_color", Color(0.01, 0.015, 0.02, 0.95))
 	content.add_child(title_label)
@@ -123,8 +125,8 @@ func _apply_style() -> void:
 	panel_style.corner_radius_top_right = 10
 	panel_style.corner_radius_bottom_left = 10
 	panel_style.corner_radius_bottom_right = 10
-	panel_style.content_margin_left = 20.0
-	panel_style.content_margin_right = 20.0
-	panel_style.content_margin_top = 10.0
-	panel_style.content_margin_bottom = 10.0
+	panel_style.content_margin_left = 16.0
+	panel_style.content_margin_right = 16.0
+	panel_style.content_margin_top = 8.0
+	panel_style.content_margin_bottom = 8.0
 	add_theme_stylebox_override("panel", panel_style)

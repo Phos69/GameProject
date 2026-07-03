@@ -142,15 +142,18 @@ func test_character_select_ui() -> void:
 	assert_true(viewport_rect.encloses(main_menu.character_select_panel.get_global_rect()), "character select panel stays inside the viewport safe area")
 	for resolution in [Vector2i(1280, 720), Vector2i(1024, 768), Vector2i(960, 540)]:
 		root.size = resolution
-		await wait_physics_frames(1)
+		# Il layout dei container annidati si assesta in una passata deferred:
+		# un solo frame sotto carico (full run) lasciava i rect dei bottoni alla
+		# risoluzione precedente, rendendo flaky il check di safe-area.
+		await wait_physics_frames(3)
 		main_menu._open_character_select()
-		await wait_physics_frames(1)
+		await wait_physics_frames(2)
 		var resized_viewport := Rect2(Vector2.ZERO, root.get_visible_rect().size)
 		assert_true(resized_viewport.encloses(main_menu.character_select_panel.get_global_rect()), "character select safe-area fits %dx%d" % [resolution.x, resolution.y])
 		assert_not_null(main_menu.character_roster_scroll, "character select keeps the roster scroll container at %dx%d" % [resolution.x, resolution.y])
 		assert_true(resized_viewport.encloses(main_menu.character_back_button.get_global_rect()) and resized_viewport.encloses(main_menu.character_start_button.get_global_rect()), "character select action buttons stay visible at %dx%d" % [resolution.x, resolution.y])
 	root.size = Vector2i(1280, 720)
-	await wait_physics_frames(1)
+	await wait_physics_frames(3)
 
 	if not main_menu.character_card_buttons.is_empty():
 		assert_true(main_menu.character_card_buttons[0].has_method("set_profile"), "roster cards use the custom visual card script")

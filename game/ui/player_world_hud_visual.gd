@@ -7,14 +7,16 @@ const SLOT_COLORS: Array[Color] = [
 	Color(0.52, 0.86, 0.32, 1.0),
 	Color(0.94, 0.78, 0.28, 1.0)
 ]
-const HUD_OFFSET: Vector2 = Vector2(-76.0, -104.0)
-const HUD_SIZE: Vector2 = Vector2(152.0, 64.0)
+# Faceplate compatto (VIS-007): il pannello 152x64 era largo ~4x il player e
+# copriva ostacoli/bersagli sopra l'attore. I font restano >= 10.
+const HUD_OFFSET: Vector2 = Vector2(-61.0, -86.0)
+const HUD_SIZE: Vector2 = Vector2(122.0, 50.0)
 const PANEL_RECT: Rect2 = Rect2(Vector2.ZERO, HUD_SIZE)
-const LEVEL_CENTER: Vector2 = Vector2(22.0, 21.0)
-const LEVEL_RING_RADIUS: float = 15.0
-const AMMO_BAR_RECT: Rect2 = Rect2(Vector2(44.0, 42.0), Vector2(92.0, 12.0))
-const HEALTH_BAR_RECT: Rect2 = Rect2(Vector2(44.0, 7.0), Vector2(92.0, 28.0))
-const SUPER_BAR_RECT: Rect2 = Rect2(Vector2(142.0, 5.0), Vector2(6.0, 54.0))
+const LEVEL_CENTER: Vector2 = Vector2(17.0, 17.0)
+const LEVEL_RING_RADIUS: float = 12.0
+const AMMO_BAR_RECT: Rect2 = Rect2(Vector2(34.0, 31.0), Vector2(80.0, 13.0))
+const HEALTH_BAR_RECT: Rect2 = Rect2(Vector2(34.0, 5.0), Vector2(80.0, 22.0))
+const SUPER_BAR_RECT: Rect2 = Rect2(Vector2(114.0, 4.0), Vector2(5.0, 42.0))
 const LOW_MAGAZINE_RATIO: float = 0.25
 const LEVEL_UP_FLASH_DURATION: float = 0.70
 const TEXT_OUTLINE: Color = Color(0.005, 0.008, 0.012, 0.96)
@@ -220,7 +222,7 @@ func _draw_health() -> void:
 	_draw_bar(HEALTH_BAR_RECT, ratio, fill_color)
 	_draw_text(
 		label,
-		HEALTH_BAR_RECT.position + Vector2(0.0, 19.0),
+		HEALTH_BAR_RECT.position + Vector2(0.0, 16.0),
 		HEALTH_BAR_RECT.size.x,
 		_scaled_font_size(STATUS_FONT_SIZE),
 		Color.WHITE,
@@ -240,7 +242,7 @@ func _draw_level_ring(accent: Color) -> void:
 		TAU,
 		34,
 		Color(0.05, 0.07, 0.10, 0.95),
-		4.2,
+		3.4,
 		true
 	)
 	if exp_ratio > 0.0:
@@ -251,7 +253,7 @@ func _draw_level_ring(accent: Color) -> void:
 			-PI * 0.5 + TAU * exp_ratio,
 			34,
 			ring_color,
-			4.2,
+			3.4,
 			true
 		)
 	if level_up_flash_timer > 0.0:
@@ -284,7 +286,7 @@ func _draw_level_ring(accent: Color) -> void:
 		str(level),
 		LEVEL_CENTER - Vector2(LEVEL_RING_RADIUS, -8.0),
 		LEVEL_RING_RADIUS * 2.0,
-		_scaled_font_size(14),
+		_scaled_font_size(12),
 		Color.WHITE,
 		HORIZONTAL_ALIGNMENT_CENTER,
 		1.2,

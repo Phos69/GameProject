@@ -9,8 +9,13 @@ var gameplay_texture_cache: Dictionary = {}
 var animation_time: float = 0.0
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(268.0, 140.0)
+	# Non sovrascrivere una minimum size gia' assegnata dal contenitore (il
+	# dossier compatto usa una preview piu' bassa).
+	if custom_minimum_size == Vector2.ZERO:
+		custom_minimum_size = Vector2(268.0, 140.0)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Il fondale decorativo non deve attraversare i bordi della card (VIS-010).
+	clip_contents = true
 	set_process(true)
 	queue_redraw()
 
@@ -108,44 +113,68 @@ func _draw_asset_preview(
 
 func _draw_background(rect: Rect2, primary: Color, accent: Color) -> void:
 	draw_rect(rect, Color(0.018, 0.025, 0.032, 1.0), true)
+	# Slot vuoto: fondale attenuato, senza griglia/cerchi fantasma (VIS-010).
+	var empty := character_profile.is_empty()
+	var line_alpha := 0.14 if empty else 0.38
 	var floor_center := Vector2(rect.size.x * 0.50, rect.size.y * 0.68)
+	# Il rombo resta dentro il controllo: prima usava mezze diagonali fisse
+	# (118x54) che sbordavano dalle card slot piu' piccole.
+	var half := Vector2(
+		minf(118.0, rect.size.x * 0.44),
+		minf(54.0, rect.size.y * 0.40)
+	)
 	var floor := PackedVector2Array([
-		floor_center + Vector2(0.0, -54.0),
-		floor_center + Vector2(118.0, 0.0),
-		floor_center + Vector2(0.0, 54.0),
-		floor_center + Vector2(-118.0, 0.0)
+		floor_center + Vector2(0.0, -half.y),
+		floor_center + Vector2(half.x, 0.0),
+		floor_center + Vector2(0.0, half.y),
+		floor_center + Vector2(-half.x, 0.0)
 	])
 	var closed_floor := PackedVector2Array(floor)
 	closed_floor.append(floor[0])
 	draw_colored_polygon(floor, Color(0.055, 0.070, 0.076, 1.0))
-	draw_polyline(closed_floor, Color(0.18, 0.22, 0.24, 0.9), 2.0, true)
-	for index in range(-3, 4):
-		var offset := float(index) * 28.0
-		draw_line(
-			floor_center + Vector2(offset, -54.0),
-			floor_center + Vector2(offset + 118.0, 0.0),
-			Color(0.11, 0.14, 0.15, 0.38),
-			1.0
+	draw_polyline(
+		closed_floor,
+		Color(0.18, 0.22, 0.24, 0.45 if empty else 0.9),
+		2.0,
+		true
+	)
+	if not empty:
+		for index in range(-3, 4):
+			var offset := float(index) * half.x * 0.24
+			draw_line(
+				floor_center + Vector2(offset, -half.y),
+				floor_center + Vector2(offset + half.x, 0.0),
+				Color(0.11, 0.14, 0.15, 0.38),
+				1.0
+			)
+			draw_line(
+				floor_center + Vector2(offset, -half.y),
+				floor_center + Vector2(offset - half.x, 0.0),
+				Color(0.11, 0.14, 0.15, 0.38),
+				1.0
+			)
+		for marker in [
+			Vector2(rect.size.x * 0.16, rect.size.y * 0.47),
+			Vector2(rect.size.x * 0.83, rect.size.y * 0.45),
+			Vector2(rect.size.x * 0.76, rect.size.y * 0.79)
+		]:
+			draw_circle(marker + Vector2(0.0, 10.0), 13.0, Color(0.0, 0.0, 0.0, 0.24))
+			draw_circle(marker, 8.0, Color(0.05, 0.11, 0.08, 0.55))
+			draw_line(marker + Vector2(-5.0, 8.0), marker + Vector2(5.0, -6.0), Color(0.02, 0.05, 0.035, 0.7), 4.0, true)
+		draw_arc(
+			rect.get_center(),
+			minf(rect.size.x, rect.size.y) * 0.44,
+			0.0,
+			TAU,
+			48,
+			Color(primary, 0.12),
+			8.0,
+			true
 		)
-		draw_line(
-			floor_center + Vector2(offset, -54.0),
-			floor_center + Vector2(offset - 118.0, 0.0),
-			Color(0.11, 0.14, 0.15, 0.38),
-			1.0
-		)
-	for marker in [
-		Vector2(rect.size.x * 0.16, rect.size.y * 0.47),
-		Vector2(rect.size.x * 0.83, rect.size.y * 0.45),
-		Vector2(rect.size.x * 0.76, rect.size.y * 0.79)
-	]:
-		draw_circle(marker + Vector2(0.0, 10.0), 13.0, Color(0.0, 0.0, 0.0, 0.24))
-		draw_circle(marker, 8.0, Color(0.05, 0.11, 0.08, 0.55))
-		draw_line(marker + Vector2(-5.0, 8.0), marker + Vector2(5.0, -6.0), Color(0.02, 0.05, 0.035, 0.7), 4.0, true)
-	draw_arc(rect.get_center(), minf(rect.size.x, rect.size.y) * 0.47, 0.0, TAU, 48, Color(primary, 0.12), 8.0, true)
 	draw_line(
 		Vector2(12.0, rect.size.y - 16.0),
 		Vector2(rect.size.x - 12.0, rect.size.y - 16.0),
-		Color(accent, 0.38),
+		Color(accent, line_alpha),
 		2.0,
 		true
 	)

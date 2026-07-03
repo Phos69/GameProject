@@ -17,7 +17,7 @@ var current_profile: Dictionary = {}
 var current_weapon_data: WeaponData
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(292.0, 388.0)
+	custom_minimum_size = Vector2(292.0, 0.0)
 	add_theme_stylebox_override("panel", _make_panel_style())
 	_build_ui()
 
@@ -25,8 +25,8 @@ func set_profile(profile: Dictionary, weapon_data: WeaponData = null) -> void:
 	current_profile = profile.duplicate(true)
 	current_weapon_data = weapon_data
 	if current_profile.is_empty():
-		hero_label.text = "SURVIVOR DOSSIER"
-		class_label.text = "Focus a card"
+		hero_label.text = "DOSSIER SOPRAVVISSUTO"
+		class_label.text = "Evidenzia una card per i dettagli"
 		style_label.text = ""
 		weapon_label.text = ""
 		passive_label.text = ""
@@ -41,14 +41,14 @@ func set_profile(profile: Dictionary, weapon_data: WeaponData = null) -> void:
 		str(current_profile.get("base_weapon_name", "Weapon"))
 	]
 	style_label.text = str(current_profile.get("style_description", ""))
-	weapon_label.text = "Weapon: %s  %s  Range %dm" % [
+	weapon_label.text = "Arma: %s  %s  Gittata %dm" % [
 		str(current_profile.get("base_weapon_name", "Weapon")),
 		_attack_type_label(
 			current_weapon_data.attack_type if current_weapon_data != null else &"projectile"
 		),
 		int(_weapon_range())
 	]
-	passive_label.text = "Passive: %s\n%s" % [
+	passive_label.text = "Passiva: %s\n%s" % [
 		str(current_profile.get("passive_name", "")),
 		str(current_profile.get("passive_description", ""))
 	]
@@ -67,20 +67,20 @@ func has_asset_preview() -> bool:
 func _build_ui() -> void:
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 12)
-	margin.add_theme_constant_override("margin_top", 10)
+	margin.add_theme_constant_override("margin_top", 8)
 	margin.add_theme_constant_override("margin_right", 12)
-	margin.add_theme_constant_override("margin_bottom", 10)
+	margin.add_theme_constant_override("margin_bottom", 8)
 	add_child(margin)
 
 	var content := VBoxContainer.new()
-	content.add_theme_constant_override("separation", 7)
+	content.add_theme_constant_override("separation", 4)
 	margin.add_child(content)
 
 	hero_label = Label.new()
-	hero_label.add_theme_font_size_override("font_size", 20)
+	hero_label.add_theme_font_size_override("font_size", 16)
 	hero_label.modulate = Color(0.93, 0.96, 1.0, 1.0)
 	hero_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hero_label.text = "SURVIVOR DOSSIER"
+	hero_label.text = "DOSSIER SOPRAVVISSUTO"
 	content.add_child(hero_label)
 
 	class_label = Label.new()
@@ -90,7 +90,7 @@ func _build_ui() -> void:
 	content.add_child(class_label)
 
 	preview = CHARACTER_GAMEPLAY_PREVIEW_SCRIPT.new() as Control
-	preview.custom_minimum_size = Vector2(268.0, 140.0)
+	preview.custom_minimum_size = Vector2(268.0, 44.0)
 	content.add_child(preview)
 
 	style_label = _make_wrapped_label(11, 2, Color(0.86, 0.90, 0.94, 1.0))
@@ -127,19 +127,19 @@ func _add_stat_row(parent: VBoxContainer, stat_id: StringName, label_text: Strin
 	parent.add_child(row)
 	var label := Label.new()
 	label.text = label_text
-	label.custom_minimum_size = Vector2(36.0, 17.0)
+	label.custom_minimum_size = Vector2(36.0, 14.0)
 	label.add_theme_font_size_override("font_size", 11)
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	row.add_child(label)
 	var bar := ProgressBar.new()
-	bar.custom_minimum_size = Vector2(150.0, 14.0)
+	bar.custom_minimum_size = Vector2(150.0, 11.0)
 	bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bar.show_percentage = false
 	bar.min_value = 0.0
 	bar.max_value = 1.0
 	row.add_child(bar)
 	var value_label := Label.new()
-	value_label.custom_minimum_size = Vector2(54.0, 17.0)
+	value_label.custom_minimum_size = Vector2(54.0, 14.0)
 	value_label.add_theme_font_size_override("font_size", 11)
 	value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	value_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -175,19 +175,19 @@ func _weapon_range() -> float:
 func _attack_type_label(attack_type: StringName) -> String:
 	match attack_type:
 		&"melee_arc":
-			return "Arc melee"
+			return "Melee ad arco"
 		&"melee_rect", &"melee_sweep":
-			return "Sweep melee"
+			return "Melee a spazzata"
 		&"dash_slash":
-			return "Dash slash"
+			return "Scatto tagliente"
 		&"radial_aoe":
-			return "Radial AOE"
+			return "AOE radiale"
 		&"cone_volley":
-			return "Cone volley"
+			return "Raffica a cono"
 		&"auto_target_burst":
-			return "Target burst"
+			return "Raffica mirata"
 		_:
-			return "Projectile"
+			return "Proiettile"
 
 func _make_panel_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
