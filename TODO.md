@@ -28,15 +28,25 @@ Regole per nuove voci:
 - Audit visuale 2026-07-01: `docs/visual_qa_report_2026-07-01.md` rileva
   HUD sovradimensionato, Character Select incompleto, scale crate/ostacoli
   incoerenti e leggibilita disomogenea delle armi. `VIS-001` Settings tagliato
-  e chiuso dal follow-up UI-VIS-FIX del 2026-07-02; `UI-VIS-FIX` resta aperto
-  per gerarchia HUD, Character Select e boss HUD. Le priorita `ART-VIS-FIX` e
-  `WEAPON-VIS-FIX` restano aperte dentro questa milestone.
-- Piano operativo `ART-VIS-FIX`: `docs/biome_art_vis_fix_roadmap.md` spezza il
-  rendering biomi in pass per-bioma con QA dedicata, requisiti di transizione
-  terrain/road orientabile e ciclo screenshot -> fix -> verifica. Primo pass
-  `infected_plains` avviato con QA dedicata e rendering route senza texture
-  intermedie; restano da iterare `toxic_wastes`, `frozen_outskirts`,
-  `drowned_marsh` e `burning_fields`.
+  e chiuso dal follow-up UI-VIS-FIX del 2026-07-02. `UI-VIS-FIX` e' chiuso il
+  2026-07-03 (gerarchia HUD `VIS-007`, Character Select `VIS-010` e boss HUD;
+  card compatta ad altezza contenuto, faceplate 122x50, fascia boss ridotta,
+  Character Select in italiano con dossier affiancato senza scrollbar).
+  `ART-VIS-FIX` e' chiuso il 2026-07-03; `WEAPON-VIS-FIX` resta aperto dentro
+  questa milestone insieme al polish del main menu (`VIS-012`) e alla QA
+  audio.
+- Stato ART-VIS-FIX 2026-07-03: **completato** su tutti e cinque i biomi
+  (dettagli e residui in `docs/biome_art_vis_fix_roadmap.md`). Chiusi i
+  finding `VIS-002` (scacchiera/seam terreno) e `VIS-005` (gli "oggetti crate
+  giganti" erano gli edifici generati, ridisegnati come strutture); ribilanciato
+  il contrasto dei quattro biomi avanzati (`VIS-006`) e normalizzata
+  `reed_wall` (parte di `VIS-009`). Ogni bioma ha QA dedicata
+  `tests/visual_qa/biome_art_<bioma>_visual_qa.gd` e guardrail in
+  `generated_texture_test.gd`; il review completo dei cinque biomi passa con
+  exit code `0`. Residui fuori scope: pozze/hazard tematici assenti dalla
+  pipeline voidfirst (decisione gameplay, spostata in `BAL-001`) e
+  normalizzazione di `large_rock`/`broken_fence`/`forest_tree` (resta dentro
+  `VIS-009`).
 - Obiettivo: rifinire menu, HUD, Character Select, status, mappa, boss, feedback
   audio e leggibilita senza cambiare regole di gioco.
 - Milestone collegata: post-roadmap UI/UX Milestone 8.
@@ -150,5 +160,10 @@ collegata prima di implementare.
 - Mini-eventi bioma: durante il playtest end-to-end di `BAL-001`, raccogliere
   screenshot/video reali dei quattro eventi come materiale QA; riaprire
   `BIO-001` solo in presenza di bug o tuning concreto.
+- Hazard tematici nel mondo streammato: la pipeline voidfirst non piazza i
+  theme hazard di bioma (`toxic_puddle`, `gas_cloud`, `lava_crack`,
+  `slippery_ice`, `deep_water`, ...), che esistono solo nel path legacy.
+  Decidere in `BAL-001` se introdurli nel layout voidfirst (cambia spawn e
+  danno) o lasciarli agli encounter dinamici. Emersa dal pass `ART-VIS-FIX`.
 - Arte personaggi RPG: decidere se produrre asset `final_quality`
   per-personaggio nel pass `UIUX-001` o lasciarli come polish opzionale.

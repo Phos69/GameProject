@@ -73,6 +73,75 @@ Validazione finale:
 - 150/150 catture review superano il controllo di copertura world;
 - 25 log senza `FAIL`, errori, leak o risorse residue.
 
+## Follow-up UI-VIS-FIX completo - 2026-07-03
+
+**PASS per gerarchia HUD, Character Select e boss HUD.** `VIS-007` e
+`VIS-010` sono chiusi; con la safe area Settings gia' chiusa il 2026-07-02,
+`UI-VIS-FIX` e' completo.
+
+- La card player e' compatta e ad altezza contenuto (240 px di larghezza,
+  cresce dall'angolo di ancoraggio con grow direction): niente piu' pannello
+  276x184 semivuoto che copriva un terzo dello schermo a 960x540.
+- Il faceplate world-space scende da 152x64 a 122x50 (da ~4x a ~2x la
+  larghezza del player) mantenendo i contratti del layout snapshot: vita
+  orizzontale su due righe, super verticale >= 80% del bordo, font >= 10.
+- La barra boss occupa una fascia alta piu' stretta (360x64 invece di
+  460x90) e l'annuncio centrale e' compatto e spostato sotto la barra: i due
+  elementi non si sovrappongono a nessuna risoluzione di riferimento.
+- Character Select: slot cards a piena riga con placeholder informativo per
+  gli slot liberi ("Premi START sul pad per unirti"), fondale decorativo
+  attenuato e clippato dentro le card, roster e dossier affiancati senza
+  scrollbar a 1280x720, dossier compatto con tutte le informazioni visibili
+  e lingua uniformata all'italiano su tutta la schermata.
+- Stabilizzato `test_character_select_ui`: i check di safe-area dopo il
+  resize del viewport attendono la passata deferred del layout (3 frame),
+  eliminando il flake della full run.
+
+Validazione finale:
+
+- `menu_visual_qa`, `visual_accessibility_qa`, `boss_telegraph_visual_qa`,
+  `player_world_hud_visual_qa`, `final_survival_visual_qa`,
+  `survival_visual_qa`: tutti PASS;
+- suite GUT `ui_audio` 12/12, `progression` 12/12, `enemies` 10/10;
+- suite `combat` 19/20: l'unico rosso e' il noto
+  `test_weapon_tower_visual_identity` (tower barrel), pre-esistente su
+  master e non correlato al pass UI.
+
+## Follow-up ART-VIS-FIX completo - 2026-07-03
+
+**PASS per materiali e oggetti dei cinque biomi.** `VIS-002` e `VIS-005` sono
+chiusi; `VIS-006` e' ribilanciato per i quattro biomi avanzati; `VIS-009` e'
+ridotto (reed_wall ed edifici normalizzati, restano large_rock/broken_fence/
+forest_tree). Piano e residui in `docs/biome_art_vis_fix_roadmap.md`.
+
+- Gli oggetti letti dall'audit come "crate giganti" (VIS-005) erano gli
+  edifici generati: il template SVG condiviso (tetto a tinta accent piena,
+  chevron da cassa, rombo accent sotto la base) e' stato ridisegnato con
+  linguaggio architetturale e trim minimo; la base occupata usa un bordo
+  scuro. Le vere supply crate (64x48 world) erano gia' proporzionate.
+- toxic_wastes non alterna piu' quattro varianti ground contrastanti per
+  macro-cella: il pool base usa la coppia coerente di rubble, come gia'
+  frozen/swamp/volcanic.
+- I quattro temi generati renderizzano le route a taglio netto senza bande di
+  transizione world-UV (stessa policy della Pianura Infetta).
+- frozen_outskirts: tono neutro sul manto nevoso, blend neve delle route
+  ridotto, bordi armonizzati (griglia bianca da repeat eliminata).
+- drowned_marsh: route sollevate sopra la banda di luminanza del fango, strip
+  cliff downscalate e mipmappate (niente glitter dorato sui chasm), reed_wall
+  ridisegnata a canneto full-canvas.
+- burning_fields: pixel brace del ground smorzati selettivamente per non
+  competere con telegraph e hazard.
+- `BiomeTileLayer`/`BiomeTileChunk` filtrano con mipmap le texture generate.
+
+Validazione finale:
+
+- QA dedicate per bioma (5): tutte PASS con zero chunk visibili mancanti;
+- `biome_rendering_review_visual_qa.gd`: PASS, 150 PNG rigenerati;
+- `obstacle_asset_visual_qa.gd`: PASS, board rigenerata;
+- suite GUT `assets` 64/64 (8.775 assert, guardrail nuovi per pool toxic,
+  tono frozen, lift marsh, damping burning, downscale cliff marsh),
+  `environment` 37/37, `world_gen` 48/48, `obstacles` 16/16.
+
 ## Follow-up ART-VIS-FIX infected_plains - 2026-07-02
 
 Primo pass sulla Pianura Infetta eseguito. Il finding generale `VIS-002` resta
@@ -145,6 +214,9 @@ inaccessibili o apparire fuori safe area.
 
 ### VIS-002 - Alta - Seam e griglia dei tile dominano il terreno
 
+Stato 2026-07-03: **CHIUSO da ART-VIS-FIX** (follow-up in testa al report).
+Il testo seguente conserva l'evidenza dell'audit originario.
+
 I cinque biomi mostrano rettangoli, checker e giunzioni ortogonali chiaramente
 visibili. Il problema e particolarmente evidente:
 
@@ -207,6 +279,10 @@ chunk mancanti in camera".
 
 ### VIS-005 - Alta - Scala e linguaggio delle crate incoerenti
 
+Stato 2026-07-03: **CHIUSO da ART-VIS-FIX**. Gli oggetti flaggati erano gli
+edifici generati, non le crate: ridisegnati come strutture (follow-up in testa
+al report). Il testo seguente conserva l'evidenza dell'audit originario.
+
 Le resource crate tematiche sono circa 2-3 volte il volume visuale del player e
 sembrano piccoli edifici. Usano contorni vettoriali puliti e colori saturi sopra
 fondali raster molto dettagliati. La differenza di scala e stile le fa sembrare
@@ -221,6 +297,10 @@ Il contrasto rende la crate leggibile, ma rompe profondita, proporzione e
 coerenza con collisione/footprint.
 
 ### VIS-006 - Media - Contrasto dei biomi sbilanciato
+
+Stato 2026-07-03: **CHIUSO da ART-VIS-FIX** (toni per-bioma ribilanciati:
+damping braci, tono neve, lift route palude, ground pool tossico coerente).
+Il testo seguente conserva l'evidenza dell'audit originario.
 
 - **Infuocato**: il rumore arancio del terreno compete con hazard, telegraph e
   oggetti piccoli.
@@ -238,6 +318,9 @@ Impatto: hazard e percorsi richiedono lettura per colore locale invece di
 silhouette/materiale, con rischio maggiore in co-op e durante le wave.
 
 ### VIS-007 - Media - HUD sovradimensionato rispetto agli attori
+
+Stato 2026-07-03: **CHIUSO da UI-VIS-FIX** (follow-up in testa al report).
+Il testo seguente conserva l'evidenza dell'audit originario.
 
 La card P1 occupa circa `276x182` px anche a `960x540`, quasi un terzo della
 larghezza e un terzo dell'altezza. Gran parte del pannello e vuota. Il
@@ -269,6 +352,10 @@ Evidenze:
 
 ### VIS-009 - Media - Asset ostacolo non normalizzati
 
+Stato 2026-07-03: **RIDOTTO da ART-VIS-FIX**: `reed_wall` e' ora un canneto
+full-canvas e gli edifici generati sono normalizzati. Restano `large_rock`,
+`broken_fence` e la densita' fotografica di `forest_tree`.
+
 L'asset board mostra sorgenti con trattamento molto diverso:
 
 - `large_rock` appare come texture quadrata opaca, non come oggetto isometrico;
@@ -283,6 +370,9 @@ Evidenze:
 `build/qa/obstacle_assets/`.
 
 ### VIS-010 - Media - Character Select compositivamente incompleto
+
+Stato 2026-07-03: **CHIUSO da UI-VIS-FIX** (follow-up in testa al report).
+Il testo seguente conserva l'evidenza dell'audit originario.
 
 Le quattro slot card superiori contengono grandi aree vuote; gli slot inattivi
 mostrano griglia e cerchi fantasma ma nessun placeholder informativo. Le linee
@@ -450,8 +540,9 @@ Evidenza:
 
 ### 3. UI-VIS-FIX - Ripristinare safe area e gerarchia HUD
 
-- Stato 2026-07-02: `VIS-001` chiuso per Settings; restano HUD
-  sovradimensionato, Character Select e gerarchia boss/HUD.
+- Stato 2026-07-03: **completato**; `VIS-001` chiuso il 2026-07-02,
+  `VIS-007`/`VIS-010` chiusi dal follow-up `UI-VIS-FIX completo` in testa al
+  report.
 - Obiettivo: eliminare clipping e ridurre l'occlusione del campo di gioco.
 - Milestone collegata: `UIUX-001`.
 - File/sistemi: `game/ui/`, `game/settings/`, Character Select, boss HUD.
@@ -463,6 +554,8 @@ Evidenza:
 
 ### 4. ART-VIS-FIX - Normalizzare materiali e oggetti
 
+- Stato 2026-07-03: **completato**; evidenze e validazione nel follow-up
+  `ART-VIS-FIX completo` in testa al report.
 - Piano operativo: `docs/biome_art_vis_fix_roadmap.md` divide il lavoro per
   bioma, richiede QA dedicata per ciascun pass e formalizza la transizione
   terrain/road con immagine orientabile a taglio netto invece di texture

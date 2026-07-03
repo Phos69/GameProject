@@ -8,6 +8,17 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Added
 
+- Aggiunte le QA dedicate `ART-VIS-FIX` per i quattro biomi generated art
+  (`biome_art_toxic_wastes`, `biome_art_frozen_outskirts`,
+  `biome_art_drowned_marsh`, `biome_art_burning_fields`) sopra la base
+  condivisa `tests/visual_qa/helpers/biome_art_pass_qa_base.gd`: mondo
+  streammato reale, seed `641004/772031/918273`, risoluzioni `1280x720` e
+  `960x540`, viste center/passage/fall_cliff/obstacle_hazard/player_roster
+  piu' un close-up del contatto terreno-route, con lo stesso contratto di
+  readiness del review (zero chunk visibili mancanti, coverage minima).
+- Aggiunto il filtro `--only=id1,id2` a
+  `tools/generate_isometric_environment_assets.gd` per rigenerare una singola
+  famiglia di asset senza riscrivere il resto del catalogo.
 - Aggiunto `tests/visual_qa/biome_art_infected_plains_visual_qa.gd`, QA
   mirata per `ART-VIS-FIX` che cattura Pianura Infetta con crossing
   road/path, bordo terreno-strada, cliff e cluster di alberi sotto
@@ -77,6 +88,46 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Changed
 
+- Completato il pass `UI-VIS-FIX` su gerarchia HUD, Character Select e boss
+  HUD (finding `VIS-007`/`VIS-010`):
+  - la card player e' compatta (240 px) e ad altezza contenuto, piazzata per
+    angolo di ancoraggio + grow direction invece di una size fissa 276x184;
+  - il faceplate world-space scende a `122x50` (da ~4x a ~2x la larghezza del
+    player) mantenendo i contratti del layout snapshot (font >= 10, vita su
+    due righe, super verticale >= 80%);
+  - barra boss piu' stretta (360x64) e annuncio centrale compatto spostato
+    sotto la barra, senza sovrapposizioni alle risoluzioni di riferimento;
+  - Character Select interamente in italiano, slot liberi con hint di join
+    ("Premi START sul pad per unirti"), fondale decorativo clippato nelle
+    card, roster e dossier affiancati senza scrollbar a 1280x720;
+  - stabilizzato `test_character_select_ui`: i check di safe-area attendono
+    la passata deferred del layout dopo il resize del viewport.
+- Completato il pass `ART-VIS-FIX` sui quattro biomi generated art
+  (finding `VIS-002`/`VIS-005`, parziali `VIS-006`/`VIS-008`/`VIS-009`):
+  - gli edifici generati (`ruined_house`, `lab_ruin`, `burned_house`,
+    `abandoned_house`, `snow_cabin`, `sunken_house`, `lab_block`) sono stati
+    ridisegnati come strutture con tetto muto, porta/finestre, fondazione
+    scura e trim accent minimo; rimossi il tetto a tinta accent piena e i
+    chevron da cassa, cosi' non leggono piu' come loot crate giganti;
+  - la base occupata degli oggetti usa un bordo scuro invece dell'outline
+    color accento che leggeva come marker di selezione;
+  - i temi generati renderizzano le route a taglio netto: le tile di
+    transizione `grass_to_path`/`grass_to_road`/`path_to_road` usano
+    direttamente le superfici path/road (stessa policy della Pianura);
+  - `toxic_wastes`: il ground pool usa solo la coppia coerente di rubble
+    (variation 02/03); lichene chiaro e ghiaia bruna passano a `detail`,
+    eliminando la scacchiera di pannelli per macro-cella;
+  - `frozen_outskirts`: tono neutro anti-sovraesposizione sul manto nevoso,
+    blend neve delle route ridotto (`0.10/0.12`) per separare ghiaccio e
+    sentieri, harmonize dei bordi contro la griglia bianca da repeat;
+  - `drowned_marsh`: lift caldo di path/road sopra la banda di luminanza del
+    fango, downscale `0.45` delle strip cliff e `reed_wall` ridisegnata come
+    canneto verticale full-canvas (`preserveAspectRatio="none"`);
+  - `burning_fields`: damping selettivo dei pixel brace del ground per non
+    competere con telegraph e fire hazard;
+  - `BiomeTileLayer`/`BiomeTileChunk` usano filtering con mipmap e le texture
+    generate normalizzate generano mipmap: elimina lo speckle delle strip
+    cliff minificate sui bordi dei chasm.
 - Pianura Infetta non renderizza piu `grass_to_path`, `grass_to_road` e
   `path_to_road` come texture intermedie: le celle di contatto usano
   direttamente le superfici `forest_path` o `forest_road`, mantenendo un taglio
