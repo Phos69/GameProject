@@ -5,9 +5,32 @@ const GENERATED_SURFACE_TEXTURE_EDGE_TRIM_PIXELS := 2
 const GENERATED_CLIFF_TEXTURE_EDGE_TRIM_PIXELS := 12
 const BURNING_FIELDS_GENERATED_TEXTURE_EDGE_TRIM_PIXELS := 10
 const BURNING_FIELDS_EDGE_BLEND_PIXELS := 18
-const FROZEN_ROUTE_SNOW_BLEND := 0.16
-const FROZEN_ROAD_SNOW_BLEND := 0.24
+# Blend ridotti (ART-VIS-FIX): a 0.16/0.24 route e ghiaccio diventavano quasi
+# indistinguibili dalla neve sovraesposta (VIS-002/VIS-006). Il minimo utile per
+# il contratto "snow softened" del test e' ~0.10.
+const FROZEN_ROUTE_SNOW_BLEND := 0.10
+const FROZEN_ROAD_SNOW_BLEND := 0.12
 const FROZEN_SNOW_BLEND_COLOR := Color(0.82, 0.90, 0.97, 1.0)
+# Tinta moltiplicativa del manto nevoso base: abbassa l'esposizione del bianco
+# pieno verso un grigio neutro (niente dominante azzurra aggiuntiva), cosi'
+# attori, crate e route chiare recuperano separazione (VIS-006) e i patch di
+# neve base non staccano dai materiali granulosi di route e passaggi.
+const FROZEN_GROUND_TONE := Color(0.90, 0.91, 0.93, 1.0)
+# drowned_marsh: fango, strada e acqua vivono tutti fra lum 54-66 (VIS-006,
+# "valori troppo scuri e vicini"). Il lift caldo porta walkway/strade sopra il
+# fango senza toccare il ground, che resta scuro per la leggibilita' attori.
+const SWAMP_ROUTE_LIFT_COLOR := Color(0.82, 0.72, 0.52, 1.0)
+const SWAMP_ROUTE_LIFT := 0.22
+# drowned_marsh: le strip lip dei cliff hanno dettaglio organico ad alta
+# frequenza; minificate ~10x sul bordo dei chasm senza mipmap diventano
+# "glitter" dorato (VIS-002 bordo chiaro residuo). Il pre-downscale le porta
+# vicine alla scala di rendering reale.
+const SWAMP_CLIFF_TEXTURE_DOWNSCALE := 0.45
+# burning_fields: i pixel brace piu' accesi del ground competono con telegraph
+# e fire hazard (VIS-006). Il damping selettivo scurisce solo i pixel a
+# dominanza arancio, lasciando lava feature e path intatti.
+const VOLCANIC_EMBER_THRESHOLD := 0.18
+const VOLCANIC_EMBER_DAMPING := 0.34
 
 # Cache di sessione delle texture normalizzate, keyed su asset_path + parametri.
 # La normalizzazione gira pixel-per-pixel in GDScript: senza cache veniva rifatta
@@ -32,10 +55,17 @@ static func cliff_edge_trim_pixels(_biome_id: StringName) -> int:
 	return GENERATED_CLIFF_TEXTURE_EDGE_TRIM_PIXELS
 
 static func should_harmonize_surface_edges(biome_id: StringName) -> bool:
-	return biome_id == &"burning_fields"
+	# frozen_outskirts: i bordi chiari della neve formavano una griglia bianca
+	# regolare a ogni repeat world-UV (ART-VIS-FIX, VIS-002).
+	return biome_id == &"burning_fields" or biome_id == &"frozen_outskirts"
 
 static func should_harmonize_cliff_edges(biome_id: StringName) -> bool:
 	return biome_id == &"burning_fields"
+
+static func cliff_texture_downscale(biome_id: StringName) -> float:
+	if biome_id == &"drowned_marsh":
+		return SWAMP_CLIFF_TEXTURE_DOWNSCALE
+	return 1.0
 
 static func normalize_surface_texture(
 	texture: Texture2D,
@@ -57,6 +87,10 @@ static func normalize_surface_texture(
 	)
 	if biome_id == &"frozen_outskirts":
 		normalized = _harmonize_frozen_surface_texture(normalized, asset_path)
+	if biome_id == &"drowned_marsh":
+		normalized = _harmonize_swamp_surface_texture(normalized, asset_path)
+	if biome_id == &"burning_fields":
+		normalized = _harmonize_volcanic_surface_texture(normalized, asset_path)
 	if not asset_path.is_empty() and normalized != null:
 		_normalized_texture_cache[cache_key] = normalized
 	return normalized
@@ -68,17 +102,19 @@ static func normalize_repeating_texture(
 	trim: int,
 	harmonize_edges: bool = false,
 	blend_pixels: int = BURNING_FIELDS_EDGE_BLEND_PIXELS,
-	cache_key: String = ""
+	cache_key: String = "",
+	downscale: float = 1.0
 ) -> Texture2D:
 	if texture == null:
 		return null
 	var full_key := ""
 	if not cache_key.is_empty():
-		full_key = "repeat|%s|%d|%s|%d" % [
+		full_key = "repeat|%s|%d|%s|%d|%.2f" % [
 			cache_key,
 			trim,
 			str(harmonize_edges),
-			blend_pixels
+			blend_pixels,
+			downscale
 		]
 		if _normalized_texture_cache.has(full_key):
 			return _normalized_texture_cache[full_key] as Texture2D
@@ -86,7 +122,8 @@ static func normalize_repeating_texture(
 		texture,
 		trim,
 		harmonize_edges,
-		blend_pixels
+		blend_pixels,
+		downscale
 	)
 	# Anche i passthrough (immagine non leggibile) vengono cache-ati: rifallire
 	# costa comunque un get_image() dalla VRAM a ogni chiamata.
@@ -98,7 +135,8 @@ static func _normalize_repeating_texture_uncached(
 	texture: Texture2D,
 	trim: int,
 	harmonize_edges: bool,
-	blend_pixels: int
+	blend_pixels: int,
+	downscale: float = 1.0
 ) -> Texture2D:
 	if texture == null:
 		return null
@@ -115,9 +153,20 @@ static func _normalize_repeating_texture_uncached(
 	normalized.convert(Image.FORMAT_RGBA8)
 	if harmonize_edges:
 		_harmonize_repeating_texture_edges(normalized, blend_pixels)
+	if downscale > 0.0 and downscale < 1.0:
+		# Pre-minifica il dettaglio ad alta frequenza: le strip cliff strette
+		# campionate senza mipmap altrimenti scintillano (aliasing).
+		normalized.resize(
+			maxi(roundi(normalized.get_width() * downscale), 8),
+			maxi(roundi(normalized.get_height() * downscale), 8),
+			Image.INTERPOLATE_LANCZOS
+		)
 	# Generated cutouts often keep white RGB in transparent edge pixels.
 	# Bleed neighbour colour into alpha so repeat/filter sampling cannot expose it.
 	normalized.fix_alpha_edges()
+	# Le strip cliff vengono minificate anche 10x sul bordo dei chasm: senza
+	# mipmap il sampling salta righe e produce speckle (ART-VIS-FIX, VIS-002).
+	normalized.generate_mipmaps()
 	return ImageTexture.create_from_image(normalized)
 
 static func _copy_or_crop_image(image: Image, trim: int) -> Image:
@@ -176,7 +225,98 @@ static func _harmonize_frozen_surface_texture(
 	asset_path: String
 ) -> Texture2D:
 	var snow_blend := _frozen_surface_snow_blend(asset_path)
-	if snow_blend <= 0.0 or texture == null:
+	var shade_ground := asset_path.contains("base_ground_variation")
+	if (snow_blend <= 0.0 and not shade_ground) or texture == null:
+		return texture
+	var image := texture.get_image()
+	if image == null or image.is_empty():
+		return texture
+	if image.is_compressed():
+		var decompress_error := image.decompress()
+		if decompress_error != OK:
+			return texture
+	image.convert(Image.FORMAT_RGBA8)
+	for y in range(image.get_height()):
+		for x in range(image.get_width()):
+			var source := image.get_pixel(x, y)
+			if source.a <= 0.01:
+				continue
+			var adjusted := source
+			if shade_ground:
+				adjusted = Color(
+					source.r * FROZEN_GROUND_TONE.r,
+					source.g * FROZEN_GROUND_TONE.g,
+					source.b * FROZEN_GROUND_TONE.b,
+					source.a
+				)
+			else:
+				adjusted = source.lerp(
+					FROZEN_SNOW_BLEND_COLOR,
+					snow_blend * source.a
+				)
+				adjusted.a = source.a
+			image.set_pixel(x, y, adjusted)
+	image.fix_alpha_edges()
+	image.generate_mipmaps()
+	return ImageTexture.create_from_image(image)
+
+static func _harmonize_volcanic_surface_texture(
+	texture: Texture2D,
+	asset_path: String
+) -> Texture2D:
+	if texture == null:
+		return null
+	if not asset_path.contains("base_ground_variation"):
+		return texture
+	var image := texture.get_image()
+	if image == null or image.is_empty():
+		return texture
+	if image.is_compressed():
+		var decompress_error := image.decompress()
+		if decompress_error != OK:
+			return texture
+	image.convert(Image.FORMAT_RGBA8)
+	for y in range(image.get_height()):
+		for x in range(image.get_width()):
+			var source := image.get_pixel(x, y)
+			if source.a <= 0.01:
+				continue
+			var ember := maxf(
+				source.r - (source.g + source.b) * 0.5,
+				0.0
+			)
+			if ember <= VOLCANIC_EMBER_THRESHOLD:
+				continue
+			var strength := minf(
+				(ember - VOLCANIC_EMBER_THRESHOLD) / 0.30,
+				1.0
+			)
+			var adjusted := source.darkened(
+				VOLCANIC_EMBER_DAMPING * strength
+			)
+			adjusted.a = source.a
+			image.set_pixel(x, y, adjusted)
+	image.fix_alpha_edges()
+	image.generate_mipmaps()
+	return ImageTexture.create_from_image(image)
+
+static func _frozen_surface_snow_blend(asset_path: String) -> float:
+	if asset_path.contains("road_variation"):
+		return FROZEN_ROAD_SNOW_BLEND
+	if asset_path.contains("path_variation"):
+		return FROZEN_ROUTE_SNOW_BLEND
+	return 0.0
+
+static func _harmonize_swamp_surface_texture(
+	texture: Texture2D,
+	asset_path: String
+) -> Texture2D:
+	if texture == null:
+		return null
+	if (
+		not asset_path.contains("path_variation")
+		and not asset_path.contains("road_variation")
+	):
 		return texture
 	var image := texture.get_image()
 	if image == null or image.is_empty():
@@ -192,17 +332,11 @@ static func _harmonize_frozen_surface_texture(
 			if source.a <= 0.01:
 				continue
 			var adjusted := source.lerp(
-				FROZEN_SNOW_BLEND_COLOR,
-				snow_blend * source.a
+				SWAMP_ROUTE_LIFT_COLOR,
+				SWAMP_ROUTE_LIFT * source.a
 			)
 			adjusted.a = source.a
 			image.set_pixel(x, y, adjusted)
 	image.fix_alpha_edges()
+	image.generate_mipmaps()
 	return ImageTexture.create_from_image(image)
-
-static func _frozen_surface_snow_blend(asset_path: String) -> float:
-	if asset_path.contains("road_variation"):
-		return FROZEN_ROAD_SNOW_BLEND
-	if asset_path.contains("path_variation"):
-		return FROZEN_ROUTE_SNOW_BLEND
-	return 0.0

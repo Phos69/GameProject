@@ -194,6 +194,8 @@ func configure(
 	_build_all_chunks_on_finalize = build_all_chunks
 	z_index = -9
 	texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+	# Vedi BiomeTileChunk: filtering con mipmap per le texture minificate.
+	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	add_to_group("biome_tile_layers")
 	_rebuild_chunks()
 	_bake_key = TILE_BAKE_CACHE.make_key(
@@ -737,21 +739,24 @@ func _load_generated_cliff_texture(asset_path: String) -> Texture2D:
 		texture,
 		_generated_cliff_texture_edge_trim_pixels(),
 		_should_harmonize_generated_cliff_edges(),
-		asset_path
+		asset_path,
+		GENERATED_TEXTURE_TOOLS.cliff_texture_downscale(biome_id)
 	)
 
 func _trim_repeating_texture(
 	texture: Texture2D,
 	trim: int,
 	harmonize_edges: bool = false,
-	cache_key: String = ""
+	cache_key: String = "",
+	downscale: float = 1.0
 ) -> Texture2D:
 	return GENERATED_TEXTURE_TOOLS.normalize_repeating_texture(
 		texture,
 		trim,
 		harmonize_edges,
 		GENERATED_TEXTURE_TOOLS.BURNING_FIELDS_EDGE_BLEND_PIXELS,
-		cache_key
+		cache_key,
+		downscale
 	)
 
 func _generated_surface_texture_edge_trim_pixels() -> int:

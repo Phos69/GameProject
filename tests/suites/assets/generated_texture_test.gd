@@ -353,6 +353,16 @@ func test_toxic_surface_selection_uses_coherent_materials() -> void:
 			ground_path.contains("detail_decal"),
 			"toxic ground avoids white-backed detail decals"
 		)
+		assert_false(
+			ground_path.contains("base_ground_variation_01")
+			or ground_path.contains("base_ground_variation_04"),
+			"toxic ground keeps lichen sheet and brown gravel out of the base surface"
+		)
+		assert_true(
+			ground_path.contains("base_ground_variation_02")
+			or ground_path.contains("base_ground_variation_03"),
+			"toxic ground uses the coherent grey rubble pair as its base surface"
+		)
 	var coherent_roles: Array[StringName] = [
 		BiomeGeneratedArtCatalog.ROLE_PATH,
 		BiomeGeneratedArtCatalog.ROLE_ROAD,
@@ -592,7 +602,18 @@ func test_generated_biome_runtime_consumption() -> void:
 				0.04,
 				"burning_fields runtime surface harmonizes opposite edges"
 			)
+		if biome_id == &"drowned_marsh":
+			_assert_marsh_routes_are_lifted(layer, expected_surface_trim)
+		if biome_id == &"burning_fields":
+			_assert_volcanic_embers_are_damped(layer, expected_surface_trim)
 		if biome_id == &"frozen_outskirts":
+			var frozen_runtime_image := runtime_texture.get_image()
+			assert_lte(
+				_edge_seam_score(frozen_runtime_image),
+				0.04,
+				"frozen_outskirts runtime surface harmonizes opposite edges"
+			)
+			_assert_frozen_ground_is_toned_down(layer, expected_surface_trim)
 			_assert_frozen_route_textures_are_snow_softened(
 				layer,
 				"path_variation",
@@ -673,9 +694,16 @@ func test_generated_biome_runtime_consumption() -> void:
 		var expected_cliff_trim := (
 			_expected_generated_cliff_texture_trim_pixels(biome_id)
 		)
+		var expected_cliff_downscale := (
+			_expected_generated_cliff_texture_downscale(biome_id)
+		)
 		assert_eq(
 			layer._cliff_lip_texture.get_width(),
-			cliff_lip_source_image.get_width() - expected_cliff_trim * 2,
+			_expected_normalized_width(
+				cliff_lip_source_image.get_width(),
+				expected_cliff_trim,
+				expected_cliff_downscale
+			),
 			"%s trims generated cliff lips before repeat sampling"
 			% String(biome_id)
 		)
@@ -683,19 +711,22 @@ func test_generated_biome_runtime_consumption() -> void:
 			layer._cliff_face_texture,
 			String(cliff_paths.get(&"cliff_face_texture", "")),
 			expected_cliff_trim,
-			"%s cliff face" % String(biome_id)
+			"%s cliff face" % String(biome_id),
+			expected_cliff_downscale
 		)
 		_assert_generated_cliff_texture_is_normalized(
 			layer._cliff_lip_texture,
 			String(cliff_paths.get(&"cliff_lip_texture", "")),
 			expected_cliff_trim,
-			"%s horizontal cliff lip" % String(biome_id)
+			"%s horizontal cliff lip" % String(biome_id),
+			expected_cliff_downscale
 		)
 		_assert_generated_cliff_texture_is_normalized(
 			layer._cliff_lip_vertical_texture,
 			String(cliff_paths.get(&"cliff_lip_vertical_texture", "")),
 			expected_cliff_trim,
-			"%s vertical cliff lip" % String(biome_id)
+			"%s vertical cliff lip" % String(biome_id),
+			expected_cliff_downscale
 		)
 		if biome_id == &"burning_fields":
 			var runtime_cliff_lip_image := layer._cliff_lip_texture.get_image()
@@ -1207,17 +1238,34 @@ func _expected_generated_surface_texture_trim_pixels(
 func _expected_generated_cliff_texture_trim_pixels(_biome_id: StringName) -> int:
 	return 12
 
+func _expected_generated_cliff_texture_downscale(biome_id: StringName) -> float:
+	return GeneratedBiomeTextureTools.cliff_texture_downscale(biome_id)
+
+# Rispecchia _normalize_repeating_texture_uncached: crop del trim, poi
+# eventuale downscale anti-aliasing (con floor a 8 px).
+func _expected_normalized_width(
+	source_width: int,
+	expected_trim: int,
+	expected_downscale: float
+) -> int:
+	var trimmed := source_width - expected_trim * 2
+	if expected_downscale > 0.0 and expected_downscale < 1.0:
+		return maxi(roundi(trimmed * expected_downscale), 8)
+	return trimmed
+
 func _assert_generated_cliff_texture_is_normalized(
 	texture: Texture2D,
 	source_path: String,
 	expected_trim: int,
-	label: String
+	label: String,
+	expected_downscale: float = 1.0
 ) -> void:
 	_assert_runtime_texture_width_matches_trim(
 		texture,
 		source_path,
 		expected_trim,
-		label
+		label,
+		expected_downscale
 	)
 	if texture == null:
 		return
@@ -1235,7 +1283,8 @@ func _assert_runtime_texture_width_matches_trim(
 	texture: Texture2D,
 	source_path: String,
 	expected_trim: int,
-	label: String
+	label: String,
+	expected_downscale: float = 1.0
 ) -> void:
 	assert_not_null(texture, "%s runtime texture exists" % label)
 	if texture == null:
@@ -1247,7 +1296,11 @@ func _assert_runtime_texture_width_matches_trim(
 		return
 	assert_eq(
 		texture.get_width(),
-		source_image.get_width() - expected_trim * 2,
+		_expected_normalized_width(
+			source_image.get_width(),
+			expected_trim,
+			expected_downscale
+		),
 		"%s runtime width reflects generated texture trim" % label
 	)
 
@@ -1373,6 +1426,144 @@ func _is_visible_white_matte(color: Color) -> bool:
 		and minimum >= 0.86
 		and maximum - minimum <= 0.08
 	)
+
+# Il ground vulcanico deve uscire dal runtime con le braci smorzate rispetto
+# alla sorgente (damping selettivo ART-VIS-FIX): il rumore arancio non deve
+# competere con telegraph e fire hazard.
+func _assert_volcanic_embers_are_damped(
+	layer: BiomeTileLayer,
+	expected_trim: int
+) -> void:
+	var matched := 0
+	var paths := layer.get_forest_surface_art_asset_paths()
+	for material_id in layer.get_loaded_surface_texture_ids():
+		var source_path := String(paths.get(material_id, ""))
+		if not source_path.contains("base_ground_variation"):
+			continue
+		matched += 1
+		var runtime_texture := (
+			layer._forest_surface_textures.get(material_id) as Texture2D
+		)
+		assert_not_null(runtime_texture, "volcanic ground runtime texture exists")
+		if runtime_texture == null:
+			continue
+		var source_image := Image.new()
+		if source_image.load(ProjectSettings.globalize_path(source_path)) != OK:
+			continue
+		var trimmed_source := _trimmed_image_copy(source_image, expected_trim)
+		assert_lt(
+			_average_ember_intensity(runtime_texture.get_image()),
+			_average_ember_intensity(trimmed_source) * 0.92,
+			"volcanic ground embers are damped against telegraph competition"
+		)
+	assert_gt(matched, 0, "volcanic ground has generated textures to validate")
+
+# Media dell'intensita' brace sui soli pixel sopra la soglia di damping: il
+# fix agisce sulla coda calda, quindi la media su tutti i pixel non e' un
+# segnale utile (i pixel freddi dominano e restano intatti).
+func _average_ember_intensity(image: Image) -> float:
+	if image == null or image.is_empty():
+		return 1.0
+	var samples := 0
+	var total := 0.0
+	for y in range(image.get_height()):
+		for x in range(image.get_width()):
+			var color := image.get_pixel(x, y)
+			if color.a <= 0.01:
+				continue
+			var ember := maxf(color.r - (color.g + color.b) * 0.5, 0.0)
+			if ember <= GeneratedBiomeTextureTools.VOLCANIC_EMBER_THRESHOLD:
+				continue
+			total += ember
+			samples += 1
+	if samples <= 0:
+		return 0.0
+	return total / float(samples)
+
+# Le route della palude devono uscire dal runtime piu' chiare della sorgente
+# (lift caldo ART-VIS-FIX): fango, strada e acqua vivevano tutti nella stessa
+# banda di luminanza e la strada non si separava dal terreno.
+func _assert_marsh_routes_are_lifted(
+	layer: BiomeTileLayer,
+	expected_trim: int
+) -> void:
+	var matched := 0
+	var paths := layer.get_forest_surface_art_asset_paths()
+	for material_id in layer.get_loaded_surface_texture_ids():
+		var source_path := String(paths.get(material_id, ""))
+		if (
+			not source_path.contains("path_variation")
+			and not source_path.contains("road_variation")
+		):
+			continue
+		matched += 1
+		var runtime_texture := (
+			layer._forest_surface_textures.get(material_id) as Texture2D
+		)
+		assert_not_null(runtime_texture, "marsh route runtime texture exists")
+		if runtime_texture == null:
+			continue
+		var source_image := Image.new()
+		if source_image.load(ProjectSettings.globalize_path(source_path)) != OK:
+			continue
+		var trimmed_source := _trimmed_image_copy(source_image, expected_trim)
+		assert_gt(
+			_average_visible_luminance(runtime_texture.get_image()),
+			_average_visible_luminance(trimmed_source) * 1.05,
+			"marsh route is lifted above the mud value range"
+		)
+	assert_gt(matched, 0, "marsh has generated route textures to validate")
+
+# Il manto nevoso base deve uscire dal runtime piu' scuro della sorgente
+# (tinta anti-sovraesposizione ART-VIS-FIX): attori, crate e route chiare
+# devono restare separabili sulla neve.
+func _assert_frozen_ground_is_toned_down(
+	layer: BiomeTileLayer,
+	expected_trim: int
+) -> void:
+	var matched := 0
+	var paths := layer.get_forest_surface_art_asset_paths()
+	for material_id in layer.get_loaded_surface_texture_ids():
+		var source_path := String(paths.get(material_id, ""))
+		if not source_path.contains("base_ground_variation"):
+			continue
+		matched += 1
+		var runtime_texture := (
+			layer._forest_surface_textures.get(material_id) as Texture2D
+		)
+		assert_not_null(runtime_texture, "frozen ground runtime texture exists")
+		if runtime_texture == null:
+			continue
+		var source_image := Image.new()
+		if source_image.load(ProjectSettings.globalize_path(source_path)) != OK:
+			continue
+		var trimmed_source := _trimmed_image_copy(source_image, expected_trim)
+		var source_luminance := _average_visible_luminance(trimmed_source)
+		var runtime_luminance := _average_visible_luminance(
+			runtime_texture.get_image()
+		)
+		assert_lt(
+			runtime_luminance,
+			source_luminance * 0.97,
+			"frozen ground is toned down against overexposure"
+		)
+	assert_gt(matched, 0, "frozen ground has generated textures to validate")
+
+func _average_visible_luminance(image: Image) -> float:
+	if image == null or image.is_empty():
+		return 1.0
+	var samples := 0
+	var total := 0.0
+	for y in range(image.get_height()):
+		for x in range(image.get_width()):
+			var color := image.get_pixel(x, y)
+			if color.a <= 0.01:
+				continue
+			total += color.get_luminance()
+			samples += 1
+	if samples <= 0:
+		return 1.0
+	return total / float(samples)
 
 func _assert_frozen_route_textures_are_snow_softened(
 	layer: BiomeTileLayer,

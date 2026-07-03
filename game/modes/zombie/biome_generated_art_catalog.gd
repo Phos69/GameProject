@@ -405,6 +405,18 @@ static func _surface_role_for_file(
 		and file_name.contains("base_ground_variation_04")
 	):
 		return ROLE_DETAIL
+	if (
+		theme_id == &"urban_ruins"
+		and (
+			file_name.contains("base_ground_variation_01")
+			or file_name.contains("base_ground_variation_04")
+		)
+	):
+		# The light lichen sheet (01) and the brown gravel (04) contrast too much
+		# with the grey rubble pair: at macro-cell granularity they read as a
+		# checkerboard of panels (ART-VIS-FIX, VIS-002). Keep the tonally close
+		# rubble variants (02/03) as the base surface.
+		return ROLE_DETAIL
 	if file_name.contains("transition_ground_to_path"):
 		return ROLE_GROUND_TO_PATH
 	if file_name.contains("transition_ground_to_road"):

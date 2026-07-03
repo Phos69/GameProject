@@ -1089,10 +1089,14 @@ func _generated_surface_role(tile_id: StringName) -> StringName:
 			return GENERATED_ART_CATALOG.ROLE_PATH
 		TILE_FOREST_ROAD:
 			return GENERATED_ART_CATALOG.ROLE_ROAD
+		# Transition cells render the route surface directly: world-UV repeated
+		# transition bands read as an overlay strip along the route instead of a
+		# ground/route contact (ART-VIS-FIX, VIS-002). Same crisp-cut policy as
+		# the infected_plains forest surfaces.
 		TILE_GRASS_TO_PATH:
-			return GENERATED_ART_CATALOG.ROLE_GROUND_TO_PATH
+			return GENERATED_ART_CATALOG.ROLE_PATH
 		TILE_GRASS_TO_ROAD, TILE_PATH_TO_ROAD:
-			return GENERATED_ART_CATALOG.ROLE_GROUND_TO_ROAD
+			return GENERATED_ART_CATALOG.ROLE_ROAD
 	return &""
 
 func _tile_data(tile_id: StringName, section: StringName, role: StringName) -> Dictionary:

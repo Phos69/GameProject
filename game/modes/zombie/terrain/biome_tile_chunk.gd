@@ -45,6 +45,9 @@ func configure(
 	suppressed_void_texture_count = next_suppressed_void_texture_count
 	z_index = -9
 	texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+	# Mipmap filtering: le texture generate (in particolare le strip cliff sui
+	# bordi dei chasm) vengono minificate molto e senza mipmap scintillano.
+	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	add_to_group("biome_tile_chunks")
 	queue_redraw()
 

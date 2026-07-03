@@ -2,14 +2,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="198" height="192" viewBox="0 0 160 120" data-generated-by="generate_isometric_environment_assets" data-section="object_scenes" data-id="snow_cabin" data-footprint-slots="4x3">
   <title>object_scenes snow_cabin</title>
   <ellipse cx="80" cy="82" rx="58" ry="18" fill="#050608" opacity="0.45"/>
-  <polygon points="38,74 80,50 122,74 80,98" fill="#242a2f" stroke="#d6edf3" stroke-width="3"/>
-  <polygon points="40,42 80,20 120,42 80,64" fill="#d6edf3" stroke="#0b0c0d" stroke-width="4"/>
-  <polygon points="40,42 80,64 80,94 40,72" fill="#7f99a8" stroke="#0b0c0d" stroke-width="3"/>
-  <polygon points="120,42 80,64 80,94 120,72" fill="#7f99a8" stroke="#0b0c0d" stroke-width="3" opacity="0.82"/>
-  <path d="M60 73 L60 54 L72 60 L72 81 Z" fill="#090b0c" opacity="0.88"/>
-  <path d="M92 63 L107 55 L107 69 L92 78 Z" fill="#11181a" stroke="#d6edf3" stroke-width="2" opacity="0.92"/>
-  <path d="M39 41 L80 18 L121 41" fill="none" stroke="#edf8fb" stroke-width="7" stroke-linecap="round"/>
-  <path d="M45 48 L80 66 L115 47" fill="none" stroke="#edf8fb" stroke-width="3" opacity="0.82"/>
-  <path d="M24 92 L80 110 L136 92" fill="none" stroke="#d6edf3" stroke-width="3" stroke-linecap="round" opacity="0.75"/>
-  <path d="M36 96 L80 108 L124 96" fill="none" stroke="#000000" stroke-width="2" opacity="0.35"/>
+  <polygon points="34,75 80,54 126,75 80,100" fill="#303a40" opacity="0.95"/>
+  <polygon points="40,74 80,94 80,60 40,40" fill="#758d9b" stroke="#0b0c0d" stroke-width="2"/>
+  <polygon points="80,94 120,74 120,40 80,60" fill="#596b76" stroke="#0b0c0d" stroke-width="2"/>
+  <path d="M44 62 L76 78 M44 68 L76 84" stroke="#000000" stroke-width="2" opacity="0.16"/>
+  <path d="M84 76 L116 60 M84 82 L116 66" stroke="#000000" stroke-width="2" opacity="0.16"/>
+  <polygon points="33,42 80,17 127,42 80,67" fill="#425057" stroke="#0b0c0d" stroke-width="3"/>
+  <polygon points="47,42 80,25 113,42 80,59" fill="none" stroke="#667a86" stroke-width="2" opacity="0.5"/>
+  <path d="M40 44 L80 64 L120 44" fill="none" stroke="#000000" stroke-width="4" opacity="0.25"/>
+  <polygon points="56,82 68,88 68,68 56,62" fill="#0a0c0c" stroke="#d6edf3" stroke-width="2" stroke-opacity="0.28"/>
+  <polygon points="92,78 106,71 106,59 92,66" fill="#0d1315" stroke="#d6edf3" stroke-width="2" stroke-opacity="0.30"/>
+  <path d="M35 41 L80 18 L125 41" fill="none" stroke="#edf8fb" stroke-width="6" stroke-linecap="round"/>
+  <path d="M50 55 C65 63 95 63 110 55" fill="none" stroke="#edf8fb" stroke-width="4" opacity="0.8"/>
 </svg>

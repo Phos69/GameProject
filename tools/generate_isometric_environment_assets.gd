@@ -23,6 +23,7 @@ func _run() -> void:
 	var write := args.has("--write")
 	var check := args.has("--check")
 	var overwrite := args.has("--overwrite-generated")
+	var only_ids := _parse_only_ids(args)
 	if not dry_run and not write and not check:
 		dry_run = true
 
@@ -41,6 +42,8 @@ func _run() -> void:
 
 	for target in planned:
 		var contract := target as Dictionary
+		if not only_ids.is_empty() and not only_ids.has(String(contract.get("id", ""))):
+			continue
 		var asset_path := String(contract.get("asset_path", ""))
 		if seen_paths.has(asset_path):
 			continue
@@ -91,6 +94,17 @@ func _run() -> void:
 		)
 	_finish()
 
+# --only=id1,id2 limits write/overwrite passes to specific contract ids so a
+# template fix can regenerate one asset family without touching the rest.
+func _parse_only_ids(args: PackedStringArray) -> Dictionary:
+	var only_ids: Dictionary = {}
+	for arg in args:
+		if not arg.begins_with("--only="):
+			continue
+		for raw_id in arg.trim_prefix("--only=").split(",", false):
+			only_ids[raw_id.strip_edges()] = true
+	return only_ids
+
 func _collect_asset_targets(manifest: IsometricEnvironmentManifest) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	for section in ASSET_SECTIONS:
@@ -123,18 +137,42 @@ func _build_svg(contract: Dictionary) -> String:
 	var shape := _section_shape(section, asset_id, primary, secondary, accent)
 	var native_size := _native_svg_size(contract)
 	var footprint := contract.get("footprint_slots", Vector2i.ONE) as Vector2i
+	# Tall canvases (e.g. reed_wall 56x136) letterbox a 160x120 viewBox down to a
+	# tiny strip; stretching the viewBox instead lets the art fill the native
+	# visual box, and the shape is drawn to survive the anisotropic scale.
+	var aspect_attribute := (
+		' preserveAspectRatio="none"' if _uses_stretch_canvas(asset_id) else ""
+	)
 	var lines := PackedStringArray([
 		'<?xml version="1.0" encoding="UTF-8"?>',
-		'<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 160 120" data-generated-by="%s" data-section="%s" data-id="%s" data-footprint-slots="%dx%d">' % [native_size.x, native_size.y, GENERATED_BY, _xml_escape(section), _xml_escape(asset_id), footprint.x, footprint.y],
+		'<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 160 120"%s data-generated-by="%s" data-section="%s" data-id="%s" data-footprint-slots="%dx%d">' % [native_size.x, native_size.y, aspect_attribute, GENERATED_BY, _xml_escape(section), _xml_escape(asset_id), footprint.x, footprint.y],
 		'  <title>%s</title>' % _xml_escape(title),
 		'  <ellipse cx="80" cy="82" rx="58" ry="18" fill="#050608" opacity="0.45"/>',
-		shape,
-		'  <path d="M24 92 L80 110 L136 92" fill="none" stroke="%s" stroke-width="3" stroke-linecap="round" opacity="0.75"/>' % accent,
-		'  <path d="M36 96 L80 108 L124 96" fill="none" stroke="#000000" stroke-width="2" opacity="0.35"/>',
-		'</svg>',
-		""
+		shape
 	])
+	# The accent chevron underline is loot-crate language: keep it for crates and
+	# small props, never under buildings (ART-VIS-FIX, VIS-005) e mai sotto la
+	# vegetazione stretchata, dove la V si deforma.
+	if not _is_building_asset(section, asset_id) and not _uses_stretch_canvas(asset_id):
+		lines.append('  <path d="M24 92 L80 110 L136 92" fill="none" stroke="%s" stroke-width="3" stroke-linecap="round" opacity="0.75"/>' % accent)
+		lines.append('  <path d="M36 96 L80 108 L124 96" fill="none" stroke="#000000" stroke-width="2" opacity="0.35"/>')
+	lines.append('</svg>')
+	lines.append("")
 	return "\n".join(lines)
+
+func _uses_stretch_canvas(asset_id: String) -> bool:
+	return asset_id == "reed_wall"
+
+func _is_building_asset(section: String, asset_id: String) -> bool:
+	return (
+		section == "object_scenes"
+		and (
+			asset_id.contains("house")
+			or asset_id.contains("cabin")
+			or asset_id.contains("lab_block")
+			or asset_id.contains("lab_ruin")
+		)
+	)
 
 func _section_shape(section: String, asset_id: String, primary: String, secondary: String, accent: String) -> String:
 	match section:
@@ -252,6 +290,8 @@ func _object_scene_shape(asset_id: String, primary: String, secondary: String, a
 		return _debris_shape(primary, secondary, accent)
 	if asset_id.contains("rock") or asset_id.contains("ice_block"):
 		return _rock_shape(asset_id, primary, accent)
+	if asset_id.contains("reed"):
+		return _reed_wall_shape(primary, accent)
 	if asset_id.contains("fence") or asset_id.contains("wall") or asset_id.contains("barrier"):
 		return _barrier_shape(asset_id, primary, secondary, accent)
 	if asset_id.contains("crate"):
@@ -268,33 +308,59 @@ func _native_svg_size(contract: Dictionary) -> Vector2i:
 		maxi((footprint.y + visual_height) * 8, 56)
 	)
 
-func _building_shape(asset_id: String, primary: String, secondary: String, accent: String) -> String:
+# Buildings must read as structures, not loot crates (ART-VIS-FIX, VIS-005):
+# muted roof slab instead of an accent-filled lid, visible wall volume with
+# door/window openings, dark foundation instead of an accent-stroked diamond,
+# and accent colour only as sparse trim.
+func _building_shape(asset_id: String, primary: String, _secondary: String, accent: String) -> String:
+	var wall_light := _shade(primary, -0.08)
+	var wall_dark := _shade(primary, -0.30)
+	var roof := _shade(primary, -0.48)
+	var roof_hi := _shade(primary, -0.20)
+	var foundation := _shade(primary, -0.62)
 	var lines := PackedStringArray([
-		'  <polygon points="38,74 80,50 122,74 80,98" fill="%s" stroke="%s" stroke-width="3"/>' % [secondary, accent],
-		'  <polygon points="40,42 80,20 120,42 80,64" fill="%s" stroke="#0b0c0d" stroke-width="4"/>' % accent,
-		'  <polygon points="40,42 80,64 80,94 40,72" fill="%s" stroke="#0b0c0d" stroke-width="3"/>' % primary,
-		'  <polygon points="120,42 80,64 80,94 120,72" fill="%s" stroke="#0b0c0d" stroke-width="3" opacity="0.82"/>' % primary,
-		'  <path d="M60 73 L60 54 L72 60 L72 81 Z" fill="#090b0c" opacity="0.88"/>',
-		'  <path d="M92 63 L107 55 L107 69 L92 78 Z" fill="#11181a" stroke="%s" stroke-width="2" opacity="0.92"/>' % accent
+		'  <polygon points="34,75 80,54 126,75 80,100" fill="%s" opacity="0.95"/>' % foundation,
+		'  <polygon points="40,74 80,94 80,60 40,40" fill="%s" stroke="#0b0c0d" stroke-width="2"/>' % wall_light,
+		'  <polygon points="80,94 120,74 120,40 80,60" fill="%s" stroke="#0b0c0d" stroke-width="2"/>' % wall_dark,
+		'  <path d="M44 62 L76 78 M44 68 L76 84" stroke="#000000" stroke-width="2" opacity="0.16"/>',
+		'  <path d="M84 76 L116 60 M84 82 L116 66" stroke="#000000" stroke-width="2" opacity="0.16"/>',
+		'  <polygon points="33,42 80,17 127,42 80,67" fill="%s" stroke="#0b0c0d" stroke-width="3"/>' % roof,
+		'  <polygon points="47,42 80,25 113,42 80,59" fill="none" stroke="%s" stroke-width="2" opacity="0.5"/>' % roof_hi,
+		'  <path d="M40 44 L80 64 L120 44" fill="none" stroke="#000000" stroke-width="4" opacity="0.25"/>',
+		'  <polygon points="56,82 68,88 68,68 56,62" fill="#0a0c0c" stroke="%s" stroke-width="2" stroke-opacity="0.28"/>' % accent,
+		'  <polygon points="92,78 106,71 106,59 92,66" fill="#0d1315" stroke="%s" stroke-width="2" stroke-opacity="0.30"/>' % accent
 	])
 	if asset_id.contains("ruin") or asset_id.contains("ruined"):
-		lines.append('  <path d="M39 42 L56 31 L72 37 L85 22 L101 31 L119 42" fill="none" stroke="#111111" stroke-width="6" stroke-linecap="round"/>')
-		lines.append('  <path d="M46 70 L62 78 M99 56 L116 50" stroke="#050505" stroke-width="4" stroke-linecap="round"/>')
+		lines.append('  <polygon points="58,36 84,26 98,38 72,48" fill="#0a0c0c" opacity="0.92"/>')
+		lines.append('  <path d="M40 44 L54 30 L66 40 L82 22 L98 36 L112 30 L120 42" fill="none" stroke="#0d0d0d" stroke-width="5" stroke-linecap="round"/>')
+		lines.append('  <path d="M52 60 L60 74 M100 52 L108 66" stroke="#050505" stroke-width="3" stroke-linecap="round"/>')
 	elif asset_id.contains("burn"):
-		lines.append('  <path d="M47 43 L57 30 L65 43 L74 25 L86 47 L99 28 L114 43" fill="none" stroke="#090706" stroke-width="6" stroke-linecap="round"/>')
-		lines.append('  <path d="M54 72 L111 49" stroke="#1b0e0a" stroke-width="5" stroke-linecap="round"/>')
+		lines.append('  <path d="M44 42 L56 28 L66 40 L76 24 L88 42 L100 27 L114 40" fill="none" stroke="#090706" stroke-width="5" stroke-linecap="round"/>')
+		lines.append('  <path d="M58 60 L62 50 M96 56 L100 47" stroke="#090706" stroke-width="4" stroke-linecap="round" opacity="0.7"/>')
+		lines.append('  <path d="M54 72 L104 52" stroke="#1b0e0a" stroke-width="4" stroke-linecap="round" opacity="0.8"/>')
 	elif asset_id.contains("snow") or asset_id.contains("cabin"):
-		lines.append('  <path d="M39 41 L80 18 L121 41" fill="none" stroke="#edf8fb" stroke-width="7" stroke-linecap="round"/>')
-		lines.append('  <path d="M45 48 L80 66 L115 47" fill="none" stroke="#edf8fb" stroke-width="3" opacity="0.82"/>')
+		lines.append('  <path d="M35 41 L80 18 L125 41" fill="none" stroke="#edf8fb" stroke-width="6" stroke-linecap="round"/>')
+		lines.append('  <path d="M50 55 C65 63 95 63 110 55" fill="none" stroke="#edf8fb" stroke-width="4" opacity="0.8"/>')
 	elif asset_id.contains("sunken"):
-		lines.append('  <path d="M34 84 C52 78 68 90 86 84 C105 78 121 88 138 81" fill="none" stroke="#7fc0a6" stroke-width="5" opacity="0.75"/>')
-		lines.append('  <path d="M44 44 L78 25 L121 43" stroke="#0c1010" stroke-width="5" opacity="0.65"/>')
+		lines.append('  <path d="M42 80 C56 74 68 88 80 90 C94 86 108 74 118 70" fill="none" stroke="#7fc0a6" stroke-width="4" opacity="0.7"/>')
+		lines.append('  <path d="M46 86 C60 81 72 92 84 93 C96 90 108 80 116 76" fill="none" stroke="#7fc0a6" stroke-width="3" opacity="0.4"/>')
+		lines.append('  <path d="M50 84 L54 90 M88 84 L92 90" stroke="#2c4a42" stroke-width="3" stroke-linecap="round"/>')
 	elif asset_id.contains("lab"):
-		lines.append('  <path d="M51 48 L80 33 L110 49 M50 60 L80 76 L110 60" stroke="%s" stroke-width="4" stroke-linecap="round"/>' % accent)
-		lines.append('  <circle cx="102" cy="61" r="5" fill="%s" opacity="0.82"/>' % accent)
+		lines.append('  <polygon points="60,33 68,29 74,32 66,36" fill="%s" stroke="#0b0c0d" stroke-width="2"/>' % wall_light)
+		lines.append('  <polygon points="86,27 94,23 100,26 92,30" fill="%s" stroke="#0b0c0d" stroke-width="2"/>' % wall_light)
+		lines.append('  <path d="M40 48 L80 68 L120 48" fill="none" stroke="%s" stroke-width="2" opacity="0.45"/>' % accent)
+		lines.append('  <circle cx="108" cy="52" r="3" fill="%s" opacity="0.75"/>' % accent)
 	else:
-		lines.append('  <path d="M48 48 L80 31 L112 48" stroke="#141414" stroke-width="4" opacity="0.75"/>')
+		lines.append('  <path d="M90 66 L108 60 M90 73 L108 67" stroke="#2a2118" stroke-width="3" stroke-linecap="round"/>')
+		lines.append('  <path d="M47 42 L80 26 L113 42" fill="none" stroke="#000000" stroke-width="3" opacity="0.25"/>')
 	return "\n".join(lines)
+
+# Derives a muted tone from a template colour: negative factors darken toward
+# black, positive factors lighten toward white.
+func _shade(hex: String, factor: float) -> String:
+	var color := Color(hex)
+	color = color.darkened(-factor) if factor < 0.0 else color.lightened(factor)
+	return "#" + color.to_html(false)
 
 func _barrier_shape(asset_id: String, primary: String, secondary: String, accent: String) -> String:
 	var lines := PackedStringArray([
@@ -392,6 +458,31 @@ func _bridge_object_shape(primary: String, secondary: String, accent: String) ->
 		var x_a := 39 + index * 15
 		lines.append('  <path d="M%d 64 L%d 84" stroke="%s" stroke-width="8" stroke-linecap="round"/>' % [x_a, x_a + 15, primary])
 	lines.append('  <path d="M31 65 L80 91 L129 65 M31 79 L80 105 L129 79" stroke="%s" stroke-width="4" stroke-linecap="round"/>' % accent)
+	return "\n".join(lines)
+
+# Canneto verticale per reed_wall: disegnato nel viewBox 160x120 ma reso con
+# preserveAspectRatio="none" su canvas 56x136, quindi gli steli larghi ~7 unita'
+# diventano canne sottili e alte. Niente lastre/pali da barriera generica.
+func _reed_wall_shape(primary: String, accent: String) -> String:
+	var lines := PackedStringArray([
+		'  <ellipse cx="80" cy="100" rx="56" ry="11" fill="%s" opacity="0.78"/>' % _shade(primary, -0.5)
+	])
+	var stem_tops: Array[int] = [26, 14, 20, 10, 18, 12, 22, 16, 28]
+	for index in range(stem_tops.size()):
+		var x := 26 + index * 14
+		var lean := (index % 3) - 1
+		lines.append(
+			'  <path d="M%d 104 C%d 70 %d 45 %d %d" fill="none" stroke="%s" stroke-width="7" stroke-linecap="round"/>'
+			% [x, x + lean * 3, x + lean * 5, x + lean * 7, stem_tops[index], _shade(primary, -0.06 - 0.05 * float(index % 2))]
+		)
+	for index: int in [1, 3, 5, 7]:
+		var x: int = 26 + index * 14
+		var lean: int = (index % 3) - 1
+		lines.append(
+			'  <ellipse cx="%d" cy="%d" rx="7" ry="11" fill="#5c4327" stroke="#241a10" stroke-width="2"/>'
+			% [x + lean * 7, stem_tops[index] + 6]
+		)
+	lines.append('  <path d="M40 96 L58 60 M96 98 L112 66 M68 100 L60 74" fill="none" stroke="%s" stroke-width="4" stroke-linecap="round" opacity="0.55"/>' % accent)
 	return "\n".join(lines)
 
 func _crate_shape(primary: String, secondary: String, accent: String) -> String:

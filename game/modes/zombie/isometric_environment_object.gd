@@ -551,6 +551,10 @@ func _draw_occupied_base() -> void:
 	var base_color := primary_color.darkened(0.46)
 	base_color.a = 0.72 if obstacle_category in [&"building", &"dense_vegetation"] else 0.48
 	draw_colored_polygon(points, base_color)
+	# Subtle dark rim: an accent-coloured outline reads as a selection/loot
+	# marker under large objects (ART-VIS-FIX, VIS-005).
+	var rim_color := primary_color.darkened(0.62)
+	rim_color.a = 0.55
 	var outline := points.duplicate()
 	outline.append(points[0])
-	draw_polyline(outline, accent_color.darkened(0.20), 1.5, true)
+	draw_polyline(outline, rim_color, 1.5, true)

@@ -1,6 +1,10 @@
 # Biome ART-VIS-FIX Roadmap
 
-Stato: aperto.
+Stato: completato 2026-07-03. Tutti e cinque i biomi hanno il pass applicato,
+la QA dedicata verde e i guardrail GUT estesi; il review completo
+`biome_rendering_review_visual_qa.gd` chiude con exit code `0`. Restano fuori
+scope i residui documentati in fondo a questo file (sezione "Residui e
+riclassificazioni").
 
 Questo documento spezza `ART-VIS-FIX` in pass piccoli, uno per bioma, per
 rendere piu rapido il ciclo agente -> screenshot -> correzione -> QA. La fonte
@@ -170,6 +174,15 @@ Pass locale:
 
 ### toxic_wastes
 
+Stato 2026-07-03: pass completato. Il ground pool usa solo la coppia coerente
+di rubble (variation 02/03: lichene chiaro e ghiaia bruna passano a `detail`),
+eliminando la scacchiera di pannelli per macro-cella. Le route dei temi
+generati usano il taglio netto (transition tiles -> path/road). Gli edifici
+generati sono stati ridisegnati nel pass trasversale (vedi "Residui e
+riclassificazioni" per le pozze). QA dedicata:
+`tests/visual_qa/biome_art_toxic_wastes_visual_qa.gd`; guardrail esteso in
+`generated_texture_test.gd` (contratto pool ground).
+
 Obiettivo: eliminare il look a blocchi grigi e rendere route, terreno e pozze
 tossiche separabili senza aumentare saturazione in modo aggressivo.
 
@@ -194,6 +207,13 @@ Pass locale:
 - hazard tossici leggibili in co-op.
 
 ### burning_fields
+
+Stato 2026-07-03: pass completato. Damping selettivo dei pixel brace del
+ground (`VOLCANIC_EMBER_THRESHOLD`/`VOLCANIC_EMBER_DAMPING` in
+`GeneratedBiomeTextureTools`), route a taglio netto dal fix condiviso, cliff
+gia' trimmati/armonizzati e ora anche mipmappati. QA dedicata:
+`tests/visual_qa/biome_art_burning_fields_visual_qa.gd`; guardrail
+`_assert_volcanic_embers_are_damped` sulla coda calda.
 
 Obiettivo: mantenere identita calda e pericolosa, ma ridurre rumore arancio e
 competizione con hazard, telegraph e oggetti piccoli.
@@ -221,6 +241,13 @@ Pass locale:
 
 ### frozen_outskirts
 
+Stato 2026-07-03: pass completato. Tono neutro anti-sovraesposizione sul manto
+nevoso (`FROZEN_GROUND_TONE`), blend neve delle route ridotto a `0.10/0.12`
+per separare sentieri e ghiaccio dalla neve, harmonize dei bordi contro la
+griglia bianca da repeat. QA dedicata:
+`tests/visual_qa/biome_art_frozen_outskirts_visual_qa.gd`; guardrail
+`_assert_frozen_ground_is_toned_down` + seam score sui bordi.
+
 Obiettivo: ridurre sovraesposizione e griglia bianca mantenendo neve, ghiaccio
 e strada distinguibili.
 
@@ -244,6 +271,14 @@ Pass locale:
 - nessun bordo bianco nei tile ripetuti.
 
 ### drowned_marsh
+
+Stato 2026-07-03: pass completato. Lift caldo di path/road
+(`SWAMP_ROUTE_LIFT*`) sopra la banda di luminanza del fango (prima route
+54-58 vs fango 59-66), downscale `0.45` delle strip cliff + mipmap contro il
+glitter dorato dei bordi chasm, `reed_wall` ridisegnata come canneto verticale
+full-canvas (`preserveAspectRatio="none"` nel generator). QA dedicata:
+`tests/visual_qa/biome_art_drowned_marsh_visual_qa.gd`; guardrail
+`_assert_marsh_routes_are_lifted` + contratto dimensioni cliff con downscale.
 
 Obiettivo: separare fango, acqua profonda, strada e vegetazione palude senza
 trasformare il bioma in un pannello scuro uniforme.
@@ -285,6 +320,26 @@ GUT:
 Rischi residui:
 Prossimo bioma consigliato:
 ```
+
+## Residui e Riclassificazioni
+
+- Pozze tossiche "troppo piccole" (scheda toxic_wastes): le pozze visibili
+  nell'audit erano in realta' le resource crate tematiche. I theme hazard
+  (`toxic_puddle`, `gas_cloud`, ecc.) non vengono piazzati dalla pipeline
+  voidfirst del mondo streammato standard (`_add_theme_hazards` esiste solo
+  nel path legacy): aggiungerli cambierebbe spawn e danni, quindi e' una
+  decisione di gameplay da valutare nei playtest `BAL-001`, non un fix
+  presentazionale.
+- Pass trasversale edifici (VIS-005): i sette edifici generati e la base
+  occupata sono normalizzati; le vere supply crate (64x48 world) erano gia'
+  proporzionate al player e non sono state toccate.
+- VIS-009 ridotto ma non chiuso: `reed_wall` e gli edifici sono normalizzati;
+  restano `large_rock` (texture quadrata), `broken_fence` (sfocato) e la
+  densita' fotografica di `forest_tree`, da valutare in un eventuale pass
+  asset dedicato dentro `UIUX-001`.
+- I seam tra biomi diversi ai confini di regione restano a taglio netto:
+  sono un contratto del mondo (RegionSeamSystem), non un difetto del pass
+  per-bioma.
 
 ## Definition Of Done
 
