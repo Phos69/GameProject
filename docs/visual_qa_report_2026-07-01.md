@@ -161,16 +161,207 @@ di transizione intermedie.
 
 La QA dedicata `biome_art_toxic_wastes_visual_qa.gd` cattura i seed `641004`,
 `772031` e `918273` a `1280x720` e `960x540`, con viste center, passage,
-fall/cliff, obstacle/hazard, player roster e route transition. Le 36 catture
-passano con `visible_missing_chunks == 0`; il pass resta aperto per la scala
-crate/oggetti di `VIS-005`.
+fall/cliff, obstacle/hazard, resource crate, player roster e route transition.
+Le 42 catture passano con `visible_missing_chunks == 0`; il successivo pass
+oggetti ha chiuso `VIS-005`.
 
 Validazione mirata:
 
 - suite `assets`: **64/64 test**, 8.644 assert;
 - suite `environment`: **37/37 test**, 8.954 assert;
 - suite `world_gen`: **48/48 test**, 352 assert;
-- QA `biome_art_toxic_wastes`: **1 OK, 0 falliti**, 36 PNG;
+- QA `biome_art_toxic_wastes`: **1 OK, 0 falliti**, 42 PNG;
+- review completo dei cinque biomi: **1 OK, 0 falliti**, 150 PNG.
+
+## Follow-up ART-VIS-FIX frozen_outskirts - 2026-07-02
+
+**PASS parziale per terreno e route.** `frozen_tundra` non cambia piu
+materiale ogni macro-cella: ground, path e road selezionano un materiale
+stabile per ruolo sull'intera regione. I bordi opposti dei raster vengono
+armonizzati a runtime con repeat world-space `512`; gli atlas specchiati
+provati durante l'iterazione sono stati scartati perche introducevano simmetrie
+caleidoscopiche visibili. Le celle di contatto usano direttamente path o road
+e non renderizzano asset `transition_ground_*`.
+
+La QA dedicata `biome_art_frozen_outskirts_visual_qa.gd` cattura i seed
+`641004`, `772031` e `918273` a `1280x720` e `960x540`, con viste center,
+passage, fall/cliff, obstacle/hazard, player roster e route transition. Le 36
+catture passano con `visible_missing_chunks == 0`; attori, hazard e ostacoli
+restano distinguibili. In questo primo pass restava aperto il polish sulla
+ripetizione del singolo raster neve; il follow-up del 2026-07-03 riportato
+sotto lo chiude con la quilt ground a periodo `1024`.
+
+Validazione mirata:
+
+- suite `generated_texture`: **24/24 test**, 1.824 assert;
+- suite `assets`: **64/64 test**, 8.643 assert;
+- suite `environment`: **37/37 test**, 8.954 assert;
+- QA `biome_art_frozen_outskirts`: **1 OK, 0 falliti**, 36 PNG;
+- review completo dei cinque biomi: **1 OK, 0 falliti**, 150 PNG.
+
+## Follow-up ART-VIS-FIX frozen ground repetition - 2026-07-03
+
+**PASS; pass locale Neve chiuso.** La baseline ripeteva il singolo raster
+`base_ground_variation_01` ogni `512` world unit: nelle viste aperte gli stessi
+cespi e sassi ricomparivano piu volte. Lo stretching a `1024` avrebbe ridotto
+la densita, mentre un atlas specchiato avrebbe reintrodotto le simmetrie
+caleidoscopiche gia scartate.
+
+`GeneratedBiomeTextureTools` costruisce ora una quilt runtime `2x2` usando
+quattro offset periodici dello stesso raster neve pulita. Blend larghi
+raccordano la croce interna e i bordi esterni; il macro-materiale conserva la
+densita sorgente e usa periodo world-space `1024`. Path e road non cambiano:
+restano a `512`, ammorbiditi verso la palette neve e usati direttamente sui
+contatti terrain/route.
+
+I guardrail verificano dimensione doppia, continuita dei bordi, cucitura
+interna, differenza effettiva tra le due meta del periodo e densita invariata
+delle route. Le 36 catture dedicate e il review condiviso da 150 PNG passano
+con zero chunk visibili mancanti; center, passage e route transition non
+mostrano pannelli tonali o mirror.
+
+Validazione:
+
+- suite `generated_texture`: **24/24 test**, 1.947 assert;
+- suite `assets`: **64/64 test**, 8.795 assert;
+- suite `environment`: **37/37 test**, 8.954 assert;
+- QA `biome_art_frozen_outskirts`: **1 OK, 0 falliti**, 36 PNG;
+- review completo dei cinque biomi: **1 OK, 0 falliti**, 150 PNG.
+
+## Follow-up ART-VIS-FIX drowned_marsh - 2026-07-02
+
+**PASS parziale per terreno e route.** `swamp` non alterna piu materiali
+chiari e scuri ogni macro-cella: ground, path e road selezionano un materiale
+stabile per ruolo sull'intera regione. I bordi opposti vengono armonizzati a
+runtime con repeat world-space `512`; i contatti usano direttamente path o
+road e non renderizzano asset `transition_ground_*`.
+
+La QA dedicata `biome_art_drowned_marsh_visual_qa.gd` cattura i seed `641004`,
+`772031` e `918273` a `1280x720` e `960x540`, con viste center, passage,
+fall/cliff, obstacle/hazard, player roster e route transition. Le 36 catture
+passano con `visible_missing_chunks == 0`; passerella, fango, hazard, attori e
+ostacoli restano separabili. Restano aperti il polish sulla ripetizione a bassa
+frequenza del raster ground e il finding trasversale `VIS-009` su
+padding/scala di `reed_wall`.
+
+Validazione mirata:
+
+- suite `generated_texture`: **24/24 test**, 1.821 assert;
+- suite `assets`: **64/64 test**, 8.640 assert;
+- suite `environment`: **37/37 test**, 8.954 assert;
+- QA `biome_art_drowned_marsh`: **1 OK, 0 falliti**, 36 PNG;
+- review completo dei cinque biomi: **1 OK, 0 falliti**, 150 PNG.
+
+## Follow-up ART-VIS-FIX burning_fields - 2026-07-02
+
+**PASS parziale per terreno e route.** `volcanic` non alterna piu superfici
+incandescenti ogni macro-cella: ground, path e road selezionano un materiale
+stabile per ruolo sull'intera regione. Il ground pieno usa la sola base
+variation 02; le variation 01, 03 e 04 restano detail catalogati e la lava
+torna a essere un accento. I bordi opposti vengono armonizzati a runtime con
+repeat world-space `512`; i contatti usano direttamente path o road e non
+renderizzano asset `transition_ground_*`.
+
+La QA dedicata `biome_art_burning_fields_visual_qa.gd` cattura i seed `641004`,
+`772031` e `918273` a `1280x720` e `960x540`, con viste center, passage,
+fall/cliff, obstacle/hazard, resource crate, player roster e route transition.
+Le 42 catture passano con `visible_missing_chunks == 0`; terreno, route,
+hazard, telegraph, attori, cliff e supply crate restano separabili. Resta
+aperto il polish sulla ripetizione a bassa frequenza del raster ground.
+
+Validazione mirata:
+
+- suite `generated_texture`: **24/24 test**, 1.941 assert;
+- suite `assets`: **64/64 test**, 8.760 assert;
+- suite `environment`: **37/37 test**, 8.954 assert;
+- QA `biome_art_burning_fields`: **1 OK, 0 falliti**, 42 PNG;
+- review completo dei cinque biomi: **1 OK, 0 falliti**, 150 PNG.
+
+## Follow-up ART-VIS-FIX oggetti e VIS-005 - 2026-07-02
+
+**PASS; `VIS-005` chiuso.** La verifica degli ID runtime ha corretto
+l'attribuzione del finding: le due evidenze indicate come crate mostravano
+edifici ambientali (`lab_block` nel Tossico e `burned_house` nei Campi
+Ardenti), con footprint rispettivamente `6x6` e `5x3`. Le vere supply crate
+sono prop compatti e non condividono quella scala.
+
+`lab_block` e `lab_ruin` hanno ora profili SVG distinti dalla cassa:
+silhouette industriali verticali, modulo tecnico sul tetto, finestre, impianti
+e macerie. Il generatore `generate_isometric_environment_assets.gd` conserva
+questi profili; footprint, collisioni, placement e gameplay restano invariati.
+
+Le QA dedicate Tossico e Campi Ardenti aggiungono la vista `resource_crate`.
+Su tre seed e due risoluzioni, le crate risultano compatte e separabili da
+player, terreno ed edifici; `lab_block` legge come laboratorio e non piu come
+contenitore sovradimensionato.
+
+Validazione:
+
+- generator check: **130 asset**, passa;
+- suite `object_asset`: **8/8 test**, 453 assert;
+- suite `assets`: **64/64 test**, 8.766 assert;
+- QA `obstacle_asset`: **1 OK, 0 falliti**;
+- QA `biome_art_toxic_wastes`: **1 OK, 0 falliti**, 42 PNG;
+- QA `biome_art_burning_fields`: **1 OK, 0 falliti**, 42 PNG.
+
+## Follow-up ART-VIS-FIX reed_wall / VIS-009 - 2026-07-03
+
+**PASS per la componente Palude di `VIS-009`.** La sorgente `reed_wall`
+dichiarava una canvas nativa `56x136`, ma il `viewBox` `160x120` manteneva il
+rapporto 4:3 e concentrava il contenuto in una fascia centrale alta circa il
+29% della texture. Il loader runtime lo rasterizzava inoltre a `160x120` e lo
+riduceva uniformemente nel target verticale, lasciando l'oggetto sottoscala.
+
+Il nuovo profilo SVG rappresenta un muro di canne verticale, disattiva il
+letterboxing per questa sorgente e occupa oltre il 78% dell'altezza alpha.
+`IsometricEnvironmentObject` richiede per `reed_wall` la dimensione nativa
+`56x136`, quindi lo sprite resta a scala `1.0`. Footprint `1x3`, collisione,
+placement, sorting e gameplay non cambiano.
+
+La QA Palude aggiunge il focus `reed_wall`: le sei viste dedicate su tre seed
+e due risoluzioni mostrano la barriera alta, ancorata al terreno e separabile
+dal player. Le 42 catture complessive passano con zero chunk visibili mancanti.
+
+Evidenze:
+
+- `build/qa/obstacle_assets/reed_wall.png`;
+- `build/qa/biome_art_fix/drowned_marsh/1280x720/1280x720_seed_918273_drowned_marsh_biome_2_1_reed_wall.png`;
+- `build/qa/biome_art_fix/drowned_marsh/960x540/960x540_seed_772031_drowned_marsh_biome_1_0_reed_wall.png`.
+
+Validazione:
+
+- generator check: **130 asset**, passa;
+- suite `object_asset`: **8/8 test**, 476 assert;
+- suite `assets`: **64/64 test**, 8.789 assert;
+- QA `obstacle_asset`: **1 OK, 0 falliti**;
+- QA `biome_art_drowned_marsh`: **1 OK, 0 falliti**, 42 PNG.
+
+## Follow-up ART-VIS-FIX ground drowned_marsh - 2026-07-03
+
+**PASS; pass locale Palude chiuso.** Il ground `swamp` non ripete piu la
+stessa disposizione di acqua, sassi e vegetazione ogni `512` world unit. Il
+runtime compone una quilt `2x2` da quattro offset periodici dello stesso raster
+base e raccorda cuciture interne e bordi esterni; il periodo risultante e
+`1024`, senza mirror o variazioni tonali. Path e road restano a `512`, quindi
+mantengono la densita locale validata nel primo pass.
+
+Le 42 catture dedicate sui tre seed e due risoluzioni mantengono leggibili
+fango/acqua, passerella, cliff, hazard, attori e `reed_wall`, con zero chunk
+visibili mancanti. Collisioni, pathfinding, hazard e regole gameplay non
+cambiano.
+
+Evidenze:
+
+- `build/qa/biome_art_fix/drowned_marsh/1280x720/1280x720_seed_918273_drowned_marsh_biome_2_1_center.png`;
+- `build/qa/biome_art_fix/drowned_marsh/1280x720/1280x720_seed_918273_drowned_marsh_biome_2_1_passage.png`;
+- `build/qa/biome_art_fix/drowned_marsh/960x540/960x540_seed_641004_drowned_marsh_biome_2_0_route_transition.png`.
+
+Validazione:
+
+- suite `generated_texture`: **24/24 test**, 1.953 assert;
+- suite `assets`: **64/64 test**, 8.801 assert;
+- suite `environment`: **37/37 test**, 8.954 assert;
+- QA `biome_art_drowned_marsh`: **1 OK, 0 falliti**, 42 PNG.
 - review completo dei cinque biomi: **1 OK, 0 falliti**, 150 PNG.
 
 ## Follow-up UI-VIS-FIX - 2026-07-02
@@ -303,7 +494,9 @@ chunk mancanti in camera".
 
 Stato 2026-07-03: **CHIUSO da ART-VIS-FIX**. Gli oggetti flaggati erano gli
 edifici generati, non le crate: ridisegnati come strutture (follow-up in testa
-al report). Il testo seguente conserva l'evidenza dell'audit originario.
+al report). Le nuove viste `resource_crate` nelle QA dedicate confermano che
+le casse reali restano di scala compatta. Il testo seguente conserva
+l'evidenza dell'audit originario.
 
 Le resource crate tematiche sono circa 2-3 volte il volume visuale del player e
 sembrano piccoli edifici. Usano contorni vettoriali puliti e colori saturi sopra
@@ -315,8 +508,9 @@ Evidenze:
 - `build/qa/biome_rendering_review/960x540/960x540_seed_641004_toxic_wastes_biome_2_2_obstacle_hazard.png`;
 - `build/qa/biome_rendering_review/960x540/960x540_seed_641004_burning_fields_biome_2_1_obstacle_hazard.png`.
 
-Il contrasto rende la crate leggibile, ma rompe profondita, proporzione e
-coerenza con collisione/footprint.
+Il problema effettivo era di identita visiva: `lab_block` e `lab_ruin`
+sembravano contenitori, non edifici. Il follow-up ha corretto le silhouette e
+aggiunto evidenza separata per le crate reali.
 
 ### VIS-006 - Media - Contrasto dei biomi sbilanciato
 
@@ -382,8 +576,8 @@ L'asset board mostra sorgenti con trattamento molto diverso:
 
 - `large_rock` appare come texture quadrata opaca, non come oggetto isometrico;
 - `broken_fence` e sfocato rispetto alle case vettoriali;
-- `reed_wall` occupa una parte minima di una canvas alta e in runtime rischia
-  di apparire sottoscala;
+- `reed_wall` occupava una parte minima di una canvas alta ed era sottoscala
+  (**chiuso il 2026-07-03**);
 - `forest_tree` ha dettaglio fotografico mentre case, auto e rocce piccole
   usano forme piatte.
 

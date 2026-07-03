@@ -5,6 +5,10 @@ const GENERATED_SURFACE_TEXTURE_EDGE_TRIM_PIXELS := 2
 const GENERATED_CLIFF_TEXTURE_EDGE_TRIM_PIXELS := 12
 const BURNING_FIELDS_GENERATED_TEXTURE_EDGE_TRIM_PIXELS := 10
 const BURNING_FIELDS_EDGE_BLEND_PIXELS := 18
+const BURNING_SURFACE_EDGE_BLEND_PIXELS := 40
+const FROZEN_SURFACE_EDGE_BLEND_PIXELS := 40
+const MARSH_SURFACE_EDGE_BLEND_PIXELS := 40
+const GROUND_MACRO_SEAM_BLEND_PIXELS := 128
 # Blend ridotti (ART-VIS-FIX): a 0.16/0.24 route e ghiaccio diventavano quasi
 # indistinguibili dalla neve sovraesposta (VIS-002/VIS-006). Il minimo utile per
 # il contratto "snow softened" del test e' ~0.10.
@@ -59,6 +63,7 @@ static func should_harmonize_surface_edges(biome_id: StringName) -> bool:
 	# regolare a ogni repeat world-UV (ART-VIS-FIX, VIS-002).
 	return (
 		biome_id == &"burning_fields"
+		or biome_id == &"drowned_marsh"
 		or biome_id == &"frozen_outskirts"
 		or biome_id == &"toxic_wastes"
 	)
@@ -70,6 +75,17 @@ static func cliff_texture_downscale(biome_id: StringName) -> float:
 	if biome_id == &"drowned_marsh":
 		return SWAMP_CLIFF_TEXTURE_DOWNSCALE
 	return 1.0
+
+static func surface_edge_blend_pixels(biome_id: StringName) -> int:
+	match biome_id:
+		&"burning_fields":
+			return BURNING_SURFACE_EDGE_BLEND_PIXELS
+		&"drowned_marsh":
+			return MARSH_SURFACE_EDGE_BLEND_PIXELS
+		&"frozen_outskirts":
+			return FROZEN_SURFACE_EDGE_BLEND_PIXELS
+		_:
+			return BURNING_FIELDS_EDGE_BLEND_PIXELS
 
 static func normalize_surface_texture(
 	texture: Texture2D,
@@ -87,12 +103,9 @@ static func normalize_surface_texture(
 		texture,
 		surface_edge_trim_pixels(biome_id),
 		should_harmonize_surface_edges(biome_id),
-		BURNING_FIELDS_EDGE_BLEND_PIXELS
+		surface_edge_blend_pixels(biome_id)
 	)
-	if (
-		biome_id == &"toxic_wastes"
-		and _toxic_surface_uses_mirrored_atlas(asset_path)
-	):
+	if _surface_uses_mirrored_atlas(biome_id, asset_path):
 		normalized = _build_mirrored_repeat_atlas(normalized)
 	if biome_id == &"frozen_outskirts":
 		normalized = _harmonize_frozen_surface_texture(normalized, asset_path)
@@ -140,6 +153,77 @@ static func normalize_repeating_texture(
 		_normalized_texture_cache[full_key] = result
 	return result
 
+static func build_offset_ground_macro_texture(
+	base_texture: Texture2D,
+	cache_key: String = ""
+) -> Texture2D:
+	if base_texture == null:
+		return base_texture
+	var full_key := ""
+	if not cache_key.is_empty():
+		full_key = "offset_ground_macro|%s" % cache_key
+		if _normalized_texture_cache.has(full_key):
+			return _normalized_texture_cache[full_key] as Texture2D
+	var base := _readable_texture_image(base_texture)
+	if base == null or base.is_empty():
+		return base_texture
+	base.convert(Image.FORMAT_RGBA8)
+	var tile_size := base.get_size()
+	var atlas := Image.create(
+		tile_size.x * 2,
+		tile_size.y * 2,
+		false,
+		Image.FORMAT_RGBA8
+	)
+	var base_top_right := _offset_periodic_image(
+		base,
+		Vector2i(tile_size.x / 3, tile_size.y / 7)
+	)
+	var base_bottom_left := _offset_periodic_image(
+		base,
+		Vector2i(tile_size.x * 2 / 3, tile_size.y * 3 / 5)
+	)
+	var base_bottom_right := _offset_periodic_image(
+		base,
+		Vector2i(tile_size.x / 5, tile_size.y * 2 / 5)
+	)
+	var source_rect := Rect2i(Vector2i.ZERO, tile_size)
+	atlas.blit_rect(base, source_rect, Vector2i.ZERO)
+	atlas.blit_rect(
+		base_top_right,
+		source_rect,
+		Vector2i(tile_size.x, 0)
+	)
+	atlas.blit_rect(
+		base_bottom_left,
+		source_rect,
+		Vector2i(0, tile_size.y)
+	)
+	atlas.blit_rect(
+		base_bottom_right,
+		source_rect,
+		tile_size
+	)
+	_blend_internal_vertical_seam(
+		atlas,
+		tile_size.x,
+		GROUND_MACRO_SEAM_BLEND_PIXELS
+	)
+	_blend_internal_horizontal_seam(
+		atlas,
+		tile_size.y,
+		GROUND_MACRO_SEAM_BLEND_PIXELS
+	)
+	_harmonize_repeating_texture_edges(
+		atlas,
+		GROUND_MACRO_SEAM_BLEND_PIXELS
+	)
+	atlas.fix_alpha_edges()
+	var result := ImageTexture.create_from_image(atlas)
+	if not full_key.is_empty():
+		_normalized_texture_cache[full_key] = result
+	return result
+
 static func _normalize_repeating_texture_uncached(
 	texture: Texture2D,
 	trim: int,
@@ -178,6 +262,116 @@ static func _normalize_repeating_texture_uncached(
 	normalized.generate_mipmaps()
 	return ImageTexture.create_from_image(normalized)
 
+static func _readable_texture_image(texture: Texture2D) -> Image:
+	if texture == null:
+		return null
+	var image := texture.get_image()
+	if image == null or image.is_empty():
+		return null
+	if image.is_compressed():
+		var decompress_error := image.decompress()
+		if decompress_error != OK:
+			return null
+	return image.duplicate()
+
+static func _offset_periodic_image(
+	image: Image,
+	offset: Vector2i
+) -> Image:
+	if image == null or image.is_empty():
+		return Image.new()
+	var size := image.get_size()
+	var safe_offset := Vector2i(
+		posmod(offset.x, size.x),
+		posmod(offset.y, size.y)
+	)
+	var result := Image.create(size.x, size.y, false, image.get_format())
+	var left_width := size.x - safe_offset.x
+	var top_height := size.y - safe_offset.y
+	_blit_positive_rect(
+		result,
+		image,
+		Rect2i(safe_offset, Vector2i(left_width, top_height)),
+		Vector2i.ZERO
+	)
+	_blit_positive_rect(
+		result,
+		image,
+		Rect2i(
+			Vector2i(0, safe_offset.y),
+			Vector2i(safe_offset.x, top_height)
+		),
+		Vector2i(left_width, 0)
+	)
+	_blit_positive_rect(
+		result,
+		image,
+		Rect2i(
+			Vector2i(safe_offset.x, 0),
+			Vector2i(left_width, safe_offset.y)
+		),
+		Vector2i(0, top_height)
+	)
+	_blit_positive_rect(
+		result,
+		image,
+		Rect2i(Vector2i.ZERO, safe_offset),
+		Vector2i(left_width, top_height)
+	)
+	return result
+
+static func _blit_positive_rect(
+	target: Image,
+	source: Image,
+	source_rect: Rect2i,
+	target_position: Vector2i
+) -> void:
+	if source_rect.size.x <= 0 or source_rect.size.y <= 0:
+		return
+	target.blit_rect(source, source_rect, target_position)
+
+static func _blend_internal_vertical_seam(
+	image: Image,
+	seam_x: int,
+	blend_pixels: int
+) -> void:
+	var blend_width := mini(
+		blend_pixels,
+		mini(seam_x, image.get_width() - seam_x)
+	)
+	for offset in range(blend_width):
+		var blend := 1.0 - float(offset) / float(blend_width)
+		blend *= blend
+		var left_x := seam_x - 1 - offset
+		var right_x := seam_x + offset
+		for y in range(image.get_height()):
+			var left := image.get_pixel(left_x, y)
+			var right := image.get_pixel(right_x, y)
+			var average := left.lerp(right, 0.5)
+			image.set_pixel(left_x, y, left.lerp(average, blend))
+			image.set_pixel(right_x, y, right.lerp(average, blend))
+
+static func _blend_internal_horizontal_seam(
+	image: Image,
+	seam_y: int,
+	blend_pixels: int
+) -> void:
+	var blend_width := mini(
+		blend_pixels,
+		mini(seam_y, image.get_height() - seam_y)
+	)
+	for offset in range(blend_width):
+		var blend := 1.0 - float(offset) / float(blend_width)
+		blend *= blend
+		var top_y := seam_y - 1 - offset
+		var bottom_y := seam_y + offset
+		for x in range(image.get_width()):
+			var top := image.get_pixel(x, top_y)
+			var bottom := image.get_pixel(x, bottom_y)
+			var average := top.lerp(bottom, 0.5)
+			image.set_pixel(x, top_y, top.lerp(average, blend))
+			image.set_pixel(x, bottom_y, bottom.lerp(average, blend))
+
 static func _build_mirrored_repeat_atlas(texture: Texture2D) -> Texture2D:
 	if texture == null:
 		return null
@@ -212,11 +406,17 @@ static func _build_mirrored_repeat_atlas(texture: Texture2D) -> Texture2D:
 	atlas.fix_alpha_edges()
 	return ImageTexture.create_from_image(atlas)
 
-static func _toxic_surface_uses_mirrored_atlas(asset_path: String) -> bool:
+static func _surface_uses_mirrored_atlas(
+	biome_id: StringName,
+	asset_path: String
+) -> bool:
 	return (
-		asset_path.contains("base_ground_variation")
-		or asset_path.contains("path_variation")
-		or asset_path.contains("road_variation")
+		biome_id == &"toxic_wastes"
+		and (
+			asset_path.contains("base_ground_variation")
+			or asset_path.contains("path_variation")
+			or asset_path.contains("road_variation")
+		)
 	)
 
 static func _copy_or_crop_image(image: Image, trim: int) -> Image:

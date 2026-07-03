@@ -196,8 +196,10 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
   in repeat runtime; applica crop dei bordi chiari, fix dei pixel alpha e la
   stessa policy a ground, cliff/void e raised cliff perimetrali. Per
   `toxic_wastes` compone inoltre un atlas specchiato 2x2 a densita nativa,
-  evitando pannelli ripetuti senza cambiare classificazione, collisioni o
-  pathfinding.
+  mentre `frozen_outskirts` e `drowned_marsh` compongono quilt `2x2` non
+  specchiate da offset dello stesso raster base. `burning_fields` armonizza i
+  bordi opposti del raster originale. La normalizzazione non cambia
+  classificazione, collisioni o pathfinding.
 - `WorldGenerationSeed`: seed globale di run e derivazione deterministica degli stream RNG per mappa, terreno, ostacoli, bordi, loot e spawn.
 - `BiomeWorldGenerator`: orchestratore della pipeline procedurale globale per mappa biomi, layout per cella e debug seed.
 - `WorldDataCache`: cache LRU in memoria e su disco dei `world_data` generati.
@@ -275,6 +277,12 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `IsometricEnvironmentObject`: scena base `StaticBody2D` per oggetti
   slot-based con `Sprite2D`, ombra, anchor/footprint debug opzionale,
   collisione/layer/sort dal manifest e hook futuri per overlay danneggiato.
+  Gli edifici tossici `lab_block` e `lab_ruin` usano profili SVG dedicati,
+  distinti dalla silhouette compatta di `object_scenes/supply_crate`, senza
+  cambiare footprint o collisioni. `reed_wall` usa il raster nativo stretto e
+  verticale `56x136`, evitando che il loader canonico `160x120` lo riduca
+  dentro la canvas; la scelta resta presentazionale e non altera il contratto
+  fisico `1x3`.
 - `BiomeObstacle`: fallback compatibile che conserva draw mode procedurali
   data-driven dal manifest per distinguere gli ostacoli dei biomi senza cambiare
   collisioni o placement.
@@ -852,8 +860,18 @@ multi-bioma.
   raggruppa le mesh per tale materiale. `urban_ruins` seleziona un materiale
   stabile per ruolo sull'intera regione e risolve le celle di transizione
   direttamente a path/road; gli asset transition restano catalogati ma non
-  sono superfici runtime del Tossico. Il cambio di significato delle mappe
-  `material_asset_*` invalida la `TileBakeCache` tramite format version `12`.
+  sono superfici runtime del Tossico. `frozen_tundra` applica lo stesso
+  contratto di selezione regionale e transizione diretta. Il ground usa una
+  quilt runtime `2x2` a periodo world-space `1024`: quattro offset periodici
+  dello stesso raster neve vengono raccordati sulle cuciture interne ed
+  esterne, mantenendo densita nativa senza checker, pannelli tonali o simmetria
+  specchiata. Path e road mantengono periodo `512`. `swamp` applica selezione
+  regionale e transizioni dirette; il ground usa la stessa quilt a offset con
+  periodo `1024`, mentre path e road restano a `512`. `volcanic` usa lo stesso
+  contratto regionale e di transizione, limita il ground pieno alla base
+  variation 02 e mantiene 01, 03 e 04 come detail; il repeat world-space e
+  `512`. Il cambio di significato delle mappe `material_asset_*` invalida la
+  `TileBakeCache` tramite format version `15`.
   `desert` e il set sostitutivo `forest` sono validati dal catalogo ma non
   hanno un consumer runtime.
   `IsometricCliffMeshBuilder` mantiene le 14 geometrie neighbor-aware per il

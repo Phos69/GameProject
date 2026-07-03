@@ -23,6 +23,7 @@ const MISSING_ASSET_FALLBACK_STATUSES: Array[String] = [
 	"procedural_fallback",
 	"deprecated"
 ]
+const NATIVE_RASTER_OBJECT_IDS: Array[StringName] = [&"reed_wall"]
 
 const CONTENT_ALPHA_THRESHOLD := 0.08
 const LEGACY_TILE_SCALE := IsoGridConfig.LEGACY_TILE_SCALE
@@ -250,10 +251,17 @@ func _load_asset_texture(contract: Dictionary) -> void:
 	if asset_path.is_empty():
 		procedural_fallback_active = _contract_allows_procedural_fallback(contract)
 		return
+	var texture_size := SVG_TEXTURE_LOADER.DEFAULT_SIZE
+	if NATIVE_RASTER_OBJECT_IDS.has(obstacle_id):
+		var native_size := IsometricEnvironmentManifest.get_shared().get_native_visual_size(
+			obstacle_id
+		)
+		texture_size = Vector2i(roundi(native_size.x), roundi(native_size.y))
 	var texture := SVG_TEXTURE_LOADER.load_texture(
 		asset_path,
 		primary_color,
-		accent_color
+		accent_color,
+		texture_size
 	)
 	if texture != null:
 		asset_sprite.texture = texture

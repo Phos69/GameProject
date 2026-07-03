@@ -110,7 +110,31 @@ organizzati per tema e ruolo. Il mapping runtime e:
 `BiomeGeneratedArtCatalog` espone pool tipizzati per ground, path, road,
 transizioni, detail e cliff. Il manifest registra per ogni set attivo stato
 `final`, provenienza `openai_image_generation`, licenza `Project original` e
-le liste di ruoli. Prima di importare o committare modifiche ai sorgenti:
+le liste di ruoli.
+
+Nel runtime `frozen_tundra` sceglie un solo materiale per ruolo e regione. Il
+ground viene tagliato e composto in una quilt `2x2` da quattro offset periodici
+dello stesso raster neve, con raccordo interno/esterno e repeat world-space
+`1024`; non usa mirror né varianti tonali diverse. Path e road restano a `512`
+e vengono ammorbiditi verso la palette neve. I contatti terrain/route usano
+direttamente path o road. Gli asset `transition_ground_*` restano nel catalogo
+come sorgenti, ma non sono superfici runtime di `frozen_outskirts`.
+
+`swamp` applica lo stesso contratto regionale senza correzione cromatica. Il
+ground compone una quilt `2x2` da quattro offset periodici dello stesso raster,
+con raccordo interno/esterno e repeat world-space `1024`; non usa mirror ne
+varianti tonali diverse. Path e road mantengono palette, densita e periodo
+`512`. I contatti terrain/route usano direttamente path o road; gli asset
+`transition_ground_*` restano catalogati ma non sono superfici runtime di
+`drowned_marsh`.
+
+`volcanic` applica selezione regionale, bordi opposti armonizzati e repeat
+world-space `512`. Il ground pieno usa solo la base variation 02 piu quieta;
+le variation 01, 03 e 04 restano catalogate come detail. I contatti
+terrain/route usano direttamente path o road e gli asset
+`transition_ground_*` non sono superfici runtime di `burning_fields`.
+
+Prima di importare o committare modifiche ai sorgenti:
 
 ```text
 godot --headless --path . --script res://tools/prepare_generated_biome_assets.gd -- --write
@@ -161,8 +185,12 @@ Gli SVG generati includono metadata `data-generated-by`, `data-section`,
 ripetibile. Gli asset base sono originali del progetto: i terrain/passaggi
 espongono silhouette isometriche di route, mentre gli `object_scenes` usano
 sprite trasparenti distinti per case, barriere, barili, relitti, tronchi, ponti
-e crate. Possono essere sostituiti gradualmente con arte `needs_polish`/`final`
-senza cambiare il contratto runtime.
+e crate. `lab_block` e `lab_ruin` hanno profili industriali dedicati con
+volumi verticali e dettagli tecnici, così non vengono confusi con la
+`supply_crate` compatta. `reed_wall` disattiva il letterboxing del viewBox e
+usa tutta la canvas nativa `56x136`, coerente con il footprint stretto `1x3`.
+Possono essere sostituiti gradualmente con arte
+`needs_polish`/`final` senza cambiare il contratto runtime.
 
 ## Ambiente isometrico (tile layer runtime)
 
@@ -224,7 +252,9 @@ avere la cache import editor per caricarli direttamente come `Texture2D`; per
 questo `IsometricSvgTextureLoader` rasterizza il contenuto SVG trasparente
 quando possibile, scarta gli import con canvas opaco e produce una
 `ImageTexture` fallback per categoria oggetto usando `data-section`/`data-id`.
-La supply crate usa lo stesso percorso tramite `object_scenes/supply_crate`.
+La supply crate usa lo stesso percorso tramite `object_scenes/supply_crate`;
+`reed_wall` richiede la propria dimensione nativa al loader per conservare
+l'altezza visuale prevista dal manifest.
 
 ## Sostituzione Placeholder
 

@@ -9,13 +9,14 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 ### Added
 
 - Aggiunte le QA dedicate `ART-VIS-FIX` per i quattro biomi generated art
-  (`biome_art_toxic_wastes`, `biome_art_frozen_outskirts`,
-  `biome_art_drowned_marsh`, `biome_art_burning_fields`) sopra la base
-  condivisa `tests/visual_qa/helpers/biome_art_pass_qa_base.gd`: mondo
-  streammato reale, seed `641004/772031/918273`, risoluzioni `1280x720` e
-  `960x540`, viste center/passage/fall_cliff/obstacle_hazard/player_roster
-  piu' un close-up del contatto terreno-route, con lo stesso contratto di
-  readiness del review (zero chunk visibili mancanti, coverage minima).
+  (`biome_art_toxic_wastes`, `biome_art_burning_fields`,
+  `biome_art_drowned_marsh`, `biome_art_frozen_outskirts`), tutte estese da
+  `tests/visual_qa/biome_rendering_review_visual_qa.gd`: mondo streammato
+  reale, seed `641004/772031/918273`, risoluzioni `1280x720` e `960x540` e
+  viste center/passage/fall_cliff/obstacle_hazard/player_roster/route
+  transition, con `resource_crate` per toxic_wastes e burning_fields e
+  `reed_wall` per drowned_marsh, con lo stesso contratto di readiness del
+  review (zero chunk visibili mancanti, coverage minima).
 - Aggiunto il filtro `--only=id1,id2` a
   `tools/generate_isometric_environment_assets.gd` per rigenerare una singola
   famiglia di asset senza riscrivere il resto del catalogo.
@@ -130,8 +131,21 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
     cliff minificate sui bordi dei chasm.
   - `toxic_wastes` (`urban_ruins`) usa un materiale stabile per regione e
     ruolo, atlas runtime 2x2 specchiati con bordi armonizzati e repeat a
-    scala nativa. `TileBakeCache.FORMAT_VERSION` sale a `12` per invalidare i
-    vecchi `material_asset_id` persistiti.
+    scala nativa.
+  - `frozen_outskirts` (`frozen_tundra`) e `drowned_marsh` (`swamp`) chiudono
+    il polish sulla ripetizione del ground componendo a runtime una quilt
+    `2x2` da quattro offset periodici dello stesso raster base, con blend
+    interno/esterno e periodo world-space `1024`: i dettagli non si duplicano
+    piu' ogni `512` e non usano mirror ne' varianti tonali; path e road
+    mantengono densita e periodo `512`.
+  - Le QA dedicate Tossico e Campi Ardenti aggiungono la vista
+    `resource_crate` a conferma che, dopo il redesign di `lab_block`/
+    `lab_ruin` (`VIS-005`), le vere supply crate restano compatte; la QA
+    Palude aggiunge la vista `reed_wall`.
+  - `TileBakeCache.FORMAT_VERSION` sale progressivamente a `15` mano a mano
+    che ogni bioma normalizza i propri `material_asset_id`, invalidando le
+    cache persistite obsolete.
+
 - Pianura Infetta non renderizza piu `grass_to_path`, `grass_to_road` e
   `path_to_road` come texture intermedie: le celle di contatto usano
   direttamente le superfici `forest_path` o `forest_road`, mantenendo un taglio
@@ -306,6 +320,85 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Validation
 
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/assets -Select generated_texture`:
+  24 test, 1.953 assert, passa.
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/assets`: 64 test,
+  8.801 assert, passa; profilo chunk massimo 14,474 ms.
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/environment`: 37
+  test, 8.954 assert, passa; `visible_missing_chunks == 0` e commit massimo
+  osservato 5,467 ms.
+- `./tools/run_visual_qa.ps1 -SkipImport -Filter biome_art_drowned_marsh`: 1
+  Visual QA, passa; rigenerate 42 PNG e ispezionate le viste center, passage e
+  route transition a entrambe le risoluzioni.
+- `./tools/run_visual_qa.ps1 -SkipImport -Filter biome_rendering_review`: 1
+  Visual QA, passa; rigenerate 150 PNG sui cinque biomi.
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/assets -Select generated_texture`:
+  24 test, 1.947 assert, passa.
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/assets`: 64 test,
+  8.795 assert, passa; profilo chunk massimo 14,265 ms.
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/environment`: 37
+  test, 8.954 assert, passa; `visible_missing_chunks == 0` e commit massimo
+  osservato 11,315 ms.
+- `./tools/run_visual_qa.ps1 -SkipImport -Filter biome_art_frozen_outskirts`:
+  1 Visual QA, passa; rigenerate 36 PNG e ispezionate le viste center, passage
+  e route transition a entrambe le risoluzioni.
+- `./tools/run_visual_qa.ps1 -SkipImport -Filter biome_rendering_review`: 1
+  Visual QA, passa; rigenerate 150 PNG sui cinque biomi.
+- `godot --headless --path . --script res://tools/generate_isometric_environment_assets.gd -- --check`:
+  130 asset controllati, passa.
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/assets -Select object_asset`:
+  8 test, 476 assert, passa.
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/assets`: 64 test,
+  8.789 assert, passa; profilo chunk massimo 15,336 ms.
+- `./tools/run_visual_qa.ps1 -SkipImport -Filter obstacle_asset`: 1 Visual QA,
+  passa; `reed_wall` ispezionato.
+- `./tools/run_visual_qa.ps1 -SkipImport -Filter biome_art_drowned_marsh`: 1
+  Visual QA, passa; rigenerate 42 PNG e ispezionate le 6 viste `reed_wall`.
+- `godot --headless --path . --script res://tools/generate_isometric_environment_assets.gd -- --check`:
+  130 asset controllati, passa.
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/assets -Select object_asset`:
+  8 test, 453 assert, passa.
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/assets`: 64 test,
+  8.766 assert, passa; profilo chunk massimo 14,995 ms.
+- `./tools/run_visual_qa.ps1 -SkipImport -Filter obstacle_asset`: 1 Visual QA,
+  passa; `lab_block` e `lab_ruin` ispezionati.
+- `./tools/run_visual_qa.ps1 -SkipImport -Filter biome_art_toxic_wastes`: 1
+  Visual QA, passa; rigenerate e ispezionate 42 PNG.
+- `./tools/run_visual_qa.ps1 -SkipImport -Filter biome_art_burning_fields`: 1
+  Visual QA, passa; rigenerate e ispezionate 42 PNG.
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/assets -Select generated_texture`:
+  24 test, 1.941 assert, passa; profilo chunk massimo 19,259 ms.
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/assets`: 64 test,
+  8.760 assert, passa; profilo chunk massimo 16,837 ms.
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/environment`: 37
+  test, 8.954 assert, passa; il profilo direzionale mantiene
+  `visible_missing_chunks == 0` e commit massimo osservato 6,946 ms.
+- `./tools/run_visual_qa.ps1 -SkipImport -Filter biome_art_burning_fields`: 1
+  Visual QA, passa; rigenerate e ispezionate 36 PNG.
+- `./tools/run_visual_qa.ps1 -SkipImport -Filter biome_rendering_review`: 1
+  Visual QA, passa; rigenerate 150 PNG sui cinque biomi.
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/assets -Select generated_texture`:
+  24 test, 1.821 assert, passa.
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/assets`: 64 test,
+  8.640 assert, passa.
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/environment`: 37
+  test, 8.954 assert, passa; il profilo direzionale mantiene
+  `visible_missing_chunks == 0` e commit massimo osservato 7,237 ms.
+- `./tools/run_visual_qa.ps1 -SkipImport -Filter biome_art_drowned_marsh`: 1
+  Visual QA, passa; rigenerate e ispezionate 36 PNG.
+- `./tools/run_visual_qa.ps1 -SkipImport -Filter biome_rendering_review`: 1
+  Visual QA, passa; rigenerate 150 PNG sui cinque biomi.
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/assets -Select generated_texture`:
+  24 test, 1.824 assert, passa.
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/assets`: 64 test,
+  8.643 assert, passa.
+- `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/environment`: 37
+  test, 8.954 assert, passa; il profilo direzionale mantiene
+  `visible_missing_chunks == 0` e commit massimo osservato 6,358 ms.
+- `./tools/run_visual_qa.ps1 -SkipImport -Filter biome_art_frozen_outskirts`:
+  1 Visual QA, passa; rigenerate e ispezionate 36 PNG.
+- `./tools/run_visual_qa.ps1 -SkipImport -Filter biome_rendering_review`: 1
+  Visual QA, passa; rigenerate 150 PNG sui cinque biomi.
 - `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/ui_audio`: 12
   test, 263 assert, passa.
 - `./tools/run_visual_qa.ps1 -SkipImport -Filter visual_accessibility`: 1

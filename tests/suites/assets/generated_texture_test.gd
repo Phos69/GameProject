@@ -287,14 +287,30 @@ func test_frozen_surface_selection_uses_coherent_materials() -> void:
 			biome_id,
 			role,
 			94117,
-			Vector2i(17, 25)
+			Vector2i(113, 129)
 		)
 		assert_eq(
 			adjacent,
 			first,
-			"frozen %s keeps the same material within one macro patch"
+			"frozen %s keeps the same material across the region"
 			% String(role)
 		)
+	assert_eq(
+		BiomeGeneratedArtCatalog.resolve_runtime_surface_role(
+			biome_id,
+			BiomeGeneratedArtCatalog.ROLE_GROUND_TO_PATH
+		),
+		BiomeGeneratedArtCatalog.ROLE_PATH,
+		"frozen ground/path transitions render with the path surface"
+	)
+	assert_eq(
+		BiomeGeneratedArtCatalog.resolve_runtime_surface_role(
+			biome_id,
+			BiomeGeneratedArtCatalog.ROLE_GROUND_TO_ROAD
+		),
+		BiomeGeneratedArtCatalog.ROLE_ROAD,
+		"frozen ground/road transitions render with the road surface"
+	)
 
 func test_swamp_surface_selection_uses_coherent_materials() -> void:
 	var biome_id := &"drowned_marsh"
@@ -331,14 +347,30 @@ func test_swamp_surface_selection_uses_coherent_materials() -> void:
 			biome_id,
 			role,
 			94223,
-			Vector2i(25, 33)
+			Vector2i(121, 137)
 		)
 		assert_eq(
 			adjacent,
 			first,
-			"swamp %s keeps the same material within one macro patch"
+			"swamp %s keeps the same material across the region"
 			% String(role)
 		)
+	assert_eq(
+		BiomeGeneratedArtCatalog.resolve_runtime_surface_role(
+			biome_id,
+			BiomeGeneratedArtCatalog.ROLE_GROUND_TO_PATH
+		),
+		BiomeGeneratedArtCatalog.ROLE_PATH,
+		"swamp ground/path transitions render with the path surface"
+	)
+	assert_eq(
+		BiomeGeneratedArtCatalog.resolve_runtime_surface_role(
+			biome_id,
+			BiomeGeneratedArtCatalog.ROLE_GROUND_TO_ROAD
+		),
+		BiomeGeneratedArtCatalog.ROLE_ROAD,
+		"swamp ground/road transitions render with the road surface"
+	)
 
 func test_toxic_surface_selection_uses_coherent_materials() -> void:
 	var biome_id := &"toxic_wastes"
@@ -429,8 +461,14 @@ func test_burning_surface_selection_uses_coherent_materials() -> void:
 			"burning ground avoids full-surface lava detail decals"
 		)
 		assert_false(
-			ground_path.contains("base_ground_variation_04"),
-			"burning ground avoids flowing-lava feature blocks as the base surface"
+			ground_path.contains("base_ground_variation_01")
+			or ground_path.contains("base_ground_variation_03")
+			or ground_path.contains("base_ground_variation_04"),
+			"burning ground keeps bright cracks and lava features out of the base surface"
+		)
+		assert_true(
+			ground_path.contains("base_ground_variation_02"),
+			"burning ground uses the quiet ember material as its full-surface base"
 		)
 	var coherent_roles: Array[StringName] = [
 		BiomeGeneratedArtCatalog.ROLE_PATH,
@@ -449,14 +487,30 @@ func test_burning_surface_selection_uses_coherent_materials() -> void:
 			biome_id,
 			role,
 			94451,
-			Vector2i(41, 49)
+			Vector2i(137, 153)
 		)
 		assert_eq(
 			adjacent,
 			first,
-			"burning %s keeps the same material within one macro patch"
+			"burning %s keeps the same material across the region"
 			% String(role)
 		)
+	assert_eq(
+		BiomeGeneratedArtCatalog.resolve_runtime_surface_role(
+			biome_id,
+			BiomeGeneratedArtCatalog.ROLE_GROUND_TO_PATH
+		),
+		BiomeGeneratedArtCatalog.ROLE_PATH,
+		"burning ground/path transitions render with the path surface"
+	)
+	assert_eq(
+		BiomeGeneratedArtCatalog.resolve_runtime_surface_role(
+			biome_id,
+			BiomeGeneratedArtCatalog.ROLE_GROUND_TO_ROAD
+		),
+		BiomeGeneratedArtCatalog.ROLE_ROAD,
+		"burning ground/road transitions render with the road surface"
+	)
 
 func test_generated_biome_catalog_deterministically_covers_active_assets() -> void:
 	var selected_paths: Dictionary = {}
@@ -627,6 +681,14 @@ func test_generated_biome_runtime_consumption() -> void:
 			)
 		):
 			expected_runtime_width *= 2
+		if (
+			(
+				biome_id == &"frozen_outskirts"
+				or biome_id == &"drowned_marsh"
+			)
+			and source_path.contains("base_ground_variation_01")
+		):
+			expected_runtime_width *= 2
 		assert_eq(
 			runtime_texture.get_width(),
 			expected_runtime_width,
@@ -639,6 +701,11 @@ func test_generated_biome_runtime_consumption() -> void:
 				_edge_seam_score(runtime_image),
 				0.04,
 				"burning_fields runtime surface harmonizes opposite edges"
+			)
+			assert_eq(
+				layer._forest_surface_texture_world_size(first_rendered_id),
+				BiomeTileLayer.BURNING_SURFACE_TEXTURE_WORLD_SIZE,
+				"burning_fields uses a broad repeat period"
 			)
 		if biome_id == &"drowned_marsh":
 			_assert_marsh_routes_are_lifted(layer, expected_surface_trim)
@@ -657,11 +724,55 @@ func test_generated_biome_runtime_consumption() -> void:
 				"toxic_wastes uses a broad repeat period"
 			)
 		if biome_id == &"frozen_outskirts":
-			var frozen_runtime_image := runtime_texture.get_image()
+			var frozen_ground_id := _find_surface_material_id(
+				layer,
+				"base_ground_variation_01"
+			)
+			assert_false(
+				frozen_ground_id.is_empty(),
+				"frozen_outskirts exposes its clean snow ground material"
+			)
+			var frozen_ground_texture := (
+				layer._forest_surface_textures.get(frozen_ground_id)
+				as Texture2D
+			)
+			assert_not_null(
+				frozen_ground_texture,
+				"frozen_outskirts builds its macro ground texture"
+			)
+			var frozen_runtime_image := frozen_ground_texture.get_image()
 			assert_lte(
 				_edge_seam_score(frozen_runtime_image),
 				0.04,
-				"frozen_outskirts runtime surface harmonizes opposite edges"
+				"frozen_outskirts runtime surface has continuous repeat edges"
+			)
+			assert_lte(
+				_internal_half_seam_score(frozen_runtime_image),
+				0.04,
+				"frozen ground macro has no visible internal quilt seam"
+			)
+			assert_gt(
+				_half_period_rgb_difference_score(frozen_runtime_image),
+				0.015,
+				"frozen ground macro period does not duplicate the same half"
+			)
+			assert_eq(
+				layer._forest_surface_texture_world_size(frozen_ground_id),
+				BiomeTileLayer.FROZEN_GROUND_TEXTURE_WORLD_SIZE,
+				"frozen ground uses a double-width non-mirrored macro period"
+			)
+			var frozen_path_id := _find_surface_material_id(
+				layer,
+				"path_variation"
+			)
+			assert_false(
+				frozen_path_id.is_empty(),
+				"frozen_outskirts exposes a path material"
+			)
+			assert_eq(
+				layer._forest_surface_texture_world_size(frozen_path_id),
+				BiomeTileLayer.FROZEN_SURFACE_TEXTURE_WORLD_SIZE,
+				"frozen route keeps native material density"
 			)
 			_assert_frozen_ground_is_toned_down(layer, expected_surface_trim)
 			_assert_frozen_route_textures_are_snow_softened(
@@ -675,6 +786,57 @@ func test_generated_biome_runtime_consumption() -> void:
 				"road_variation",
 				expected_surface_trim,
 				"frozen road"
+			)
+		if biome_id == &"drowned_marsh":
+			var marsh_ground_id := _find_surface_material_id(
+				layer,
+				"base_ground_variation_01"
+			)
+			assert_false(
+				marsh_ground_id.is_empty(),
+				"drowned_marsh exposes its quiet ground material"
+			)
+			var marsh_ground_texture := (
+				layer._forest_surface_textures.get(marsh_ground_id)
+				as Texture2D
+			)
+			assert_not_null(
+				marsh_ground_texture,
+				"drowned_marsh builds its macro ground texture"
+			)
+			var marsh_runtime_image := marsh_ground_texture.get_image()
+			assert_lte(
+				_edge_seam_score(marsh_runtime_image),
+				0.04,
+				"drowned_marsh runtime surface has continuous repeat edges"
+			)
+			assert_lte(
+				_internal_half_seam_score(marsh_runtime_image),
+				0.04,
+				"drowned marsh ground macro has no visible internal quilt seam"
+			)
+			assert_gt(
+				_half_period_rgb_difference_score(marsh_runtime_image),
+				0.015,
+				"drowned marsh ground macro period does not duplicate the same half"
+			)
+			assert_eq(
+				layer._forest_surface_texture_world_size(marsh_ground_id),
+				BiomeTileLayer.MARSH_GROUND_TEXTURE_WORLD_SIZE,
+				"drowned marsh ground uses a double-width non-mirrored macro period"
+			)
+			var marsh_path_id := _find_surface_material_id(
+				layer,
+				"path_variation"
+			)
+			assert_false(
+				marsh_path_id.is_empty(),
+				"drowned_marsh exposes a path material"
+			)
+			assert_eq(
+				layer._forest_surface_texture_world_size(marsh_path_id),
+				BiomeTileLayer.MARSH_SURFACE_TEXTURE_WORLD_SIZE,
+				"drowned marsh route keeps native material density"
 			)
 		var selected_material_ids: Dictionary = {}
 		var selected_material_paths: Dictionary = {}
@@ -728,6 +890,24 @@ func test_generated_biome_runtime_consumption() -> void:
 				assert_false(
 					String(rendered_id).contains("transition_ground_"),
 					"toxic_wastes does not render intermediate transition textures"
+				)
+		if biome_id == &"frozen_outskirts":
+			for rendered_id in rendered_material_ids:
+				assert_false(
+					String(rendered_id).contains("transition_ground_"),
+					"frozen_outskirts does not render intermediate transition textures"
+				)
+		if biome_id == &"drowned_marsh":
+			for rendered_id in rendered_material_ids:
+				assert_false(
+					String(rendered_id).contains("transition_ground_"),
+					"drowned_marsh does not render intermediate transition textures"
+				)
+		if biome_id == &"burning_fields":
+			for rendered_id in rendered_material_ids:
+				assert_false(
+					String(rendered_id).contains("transition_ground_"),
+					"burning_fields does not render intermediate transition textures"
 				)
 		assert_eq(
 			layer.get_loaded_cliff_variant_count(),
@@ -1450,6 +1630,53 @@ func _edge_seam_score(image: Image) -> float:
 		samples += 1
 	return total / float(maxi(samples, 1))
 
+func _half_period_rgb_difference_score(image: Image) -> float:
+	if image == null or image.is_empty():
+		return 0.0
+	var half_width := image.get_width() / 2
+	var half_height := image.get_height() / 2
+	if half_width <= 0 or half_height <= 0:
+		return 0.0
+	var step := maxi(mini(half_width, half_height) / 96, 1)
+	var total := 0.0
+	var samples := 0
+	for y in range(0, half_height, step):
+		for x in range(0, half_width, step):
+			total += _rgb_delta(
+				image.get_pixel(x, y),
+				image.get_pixel(x + half_width, y)
+			)
+			total += _rgb_delta(
+				image.get_pixel(x, y),
+				image.get_pixel(x, y + half_height)
+			)
+			samples += 2
+	return total / float(maxi(samples, 1))
+
+func _internal_half_seam_score(image: Image) -> float:
+	if image == null or image.is_empty():
+		return 1.0
+	var seam_x := image.get_width() / 2
+	var seam_y := image.get_height() / 2
+	if seam_x <= 0 or seam_y <= 0:
+		return 1.0
+	var step := maxi(mini(image.get_width(), image.get_height()) / 256, 1)
+	var total := 0.0
+	var samples := 0
+	for y in range(0, image.get_height(), step):
+		total += _rgb_delta(
+			image.get_pixel(seam_x - 1, y),
+			image.get_pixel(seam_x, y)
+		)
+		samples += 1
+	for x in range(0, image.get_width(), step):
+		total += _rgb_delta(
+			image.get_pixel(x, seam_y - 1),
+			image.get_pixel(x, seam_y)
+		)
+		samples += 1
+	return total / float(maxi(samples, 1))
+
 func _rgb_delta(first: Color, second: Color) -> float:
 	return (absf(first.r - second.r) + absf(first.g - second.g) + absf(first.b - second.b)) / 3.0
 
@@ -1473,6 +1700,16 @@ func _edge_visible_matte_ratio(image: Image) -> float:
 			matte_samples += 1
 		samples += 2
 	return float(matte_samples) / float(maxi(samples, 1))
+
+func _find_surface_material_id(
+	layer: BiomeTileLayer,
+	asset_fragment: String
+) -> StringName:
+	var paths := layer.get_forest_surface_art_asset_paths()
+	for material_id in layer.get_loaded_surface_texture_ids():
+		if String(paths.get(material_id, "")).contains(asset_fragment):
+			return material_id
+	return &""
 
 func _is_visible_white_matte(color: Color) -> bool:
 	var minimum := minf(color.r, minf(color.g, color.b))

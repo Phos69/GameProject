@@ -20,6 +20,8 @@ const FOCUS_CENTER := &"center"
 const FOCUS_PASSAGE := &"passage"
 const FOCUS_CLIFF := &"fall_cliff"
 const FOCUS_OBSTACLE := &"obstacle_hazard"
+const FOCUS_CRATE := &"resource_crate"
+const FOCUS_REED_WALL := &"reed_wall"
 const FOCUS_ACTORS := &"actors"
 const FOCUS_PLAYER_ROSTER := &"player_roster"
 const FOCUS_ROUTE_TRANSITION := &"route_transition"
@@ -402,6 +404,29 @@ func _focus_position(cell: BiomeCell, focus: StringName) -> Vector2:
 				return offset + layout.obstacle_positions.front()
 			if not layout.rock_rects.is_empty():
 				return offset + layout.rect_center_to_world(layout.rock_rects.front())
+		FOCUS_CRATE:
+			if not layout.crate_cells.is_empty():
+				var crate_focus_cell := _find_walkable_cell_near_crate(
+					layout,
+					layout.crate_cells.front(),
+					cell
+				)
+				if crate_focus_cell != Vector2i(-1, -1):
+					return offset + layout.logical_to_world(crate_focus_cell)
+		FOCUS_REED_WALL:
+			for index in range(layout.obstacle_ids.size()):
+				if layout.obstacle_ids[index] != &"reed_wall":
+					continue
+				if index < layout.obstacle_rects.size():
+					var reed_focus_cell := _find_walkable_cell_near_rect(
+						layout,
+						layout.obstacle_rects[index],
+						cell
+					)
+					if reed_focus_cell != Vector2i(-1, -1):
+						return offset + layout.logical_to_world(reed_focus_cell)
+				if index < layout.obstacle_positions.size():
+					return offset + layout.obstacle_positions[index]
 		FOCUS_ROUTE_TRANSITION:
 			var route_cell := _find_route_transition_cell(layout, cell)
 			if route_cell != Vector2i(-1, -1):
@@ -539,6 +564,34 @@ func _find_walkable_cell_near_rect(
 			if layout.get_terrain_class_at_cell(candidate, cell) != BiomeEnvironmentLayout.TERRAIN_WALKABLE:
 				continue
 			var distance := Vector2(candidate).distance_squared_to(target_center)
+			if distance < best_distance:
+				best_distance = distance
+				best_cell = candidate
+	return best_cell
+
+func _find_walkable_cell_near_crate(
+	layout: BiomeEnvironmentLayout,
+	crate_cell: Vector2i,
+	cell: BiomeCell
+) -> Vector2i:
+	var bounds := Rect2i(Vector2i.ZERO, layout.zone_size)
+	var search_rect := Rect2i(
+		crate_cell - Vector2i(6, 6),
+		Vector2i(13, 13)
+	).intersection(bounds)
+	var best_cell := Vector2i(-1, -1)
+	var best_distance := INF
+	for y in range(search_rect.position.y, search_rect.end.y):
+		for x in range(search_rect.position.x, search_rect.end.x):
+			var candidate := Vector2i(x, y)
+			var distance := Vector2(candidate).distance_to(Vector2(crate_cell))
+			if distance < 2.5:
+				continue
+			if (
+				layout.get_terrain_class_at_cell(candidate, cell)
+				!= BiomeEnvironmentLayout.TERRAIN_WALKABLE
+			):
+				continue
 			if distance < best_distance:
 				best_distance = distance
 				best_cell = candidate

@@ -44,6 +44,11 @@ const LARGE_ROCK_OBJECT_ID := &"large_rock"
 const FOREST_GRASS_TEXTURE_ID := &"forest_grass"
 const FOREST_SURFACE_TEXTURE_WORLD_SIZE := 256.0
 const TOXIC_SURFACE_TEXTURE_WORLD_SIZE := 1024.0
+const FROZEN_SURFACE_TEXTURE_WORLD_SIZE := 512.0
+const FROZEN_GROUND_TEXTURE_WORLD_SIZE := 1024.0
+const MARSH_SURFACE_TEXTURE_WORLD_SIZE := 512.0
+const MARSH_GROUND_TEXTURE_WORLD_SIZE := 1024.0
+const BURNING_SURFACE_TEXTURE_WORLD_SIZE := 512.0
 const GENERATED_SURFACE_RUN_OVERDRAW_PIXELS := 1.5
 const FOREST_SURFACE_TEXTURE_IDS: Array[StringName] = [
 	&"forest_grass",
@@ -823,6 +828,11 @@ func _load_forest_surface_art_textures() -> void:
 				continue
 			_forest_surface_textures[material_id] = texture
 			_surface_texture_ids.append(material_id)
+		if (
+			biome_id == &"frozen_outskirts"
+			or biome_id == &"drowned_marsh"
+		):
+			_apply_offset_ground_macro_texture()
 		return
 	for texture_id in FOREST_SURFACE_TEXTURE_IDS:
 		var contract := manifest.get_terrain_asset_contract(_themed_surface_asset_id(texture_id))
@@ -839,6 +849,26 @@ func _load_forest_surface_art_textures() -> void:
 		if texture != null:
 			_forest_surface_textures[texture_id] = texture
 			_surface_texture_ids.append(texture_id)
+
+func _apply_offset_ground_macro_texture() -> void:
+	var ground_id := &""
+	for material_id in _surface_texture_ids:
+		var asset_path := String(
+			_forest_surface_art_asset_paths.get(material_id, "")
+		)
+		if asset_path.contains("base_ground_variation_01"):
+			ground_id = material_id
+	if ground_id.is_empty():
+		return
+	var ground_texture := _forest_surface_textures.get(ground_id) as Texture2D
+	var macro_texture := (
+		GENERATED_TEXTURE_TOOLS.build_offset_ground_macro_texture(
+			ground_texture,
+			String(_forest_surface_art_asset_paths.get(ground_id, ""))
+		)
+	)
+	if macro_texture != null:
+		_forest_surface_textures[ground_id] = macro_texture
 
 func _rebuild_ground_geometry() -> void:
 	_ground_mesh = null
@@ -1257,9 +1287,19 @@ func _build_forest_surface_meshes(
 
 func _forest_surface_texture_world_size(texture_id: StringName) -> float:
 	if _uses_generated_theme():
+		var texture_name := String(texture_id)
 		if biome_id == &"toxic_wastes":
 			return TOXIC_SURFACE_TEXTURE_WORLD_SIZE
-		var texture_name := String(texture_id)
+		if biome_id == &"frozen_outskirts":
+			if texture_name.contains("base_ground_variation_01"):
+				return FROZEN_GROUND_TEXTURE_WORLD_SIZE
+			return FROZEN_SURFACE_TEXTURE_WORLD_SIZE
+		if biome_id == &"drowned_marsh":
+			if texture_name.contains("base_ground_variation_01"):
+				return MARSH_GROUND_TEXTURE_WORLD_SIZE
+			return MARSH_SURFACE_TEXTURE_WORLD_SIZE
+		if biome_id == &"burning_fields":
+			return BURNING_SURFACE_TEXTURE_WORLD_SIZE
 		if texture_name.contains("transition_"):
 			return 128.0
 	if FOREST_TRANSITION_TEXTURE_IDS.has(texture_id):

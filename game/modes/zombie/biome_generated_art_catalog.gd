@@ -12,7 +12,10 @@ const COHERENT_SURFACE_SAMPLE_THEMES: Array[StringName] = [
 	&"volcanic",
 ]
 const REGION_COHERENT_SURFACE_SAMPLE_THEMES: Array[StringName] = [
+	&"frozen_tundra",
+	&"swamp",
 	&"urban_ruins",
+	&"volcanic",
 ]
 const GROUND_DETAIL_POOL_THEMES: Array[StringName] = [
 	&"desert",
@@ -212,7 +215,12 @@ static func resolve_runtime_surface_role(
 	biome_id: StringName,
 	role: StringName
 ) -> StringName:
-	if biome_id != &"toxic_wastes":
+	if (
+		biome_id != &"toxic_wastes"
+		and biome_id != &"burning_fields"
+		and biome_id != &"frozen_outskirts"
+		and biome_id != &"drowned_marsh"
+	):
 		return role
 	match role:
 		ROLE_GROUND_TO_PATH:
@@ -421,7 +429,11 @@ static func _surface_role_for_file(
 		return ROLE_DETAIL
 	if (
 		theme_id == &"volcanic"
-		and file_name.contains("base_ground_variation_04")
+		and (
+			file_name.contains("base_ground_variation_01")
+			or file_name.contains("base_ground_variation_03")
+			or file_name.contains("base_ground_variation_04")
+		)
 	):
 		return ROLE_DETAIL
 	if (

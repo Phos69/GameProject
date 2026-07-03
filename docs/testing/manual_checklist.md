@@ -1139,6 +1139,32 @@ godot --headless --path . --script res://tools/generate_isometric_environment_as
   ground non cambi variante a macro-celle, che il repeat specchiato non mostri
   bordi rettangolari e che i contatti terrain/path/road usino direttamente la
   superficie route senza fasce di transizione.
+- In `burning_fields`, sugli stessi seed verificare che il ground mantenga la
+  base volcanic piu quieta senza alternare pannelli incandescenti, che i
+  contatti terrain/path/road non usino asset `transition_ground_*` e che la
+  lava resti un accento.
+- A entrambe le risoluzioni controllare che path/road, cliff, fire hazard,
+  telegraph, attori e ostacoli restino separabili. Annotare come polish
+  l'eventuale ripetizione a bassa frequenza del raster ground, senza accettare
+  checker o bordi chiari.
+- In `frozen_outskirts`, sugli stessi seed verificare che neve, path e road non
+  cambino materiale a macro-celle, che i bordi ripetuti non formino una griglia
+  chiara e che nessun asset `transition_ground_*` compaia sui contatti route.
+- A `1280x720` e `960x540` controllare le viste passage, obstacle/hazard e
+  player roster della Neve: route, ghiaccio, cliff, crate, attori e telegraph
+  devono restare separabili. Sul ground controllare che la quilt a periodo
+  `1024` non mostri cuciture interne, pannelli tonali, mirror o duplicazione
+  esatta dei dettagli a meta periodo; checker e bordi bianchi restano failure.
+- In `drowned_marsh`, sugli stessi seed verificare che acqua/fango, path e
+  passerella non cambino materiale a macro-celle e che nessun asset
+  `transition_ground_*` compaia sui contatti route.
+- A entrambe le risoluzioni controllare che path/passerella, hazard acqua,
+  cliff, attori e ostacoli palude restino separabili. Nel focus `reed_wall`
+  verificare che le canne occupino la canvas verticale, restino ancorate al
+  footprint `1x3` e non coprano ambiguamente player o pickup. Sul ground
+  controllare che la quilt a periodo `1024` non mostri cuciture interne,
+  pannelli tonali, mirror o duplicazione esatta dei dettagli a meta periodo;
+  path e passerella devono mantenere densita nativa a `512`.
 - Su una seam tra due biomi controllare entrambi i lati: ogni raised cliff usa
   il tema della regione proprietaria, resta alto due tile logiche e non chiude il
   varco fisico.
@@ -1151,6 +1177,9 @@ godot --headless --path . --script res://tools/generate_isometric_environment_as
 godot --headless --path . --script res://tools/prepare_generated_biome_assets.gd -- --check
 godot --path . --rendering-method gl_compatibility --script res://tests/visual_qa/generated_biome_art_visual_qa.gd
 ./tools/run_visual_qa.ps1 -SkipImport -Filter biome_art_toxic_wastes
+./tools/run_visual_qa.ps1 -SkipImport -Filter biome_art_burning_fields
+./tools/run_visual_qa.ps1 -SkipImport -Filter biome_art_frozen_outskirts
+./tools/run_visual_qa.ps1 -SkipImport -Filter biome_art_drowned_marsh
 ./tools/run_gut.ps1 -GutDir res://tests/suites/assets -Select generated_texture
 ```
 
@@ -1227,6 +1256,12 @@ QA visuale e runtime da eseguire dopo modifiche a `ObstacleSystem`,
 - Confermare che case, cabine, laboratori, recinti, muri, barili, relitti,
   tronchi, ponti e crate abbiano silhouette diverse e non usino piu la stessa
   casetta placeholder generica.
+- In `toxic_wastes`, verificare che `lab_block` e `lab_ruin` leggano come
+  edifici industriali verticali e non come casse sovradimensionate; footprint,
+  collisione e Y-sort devono restare invariati.
+- Nelle QA dedicate Tossico e Campi Ardenti aprire la vista `resource_crate`:
+  la vera supply crate deve restare un prop compatto e raggiungibile, distinto
+  dagli edifici ambientali.
 - Nella Pianura Infetta verificare un `forest_tree` `3x3` e almeno due
   `large_rock` di dimensione diversa. Le rocce devono mostrare top continuo,
   faccia cliff solo a sud e bordi orizzontali/verticali sul `rock_rect`, senza

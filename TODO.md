@@ -38,9 +38,12 @@ Regole per nuove voci:
 - Stato ART-VIS-FIX 2026-07-03: **completato** su tutti e cinque i biomi
   (dettagli e residui in `docs/biome_art_vis_fix_roadmap.md`). Chiusi i
   finding `VIS-002` (scacchiera/seam terreno) e `VIS-005` (gli "oggetti crate
-  giganti" erano gli edifici generati, ridisegnati come strutture); ribilanciato
-  il contrasto dei quattro biomi avanzati (`VIS-006`) e normalizzata
-  `reed_wall` (parte di `VIS-009`). Ogni bioma ha QA dedicata
+  giganti" erano gli edifici generati: `lab_block`/`lab_ruin` ora leggono come
+  edifici e le viste `resource_crate` dedicate confermano supply crate
+  compatte); ribilanciato il contrasto dei quattro biomi avanzati (`VIS-006`)
+  e normalizzata `reed_wall` (parte di `VIS-009`). Neve e Palude chiudono la
+  ripetizione del ground con una quilt non specchiata a periodo `1024`
+  (path/road a densita nativa `512`). Ogni bioma ha QA dedicata
   `tests/visual_qa/biome_art_<bioma>_visual_qa.gd` e guardrail in
   `generated_texture_test.gd`; il review completo dei cinque biomi passa con
   exit code `0`. Residui fuori scope: pozze/hazard tematici assenti dalla

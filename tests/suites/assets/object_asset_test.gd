@@ -10,7 +10,8 @@ const REQUIRED_OBSTACLE_ASSET_IDS: Array[StringName] = [
 	&"ruined_house", &"burned_house", &"snow_cabin", &"sunken_house", &"lab_block",
 	&"boundary_fence", &"toxic_boundary_wall", &"lava_boundary", &"ice_boundary", &"deep_water_boundary",
 	&"industrial_fence", &"charred_wall", &"snow_wall", &"ash_barrier", &"pipe_stack",
-	&"burned_car", &"ice_block", &"dead_tree", &"marsh_log", &"broken_walkway", &"toxic_barrel", &"chemical_barrel"
+	&"burned_car", &"ice_block", &"dead_tree", &"marsh_log", &"reed_wall",
+	&"broken_walkway", &"toxic_barrel", &"chemical_barrel"
 ]
 const REQUIRED_CRATE_ASSET_ID := &"supply_crate"
 const ISOMETRIC_OBJECT_SCRIPT = preload("res://game/modes/zombie/isometric_environment_object.gd")
@@ -38,15 +39,62 @@ func test_asset_contract_coverage() -> void:
 	assert_true(_asset_exists(String(crate_contract.get("asset_path", ""))), "supply_crate asset path exists")
 
 func test_runtime_texture_shapes() -> void:
+	SVG_TEXTURE_LOADER.clear_cache()
 	var house_contract := _manifest.get_object_asset_contract(&"ruined_house")
 	var barrel_contract := _manifest.get_object_asset_contract(&"toxic_barrel")
+	var lab_contract := _manifest.get_object_asset_contract(&"lab_ruin")
+	var lab_block_contract := _manifest.get_object_asset_contract(&"lab_block")
+	var reed_wall_contract := _manifest.get_object_asset_contract(&"reed_wall")
+	var crate_contract := _manifest.get_object_asset_contract(&"supply_crate")
 	var house_texture := SVG_TEXTURE_LOADER.load_texture(String(house_contract.get("asset_path", "")), Color(0.42, 0.38, 0.30, 1.0), Color(0.86, 0.68, 0.22, 1.0))
 	var barrel_texture := SVG_TEXTURE_LOADER.load_texture(String(barrel_contract.get("asset_path", "")), Color(0.20, 0.52, 0.34, 1.0), Color(0.82, 0.96, 0.34, 1.0))
+	var lab_texture := SVG_TEXTURE_LOADER.load_texture(String(lab_contract.get("asset_path", "")), Color(0.20, 0.52, 0.34, 1.0), Color(0.82, 0.96, 0.34, 1.0))
+	var lab_block_texture := SVG_TEXTURE_LOADER.load_texture(String(lab_block_contract.get("asset_path", "")), Color(0.20, 0.52, 0.34, 1.0), Color(0.82, 0.96, 0.34, 1.0))
+	var reed_wall_native_size := _manifest.get_native_visual_size(&"reed_wall")
+	var reed_wall_texture := SVG_TEXTURE_LOADER.load_texture(
+		String(reed_wall_contract.get("asset_path", "")),
+		Color(0.21, 0.36, 0.35, 1.0),
+		Color(0.76, 0.69, 0.44, 1.0),
+		Vector2i(
+			roundi(reed_wall_native_size.x),
+			roundi(reed_wall_native_size.y)
+		)
+	)
+	var crate_texture := SVG_TEXTURE_LOADER.load_texture(String(crate_contract.get("asset_path", "")), Color(0.20, 0.52, 0.34, 1.0), Color(0.82, 0.96, 0.34, 1.0))
 	assert_not_null(house_texture, "ruined_house runtime texture loads")
 	assert_not_null(barrel_texture, "toxic_barrel runtime texture loads")
-	if house_texture == null or barrel_texture == null:
+	assert_not_null(lab_texture, "lab_ruin runtime texture loads")
+	assert_not_null(lab_block_texture, "lab_block runtime texture loads")
+	assert_not_null(reed_wall_texture, "reed_wall runtime texture loads")
+	assert_not_null(crate_texture, "supply_crate runtime texture loads")
+	if house_texture == null or barrel_texture == null or lab_texture == null or lab_block_texture == null or reed_wall_texture == null or crate_texture == null:
 		return
 	assert_gt(_alpha_mask_difference_score(house_texture, barrel_texture), 0.04, "ruined_house and toxic_barrel have distinct runtime silhouettes")
+	assert_lt(
+		_first_opaque_row_ratio(lab_texture),
+		0.16,
+		"lab_ruin has a tall asymmetric building silhouette"
+	)
+	assert_lt(
+		_first_opaque_row_ratio(lab_block_texture),
+		0.25,
+		"lab_block reads as a tall building silhouette, not a crate"
+	)
+	assert_lt(
+		_first_opaque_row_ratio(reed_wall_texture),
+		0.12,
+		"reed_wall uses the reserved vertical canvas instead of top padding"
+	)
+	assert_gt(
+		_opaque_height_ratio(reed_wall_texture),
+		0.78,
+		"reed_wall keeps a substantial tall vegetation silhouette"
+	)
+	assert_gt(
+		_first_opaque_row_ratio(crate_texture),
+		0.25,
+		"supply_crate remains a low compact prop"
+	)
 
 func test_loader_fallback_shapes() -> void:
 	var house_path := "user://isometric_loader_house_test.svg"
@@ -83,6 +131,19 @@ func test_factory_obstacle_coverage() -> void:
 			assert_true(obstacle.has_ground_shadow(), "%s keeps ground shadow contract" % String(obstacle_id))
 			assert_eq(obstacle.get_obstacle_category(), _manifest.get_category(obstacle_id), "%s category comes from manifest" % String(obstacle_id))
 			assert_false(obstacle.uses_generic_fallback(), "%s avoids generic visual fallback" % String(obstacle_id))
+			if obstacle_id == &"reed_wall":
+				var reed_object := obstacle as IsometricEnvironmentObject
+				var expected_size := _manifest.get_native_visual_size(obstacle_id)
+				assert_eq(
+					reed_object.asset_sprite.texture.get_size(),
+					expected_size,
+					"reed_wall rasterizes at its narrow vertical native size"
+				)
+				assert_eq(
+					reed_object.asset_sprite.scale,
+					Vector2.ONE,
+					"reed_wall keeps the manifest visual size at runtime"
+				)
 		_check_collision_contract(obstacle_id, obstacle)
 		obstacle.queue_free()
 		await wait_physics_frames(1)
@@ -272,3 +333,34 @@ func _alpha_mask_difference_score(texture_a: Texture2D, texture_b: Texture2D) ->
 	if samples <= 0:
 		return 0.0
 	return float(changed) / float(samples)
+
+func _first_opaque_row_ratio(texture: Texture2D) -> float:
+	if texture == null:
+		return 1.0
+	var image := texture.get_image()
+	if image == null or image.get_height() <= 0:
+		return 1.0
+	for y in range(image.get_height()):
+		for x in range(image.get_width()):
+			if image.get_pixel(x, y).a > 0.08:
+				return float(y) / float(image.get_height())
+	return 1.0
+
+func _opaque_height_ratio(texture: Texture2D) -> float:
+	if texture == null:
+		return 0.0
+	var image := texture.get_image()
+	if image == null or image.get_height() <= 0:
+		return 0.0
+	var first_opaque_row := image.get_height()
+	var last_opaque_row := -1
+	for y in range(image.get_height()):
+		for x in range(image.get_width()):
+			if image.get_pixel(x, y).a <= 0.08:
+				continue
+			first_opaque_row = mini(first_opaque_row, y)
+			last_opaque_row = maxi(last_opaque_row, y)
+			break
+	if last_opaque_row < first_opaque_row:
+		return 0.0
+	return float(last_opaque_row - first_opaque_row + 1) / float(image.get_height())

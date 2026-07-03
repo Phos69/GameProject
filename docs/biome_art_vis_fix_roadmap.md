@@ -94,6 +94,8 @@ Ogni QA dedicata deve catturare almeno:
   `player_roster`;
 - una vista ravvicinata di transizione terrain -> road/path per verificare il
   taglio netto orientabile;
+- una vista `resource_crate` quando il pass riguarda scala o identita degli
+  oggetti raccoglibili;
 - log con `visible_missing_chunks == 0` e world coverage valida.
 
 Comandi minimi durante il lavoro:
@@ -189,9 +191,13 @@ tossiche separabili senza aumentare saturazione in modo aggressivo.
 Stato 2026-07-02: primo pass terreno/route eseguito. `urban_ruins` mantiene un
 materiale stabile per ruolo su tutta la regione, normalizza i raster in atlas
 specchiati 2x2 alla densita nativa e usa direttamente path/road sui contatti,
-senza texture di transizione intermedia. La QA dedicata copre tre seed, due
-risoluzioni e sei viste con zero chunk mancanti. Il bioma resta aperto per il
-finding trasversale `VIS-005`: scala e stile di crate/oggetti.
+senza texture di transizione intermedia. Il secondo pass oggetti ridisegna
+`lab_block` e `lab_ruin` con la stessa architettura muta di tetto/porta/
+finestre/fondazione degli altri edifici generati, cosi' si distinguono dalle
+supply crate senza cambiare footprint o collisioni. La QA dedicata copre tre
+seed, due risoluzioni e sette viste, inclusa `resource_crate`, con zero chunk
+mancanti. `VIS-005` e chiuso: le evidenze originarie mostravano edifici
+laboratorio, mentre le vere crate sono compatte.
 
 File probabili:
 
@@ -224,6 +230,17 @@ gia' trimmati/armonizzati e ora anche mipmappati. QA dedicata:
 
 Obiettivo: mantenere identita calda e pericolosa, ma ridurre rumore arancio e
 competizione con hazard, telegraph e oggetti piccoli.
+
+Stato 2026-07-02: primo pass terreno/route eseguito. `volcanic` mantiene un
+materiale stabile per ruolo sull'intera regione; il ground pieno usa solo la
+base variation 02 piu quieta, mentre 01, 03 e 04 restano detail catalogati.
+I raster armonizzano i bordi opposti con periodo world-space `512` e i
+contatti usano direttamente path/road, senza texture di transizione
+intermedia. La QA dedicata copre tre seed, due risoluzioni e sette viste,
+inclusa `resource_crate`, con zero chunk mancanti; hazard, telegraph, attori,
+cliff e supply crate restano separabili. Il bioma resta aperto per il polish
+sulla ripetizione a bassa frequenza del raster ground; `VIS-005` non e piu
+assegnato al bioma.
 
 File probabili:
 
@@ -258,6 +275,16 @@ griglia bianca da repeat. QA dedicata:
 Obiettivo: ridurre sovraesposizione e griglia bianca mantenendo neve, ghiaccio
 e strada distinguibili.
 
+Stato 2026-07-03: pass locale chiuso. `frozen_tundra` mantiene un materiale
+stabile per ruolo sull'intera regione e usa direttamente path/road sui
+contatti, senza texture di transizione intermedia. Il ground costruisce a
+runtime una quilt periodica `2x2` da quattro offset dello stesso raster neve:
+le cuciture interne ed esterne sono armonizzate, la densita resta nativa e il
+periodo world-space sale a `1024` senza simmetrie specchiate o cambio materiale
+a macro-celle. Path e road restano a `512`. La QA dedicata copre tre seed, due
+risoluzioni e sei viste con zero chunk mancanti; il review condiviso dei cinque
+biomi passa su 150 catture.
+
 File probabili:
 
 - `game/modes/zombie/generated_biome_texture_tools.gd`
@@ -290,6 +317,19 @@ full-canvas (`preserveAspectRatio="none"` nel generator). QA dedicata:
 Obiettivo: separare fango, acqua profonda, strada e vegetazione palude senza
 trasformare il bioma in un pannello scuro uniforme.
 
+Stato 2026-07-03: pass locale chiuso. `swamp` mantiene un materiale stabile per
+ruolo sull'intera regione e usa direttamente path/road sui contatti, senza
+texture di transizione intermedia. Il ground compone a runtime una quilt `2x2`
+da quattro offset periodici dello stesso raster base, raccordati sulle cuciture
+interne ed esterne con periodo world-space `1024`: i dettagli non si duplicano
+piu ogni `512`, senza mirror o variazioni tonali. Path e road mantengono densita
+e periodo `512`. Il pass oggetti normalizza inoltre `reed_wall`: il profilo SVG
+usa l'intera canvas verticale `56x136` e il runtime lo rasterizza alla
+dimensione nativa del contratto, senza cambiare footprint, collisione o
+placement. La QA dedicata copre tre seed, due risoluzioni e sette viste,
+incluso il focus `reed_wall`, con zero chunk mancanti. La componente Palude di
+`VIS-009` e il polish sulla ripetizione ground sono chiusi.
+
 File probabili:
 
 - `game/modes/zombie/biome_generated_art_catalog.gd`
@@ -302,7 +342,8 @@ Finding da chiudere:
 - bande verticali e materiali a pannelli;
 - valori troppo scuri e vicini;
 - acqua profonda e strada poco distinguibili;
-- `reed_wall` e oggetti palude con padding/scala incoerente.
+- `reed_wall` e oggetti palude con padding/scala incoerente (**chiuso per
+  `reed_wall` il 2026-07-03**).
 
 Pass locale:
 
