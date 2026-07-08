@@ -275,6 +275,12 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Fixed
 
+- Ripristinato il rendering asset-backed dei tile semantici nei biomi con
+  `generated_theme_id`: `IsometricTileResolver` non sovrascrive piu' `asset_path`
+  di route/passaggi manifest (`service_lane`, `ash_lane`, `packed_snow_path`,
+  `wooden_walkway`, `bridge`, `snow_pass`, `broken_gate`, `burned_road`,
+  entry/exit) con i PNG generated; `BiomeTileLayer` li carica come texture SVG
+  `section/tile`, li include nei mesh surface e la tile bake cache sale a v16.
 - `HealthSystem.get_last_damage_source` non genera piu' un errore engine
   quando la sorgente dell'ultimo danno e' stata liberata nel frattempo (nemico
   o player despawnato): il check di validita' avviene sul Variant prima del

@@ -155,6 +155,12 @@ const GENERATED_BIOME_PASSAGE_TAGS: Dictionary = {
 	&"frozen_outskirts": &"snow_pass",
 	&"drowned_marsh": &"bridge",
 }
+const GENERATED_BIOME_ROUTE_TAGS: Dictionary = {
+	&"toxic_wastes": &"service_lane",
+	&"burning_fields": &"ash_lane",
+	&"frozen_outskirts": &"packed_snow_path",
+	&"drowned_marsh": &"wooden_walkway",
+}
 const FROZEN_SNOW_REFERENCE := Color(0.82, 0.90, 0.97, 1.0)
 
 func test_generated_biome_catalog_contract() -> void:
@@ -607,6 +613,12 @@ func test_generated_biome_runtime_consumption() -> void:
 		)
 		layout.road_rect_tags.append(&"broken_street")
 		layout.road_rects.append(
+			Rect2i(Vector2i(2, 16), Vector2i(10, 3))
+		)
+		layout.road_rect_tags.append(
+			GENERATED_BIOME_ROUTE_TAGS[biome_id] as StringName
+		)
+		layout.road_rects.append(
 			Rect2i(Vector2i(18, 2), Vector2i(3, 5))
 		)
 		layout.road_rect_tags.append(
@@ -638,10 +650,26 @@ func test_generated_biome_runtime_consumption() -> void:
 			layer.has_forest_surface_art_textures(),
 			"%s loads every generated surface texture" % String(biome_id)
 		)
-		assert_eq(
+		var loaded_surface_ids := layer.get_loaded_surface_texture_ids()
+		assert_gte(
 			layer.get_loaded_surface_texture_ids().size(),
 			BiomeGeneratedArtCatalog.get_all_surface_asset_paths(biome_id).size(),
-			"%s exposes every surface material" % String(biome_id)
+			"%s exposes every generated material plus manifest tile surfaces"
+			% String(biome_id)
+		)
+		var route_tag := GENERATED_BIOME_ROUTE_TAGS[biome_id] as StringName
+		var passage_tag := GENERATED_BIOME_PASSAGE_TAGS[biome_id] as StringName
+		var route_texture_id := _manifest_surface_texture_id(&"terrain_tiles", route_tag)
+		var passage_texture_id := _manifest_surface_texture_id(&"passage_tiles", passage_tag)
+		assert_true(
+			loaded_surface_ids.has(route_texture_id),
+			"%s loads terrain tile texture %s"
+			% [String(biome_id), String(route_texture_id)]
+		)
+		assert_true(
+			loaded_surface_ids.has(passage_texture_id),
+			"%s loads passage tile texture %s"
+			% [String(biome_id), String(passage_texture_id)]
 		)
 		assert_gt(
 			layer.get_rendered_surface_material_ids().size(),
@@ -654,7 +682,21 @@ func test_generated_biome_runtime_consumption() -> void:
 			"%s generated surface mesh uses seam-covering overdraw"
 			% String(biome_id)
 		)
-		var first_rendered_id := layer.get_rendered_surface_material_ids()[0]
+		var expected_theme_fragment := (
+			"/%s/" % String(GENERATED_BIOME_THEMES[biome_id])
+		)
+		var first_rendered_id := &""
+		for rendered_id in layer.get_rendered_surface_material_ids():
+			var rendered_path := String(
+				layer.get_forest_surface_art_asset_paths().get(rendered_id, "")
+			)
+			if rendered_path.contains(expected_theme_fragment):
+				first_rendered_id = rendered_id
+				break
+		assert_false(
+			first_rendered_id.is_empty(),
+			"%s renders at least one generated PNG material" % String(biome_id)
+		)
 		var runtime_texture := (
 			layer._forest_surface_textures.get(first_rendered_id) as Texture2D
 		)
@@ -849,9 +891,6 @@ func test_generated_biome_runtime_consumption() -> void:
 					selected_material_paths[
 						layer.get_resolved_material_asset_path(cell)
 					] = true
-		var expected_theme_fragment := (
-			"/%s/" % String(GENERATED_BIOME_THEMES[biome_id])
-		)
 		for selected_path in selected_material_paths:
 			assert_true(
 				String(selected_path).contains(expected_theme_fragment),
@@ -864,19 +903,53 @@ func test_generated_biome_runtime_consumption() -> void:
 			).contains(expected_theme_fragment),
 			"%s hazard underlay uses its generated theme" % String(biome_id)
 		)
+		var route_probe := Vector2i(5, 17)
+		assert_eq(
+			layer.get_resolved_tile_id(route_probe),
+			route_tag,
+			"%s route keeps its biome tile id" % String(biome_id)
+		)
+		assert_eq(
+			layer.get_resolved_tile_section(route_probe),
+			&"terrain_tiles",
+			"%s route remains a terrain tile" % String(biome_id)
+		)
 		assert_true(
-			layer.get_resolved_material_asset_path(
-				Vector2i(19, 3)
-			).contains(expected_theme_fragment),
-			"%s passage surface uses its generated theme" % String(biome_id)
+			layer.get_resolved_material_asset_path(route_probe).is_empty(),
+			"%s route tile is not replaced by generated material"
+			% String(biome_id)
+		)
+		assert_true(
+			layer.get_resolved_asset_path(route_probe).contains(String(route_tag)),
+			"%s route keeps its manifest SVG asset" % String(biome_id)
+		)
+		var passage_probe := Vector2i(19, 3)
+		assert_eq(
+			layer.get_resolved_tile_id(passage_probe),
+			passage_tag,
+			"%s passage keeps its biome tile id" % String(biome_id)
+		)
+		assert_eq(
+			layer.get_resolved_tile_section(passage_probe),
+			&"passage_tiles",
+			"%s passage remains a passage tile" % String(biome_id)
+		)
+		assert_true(
+			layer.get_resolved_material_asset_path(passage_probe).is_empty(),
+			"%s passage tile is not replaced by generated material"
+			% String(biome_id)
+		)
+		assert_true(
+			layer.get_resolved_asset_path(passage_probe).contains(String(passage_tag)),
+			"%s passage keeps its manifest SVG asset" % String(biome_id)
 		)
 		var rendered_material_ids: Dictionary = {}
 		for rendered_id in layer.get_rendered_surface_material_ids():
 			rendered_material_ids[rendered_id] = true
-		assert_eq(
+		assert_gte(
 			rendered_material_ids.size(),
 			selected_material_ids.size(),
-			"%s builds one non-empty mesh for every selected material"
+			"%s builds meshes for selected generated materials and manifest tiles"
 			% String(biome_id)
 		)
 		for selected_id in selected_material_ids:
@@ -885,6 +958,26 @@ func test_generated_biome_runtime_consumption() -> void:
 				"%s renders selected material %s"
 				% [String(biome_id), String(selected_id)]
 			)
+		assert_true(
+			rendered_material_ids.has(route_texture_id),
+			"%s renders semantic route texture %s"
+			% [String(biome_id), String(route_texture_id)]
+		)
+		assert_true(
+			rendered_material_ids.has(passage_texture_id),
+			"%s renders semantic passage texture %s"
+			% [String(biome_id), String(passage_texture_id)]
+		)
+		assert_eq(
+			layer._forest_surface_texture_world_size(route_texture_id),
+			BiomeTileLayer.SEMANTIC_SURFACE_TEXTURE_WORLD_SIZE,
+			"%s route tile texture uses one-cell density" % String(biome_id)
+		)
+		assert_eq(
+			layer._forest_surface_texture_world_size(passage_texture_id),
+			BiomeTileLayer.SEMANTIC_SURFACE_TEXTURE_WORLD_SIZE,
+			"%s passage tile texture uses one-cell density" % String(biome_id)
+		)
 		if biome_id == &"toxic_wastes":
 			for rendered_id in rendered_material_ids:
 				assert_false(
@@ -1710,6 +1803,9 @@ func _find_surface_material_id(
 		if String(paths.get(material_id, "")).contains(asset_fragment):
 			return material_id
 	return &""
+
+func _manifest_surface_texture_id(section: StringName, tile_id: StringName) -> StringName:
+	return StringName("%s/%s" % [String(section), String(tile_id)])
 
 func _is_visible_white_matte(color: Color) -> bool:
 	var minimum := minf(color.r, minf(color.g, color.b))

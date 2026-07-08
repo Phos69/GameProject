@@ -88,6 +88,37 @@ const TERRAIN_ROUTE_TILE_IDS := TILE_CATALOG.TERRAIN_ROUTE_TILE_IDS
 const FOREST_TERRAIN_TILE_IDS := TILE_CATALOG.FOREST_TERRAIN_TILE_IDS
 const PASSAGE_ROUTE_TILE_IDS := TILE_CATALOG.PASSAGE_ROUTE_TILE_IDS
 const REQUIRED_TILE_IDS := TILE_CATALOG.REQUIRED_TILE_IDS
+const GENERATED_THEME_MANIFEST_SURFACE_TILE_IDS: Array[StringName] = [
+	TILE_MAIN_ROAD,
+	TILE_ROAD,
+	TILE_BROKEN_STREET,
+	TILE_SERVICE_LANE,
+	TILE_ASH_LANE,
+	TILE_PACKED_SNOW_PATH,
+	TILE_WOODEN_WALKWAY,
+	TILE_BRIDGE,
+	TILE_SNOW_PASS,
+	TILE_BROKEN_GATE,
+	TILE_BURNED_ROAD,
+	TILE_ROAD_INTERSECTION,
+	TILE_ROAD_EDGE,
+	TILE_ROAD_CURVE_NORTH,
+	TILE_ROAD_CURVE_EAST,
+	TILE_ROAD_CURVE_SOUTH,
+	TILE_ROAD_CURVE_WEST,
+	TILE_ROAD_ENTRY,
+	TILE_ROAD_EXIT,
+	TILE_BRIDGE_ENTRY,
+	TILE_BRIDGE_EXIT,
+	TILE_SNOW_PASS_ENTRY,
+	TILE_SNOW_PASS_EXIT,
+	TILE_BROKEN_GATE_ENTRY,
+	TILE_BROKEN_GATE_EXIT,
+	TILE_BURNED_ROAD_ENTRY,
+	TILE_BURNED_ROAD_EXIT,
+	TILE_BRIDGE_BROKEN,
+	TILE_CLIFF_RAMP
+]
 
 var manifest: IsometricEnvironmentManifest
 
@@ -534,7 +565,7 @@ func _resolve_route_tile_data(
 		return passage_rect_data
 	var cell_route_tags := layout.get_road_tags_at_cell(cell)
 	if not cell_route_tags.is_empty():
-		if _uses_themed_surface(biome_id):
+		if _is_forest_biome(biome_id):
 			return _resolve_forest_cell_route_tile_data(layout, cell, cell_route_tags, biome_cell)
 		return _resolve_cell_route_tile_data(layout, cell, cell_route_tags)
 	var matching_indices: Array[int] = []
@@ -543,7 +574,7 @@ func _resolve_route_tile_data(
 			matching_indices.append(index)
 	if matching_indices.is_empty():
 		return {}
-	if _uses_themed_surface(biome_id):
+	if _is_forest_biome(biome_id):
 		return _resolve_forest_rect_route_tile_data(
 			layout,
 			cell,
@@ -1057,6 +1088,8 @@ func _apply_generated_material(
 	):
 		return tile_data
 	var tile_id := StringName(tile_data.get("tile_id", &""))
+	if _uses_manifest_surface_tile(tile_id):
+		return tile_data
 	var material_role := _generated_surface_role(tile_id)
 	if material_role.is_empty():
 		return tile_data
@@ -1080,6 +1113,9 @@ func _apply_generated_material(
 	result["material_asset_path"] = asset_path
 	result["asset_path"] = asset_path
 	return result
+
+func _uses_manifest_surface_tile(tile_id: StringName) -> bool:
+	return GENERATED_THEME_MANIFEST_SURFACE_TILE_IDS.has(tile_id)
 
 func _generated_surface_role(tile_id: StringName) -> StringName:
 	if is_void_transition_tile_id(tile_id):

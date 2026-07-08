@@ -43,6 +43,7 @@ const ROCK_CLIFF_FACE_TEXTURE_ID := &"rock_cliff_face_texture"
 const LARGE_ROCK_OBJECT_ID := &"large_rock"
 const FOREST_GRASS_TEXTURE_ID := &"forest_grass"
 const FOREST_SURFACE_TEXTURE_WORLD_SIZE := 256.0
+const SEMANTIC_SURFACE_TEXTURE_WORLD_SIZE := 256.0
 const TOXIC_SURFACE_TEXTURE_WORLD_SIZE := 1024.0
 const FROZEN_SURFACE_TEXTURE_WORLD_SIZE := 512.0
 const FROZEN_GROUND_TEXTURE_WORLD_SIZE := 1024.0
@@ -81,6 +82,44 @@ const FOREST_PASSAGE_SURFACE_TILE_IDS: Array[StringName] = [
 	&"burned_road", &"burned_road_entry", &"burned_road_exit",
 	&"bridge", &"bridge_entry", &"bridge_exit",
 	&"snow_pass", &"snow_pass_entry", &"snow_pass_exit"
+]
+const GENERATED_THEME_TERRAIN_SURFACE_TILE_IDS: Array[StringName] = [
+	&"main_road",
+	&"road",
+	&"broken_street",
+	&"service_lane",
+	&"ash_lane",
+	&"packed_snow_path",
+	&"wooden_walkway",
+	&"bridge",
+	&"snow_pass",
+	&"broken_gate",
+	&"burned_road",
+	&"road_intersection",
+	&"road_edge",
+	&"road_curve_north",
+	&"road_curve_east",
+	&"road_curve_south",
+	&"road_curve_west"
+]
+const GENERATED_THEME_PASSAGE_SURFACE_TILE_IDS: Array[StringName] = [
+	&"road",
+	&"bridge",
+	&"snow_pass",
+	&"broken_gate",
+	&"burned_road",
+	&"road_entry",
+	&"road_exit",
+	&"bridge_entry",
+	&"bridge_exit",
+	&"snow_pass_entry",
+	&"snow_pass_exit",
+	&"broken_gate_entry",
+	&"broken_gate_exit",
+	&"burned_road_entry",
+	&"burned_road_exit",
+	&"bridge_broken",
+	&"cliff_ramp"
 ]
 var layout: BiomeEnvironmentLayout
 var palette: BiomePalette
@@ -482,7 +521,7 @@ func has_forest_surface_art_textures() -> bool:
 		return (
 			not _surface_texture_ids.is_empty()
 			and _surface_texture_ids.size()
-			== GENERATED_ART_CATALOG.get_all_surface_asset_paths(biome_id).size()
+			>= GENERATED_ART_CATALOG.get_all_surface_asset_paths(biome_id).size()
 		)
 	for texture_id in FOREST_SURFACE_TEXTURE_IDS:
 		if not (_forest_surface_textures.get(texture_id) is Texture2D):
@@ -833,6 +872,7 @@ func _load_forest_surface_art_textures() -> void:
 			or biome_id == &"drowned_marsh"
 		):
 			_apply_offset_ground_macro_texture()
+		_load_generated_theme_manifest_surface_textures()
 		return
 	for texture_id in FOREST_SURFACE_TEXTURE_IDS:
 		var contract := manifest.get_terrain_asset_contract(_themed_surface_asset_id(texture_id))
@@ -848,6 +888,52 @@ func _load_forest_surface_art_textures() -> void:
 		)
 		if texture != null:
 			_forest_surface_textures[texture_id] = texture
+			_surface_texture_ids.append(texture_id)
+
+func _load_generated_theme_manifest_surface_textures() -> void:
+	for tile_id in _biome_manifest_surface_tile_ids(
+		&"terrain_tiles",
+		GENERATED_THEME_TERRAIN_SURFACE_TILE_IDS
+	):
+		_load_manifest_surface_texture(IsometricTileResolver.TILE_SECTION_TERRAIN, tile_id)
+	for tile_id in _biome_manifest_surface_tile_ids(
+		&"passage_tiles",
+		GENERATED_THEME_PASSAGE_SURFACE_TILE_IDS
+	):
+		_load_manifest_surface_texture(IsometricTileResolver.TILE_SECTION_PASSAGE, tile_id)
+
+func _biome_manifest_surface_tile_ids(
+	contract_key: StringName,
+	fallback_ids: Array[StringName]
+) -> Array[StringName]:
+	var result: Array[StringName] = []
+	if manifest != null:
+		var biome_contract := manifest.get_biome_asset_set_contract(biome_id)
+		var raw_ids := biome_contract.get(String(contract_key), biome_contract.get(contract_key, [])) as Array
+		for raw_id in raw_ids:
+			result.append(StringName(str(raw_id)))
+	if result.is_empty():
+		return fallback_ids.duplicate()
+	return result
+
+func _load_manifest_surface_texture(section: StringName, tile_id: StringName) -> void:
+	var texture_id := _manifest_surface_texture_id(section, tile_id)
+	if texture_id.is_empty() or manifest == null:
+		return
+	var contract := manifest.get_asset_contract(section, tile_id)
+	var asset_path := String(contract.get("asset_path", ""))
+	_forest_surface_art_asset_paths[texture_id] = asset_path
+	if asset_path.is_empty():
+		return
+	var texture := SVG_TEXTURE_LOADER.load_texture(
+		asset_path,
+		palette.floor_color if palette != null else Color(0.26, 0.40, 0.18, 1.0),
+		palette.alternate_floor_color if palette != null else Color(0.18, 0.30, 0.14, 1.0),
+		Vector2i(512, 512)
+	)
+	if texture != null:
+		_forest_surface_textures[texture_id] = texture
+		if not _surface_texture_ids.has(texture_id):
 			_surface_texture_ids.append(texture_id)
 
 func _apply_offset_ground_macro_texture() -> void:
@@ -1130,8 +1216,44 @@ func _surface_texture_id_for_cell(
 	tile_id: StringName
 ) -> StringName:
 	if _uses_generated_theme():
-		return get_resolved_material_asset_id(cell)
+		var material_id := get_resolved_material_asset_id(cell)
+		if not material_id.is_empty():
+			return material_id
+		return _manifest_surface_texture_id_for_cell(cell, tile_id)
 	return _forest_surface_texture_id(tile_id)
+
+func _manifest_surface_texture_id_for_cell(
+	cell: Vector2i,
+	tile_id: StringName
+) -> StringName:
+	var section := get_resolved_tile_section(cell)
+	if section.is_empty():
+		section = _manifest_surface_section_for_tile_id(tile_id)
+	if section.is_empty():
+		return &""
+	var texture_id := _manifest_surface_texture_id(section, tile_id)
+	if _forest_surface_textures.get(texture_id) is Texture2D:
+		return texture_id
+	return &""
+
+func _manifest_surface_texture_id(section: StringName, tile_id: StringName) -> StringName:
+	if section.is_empty() or tile_id.is_empty():
+		return &""
+	return StringName("%s/%s" % [String(section), String(tile_id)])
+
+func _manifest_surface_section_for_tile_id(tile_id: StringName) -> StringName:
+	if GENERATED_THEME_PASSAGE_SURFACE_TILE_IDS.has(tile_id):
+		return IsometricTileResolver.TILE_SECTION_PASSAGE
+	if GENERATED_THEME_TERRAIN_SURFACE_TILE_IDS.has(tile_id):
+		return IsometricTileResolver.TILE_SECTION_TERRAIN
+	return &""
+
+func _is_manifest_surface_texture_id(texture_id: StringName) -> bool:
+	var texture_key := String(texture_id)
+	return (
+		texture_key.begins_with("%s/" % String(IsometricTileResolver.TILE_SECTION_TERRAIN))
+		or texture_key.begins_with("%s/" % String(IsometricTileResolver.TILE_SECTION_PASSAGE))
+	)
 
 func _forest_surface_texture_id(tile_id: StringName) -> StringName:
 	if resolver != null and resolver.is_void_transition_tile_id(tile_id):
@@ -1286,6 +1408,8 @@ func _build_forest_surface_meshes(
 	return result
 
 func _forest_surface_texture_world_size(texture_id: StringName) -> float:
+	if _is_manifest_surface_texture_id(texture_id):
+		return SEMANTIC_SURFACE_TEXTURE_WORLD_SIZE
 	if _uses_generated_theme():
 		var texture_name := String(texture_id)
 		if biome_id == &"toxic_wastes":

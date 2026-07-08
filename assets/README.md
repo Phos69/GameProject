@@ -112,6 +112,12 @@ transizioni, detail e cliff. Il manifest registra per ogni set attivo stato
 `final`, provenienza `openai_image_generation`, licenza `Project original` e
 le liste di ruoli.
 
+I set generati sono materiali di superficie per ground/cliff e non sostituiscono
+i tile semantici del manifest: route e passage come `service_lane`, `ash_lane`,
+`packed_snow_path`, `wooden_walkway`, `bridge`, `snow_pass`, `broken_gate`,
+`burned_road` e relative entry/exit continuano a risolvere gli SVG asset-backed
+e vengono caricati dal `BiomeTileLayer` come texture di superficie dedicate.
+
 Nel runtime `frozen_tundra` sceglie un solo materiale per ruolo e regione. Il
 ground viene tagliato e composto in una quilt `2x2` da quattro offset periodici
 dello stesso raster neve, con raccordo interno/esterno e repeat world-space
@@ -215,6 +221,12 @@ vivono in `environment/isometric/tiles/forest/` e nelle cartelle `edges/`.
 divide in chunk e usa il manifest v9 come contratto per gli asset. I vecchi
 `BiomeRegionGround` e `BiomeTerrainPatch` restano fallback tecnici solo quando
 la modalita asset viene disattivata.
+
+Nei biomi con `generated_theme_id`, `BiomeTileLayer` usa i PNG generated per le
+superfici ampie ma carica i `terrain_tiles` e `passage_tiles` dichiarati dal
+biome asset set come texture SVG con ID sezione/tile (`terrain_tiles/service_lane`,
+`passage_tiles/bridge_entry`). Questo preserva gli asset visibili dei biomi e
+impedisce che il materiale generated sovrascriva `asset_path` dei tile semantici.
 
 Il generator asset controlla 108 SVG ambiente isometrico dopo il pass texture
 forestali, inclusi road connector, entry/exit dei passaggi, object scene per

@@ -806,6 +806,11 @@ multi-bioma.
   cosi entry, exit e connector restano coerenti con il `passage_type`; le altre
   route generate preferiscono `road_cell_tags` diagonali e usano i rettangoli
   solo per compatibilita.
+- Nei biomi con `generated_theme_id`, il resolver applica materiali PNG generated
+  solo a superfici ampie/ruoli forestali compatibili; route e passage semantici
+  dichiarati dal manifest mantengono `tile_id`, sezione e `asset_path` SVG.
+  `BiomeTileLayer` li carica come texture di superficie con ID `section/tile`,
+  cosi i tile bioma restano renderizzati senza confondersi con il pool generated.
 - `IsometricTileCatalog` possiede solo ID statici, sezioni manifest e liste di
   route/tile richiesti. `IsometricTileResolver` mantiene alias pubblici per i
   consumer esistenti e resta l'unico responsabile della scelta per-cella.
