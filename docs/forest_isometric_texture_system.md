@@ -15,6 +15,7 @@ Tile principali:
 - `forest_tall_grass`
 - `forest_path`
 - `forest_road`
+- `forest_road_border`
 - `forest_void`
 - `forest_cliff_edge`
 - `forest_mountain_wall`
@@ -64,13 +65,14 @@ mesh e non mostra cap scuri agli estremi.
 prospettiva invece di una striscia piatta; la mesh legacy a rombi resta fallback
 non forestale. Path, road, wall, void e collisioni restano separati.
 
-Sentiero e strada usano rispettivamente
-`forest_dirt_path_generated.png` e `forest_asphalt_generated.png`. Dal pass
-`ART-VIS-FIX` del 2026-07-02, i tile logici `grass_to_path`,
-`grass_to_road` e `path_to_road` restano nel resolver come semantica di
-contatto, ma il runtime non li stende piu come materiali misti larghi un tile:
-`BiomeTileLayer` li mappa direttamente a `forest_path` o `forest_road`, cosi il
-contatto con il terreno resta un taglio netto della superficie orientabile.
+Sentiero, strada e bordo strada usano rispettivamente
+`forest_dirt_path_generated.png`, `forest_asphalt_generated.png` e
+`forest_road_border_defined.png`. Dal secondo pass `ART-VIS-FIX` del 2026-07-08, i
+tile logici `grass_to_path`, `grass_to_road` e `path_to_road` restano nel
+resolver come semantica di contatto, ma il runtime non li stende piu come
+materiali misti larghi un tile: `BiomeTileLayer` mappa `grass_to_path`
+direttamente a `forest_path` e i contatti verso strada a `forest_road_border`,
+cosi il contatto con il terreno resta un taglio netto con bordo definito.
 Tutti i raster sono seamless, mipmapped e limitati a 512 px in import.
 
 ## Regole di risoluzione
@@ -84,9 +86,9 @@ Tutti i raster sono seamless, mipmapped e limitati a 512 px in import.
 - Le strade principali (`main_road`) diventano `forest_road`.
 - I sentieri (`broken_street`) diventano `forest_path`.
 - Il contatto tra strada principale e sentiero resta marcato come
-  `path_to_road`, ma viene renderizzato con la superficie `forest_road`.
+  `path_to_road`, ma viene renderizzato con la superficie `forest_road_border`.
 - Il contatto con floor non-route produce `grass_to_path` o `grass_to_road`;
-  nel rendering diventano rispettivamente `forest_path` e `forest_road`.
+  nel rendering diventano rispettivamente `forest_path` e `forest_road_border`.
 - Il contatto tra erba bassa e tall grass produce `grass_to_tall_grass`.
 - Il contatto con void/fall zone produce `ground_to_void_cliff`.
 - Il contatto con border o wall segment produce `ground_to_mountain_wall`.
@@ -133,8 +135,8 @@ esterno, lasciando solo il fondale void. Non crea nodi per tile.
 
 - Avviare survival con seed `772031` e confermare che la regione base mostri
   erba forestale, tall grass, sentieri e strada, non floor generico.
-- Verificare che `forest_path` e `forest_road` siano leggibili anche quando si
-  incrociano o toccano erba.
+- Verificare che `forest_path`, `forest_road` e `forest_road_border` siano
+  leggibili anche quando si incrociano o toccano erba.
 - Attraversare un varco fisico: il passaggio deve restare aperto, senza portali
   o gate visibili, e le pareti laterali devono leggere come montagna/roccia.
 - Camminare vicino a void e fall zone: il bordo deve mostrare cliff/depth e

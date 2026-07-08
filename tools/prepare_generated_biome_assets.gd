@@ -1,7 +1,7 @@
 extends SceneTree
 
 const ASSET_ROOT := "res://assets/environment/isometric/generated_images"
-const EXPECTED_PNG_COUNT := 191
+const EXPECTED_PNG_COUNT := 195
 const MATTE_MIN_CHANNEL := 220
 const MATTE_MAX_CHROMA := 20
 const CUTOUT_MATTE_MIN_CHANNEL := 228

@@ -65,6 +65,10 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
   transition, con `resource_crate` per toxic_wastes e burning_fields e
   `reed_wall` per drowned_marsh, con lo stesso contratto di readiness del
   review (zero chunk visibili mancanti, coverage minima).
+- Aggiunti cinque asset PNG `road_border_defined` per il rendering delle
+  transizioni strada: `forest_road_border` per `infected_plains` e un materiale
+  `ground_to_road` dedicato per `urban_ruins`, `volcanic`, `frozen_tundra` e
+  `swamp`.
 - Aggiunto il filtro `--only=id1,id2` a
   `tools/generate_isometric_environment_assets.gd` per rigenerare una singola
   famiglia di asset senza riscrivere il resto del catalogo.
@@ -103,12 +107,12 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
   bordi, rocce e conversione footprint.
 - Aggiunto `docs/iso_grid_scale_migration_report.md` con metriche della
   migrazione, impatto su cache/snapshot e lista dei test eseguiti.
-- Integrati 191 PNG generati e ripuliti sotto
+- Integrati 195 PNG generati e ripuliti sotto
   `assets/environment/isometric/generated_images/`. I quattro biomi Survival
   avanzati usano set tematici per ground, route, transizioni, cliff verso void e
-  raised cliff; `desert` e il nuovo set `forest` restano catalogati ma non
-  assegnati. `BiomeGeneratedArtCatalog` assegna ruoli e varianti in modo
-  deterministico.
+  raised cliff, inclusi i nuovi bordi strada `road_border_defined`; `desert` e
+  il nuovo set `forest` restano catalogati ma non assegnati.
+  `BiomeGeneratedArtCatalog` assegna ruoli e varianti in modo deterministico.
 - Infinite Arena rende i quattro lati `BLOCKED` come cliff rocciosi rialzati di
   due tile logiche. `BiomeEnvironmentLayout` distingue `procedural_wall` e
   `raised_cliff`; i segmenti conservano collisioni e Y-sort ma usano materiali
@@ -160,9 +164,9 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
     chevron da cassa, cosi' non leggono piu' come loot crate giganti;
   - la base occupata degli oggetti usa un bordo scuro invece dell'outline
     color accento che leggeva come marker di selezione;
-  - i temi generati renderizzano le route a taglio netto: le tile di
-    transizione `grass_to_path`/`grass_to_road`/`path_to_road` usano
-    direttamente le superfici path/road (stessa policy della Pianura);
+  - i temi generati renderizzano le route a taglio netto: le transizioni verso
+    path restano path diretto, mentre bordi e curve strada usano asset
+    `road_border_defined` tramite il ruolo `ground_to_road`;
   - `toxic_wastes`: il ground pool usa solo la coppia coerente di rubble
     (variation 02/03); lichene chiaro e ghiaia bruna passano a `detail`,
     eliminando la scacchiera di pannelli per macro-cella;
@@ -190,14 +194,14 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
     `resource_crate` a conferma che, dopo il redesign di `lab_block`/
     `lab_ruin` (`VIS-005`), le vere supply crate restano compatte; la QA
     Palude aggiunge la vista `reed_wall`.
-  - `TileBakeCache.FORMAT_VERSION` sale progressivamente a `15` mano a mano
-    che ogni bioma normalizza i propri `material_asset_id`, invalidando le
-    cache persistite obsolete.
+  - `TileBakeCache.FORMAT_VERSION` sale progressivamente a `17` mano a mano
+    che ogni bioma normalizza i propri `material_asset_id` e i nuovi border
+    strada, invalidando le cache persistite obsolete.
 
 - Pianura Infetta non renderizza piu `grass_to_path`, `grass_to_road` e
-  `path_to_road` come texture intermedie: le celle di contatto usano
-  direttamente le superfici `forest_path` o `forest_road`, mantenendo un taglio
-  netto verso il terreno. `forest_tree` applica inoltre flip/tinta
+  `path_to_road` come texture intermedie: `grass_to_path` usa direttamente
+  `forest_path`, mentre i contatti verso strada usano `forest_road_border`,
+  mantenendo un taglio netto verso il terreno. `forest_tree` applica inoltre flip/tinta
   deterministici per ridurre la ripetizione senza cambiare collisioni o
   footprint.
 - Ricalibrato il rendering dei cliff verso void per la griglia `6x6`: il lip

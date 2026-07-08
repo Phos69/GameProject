@@ -1100,7 +1100,7 @@ QA visuale e runtime da eseguire dopo modifiche a `infected_plains`,
   segnaletica e i raccordi prato/terra/asfalto non mostrino scacchi o ripetizioni
   evidenti. Il runtime non deve usare `grass_to_path`, `grass_to_road` o
   `path_to_road` come texture intermedie: i contatti devono leggere come tagli
-  netti delle superfici `forest_path` o `forest_road`.
+  netti di `forest_path` o del bordo definito `forest_road_border`.
 - Verificare che gli incroci path/road e i bordi path/grass o road/grass usino
   route leggibili, senza rettangoli piatti, patch ovali legacy o fasce
   sovrapposte.
@@ -1129,7 +1129,7 @@ godot --headless --path . --script res://tools/generate_isometric_environment_as
 ## Regressione asset generati dei biomi
 
 - Eseguire `prepare_generated_biome_assets.gd -- --check`: devono risultare
-  esattamente 191 PNG, zero modifiche e nessun bordo bianco residuo.
+  esattamente 195 PNG, zero modifiche e nessun bordo bianco residuo.
 - Eseguire la QA visuale e controllare i quattro pannelli: terreno, path, road,
   void face, lip e corona non devono mostrare bianco o checkerboard.
 - In Survival attraversare `toxic_wastes`, `burning_fields`,

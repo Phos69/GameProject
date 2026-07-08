@@ -703,8 +703,8 @@ Identita dei biomi:
 
 - `Pianura Infetta`: onboarding, zombie base, casse comuni/mediche e fall zone;
   il visuale ground usa il set foresta base con erba, erba alta, sentieri,
-  strada, cliff/void e pareti rocciose, piu transizioni tra grass/path/road,
-  tall grass, cliff e mountain wall. La versione starter contiene anche una
+  strada, bordi strada definiti, cliff/void e pareti rocciose, piu transizioni
+  tra grass/path/road, tall grass, cliff e mountain wall. La versione starter contiene anche una
   strada principale edge-to-edge, sentieri, almeno una casa, vegetazione densa
   impassabile, alberi `3x3` e masse rocciose scalabili, auto abbandonate e un possibile
   fiume attraversabile solo sui bridge;
@@ -738,9 +738,9 @@ Identita dei biomi:
   almeno un passaggio raggiungibile; ogni regione rende il proprio lato con il
   proprio tema. I lati senza vicino diventano fall zone con visuale
   cliff/depth;
-- tall grass, path, road e transizioni del bioma base sono solo lettura
-  visuale: non rendono obbligatori asset esterni e non cambiano walkability,
-  danno, spawn o pathfinding;
+- tall grass, path, road, bordi strada e transizioni del bioma base sono solo
+  lettura visuale: non rendono obbligatori asset esterni e non cambiano
+  walkability, danno, spawn o pathfinding;
 - la vegetazione densa e un ostacolo fisico: blocca movimento e proiettili come
   copertura/impedimento, a differenza del tall grass tile-level;
 - `deep_water` e hazard bloccante; i bridge dichiarati dal layout riaprono solo
@@ -782,9 +782,10 @@ Regole hazard:
 - il void profondo non mostra texture o reticoli ripetuti: resta uniforme e
   usa lo stesso colore del fuori-mappa e viene definito visivamente dal cliff
   dettagliato solo sul confine con terreno calpestabile;
-- ground, path, road, passaggi, hazard-underlay, transizioni e bordo cliff dei
-  quattro biomi avanzati usano esclusivamente il relativo set generato; questa
-  skin non modifica collisioni, danno, spawn, fall recovery o pathfinding;
+- ground, path, road, passaggi, hazard-underlay, bordi strada, transizioni e
+  bordo cliff dei quattro biomi avanzati usano esclusivamente il relativo set
+  generato; questa skin non modifica collisioni, danno, spawn, fall recovery o
+  pathfinding;
 - quando void e bordo esterno si incontrano non viene disegnato alcun raccordo,
   muro o cliff aggiuntivo: l'intero tratto di contatto resta puro vuoto;
 - calpestando una cella `void` o `fall_zone` il player entra in `falling`; il

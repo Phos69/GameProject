@@ -145,12 +145,13 @@ base, poi i biomi con generated art piu problematici.
 Obiettivo: fare della Pianura Infetta il riferimento per le transizioni
 ground/path/road e per la scala degli oggetti forestali.
 
-Stato 2026-07-02: primo pass eseguito. Il runtime mantiene i tile ID
+Stato 2026-07-08: secondo pass eseguito. Il runtime mantiene i tile ID
 `grass_to_path`, `grass_to_road` e `path_to_road` come semantica del resolver,
-ma non li renderizza piu con texture intermedie: il tile layer usa direttamente
-`forest_path` o `forest_road` per ottenere tagli netti. Aggiunta QA dedicata in
-`tests/visual_qa/biome_art_infected_plains_visual_qa.gd` e variazione
-deterministica flip/tinta per `forest_tree`.
+ma non li renderizza piu con texture intermedie: `grass_to_path` usa
+`forest_path`, mentre `grass_to_road` e `path_to_road` usano
+`forest_road_border` per ottenere tagli netti con bordo strada definito.
+Aggiunta QA dedicata in `tests/visual_qa/biome_art_infected_plains_visual_qa.gd`
+e variazione deterministica flip/tinta per `forest_tree`.
 
 File probabili:
 
@@ -163,7 +164,7 @@ File probabili:
 Finding da chiudere:
 
 - path e road con scalini o angoli netti;
-- `path_to_road` percepito come fascia sovrapposta;
+- `path_to_road` o `grass_to_road` percepiti come fascia sovrapposta;
 - ripetizione e scala di `forest_tree`;
 - eventuali oggetti forestali con stile troppo diverso dagli attori.
 

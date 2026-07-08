@@ -47,7 +47,7 @@ func _run() -> void:
 	await process_frame
 	_expect(layer.has_forest_surface_art_textures(), "forest surface textures load")
 	_expect(layer.get_missing_asset_count() == 0, "forest tile layer has no missing assets")
-	_expect(_route_surfaces_are_crisp(layer), "route transition cells render as path/road surfaces")
+	_expect(_route_surfaces_are_crisp(layer), "road transition cells render with defined road-border surfaces")
 
 	await _add_tree_cluster(scene_root, layout, biome.palette)
 	for _frame in range(4):
@@ -82,6 +82,7 @@ func _route_surfaces_are_crisp(layer: BiomeTileLayer) -> bool:
 	return (
 		rendered_ids.has(&"forest_path")
 		and rendered_ids.has(&"forest_road")
+		and rendered_ids.has(&"forest_road_border")
 		and not rendered_ids.has(&"grass_to_path")
 		and not rendered_ids.has(&"grass_to_road")
 		and not rendered_ids.has(&"path_to_road")
@@ -145,7 +146,7 @@ func _add_labels(scene_root: Node2D) -> void:
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	scene_root.add_child(title)
 	var subtitle := _make_label(
-		"Route edges use path/road surfaces directly; no mixed transition texture is rendered.",
+		"Road contacts use a defined border material; no generic blended transition texture is rendered.",
 		Vector2(0.0, 55.0),
 		Vector2(1280.0, 26.0),
 		15,

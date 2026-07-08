@@ -2,8 +2,8 @@ extends RefCounted
 class_name BiomeGeneratedArtCatalog
 
 const ASSET_ROOT := "res://assets/environment/isometric/generated_images"
-const EXPECTED_TOTAL_ASSET_COUNT := 191
-const EXPECTED_ACTIVE_ASSET_COUNT := 129
+const EXPECTED_TOTAL_ASSET_COUNT := 195
+const EXPECTED_ACTIVE_ASSET_COUNT := 133
 const SURFACE_MACRO_CELL_SIZE := 8
 const COHERENT_SURFACE_SAMPLE_THEMES: Array[StringName] = [
 	&"frozen_tundra",
@@ -20,6 +20,12 @@ const REGION_COHERENT_SURFACE_SAMPLE_THEMES: Array[StringName] = [
 const GROUND_DETAIL_POOL_THEMES: Array[StringName] = [
 	&"desert",
 	&"forest",
+]
+const ROAD_BORDER_THEME_IDS: Array[StringName] = [
+	&"frozen_tundra",
+	&"swamp",
+	&"urban_ruins",
+	&"volcanic",
 ]
 
 const ROLE_GROUND: StringName = &"ground"
@@ -225,8 +231,6 @@ static func resolve_runtime_surface_role(
 	match role:
 		ROLE_GROUND_TO_PATH:
 			return ROLE_PATH
-		ROLE_GROUND_TO_ROAD:
-			return ROLE_ROAD
 		_:
 			return role
 
@@ -450,7 +454,11 @@ static func _surface_role_for_file(
 		return ROLE_DETAIL
 	if file_name.contains("transition_ground_to_path"):
 		return ROLE_GROUND_TO_PATH
+	if file_name.contains("road_border_defined"):
+		return ROLE_GROUND_TO_ROAD
 	if file_name.contains("transition_ground_to_road"):
+		if ROAD_BORDER_THEME_IDS.has(theme_id):
+			return ROLE_DETAIL
 		return ROLE_GROUND_TO_ROAD
 	if file_name.contains("base_ground_variation"):
 		return ROLE_GROUND

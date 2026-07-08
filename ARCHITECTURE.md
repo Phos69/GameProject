@@ -819,8 +819,9 @@ multi-bioma.
   decide tile, sezioni o ruoli.
 - Per `infected_plains`, `IsometricTileResolver` usa il set forestale dedicato:
   `forest_grass`, `forest_tall_grass`, `forest_path`, `forest_road`,
-  `forest_void`, `forest_cliff_edge`, `forest_mountain_wall` e le transizioni
-  `grass_to_path`, `grass_to_road`, `grass_to_tall_grass`, `path_to_road`,
+  `forest_road_border`, `forest_void`, `forest_cliff_edge`,
+  `forest_mountain_wall` e le transizioni `grass_to_path`, `grass_to_road`,
+  `grass_to_tall_grass`, `path_to_road`,
   `ground_to_void_cliff` e `ground_to_mountain_wall`. Queste scelte sono
   presentazionali e neighbor-aware: non cambiano pathfinding, collisioni,
   hazard o spawn.
@@ -854,8 +855,9 @@ multi-bioma.
   Nel bioma forestale il baker pre-bake-a run rettangolari con UV world-space
   per prato, sentiero in terra e strada asfaltata. I tile semantici
   `grass_to_path`, `grass_to_road` e `path_to_road` non stendono texture
-  intermedie: vengono mappati rispettivamente su `forest_path` o `forest_road`
-  per mantenere un taglio netto del materiale orientabile verso il terreno.
+  intermedie: `grass_to_path` viene mappato su `forest_path`, mentre i contatti
+  verso strada usano `forest_road_border` per mantenere un taglio netto con
+  bordo definito verso il terreno.
   `IsometricForestGroundMeshBuilder` possiede la costruzione delle mesh; le
   classi senza raster finale mantengono le proprie mesh colorate. Il
   layer pre-bake-a anche linee di dettaglio per grass, tall grass,
@@ -869,20 +871,22 @@ multi-bioma.
   `drowned_marsh -> swamp`. Il resolver conserva `tile_id`, `section` e
   `role`, aggiunge `material_asset_id`/`material_asset_path` e il layer
   raggruppa le mesh per tale materiale. `urban_ruins` seleziona un materiale
-  stabile per ruolo sull'intera regione e risolve le celle di transizione
-  direttamente a path/road; gli asset transition restano catalogati ma non
-  sono superfici runtime del Tossico. `frozen_tundra` applica lo stesso
-  contratto di selezione regionale e transizione diretta. Il ground usa una
+  stabile per ruolo sull'intera regione; le transizioni path restano path
+  diretto, mentre `road_edge`/`road_curve_*` usano il ruolo `ground_to_road`
+  con PNG `road_border_defined`. Gli asset `transition_ground_to_road` restano
+  catalogati come detail/storico e non sono superfici runtime del Tossico.
+  `frozen_tundra` applica lo stesso contratto di selezione regionale e bordo
+  strada. Il ground usa una
   quilt runtime `2x2` a periodo world-space `1024`: quattro offset periodici
   dello stesso raster neve vengono raccordati sulle cuciture interne ed
   esterne, mantenendo densita nativa senza checker, pannelli tonali o simmetria
   specchiata. Path e road mantengono periodo `512`. `swamp` applica selezione
-  regionale e transizioni dirette; il ground usa la stessa quilt a offset con
+  regionale e bordi strada definiti; il ground usa la stessa quilt a offset con
   periodo `1024`, mentre path e road restano a `512`. `volcanic` usa lo stesso
-  contratto regionale e di transizione, limita il ground pieno alla base
+  contratto regionale e di bordo strada, limita il ground pieno alla base
   variation 02 e mantiene 01, 03 e 04 come detail; il repeat world-space e
   `512`. Il cambio di significato delle mappe `material_asset_*` invalida la
-  `TileBakeCache` tramite format version `15`.
+  `TileBakeCache` tramite format version `17`.
   `desert` e il set sostitutivo `forest` sono validati dal catalogo ma non
   hanno un consumer runtime.
   `IsometricCliffMeshBuilder` mantiene le 14 geometrie neighbor-aware per il

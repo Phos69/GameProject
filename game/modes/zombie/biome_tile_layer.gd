@@ -55,6 +55,7 @@ const FOREST_SURFACE_TEXTURE_IDS: Array[StringName] = [
 	&"forest_grass",
 	&"forest_path",
 	&"forest_road",
+	&"forest_road_border",
 	&"grass_to_path",
 	&"grass_to_road",
 	&"path_to_road"
@@ -69,7 +70,8 @@ const FOREST_GRASS_SURFACE_TILE_IDS: Array[StringName] = [
 const FOREST_TRANSITION_TEXTURE_IDS: Array[StringName] = [
 	&"grass_to_path",
 	&"grass_to_road",
-	&"path_to_road"
+	&"path_to_road",
+	&"forest_road_border"
 ]
 # Passage connectors/endpoints (road, broken_gate, burned_road, bridge, snow_pass
 # and their *_entry/*_exit) are emitted by the resolver as raw passage tags. Without
@@ -1282,7 +1284,7 @@ func _forest_surface_texture_id(tile_id: StringName) -> StringName:
 		IsometricTileResolver.TILE_GRASS_TO_PATH:
 			return &"forest_path"
 		IsometricTileResolver.TILE_GRASS_TO_ROAD, IsometricTileResolver.TILE_PATH_TO_ROAD:
-			return &"forest_road"
+			return &"forest_road_border"
 		IsometricTileResolver.TILE_FOREST_CLIFF_EDGE, IsometricTileResolver.TILE_GROUND_TO_VOID_CLIFF:
 			# Crest cells are surfaced as grass so the base ground reaches the void
 			# rect edge; the rock crest and descending wall come from the dedicated

@@ -5,9 +5,10 @@ prendere. Le milestone archiviate, le roadmap storiche e le baseline di validazi
 sono consolidate in `ROADMAP.md`, `CHANGELOG.md`, nei report specifici sotto
 `docs/` e in `docs/documentation_inventory.md`.
 
-Il cleanup documentale del 2026-07-01 ha rimosso prompt grezzi, roadmap
-storiche archiviate, file milestone duplicati e vecchie sezioni TODO. Le
-informazioni ancora utili sono consolidate nei documenti correnti.
+Le milestone `UIUX-001`, `BOSS-001`, `TD-001` e `REL-001` sono completate e
+archiviate in `CHANGELOG.md` (dettagli in
+`docs/latest_commit_validation_report.md` e
+`docs/visual_qa_report_2026-07-01.md`).
 
 Regole per nuove voci:
 
@@ -19,50 +20,19 @@ Regole per nuove voci:
 
 ## Backlog Aperto Prioritizzato
 
-La milestone `UIUX-001` e' **completata il 2026-07-07** (UI-VIS-FIX,
-ART-VIS-FIX, WEAPON-VIS-FIX, main menu `VIS-012`, asset residui `VIS-009` e
-regressione audio mix; dettagli in `CHANGELOG.md` e
-`docs/visual_qa_report_2026-07-01.md`). L'unico controllo non automatizzabile
-- l'ascolto reale del mix con quattro pad e boss wave - resta una voce di
-`docs/testing/manual_checklist.md`.
-
-Le milestone `BOSS-001` e `TD-001` sono **completate il 2026-07-08**:
-`BOSS-001` con il pattern avanzato `crescent_barrage` del Wave Warden
-(telegraph dedicato senza danno nel warning, rotazione a tre pattern in fase
-due, contratto registry/ID invariato) e `TD-001` con l'upgrade delle torri a
-tre livelli (stesso gesto interact sullo slot, costo per livello con rimborso,
-pip di livello sul visual, prompt UP sullo slot, pulizia gia' coperta dal
-lifecycle). Dettagli in `CHANGELOG.md` e
-`docs/latest_commit_validation_report.md`; la QA manuale 5 wave con
-tastiera/joypad rientra nei playtest gia' elencati in `BAL-001`.
-
 ### BAL-001 - Bilanciamento, performance e playtest end-to-end
 
-- Stato 2026-07-08: **chiusa la parte automatizzabile**. Suite soak/stress
-  8/8 (dieci wave multi-bioma, soak 10 minuti simulati, arena stress,
-  lifecycle loop 100 cicli, perf bottleneck). Profilo perf rimisurato in
-  finestra (RTX 2070S, vsync off): a 24 mob render 3,7/4,6 ms e frame medio
-  16,5 ms; a 96 mob — 3,4 volte il profilo di accettazione da 28 nemici — il
-  worst frame resta 28,9 ms, sotto il budget p95 di 33,3 ms; il tetto si
-  supera solo verso ~192 mob (45,2 ms), fuori dall'envelope reale (wave 10 =
-  21 nemici, wave 20 = 41). Il residuo "raster mob a schermo" e' chiuso come
-  tetto accettato e documentato: il baking degli archetipi in sprite resta
-  opzione futura solo se il contenuto superera' ~100 mob visibili
-  simultanei. QA renderizzata del seam con zoom variabile PASS (zero chunk
-  visibili mancanti, commit max 4,5 ms). Guardrail di nicchia esteso a tutte
-  e 7 le classi RPG con statline uniche
-  (`tests/suites/balance/weapon_balance_test.gd::test_advanced_class_niches`).
-  Dettagli in `docs/latest_commit_validation_report.md`.
-- Stato WORLD-VIS-FIX 2026-07-02: chiusi i finding `VIS-003`/`VIS-004`.
-  Infinite Arena distingue raised cliff e chasm, ogni contatto ground/void ha
-  coverage cliff automatica, ostacoli/crate non possono occupare fall zone e il
-  profilo renderizzato attraversa un seam con zoom variabile mantenendo zero
-  chunk visibili mancanti.
+- Stato 2026-07-08: la parte automatizzabile e' chiusa (suite soak/stress 8/8,
+  profilo perf entro budget fino a ~96 mob, QA renderizzata del seam PASS,
+  guardrail di nicchia su tutte e 7 le classi RPG); dettagli in
+  `docs/latest_commit_validation_report.md`.
 - Residuo aperto: **solo i playtest manuali** — Infinite Arena 20 minuti,
   survival multi-bioma 20 minuti con 1-4 player e zoom variabile, dungeon con
   tre seed, tower defense 5 wave con tastiera/joypad, giudizio qualitativo su
   "biomi pericolosi ma non frustranti" e raccolta screenshot dei mini-eventi
-  (vedi Decisioni Aperte).
+  (vedi Decisioni Aperte). Rientrano qui anche l'ascolto reale del mix con
+  quattro pad e boss wave e l'ascolto di mix/SFX all'avvio della build
+  esportata (`docs/testing/manual_checklist.md`).
 - Obiettivo: affinare valori data-driven e performance dopo playtest reali su
   survival, dungeon, tower defense, RPG, biomi e boss.
 - Milestone collegata: post-roadmap bilanciamento Milestone 11.
@@ -80,42 +50,11 @@ tastiera/joypad rientra nei playtest gia' elencati in `BAL-001`.
   art attiva e zoom variabile, dungeon con tre seed, tower defense 5 wave,
   profiling renderizzato dello streaming chunk e regressione smoke principale.
 
-La milestone `REL-001` e' **completata il 2026-07-08**: EXE (99,7 MB) e PCK
-(44,4 MB) esportati da checkout pulito con exit code `0`, build smoke
-sull'eseguibile esportato PASS (flusso menu/Character Select/Infinite
-Arena/survival via joypad, controller XInput reale rilevato), attribuzioni
-complete e firma chiusa come blocco esterno documentato (nessun certificato
-ne' toolchain sul sistema). Dettagli e note di riproducibilita' in
-`docs/latest_commit_validation_report.md`. L'ascolto reale di mix/SFX
-all'avvio manuale resta nella checklist manuale.
-
 ## Decisioni Aperte
 
 Queste decisioni non avviano lavoro da sole; vanno risolte dentro la milestone
 collegata prima di implementare.
 
-- Tower defense avanzata: **risolta il 2026-07-08** — scelta l'espansione
-  "upgrade delle torri" (loop di spesa naturale sul flusso crediti esistente,
-  nessuna duplicazione di combat/projectile). Vendita, riparazione, nuovi tipi
-  torre e percorsi multipli restano fuori scope salvo nuova voce.
-- Nuovi boss: **risolta il 2026-07-08** — estesi i pattern del Wave Warden
-  (`crescent_barrage`) invece di aggiungere un boss nuovo; il registry resta
-  pronto per un boss futuro con una nuova voce esplicita.
-- Firma digitale: **risolta il 2026-07-08** come blocco esterno documentato —
-  nessun `signtool` (PATH o Windows SDK) e nessun certificato code-signing
-  negli store del sistema. Riaprire con una nuova voce quando certificato e
-  toolchain saranno disponibili.
 - Mini-eventi bioma: durante il playtest end-to-end di `BAL-001`, raccogliere
   screenshot/video reali dei quattro eventi come materiale QA; riaprire
   `BIO-001` solo in presenza di bug o tuning concreto.
-- Hazard tematici nel mondo streammato: **risolta il 2026-07-08** — i theme
-  hazard (`toxic_puddle`, `gas_cloud`, `lava_crack`, ...) restano fuori dal
-  layout voidfirst e affidati agli encounter dinamici. Il layout streammato ha
-  gia' pericolo spaziale coperto da guardrail (chasm/fall zone della void
-  lottery) e scaling nemici per bioma; hazard di danno statici cambierebbero
-  spawn e bilanciamento richiedendo un re-bake dei golden snapshot durante i
-  playtest. Riaprire con una nuova voce solo se i playtest manuali giudicano i
-  biomi avanzati poco pericolosi.
-- Arte personaggi RPG: **risolta il 2026-07-07** — gli asset `final_quality`
-  per-personaggio restano polish opzionale documentato (vedi `ROADMAP.md`),
-  non backlog attivo; riaprire solo con un nuovo goal esplicito.

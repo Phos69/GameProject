@@ -11,7 +11,8 @@ extends GutTest
 ## via BiomeTileLayer. La risoluzione su mappa generata usa una build 3x3 dedicata.
 
 const FOREST_SURFACE_IDS: Array[StringName] = [
-	&"forest_grass", &"forest_path", &"forest_road", &"grass_to_path", &"grass_to_road", &"path_to_road"
+	&"forest_grass", &"forest_path", &"forest_road", &"forest_road_border",
+	&"grass_to_path", &"grass_to_road", &"path_to_road"
 ]
 const EDGE_ID := &"cliff_lip_texture"
 const CLIFF_TEXTURE_IDS: Array[StringName] = [
@@ -25,6 +26,13 @@ const TRANSITION_IDS: Array[StringName] = [
 	IsometricTileResolver.TILE_VOID_CORNER_OUTER_NORTH_EAST, IsometricTileResolver.TILE_VOID_CORNER_OUTER_SOUTH_EAST,
 	IsometricTileResolver.TILE_VOID_CORNER_OUTER_SOUTH_WEST, IsometricTileResolver.TILE_VOID_CORNER_OUTER_NORTH_WEST,
 	IsometricTileResolver.TILE_VOID_DIAGONAL_NORTH_EAST_SOUTH_WEST, IsometricTileResolver.TILE_VOID_DIAGONAL_NORTH_WEST_SOUTH_EAST
+]
+const ROAD_BORDER_TILE_IDS: Array[StringName] = [
+	IsometricTileResolver.TILE_ROAD_EDGE,
+	IsometricTileResolver.TILE_ROAD_CURVE_NORTH,
+	IsometricTileResolver.TILE_ROAD_CURVE_EAST,
+	IsometricTileResolver.TILE_ROAD_CURVE_SOUTH,
+	IsometricTileResolver.TILE_ROAD_CURVE_WEST
 ]
 const REQUIRED_FOREST_TILE_IDS: Array[StringName] = [
 	&"forest_grass", &"forest_grass_variant_01", &"forest_grass_variant_02", &"forest_tall_grass",
@@ -63,7 +71,14 @@ func test_forest_runtime_consumption() -> void:
 	var paths := layer.get_forest_surface_art_asset_paths()
 	for asset_id in FOREST_SURFACE_IDS:
 		var asset_path := String(paths.get(asset_id, ""))
-		assert_true(asset_path.contains("_generated") and asset_path.ends_with(".png"), "forest tile layer exposes %s generated path" % String(asset_id))
+		assert_true(
+			(
+				asset_path.contains("_generated")
+				or asset_path.contains("_defined")
+			)
+			and asset_path.ends_with(".png"),
+			"forest tile layer exposes %s generated path" % String(asset_id)
+		)
 	assert_true(layer.has_cliff_art_textures(), "forest tile layer loads grass-cliff edge")
 	assert_gt(layer.get_cliff_transition_count(), 0, "forest void builds textured cliff transitions")
 	assert_eq(layer._surface_mesh_overdraw_pixels(), 0.0, "forest legacy surface keeps exact mesh bounds")
@@ -93,17 +108,18 @@ func test_forest_route_transitions_render_with_route_surfaces() -> void:
 	)
 	assert_eq(
 		layer._forest_surface_texture_id(IsometricTileResolver.TILE_GRASS_TO_ROAD),
-		&"forest_road",
-		"forest grass/road contact renders with the oriented road surface, not an intermediate texture"
+		&"forest_road_border",
+		"forest grass/road contact renders with the defined road-border surface"
 	)
 	assert_eq(
 		layer._forest_surface_texture_id(IsometricTileResolver.TILE_PATH_TO_ROAD),
-		&"forest_road",
-		"forest path/road crossing renders as a crisp road cut"
+		&"forest_road_border",
+		"forest path/road crossing renders as a crisp road-border cut"
 	)
 	var rendered_ids := layer.get_rendered_surface_material_ids()
 	assert_true(rendered_ids.has(&"forest_path"), "path surface is rendered")
 	assert_true(rendered_ids.has(&"forest_road"), "road surface is rendered")
+	assert_true(rendered_ids.has(&"forest_road_border"), "defined road-border surface is rendered")
 	assert_false(rendered_ids.has(&"grass_to_path"), "grass/path intermediate surface is not rendered")
 	assert_false(rendered_ids.has(&"grass_to_road"), "grass/road intermediate surface is not rendered")
 	assert_false(rendered_ids.has(&"path_to_road"), "path/road intermediate surface is not rendered")
@@ -171,12 +187,12 @@ func test_generated_biome_catalog_contract() -> void:
 	)
 	assert_eq(
 		BiomeGeneratedArtCatalog.get_total_asset_count(),
-		191,
+		195,
 		"all generated PNG files are catalogued"
 	)
 	assert_eq(
 		BiomeGeneratedArtCatalog.get_active_asset_count(),
-		129,
+		133,
 		"all PNG files for the four active themes are catalogued"
 	)
 	assert_eq(
@@ -314,8 +330,8 @@ func test_frozen_surface_selection_uses_coherent_materials() -> void:
 			biome_id,
 			BiomeGeneratedArtCatalog.ROLE_GROUND_TO_ROAD
 		),
-		BiomeGeneratedArtCatalog.ROLE_ROAD,
-		"frozen ground/road transitions render with the road surface"
+		BiomeGeneratedArtCatalog.ROLE_GROUND_TO_ROAD,
+		"frozen ground/road transitions render with the defined road-border surface"
 	)
 
 func test_swamp_surface_selection_uses_coherent_materials() -> void:
@@ -374,8 +390,8 @@ func test_swamp_surface_selection_uses_coherent_materials() -> void:
 			biome_id,
 			BiomeGeneratedArtCatalog.ROLE_GROUND_TO_ROAD
 		),
-		BiomeGeneratedArtCatalog.ROLE_ROAD,
-		"swamp ground/road transitions render with the road surface"
+		BiomeGeneratedArtCatalog.ROLE_GROUND_TO_ROAD,
+		"swamp ground/road transitions render with the defined road-border surface"
 	)
 
 func test_toxic_surface_selection_uses_coherent_materials() -> void:
@@ -449,8 +465,8 @@ func test_toxic_surface_selection_uses_coherent_materials() -> void:
 			biome_id,
 			BiomeGeneratedArtCatalog.ROLE_GROUND_TO_ROAD
 		),
-		BiomeGeneratedArtCatalog.ROLE_ROAD,
-		"toxic ground/road transitions render with the road surface"
+		BiomeGeneratedArtCatalog.ROLE_GROUND_TO_ROAD,
+		"toxic ground/road transitions render with the defined road-border surface"
 	)
 
 func test_burning_surface_selection_uses_coherent_materials() -> void:
@@ -514,8 +530,8 @@ func test_burning_surface_selection_uses_coherent_materials() -> void:
 			biome_id,
 			BiomeGeneratedArtCatalog.ROLE_GROUND_TO_ROAD
 		),
-		BiomeGeneratedArtCatalog.ROLE_ROAD,
-		"burning ground/road transitions render with the road surface"
+		BiomeGeneratedArtCatalog.ROLE_GROUND_TO_ROAD,
+		"burning ground/road transitions render with the defined road-border surface"
 	)
 
 func test_generated_biome_catalog_deterministically_covers_active_assets() -> void:
@@ -577,7 +593,7 @@ func test_generated_biome_catalog_deterministically_covers_active_assets() -> vo
 						"cliff selection is deterministic"
 					)
 	selected_paths.erase("")
-	assert_eq(expected_paths.size(), 129, "active themes expose 129 unique PNGs")
+	assert_eq(expected_paths.size(), 133, "active themes expose 133 unique PNGs")
 	assert_eq(
 		selected_paths.size(),
 		expected_paths.size(),
@@ -882,21 +898,31 @@ func test_generated_biome_runtime_consumption() -> void:
 			)
 		var selected_material_ids: Dictionary = {}
 		var selected_material_paths: Dictionary = {}
+		var road_border_material_seen := false
 		for y in range(layout.zone_size.y):
 			for x in range(layout.zone_size.x):
 				var cell := Vector2i(x, y)
 				var selected_id := layer.get_resolved_material_asset_id(cell)
 				if not selected_id.is_empty():
 					selected_material_ids[selected_id] = true
-					selected_material_paths[
-						layer.get_resolved_material_asset_path(cell)
-					] = true
+					var selected_path := layer.get_resolved_material_asset_path(cell)
+					selected_material_paths[selected_path] = true
+					if (
+						ROAD_BORDER_TILE_IDS.has(layer.get_resolved_tile_id(cell))
+						and selected_path.contains("road_border_defined")
+					):
+						road_border_material_seen = true
 		for selected_path in selected_material_paths:
 			assert_true(
 				String(selected_path).contains(expected_theme_fragment),
 				"%s resolver never falls back outside its generated theme: %s"
 				% [String(biome_id), String(selected_path)]
 			)
+		assert_true(
+			road_border_material_seen,
+			"%s maps road edge/curve cells to defined road-border material"
+			% String(biome_id)
+		)
 		assert_true(
 			layer.get_resolved_material_asset_path(
 				Vector2i(4, 4)
