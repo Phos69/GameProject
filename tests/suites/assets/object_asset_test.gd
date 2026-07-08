@@ -11,7 +11,7 @@ const REQUIRED_OBSTACLE_ASSET_IDS: Array[StringName] = [
 	&"boundary_fence", &"toxic_boundary_wall", &"lava_boundary", &"ice_boundary", &"deep_water_boundary",
 	&"industrial_fence", &"charred_wall", &"snow_wall", &"ash_barrier", &"pipe_stack",
 	&"burned_car", &"ice_block", &"dead_tree", &"marsh_log", &"reed_wall",
-	&"broken_walkway", &"toxic_barrel", &"chemical_barrel"
+	&"broken_walkway", &"toxic_barrel", &"chemical_barrel", &"broken_fence"
 ]
 const REQUIRED_CRATE_ASSET_ID := &"supply_crate"
 const ISOMETRIC_OBJECT_SCRIPT = preload("res://game/modes/zombie/isometric_environment_object.gd")
@@ -131,18 +131,22 @@ func test_factory_obstacle_coverage() -> void:
 			assert_true(obstacle.has_ground_shadow(), "%s keeps ground shadow contract" % String(obstacle_id))
 			assert_eq(obstacle.get_obstacle_category(), _manifest.get_category(obstacle_id), "%s category comes from manifest" % String(obstacle_id))
 			assert_false(obstacle.uses_generic_fallback(), "%s avoids generic visual fallback" % String(obstacle_id))
-			if obstacle_id == &"reed_wall":
-				var reed_object := obstacle as IsometricEnvironmentObject
-				var expected_size := _manifest.get_native_visual_size(obstacle_id)
-				assert_eq(
-					reed_object.asset_sprite.texture.get_size(),
-					expected_size,
-					"reed_wall rasterizes at its narrow vertical native size"
+			if obstacle_id == &"reed_wall" or obstacle_id == &"broken_fence":
+				var native_object := obstacle as IsometricEnvironmentObject
+				var native_size := _manifest.get_native_visual_size(obstacle_id)
+				var expected_size := Vector2(
+					roundi(native_size.x),
+					roundi(native_size.y)
 				)
 				assert_eq(
-					reed_object.asset_sprite.scale,
+					native_object.asset_sprite.texture.get_size(),
+					expected_size,
+					"%s rasterizes at its native canvas without letterboxing" % String(obstacle_id)
+				)
+				assert_eq(
+					native_object.asset_sprite.scale,
 					Vector2.ONE,
-					"reed_wall keeps the manifest visual size at runtime"
+					"%s keeps the manifest visual size at runtime" % String(obstacle_id)
 				)
 		_check_collision_contract(obstacle_id, obstacle)
 		obstacle.queue_free()

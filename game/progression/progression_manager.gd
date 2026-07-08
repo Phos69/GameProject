@@ -98,8 +98,8 @@ func get_run_max_health_bonus() -> int:
 
 func get_unlock_status_text() -> String:
 	if has_unlock(FIELD_KIT_UNLOCK):
-		return "Field Kit: +%d max HP" % FIELD_KIT_HEALTH_BONUS
-	return "Next unlock: Field Kit at party Lv %d" % FIELD_KIT_UNLOCK_LEVEL
+		return "Field Kit: +%d HP max" % FIELD_KIT_HEALTH_BONUS
+	return "Prossimo sblocco: Field Kit a Gruppo Lv %d" % FIELD_KIT_UNLOCK_LEVEL
 
 func prepare_players_for_run() -> void:
 	for player in PlayerQuery.all(get_tree()):

@@ -177,12 +177,19 @@ static func get_pickup_body_polygon_for_shape(
 			])
 		&"quick_knife":
 			return PackedVector2Array([
-				Vector2(-14.0, 2.0),
-				Vector2(-4.0, -4.5),
-				Vector2(12.0, -2.0),
-				Vector2(16.0, 0.0),
-				Vector2(12.0, 2.0),
-				Vector2(-4.0, 4.5)
+				Vector2(-16.0, -2.0),
+				Vector2(-10.5, -2.6),
+				Vector2(-8.5, -6.5),
+				Vector2(-5.0, -5.8),
+				Vector2(-4.0, -3.6),
+				Vector2(8.0, -4.4),
+				Vector2(16.5, 0.0),
+				Vector2(6.0, 4.6),
+				Vector2(-4.0, 3.8),
+				Vector2(-5.5, 6.2),
+				Vector2(-9.0, 6.8),
+				Vector2(-10.5, 2.8),
+				Vector2(-16.0, 2.2)
 			])
 		&"rpg_bow":
 			return PackedVector2Array([
@@ -267,11 +274,15 @@ static func get_pickup_body_polygon_for_shape(
 			])
 		&"spear":
 			return PackedVector2Array([
-				Vector2(-16.0, 2.0),
-				Vector2(7.0, -2.0),
-				Vector2(16.0, 0.0),
-				Vector2(7.0, 2.0),
-				Vector2(-16.0, 4.0)
+				Vector2(-17.0, -1.4),
+				Vector2(3.0, -1.8),
+				Vector2(4.5, -4.8),
+				Vector2(10.5, -3.6),
+				Vector2(17.0, 0.0),
+				Vector2(10.5, 3.6),
+				Vector2(4.5, 4.8),
+				Vector2(3.0, 1.8),
+				Vector2(-17.0, 1.4)
 			])
 		&"ruined_katana":
 			return PackedVector2Array([
@@ -323,7 +334,20 @@ static func get_pickup_body_polygon_for_shape(
 				Vector2(-12.0, 7.0)
 			])
 		&"fireball":
-			return _ellipse_points(Vector2(0.0, 0.0), Vector2(13.0, 10.0), 12)
+			return PackedVector2Array([
+				Vector2(13.0, 0.0),
+				Vector2(9.0, -6.0),
+				Vector2(1.5, -7.5),
+				Vector2(-5.0, -5.5),
+				Vector2(-12.5, -7.0),
+				Vector2(-7.5, -2.4),
+				Vector2(-15.0, 0.0),
+				Vector2(-7.5, 2.4),
+				Vector2(-12.5, 7.0),
+				Vector2(-5.0, 5.5),
+				Vector2(1.5, 7.5),
+				Vector2(9.0, 6.0)
+			])
 		&"ice_lance":
 			return PackedVector2Array([
 				Vector2(-15.0, 0.0),
@@ -348,14 +372,13 @@ static func get_pickup_body_polygon_for_shape(
 			])
 		&"chain_lightning":
 			return PackedVector2Array([
-				Vector2(-13.0, -6.0),
-				Vector2(-1.0, -3.0),
-				Vector2(-5.0, 2.0),
-				Vector2(13.0, -2.0),
-				Vector2(2.0, 4.0),
-				Vector2(5.0, 10.0),
-				Vector2(-12.0, 5.0),
-				Vector2(-5.0, 1.0)
+				Vector2(-12.5, 2.5),
+				Vector2(-12.5, -7.0),
+				Vector2(-3.0, -1.5),
+				Vector2(-3.0, -9.0),
+				Vector2(12.5, 4.5),
+				Vector2(1.5, 0.5),
+				Vector2(1.5, 9.0)
 			])
 		&"arcane_taser":
 			return PackedVector2Array([
@@ -392,7 +415,16 @@ static func get_pickup_body_polygon_for_shape(
 				Vector2(-14.0, -4.0)
 			])
 		&"unstable_void":
-			return _ellipse_points(Vector2(0.0, 0.0), Vector2(12.0, 12.0), 14)
+			return PackedVector2Array([
+				Vector2(12.0, 2.5),
+				Vector2(2.5, 4.2),
+				Vector2(-2.5, 12.0),
+				Vector2(-4.2, 2.5),
+				Vector2(-12.0, -2.5),
+				Vector2(-2.5, -4.2),
+				Vector2(2.5, -12.0),
+				Vector2(4.2, -2.5)
+			])
 		&"prototype_blaster", &"rift_repeater":
 			return PackedVector2Array([
 				Vector2(-14.0, -6.0),
@@ -466,9 +498,15 @@ static func get_pickup_detail_lines_for_shape(
 		&"grenade_launcher", &"rusty_minigun":
 			lines.append(PackedVector2Array([Vector2(-8.0, 0.0), Vector2(15.0, 0.0)]))
 			lines.append(PackedVector2Array([Vector2(4.0, -6.0), Vector2(4.0, 6.0)]))
-		&"quick_knife", &"machete", &"ruined_katana", &"spear":
+		&"machete", &"ruined_katana":
 			lines.append(PackedVector2Array([Vector2(-12.0, 2.0), Vector2(13.0, -1.0)]))
 			lines.append(PackedVector2Array([Vector2(-6.0, -4.0), Vector2(-3.0, 5.0)]))
+		&"quick_knife":
+			lines.append(PackedVector2Array([Vector2(-3.5, 0.2), Vector2(14.0, 0.2)]))
+			lines.append(PackedVector2Array([Vector2(-7.5, -5.5), Vector2(-6.0, 5.5)]))
+		&"spear":
+			lines.append(PackedVector2Array([Vector2(-15.5, 0.0), Vector2(3.0, 0.0)]))
+			lines.append(PackedVector2Array([Vector2(5.0, -3.6), Vector2(11.5, 0.0), Vector2(5.0, 3.6)]))
 		&"rpg_bow":
 			lines.append(PackedVector2Array([Vector2(-12.0, 0.0), Vector2(16.0, 0.0)]))
 			lines.append(PackedVector2Array([Vector2(-1.0, -9.0), Vector2(-1.0, 9.0)]))
@@ -488,21 +526,24 @@ static func get_pickup_detail_lines_for_shape(
 			lines.append(PackedVector2Array([Vector2(-8.0, -4.0), Vector2(14.0, -6.0)]))
 			lines.append(PackedVector2Array([Vector2(-8.0, 0.0), Vector2(15.0, 0.0)]))
 			lines.append(PackedVector2Array([Vector2(-8.0, 4.0), Vector2(14.0, 6.0)]))
-		&"fire_wand", &"fireball":
+		&"fire_wand":
 			lines.append(PackedVector2Array([Vector2(-8.0, 4.0), Vector2(7.0, -5.0)]))
 			lines.append(PackedVector2Array([Vector2(4.0, 7.0), Vector2(12.0, 1.0)]))
+		&"fireball":
+			lines.append(PackedVector2Array([Vector2(6.0, -3.2), Vector2(9.8, 0.0), Vector2(6.0, 3.2)]))
+			lines.append(PackedVector2Array([Vector2(-10.0, 0.0), Vector2(-2.0, 0.0)]))
 		&"ice_lance", &"frost_nova", &"seismic_crystal":
 			lines.append(PackedVector2Array([Vector2(-8.0, 4.0), Vector2(10.0, -3.0)]))
 			lines.append(PackedVector2Array([Vector2(-2.0, -5.0), Vector2(4.0, 6.0)]))
 		&"chain_lightning":
-			lines.append(PackedVector2Array([Vector2(-10.0, -4.0), Vector2(-3.0, 0.0), Vector2(8.0, -2.0)]))
-			lines.append(PackedVector2Array([Vector2(-7.0, 4.0), Vector2(3.0, 3.0), Vector2(5.0, 8.0)]))
+			lines.append(PackedVector2Array([Vector2(-10.5, -3.5), Vector2(-3.5, -3.0), Vector2(-1.0, -6.5)]))
+			lines.append(PackedVector2Array([Vector2(-1.5, -2.0), Vector2(8.5, 2.5), Vector2(1.0, 5.5)]))
 		&"acid_flask", &"toxic_spores":
 			lines.append(PackedVector2Array([Vector2(-8.0, 3.0), Vector2(8.0, 4.0)]))
 			lines.append(PackedVector2Array([Vector2(-3.0, -9.0), Vector2(3.0, -9.0)]))
 		&"unstable_void":
-			lines.append(PackedVector2Array([Vector2(-9.0, 0.0), Vector2(9.0, 0.0)]))
-			lines.append(PackedVector2Array([Vector2(0.0, -9.0), Vector2(0.0, 9.0)]))
+			lines.append(PackedVector2Array([Vector2(7.0, 1.6), Vector2(1.8, 2.8), Vector2(-1.2, 7.5)]))
+			lines.append(PackedVector2Array([Vector2(-7.0, -1.6), Vector2(-1.8, -2.8), Vector2(1.2, -7.5)]))
 		&"prototype_blaster", &"rift_repeater":
 			lines.append(PackedVector2Array([Vector2(-8.0, -3.0), Vector2(14.0, -3.0)]))
 			lines.append(PackedVector2Array([Vector2(-8.0, 3.0), Vector2(14.0, 3.0)]))
@@ -623,7 +664,20 @@ static func get_projectile_polygon_for_shape(
 				Vector2(-2.5, 5.8)
 			])
 		&"fireball":
-			return _ellipse_points(Vector2.ZERO, Vector2(9.5, 8.0), 12)
+			return PackedVector2Array([
+				Vector2(11.0, 0.0),
+				Vector2(7.5, -4.8),
+				Vector2(1.0, -6.0),
+				Vector2(-4.0, -4.4),
+				Vector2(-10.0, -5.5),
+				Vector2(-6.0, -1.8),
+				Vector2(-12.0, 0.0),
+				Vector2(-6.0, 1.8),
+				Vector2(-10.0, 5.5),
+				Vector2(-4.0, 4.4),
+				Vector2(1.0, 6.0),
+				Vector2(7.5, 4.8)
+			])
 		&"ice_lance":
 			return PackedVector2Array([
 				Vector2(-13.0, 0.0),
@@ -646,14 +700,13 @@ static func get_projectile_polygon_for_shape(
 			])
 		&"chain_lightning":
 			return PackedVector2Array([
-				Vector2(-12.0, -2.0),
-				Vector2(-3.0, -6.0),
-				Vector2(-5.0, -1.0),
-				Vector2(4.0, -1.0),
-				Vector2(1.0, 6.0),
-				Vector2(12.0, 0.0),
-				Vector2(4.0, 2.0),
-				Vector2(6.0, -3.0)
+				Vector2(-11.0, 2.0),
+				Vector2(-11.0, -5.5),
+				Vector2(-2.5, -1.0),
+				Vector2(-2.5, -7.5),
+				Vector2(11.0, 3.5),
+				Vector2(1.0, 0.5),
+				Vector2(1.0, 7.5)
 			])
 		&"arcane_taser":
 			return PackedVector2Array([
@@ -696,7 +749,16 @@ static func get_projectile_polygon_for_shape(
 				Vector2(-8.0, 6.0)
 			])
 		&"unstable_void":
-			return _ellipse_points(Vector2.ZERO, Vector2(8.5, 8.5), 14)
+			return PackedVector2Array([
+				Vector2(10.0, 2.0),
+				Vector2(2.0, 3.4),
+				Vector2(-2.0, 10.0),
+				Vector2(-3.4, 2.0),
+				Vector2(-10.0, -2.0),
+				Vector2(-2.0, -3.4),
+				Vector2(2.0, -10.0),
+				Vector2(3.4, -2.0)
+			])
 		&"prototype_blaster":
 			return PackedVector2Array([
 				Vector2(-8.0, 0.0),

@@ -15,6 +15,9 @@ const CHARACTER_SELECT_CARD_SCRIPT := preload(
 const MENU_NAVIGATION_SCRIPT := preload(
 	"res://game/ui/menu_navigation_controller.gd"
 )
+const MENU_BACKDROP_SCRIPT := preload(
+	"res://game/ui/main_menu_backdrop.gd"
+)
 
 var backdrop: ColorRect
 var title_label: Label
@@ -59,6 +62,9 @@ var focused_character_id: StringName = &""
 var pending_mode_id: StringName = GameConstants.MODE_SURVIVAL
 var character_select_subtitle: Label
 
+var menu_content: VBoxContainer
+var menu_hint_label: Label
+
 var game_mode_manager: GameModeManager
 var save_manager: SaveManager
 var progression_manager: ProgressionManager
@@ -72,6 +78,9 @@ func _ready() -> void:
 	var size_callback := Callable(self, "_refresh_character_select_layout")
 	if not get_viewport().size_changed.is_connected(size_callback):
 		get_viewport().size_changed.connect(size_callback)
+	var menu_size_callback := Callable(self, "_refresh_menu_layout")
+	if not get_viewport().size_changed.is_connected(menu_size_callback):
+		get_viewport().size_changed.connect(menu_size_callback)
 	call_deferred("_initialize")
 
 func _input(event: InputEvent) -> void:
@@ -217,10 +226,16 @@ func _initialize() -> void:
 func _create_ui() -> void:
 	backdrop = ColorRect.new()
 	backdrop.name = "Backdrop"
-	backdrop.color = Color(0.025, 0.04, 0.075, 0.97)
+	backdrop.color = Color(0.012, 0.020, 0.038, 1.0)
 	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(backdrop)
+
+	var backdrop_art := MENU_BACKDROP_SCRIPT.new() as Control
+	backdrop_art.name = "BackdropArt"
+	backdrop_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	backdrop_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.add_child(backdrop_art)
 
 	var center := CenterContainer.new()
 	center.name = "Center"
@@ -229,13 +244,16 @@ func _create_ui() -> void:
 
 	primary_panel = PanelContainer.new()
 	primary_panel.name = "MenuPanel"
-	primary_panel.custom_minimum_size = Vector2(540.0, 700.0)
+	# Card ad altezza contenuto: niente colonna semivuota (VIS-012).
+	primary_panel.custom_minimum_size = Vector2(540.0, 0.0)
+	primary_panel.add_theme_stylebox_override("panel", _make_menu_panel_style())
 	center.add_child(primary_panel)
 
 	var content := VBoxContainer.new()
 	content.name = "Content"
 	content.add_theme_constant_override("separation", 8)
 	primary_panel.add_child(content)
+	menu_content = content
 
 	title_label = Label.new()
 	title_label.text = "ISO LOCAL SANDBOX"
@@ -245,10 +263,16 @@ func _create_ui() -> void:
 	content.add_child(title_label)
 
 	var subtitle := Label.new()
-	subtitle.text = "Choose a local multiplayer mode"
+	subtitle.text = "Scegli una modalità in multiplayer locale"
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle.add_theme_font_size_override("font_size", 18)
 	content.add_child(subtitle)
+
+	var title_rule := ColorRect.new()
+	title_rule.name = "TitleRule"
+	title_rule.color = Color(0.35, 0.62, 0.78, 0.60)
+	title_rule.custom_minimum_size = Vector2(0.0, 2.0)
+	content.add_child(title_rule)
 
 	save_status_label = Label.new()
 	save_status_label.name = "SaveStatusLabel"
@@ -256,7 +280,7 @@ func _create_ui() -> void:
 	save_status_label.modulate = Color(0.78, 0.84, 0.92, 1.0)
 	content.add_child(save_status_label)
 
-	continue_button = _create_button("Continue", Callable(self, "_continue_game"))
+	continue_button = _create_button("Continua", Callable(self, "_continue_game"))
 	content.add_child(continue_button)
 
 	first_mode_button = _create_button(
@@ -276,20 +300,45 @@ func _create_ui() -> void:
 		"Tower Defense",
 		Callable(self, "_select_mode").bind(GameConstants.MODE_TOWER_DEFENSE)
 	))
-	var settings_button := _create_button("Settings", Callable(self, "_open_settings"))
+	var settings_button := _create_button("Impostazioni", Callable(self, "_open_settings"))
 	content.add_child(settings_button)
-	content.add_child(_create_button("Quit", Callable(self, "_quit_game")))
+	content.add_child(_create_button("Esci", Callable(self, "_quit_game")))
 
 	var controls := Label.new()
 	controls.text = (
-		"Keyboard: arrows/Enter, Esc for menu | Joypad: D-pad/stick + A"
+		"Tastiera: frecce/Invio, Esc per il menu | Joypad: D-pad/stick + A"
 	)
 	controls.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	controls.modulate = Color(0.68, 0.74, 0.82, 1.0)
 	content.add_child(controls)
+	menu_hint_label = controls
+	_refresh_menu_layout()
 	_create_main_menu_navigation()
 	_create_settings_panel(center)
 	_create_character_select_panel(backdrop)
+
+# La card del menu deve stare per intero anche a 960x540: sotto i 620 px di
+# altezza viewport passa a spaziature e bottoni compatti (stessa safe-area
+# policy di Settings, VIS-001).
+func _refresh_menu_layout() -> void:
+	if primary_panel == null:
+		return
+	var compact := get_viewport().get_visible_rect().size.y < 620.0
+	var button_height := 36.0 if compact else 44.0
+	for button in menu_buttons:
+		button.custom_minimum_size = Vector2(440.0, button_height)
+	if menu_content != null:
+		menu_content.add_theme_constant_override("separation", 5 if compact else 8)
+	if title_label != null:
+		title_label.add_theme_font_size_override("font_size", 25 if compact else 30)
+	if menu_hint_label != null:
+		menu_hint_label.add_theme_font_size_override("font_size", 13 if compact else 16)
+	if save_status_label != null:
+		save_status_label.add_theme_font_size_override("font_size", 13 if compact else 16)
+	primary_panel.add_theme_stylebox_override(
+		"panel",
+		_make_menu_panel_style(compact)
+	)
 
 func _create_main_menu_navigation() -> void:
 	main_menu_navigation = MENU_NAVIGATION_SCRIPT.new()
@@ -671,7 +720,7 @@ func _refresh_save_status() -> void:
 	var unlock_status := (
 		progression_manager.get_unlock_status_text()
 		if progression_manager != null
-		else "Next unlock: Field Kit at party Lv 2"
+		else "Prossimo sblocco: Field Kit a Gruppo Lv 2"
 	)
 	var last_mode := (
 		save_manager.get_last_mode()
@@ -679,7 +728,7 @@ func _refresh_save_status() -> void:
 		else GameConstants.MODE_INFINITE_ARENA
 	)
 	save_status_label.text = (
-		"Party Lv %d  XP %d  Money %d\n%s\nContinue: %s"
+		"Gruppo Lv %d  XP %d  Denaro %d\n%s\nContinua: %s"
 	) % [
 		level,
 		experience,
@@ -1391,6 +1440,24 @@ func _make_character_slot_style(
 	style.content_margin_top = 6
 	style.content_margin_right = 8
 	style.content_margin_bottom = 6
+	return style
+
+func _make_menu_panel_style(compact: bool = false) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.018, 0.026, 0.036, 0.97)
+	style.border_color = Color(0.24, 0.40, 0.50, 1.0)
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	style.corner_radius_top_left = 10
+	style.corner_radius_top_right = 10
+	style.corner_radius_bottom_left = 10
+	style.corner_radius_bottom_right = 10
+	style.content_margin_left = 18 if compact else 30
+	style.content_margin_top = 12 if compact else 22
+	style.content_margin_right = 18 if compact else 30
+	style.content_margin_bottom = 12 if compact else 22
 	return style
 
 func _make_character_select_panel_style() -> StyleBoxFlat:

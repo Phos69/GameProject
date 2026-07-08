@@ -10,6 +10,58 @@ una validazione completa della release: 26 delle 40 catture di scenario
 principali mostrano ancora la schermata di caricamento invece dello stato che
 dovrebbero validare.
 
+## Follow-up WEAPON-VIS-FIX e residui menu/asset - 2026-07-07
+
+**PASS per armi, pickup, menu e asset residui.** `VIS-011` e `VIS-012` sono
+chiusi; `VIS-009` e' chiuso (fence corretto, large_rock riclassificato senza
+difetto, forest_tree confermato hero asset) e `VIS-008` e' assorbito dalla
+stessa decisione. Con questo pass i finding visuali del report sono tutti
+risolti o riclassificati.
+
+- quick_knife, spear e chain_lightning hanno silhouette ridisegnate con massa
+  reale (daga con guardia, lancia a foglia, saetta a nastro anche come
+  proiettile); fireball e unstable_void si distinguono per massa e ritmo
+  (cometa con coda a fiamme vs vortice a quattro cuspidi), non solo per
+  palette.
+- Il contenitore pentagonale dei weapon pickup e' ora un fondale: bordo
+  attenuato (alpha 0.42, 1.6 px) e arma in scala maggiorata
+  (`_pickup_scale_for` 0.95-1.35); il preset high contrast conserva il
+  contenitore pieno per l'accessibilita'.
+- Lo slash thrust (`quick_stab`/`spear_thrust`) disegna una lama poligonale
+  con glow e speed line al posto dei due segmenti sottili.
+- `broken_fence` aveva la stessa patologia di `reed_wall`: viewBox `160x120`
+  su canvas dichiarata `99x56` produceva raster letterboxed, upscale Lanczos a
+  `160x120` e riscalatura sprite. Nuovo SVG full-canvas `99x56` a tratti
+  netti, id aggiunto a `NATIVE_RASTER_OBJECT_IDS` e guardrail GUT sul raster
+  nativo in `object_asset_test`.
+- `large_rock`: nessun difetto di prodotto. In gioco rende come area plateau
+  (`render_mode: tile_layer_rock_area`, QA dedicata `rock_area_visual_qa`); la
+  board degli asset salva volutamente il materiale top ripetuto grezzo.
+- `forest_tree`: il raster resta l'hero asset della vegetazione (status
+  `final` nel manifest), con il tiling gia' mitigato dalla variazione
+  flip/tinta deterministica (guardrail
+  `test_forest_tree_variation_is_visual_only`). Decisione registrata qui e nel
+  CHANGELOG.
+- Main menu (`VIS-012`): fondale con gradiente notturno, griglia isometrica e
+  tessere diamante nei toni dei cinque biomi; card ad altezza contenuto con
+  bordo in stile UI condiviso; lingua uniformata all'italiano (i nomi delle
+  modalita' restano nomi propri); layout compatto sotto i 620 px di altezza
+  viewport.
+
+Validazione finale:
+
+- board WVIS rigenerate (pickup, held/HUD, projectile, melee, elemental):
+  tutte le label presenti, silhouette distinte, scenario crowded reale nei
+  tre preset default/reduced motion/high contrast;
+- `weapon_visual_identity_qa`, `menu_visual_qa`, `audio_mix_visual_qa`,
+  `visual_accessibility_qa`, `final_survival_visual_qa`,
+  `obstacle_asset_visual_qa`: PASS;
+- card menu interamente nel viewport a `1280x720`, `1024x768` e `960x540`
+  (verifica programmatica via `content_scale_size`, stessa simulazione di
+  `settings_test`);
+- suite GUT completa: **238/238 test, 24.577 assert, exit code 0**, incluso il
+  rosso storico `test_weapon_tower_visual_identity` chiuso il 2026-07-07.
+
 ## Follow-up QA-VIS-FIX - 2026-07-02
 
 **PASS per l'affidabilita del tooling.** I problemi `QA-VIS-001` -
@@ -555,6 +607,11 @@ combattimento; il problema aumenta con quattro player.
 
 ### VIS-008 - Media - Ripetizione e scala degli alberi
 
+Stato 2026-07-07: **CHIUSO** (follow-up in testa al report). La ripetizione e
+mitigata dalla variazione flip/tinta deterministica introdotta da ART-VIS-FIX;
+la densita del raster e confermata come scelta di hero asset insieme al
+residuo `VIS-009`. Il testo seguente conserva l'evidenza dell'audit originario.
+
 Il `forest_tree` usa un raster molto dettagliato e molto piu grande di player,
 armi e oggetti vettoriali. I muri di vegetazione ripetono lo stesso albero con
 scala, orientamento e spaziatura identici, rendendo evidente il tiling. Le
@@ -567,6 +624,11 @@ Evidenze:
 - `build/qa/infinite_arena_cliffs/east.png`.
 
 ### VIS-009 - Media - Asset ostacolo non normalizzati
+
+Stato 2026-07-07: **CHIUSO** (follow-up in testa al report): `broken_fence`
+ridisegnato e rasterizzato a canvas nativa, `large_rock` riclassificato senza
+difetto (in gioco e' l'area plateau dedicata), `forest_tree` confermato hero
+asset con variazione flip/tinta.
 
 Stato 2026-07-03: **RIDOTTO da ART-VIS-FIX**: `reed_wall` e' ora un canneto
 full-canvas e gli edifici generati sono normalizzati. Restano `large_rock`,
@@ -604,6 +666,9 @@ La schermata mescola inoltre inglese (`CHARACTER SELECT`, `Slot empty`,
 
 ### VIS-011 - Media - Identita armi non uniforme alla scala di gioco
 
+Stato 2026-07-07: **CHIUSO da WEAPON-VIS-FIX** (follow-up in testa al report).
+Il testo seguente conserva l'evidenza dell'audit originario.
+
 I pickup condividono tutti un grande contenitore pentagonale che domina la
 silhouette; l'arma interna e piccola. Nel board melee:
 
@@ -623,6 +688,9 @@ Il board held/HUD perde inoltre le etichette dei primi due campioni della riga
 superiore, quindi la tavola non e internamente coerente.
 
 ### VIS-012 - Bassa - Main menu privo del linguaggio visuale del gioco
+
+Stato 2026-07-07: **CHIUSO** (follow-up in testa al report). Il testo seguente
+conserva l'evidenza dell'audit originario.
 
 Il menu e leggibile e il focus e visibile, ma usa una colonna nera stretta su
 sfondo quasi nero, con molto spazio morto e nessun richiamo ai biomi, ai
@@ -788,6 +856,8 @@ Evidenza:
 
 ### 5. WEAPON-VIS-FIX - Rendere leggibili le armi deboli
 
+- Stato 2026-07-07: **completato**; evidenze e validazione nel follow-up in
+  testa al report.
 - Obiettivo: distinguere pickup e attacchi per silhouette, non solo per colore.
 - Milestone collegata: `UIUX-001`.
 - File/sistemi: `WeaponVisualRenderer`, palette/catalogo visuale, board WVIS.

@@ -276,8 +276,8 @@ static func _visual_size_for(weapon_id: StringName) -> Vector2:
 static func _pickup_scale_for(weapon_id: StringName) -> Vector2:
 	var visual_size := _visual_size_for(weapon_id)
 	return Vector2(
-		clampf(visual_size.x / 30.0, 0.75, 1.22),
-		clampf(visual_size.y / 9.0, 0.72, 1.24)
+		clampf(visual_size.x / 24.0, 0.95, 1.35),
+		clampf(visual_size.y / 7.5, 0.95, 1.35)
 	)
 
 static func _melee_impact_vfx_for(weapon_id: StringName) -> StringName:
@@ -473,7 +473,7 @@ static func _projectile_scale_for(weapon_id: StringName) -> Vector2:
 		&"frost_nova":
 			return Vector2(1.04, 1.04)
 		&"chain_lightning":
-			return Vector2(1.18, 0.70)
+			return Vector2(1.15, 1.0)
 		&"arcane_taser":
 			return Vector2(0.86, 0.62)
 		&"acid_flask":

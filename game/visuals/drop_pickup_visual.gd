@@ -75,6 +75,13 @@ func _draw() -> void:
 		]),
 		Color(0.035, 0.05, 0.065, 0.98)
 	)
+	# Per i pickup arma leggibili il contenitore resta un fondale: bordo
+	# attenuato, la silhouette dell'arma deve dominare (VIS-011).
+	var weapon_focus := (
+		drop_type == GameConstants.DROP_WEAPON
+		and not missing_weapon_visual
+		and not high_contrast
+	)
 	draw_polyline(
 		PackedVector2Array([
 			Vector2(0.0, -17.0),
@@ -84,8 +91,9 @@ func _draw() -> void:
 			Vector2(-16.0, -4.0),
 			Vector2(0.0, -17.0)
 		]),
-		Color.WHITE if high_contrast else accent_color,
-		3.5 if high_contrast else 2.5,
+		Color(accent_color, 0.42) if weapon_focus
+			else (Color.WHITE if high_contrast else accent_color),
+		1.6 if weapon_focus else (3.5 if high_contrast else 2.5),
 		true
 	)
 	_draw_icon()

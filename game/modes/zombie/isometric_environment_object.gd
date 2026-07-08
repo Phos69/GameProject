@@ -23,7 +23,7 @@ const MISSING_ASSET_FALLBACK_STATUSES: Array[String] = [
 	"procedural_fallback",
 	"deprecated"
 ]
-const NATIVE_RASTER_OBJECT_IDS: Array[StringName] = [&"reed_wall"]
+const NATIVE_RASTER_OBJECT_IDS: Array[StringName] = [&"reed_wall", &"broken_fence"]
 
 const CONTENT_ALPHA_THRESHOLD := 0.08
 const LEGACY_TILE_SCALE := IsoGridConfig.LEGACY_TILE_SCALE

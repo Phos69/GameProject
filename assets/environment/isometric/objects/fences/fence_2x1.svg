@@ -1,14 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="99" height="56" viewBox="0 0 160 120" data-generated-by="generate_isometric_environment_assets" data-section="object_scenes" data-id="broken_fence" data-footprint-slots="2x1">
+<svg xmlns="http://www.w3.org/2000/svg" width="99" height="56" viewBox="0 0 99 56" data-generated-by="manual_asset_pass" data-section="object_scenes" data-id="broken_fence" data-footprint-slots="2x1">
   <title>object_scenes broken_fence</title>
-  <ellipse cx="80" cy="82" rx="58" ry="18" fill="#050608" opacity="0.45"/>
-  <polygon points="30,78 80,54 130,78 80,102" fill="#242a2f" stroke="#c2b071" stroke-width="3"/>
-  <path d="M42 76 L48 42" stroke="#4d5b46" stroke-width="6" stroke-linecap="round"/>
-  <path d="M58 76 L64 42" stroke="#4d5b46" stroke-width="6" stroke-linecap="round"/>
-  <path d="M76 76 L82 42" stroke="#4d5b46" stroke-width="6" stroke-linecap="round"/>
-  <path d="M96 76 L102 42" stroke="#4d5b46" stroke-width="6" stroke-linecap="round"/>
-  <path d="M114 76 L120 42" stroke="#4d5b46" stroke-width="6" stroke-linecap="round"/>
-  <path d="M34 66 L124 86 M38 52 L128 72" stroke="#c2b071" stroke-width="5" stroke-linecap="round"/>
-  <path d="M24 92 L80 110 L136 92" fill="none" stroke="#c2b071" stroke-width="3" stroke-linecap="round" opacity="0.75"/>
-  <path d="M36 96 L80 108 L124 96" fill="none" stroke="#000000" stroke-width="2" opacity="0.35"/>
+  <ellipse cx="49.5" cy="47.5" rx="42" ry="7" fill="#050608" opacity="0.42"/>
+  <polygon points="8,44 49.5,37 91,48 49.5,54" fill="#2a2f26" opacity="0.5"/>
+  <polygon points="8,33.5 92,39.5 92,43 8,37" fill="#c9b077" stroke="#241a10" stroke-width="1"/>
+  <polygon points="8,22 50,25 50,28.5 8,25.5" fill="#c9b077" stroke="#241a10" stroke-width="1"/>
+  <polygon points="50,25 58,32 57,35.5 50,28.5" fill="#d8c48c" stroke="#241a10" stroke-width="1"/>
+  <polygon points="63,26.5 92,28.5 92,32 63,30" fill="#c9b077" stroke="#241a10" stroke-width="1"/>
+  <g stroke="#241a10" stroke-width="1">
+    <rect x="10" y="16" width="5" height="26" fill="#6b5138"/>
+    <rect x="15" y="17" width="2" height="25" fill="#4a3826" stroke="none"/>
+    <rect x="27" y="17.5" width="5" height="26" fill="#6b5138"/>
+    <rect x="32" y="18.5" width="2" height="25" fill="#4a3826" stroke="none"/>
+    <polygon points="44,31 46,28 47.5,30.5 49,27.5 49,45 44,45" fill="#6b5138"/>
+    <rect x="64" y="20.5" width="5" height="26" fill="#6b5138" transform="rotate(10 66.5 46.5)"/>
+    <rect x="82" y="20.5" width="5" height="26" fill="#6b5138"/>
+    <rect x="87" y="21.5" width="2" height="25" fill="#4a3826" stroke="none"/>
+  </g>
+  <polygon points="55,43 71,44.5 70,47.5 54,45.5" fill="#b7a266" stroke="#241a10" stroke-width="1"/>
+  <line x1="46" y1="35.8" x2="49" y2="41.5" stroke="#241a10" stroke-width="1.2"/>
+  <g fill="#241a10">
+    <circle cx="12.5" cy="24" r="0.9"/>
+    <circle cx="29.5" cy="25.4" r="0.9"/>
+    <circle cx="84.5" cy="30" r="0.9"/>
+    <circle cx="12.5" cy="35.2" r="0.9"/>
+    <circle cx="46.5" cy="37.5" r="0.9"/>
+    <circle cx="84.5" cy="40.3" r="0.9"/>
+  </g>
+  <g stroke="#4d5b46" stroke-width="1.5" stroke-linecap="round" fill="none">
+    <path d="M20 43 l-2 -4 M21 43.5 l1.5 -3.5"/>
+    <path d="M76 46.5 l-2 -4 M77 47 l1.5 -3.5"/>
+    <path d="M38 44.5 l-1.5 -3.5"/>
+  </g>
 </svg>

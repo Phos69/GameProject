@@ -330,9 +330,9 @@ func _draw_attack_trail(
 	var alpha := 1.0 - ratio * 0.42
 	match get_slash_style_id():
 		&"quick_stab":
-			_draw_thrust_slash(blade_color, glow_color, ratio, alpha, 0.48)
+			_draw_thrust_slash(blade_color, glow_color, ratio, alpha, 0.48, 1.5)
 		&"spear_thrust":
-			_draw_thrust_slash(blade_color, glow_color, ratio, alpha, 0.86)
+			_draw_thrust_slash(blade_color, glow_color, ratio, alpha, 0.86, 1.0)
 		&"katana_dash_cut":
 			_draw_katana_slash(blade_color, glow_color, ratio, alpha)
 		&"shield_bash":
@@ -404,29 +404,47 @@ func _draw_thrust_slash(
 	glow_color: Color,
 	ratio: float,
 	alpha: float,
-	length_scale: float
+	length_scale: float,
+	width_scale: float = 1.0
 ) -> void:
 	var length := attack_range * clampf(length_scale, 0.30, 1.0)
-	var start_x := attack_range * 0.10 + ratio * attack_range * 0.18
-	var finish_x := maxf(length, start_x + 8.0)
-	draw_line(
-		Vector2(start_x, 0.0),
-		Vector2(finish_x, 0.0),
-		Color(blade_color, 0.95 * alpha),
-		maxf(attack_width * 0.10, 3.0),
-		true
+	var start_x := attack_range * 0.08 + ratio * attack_range * 0.16
+	var finish_x := maxf(length, start_x + 12.0)
+	var half_width := maxf(attack_width * 0.16 * width_scale, 5.0)
+	var mid_x := lerpf(start_x, finish_x, 0.55)
+	draw_colored_polygon(
+		PackedVector2Array([
+			Vector2(start_x - 4.0, -half_width * 0.9),
+			Vector2(mid_x, -half_width * 1.7),
+			Vector2(finish_x + 6.0, 0.0),
+			Vector2(mid_x, half_width * 1.7),
+			Vector2(start_x - 4.0, half_width * 0.9)
+		]),
+		Color(glow_color, 0.22 * alpha)
+	)
+	draw_colored_polygon(
+		PackedVector2Array([
+			Vector2(start_x, -half_width * 0.35),
+			Vector2(mid_x, -half_width),
+			Vector2(finish_x, 0.0),
+			Vector2(mid_x, half_width),
+			Vector2(start_x, half_width * 0.35)
+		]),
+		Color(blade_color, 0.92 * alpha)
 	)
 	draw_line(
-		Vector2(start_x, -attack_width * 0.18),
-		Vector2(finish_x * 0.92, -attack_width * 0.04),
-		Color(glow_color, 0.35 * alpha),
+		Vector2(start_x, -half_width * 1.7),
+		Vector2(finish_x * 0.90, -half_width * 0.5),
+		Color(glow_color, 0.40 * alpha),
 		2.0,
 		true
 	)
-	draw_circle(
-		Vector2(finish_x, 0.0),
-		maxf(attack_width * 0.10, 2.0),
-		Color(glow_color, 0.35 * alpha)
+	draw_line(
+		Vector2(start_x, half_width * 1.7),
+		Vector2(finish_x * 0.90, half_width * 0.5),
+		Color(glow_color, 0.40 * alpha),
+		2.0,
+		true
 	)
 
 func _draw_katana_slash(
