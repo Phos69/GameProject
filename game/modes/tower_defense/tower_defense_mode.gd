@@ -170,6 +170,18 @@ func try_build_at_slot(slot_id: StringName) -> Node:
 			)
 	return null
 
+func try_upgrade_at_slot(slot_id: StringName) -> bool:
+	if (
+		active_arena == null
+		or tower_defense_manager == null
+		or state == TowerDefenseWaveController.State.DEFEATED
+	):
+		return false
+	for build_slot in active_arena.get_build_slots():
+		if build_slot.slot_id == slot_id:
+			return tower_defense_manager.try_upgrade_tower(build_slot)
+	return false
+
 func _resolve_systems() -> bool:
 	tower_defense_manager = get_tree().get_first_node_in_group(
 		"tower_defense_manager"
@@ -215,11 +227,18 @@ func _on_build_requested(build_slot: TowerBuildSlot, _player: Node) -> void:
 	if state != TowerDefenseWaveController.State.DEFEATED:
 		tower_defense_manager.try_build_tower(build_slot, _get_tower_container())
 
+func _on_upgrade_requested(build_slot: TowerBuildSlot, _player: Node) -> void:
+	if state != TowerDefenseWaveController.State.DEFEATED:
+		tower_defense_manager.try_upgrade_tower(build_slot)
+
 func _connect_build_slots() -> void:
 	for build_slot in active_arena.get_build_slots():
 		var callback := Callable(self, "_on_build_requested")
 		if not build_slot.build_requested.is_connected(callback):
 			build_slot.build_requested.connect(callback)
+		var upgrade_callback := Callable(self, "_on_upgrade_requested")
+		if not build_slot.upgrade_requested.is_connected(upgrade_callback):
+			build_slot.upgrade_requested.connect(upgrade_callback)
 
 func _move_players_to_spawn() -> void:
 	if active_arena == null:

@@ -623,6 +623,8 @@ func _on_boss_telegraph_started(
 	match pattern_id:
 		&"radial_burst":
 			boss_warning_label.text = "RADIAL BURST - FIND A GAP"
+		&"crescent_barrage":
+			boss_warning_label.text = "CRESCENT BARRAGE - SIDESTEP"
 		&"lane_sweep":
 			boss_warning_label.text = "LANE SWEEP - FIND THE GAP"
 		&"cross_burst":

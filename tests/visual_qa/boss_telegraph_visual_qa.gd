@@ -105,6 +105,7 @@ func _run() -> void:
 	boss.attack_timer = 100.0
 	boss.aimed_telegraph_duration = 4.0
 	boss.radial_telegraph_duration = 4.0
+	boss.crescent_telegraph_duration = 4.0
 	boss.target = player
 
 	DirAccess.make_dir_recursive_absolute(
@@ -151,6 +152,28 @@ func _run() -> void:
 	_expect(
 		radial_capture,
 		"radial telegraph screenshot is captured"
+	)
+
+	boss.cancel_attack_telegraph()
+	_expect(
+		boss.start_attack_telegraph(&"crescent_barrage"),
+		"crescent telegraph starts for visual QA"
+	)
+	await process_frame
+	await process_frame
+	var crescent_tiles_ready := await _wait_for_streamed_tiles(
+		streamer,
+		terrain_generator,
+		biome_manager,
+		"crescent telegraph screenshot"
+	)
+	_expect(crescent_tiles_ready, "streamed tiles are loaded for crescent screenshot")
+	var crescent_capture := false
+	if crescent_tiles_ready:
+		crescent_capture = await _capture("milestone_11_boss_crescent.png")
+	_expect(
+		crescent_capture,
+		"crescent telegraph screenshot is captured"
 	)
 	_finish()
 

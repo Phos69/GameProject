@@ -45,6 +45,20 @@ func begin_aimed(
 	rotation = direction.angle()
 	_show_active()
 
+func begin_crescent(
+	direction: Vector2,
+	duration: float,
+	count: int,
+	spread: float
+) -> void:
+	active_pattern = &"crescent_barrage"
+	telegraph_duration = maxf(duration, 0.01)
+	time_remaining = telegraph_duration
+	projectile_count = maxi(count, 2)
+	spread_radians = maxf(spread, 0.0)
+	rotation = direction.angle()
+	_show_active()
+
 func begin_radial(duration: float, count: int) -> void:
 	active_pattern = &"radial_burst"
 	telegraph_duration = maxf(duration, 0.01)
@@ -126,6 +140,8 @@ func _refresh_processing() -> void:
 func _draw() -> void:
 	if active_pattern == &"aimed_volley":
 		_draw_aimed_warning()
+	elif active_pattern == &"crescent_barrage":
+		_draw_crescent_warning()
 	elif active_pattern == &"radial_burst":
 		_draw_radial_warning()
 	elif active_pattern == &"lane_sweep":
@@ -177,6 +193,52 @@ func _draw_aimed_warning() -> void:
 			3.0,
 			true
 		)
+	_draw_countdown_ring()
+
+func _draw_crescent_warning() -> void:
+	var pulse := _warning_pulse(0.026)
+	var half_angle := (
+		spread_radians * float(maxi(projectile_count - 1, 1)) * 0.5
+		+ 0.04
+	)
+	var center := float(projectile_count - 1) * 0.5
+	for index in range(projectile_count):
+		var angle_offset := (float(index) - center) * spread_radians
+		var direction := Vector2.RIGHT.rotated(angle_offset)
+		draw_line(
+			direction * 44.0,
+			direction * (aimed_length * 0.82),
+			Color(warning_color, 0.78 * pulse),
+			3.0,
+			true
+		)
+	# Il fronte a mezzaluna avanza col countdown: comunica quando e dove il
+	# ventaglio colpira' senza infliggere danno durante il warning.
+	var front_radius := lerpf(
+		96.0,
+		aimed_length * 0.62,
+		get_progress_ratio()
+	)
+	draw_arc(
+		Vector2.ZERO,
+		front_radius,
+		-half_angle,
+		half_angle,
+		36,
+		Color(warning_color, 0.92 * pulse),
+		5.0,
+		true
+	)
+	draw_arc(
+		Vector2.ZERO,
+		front_radius * 0.86,
+		-half_angle * 0.8,
+		half_angle * 0.8,
+		30,
+		Color(warning_color, 0.38 * pulse),
+		3.0,
+		true
+	)
 	_draw_countdown_ring()
 
 func _draw_radial_warning() -> void:

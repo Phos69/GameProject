@@ -6,6 +6,7 @@ class_name DefenseTowerVisual
 )
 
 var aim_direction: Vector2 = Vector2.UP
+var tower_level: int = 1
 var tracking_target: bool = false
 var fire_flash_timer: float = 0.0
 var recoil_timer: float = 0.0
@@ -42,6 +43,10 @@ func _process(delta: float) -> void:
 	if not tracking_target:
 		var idle_angle := -PI * 0.5 + sin(animation_time * 0.8) * 0.32
 		aim_direction = Vector2.RIGHT.rotated(idle_angle)
+	queue_redraw()
+
+func set_tower_level(level: int) -> void:
+	tower_level = maxi(level, 1)
 	queue_redraw()
 
 func set_aim_direction(direction: Vector2) -> void:
@@ -159,6 +164,28 @@ func _draw() -> void:
 		4.0,
 		true
 	)
+	# Pip di livello (TD-001): un rombo accent per ogni upgrade comprato,
+	# sul fronte della base, cosi' il livello si legge a colpo d'occhio.
+	for pip_index in range(tower_level - 1):
+		var pip_center := Vector2(-8.0 + float(pip_index) * 16.0, 20.0)
+		draw_colored_polygon(
+			PackedVector2Array([
+				pip_center + Vector2(0.0, -4.0),
+				pip_center + Vector2(3.5, 0.0),
+				pip_center + Vector2(0.0, 4.0),
+				pip_center + Vector2(-3.5, 0.0)
+			]),
+			Color(0.025, 0.04, 0.055, 1.0)
+		)
+		draw_colored_polygon(
+			PackedVector2Array([
+				pip_center + Vector2(0.0, -2.6),
+				pip_center + Vector2(2.3, 0.0),
+				pip_center + Vector2(0.0, 2.6),
+				pip_center + Vector2(-2.3, 0.0)
+			]),
+			secondary.lightened(0.18)
+		)
 	draw_circle(Vector2.ZERO, 15.0, Color(0.025, 0.04, 0.055, 1.0))
 	draw_circle(Vector2.ZERO, 11.0, secondary.darkened(0.26))
 	draw_circle(

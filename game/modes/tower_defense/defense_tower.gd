@@ -3,23 +3,57 @@ class_name DefenseTower
 
 signal target_acquired(target: Node)
 signal fired(target: Node, projectile: Node)
+signal upgraded(new_level: int)
 
 @export var attack_range: float = 260.0
 @export var fire_rate: float = 2.5
 @export var projectile_damage: int = 16
 @export var projectile_speed: float = 460.0
+## Upgrade TD-001: livelli successivi comprati sullo slot con i crediti run.
+@export var max_level: int = 3
+@export var upgrade_cost_base: int = 35
+@export var upgrade_cost_step: int = 15
+@export var upgrade_damage_multiplier: float = 1.5
+@export var upgrade_fire_rate_multiplier: float = 1.2
+@export var upgrade_range_multiplier: float = 1.1
 @export var visual_data: WeaponVisualData = preload(
 	"res://game/weapons/defense_tower_visual.tres"
 )
 
 @onready var visual := $Visual as DefenseTowerVisual
 
+var tower_level: int = 1
 var fire_timer: float = 0.0
 var target
 
 func _ready() -> void:
 	add_to_group("defense_towers")
 	visual.visual_data = visual_data
+	visual.set_tower_level(tower_level)
+
+func can_upgrade() -> bool:
+	return tower_level < max_level
+
+func get_upgrade_cost() -> int:
+	return upgrade_cost_base + (tower_level - 1) * upgrade_cost_step
+
+## Aumenta di un livello statistiche e presentazione. Il costo e' gestito dal
+## TowerDefenseManager: qui solo l'effetto, cosi' il contratto resta testabile
+## in isolamento.
+func upgrade() -> bool:
+	if not can_upgrade():
+		return false
+	tower_level += 1
+	projectile_damage = maxi(
+		roundi(float(projectile_damage) * upgrade_damage_multiplier),
+		projectile_damage + 1
+	)
+	fire_rate *= upgrade_fire_rate_multiplier
+	attack_range *= upgrade_range_multiplier
+	if visual != null:
+		visual.set_tower_level(tower_level)
+	upgraded.emit(tower_level)
+	return true
 
 func _process(delta: float) -> void:
 	fire_timer = maxf(fire_timer - delta, 0.0)

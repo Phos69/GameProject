@@ -12,6 +12,8 @@ var _boss_waves: Array[int] = []
 var _boss_requests: Array[StringName] = []
 var _td_completed_waves: Array[int] = []
 var _tower_shots: int = 0
+var _tower_upgrades: Array[Dictionary] = []
+var _tower_upgrade_failures: Array[StringName] = []
 var _completed_runs: Array[int] = []
 
 # --- survival wave loop (survival_wave) -------------------------------------
@@ -257,6 +259,86 @@ func test_tower_defense_flow() -> void:
 	assert_null(scene.node(&"tower_build_slots"), "mode switch clears the tower defense arena")
 	survival_mode.stop_mode()
 	_teardown_simple(scene)
+
+## TD-001: upgrade delle torri — costo per livello, statistiche aumentate,
+## feedback (segnali + livello sul visual), rifiuti per crediti/livello massimo
+## e pulizia al ritorno al menu.
+func test_tower_upgrade_flow() -> void:
+	_tower_upgrades = []
+	_tower_upgrade_failures = []
+	var scene = _new_main_scene_fixture()
+	assert_true(scene.boot(self), "main scene can be loaded")
+	await wait_physics_frames(2)
+	var game_mode_manager: GameModeManager = scene.node(&"game_mode_manager") as GameModeManager
+	var tower_defense_mode: TowerDefenseMode = scene.node(&"tower_defense_mode") as TowerDefenseMode
+	var tower_defense_manager: TowerDefenseManager = scene.node(&"tower_defense_manager") as TowerDefenseManager
+	if game_mode_manager == null or tower_defense_mode == null or tower_defense_manager == null:
+		assert_true(false, "tower upgrade systems are available")
+		scene.teardown()
+		scene = null
+		return
+	tower_defense_manager.tower_upgraded.connect(_on_tower_upgraded)
+	tower_defense_manager.tower_upgrade_failed.connect(_on_tower_upgrade_failed)
+
+	game_mode_manager.set_mode(
+		GameConstants.MODE_TOWER_DEFENSE,
+		{"initial_delay": 100.0, "starting_credits": 100}
+	)
+	await wait_physics_frames(3)
+	assert_true(tower_defense_mode.is_running, "tower defense mode starts for the upgrade flow")
+
+	assert_false(tower_defense_mode.try_upgrade_at_slot(&"slot_b"), "an empty slot cannot be upgraded")
+	assert_true(_tower_upgrade_failures.has(&"unavailable"), "the empty slot reports the unavailable reason")
+	assert_eq(tower_defense_manager.credits, 100, "a failed upgrade spends nothing")
+
+	var tower := tower_defense_mode.try_build_at_slot(&"slot_b") as DefenseTower
+	assert_not_null(tower, "the upgrade flow builds a tower first")
+	if tower == null:
+		await _teardown_simple(scene)
+		return
+	assert_eq(tower.tower_level, 1, "a new tower starts at level one")
+	assert_eq(tower_defense_manager.credits, 75, "building spends the slot cost")
+	var base_damage := tower.projectile_damage
+	var base_fire_rate := tower.fire_rate
+	var base_range := tower.attack_range
+	assert_eq(tower.get_upgrade_cost(), 35, "level two costs the base upgrade price")
+
+	assert_true(tower_defense_mode.try_upgrade_at_slot(&"slot_b"), "an occupied slot upgrades its tower")
+	assert_eq(tower.tower_level, 2, "the upgrade raises the tower level")
+	assert_eq(tower_defense_manager.credits, 40, "the upgrade spends the level cost")
+	assert_gt(tower.projectile_damage, base_damage, "the upgrade raises tower damage")
+	assert_gt(tower.fire_rate, base_fire_rate, "the upgrade raises tower fire rate")
+	assert_gt(tower.attack_range, base_range, "the upgrade extends tower range")
+	assert_true(
+		tower.visual is DefenseTowerVisual and tower.visual.tower_level == 2,
+		"the tower visual shows the new level"
+	)
+	assert_eq(_tower_upgrades.size(), 1, "the manager announces the upgrade")
+
+	assert_eq(tower.get_upgrade_cost(), 50, "level three costs the stepped price")
+	assert_false(tower_defense_mode.try_upgrade_at_slot(&"slot_b"), "an upgrade without credits is rejected")
+	assert_true(_tower_upgrade_failures.has(&"insufficient_credits"), "the rejection reports missing credits")
+	assert_eq(tower.tower_level, 2, "a rejected upgrade leaves the level unchanged")
+	assert_eq(tower_defense_manager.credits, 40, "a rejected upgrade spends nothing")
+
+	tower_defense_manager.add_credits(60)
+	assert_true(tower_defense_mode.try_upgrade_at_slot(&"slot_b"), "the last level can be bought")
+	assert_eq(tower.tower_level, 3, "the tower reaches max level")
+	assert_false(tower.can_upgrade(), "a max level tower cannot upgrade further")
+	assert_false(tower_defense_mode.try_upgrade_at_slot(&"slot_b"), "a max level tower rejects further upgrades")
+	assert_gte(_tower_upgrade_failures.count(&"unavailable"), 2, "the max level rejection reports unavailable")
+
+	game_mode_manager.set_mode(GameConstants.MODE_MENU)
+	await wait_physics_frames(2)
+	assert_eq(
+		get_tree().get_nodes_in_group("defense_towers").size(),
+		0,
+		"returning to menu clears upgraded towers"
+	)
+
+	tower_defense_manager.tower_upgraded.disconnect(_on_tower_upgraded)
+	tower_defense_manager.tower_upgrade_failed.disconnect(_on_tower_upgrade_failed)
+	await _teardown_simple(scene)
 
 # --- dungeon (dungeon) ------------------------------------------------------
 
@@ -561,6 +643,19 @@ func _on_boss_requested(_mode_id: StringName, reason: StringName) -> void:
 
 func _on_td_wave_completed(wave_index: int, _reward_credits: int) -> void:
 	_td_completed_waves.append(wave_index)
+
+func _on_tower_upgraded(
+	build_slot_id: StringName,
+	_tower: Node,
+	new_level: int
+) -> void:
+	_tower_upgrades.append({"slot": build_slot_id, "level": new_level})
+
+func _on_tower_upgrade_failed(
+	_build_slot_id: StringName,
+	reason: StringName
+) -> void:
+	_tower_upgrade_failures.append(reason)
 
 func _on_tower_fired(_target: Node, _projectile: Node) -> void:
 	_tower_shots += 1

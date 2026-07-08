@@ -27,6 +27,12 @@ signal died(boss: Node)
 @export var aimed_projectile_count: int = 3
 @export var aimed_spread_radians: float = 0.16
 @export var radial_projectile_count: int = 12
+## Pattern avanzato BOSS-001: ventaglio ampio con fronte a mezzaluna
+## (velocita' sfalsate), in rotazione solo dalla fase due.
+@export var crescent_telegraph_duration: float = 0.85
+@export var crescent_projectile_count: int = 7
+@export var crescent_spread_radians: float = 0.20
+@export var crescent_speed_stagger: float = 0.18
 @export var projectile_damage: int = 10
 @export var defense: int = 2
 @export var kill_experience: int = 100
@@ -199,6 +205,42 @@ func perform_radial_burst() -> int:
 	attack_pattern_started.emit(&"radial_burst", radial_projectile_count)
 	return radial_projectile_count
 
+func perform_crescent_barrage(
+	direction_override: Vector2 = Vector2.ZERO
+) -> int:
+	var projectile_system := _get_projectile_system()
+	if projectile_system == null:
+		return 0
+	var base_direction := direction_override.normalized()
+	if base_direction.is_zero_approx():
+		if not _is_valid_target(target):
+			_select_target()
+		if target == null:
+			return 0
+		base_direction = global_position.direction_to(target.global_position)
+	var center := float(crescent_projectile_count - 1) * 0.5
+	for index in range(crescent_projectile_count):
+		var angle_offset := (float(index) - center) * crescent_spread_radians
+		# Velocita' alternate: il fronte arriva come una mezzaluna sfalsata,
+		# non come una riga piatta schivabile con un solo passo.
+		var speed_scale := (
+			1.0 - crescent_speed_stagger
+			if index % 2 == 0
+			else 1.0
+		)
+		projectile_system.spawn_projectile(
+			global_position + base_direction * 42.0,
+			base_direction.rotated(angle_offset),
+			projectile_speed * speed_scale,
+			self,
+			projectile_scene,
+			maxi(1, roundi(float(projectile_damage) * 0.85)),
+			&"boss_crescent",
+			radial_projectile_visual
+		)
+	attack_pattern_started.emit(&"crescent_barrage", crescent_projectile_count)
+	return crescent_projectile_count
+
 func start_attack_telegraph(pattern_id: StringName) -> bool:
 	if is_dead or not pending_pattern_id.is_empty():
 		return false
@@ -224,6 +266,19 @@ func start_attack_telegraph(pattern_id: StringName) -> bool:
 			telegraph_visual.begin_radial(
 				duration,
 				radial_projectile_count
+			)
+		&"crescent_barrage":
+			if not _is_valid_target(target):
+				_select_target()
+			if target == null:
+				return false
+			direction = global_position.direction_to(target.global_position)
+			duration = maxf(crescent_telegraph_duration, 0.01)
+			telegraph_visual.begin_crescent(
+				direction,
+				duration,
+				crescent_projectile_count,
+				crescent_spread_radians
 			)
 		_:
 			return false
@@ -291,19 +346,27 @@ func _finish_attack_telegraph() -> void:
 	)
 
 func _get_next_scheduled_pattern() -> StringName:
-	if phase_index > 1 and phase_two_pattern_index % 2 == 0:
-		return &"radial_burst"
+	if phase_index > 1:
+		match phase_two_pattern_index % 3:
+			0:
+				return &"radial_burst"
+			1:
+				return &"crescent_barrage"
 	return &"aimed_volley"
 
 func _execute_pattern(pattern_id: StringName, direction: Vector2) -> void:
 	if pattern_id == &"radial_burst":
 		perform_radial_burst()
+	elif pattern_id == &"crescent_barrage":
+		perform_crescent_barrage(direction)
 	else:
 		perform_aimed_volley(direction)
 
 func _get_telegraph_duration(pattern_id: StringName) -> float:
 	if pattern_id == &"radial_burst":
 		return maxf(radial_telegraph_duration, 0.01)
+	if pattern_id == &"crescent_barrage":
+		return maxf(crescent_telegraph_duration, 0.01)
 	return maxf(aimed_telegraph_duration, 0.01)
 
 func _select_target() -> void:

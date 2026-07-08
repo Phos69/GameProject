@@ -6,6 +6,8 @@ signal base_destroyed()
 signal tower_build_requested(build_slot_id: StringName)
 signal tower_built(build_slot_id: StringName, tower: Node)
 signal tower_build_failed(build_slot_id: StringName, reason: StringName)
+signal tower_upgraded(build_slot_id: StringName, tower: Node, new_level: int)
+signal tower_upgrade_failed(build_slot_id: StringName, reason: StringName)
 signal credits_changed(credits: int)
 
 @export var base_max_health: int = 250
@@ -63,3 +65,26 @@ func try_build_tower(build_slot: TowerBuildSlot, tower_parent: Node) -> Node:
 		return null
 	tower_built.emit(build_slot.slot_id, tower)
 	return tower
+
+## Upgrade TD-001: speculare a try_build_tower — stesso flusso crediti con
+## rimborso se l'effetto non si applica, e feedback via segnali dedicati.
+func try_upgrade_tower(build_slot: TowerBuildSlot) -> bool:
+	if build_slot == null or not build_slot.can_upgrade_tower():
+		var invalid_slot_id := build_slot.slot_id if build_slot != null else &"unknown"
+		tower_upgrade_failed.emit(invalid_slot_id, &"unavailable")
+		return false
+	var tower := build_slot.get_built_tower() as DefenseTower
+	if tower == null:
+		tower_upgrade_failed.emit(build_slot.slot_id, &"unavailable")
+		return false
+	var upgrade_cost := tower.get_upgrade_cost()
+	if not spend_credits(upgrade_cost):
+		tower_upgrade_failed.emit(build_slot.slot_id, &"insufficient_credits")
+		return false
+	if not tower.upgrade():
+		add_credits(upgrade_cost)
+		tower_upgrade_failed.emit(build_slot.slot_id, &"upgrade_failed")
+		return false
+	build_slot.refresh_prompt()
+	tower_upgraded.emit(build_slot.slot_id, tower, tower.tower_level)
+	return true

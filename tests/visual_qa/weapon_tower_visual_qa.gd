@@ -201,8 +201,24 @@ func _run() -> void:
 		tower.visual.set_aim_direction(direction)
 		if index == 1:
 			tower.visual.play_fire()
+	# TD-001: gli upgrade passano dal flusso crediti reale, cosi' i prompt
+	# degli slot restano coerenti; la board mostra L1 / L3 / L2 fianco a
+	# fianco con i pip di livello sulla base.
+	var tower_defense_manager := get_first_node_in_group(
+		"tower_defense_manager"
+	) as TowerDefenseManager
+	if tower_defense_manager != null:
+		tower_defense_manager.add_credits(200)
+		tower_defense_mode.try_upgrade_at_slot(&"slot_b")
+		tower_defense_mode.try_upgrade_at_slot(&"slot_b")
+		tower_defense_mode.try_upgrade_at_slot(&"slot_c")
 	await process_frame
 	await process_frame
+	_expect(
+		tower_b != null and tower_b.tower_level == 3
+			and tower_c != null and tower_c.tower_level == 2,
+		"upgraded towers reach their display levels through the credit flow"
+	)
 	_expect(
 		towers.all(func(tower: DefenseTower) -> bool: return tower != null),
 		"tower scenario marker contains all three defense towers"

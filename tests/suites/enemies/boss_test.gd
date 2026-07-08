@@ -228,12 +228,51 @@ func test_boss_telegraph() -> void:
 	assert_eq(_boss_projectiles.size(), boss.radial_projectile_count, "radial burst spawns its configured projectile count")
 	_clear_boss_projectiles()
 
+	# BOSS-001: pattern avanzato crescent barrage — telegraph dedicato, nessun
+	# danno durante il warning, ventaglio ampio con velocita' sfalsate.
+	var pattern_count_before_crescent := _patterns.size()
+	boss.crescent_telegraph_duration = 0.24
+	assert_true(boss.start_attack_telegraph(&"crescent_barrage"), "crescent barrage can enter its telegraph state")
+	assert_true(_boss_projectiles.is_empty(), "crescent warning appears before any damaging projectile")
+	assert_true(telegraph_visual != null and telegraph_visual.active_pattern == &"crescent_barrage", "crescent telegraph exposes its advancing fan")
+	assert_true(_telegraphs.has(&"crescent_barrage"), "crescent telegraph emits its public signal")
+	assert_true("CRESCENT BARRAGE" in hud.boss_warning_label.text, "HUD explains the crescent danger")
+	for _frame in range(5):
+		await wait_physics_frames(1)
+	assert_true(_boss_projectiles.is_empty(), "crescent barrage remains harmless during its warning window")
+	assert_true(await _wait_for_pattern_count(pattern_count_before_crescent + 1), "crescent barrage fires after the warning window")
+	assert_eq(_boss_projectiles.size(), boss.crescent_projectile_count, "crescent barrage spawns its configured projectile count")
+	if _boss_projectiles.size() >= 2:
+		var first_direction := (_boss_projectiles[0] as Projectile).velocity.normalized()
+		var last_direction := (_boss_projectiles[_boss_projectiles.size() - 1] as Projectile).velocity.normalized()
+		assert_gt(absf(first_direction.angle_to(last_direction)), 0.9, "crescent barrage spreads a wide fan")
+		var first_speed := (_boss_projectiles[0] as Projectile).velocity.length()
+		var second_speed := (_boss_projectiles[1] as Projectile).velocity.length()
+		assert_false(is_equal_approx(first_speed, second_speed), "crescent barrage staggers projectile speeds into a wave front")
+	_clear_boss_projectiles()
+
 	var boss_health := boss.get_node("HealthComponent") as HealthComponent
 	health_system.apply_damage(boss, boss_health.current_health - boss_health.max_health / 2)
 	assert_eq(boss.phase_index, 2, "boss still enters phase two at half health")
 	assert_true(telegraph_visual != null and telegraph_visual.phase_pulse_remaining > 0.0, "phase change creates a world-space pulse")
 	assert_true("PHASE 2" in hud.boss_warning_label.text, "HUD announces the phase transition")
 	assert_true(_audio_feedback.has(&"boss_phase"), "phase transition emits a distinct audio cue")
+
+	# La rotazione di fase due copre tutti e tre i pattern; la fase uno resta
+	# solo aimed (il pattern avanzato non anticipa la pressione iniziale).
+	var rotation_patterns: Array[StringName] = []
+	for rotation_index in range(3):
+		boss.phase_two_pattern_index = rotation_index
+		rotation_patterns.append(boss._get_next_scheduled_pattern())
+	assert_true(
+		rotation_patterns.has(&"radial_burst")
+			and rotation_patterns.has(&"crescent_barrage")
+			and rotation_patterns.has(&"aimed_volley"),
+		"phase two rotation schedules all three patterns"
+	)
+	boss.phase_index = 1
+	assert_eq(boss._get_next_scheduled_pattern(), &"aimed_volley", "phase one keeps the aimed-only schedule")
+	boss.phase_index = 2
 
 	boss.queue_free()
 	await wait_physics_frames(1)
