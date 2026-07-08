@@ -8,6 +8,14 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Added
 
+- Chiusa `REL-001`: export Windows ripetibile da checkout pulito
+  (`build/iso_local_sandbox.exe` 99,7 MB + `.pck` 44,4 MB, exit code 0),
+  build smoke sull'eseguibile esportato PASS (flusso menu, Character Select,
+  Infinite Arena e survival via joypad con controller XInput reale),
+  attribuzioni asset complete e firma digitale chiusa come blocco esterno
+  documentato (nessun certificato ne' signtool sul sistema). Nota: lanciare
+  lo smoke senza `--log-file`; dettagli in
+  `docs/latest_commit_validation_report.md`.
 - Chiusa `TD-001` con l'upgrade delle torri a tre livelli: lo stesso gesto
   interact sullo slot occupato compra il livello successivo (35 poi 50
   crediti, rimborso se l'effetto non si applica), il danno sale x1.5, la

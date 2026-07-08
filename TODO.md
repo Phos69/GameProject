@@ -80,20 +80,14 @@ tastiera/joypad rientra nei playtest gia' elencati in `BAL-001`.
   art attiva e zoom variabile, dungeon con tre seed, tower defense 5 wave,
   profiling renderizzato dello streaming chunk e regressione smoke principale.
 
-### REL-001 - Packaging, firma digitale e release readiness
-
-- Obiettivo: preparare una build Windows pubblicabile con export ripetibile,
-  build smoke, asset attribuiti e firma digitale se il certificato e
-  disponibile.
-- Milestone collegata: post-roadmap release Milestone 12.
-- File/sistemi coinvolti: `export_presets.cfg`, `build/`,
-  `assets/ATTRIBUTION.md`, `assets/README.md`, `README.md`,
-  `docs/latest_commit_validation_report.md`, `BuildRuntimeSmoke`.
-- Criterio di accettazione: EXE/PCK generati da checkout pulito, build smoke
-  exit code `0`, attribuzioni complete, EXE firmato oppure blocco esterno
-  documentato.
-- Test richiesto: export release, export pack, build smoke, avvio manuale
-  Windows con controller/audio e verifica firma se toolchain disponibile.
+La milestone `REL-001` e' **completata il 2026-07-08**: EXE (99,7 MB) e PCK
+(44,4 MB) esportati da checkout pulito con exit code `0`, build smoke
+sull'eseguibile esportato PASS (flusso menu/Character Select/Infinite
+Arena/survival via joypad, controller XInput reale rilevato), attribuzioni
+complete e firma chiusa come blocco esterno documentato (nessun certificato
+ne' toolchain sul sistema). Dettagli e note di riproducibilita' in
+`docs/latest_commit_validation_report.md`. L'ascolto reale di mix/SFX
+all'avvio manuale resta nella checklist manuale.
 
 ## Decisioni Aperte
 
@@ -107,8 +101,10 @@ collegata prima di implementare.
 - Nuovi boss: **risolta il 2026-07-08** — estesi i pattern del Wave Warden
   (`crescent_barrage`) invece di aggiungere un boss nuovo; il registry resta
   pronto per un boss futuro con una nuova voce esplicita.
-- Firma digitale: verificare disponibilita certificato e toolchain. Collegata a
-  `REL-001`.
+- Firma digitale: **risolta il 2026-07-08** come blocco esterno documentato —
+  nessun `signtool` (PATH o Windows SDK) e nessun certificato code-signing
+  negli store del sistema. Riaprire con una nuova voce quando certificato e
+  toolchain saranno disponibili.
 - Mini-eventi bioma: durante il playtest end-to-end di `BAL-001`, raccogliere
   screenshot/video reali dei quattro eventi come materiale QA; riaprire
   `BIO-001` solo in presenza di bug o tuning concreto.

@@ -5,6 +5,31 @@ prompt e milestone Markdown rimossi durante il cleanup documentale; per la
 documentazione operativa corrente usare `README.md`, `TODO.md`, `ROADMAP.md` e
 `docs/documentation_inventory.md`.
 
+## REL-001 release readiness - 2026-07-08
+
+- Branch: `master`, commit `3ccc1ee` (fasi 0-4 del piano TODO committate),
+  working tree pulito al momento dell'export.
+- Scope validato: export Windows ripetibile, build smoke sull'eseguibile
+  esportato, attribuzioni asset e verifica della toolchain di firma.
+- Esito: **PASS** (firma: blocco esterno documentato, come previsto dal
+  criterio di accettazione).
+
+| Verifica | Esito | Note |
+|---|---|---|
+| Export release `Windows Desktop` | PASS | `godot --headless --path . --export-release` -> `build/iso_local_sandbox.exe` (99,7 MB), exit code 0 |
+| Export pack | PASS | `build/iso_local_sandbox.pck` (44,4 MB), exit code 0 |
+| Build smoke sull'EXE esportato | PASS | `iso_local_sandbox.exe -- --build-smoke`: **BUILD_RUNTIME_SMOKE: PASS, exit 0** — flusso completo menu -> Character Select -> Infinite Arena -> menu -> Zombie Survival -> menu via joypad simulato, con un controller XInput reale rilevato e feedback audio che scrive campioni; log in `user://logs/godot.log` |
+| Attribuzioni | PASS | `assets/ATTRIBUTION.md` completa: tutti gli asset sono originali del progetto o generati internamente (set OpenAI documentato con modifiche); il guardrail `test_no_external_assets` resta verde |
+| Firma digitale | BLOCCO ESTERNO | nessun `signtool` (ne' PATH ne' Windows SDK in `C:\Program Files (x86)\Windows Kits\10\bin`) e zero certificati code-signing negli store CurrentUser/LocalMachine; `codesign/enable=false` nel preset. Da riaprire solo quando certificato e toolchain saranno disponibili |
+
+Nota di riproducibilita': lanciare lo smoke SENZA `--log-file` (con quel flag
+l'eseguibile esportato termina con access violation prima di scrivere il log);
+l'output finisce comunque nel log utente standard.
+
+Residuo manuale: ascolto reale di mix/SFX con controller durante l'avvio
+manuale, gia' coperto dalla voce audio della checklist
+(`docs/testing/manual_checklist.md`).
+
 ## BOSS-001 e TD-001 - 2026-07-08
 
 - Branch: `master` (working tree del piano TODO, fasi 0-4).

@@ -104,8 +104,11 @@ evitare sovrapposizioni.
 
 ### Release
 
-- `REL-001`: export Windows ripetibile, build smoke, attribuzioni asset e firma
-  digitale se certificato/toolchain sono disponibili.
+- `REL-001`: **completata 2026-07-08** — export Windows ripetibile da checkout
+  pulito (EXE 99,7 MB + PCK 44,4 MB, exit 0), build smoke PASS
+  sull'eseguibile esportato con controller reale, attribuzioni complete e
+  firma chiusa come blocco esterno documentato (nessun certificato/toolchain
+  sul sistema; riaprire con una nuova voce quando disponibili).
 - La firma non e una milestone separata: e un sotto-blocco di release readiness.
 
 ## Sequenza Consigliata
@@ -117,7 +120,9 @@ evitare sovrapposizioni.
 3. ~~Decidere e implementare `BOSS-001`/`TD-001`~~ — fatte il 2026-07-08
    (pattern `crescent_barrage` + upgrade torri); di `BAL-001` restano i
    playtest manuali lunghi, che ora coprono anche le due espansioni.
-4. Affrontare `REL-001` quando smoke, QA e attribuzioni sono stabili.
+4. ~~Affrontare `REL-001`~~ — fatta il 2026-07-08 (export + build smoke +
+   attribuzioni; firma = blocco esterno documentato). L'unico lavoro aperto
+   sono i playtest manuali di `BAL-001`.
 
 ## Ridondanze e Conflitti Risolti
 
