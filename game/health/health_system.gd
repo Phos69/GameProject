@@ -54,9 +54,12 @@ func get_last_damage_source(target: Node) -> Node:
 		target.get_instance_id(),
 		{}
 	)
-	var source: Node = data.get("source", null)
-	if source != null and is_instance_valid(source):
-		return source
+	# La sorgente puo' essere stata liberata nel frattempo: l'assegnazione a una
+	# variabile tipizzata Node fallirebbe con un errore engine, quindi il check
+	# di validita' avviene sul Variant.
+	var source: Variant = data.get("source", null)
+	if is_instance_valid(source) and source is Node:
+		return source as Node
 	return null
 
 func clear_last_damage_source(target: Node) -> void:
