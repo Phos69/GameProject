@@ -36,8 +36,15 @@ evitare sovrapposizioni.
 
 ### Presentazione e UX
 
-- `UIUX-001`: rifinire menu, HUD, Character Select, status, mappa, boss,
-  feedback audio e leggibilita multi-risoluzione senza cambiare regole di gioco.
+- `UIUX-001`: **completata 2026-07-07**. UI-VIS-FIX (2026-07-03) ha chiuso
+  gerarchia HUD, Character Select e boss HUD; il pass finale del 2026-07-07 ha
+  chiuso `WEAPON-VIS-FIX` (`VIS-011`), il main menu (`VIS-012`, fondale
+  isometrico nei toni dei biomi, card compatta, lingua italiana, safe area a
+  tre risoluzioni) e i residui asset (`VIS-009`/`VIS-008`: fence a canvas
+  nativa, large_rock riclassificato, forest_tree confermato hero asset).
+  Regressione audio mix e suite GUT completa verdi (238/238). Resta solo
+  l'ascolto manuale del mix a quattro pad in
+  `docs/testing/manual_checklist.md`.
 - `ART-VIS-FIX`: **completato 2026-07-03** su tutti e cinque i biomi
   (`docs/biome_art_vis_fix_roadmap.md`): edifici generati leggibili come
   strutture, ground pool coerenti, route a taglio netto, toni per-bioma
@@ -48,27 +55,47 @@ evitare sovrapposizioni.
   `reed_wall`. Residui riclassificati: hazard tematici della pipeline
   voidfirst in `BAL-001`, normalizzazione `large_rock`/`broken_fence`/
   `forest_tree` dentro `UIUX-001` (VIS-009).
-- Include la decisione sugli asset `final_quality` dei personaggi RPG: o entrano
-  nel pass UI/UX, o restano polish opzionale documentato.
+- Decisione asset `final_quality` dei personaggi RPG: **risolta 2026-07-07** —
+  restano polish opzionale documentato, fuori dal backlog attivo; riaprire solo
+  con un nuovo goal esplicito e una voce in `TODO.md`.
 - Non include tuning numerico, nuove regole combat o nuove modalita.
 
 ### Espansione Gameplay
 
-- `BOSS-001`: scegliere un boss nuovo o un'estensione contenuta dei pattern
-  esistenti, usando `BossSystem` e i contratti condivisi.
-- `TD-001`: scegliere una sola espansione tower defense tra upgrade, vendita,
-  riparazione, nuovi tipi torre o percorsi multipli.
-- Le due aree non devono duplicare combat, projectile, drop, boss o sistemi UI
-  gia condivisi.
+- `BOSS-001`: **completata 2026-07-08** con il pattern avanzato
+  `crescent_barrage` del Wave Warden — ventaglio ampio a velocita' sfalsate
+  con telegraph dedicato (fronte a mezzaluna che avanza col countdown, nessun
+  danno nel warning, warning HUD "CRESCENT BARRAGE - SIDESTEP") in rotazione
+  a tre pattern dalla fase due. Contratto registry/ID e drop invariati; un
+  eventuale boss nuovo richiede una nuova voce in `TODO.md`.
+- `TD-001`: **completata 2026-07-08** con l'upgrade delle torri a tre livelli:
+  interact sullo slot occupato, costo per livello (35/50 crediti) con rimborso
+  su fallimento, statistiche scalate (danno x1.5, cadenza x1.2, gittata x1.1),
+  pip di livello sulla base e prompt "UP n C" sullo slot. Vendita,
+  riparazione, nuovi tipi torre e percorsi multipli restano fuori scope.
+- Le due aree non duplicano combat, projectile, drop, boss o sistemi UI gia
+  condivisi.
 
 ### QA, Bilanciamento e Performance
 
-- `QA-001`: coprire meglio health, multiplayer, wave, save/load, world runtime
-  e lifecycle oltre agli smoke gia presenti.
-- `BAL-001`: playtest end-to-end, tuning data-driven e profiling su survival,
-  dungeon, tower defense, RPG, biomi e boss. Il profilo Zombie Survival
-  `1280x720`, balanced/generated art, 4 player e 28 nemici deve misurare
-  p95 normale <= 33,3 ms, seam <= 50 ms e nessun chunk mancante in camera.
+- `QA-001`: **completata 2026-07-08**. Oltre al pass `QA-VIS-FIX` sul tooling
+  (2026-07-02), ogni sistema condiviso critico ha ora uno smoke headless
+  dedicato: edge case health (`health_edge_test`), join/leave a meta' ondata
+  (`multiplayer_midwave_test`), edge di persistenza con backup e salvataggi
+  corrotti (`save_edge_test`) e lifecycle multi-modalita' con cleanup
+  (`mode_lifecycle_test`). Suite completa 247/247 con exit code `0`; dettagli
+  in `docs/latest_commit_validation_report.md`. Nuovi warning o rossi sono
+  regressioni, non prosecuzione della milestone.
+- `BAL-001`: parte automatizzabile **chiusa il 2026-07-08** — soak/stress
+  8/8, profilo perf rimisurato in finestra (a 96 mob worst frame 28,9 ms,
+  sotto il budget p95 di 33,3 ms; tetto raster mob accettato e documentato,
+  baking archetipi solo come opzione futura oltre ~100 mob visibili), seam
+  renderizzato senza chunk mancanti e guardrail di nicchia per tutte e 7 le
+  classi RPG. Restano i playtest manuali lunghi (Infinite Arena e survival 20
+  minuti, dungeon tre seed, TD 5 wave) e il giudizio qualitativo sui biomi.
+  Il profilo Zombie Survival `1280x720`, balanced/generated art, 4 player e
+  28 nemici resta il riferimento: p95 normale <= 33,3 ms, seam <= 50 ms e
+  nessun chunk mancante in camera.
 - Il pass `WORLD-VIS-FIX` e completato: raised cliff e fall zone hanno semantica
   distinta, placement e contatti ground/void sono coperti da guardrail e il
   profilo movimento/zoom non perde chunk visibili. Soak e tuning restano aperti.
@@ -83,11 +110,13 @@ evitare sovrapposizioni.
 
 ## Sequenza Consigliata
 
-1. Chiudere un pass `UIUX-001` piccolo e verificabile, per ridurre rumore
-   visuale prima dei playtest.
-2. Rafforzare `QA-001` sui sistemi critici che possono rompere piu modalita.
-3. Eseguire `BAL-001` con playtest reali e profiling, usando i risultati per
-   decidere se prioritizzare `BOSS-001` o `TD-001`.
+1. ~~Chiudere un pass `UIUX-001` piccolo e verificabile~~ — fatto il
+   2026-07-07 (la milestone e' chiusa per intero).
+2. ~~Rafforzare `QA-001` sui sistemi critici~~ — fatto il 2026-07-08 (smoke
+   health/multiplayer/save/lifecycle, suite 247/247).
+3. ~~Decidere e implementare `BOSS-001`/`TD-001`~~ — fatte il 2026-07-08
+   (pattern `crescent_barrage` + upgrade torri); di `BAL-001` restano i
+   playtest manuali lunghi, che ora coprono anche le due espansioni.
 4. Affrontare `REL-001` quando smoke, QA e attribuzioni sono stabili.
 
 ## Ridondanze e Conflitti Risolti

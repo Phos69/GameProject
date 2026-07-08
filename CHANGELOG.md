@@ -8,6 +8,46 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Added
 
+- Chiusa `TD-001` con l'upgrade delle torri a tre livelli: lo stesso gesto
+  interact sullo slot occupato compra il livello successivo (35 poi 50
+  crediti, rimborso se l'effetto non si applica), il danno sale x1.5, la
+  cadenza x1.2 e la gittata x1.1 per livello, la base mostra un pip rombo per
+  upgrade e lo slot espone il prompt "UP n C" finche' la torre non e' al
+  massimo. Segnali dedicati `tower_upgraded`/`tower_upgrade_failed` sul
+  `TowerDefenseManager`; nuovo `test_tower_upgrade_flow` in
+  `core_modes_test.gd` e QA visuale con L1/L3/L2 affiancate attraverso il
+  flusso crediti reale.
+- Chiusa `BOSS-001` con il pattern avanzato `crescent_barrage` del Wave
+  Warden: ventaglio di 7 proiettili a velocita' sfalsate (fronte a mezzaluna),
+  telegraph dedicato che disegna il ventaglio e un fronte che avanza col
+  countdown senza infliggere danno, warning HUD "CRESCENT BARRAGE -
+  SIDESTEP" e rotazione a tre pattern dalla fase due (la fase uno resta solo
+  aimed). Contratto registry/ID, compatibilita' per modalita' e drop
+  invariati; copertura estesa in `boss_test.gd` (telegraph innocuo, ampiezza
+  del ventaglio, stagger delle velocita', rotazione completa) e cattura
+  dedicata nella QA telegraph.
+- Aggiunto `test_advanced_class_niches` a
+  `tests/suites/balance/weapon_balance_test.gd` (`BAL-001`): nicchie
+  data-driven per le tre classi avanzate — mago glass cannon di precisione
+  (attack ranged massimo, scatter zero, burst per caricatore, HP minimo del
+  roster), domatrice a pressione continua (reload uptime massimo del comparto
+  ranged, dispersione dimezzata rispetto alla pistola), licantropo melee
+  veloce (cadenza e recupero migliori del comparto, velocita' massima tra i
+  melee, HP tra spadaccino e berserker) — piu' il vincolo che nessuna coppia
+  delle 7 classi condivida la stessa statline HP/ATK/DEF/SPD.
+- Aggiunti gli smoke `QA-001` sui sistemi condivisi critici:
+  `tests/suites/combat/health_edge_test.gd` (overkill e clamp, cap di cura,
+  invulnerabilita' multipla e bypass, stati downed/dead, revive bounds,
+  set_max_health, tracking della sorgente di danno con riferimenti liberati),
+  `tests/suites/modes/multiplayer_midwave_test.gd` (join/leave locale a meta'
+  ondata: joiner preparato per la run, retarget dei nemici dopo il leave,
+  slot 1 non abbandonabile, wave completata con roster cambiato),
+  `tests/suites/modes/save_edge_test.gd` (fallback sul .bak, salvataggi
+  corrotti rifiutati senza toccare lo stato, write atomico senza residui,
+  sanitize del last_mode, roundtrip dei binding join/leave) e
+  `tests/suites/modes/mode_lifecycle_test.gd` (cicli menu/run su
+  survival/dungeon/tower defense con cleanup di nemici e torri e vita piena a
+  ogni nuova run). La suite completa sale a 247 test / 24.731 assert.
 - Aggiunte le QA dedicate `ART-VIS-FIX` per i quattro biomi generated art
   (`biome_art_toxic_wastes`, `biome_art_burning_fields`,
   `biome_art_drowned_marsh`, `biome_art_frozen_outskirts`), tutte estese da
@@ -227,7 +267,42 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Fixed
 
-- Chiuso `VIS-001` del report QA visuale: `SettingsPanel` usa dimensioni
+- `HealthSystem.get_last_damage_source` non genera piu' un errore engine
+  quando la sorgente dell'ultimo danno e' stata liberata nel frattempo (nemico
+  o player despawnato): il check di validita' avviene sul Variant prima del
+  cast a `Node`. Scovato dal nuovo `health_edge_test` di `QA-001`.
+- Chiuso `WEAPON-VIS-FIX` (`VIS-011`): silhouette ridisegnate per
+  `quick_knife` (daga con guardia), `spear` (lancia a foglia) e
+  `chain_lightning` (saetta a nastro, anche come proiettile); `fireball` e
+  `unstable_void` ora si distinguono per massa e ritmo (cometa con coda vs
+  vortice a quattro cuspidi), non solo per palette; il contenitore dei weapon
+  pickup e' attenuato con l'arma in scala maggiorata (high contrast
+  invariato); lo slash thrust disegna una lama poligonale con glow e speed
+  line. Board WVIS con tutte le label, scenario crowded reale nei tre preset e
+  suite `combat` 20/20.
+- Chiuso il residuo `VIS-009` (con `VIS-008`): `broken_fence` ridisegnato
+  full-canvas `99x56` e rasterizzato a dimensione nativa senza
+  letterbox/doppio resample (id in `NATIVE_RASTER_OBJECT_IDS`, guardrail in
+  `object_asset_test`); `large_rock` riclassificato senza difetto di prodotto
+  (in gioco e' l'area plateau dedicata con QA `rock_area_visual_qa`);
+  `forest_tree` confermato hero asset raster con variazione flip/tinta
+  deterministica.
+- Chiuso `VIS-012`: il main menu usa un fondale con gradiente notturno,
+  griglia isometrica e tessere diamante nei toni dei cinque biomi
+  (`MainMenuBackdrop`, disegno statico compatibile con reduced motion), card
+  ad altezza contenuto in stile UI condiviso, lingua uniformata all'italiano e
+  layout compatto sotto i 620 px di altezza viewport; card verificata dentro
+  il viewport a 1280x720, 1024x768 e 960x540.
+- Stabilizzato `test_weapon_tower_visual_identity`
+  (`tests/suites/combat/drops_test.gd`), il rosso noto della suite `combat`:
+  il bersaglio di test moriva sotto il fuoco della torre stessa durante
+  l'attesa (38 HP contro colpi da 16 a fire rate 20), la torre azzerava
+  correttamente tracking e feedback sul bersaglio morto e gli assert
+  fotografavano lo stato idle; `assert_eq(tower.target, target)` mascherava la
+  morte perche' un'istanza liberata confronta uguale a `null`. Il bersaglio usa
+  ora `health_multiplier` 100 e un guard assert dedicato fallisce in modo
+  esplicito se il bersaglio non sopravvive alla finestra di tracking. Suite
+  `combat` 20/20 (1.644 assert).
   minime piu compatte, tab Video/Controls con scroll interno che segue il focus
   e Back sempre fuori dallo scroll, con guardrail a 1280x720, 1024x768 e
   960x540.

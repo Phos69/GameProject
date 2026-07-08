@@ -5,6 +5,77 @@ prompt e milestone Markdown rimossi durante il cleanup documentale; per la
 documentazione operativa corrente usare `README.md`, `TODO.md`, `ROADMAP.md` e
 `docs/documentation_inventory.md`.
 
+## BOSS-001 e TD-001 - 2026-07-08
+
+- Branch: `master` (working tree del piano TODO, fasi 0-4).
+- Scope validato: le due espansioni gameplay a scope minimo — upgrade delle
+  torri (`TD-001`) e pattern boss avanzato `crescent_barrage` (`BOSS-001`) —
+  con i rispettivi criteri di accettazione.
+- Esito: **PASS**.
+- `TD-001`: azione con costo e feedback chiari (crediti scalati con rimborso,
+  prompt "UP n C" sullo slot, pip di livello sul visual, segnali dedicati);
+  nessuna duplicazione di combat/projectile/boss; pulizia di torri e crediti
+  al retry/menu gia' coperta da `mode_lifecycle_test`.
+- `BOSS-001`: boss richiedibile per ID senza cambiare i chiamanti (registry
+  invariato), telegraph leggibile e innocuo durante il warning (assert
+  dedicati), drop invariati via `DropSystem`; rotazione fase due a tre
+  pattern, fase uno invariata.
+
+| Verifica | Esito | Note |
+|---|---|---|
+| `core_modes_test` (con `test_tower_upgrade_flow`) | PASS | 5/5, 344 assert: costo/rimborso, statistiche scalate, livello massimo, slot vuoto, pulizia al menu |
+| suite `enemies` (con blocco crescent in `test_boss_telegraph`) | PASS | 10/10, 308 assert: telegraph innocuo, conteggio proiettili, ampiezza ventaglio > 0.9 rad, velocita' sfalsate, rotazione a tre pattern |
+| QA `boss_telegraph_visual_qa` | PASS | nuova cattura `milestone_11_boss_crescent.png`: ventaglio, fronte a mezzaluna, countdown e warning HUD leggibili |
+| QA `weapon_tower_visual_qa` | PASS | board L1/L3/L2 attraverso il flusso crediti reale: prompt "UP 35 C"/"UP 50 C"/nessun prompt al livello massimo, crediti coerenti |
+
+## BAL-001 parte automatizzabile - 2026-07-08
+
+- Branch: `master` (working tree del piano TODO, fasi 0-3).
+- Scope validato: soak/stress, profilo di performance renderizzato con
+  chiusura del residuo "raster mob a schermo", QA seam renderizzata e
+  guardrail di nicchia per tutte e sette le classi RPG. I playtest manuali
+  lunghi restano aperti in `TODO.md`.
+- Esito: **PASS** sulla parte automatizzabile.
+- Decisione residuo perf (dal pass bottleneck P1-P4): il costo raster dei mob
+  a schermo (~60 µs CPU + ~57 µs GPU per zombie, misurato oggi in finestra su
+  RTX 2070S con vsync off) e' un **tetto accettato e documentato**: a 96 mob
+  visibili — 3,4 volte il profilo di accettazione da 28 nemici — il worst
+  frame e' 28,9 ms, ancora sotto il budget p95 di 33,3 ms; il tetto si supera
+  solo verso ~192 mob (45,2 ms), fuori dall'envelope reale delle wave
+  (3+2/wave: 21 nemici a wave 10, 41 a wave 20). Il baking degli archetipi in
+  sprite texture resta documentato come opzione futura se il contenuto
+  superera' ~100 mob visibili simultanei.
+
+| Verifica | Esito | Note |
+|---|---|---|
+| Suite soak/stress (`.gutconfig.soak.json`) | PASS | 8/8 test, 76 assert, 51 s: arena stress, dieci wave multi-bioma, soak 10 minuti simulati, lifecycle loop 100 cicli, perf bottleneck |
+| Perf bottleneck headless | PASS | query ostacoli 2,3 µs/call, void scan a fette 0,79 ms/frame a 192 nemici, spawn burst 24 istanze 3,3 ms, frame inchiodato al pacing 16,6 ms fino a 192 mob (physics 8,2 ms) |
+| Perf bottleneck in finestra (P4) | PASS | render CPU/GPU: 3,7/4,6 ms a 24 mob, 7,8/7,4 ms a 96, 12,6/13,0 ms a 192; wall worst 16,8/28,9/45,2 ms; il gate offscreen tiene (hidden: 3,3/4,3 ms) |
+| QA seam renderizzata (`milestone_10_isometric_final_visual_qa`) | PASS | attraversamento seam con movimento continuo e zoom fino a 0.68, zero chunk visibili mancanti |
+| Guardrail classi RPG (`weapon_balance_test`) | PASS | nuove nicchie data-driven per mago (glass cannon di precisione), domatrice (uptime ranged) e licantropo (melee veloce), piu' statline uniche su tutte e 7 le classi |
+
+## QA-001 smoke sistemi critici - 2026-07-08
+
+- Branch: `master` (working tree del piano TODO, fasi 0-2).
+- Scope validato: nuovi smoke headless per i sistemi condivisi critici
+  richiesti da `QA-001`: edge case di HealthComponent/HealthSystem, join/leave
+  locale a meta' ondata, edge di persistenza del SaveManager e lifecycle
+  menu -> run -> menu multi-modalita' nella stessa scena.
+- Esito: **PASS**. Suite GUT completa **247/247 test, 24.731 assert, exit
+  code 0**.
+- Bug di prodotto trovato e corretto dal nuovo smoke:
+  `HealthSystem.get_last_damage_source` assegnava una sorgente gia' liberata a
+  una variabile tipizzata `Node` (errore engine "previously freed instance");
+  ora il check di validita' avviene sul Variant prima del cast.
+
+| Test | Esito | Note |
+|---|---|---|
+| `tests/suites/combat/health_edge_test.gd` | PASS | 6 test, 51 assert: overkill/clamp, cap di cura, invulnerabilita' multipla e bypass, stati downed/dead, revive bounds, set_max_health, last damage source con riferimenti liberati |
+| `tests/suites/modes/multiplayer_midwave_test.gd` | PASS | joiner preparato per la run in corso con card HUD, leave senza bersagli penzolanti (retarget verificato), slot 1 non abbandonabile, wave completata con il roster cambiato |
+| `tests/suites/modes/save_edge_test.gd` | PASS | fallback sul .bak, JSON corrotto/root non-dizionario/party non valido rifiutati senza toccare lo stato runtime, write atomico senza residui .tmp/.bak, sanitize del last_mode, roundtrip dei binding join/leave |
+| `tests/suites/modes/mode_lifecycle_test.gd` | PASS | 4 cicli menu -> survival/dungeon/tower defense: nemici di wave/stanza e torri puliti al ritorno al menu, roster player stabile, vita piena a ogni nuova run |
+| suite GUT completa (`tools/run_gut.ps1`) | PASS | 49 script, 247/247 test, 24.731 assert |
+
 ## Forest isometric texture pass - 2026-06-18
 - Branch: `feat/iso-milestone-10-complete`
 - Scope validato: primo sistema completo di texture isometriche per il bioma
