@@ -324,7 +324,7 @@ func test_weapon_tower_visual_identity() -> void:
 	var target_scene := load("res://game/modes/tower_defense/tower_defense_enemy.tscn") as PackedScene
 	var target := target_scene.instantiate() as TowerDefenseEnemy
 	var path := PackedVector2Array([tower.global_position + Vector2(140.0, 0.0), tower.global_position + Vector2(300.0, 0.0)])
-	target.configure_spawn({"path_points": path})
+	target.configure_spawn({"path_points": path, "health_multiplier": 100.0})
 	scene.main.get_node("World/Enemies").add_child(target)
 	target.global_position = path[0]
 	target.set_physics_process(false)
@@ -333,6 +333,7 @@ func test_weapon_tower_visual_identity() -> void:
 	tower.fired.connect(_on_tower_fired)
 	for _frame in range(12):
 		await wait_physics_frames(1)
+	assert_true(is_instance_valid(target) and not target.is_dead, "tower target stays alive through the tracking window")
 	assert_eq(tower.target, target, "tower still acquires its gameplay target")
 	assert_true(tower.visual.tracking_target, "tower barrel visual follows the acquired target")
 	assert_false(_tower_shots.is_empty(), "tower still fires through ProjectileSystem")
