@@ -295,11 +295,10 @@ func test_scalable_obstacle() -> void:
 		assert_true(bool(small.call("is_world_position_behind_cliff", Vector2(0.0, -100.0))), "position north of the sort line is behind the cliff")
 		assert_true(bool(small.call("is_world_position_in_front_of_cliff", Vector2(0.0, 100.0))), "position south of the sort line is in front of the cliff")
 		assert_false(bool(small.call("is_world_position_behind_cliff", Vector2(200.0, -100.0))), "position outside the rock width is not occluded")
-		var occluder := small.get_node_or_null("RockAreaOccluder") as RockAreaOccluderVisual
-		assert_true(occluder != null and occluder.has_texture(), "rock creates a Y-sorted occlusion cap")
-		if occluder != null:
-			var cover_bounds := occluder.get_cover_bounds()
-			assert_lt(cover_bounds.position.y, -SMALL_CELLS.y * LOGICAL_TILE_SCALE * 0.5, "occlusion cap extends north beyond the collision")
+		assert_null(
+			small.get_node_or_null("RockAreaOccluder"),
+			"rock does not create a second shifted crown layer"
+		)
 		assert_true(bool(large.call("is_footprint_contract_aligned")), "scalable rock counts as footprint-aligned")
 		small.queue_free()
 		large.queue_free()

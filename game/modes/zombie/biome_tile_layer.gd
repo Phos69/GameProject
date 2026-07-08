@@ -1074,6 +1074,18 @@ func _build_visual_chunk(chunk_rect: Rect2i, scale: float) -> void:
 				_suppressed_void_texture_count += 1
 				continue
 			var center := _cell_center_to_world(cell)
+			if _uses_rectilinear_void_transition_art(tile_id):
+				_suppressed_void_texture_count += 1
+				if collect_cliff_transitions:
+					_append_cliff_transition_mesh(
+						cell,
+						tile_id,
+						center,
+						half_w,
+						half_h,
+						scale
+					)
+				continue
 			if _uses_generated_forest_surface(cell, tile_id):
 				if collect_cliff_transitions:
 					_append_cliff_transition_mesh(
@@ -1689,6 +1701,13 @@ func _is_untextured_void_tile(tile_id: StringName) -> bool:
 	return (
 		tile_id == IsometricTileResolver.TILE_VOID_DEPTH
 		or tile_id == IsometricTileResolver.TILE_FOREST_VOID
+	)
+
+func _uses_rectilinear_void_transition_art(tile_id: StringName) -> bool:
+	return (
+		has_forest_cliff_border_art()
+		and resolver != null
+		and resolver.is_void_transition_tile_id(tile_id)
 	)
 
 func _append_texture_details(

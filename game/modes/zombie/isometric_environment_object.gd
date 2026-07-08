@@ -8,9 +8,6 @@ const ASSET_SPRITE_NAME := "AssetSprite"
 const DAMAGE_OVERLAY_NAME := "DamageOverlay"
 const TILE_LAYER_ROCK_RENDER_MODE := &"tile_layer_rock_area"
 const ROCK_AREA_OCCLUDER_NAME := "RockAreaOccluder"
-const ROCK_AREA_OCCLUDER_SCRIPT = preload(
-	"res://game/modes/zombie/rocks/rock_area_occluder_visual.gd"
-)
 const OCCLUSION_HORIZONTAL_MARGIN := 8.0
 const CLIFF_RELATION_OUTSIDE := &"outside"
 const CLIFF_RELATION_BEHIND := &"behind"
@@ -33,7 +30,6 @@ var anchor_id: StringName = &"iso_floor_center"
 var asset_status: String = ""
 var asset_sprite: Sprite2D
 var damage_overlay: Sprite2D
-var rock_area_occluder: RockAreaOccluderVisual
 var procedural_fallback_active: bool = false
 var render_mode: StringName = &"sprite"
 var _asset_variation_pending: bool = false
@@ -102,14 +98,7 @@ func has_asset_sprite() -> bool:
 	)
 
 func has_asset_visual() -> bool:
-	return (
-		has_asset_sprite()
-		or (
-			uses_tile_layer_rock_visual()
-			and rock_area_occluder != null
-			and rock_area_occluder.has_texture()
-		)
-	)
+	return has_asset_sprite() or uses_tile_layer_rock_visual()
 
 func get_render_mode() -> StringName:
 	return render_mode
@@ -223,18 +212,9 @@ func _ensure_visual_nodes() -> void:
 	damage_overlay.z_index = 1
 	damage_overlay.y_sort_enabled = false
 
-	rock_area_occluder = get_node_or_null(
-		ROCK_AREA_OCCLUDER_NAME
-	) as RockAreaOccluderVisual
-	if rock_area_occluder == null:
-		rock_area_occluder = (
-			ROCK_AREA_OCCLUDER_SCRIPT.new() as RockAreaOccluderVisual
-		)
-		rock_area_occluder.name = ROCK_AREA_OCCLUDER_NAME
-		add_child(rock_area_occluder)
-		rock_area_occluder.owner = owner
-	rock_area_occluder.z_index = 0
-	rock_area_occluder.y_sort_enabled = false
+	var stale_rock_area_occluder := get_node_or_null(ROCK_AREA_OCCLUDER_NAME)
+	if stale_rock_area_occluder != null:
+		stale_rock_area_occluder.queue_free()
 
 func _load_asset_texture(contract: Dictionary) -> void:
 	procedural_fallback_active = false
@@ -242,11 +222,7 @@ func _load_asset_texture(contract: Dictionary) -> void:
 		return
 	asset_sprite.texture = null
 	asset_sprite.visible = false
-	if rock_area_occluder != null:
-		rock_area_occluder.visible = false
 	if uses_tile_layer_rock_visual():
-		if rock_area_occluder != null:
-			rock_area_occluder.configure(obstacle_size, asset_path)
 		return
 	if asset_path.is_empty():
 		procedural_fallback_active = _contract_allows_procedural_fallback(contract)

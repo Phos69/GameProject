@@ -245,10 +245,9 @@ oggetto conserva collisione e overlay `F9`, mentre `BiomeTileLayer` sostituisce
 lo sprite stirato con un plateau rialzato sull'intero `rock_rect` (il void cliff
 specchiato verso l'alto). La corona cobble e sollevata e rientra in un mesa, con
 tre pareti continue a colonne (fronte sud + due fianchi obliqui) che salgono dal
-prato fino al bordo; la corona si prolunga a nord come overhang e
-`RockAreaOccluderVisual` la replica nel Y-sort per coprire soltanto i player
-dietro. Visual e collisione derivano dallo stesso rettangolo, ma l'estensione
-nord resta solo presentazionale. Il top usa
+prato fino al bordo. Visual e collisione derivano dallo stesso rettangolo; il top
+e disegnato una sola volta dal tile layer per evitare lastre duplicate o shiftate.
+Il top usa
 `edges/cliffs/textures/rock_plateau_top_generated.png`; le pareti usano
 `rock_cliff_face_upward_generated.png` con shading per lato. Non e una fascia
 piatta e non porta linee disegnate: il dettaglio arriva solo dalle texture.

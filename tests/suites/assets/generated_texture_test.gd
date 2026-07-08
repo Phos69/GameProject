@@ -1296,8 +1296,8 @@ func test_rectilinear_face_meshes() -> void:
 	builder.build([Rect2i(Vector2i(4, 5), Vector2i(6, 4))], [&"internal"], Vector2i(16, 16), 8.0)
 	assert_eq(builder.face_count, 4, "internal fall rectangle builds four cliff faces")
 	assert_true(_mesh_has_uvs(builder.face_mesh), "rectilinear cliff faces expose UVs")
-	assert_false(_mesh_is_axis_aligned_quads(builder.face_mesh), "lateral cliff faces are sheared into an oblique ravine in fake perspective")
-	assert_eq(_mesh_sheared_quad_count(builder.face_mesh), 2, "both side walls (east/west) lean toward the void interior")
+	assert_true(_mesh_is_axis_aligned_quads(builder.face_mesh), "internal cliff faces avoid diagonal lower-corner wedges")
+	assert_eq(_mesh_sheared_quad_count(builder.face_mesh), 0, "internal side walls stay rectilinear")
 	var bounds := _mesh_bounds(builder.face_mesh)
 	assert_true(bounds.position.is_equal_approx(Vector2(-32.0, -24.0)) and bounds.end.is_equal_approx(Vector2(16.0, 8.0)), "rectilinear cliff faces stay inside the fall rectangle")
 	builder.build([Rect2i(Vector2i(0, 0), Vector2i(16, 1))], [&"north"], Vector2i(16, 16), 48.0)
@@ -1339,6 +1339,16 @@ func test_tile_layer_consumes_cliff_textures() -> void:
 	assert_true(int(border_counts.get("horizontal", 0)) == 2 and int(border_counts.get("vertical", 0)) == 2 and int(border_counts.get("corners", 0)) == 4,
 		"synthetic fall rectangle applies every dedicated border mesh")
 	assert_eq(int(border_counts.get("faces", 0)), 4, "synthetic fall rectangle replaces angled per-cell faces with four linear faces")
+	var transition_tile := layer.get_resolved_tile_id(Vector2i(6, 6))
+	assert_true(
+		layer._uses_rectilinear_void_transition_art(transition_tile),
+		"rectilinear cliff renderer owns void transition art"
+	)
+	assert_gt(
+		layer.get_suppressed_void_texture_count(),
+		4,
+		"rectilinear cliff renderer suppresses enlarged flat transition diamonds"
+	)
 	layer.queue_free()
 	await wait_physics_frames(1)
 

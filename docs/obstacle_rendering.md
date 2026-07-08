@@ -62,13 +62,10 @@ dalla camera e non viene emessa. Le pareti sono disegnate per prime e la corona
 le copre, mascherando i triangoli alti come fa il void con il suo lip. Lo shading
 e per lato (fronte chiaro, est illuminato, ovest in ombra) con gradiente verso la
 base; non ci sono fenditure o lip disegnati a mano, quindi la superficie resta
-priva di linee procedurali. Il nodo `large_rock` non disegna uno sprite ma
-mantiene collisione, blocker, overlay `F9` e il cap Y-sorted di occlusione.
-`RockAreaOccluderVisual` ridisegna esattamente la corona sollevata (stesso
-rettangolo rientrato del builder), cosi un player entro la larghezza e a nord
-della linea centrale resta dietro la roccia, a sud davanti; fuori larghezza non
-viene coperto. Entrambi bloccano movimento e proiettili sull'intera area
-dichiarata.
+priva di linee procedurali. Il nodo `large_rock` non disegna uno sprite e non
+ridisegna la corona: mantiene solo collisione, blocker e overlay `F9`, mentre il
+tile layer produce l'unico top visibile. Entrambi bloccano movimento e
+proiettili sull'intera area dichiarata.
 
 Void/fall zone usano contratti `void_tiles`/cliff separati e non sono ostacoli
 solidi. Pareti, case, vegetazione e rocce usano invece `object_scenes` e dichiarano

@@ -275,6 +275,15 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Fixed
 
+- Rimosso il cap visuale duplicato delle `large_rock`/mesa: il top cobble viene
+  disegnato una sola volta da `BiomeTileLayer` e `IsometricEnvironmentObject`
+  non crea piu' `RockAreaOccluderVisual`, eliminando la lastra sovrapposta e
+  shiftata senza cambiare collisioni, blocker o classificazione dietro/davanti.
+- Rimossi i triangoli neri ai lati e agli angoli inferiori dei pit cliff dopo
+  l'ingrandimento del tile base: con il renderer rettilineo attivo, i
+  `void_transition` non emettono piu' il diamond flat scuro sottostante e le
+  pareti laterali degli scavi interni usano strip verticali clipped tra faccia
+  alta e bassa, senza diagonali scure nei corner.
 - Ripristinato il rendering asset-backed dei tile semantici nei biomi con
   `generated_theme_id`: `IsometricTileResolver` non sovrascrive piu' `asset_path`
   di route/passaggi manifest (`service_lane`, `ash_lane`, `packed_snow_path`,

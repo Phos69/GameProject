@@ -832,6 +832,12 @@ multi-bioma.
   tile logici totali, tile gia risolti nella cache, tile visuali residenti e
   chunk visibili; un worker in corso non espone il conteggio parziale come
   copertura totale.
+  Quando il renderer rettilineo dei cliff e attivo, i `void_transition` non
+  emettono il diamond ground per-cella: facce e lip dedicati sono l'unica
+  sorgente visibile del pit, evitando punte scure fuori dal rettangolo void.
+  Le pareti laterali degli scavi interni sono strip rettilinee clipped tra
+  faccia alta e bassa, cosi i corner restano chiusi dai face orizzontali senza
+  wedge scuri sovrapposti.
   In Zombie Survival il rettangolo camera e visibile, +1 e caricato, +2 viene
   prefabbricato e i residenti entro +3 vengono conservati; oltre +3 il rilascio
   avviene dopo 2 secondi. Lo scheduler ammette al massimo due chunk e non avvia
@@ -936,7 +942,8 @@ multi-bioma.
   `rock_plateau_top_generated.png`, le pareti `rock_cliff_face_upward_generated.png`
   con shading per lato e gradiente verso la base; nessuna fissure/lip disegnata a
   mano, quindi la superficie resta priva di linee procedurali. La corona viene
-  duplicata da `RockAreaOccluderVisual` sul nodo ostacolo Y-sorted.
+  disegnata una sola volta dal tile layer; il nodo oggetto non aggiunge un cap
+  Y-sorted duplicato.
 - `IsometricEnvironmentObject.is_world_position_behind_cliff()` classifica una
   posizione come dietro quando ricade nella larghezza della roccia e ha Y
   minore della linea centrale; Y maggiore/uguale significa davanti. Posizioni

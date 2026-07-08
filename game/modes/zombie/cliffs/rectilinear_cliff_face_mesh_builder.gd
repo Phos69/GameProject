@@ -3,13 +3,14 @@ class_name RectilinearCliffFaceMeshBuilder
 
 ## Builds continuous cliff faces aligned to rectangular fall-zone boundaries.
 ## This replaces the per-cell diamond faces for the forest renderer only.
-## The far (north) wall descends straight; the lateral (east/west) walls are
-## sheared so the side of the drop reads as an oblique ravine in fake
-## perspective, the same trick the legacy diamond EDGE E/W faces used.
+## Internal pits use clipped orthogonal side strips so the top/bottom faces own
+## the corners. Perimeter east/west strips still use an oblique drop because they
+## do not meet an internal lower face.
 
 const TEXTURE_REPEAT_WORLD_SIZE := 128.0
 const PERIMETER_FACE_DEPTH_TILES := 1.15
 const PERIMETER_MIN_FACE_DEPTH := 42.0
+const INTERNAL_LATERAL_WALL_WIDTH_TILES := 0.65
 # Horizontal lean of the lateral walls as a fraction of their drop depth. 0.0 is a
 # flat vertical strip; ~0.5 ≈ 27° from vertical, matching IsometricCliffMeshBuilder.
 const LATERAL_VOID_SLOPE := 0.5
@@ -58,12 +59,16 @@ func _append_faces(
 ) -> void:
 	var far_depth := _far_face_depth(rect, side, logical_scale)
 	var near_depth := _near_face_depth(rect, side, logical_scale)
-	# Lateral walls descend roughly as deep as the far wall so the ravine reads at the
-	# same scale on every side; the lean is capped so a narrow pit cannot fold over.
+	# Perimeter side walls keep the old oblique drop. Internal pits use a clipped
+	# orthogonal strip below, so the horizontal faces can own both corner bands.
 	var lateral_drop := minf(far_depth, rect.size.y * 0.5)
 	if _is_perimeter_side(side):
 		lateral_drop = far_depth
 	var lateral_slant := minf(lateral_drop * LATERAL_VOID_SLOPE, rect.size.x * 0.42)
+	var lateral_width := minf(
+		maxf(logical_scale * INTERNAL_LATERAL_WALL_WIDTH_TILES, 8.0),
+		rect.size.x * 0.18
+	)
 	match side:
 		&"north":
 			_append_horizontal_face(
@@ -102,24 +107,24 @@ func _append_faces(
 				lateral_slant
 			)
 		_:
-			var side_top := rect.position.y
-			var side_bottom := rect.end.y - lateral_drop
+			var side_top := rect.position.y + far_depth
+			var side_bottom := rect.end.y - near_depth
 			if side_bottom > side_top:
-				_append_lateral_wall(
+				_append_lateral_strip(
 					buffers,
 					side_top,
 					side_bottom,
 					rect.position.x,
-					lateral_drop,
-					lateral_slant
+					lateral_width,
+					1.0
 				)
-				_append_lateral_wall(
+				_append_lateral_strip(
 					buffers,
 					side_top,
 					side_bottom,
 					rect.end.x,
-					lateral_drop,
-					-lateral_slant
+					lateral_width,
+					-1.0
 				)
 			_append_horizontal_face(
 				buffers,
@@ -193,6 +198,38 @@ func _append_horizontal_face(
 			Vector2(u_left, bottom_v)
 		]),
 		PackedColorArray([top_color, top_color, bottom_color, bottom_color])
+	)
+	face_count += 1
+
+func _append_lateral_strip(
+	buffers: Dictionary,
+	top: float,
+	bottom: float,
+	boundary_x: float,
+	width: float,
+	inward_sign: float
+) -> void:
+	if bottom <= top or width <= 0.0 or is_zero_approx(inward_sign):
+		return
+	var inner_x := boundary_x + inward_sign * width
+	var outer_top := Vector2(boundary_x, top)
+	var inner_top := Vector2(inner_x, top)
+	var inner_bottom := Vector2(inner_x, bottom)
+	var outer_bottom := Vector2(boundary_x, bottom)
+	var along_top := top / TEXTURE_REPEAT_WORLD_SIZE
+	var along_bottom := bottom / TEXTURE_REPEAT_WORLD_SIZE
+	var boundary_color := _boundary_color()
+	var inside_color := _inside_color()
+	_append_quad(
+		buffers,
+		PackedVector2Array([outer_top, inner_top, inner_bottom, outer_bottom]),
+		PackedVector2Array([
+			Vector2(along_top, 0.0),
+			Vector2(along_top, 1.0),
+			Vector2(along_bottom, 1.0),
+			Vector2(along_bottom, 0.0)
+		]),
+		PackedColorArray([boundary_color, inside_color, inside_color, boundary_color])
 	)
 	face_count += 1
 
