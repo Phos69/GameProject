@@ -196,9 +196,11 @@ di rubble (variation 02/03: lichene chiaro e ghiaia bruna passano a `detail`),
 eliminando la scacchiera di pannelli per macro-cella. Le route dei temi
 generati usano i PNG `road_border_defined` orientati per
 `main_road`/`road`/incroci, bordi e passage `broken_gate` con relative
-entry/exit; `urban_ruins` ha source orizzontale, quindi le strade verticali
-usano la variante ruotata per portare i bordi sui lati reali. I
-`path_variation` restano per le lane tematiche. Gli edifici generati sono stati
+entry/exit; dal pass di unificazione strade 2026-07-09 la source `urban_ruins`
+e' stata ruotata una tantum a nativa verticale come gli altri temi, quindi non
+serve piu' il caso speciale di orientamento. I `path_variation` restano per le
+lane tematiche, ora anche sui loro bordi e incroci quando nessuna strada
+principale attraversa la cella. Gli edifici generati sono stati
 ridisegnati nel pass trasversale (vedi "Residui e riclassificazioni" per le
 pozze). QA dedicata:
 `tests/visual_qa/biome_art_toxic_wastes_visual_qa.gd`; guardrail esteso in

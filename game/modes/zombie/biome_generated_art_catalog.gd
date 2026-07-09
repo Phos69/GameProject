@@ -70,7 +70,7 @@ const THEME_CONTRACTS: Dictionary = {
 	&"urban_ruins": {
 		&"sampling": SAMPLING_REGION,
 		&"road_style": ROAD_STYLE_BORDER_DEFINED,
-		&"native_border_orientation": ROAD_BORDER_ORIENTATION_HORIZONTAL,
+		&"native_border_orientation": ROAD_BORDER_ORIENTATION_VERTICAL,
 		&"ground_detail_in_pool": false,
 		&"detail_ground_variations": ["01", "04"],
 		&"path_transitions": false,

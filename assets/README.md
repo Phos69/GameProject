@@ -122,19 +122,24 @@ dettaglio/storico e non sono piu superfici runtime strada. Il manifest registra 
 stato `final`, provenienza `openai_image_generation`, licenza
 `Project original` e le liste di ruoli.
 Ogni `road_border_defined` resta un solo sorgente PNG, ma il runtime lo espone
-come due materiali orientati. La source orientation viene letta per tema:
-`urban_ruins` e nativo orizzontale, quindi `__horizontal` usa la sorgente e
-`__vertical` la variante ruotata; gli altri temi attivi restano nativi
-verticali. Le celle route mantengono i propri tile semantici; cambia solo il
-materiale di superficie scelto dal resolver.
+come quattro materiali: bordo `__vertical`/`__horizontal` e core interno
+`__core_vertical`/`__core_horizontal` (banda centrale ritagliata, senza le
+strisce di bordo). Dal pass di unificazione strade tutti i sorgenti sono
+nativi verticali (`urban_ruins` e stato ruotato una tantum su disco); la
+source orientation resta un campo del contratto tema
+(`THEME_CONTRACTS.native_border_orientation`). Le celle route mantengono i
+propri tile semantici; cambia solo il materiale di superficie scelto dal
+resolver.
 La board `generated_biome_art_visual_qa.gd` mostra entrambe le varianti runtime
 per `urban_ruins`, `volcanic`, `frozen_tundra` e `swamp`.
 
 I set generati sono materiali di superficie per ground, route e cliff. Nei
-quattro biomi con `generated_theme_id`, `main_road`, `road` e
-`road_intersection` usano i PNG `road_border_defined` come materiali orientati
-`__vertical`/`__horizontal`, mentre `service_lane`, `ash_lane`,
-`packed_snow_path` e `wooden_walkway` usano `path_variation`.
+quattro biomi con `generated_theme_id`, le celle interne `main_road`/`road`
+usano il core `road_border_defined__core_vertical`/`__core_horizontal`,
+mentre `road_edge`, `road_curve_*` e `road_intersection` usano il bordo
+orientato `__vertical`/`__horizontal`; `service_lane`, `ash_lane`,
+`packed_snow_path` e `wooden_walkway` usano `path_variation`, anche sui
+propri bordi e incroci quando nessuna strada principale attraversa la cella.
 `tile_id` e sezione restano quelli del manifest per semantica, collisioni e
 debug, ma `material_asset_id`/`material_asset_path` puntano ai raster generated.
 Anche i passage road-like tra biomi (`bridge`, `snow_pass`, `broken_gate`,

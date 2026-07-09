@@ -8,6 +8,18 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Added
 
+- Unificazione strade biomi, fase 2 (`docs/biome_road_unification_plan.md`):
+  i bordi e gli incroci delle lane tematiche (`service_lane`, `ash_lane`,
+  `packed_snow_path`, `wooden_walkway`, `broken_street`) renderizzano il
+  materiale `path_variation` invece del bordo stradale quando nessuna strada
+  principale attraversa la cella (nuovo
+  `IsometricTileResolver.route_cell_uses_lane_surface`, tile id semantici
+  invariati); il PNG `road_border_defined` di `urban_ruins` e' stato ruotato
+  una tantum a nativo verticale come gli altri temi, eliminando il caso
+  speciale di orientamento; bump `TileBakeCache.FORMAT_VERSION` 22→23 per
+  invalidare le mappe material pre-unificazione. Guardrail lane-edge in
+  `generated_texture_test.gd` e review QA lane-aware; GUT assets/environment
+  e QA visuale toxic/review/generated_art verdi.
 - Unificazione strade biomi, fasi 0-1 (`docs/biome_road_unification_plan.md`):
   `BiomeGeneratedArtCatalog` ora deriva sampling, stile strada, orientamento
   nativo del bordo e declassamenti ground da un contratto unico per tema

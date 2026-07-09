@@ -1,8 +1,8 @@
 # Report differenze biomi + piano di unificazione strade
 
-Stato: 2026-07-09 — fasi 0 e 1 eseguite (vedi note in fondo alle rispettive
-sezioni); fasi 2-5 aperte. Il report differenze descrive lo stato *precedente*
-alle fasi eseguite.
+Stato: 2026-07-09 — fasi 0, 1 e 2 eseguite (vedi note in fondo alle
+rispettive sezioni); fasi 3-5 aperte. Il report differenze descrive lo stato
+*precedente* alle fasi eseguite.
 
 Fonte del problema percepito ("non si capisce piu niente"): oggi convivono
 **tre pipeline di rendering strada diverse** piu una serie di eccezioni
@@ -174,6 +174,20 @@ e `biome_rendering_review` exit 0, ispezione immagini frozen/toxic.
   `urban_ruins_terrain_27_road_border_defined_01.png` in verticale (una
   tantum) ed eliminare `ROAD_BORDER_HORIZONTAL_SOURCE_THEME_IDS` e il caso
   speciale runtime.
+
+**Eseguita 2026-07-09.** Bordi/incroci lane: nuovo helper pubblico
+`IsometricTileResolver.route_cell_uses_lane_surface` — se nessuna strada
+principale attraversa la cella, `road_edge`/`road_curve_*`/`road_intersection`
+risolvono `ROLE_PATH` (materiale `path_variation`) invece del bordo stradale;
+il tile id semantico resta invariato. Asset urban: PNG ruotato 90° CW su disco
+(ora nativo verticale come gli altri temi), contratto
+`native_border_orientation` aggiornato; il campo resta nel contratto per
+eventuali temi futuri, il codice runtime e' gia' generico. Bump
+`TileBakeCache.FORMAT_VERSION` 22→23 per invalidare le mappe material bake-ate
+con le regole pre-unificazione. Guardrail: probe lane-edge in
+`generated_texture_test.gd` (bordo lane = `path_variation`), review QA
+lane-aware, board `generated_biome_art` invariata (legge l'orientamento dal
+contratto). GUT assets+environment verdi, QA toxic/review/generated_art exit 0.
 
 ### Fase 3 — Unificare i due rami del resolver
 

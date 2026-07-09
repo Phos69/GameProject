@@ -328,13 +328,21 @@ func _generated_route_material_report(layer: BiomeTileLayer) -> Dictionary:
 			var tile_id := layer.get_resolved_tile_id(cell)
 			if GENERATED_ROAD_SURFACE_TILE_IDS.has(tile_id):
 				route_cells += 1
+				var lane_intersection := (
+					tile_id == &"road_intersection"
+					and layer.resolver != null
+					and layer.resolver.route_cell_uses_lane_surface(
+						layer.layout,
+						cell
+					)
+				)
 				_assert_generated_route_path(
 					failures,
 					layer,
 					cell,
 					theme_fragment,
-					"road_border_defined",
-					true
+					"path_variation" if lane_intersection else "road_border_defined",
+					not lane_intersection
 				)
 			elif GENERATED_PATH_SURFACE_TILE_IDS.has(tile_id):
 				route_cells += 1
@@ -348,13 +356,22 @@ func _generated_route_material_report(layer: BiomeTileLayer) -> Dictionary:
 				)
 			elif GENERATED_ROAD_BORDER_TILE_IDS.has(tile_id):
 				route_cells += 1
+				var lane_border := (
+					layer.resolver != null
+					and layer.resolver.route_cell_uses_lane_surface(
+						layer.layout,
+						cell
+					)
+				)
+				# Dalla Fase 2 dell'unificazione strade i bordi delle lane
+				# renderizzano il materiale path, non il bordo stradale.
 				_assert_generated_route_path(
 					failures,
 					layer,
 					cell,
 					theme_fragment,
-					"road_border_defined",
-					true
+					"path_variation" if lane_border else "road_border_defined",
+					not lane_border
 				)
 	return {"route_cells": route_cells, "failures": failures}
 

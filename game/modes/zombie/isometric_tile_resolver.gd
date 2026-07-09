@@ -1134,6 +1134,16 @@ func _apply_generated_material(
 	var material_role := _generated_surface_role(tile_id)
 	if material_role.is_empty():
 		return tile_data
+	if (
+		(
+			GENERATED_THEME_ROAD_BORDER_TILE_IDS.has(tile_id)
+			or tile_id == TILE_ROAD_INTERSECTION
+		)
+		and route_cell_uses_lane_surface(layout, cell)
+	):
+		# Bordi e incroci di una lane: il margine resta materiale path, non
+		# il bordo della strada principale (unificazione strade, Fase 2).
+		material_role = GENERATED_ART_CATALOG.ROLE_PATH
 	material_role = GENERATED_ART_CATALOG.resolve_runtime_surface_role(
 		biome_id,
 		material_role
@@ -1289,6 +1299,31 @@ func _route_runs_horizontally(
 		if rect.has_point(cell) and rect.size.x != rect.size.y:
 			return rect.size.x > rect.size.y
 	return true
+
+## True se la cella route appartiene solo a lane tematiche (nessuna strada
+## principale la attraversa): i suoi bordi/incroci renderizzano il materiale
+## path invece del bordo stradale.
+func route_cell_uses_lane_surface(
+	layout: BiomeEnvironmentLayout,
+	cell: Vector2i
+) -> bool:
+	if layout == null:
+		return false
+	var found_lane := false
+	for tag in layout.get_road_tags_at_cell(cell):
+		if _is_road_border_main_tag(tag):
+			return false
+		if _is_forest_path_tag(tag):
+			found_lane = true
+	for index in range(layout.road_rects.size()):
+		if not layout.road_rects[index].has_point(cell):
+			continue
+		var tag := _road_tag_for_index(layout, index)
+		if _is_road_border_main_tag(tag):
+			return false
+		if _is_forest_path_tag(tag):
+			found_lane = true
+	return found_lane
 
 func _matching_main_road_orientation(
 	layout: BiomeEnvironmentLayout,

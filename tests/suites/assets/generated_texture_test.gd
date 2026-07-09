@@ -360,8 +360,8 @@ func test_generated_biome_catalog_contract() -> void:
 	)
 	assert_eq(
 		BiomeGeneratedArtCatalog.road_border_source_orientation(toxic_road_path),
-		BiomeGeneratedArtCatalog.ROAD_BORDER_ORIENTATION_HORIZONTAL,
-		"urban_ruins defined road-border source is horizontal"
+		BiomeGeneratedArtCatalog.ROAD_BORDER_ORIENTATION_VERTICAL,
+		"urban_ruins defined road-border source is normalized to vertical"
 	)
 	var volcanic_road_path := BiomeGeneratedArtCatalog.select_surface_asset_path(
 		&"burning_fields",
@@ -372,7 +372,7 @@ func test_generated_biome_catalog_contract() -> void:
 	assert_eq(
 		BiomeGeneratedArtCatalog.road_border_source_orientation(volcanic_road_path),
 		BiomeGeneratedArtCatalog.ROAD_BORDER_ORIENTATION_VERTICAL,
-		"non-toxic defined road-border sources stay vertical"
+		"volcanic defined road-border source is vertical"
 	)
 	for biome_id_value in GENERATED_BIOME_THEMES:
 		var biome_id := biome_id_value as StringName
@@ -1085,7 +1085,10 @@ func test_generated_biome_runtime_consumption() -> void:
 		var selected_material_paths: Dictionary = {}
 		var road_border_material_seen := false
 		var horizontal_border_cell := Vector2i(6, 10)
-		var vertical_border_cell := Vector2i(10, 5)
+		# Bordo est della main road verticale (20,4 3x8): la vecchia sonda
+		# (10,5) era il bordo della lane broken_street, che dalla Fase 2
+		# renderizza il materiale path e non il bordo stradale.
+		var vertical_border_cell := Vector2i(22, 8)
 		var horizontal_border_id := layer.get_resolved_material_asset_id(
 			horizontal_border_cell
 		)
@@ -1162,27 +1165,40 @@ func test_generated_biome_runtime_consumption() -> void:
 			"%s loads the vertical road-border texture variant"
 			% String(biome_id)
 		)
+		var lane_border_cell := Vector2i(10, 5)
+		assert_eq(
+			layer.get_resolved_tile_id(lane_border_cell),
+			IsometricTileResolver.TILE_ROAD_EDGE,
+			"%s lane border keeps the road edge tile id" % String(biome_id)
+		)
+		assert_true(
+			layer.get_resolved_material_asset_path(lane_border_cell).contains(
+				"path_variation"
+			),
+			"%s lane border renders with the lane path material, not the road border"
+			% String(biome_id)
+		)
 		if biome_id == &"toxic_wastes":
 			var toxic_border_base_id := (
 				BiomeGeneratedArtCatalog.material_id_from_path(
-					layer.get_resolved_material_asset_path(horizontal_border_cell)
+					layer.get_resolved_material_asset_path(vertical_border_cell)
 				)
 			)
 			assert_true(
 				_surface_textures_have_same_pixels(
 					layer,
 					toxic_border_base_id,
-					horizontal_border_id
+					vertical_border_id
 				),
-				"toxic horizontal road border uses the native source texture"
+				"toxic vertical road border uses the native source texture"
 			)
 			assert_false(
 				_surface_textures_have_same_pixels(
 					layer,
 					toxic_border_base_id,
-					vertical_border_id
+					horizontal_border_id
 				),
-				"toxic vertical road border rotates the horizontal source texture"
+				"toxic horizontal road border rotates the vertical source texture"
 			)
 		assert_true(
 			layer.get_resolved_material_asset_path(
