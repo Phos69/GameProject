@@ -27,6 +27,15 @@ const ROAD_BORDER_THEME_IDS: Array[StringName] = [
 	&"urban_ruins",
 	&"volcanic",
 ]
+const ROAD_BORDER_ORIENTATION_HORIZONTAL: StringName = &"horizontal"
+const ROAD_BORDER_ORIENTATION_VERTICAL: StringName = &"vertical"
+const ROAD_BORDER_ORIENTATIONS: Array[StringName] = [
+	ROAD_BORDER_ORIENTATION_HORIZONTAL,
+	ROAD_BORDER_ORIENTATION_VERTICAL,
+]
+const ROAD_BORDER_HORIZONTAL_SOURCE_THEME_IDS: Array[StringName] = [
+	&"urban_ruins",
+]
 
 const ROLE_GROUND: StringName = &"ground"
 const ROLE_PATH: StringName = &"path"
@@ -256,6 +265,42 @@ static func material_id_from_path(asset_path: String) -> StringName:
 		return &""
 	return StringName(asset_path.get_file().get_basename())
 
+static func is_road_border_asset_path(asset_path: String) -> bool:
+	return asset_path.get_file().contains("road_border_defined")
+
+static func is_orientable_road_surface_asset_path(asset_path: String) -> bool:
+	return asset_path.get_file().contains("road_variation")
+
+static func oriented_road_border_material_id(
+	asset_path: String,
+	orientation: StringName
+) -> StringName:
+	if asset_path.is_empty():
+		return &""
+	var safe_orientation := orientation
+	if not ROAD_BORDER_ORIENTATIONS.has(safe_orientation):
+		safe_orientation = ROAD_BORDER_ORIENTATION_VERTICAL
+	return StringName(
+		"%s__%s" % [String(material_id_from_path(asset_path)), String(safe_orientation)]
+	)
+
+static func oriented_road_surface_material_id(
+	asset_path: String,
+	orientation: StringName
+) -> StringName:
+	return oriented_road_border_material_id(asset_path, orientation)
+
+static func road_border_source_orientation(asset_path: String) -> StringName:
+	for theme_id in ROAD_BORDER_HORIZONTAL_SOURCE_THEME_IDS:
+		if asset_path.contains("/%s/" % String(theme_id)):
+			return ROAD_BORDER_ORIENTATION_HORIZONTAL
+	return ROAD_BORDER_ORIENTATION_VERTICAL
+
+static func opposite_road_border_orientation(orientation: StringName) -> StringName:
+	if orientation == ROAD_BORDER_ORIENTATION_HORIZONTAL:
+		return ROAD_BORDER_ORIENTATION_VERTICAL
+	return ROAD_BORDER_ORIENTATION_HORIZONTAL
+
 static func validate_catalog() -> PackedStringArray:
 	var failures := PackedStringArray()
 	_ensure_profiles()
@@ -338,6 +383,11 @@ static func _surface_pool(
 	role: StringName
 ) -> PackedStringArray:
 	var resolved_role := role
+	if (
+		role == ROLE_ROAD
+		and ROAD_BORDER_THEME_IDS.has(get_theme_id_for_biome(biome_id))
+	):
+		resolved_role = ROLE_GROUND_TO_ROAD
 	if role == &"path_to_road":
 		resolved_role = ROLE_GROUND_TO_ROAD
 	var pool := get_asset_paths_for_role(biome_id, resolved_role)
@@ -407,8 +457,18 @@ static func _append_directory_assets(
 		if role.is_empty():
 			continue
 		var paths := profile.get(role, PackedStringArray()) as PackedStringArray
-		paths.append(directory_path.path_join(file_name))
+		var asset_path := directory_path.path_join(file_name)
+		paths.append(asset_path)
 		profile[role] = paths
+		if (
+			not cliff_assets
+			and role == ROLE_GROUND_TO_ROAD
+			and file_name.contains("road_border_defined")
+			and ROAD_BORDER_THEME_IDS.has(theme_id)
+		):
+			var road_paths := profile.get(ROLE_ROAD, PackedStringArray()) as PackedStringArray
+			road_paths.append(asset_path)
+			profile[ROLE_ROAD] = road_paths
 
 static func _surface_role_for_file(
 	theme_id: StringName,
@@ -465,6 +525,8 @@ static func _surface_role_for_file(
 	if file_name.contains("path_variation"):
 		return ROLE_PATH
 	if file_name.contains("road_variation"):
+		if ROAD_BORDER_THEME_IDS.has(theme_id):
+			return ROLE_DETAIL
 		return ROLE_ROAD
 	if file_name.contains("detail_decal"):
 		return ROLE_DETAIL

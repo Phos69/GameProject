@@ -65,14 +65,18 @@ mesh e non mostra cap scuri agli estremi.
 prospettiva invece di una striscia piatta; la mesh legacy a rombi resta fallback
 non forestale. Path, road, wall, void e collisioni restano separati.
 
-Sentiero, strada e bordo strada usano rispettivamente
-`forest_dirt_path_generated.png`, `forest_asphalt_generated.png` e
-`forest_road_border_defined.png`. Dal secondo pass `ART-VIS-FIX` del 2026-07-08, i
-tile logici `grass_to_path`, `grass_to_road` e `path_to_road` restano nel
-resolver come semantica di contatto, ma il runtime non li stende piu come
-materiali misti larghi un tile: `BiomeTileLayer` mappa `grass_to_path`
-direttamente a `forest_path` e i contatti verso strada a `forest_road_border`,
-cosi il contatto con il terreno resta un taglio netto con bordo definito.
+Sentiero, strada e bordo strada hanno ancora contratti asset separati
+(`forest_dirt_path_generated.png`, `forest_asphalt_generated.png` e
+`forest_road_border_defined.png`), ma dal pass `ART-VIS-FIX` del 2026-07-09 le
+route visibili della Pianura Infetta usano solo il bordo strada definito. I
+tile logici `forest_path`, `forest_road`, `grass_to_path`, `grass_to_road`,
+`path_to_road`, `road` e relativi entry/exit restano nel resolver come semantica
+di route/passaggio, ma `BiomeTileLayer` usa
+`forest_road_border__vertical`/`__horizontal` sui margini e un core strada
+derivato dallo stesso PNG negli interni, ruotando il sorgente quando la strada
+corre orizzontalmente. Cosi il contatto con il terreno resta un taglio netto con
+bordo definito su entrambi gli assi e non si sovrappongono piu texture
+terra/asfalto legacy.
 Tutti i raster sono seamless, mipmapped e limitati a 512 px in import.
 
 ## Regole di risoluzione
@@ -83,12 +87,17 @@ Tutti i raster sono seamless, mipmapped e limitati a 512 px in import.
 - Il floor walkable usa grass e varianti deterministiche in base a seed/cella.
 - I blocchi `forest` del layout diventano `forest_tall_grass` tramite
   `ObstacleLayoutGenerator`, ma restano `TERRAIN_WALKABLE`.
-- Le strade principali (`main_road`) diventano `forest_road`.
-- I sentieri (`broken_street`) diventano `forest_path`.
+- Le strade principali (`main_road`) diventano `forest_road` a livello logico.
+- Gli spoke secondari (`broken_street`) diventano `forest_path` a livello
+  logico.
 - Il contatto tra strada principale e sentiero resta marcato come
-  `path_to_road`, ma viene renderizzato con la superficie `forest_road_border`.
+  `path_to_road`, ma viene renderizzato con il core strada derivato dal bordo
+  definito, non con una patch di bordo verso erba.
 - Il contatto con floor non-route produce `grass_to_path` o `grass_to_road`;
-  nel rendering diventano rispettivamente `forest_path` e `forest_road_border`.
+  nel rendering diventano varianti orientate di `forest_road_border`.
+- I passage `road` e relativi entry/exit mantengono sezione `passage_tiles`,
+  ma nel rendering usano le stesse varianti orientate di `forest_road_border`
+  sui margini e il core strada derivato all'interno.
 - Il contatto tra erba bassa e tall grass produce `grass_to_tall_grass`.
 - Il contatto con void/fall zone produce `ground_to_void_cliff`.
 - Il contatto con border o wall segment produce `ground_to_mountain_wall`.
@@ -134,9 +143,11 @@ esterno, lasciando solo il fondale void. Non crea nodi per tile.
 ## Checklist manuale
 
 - Avviare survival con seed `772031` e confermare che la regione base mostri
-  erba forestale, tall grass, sentieri e strada, non floor generico.
-- Verificare che `forest_path`, `forest_road` e `forest_road_border` siano
-  leggibili anche quando si incrociano o toccano erba.
+  erba forestale, tall grass e route con bordo strada definito, non floor
+  generico.
+- Verificare che solo `forest_road_border__vertical` e
+  `forest_road_border__horizontal` piu i core derivati siano renderizzati sulle
+  route forestali, senza patch `forest_path`/`forest_road` sovrapposte.
 - Attraversare un varco fisico: il passaggio deve restare aperto, senza portali
   o gate visibili, e le pareti laterali devono leggere come montagna/roccia.
 - Camminare vicino a void e fall zone: il bordo deve mostrare cliff/depth e

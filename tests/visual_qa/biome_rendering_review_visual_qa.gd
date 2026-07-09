@@ -4,6 +4,9 @@ const OUTPUT_DIR := "res://build/qa/biome_rendering_review"
 const VISUAL_QA_RUNTIME = preload(
 	"res://tests/visual_qa/helpers/visual_qa_runtime.gd"
 )
+const GENERATED_ART_CATALOG = preload(
+	"res://game/modes/zombie/biome_generated_art_catalog.gd"
+)
 const BIOMES: Array[StringName] = [
 	&"infected_plains",
 	&"toxic_wastes",
@@ -31,6 +34,38 @@ const FOCUSES: Array[StringName] = [
 	FOCUS_CLIFF,
 	FOCUS_OBSTACLE,
 	FOCUS_ACTORS
+]
+const GENERATED_ROAD_SURFACE_TILE_IDS: Array[StringName] = [
+	&"main_road",
+	&"road",
+	&"road_intersection",
+	&"road_entry",
+	&"road_exit",
+	&"bridge",
+	&"bridge_entry",
+	&"bridge_exit",
+	&"snow_pass",
+	&"snow_pass_entry",
+	&"snow_pass_exit",
+	&"broken_gate",
+	&"broken_gate_entry",
+	&"broken_gate_exit",
+	&"burned_road",
+	&"burned_road_entry",
+	&"burned_road_exit",
+]
+const GENERATED_PATH_SURFACE_TILE_IDS: Array[StringName] = [
+	&"service_lane",
+	&"ash_lane",
+	&"packed_snow_path",
+	&"wooden_walkway",
+]
+const GENERATED_ROAD_BORDER_TILE_IDS: Array[StringName] = [
+	&"road_edge",
+	&"road_curve_north",
+	&"road_curve_east",
+	&"road_curve_south",
+	&"road_curve_west",
 ]
 const WORLD_CONTEXT_BASE := {
 	"biome_map_width": 3,
@@ -230,6 +265,9 @@ func _assert_tile_layers_have_assets(biome_id: StringName, seed: int) -> void:
 	var checked := 0
 	var missing_assets := 0
 	var procedural_fallbacks := 0
+	var generated_route_layers := 0
+	var generated_route_cells := 0
+	var route_material_failures := PackedStringArray()
 	for node in get_nodes_in_group("biome_tile_layers"):
 		var layer := node as BiomeTileLayer
 		if layer == null or not is_instance_valid(layer) or layer.is_queued_for_deletion():
@@ -242,6 +280,13 @@ func _assert_tile_layers_have_assets(biome_id: StringName, seed: int) -> void:
 		missing_assets += layer.get_missing_asset_count()
 		if layer.uses_procedural_fallback():
 			procedural_fallbacks += 1
+		var route_report := _generated_route_material_report(layer)
+		if int(route_report.get("route_cells", 0)) > 0:
+			generated_route_layers += 1
+			generated_route_cells += int(route_report.get("route_cells", 0))
+		route_material_failures.append_array(
+			route_report.get("failures", PackedStringArray()) as PackedStringArray
+		)
 	_expect(checked > 0, "%s seed %d exposes tile layers" % [String(biome_id), seed])
 	_expect(
 		missing_assets == 0,
@@ -252,6 +297,96 @@ func _assert_tile_layers_have_assets(biome_id: StringName, seed: int) -> void:
 		procedural_fallbacks == 0,
 		"%s seed %d tile layers avoid procedural fallback (%d checked)"
 		% [String(biome_id), seed, checked]
+	)
+	if GENERATED_ART_CATALOG.has_generated_theme(biome_id):
+		_expect(
+			generated_route_layers > 0 and generated_route_cells > 0,
+			"%s seed %d exposes generated route material cells"
+			% [String(biome_id), seed]
+		)
+	_expect(
+		route_material_failures.is_empty(),
+		"%s seed %d generated route materials are assigned: %s"
+		% [String(biome_id), seed, "; ".join(route_material_failures)]
+	)
+
+func _generated_route_material_report(layer: BiomeTileLayer) -> Dictionary:
+	var failures := PackedStringArray()
+	var route_cells := 0
+	if (
+		layer == null
+		or layer.layout == null
+		or not GENERATED_ART_CATALOG.has_generated_theme(layer.biome_id)
+	):
+		return {"route_cells": route_cells, "failures": failures}
+	var theme_fragment := "/%s/" % String(
+		GENERATED_ART_CATALOG.get_theme_id_for_biome(layer.biome_id)
+	)
+	for y in range(layer.layout.zone_size.y):
+		for x in range(layer.layout.zone_size.x):
+			var cell := Vector2i(x, y)
+			var tile_id := layer.get_resolved_tile_id(cell)
+			if GENERATED_ROAD_SURFACE_TILE_IDS.has(tile_id):
+				route_cells += 1
+				_assert_generated_route_path(
+					failures,
+					layer,
+					cell,
+					theme_fragment,
+					"road_border_defined",
+					true
+				)
+			elif GENERATED_PATH_SURFACE_TILE_IDS.has(tile_id):
+				route_cells += 1
+				_assert_generated_route_path(
+					failures,
+					layer,
+					cell,
+					theme_fragment,
+					"path_variation",
+					false
+				)
+			elif GENERATED_ROAD_BORDER_TILE_IDS.has(tile_id):
+				route_cells += 1
+				_assert_generated_route_path(
+					failures,
+					layer,
+					cell,
+					theme_fragment,
+					"road_border_defined",
+					true
+				)
+	return {"route_cells": route_cells, "failures": failures}
+
+func _assert_generated_route_path(
+	failures: PackedStringArray,
+	layer: BiomeTileLayer,
+	cell: Vector2i,
+	theme_fragment: String,
+	expected_fragment: String,
+	expect_oriented_id: bool
+) -> void:
+	var material_path := layer.get_resolved_material_asset_path(cell)
+	var material_id := layer.get_resolved_material_asset_id(cell)
+	if (
+		material_path.contains(theme_fragment)
+		and material_path.contains(expected_fragment)
+		and (
+			not expect_oriented_id
+			or String(material_id).ends_with("__horizontal")
+			or String(material_id).ends_with("__vertical")
+		)
+	):
+		return
+	failures.append(
+		"%s %s cell %s -> id=%s path=%s"
+		% [
+			String(layer.biome_id),
+			String(layer.get_resolved_tile_id(cell)),
+			str(cell),
+			String(material_id),
+			material_path,
+		]
 	)
 
 func _assert_runtime_obstacles_have_assets(biome_id: StringName, seed: int) -> void:

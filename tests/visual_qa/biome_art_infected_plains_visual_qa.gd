@@ -73,6 +73,8 @@ func _make_layout() -> BiomeEnvironmentLayout:
 	layout.road_rect_tags.append(&"main_road")
 	layout.road_rects.append(Rect2i(Vector2i(37, 5), Vector2i(7, 38)))
 	layout.road_rect_tags.append(&"broken_street")
+	layout.road_rects.append(Rect2i(Vector2i(66, 7), Vector2i(7, 28)))
+	layout.road_rect_tags.append(&"main_road")
 	layout.fall_zone_rects.append(Rect2i(Vector2i(9, 34), Vector2i(12, 8)))
 	layout.rebuild_terrain_classification()
 	return layout
@@ -80,12 +82,16 @@ func _make_layout() -> BiomeEnvironmentLayout:
 func _route_surfaces_are_crisp(layer: BiomeTileLayer) -> bool:
 	var rendered_ids := layer.get_rendered_surface_material_ids()
 	return (
-		rendered_ids.has(&"forest_path")
-		and rendered_ids.has(&"forest_road")
-		and rendered_ids.has(&"forest_road_border")
+		rendered_ids.has(&"forest_road_border__horizontal")
+		and rendered_ids.has(&"forest_road_border__vertical")
+		and rendered_ids.has(&"forest_road_border__core_horizontal")
+		and rendered_ids.has(&"forest_road_border__core_vertical")
+		and not rendered_ids.has(&"forest_path")
+		and not rendered_ids.has(&"forest_road")
 		and not rendered_ids.has(&"grass_to_path")
 		and not rendered_ids.has(&"grass_to_road")
 		and not rendered_ids.has(&"path_to_road")
+		and not rendered_ids.has(&"forest_road_border")
 	)
 
 func _add_tree_cluster(
@@ -146,7 +152,7 @@ func _add_labels(scene_root: Node2D) -> void:
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	scene_root.add_child(title)
 	var subtitle := _make_label(
-		"Road contacts use a defined border material; no generic blended transition texture is rendered.",
+		"Route corridors use defined road-border edges plus derived road cores; legacy dirt/asphalt surfaces are not rendered.",
 		Vector2(0.0, 55.0),
 		Vector2(1280.0, 26.0),
 		15,

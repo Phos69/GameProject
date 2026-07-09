@@ -126,6 +126,32 @@ const GENERATED_THEME_ROAD_BORDER_TILE_IDS: Array[StringName] = [
 	TILE_ROAD_CURVE_SOUTH,
 	TILE_ROAD_CURVE_WEST,
 ]
+const GENERATED_THEME_GENERATED_ROUTE_TILE_IDS: Array[StringName] = [
+	TILE_MAIN_ROAD,
+	TILE_ROAD,
+	TILE_BROKEN_STREET,
+	TILE_SERVICE_LANE,
+	TILE_ASH_LANE,
+	TILE_PACKED_SNOW_PATH,
+	TILE_WOODEN_WALKWAY,
+	TILE_ROAD_INTERSECTION,
+]
+const GENERATED_THEME_GENERATED_PASSAGE_SURFACE_TILE_IDS: Array[StringName] = [
+	TILE_BRIDGE,
+	TILE_SNOW_PASS,
+	TILE_BROKEN_GATE,
+	TILE_BURNED_ROAD,
+	TILE_ROAD_ENTRY,
+	TILE_ROAD_EXIT,
+	TILE_BRIDGE_ENTRY,
+	TILE_BRIDGE_EXIT,
+	TILE_SNOW_PASS_ENTRY,
+	TILE_SNOW_PASS_EXIT,
+	TILE_BROKEN_GATE_ENTRY,
+	TILE_BROKEN_GATE_EXIT,
+	TILE_BURNED_ROAD_ENTRY,
+	TILE_BURNED_ROAD_EXIT,
+]
 
 var manifest: IsometricEnvironmentManifest
 
@@ -1114,24 +1140,194 @@ func _apply_generated_material(
 	if asset_path.is_empty():
 		return tile_data
 	var result := tile_data.duplicate(true)
-	result["material_asset_id"] = (
-		GENERATED_ART_CATALOG.material_id_from_path(asset_path)
+	result["material_asset_id"] = _generated_material_id_for_cell(
+		layout,
+		cell,
+		tile_id,
+		asset_path
 	)
 	result["material_asset_path"] = asset_path
 	result["asset_path"] = asset_path
 	return result
 
+func _generated_material_id_for_cell(
+	layout: BiomeEnvironmentLayout,
+	cell: Vector2i,
+	tile_id: StringName,
+	asset_path: String
+) -> StringName:
+	if not GENERATED_ART_CATALOG.is_road_border_asset_path(asset_path):
+		if GENERATED_ART_CATALOG.is_orientable_road_surface_asset_path(asset_path):
+			return GENERATED_ART_CATALOG.oriented_road_surface_material_id(
+				asset_path,
+				resolve_route_surface_orientation_for_cell(layout, cell, tile_id)
+			)
+		return GENERATED_ART_CATALOG.material_id_from_path(asset_path)
+	return GENERATED_ART_CATALOG.oriented_road_border_material_id(
+		asset_path,
+		resolve_road_border_orientation_for_cell(layout, cell, tile_id)
+	)
+
+func resolve_route_surface_orientation_for_cell(
+	layout: BiomeEnvironmentLayout,
+	cell: Vector2i,
+	tile_id: StringName
+) -> StringName:
+	match tile_id:
+		TILE_ROAD_CURVE_EAST, TILE_ROAD_CURVE_WEST:
+			return GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_HORIZONTAL
+		TILE_ROAD_CURVE_NORTH, TILE_ROAD_CURVE_SOUTH:
+			return GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_VERTICAL
+		TILE_ROAD_INTERSECTION:
+			return (
+				GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_HORIZONTAL
+				if _route_runs_horizontally(layout, cell, true)
+				else GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_VERTICAL
+			)
+		TILE_MAIN_ROAD, TILE_ROAD, TILE_FOREST_ROAD, TILE_BRIDGE, TILE_SNOW_PASS, TILE_BROKEN_GATE, TILE_BURNED_ROAD, TILE_ROAD_ENTRY, TILE_ROAD_EXIT, TILE_BRIDGE_ENTRY, TILE_BRIDGE_EXIT, TILE_SNOW_PASS_ENTRY, TILE_SNOW_PASS_EXIT, TILE_BROKEN_GATE_ENTRY, TILE_BROKEN_GATE_EXIT, TILE_BURNED_ROAD_ENTRY, TILE_BURNED_ROAD_EXIT:
+			return (
+				GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_HORIZONTAL
+				if _route_runs_horizontally(layout, cell, true)
+				else GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_VERTICAL
+			)
+		_:
+			return GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_VERTICAL
+
+func resolve_road_border_orientation_for_cell(
+	layout: BiomeEnvironmentLayout,
+	cell: Vector2i,
+	tile_id: StringName
+) -> StringName:
+	if (
+		GENERATED_THEME_GENERATED_ROUTE_TILE_IDS.has(tile_id)
+		or GENERATED_THEME_GENERATED_PASSAGE_SURFACE_TILE_IDS.has(tile_id)
+		or tile_id == TILE_FOREST_ROAD
+		or tile_id == TILE_FOREST_PATH
+	):
+		return (
+			GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_HORIZONTAL
+			if _route_runs_horizontally(layout, cell, true)
+			else GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_VERTICAL
+		)
+	match tile_id:
+		TILE_ROAD_CURVE_EAST, TILE_ROAD_CURVE_WEST:
+			return GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_HORIZONTAL
+		TILE_ROAD_CURVE_NORTH, TILE_ROAD_CURVE_SOUTH:
+			return GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_VERTICAL
+		TILE_PATH_TO_ROAD:
+			return (
+				GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_HORIZONTAL
+				if _route_runs_horizontally(layout, cell, true)
+				else GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_VERTICAL
+			)
+		TILE_GRASS_TO_ROAD, TILE_GRASS_TO_PATH:
+			return (
+				GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_HORIZONTAL
+				if _route_runs_horizontally(layout, cell)
+				else GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_VERTICAL
+			)
+		TILE_ROAD_EDGE:
+			return (
+				GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_HORIZONTAL
+				if _route_runs_horizontally(layout, cell)
+				else GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_VERTICAL
+			)
+		_:
+			return GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_VERTICAL
+
+func _route_runs_horizontally(
+	layout: BiomeEnvironmentLayout,
+	cell: Vector2i,
+	prefer_main_road: bool = false
+) -> bool:
+	if layout == null:
+		return false
+	if prefer_main_road:
+		var main_orientation := _matching_main_road_orientation(layout, cell)
+		if not main_orientation.is_empty():
+			return main_orientation == GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_HORIZONTAL
+	var horizontal_neighbors := (
+		int(_cell_is_route_surface(layout, cell + Vector2i.LEFT))
+		+ int(_cell_is_route_surface(layout, cell + Vector2i.RIGHT))
+	)
+	var vertical_neighbors := (
+		int(_cell_is_route_surface(layout, cell + Vector2i.UP))
+		+ int(_cell_is_route_surface(layout, cell + Vector2i.DOWN))
+	)
+	if horizontal_neighbors != vertical_neighbors:
+		return horizontal_neighbors > vertical_neighbors
+	for index in range(layout.road_rects.size() - 1, -1, -1):
+		if not layout.road_rects[index].has_point(cell):
+			continue
+		var rect := layout.road_rects[index]
+		if rect.size.x != rect.size.y:
+			return rect.size.x > rect.size.y
+		if _is_passage_type(_road_tag_for_index(layout, index)):
+			continue
+	for rect in layout.passage_rects:
+		if rect.has_point(cell) and rect.size.x != rect.size.y:
+			return rect.size.x > rect.size.y
+	for rect in layout.passage_connector_rects:
+		if rect.has_point(cell) and rect.size.x != rect.size.y:
+			return rect.size.x > rect.size.y
+	return true
+
+func _matching_main_road_orientation(
+	layout: BiomeEnvironmentLayout,
+	cell: Vector2i
+) -> StringName:
+	for index in range(layout.road_rects.size() - 1, -1, -1):
+		if not layout.road_rects[index].has_point(cell):
+			continue
+		if not _is_road_border_main_tag(_road_tag_for_index(layout, index)):
+			continue
+		var rect := layout.road_rects[index]
+		return (
+			GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_HORIZONTAL
+			if rect.size.x >= rect.size.y
+			else GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_VERTICAL
+		)
+	return &""
+
+func _is_road_border_main_tag(tag: StringName) -> bool:
+	return tag == TILE_MAIN_ROAD or tag == TILE_ROAD or tag == TILE_FOREST_ROAD
+
+func _cell_is_route_surface(
+	layout: BiomeEnvironmentLayout,
+	cell: Vector2i
+) -> bool:
+	if not _cell_inside_layout(layout, cell):
+		return false
+	if layout.has_road_cell(cell):
+		return true
+	for rect in layout.road_rects:
+		if rect.has_point(cell):
+			return true
+	for rect in layout.passage_rects:
+		if rect.has_point(cell):
+			return true
+	for rect in layout.passage_connector_rects:
+		if rect.has_point(cell):
+			return true
+	return false
+
 func _uses_manifest_surface_tile(tile_id: StringName) -> bool:
-	if GENERATED_THEME_ROAD_BORDER_TILE_IDS.has(tile_id):
+	if (
+		GENERATED_THEME_ROAD_BORDER_TILE_IDS.has(tile_id)
+		or GENERATED_THEME_GENERATED_ROUTE_TILE_IDS.has(tile_id)
+		or GENERATED_THEME_GENERATED_PASSAGE_SURFACE_TILE_IDS.has(tile_id)
+	):
 		return false
 	return GENERATED_THEME_MANIFEST_SURFACE_TILE_IDS.has(tile_id)
 
 func _generated_surface_role(tile_id: StringName) -> StringName:
 	if is_void_transition_tile_id(tile_id):
 		return &""
-	if _is_passage_endpoint_tile(tile_id) or PASSAGE_ROUTE_TILE_IDS.has(tile_id):
-		return GENERATED_ART_CATALOG.ROLE_PATH
 	match tile_id:
+		TILE_MAIN_ROAD, TILE_ROAD, TILE_ROAD_INTERSECTION:
+			return GENERATED_ART_CATALOG.ROLE_ROAD
+		TILE_BROKEN_STREET, TILE_SERVICE_LANE, TILE_ASH_LANE, TILE_PACKED_SNOW_PATH, TILE_WOODEN_WALKWAY:
+			return GENERATED_ART_CATALOG.ROLE_PATH
 		TILE_FOREST_GRASS, TILE_FOREST_GRASS_VARIANT_01, TILE_FOREST_GRASS_VARIANT_02, TILE_FOREST_TALL_GRASS, TILE_GRASS_TO_TALL_GRASS, TILE_FOREST_CLIFF_EDGE, TILE_FOREST_MOUNTAIN_WALL, TILE_GROUND_TO_VOID_CLIFF, TILE_GROUND_TO_MOUNTAIN_WALL:
 			return GENERATED_ART_CATALOG.ROLE_GROUND
 		TILE_FOREST_PATH:
@@ -1144,6 +1340,10 @@ func _generated_surface_role(tile_id: StringName) -> StringName:
 			return GENERATED_ART_CATALOG.ROLE_GROUND_TO_ROAD
 		TILE_ROAD_EDGE, TILE_ROAD_CURVE_NORTH, TILE_ROAD_CURVE_EAST, TILE_ROAD_CURVE_SOUTH, TILE_ROAD_CURVE_WEST:
 			return GENERATED_ART_CATALOG.ROLE_GROUND_TO_ROAD
+	if GENERATED_THEME_GENERATED_PASSAGE_SURFACE_TILE_IDS.has(tile_id):
+		return GENERATED_ART_CATALOG.ROLE_ROAD
+	if _is_passage_endpoint_tile(tile_id) or PASSAGE_ROUTE_TILE_IDS.has(tile_id):
+		return GENERATED_ART_CATALOG.ROLE_PATH
 	return &""
 
 func _tile_data(tile_id: StringName, section: StringName, role: StringName) -> Dictionary:

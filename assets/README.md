@@ -95,9 +95,16 @@ su run continue con UV world-space. La stessa cartella contiene
 `grass_to_road_generated.png` e `path_to_road_generated_v2.png`: i tre asset di
 transizione storici restano contratti e materiale di confronto QA, ma il
 runtime della Pianura Infetta non li usa piu come texture intermedia.
-`grass_to_path` viene renderizzato con `forest_path`, mentre `grass_to_road` e
-`path_to_road` usano `forest_road_border`, ottenendo un taglio netto con bordo
-strada definito. Wall e void mantengono i rispettivi materiali e colori.
+Le route forestali visibili (`forest_path`, `forest_road`, `grass_to_path`,
+`grass_to_road`, `path_to_road`, `road` e relativi entry/exit) vengono
+renderizzate con `forest_road_border__vertical` oppure
+`forest_road_border__horizontal` sui margini e con un core strada derivato dallo
+stesso PNG negli interni, ottenendo un taglio netto con bordo strada definito su
+strade verticali e orizzontali senza sovrapporre il vecchio
+`forest_dirt_path_generated.png` o `forest_asphalt_generated.png`.
+`forest_road_border` resta il sorgente caricato, ma non viene piu usato come
+materiale unico non orientato.
+Wall e void mantengono i rispettivi materiali e colori.
 
 ### Set generati per bioma
 
@@ -108,25 +115,40 @@ organizzati per tema e ruolo. Il mapping runtime e:
 `desert` e il nuovo `forest` sono puliti e catalogati ma non assegnati.
 
 `BiomeGeneratedArtCatalog` espone pool tipizzati per ground, path, road,
-transizioni, detail e cliff. Il ruolo `ground_to_road` dei quattro temi attivi
-seleziona i nuovi PNG `road_border_defined`; i vecchi
-`transition_ground_to_road` restano catalogati come dettaglio/storico e non
-sono piu superfici runtime strada. Il manifest registra per ogni set attivo
+transizioni, detail e cliff. Nei quattro temi attivi il ruolo `road` e il ruolo
+`ground_to_road` selezionano i nuovi PNG `road_border_defined`; i vecchi
+`road_variation` e `transition_ground_to_road` restano catalogati come
+dettaglio/storico e non sono piu superfici runtime strada. Il manifest registra per ogni set attivo
 stato `final`, provenienza `openai_image_generation`, licenza
 `Project original` e le liste di ruoli.
+Ogni `road_border_defined` resta un solo sorgente PNG, ma il runtime lo espone
+come due materiali orientati. La source orientation viene letta per tema:
+`urban_ruins` e nativo orizzontale, quindi `__horizontal` usa la sorgente e
+`__vertical` la variante ruotata; gli altri temi attivi restano nativi
+verticali. Le celle route mantengono i propri tile semantici; cambia solo il
+materiale di superficie scelto dal resolver.
+La board `generated_biome_art_visual_qa.gd` mostra entrambe le varianti runtime
+per `urban_ruins`, `volcanic`, `frozen_tundra` e `swamp`.
 
-I set generati sono materiali di superficie per ground/cliff e non sostituiscono
-i tile semantici del manifest: route e passage come `service_lane`, `ash_lane`,
-`packed_snow_path`, `wooden_walkway`, `bridge`, `snow_pass`, `broken_gate`,
-`burned_road` e relative entry/exit continuano a risolvere gli SVG asset-backed
-e vengono caricati dal `BiomeTileLayer` come texture di superficie dedicate.
+I set generati sono materiali di superficie per ground, route e cliff. Nei
+quattro biomi con `generated_theme_id`, `main_road`, `road` e
+`road_intersection` usano i PNG `road_border_defined` come materiali orientati
+`__vertical`/`__horizontal`, mentre `service_lane`, `ash_lane`,
+`packed_snow_path` e `wooden_walkway` usano `path_variation`.
+`tile_id` e sezione restano quelli del manifest per semantica, collisioni e
+debug, ma `material_asset_id`/`material_asset_path` puntano ai raster generated.
+Anche i passage road-like tra biomi (`bridge`, `snow_pass`, `broken_gate`,
+`burned_road` e relative entry/exit) conservano sezione `passage_tiles`, ma
+renderizzano la strada con `road_border_defined__vertical`/`__horizontal` generated
+del bioma invece delle texture manifest.
 
 Nel runtime `frozen_tundra` sceglie un solo materiale per ruolo e regione. Il
 ground viene tagliato e composto in una quilt `2x2` da quattro offset periodici
 dello stesso raster neve, con raccordo interno/esterno e repeat world-space
 `1024`; non usa mirror né varianti tonali diverse. Path e road restano a `512`
 e vengono ammorbiditi verso la palette neve. I contatti terrain/path usano path
-diretto, mentre i bordi strada usano `road_border_defined`. Gli asset
+diretto, mentre i bordi strada usano le varianti orientate di
+`road_border_defined`. Gli asset
 `transition_ground_*` restano nel catalogo come sorgenti, ma non sono superfici
 runtime di `frozen_outskirts`.
 
@@ -135,15 +157,15 @@ ground compone una quilt `2x2` da quattro offset periodici dello stesso raster,
 con raccordo interno/esterno e repeat world-space `1024`; non usa mirror ne
 varianti tonali diverse. Path e road mantengono palette, densita e periodo
 `512`. I contatti terrain/path usano path diretto, mentre i bordi strada usano
-`road_border_defined`; gli asset `transition_ground_*` restano catalogati ma
-non sono superfici runtime di `drowned_marsh`.
+le varianti orientate di `road_border_defined`; gli asset `transition_ground_*`
+restano catalogati ma non sono superfici runtime di `drowned_marsh`.
 
 `volcanic` applica selezione regionale, bordi opposti armonizzati e repeat
 world-space `512`. Il ground pieno usa solo la base variation 02 piu quieta;
 le variation 01, 03 e 04 restano catalogate come detail. I contatti
 terrain/path usano path diretto, mentre i bordi strada usano
-`road_border_defined`; gli asset `transition_ground_*` non sono superfici
-runtime di `burning_fields`.
+le varianti orientate di `road_border_defined`; gli asset
+`transition_ground_*` non sono superfici runtime di `burning_fields`.
 
 Prima di importare o committare modifiche ai sorgenti:
 
@@ -221,6 +243,9 @@ Per `infected_plains`, il resolver usa il set forestale dedicato:
 `grass_to_tall_grass`,
 `path_to_road`, `ground_to_void_cliff` e `ground_to_mountain_wall`. Gli asset
 vivono in `environment/isometric/tiles/forest/` e nelle cartelle `edges/`.
+Per il rendering, i tile di route forestali e i passage `road` mantengono i
+propri ID/section per debug, ma selezionano solo il materiale
+`forest_road_border_defined` orientato o il suo core strada derivato.
 
 `game/modes/zombie/biome_tile_layer.gd` e il ground primario asset-driven per
 `TerrainGenerator`: cache-a tutte le 250.000 celle della regione `500x500`, le
@@ -229,10 +254,13 @@ divide in chunk e usa il manifest v9 come contratto per gli asset. I vecchi
 la modalita asset viene disattivata.
 
 Nei biomi con `generated_theme_id`, `BiomeTileLayer` usa i PNG generated per le
-superfici ampie ma carica i `terrain_tiles` e `passage_tiles` dichiarati dal
-biome asset set come texture SVG con ID sezione/tile (`terrain_tiles/service_lane`,
-`passage_tiles/bridge_entry`). Questo preserva gli asset visibili dei biomi e
-impedisce che il materiale generated sovrascriva `asset_path` dei tile semantici.
+superfici ampie e per le route principali: `main_road`/`road`/incroci pescano
+dal ruolo `road`, che nei temi attivi seleziona `road_border_defined`, e vengono registrati anche come variante ruotata
+`__horizontal`, mentre le lane tematiche pescano dal ruolo `path`. I
+`passage_tiles` road-like e i relativi entry/exit restano identificati come
+sezione/tile (`passage_tiles/bridge_entry`) per preservare semantica e debug,
+ma il renderer usa il materiale generated `road_border_defined` orientato per evitare
+connettori manifest fuori scala ai bordi regione.
 
 Il generator asset controlla 108 SVG ambiente isometrico dopo il pass texture
 forestali, inclusi road connector, entry/exit dei passaggi, object scene per

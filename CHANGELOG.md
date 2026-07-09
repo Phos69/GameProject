@@ -165,8 +165,23 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
   - la base occupata degli oggetti usa un bordo scuro invece dell'outline
     color accento che leggeva come marker di selezione;
   - i temi generati renderizzano le route a taglio netto: le transizioni verso
-    path restano path diretto, mentre bordi e curve strada usano asset
-    `road_border_defined` tramite il ruolo `ground_to_road`;
+    path restano path diretto, mentre strade piene, bordi e curve strada usano
+    asset `road_border_defined` tramite i ruoli `road` e `ground_to_road`;
+  - `main_road`, `road` e `road_intersection` dei biomi generated art usano ora
+    i PNG `road_border_defined` con materiali runtime orientati
+    (`__vertical`/`__horizontal`), mentre `service_lane`, `ash_lane`,
+    `packed_snow_path` e `wooden_walkway` usano `path_variation`; anche i
+    passage road-like tra biomi (`bridge`, `snow_pass`, `broken_gate`,
+    `burned_road` e relative entry/exit) renderizzano `road_border_defined`
+    orientato invece dei vecchi SVG `passage_tiles/*` e delle vecchie
+    `road_variation`, cosi le strade principali e i seam usano i nuovi asset
+    con bordo definito;
+  - i PNG `road_border_defined` dei generated theme e
+    `forest_road_border_defined` della Pianura Infetta vengono registrati come
+    due materiali runtime orientati (`__horizontal`/`__vertical`): `urban_ruins`
+    usa la sorgente orizzontale per `__horizontal` e la variante ruotata per
+    `__vertical`, mentre gli altri generated theme mantengono la sorgente
+    verticale nativa;
   - `toxic_wastes`: il ground pool usa solo la coppia coerente di rubble
     (variation 02/03); lichene chiaro e ghiaia bruna passano a `detail`,
     eliminando la scacchiera di pannelli per macro-cella;
@@ -193,17 +208,22 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
   - Le QA dedicate Tossico e Campi Ardenti aggiungono la vista
     `resource_crate` a conferma che, dopo il redesign di `lab_block`/
     `lab_ruin` (`VIS-005`), le vere supply crate restano compatte; la QA
-    Palude aggiunge la vista `reed_wall`.
-  - `TileBakeCache.FORMAT_VERSION` sale progressivamente a `17` mano a mano
+    Palude aggiunge la vista `reed_wall`; la board
+    `generated_biome_art_visual_qa.gd` mostra ora anche `BORDER V`/`BORDER H`
+    per i quattro generated theme e ora espone anche `ROAD V`/`ROAD H`.
+  - `TileBakeCache.FORMAT_VERSION` sale progressivamente a `22` mano a mano
     che ogni bioma normalizza i propri `material_asset_id` e i nuovi border
-    strada, invalidando le cache persistite obsolete.
+    strada/passage, invalidando le cache persistite obsolete.
 
 - Pianura Infetta non renderizza piu `grass_to_path`, `grass_to_road` e
-  `path_to_road` come texture intermedie: `grass_to_path` usa direttamente
-  `forest_path`, mentre i contatti verso strada usano `forest_road_border`,
-  mantenendo un taglio netto verso il terreno. `forest_tree` applica inoltre flip/tinta
-  deterministici per ridurre la ripetizione senza cambiare collisioni o
-  footprint.
+  `path_to_road` come texture intermedie: route principali, spoke
+  `broken_street`, passage `road`/entry/exit e contatti verso terreno usano
+  `forest_road_border__horizontal`/`__vertical` sui margini e un core strada
+  derivato dallo stesso PNG per gli interni, mantenendo un taglio netto verso
+  il terreno su entrambi gli assi e senza sovrapporre piu `forest_path` o
+  `forest_road` sulle strade. `forest_tree` applica inoltre
+  flip/tinta deterministici per ridurre la ripetizione senza cambiare
+  collisioni o footprint.
 - Ricalibrato il rendering dei cliff verso void per la griglia `6x6`: il lip
   rettilineo resta stretto e termina sulla prima cella di caduta, mentre le
   facce perimetrali scendono nel void senza comprimersi nella fall strip.

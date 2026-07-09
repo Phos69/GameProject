@@ -224,6 +224,41 @@ static func build_offset_ground_macro_texture(
 		_normalized_texture_cache[full_key] = result
 	return result
 
+static func rotate_repeating_texture_clockwise(
+	texture: Texture2D,
+	cache_key: String = ""
+) -> Texture2D:
+	if texture == null:
+		return null
+	var full_key := ""
+	if not cache_key.is_empty():
+		full_key = "rotate90cw|%s" % cache_key
+		if _normalized_texture_cache.has(full_key):
+			return _normalized_texture_cache[full_key] as Texture2D
+	var source := _readable_texture_image(texture)
+	if source == null or source.is_empty():
+		return texture
+	source.convert(Image.FORMAT_RGBA8)
+	var rotated := Image.create(
+		source.get_height(),
+		source.get_width(),
+		false,
+		Image.FORMAT_RGBA8
+	)
+	for y in range(source.get_height()):
+		for x in range(source.get_width()):
+			rotated.set_pixel(
+				source.get_height() - y - 1,
+				x,
+				source.get_pixel(x, y)
+			)
+	rotated.fix_alpha_edges()
+	rotated.generate_mipmaps()
+	var result := ImageTexture.create_from_image(rotated)
+	if not full_key.is_empty():
+		_normalized_texture_cache[full_key] = result
+	return result
+
 static func _normalize_repeating_texture_uncached(
 	texture: Texture2D,
 	trim: int,
@@ -416,6 +451,7 @@ static func _surface_uses_mirrored_atlas(
 			asset_path.contains("base_ground_variation")
 			or asset_path.contains("path_variation")
 			or asset_path.contains("road_variation")
+			or asset_path.contains("road_border_defined")
 		)
 	)
 
@@ -551,7 +587,10 @@ static func _harmonize_volcanic_surface_texture(
 	return ImageTexture.create_from_image(image)
 
 static func _frozen_surface_snow_blend(asset_path: String) -> float:
-	if asset_path.contains("road_variation"):
+	if (
+		asset_path.contains("road_variation")
+		or asset_path.contains("road_border_defined")
+	):
 		return FROZEN_ROAD_SNOW_BLEND
 	if asset_path.contains("path_variation"):
 		return FROZEN_ROUTE_SNOW_BLEND
@@ -566,6 +605,7 @@ static func _harmonize_swamp_surface_texture(
 	if (
 		not asset_path.contains("path_variation")
 		and not asset_path.contains("road_variation")
+		and not asset_path.contains("road_border_defined")
 	):
 		return texture
 	var image := texture.get_image()

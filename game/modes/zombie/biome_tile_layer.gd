@@ -42,6 +42,11 @@ const CLIFF_LIP_VERTICAL_TEXTURE_ID := &"cliff_lip_vertical_texture"
 const ROCK_CLIFF_FACE_TEXTURE_ID := &"rock_cliff_face_texture"
 const LARGE_ROCK_OBJECT_ID := &"large_rock"
 const FOREST_GRASS_TEXTURE_ID := &"forest_grass"
+const FOREST_ROAD_BORDER_TEXTURE_ID := &"forest_road_border"
+const FOREST_ROAD_BORDER_HORIZONTAL_TEXTURE_ID := &"forest_road_border__horizontal"
+const FOREST_ROAD_BORDER_VERTICAL_TEXTURE_ID := &"forest_road_border__vertical"
+const FOREST_ROAD_CORE_HORIZONTAL_TEXTURE_ID := &"forest_road_border__core_horizontal"
+const FOREST_ROAD_CORE_VERTICAL_TEXTURE_ID := &"forest_road_border__core_vertical"
 const FOREST_SURFACE_TEXTURE_WORLD_SIZE := 256.0
 const SEMANTIC_SURFACE_TEXTURE_WORLD_SIZE := 256.0
 const TOXIC_SURFACE_TEXTURE_WORLD_SIZE := 1024.0
@@ -71,19 +76,31 @@ const FOREST_TRANSITION_TEXTURE_IDS: Array[StringName] = [
 	&"grass_to_path",
 	&"grass_to_road",
 	&"path_to_road",
-	&"forest_road_border"
+	&"forest_road_border",
+	FOREST_ROAD_BORDER_HORIZONTAL_TEXTURE_ID,
+	FOREST_ROAD_BORDER_VERTICAL_TEXTURE_ID
 ]
-# Passage connectors/endpoints (road, broken_gate, burned_road, bridge, snow_pass
-# and their *_entry/*_exit) are emitted by the resolver as raw passage tags. Without
-# a surface mapping they fell through to the flat per-tile diamond fill, so a
-# passage corridor read as a green isometric grid on the grass. Surfacing them as a
-# worn dirt path makes the connection render as ground instead of a bare lattice.
-const FOREST_PASSAGE_SURFACE_TILE_IDS: Array[StringName] = [
+const FOREST_ROAD_BORDER_EDGE_SURFACE_TILE_IDS: Array[StringName] = [
+	&"grass_to_path", &"grass_to_road",
+	&"road_edge",
+	&"road_curve_north", &"road_curve_east",
+	&"road_curve_south", &"road_curve_west"
+]
+const FOREST_ROAD_BORDER_SURFACE_TILE_IDS: Array[StringName] = [
+	&"forest_path", &"forest_road",
+	&"grass_to_path", &"grass_to_road", &"path_to_road",
+	&"main_road",
 	&"road", &"road_entry", &"road_exit",
+	&"broken_street", &"service_lane", &"ash_lane",
+	&"packed_snow_path", &"wooden_walkway",
+	&"road_intersection", &"road_edge",
+	&"road_curve_north", &"road_curve_east",
+	&"road_curve_south", &"road_curve_west",
 	&"broken_gate", &"broken_gate_entry", &"broken_gate_exit",
 	&"burned_road", &"burned_road_entry", &"burned_road_exit",
 	&"bridge", &"bridge_entry", &"bridge_exit",
-	&"snow_pass", &"snow_pass_entry", &"snow_pass_exit"
+	&"snow_pass", &"snow_pass_entry", &"snow_pass_exit",
+	&"bridge_broken", &"cliff_ramp"
 ]
 const GENERATED_THEME_TERRAIN_SURFACE_TILE_IDS: Array[StringName] = [
 	&"main_road",
@@ -863,12 +880,14 @@ func _load_forest_surface_art_textures() -> void:
 	if _uses_generated_theme():
 		for asset_path in GENERATED_ART_CATALOG.get_all_surface_asset_paths(biome_id):
 			var material_id := GENERATED_ART_CATALOG.material_id_from_path(asset_path)
-			_forest_surface_art_asset_paths[material_id] = asset_path
 			var texture := _load_generated_surface_texture(asset_path)
 			if texture == null:
 				continue
-			_forest_surface_textures[material_id] = texture
-			_surface_texture_ids.append(material_id)
+			_register_surface_texture(material_id, asset_path, texture)
+			if GENERATED_ART_CATALOG.is_orientable_road_surface_asset_path(asset_path):
+				_register_road_surface_orientation_textures(asset_path, texture)
+			if GENERATED_ART_CATALOG.is_road_border_asset_path(asset_path):
+				_register_road_border_orientation_textures(asset_path, texture)
 		if (
 			biome_id == &"frozen_outskirts"
 			or biome_id == &"drowned_marsh"
@@ -889,8 +908,12 @@ func _load_forest_surface_art_textures() -> void:
 			Vector2i(512, 512)
 		)
 		if texture != null:
-			_forest_surface_textures[texture_id] = texture
-			_surface_texture_ids.append(texture_id)
+			_register_surface_texture(texture_id, asset_path, texture)
+			if texture_id == FOREST_ROAD_BORDER_TEXTURE_ID:
+				_register_forest_road_border_orientation_textures(
+					asset_path,
+					texture
+				)
 
 func _load_generated_theme_manifest_surface_textures() -> void:
 	for tile_id in _biome_manifest_surface_tile_ids(
@@ -934,9 +957,135 @@ func _load_manifest_surface_texture(section: StringName, tile_id: StringName) ->
 		Vector2i(512, 512)
 	)
 	if texture != null:
-		_forest_surface_textures[texture_id] = texture
-		if not _surface_texture_ids.has(texture_id):
-			_surface_texture_ids.append(texture_id)
+		_register_surface_texture(texture_id, asset_path, texture)
+
+func _register_surface_texture(
+	texture_id: StringName,
+	asset_path: String,
+	texture: Texture2D
+) -> void:
+	if texture_id.is_empty() or texture == null:
+		return
+	_forest_surface_art_asset_paths[texture_id] = asset_path
+	_forest_surface_textures[texture_id] = texture
+	if not _surface_texture_ids.has(texture_id):
+		_surface_texture_ids.append(texture_id)
+
+func _register_road_border_orientation_textures(
+	asset_path: String,
+	source_texture: Texture2D
+) -> void:
+	var source_orientation := GENERATED_ART_CATALOG.road_border_source_orientation(
+		asset_path
+	)
+	var source_id := GENERATED_ART_CATALOG.oriented_road_border_material_id(
+		asset_path,
+		source_orientation
+	)
+	_register_surface_texture(source_id, asset_path, source_texture)
+	var rotated_orientation := GENERATED_ART_CATALOG.opposite_road_border_orientation(
+		source_orientation
+	)
+	var rotated_id := GENERATED_ART_CATALOG.oriented_road_border_material_id(
+		asset_path,
+		rotated_orientation
+	)
+	var rotated_texture := (
+		GENERATED_TEXTURE_TOOLS.rotate_repeating_texture_clockwise(
+			source_texture,
+			"%s|road_border_%s" % [asset_path, String(rotated_orientation)]
+		)
+	)
+	_register_surface_texture(rotated_id, asset_path, rotated_texture)
+
+func _register_road_surface_orientation_textures(
+	asset_path: String,
+	vertical_texture: Texture2D
+) -> void:
+	var vertical_id := GENERATED_ART_CATALOG.oriented_road_surface_material_id(
+		asset_path,
+		GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_VERTICAL
+	)
+	_register_surface_texture(vertical_id, asset_path, vertical_texture)
+	var horizontal_id := GENERATED_ART_CATALOG.oriented_road_surface_material_id(
+		asset_path,
+		GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_HORIZONTAL
+	)
+	var horizontal_texture := (
+		GENERATED_TEXTURE_TOOLS.rotate_repeating_texture_clockwise(
+			vertical_texture,
+			"%s|road_surface_horizontal" % asset_path
+		)
+	)
+	_register_surface_texture(horizontal_id, asset_path, horizontal_texture)
+
+func _register_forest_road_border_orientation_textures(
+	asset_path: String,
+	vertical_texture: Texture2D
+) -> void:
+	_register_surface_texture(
+		FOREST_ROAD_BORDER_VERTICAL_TEXTURE_ID,
+		asset_path,
+		vertical_texture
+	)
+	var horizontal_texture := (
+		GENERATED_TEXTURE_TOOLS.rotate_repeating_texture_clockwise(
+			vertical_texture,
+			"%s|forest_road_border_horizontal" % asset_path
+		)
+	)
+	_register_surface_texture(
+		FOREST_ROAD_BORDER_HORIZONTAL_TEXTURE_ID,
+		asset_path,
+		horizontal_texture
+	)
+	var vertical_core_texture := _build_forest_road_core_texture(
+		vertical_texture
+	)
+	_register_surface_texture(
+		FOREST_ROAD_CORE_VERTICAL_TEXTURE_ID,
+		asset_path,
+		vertical_core_texture
+	)
+	var horizontal_core_texture := (
+		GENERATED_TEXTURE_TOOLS.rotate_repeating_texture_clockwise(
+			vertical_core_texture,
+			"%s|forest_road_core_horizontal" % asset_path
+		)
+	)
+	_register_surface_texture(
+		FOREST_ROAD_CORE_HORIZONTAL_TEXTURE_ID,
+		asset_path,
+		horizontal_core_texture
+	)
+
+func _build_forest_road_core_texture(
+	source_texture: Texture2D
+) -> Texture2D:
+	if source_texture == null:
+		return null
+	var image := source_texture.get_image()
+	if image == null or image.is_empty():
+		return null
+	if image.is_compressed():
+		var decompress_error := image.decompress()
+		if decompress_error != OK:
+			return null
+	image.convert(Image.FORMAT_RGBA8)
+	var horizontal_margin := roundi(float(image.get_width()) * 0.32)
+	var source_rect := Rect2i(
+		Vector2i(horizontal_margin, 0),
+		Vector2i(
+			image.get_width() - horizontal_margin * 2,
+			image.get_height()
+		)
+	)
+	if source_rect.size.x <= 0 or source_rect.size.y <= 0:
+		return null
+	var core_image := image.get_region(source_rect)
+	core_image.fix_alpha_edges()
+	core_image.generate_mipmaps()
+	return ImageTexture.create_from_image(core_image)
 
 func _apply_offset_ground_macro_texture() -> void:
 	var ground_id := &""
@@ -1234,7 +1383,86 @@ func _surface_texture_id_for_cell(
 		if not material_id.is_empty():
 			return material_id
 		return _manifest_surface_texture_id_for_cell(cell, tile_id)
+	return _forest_surface_texture_id_for_cell(cell, tile_id)
+
+func _forest_surface_texture_id_for_cell(
+	cell: Vector2i,
+	tile_id: StringName
+) -> StringName:
+	if FOREST_ROAD_BORDER_SURFACE_TILE_IDS.has(tile_id):
+		if (
+			FOREST_ROAD_BORDER_EDGE_SURFACE_TILE_IDS.has(tile_id)
+			or _forest_route_cell_touches_non_route(cell)
+		):
+			return _forest_road_border_texture_id_for_cell(cell, tile_id)
+		return _forest_road_core_texture_id_for_cell(cell, tile_id)
 	return _forest_surface_texture_id(tile_id)
+
+func _forest_road_core_texture_id_for_cell(
+	cell: Vector2i,
+	tile_id: StringName
+) -> StringName:
+	if resolver == null:
+		return FOREST_ROAD_CORE_VERTICAL_TEXTURE_ID
+	var orientation := resolver.resolve_road_border_orientation_for_cell(
+		layout,
+		cell,
+		tile_id
+	)
+	var texture_id := (
+		FOREST_ROAD_CORE_HORIZONTAL_TEXTURE_ID
+		if orientation == GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_HORIZONTAL
+		else FOREST_ROAD_CORE_VERTICAL_TEXTURE_ID
+	)
+	if _forest_surface_textures.get(texture_id) is Texture2D:
+		return texture_id
+	return _forest_road_border_texture_id_for_cell(cell, tile_id)
+
+func _forest_road_border_texture_id_for_cell(
+	cell: Vector2i,
+	tile_id: StringName
+) -> StringName:
+	if resolver == null:
+		return FOREST_ROAD_BORDER_TEXTURE_ID
+	var orientation := resolver.resolve_road_border_orientation_for_cell(
+		layout,
+		cell,
+		tile_id
+	)
+	if orientation == GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_HORIZONTAL:
+		return FOREST_ROAD_BORDER_HORIZONTAL_TEXTURE_ID
+	return FOREST_ROAD_BORDER_VERTICAL_TEXTURE_ID
+
+func _forest_route_cell_touches_non_route(cell: Vector2i) -> bool:
+	if layout == null:
+		return false
+	for offset in IsometricTileResolver.CARDINAL_OFFSETS:
+		if not _cell_is_forest_route_surface(cell + offset):
+			return true
+	return false
+
+func _cell_is_forest_route_surface(cell: Vector2i) -> bool:
+	if layout == null:
+		return false
+	if (
+		cell.x < 0
+		or cell.y < 0
+		or cell.x >= layout.zone_size.x
+		or cell.y >= layout.zone_size.y
+	):
+		return false
+	if layout.has_road_cell(cell):
+		return true
+	for rect in layout.road_rects:
+		if rect.has_point(cell):
+			return true
+	for rect in layout.passage_rects:
+		if rect.has_point(cell):
+			return true
+	for rect in layout.passage_connector_rects:
+		if rect.has_point(cell):
+			return true
+	return false
 
 func _manifest_surface_texture_id_for_cell(
 	cell: Vector2i,
@@ -1274,17 +1502,9 @@ func _forest_surface_texture_id(tile_id: StringName) -> StringName:
 		return &""
 	if FOREST_GRASS_SURFACE_TILE_IDS.has(tile_id):
 		return FOREST_GRASS_TEXTURE_ID
-	if FOREST_PASSAGE_SURFACE_TILE_IDS.has(tile_id):
-		return &"forest_path"
+	if FOREST_ROAD_BORDER_SURFACE_TILE_IDS.has(tile_id):
+		return FOREST_ROAD_BORDER_TEXTURE_ID
 	match tile_id:
-		IsometricTileResolver.TILE_FOREST_PATH:
-			return &"forest_path"
-		IsometricTileResolver.TILE_FOREST_ROAD:
-			return &"forest_road"
-		IsometricTileResolver.TILE_GRASS_TO_PATH:
-			return &"forest_path"
-		IsometricTileResolver.TILE_GRASS_TO_ROAD, IsometricTileResolver.TILE_PATH_TO_ROAD:
-			return &"forest_road_border"
 		IsometricTileResolver.TILE_FOREST_CLIFF_EDGE, IsometricTileResolver.TILE_GROUND_TO_VOID_CLIFF:
 			# Crest cells are surfaced as grass so the base ground reaches the void
 			# rect edge; the rock crest and descending wall come from the dedicated
@@ -1486,13 +1706,9 @@ func _append_underlay_run(
 func _forest_underlay_key(tile_id: StringName) -> StringName:
 	if resolver != null and resolver.is_void_transition_tile_id(tile_id):
 		return &"void"
-	if FOREST_PASSAGE_SURFACE_TILE_IDS.has(tile_id):
-		return &"path"
+	if FOREST_ROAD_BORDER_SURFACE_TILE_IDS.has(tile_id):
+		return &"road"
 	match tile_id:
-		IsometricTileResolver.TILE_FOREST_PATH, IsometricTileResolver.TILE_GRASS_TO_PATH:
-			return &"path"
-		IsometricTileResolver.TILE_FOREST_ROAD, IsometricTileResolver.TILE_GRASS_TO_ROAD, IsometricTileResolver.TILE_PATH_TO_ROAD:
-			return &"road"
 		IsometricTileResolver.TILE_FOREST_VOID:
 			return &"void"
 		IsometricTileResolver.TILE_FOREST_MOUNTAIN_WALL, IsometricTileResolver.TILE_GROUND_TO_MOUNTAIN_WALL:

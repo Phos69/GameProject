@@ -95,6 +95,8 @@ func test_forest_route_transitions_render_with_route_surfaces() -> void:
 	layout.road_rect_tags.append(&"main_road")
 	layout.road_rects.append(Rect2i(Vector2i(12, 3), Vector2i(4, 18)))
 	layout.road_rect_tags.append(&"broken_street")
+	layout.road_rects.append(Rect2i(Vector2i(22, 3), Vector2i(5, 17)))
+	layout.road_rect_tags.append(&"main_road")
 	layout.rebuild_terrain_classification()
 	var layer := BiomeTileLayer.new()
 	add_child(layer)
@@ -103,8 +105,13 @@ func test_forest_route_transitions_render_with_route_surfaces() -> void:
 
 	assert_eq(
 		layer._forest_surface_texture_id(IsometricTileResolver.TILE_GRASS_TO_PATH),
-		&"forest_path",
-		"forest grass/path contact renders with the oriented path surface, not an intermediate texture"
+		&"forest_road_border",
+		"forest grass/path contact renders with the defined road-border surface"
+	)
+	assert_eq(
+		layer._forest_surface_texture_id(IsometricTileResolver.TILE_FOREST_ROAD),
+		&"forest_road_border",
+		"forest road interiors render with the same defined road-border material as the edges"
 	)
 	assert_eq(
 		layer._forest_surface_texture_id(IsometricTileResolver.TILE_GRASS_TO_ROAD),
@@ -114,15 +121,148 @@ func test_forest_route_transitions_render_with_route_surfaces() -> void:
 	assert_eq(
 		layer._forest_surface_texture_id(IsometricTileResolver.TILE_PATH_TO_ROAD),
 		&"forest_road_border",
-		"forest path/road crossing renders as a crisp road-border cut"
+		"forest path/road crossing stays in the defined road-border material family"
+	)
+	assert_eq(
+		layer._surface_texture_id_for_cell(
+			Vector2i(4, 10),
+			layer.get_resolved_tile_id(Vector2i(4, 10))
+		),
+		&"forest_road_border__horizontal",
+		"forest horizontal road edge uses the rotated road-border surface"
+	)
+	assert_eq(
+		layer._surface_texture_id_for_cell(
+			Vector2i(22, 4),
+			layer.get_resolved_tile_id(Vector2i(22, 4))
+		),
+		&"forest_road_border__vertical",
+		"forest vertical road edge uses the native road-border surface"
+	)
+	assert_eq(
+		layer._surface_texture_id_for_cell(
+			Vector2i(4, 12),
+			layer.get_resolved_tile_id(Vector2i(4, 12))
+		),
+		&"forest_road_border__core_horizontal",
+		"forest horizontal road interior uses the core derived from the defined road-border asset"
+	)
+	assert_eq(
+		layer._surface_texture_id_for_cell(
+			Vector2i(24, 5),
+			layer.get_resolved_tile_id(Vector2i(24, 5))
+		),
+		&"forest_road_border__core_vertical",
+		"forest vertical road interior uses the core derived from the defined road-border asset"
+	)
+	assert_eq(
+		layer.get_resolved_tile_id(Vector2i(13, 12)),
+		IsometricTileResolver.TILE_PATH_TO_ROAD,
+		"forest route crossing keeps the path-to-road semantic tile id"
+	)
+	assert_eq(
+		layer._surface_texture_id_for_cell(
+			Vector2i(13, 12),
+			layer.get_resolved_tile_id(Vector2i(13, 12))
+		),
+		&"forest_road_border__core_horizontal",
+		"forest path/road crossing renders as road core, not a grass border patch"
 	)
 	var rendered_ids := layer.get_rendered_surface_material_ids()
-	assert_true(rendered_ids.has(&"forest_path"), "path surface is rendered")
-	assert_true(rendered_ids.has(&"forest_road"), "road surface is rendered")
-	assert_true(rendered_ids.has(&"forest_road_border"), "defined road-border surface is rendered")
+	assert_false(
+		rendered_ids.has(&"forest_path"),
+		"forest dirt path texture is loaded but no longer rendered on route corridors"
+	)
+	assert_false(
+		rendered_ids.has(&"forest_road"),
+		"forest asphalt texture is loaded but no longer rendered on route corridors"
+	)
+	assert_true(
+		rendered_ids.has(&"forest_road_border__horizontal"),
+		"horizontal defined road-border surface is rendered"
+	)
+	assert_true(
+		rendered_ids.has(&"forest_road_border__vertical"),
+		"vertical defined road-border surface is rendered"
+	)
+	assert_true(
+		rendered_ids.has(&"forest_road_border__core_horizontal"),
+		"horizontal defined road core surface is rendered"
+	)
+	assert_true(
+		rendered_ids.has(&"forest_road_border__core_vertical"),
+		"vertical defined road core surface is rendered"
+	)
+	assert_false(
+		rendered_ids.has(&"forest_road_border"),
+		"unoriented forest road-border base texture is loaded but not rendered"
+	)
 	assert_false(rendered_ids.has(&"grass_to_path"), "grass/path intermediate surface is not rendered")
 	assert_false(rendered_ids.has(&"grass_to_road"), "grass/road intermediate surface is not rendered")
 	assert_false(rendered_ids.has(&"path_to_road"), "path/road intermediate surface is not rendered")
+
+	layer.queue_free()
+	await wait_physics_frames(1)
+
+func test_forest_road_passages_do_not_render_as_dirt_paths() -> void:
+	var palette := load("res://game/modes/zombie/biomes/infected_plains_palette.tres") as BiomePalette
+	var layout := BiomeEnvironmentLayout.new()
+	layout.zone_size = Vector2i(18, 12)
+	layout.generation_seed = 443118
+	layout.add_floor_rect(Rect2i(Vector2i.ZERO, layout.zone_size), &"forest_grass")
+	var passage_rect := Rect2i(Vector2i(0, 5), Vector2i(2, 4))
+	var connector_rect := Rect2i(Vector2i(0, 5), Vector2i(9, 4))
+	layout.passage_rects.append(passage_rect)
+	layout.passage_connector_rects.append(connector_rect)
+	layout.road_rects.append(passage_rect)
+	layout.road_rect_tags.append(&"road")
+	layout.road_rects.append(connector_rect)
+	layout.road_rect_tags.append(&"road")
+	layout.rebuild_terrain_classification()
+	var layer := BiomeTileLayer.new()
+	add_child(layer)
+	layer.configure(layout, palette, &"infected_plains", &"quality", 9, null, _manifest, false)
+	await wait_physics_frames(1)
+
+	var connector_probe := Vector2i(4, 6)
+	var connector_tile := layer.get_resolved_tile_id(connector_probe)
+	assert_eq(connector_tile, &"road", "forest road connector keeps the passage tile id")
+	assert_eq(
+		layer.get_resolved_tile_section(connector_probe),
+		&"passage_tiles",
+		"forest road connector remains debuggable as a passage tile"
+	)
+	assert_eq(
+		layer._surface_texture_id_for_cell(connector_probe, connector_tile),
+		&"forest_road_border__core_horizontal",
+		"forest road connector interior renders with the derived core road material"
+	)
+	var connector_edge_probe := Vector2i(4, 5)
+	assert_eq(
+		layer._surface_texture_id_for_cell(
+			connector_edge_probe,
+			layer.get_resolved_tile_id(connector_edge_probe)
+		),
+		&"forest_road_border__horizontal",
+		"forest road connector edge renders with the oriented defined road-border material"
+	)
+	var rendered_ids := layer.get_rendered_surface_material_ids()
+	assert_true(
+		rendered_ids.has(&"forest_road_border__horizontal"),
+		"forest road passage renders the defined road-border material"
+	)
+	assert_true(
+		rendered_ids.has(&"forest_road_border__core_horizontal"),
+		"forest road passage renders the derived core road material"
+	)
+	assert_false(
+		rendered_ids.has(&"forest_path"),
+		"forest road passage no longer renders as a dirt path"
+	)
+	assert_false(
+		rendered_ids.has(&"forest_road"),
+		"forest road passage no longer mixes in the old asphalt texture"
+	)
 
 	layer.queue_free()
 	await wait_physics_frames(1)
@@ -207,6 +347,32 @@ func test_generated_biome_catalog_contract() -> void:
 		legacy_swamp_directory == null
 		or legacy_swamp_directory.get_files().is_empty(),
 		"the nine temporary swamp duplicates are removed"
+	)
+	var toxic_road_path := BiomeGeneratedArtCatalog.select_surface_asset_path(
+		&"toxic_wastes",
+		BiomeGeneratedArtCatalog.ROLE_ROAD,
+		13001,
+		Vector2i.ZERO
+	)
+	assert_true(
+		toxic_road_path.contains("road_border_defined"),
+		"toxic_wastes road role selects the defined-border road asset"
+	)
+	assert_eq(
+		BiomeGeneratedArtCatalog.road_border_source_orientation(toxic_road_path),
+		BiomeGeneratedArtCatalog.ROAD_BORDER_ORIENTATION_HORIZONTAL,
+		"urban_ruins defined road-border source is horizontal"
+	)
+	var volcanic_road_path := BiomeGeneratedArtCatalog.select_surface_asset_path(
+		&"burning_fields",
+		BiomeGeneratedArtCatalog.ROLE_ROAD,
+		13001,
+		Vector2i.ZERO
+	)
+	assert_eq(
+		BiomeGeneratedArtCatalog.road_border_source_orientation(volcanic_road_path),
+		BiomeGeneratedArtCatalog.ROAD_BORDER_ORIENTATION_VERTICAL,
+		"non-toxic defined road-border sources stay vertical"
 	)
 	for biome_id_value in GENERATED_BIOME_THEMES:
 		var biome_id := biome_id_value as StringName
@@ -625,6 +791,10 @@ func test_generated_biome_runtime_consumption() -> void:
 		)
 		layout.road_rect_tags.append(&"main_road")
 		layout.road_rects.append(
+			Rect2i(Vector2i(20, 4), Vector2i(3, 8))
+		)
+		layout.road_rect_tags.append(&"main_road")
+		layout.road_rects.append(
 			Rect2i(Vector2i(10, 2), Vector2i(3, 20))
 		)
 		layout.road_rect_tags.append(&"broken_street")
@@ -727,8 +897,14 @@ func test_generated_biome_runtime_consumption() -> void:
 		var expected_surface_trim := (
 			_expected_generated_surface_texture_trim_pixels(biome_id)
 		)
+		var first_rendered_text := String(first_rendered_id)
 		var expected_runtime_width := (
-			source_image.get_width() - expected_surface_trim * 2
+			(
+				source_image.get_height()
+				if first_rendered_text.ends_with("__horizontal")
+				else source_image.get_width()
+			)
+			- expected_surface_trim * 2
 		)
 		if (
 			biome_id == &"toxic_wastes"
@@ -736,6 +912,7 @@ func test_generated_biome_runtime_consumption() -> void:
 				source_path.contains("base_ground_variation")
 				or source_path.contains("path_variation")
 				or source_path.contains("road_variation")
+				or source_path.contains("road_border_defined")
 			)
 		):
 			expected_runtime_width *= 2
@@ -841,7 +1018,7 @@ func test_generated_biome_runtime_consumption() -> void:
 			)
 			_assert_frozen_route_textures_are_snow_softened(
 				layer,
-				"road_variation",
+				"road_border_defined",
 				expected_surface_trim,
 				"frozen road"
 			)
@@ -899,6 +1076,14 @@ func test_generated_biome_runtime_consumption() -> void:
 		var selected_material_ids: Dictionary = {}
 		var selected_material_paths: Dictionary = {}
 		var road_border_material_seen := false
+		var horizontal_border_cell := Vector2i(6, 10)
+		var vertical_border_cell := Vector2i(10, 5)
+		var horizontal_border_id := layer.get_resolved_material_asset_id(
+			horizontal_border_cell
+		)
+		var vertical_border_id := layer.get_resolved_material_asset_id(
+			vertical_border_cell
+		)
 		for y in range(layout.zone_size.y):
 			for x in range(layout.zone_size.x):
 				var cell := Vector2i(x, y)
@@ -923,11 +1108,140 @@ func test_generated_biome_runtime_consumption() -> void:
 			"%s maps road edge/curve cells to defined road-border material"
 			% String(biome_id)
 		)
+		assert_eq(
+			layer.get_resolved_tile_id(horizontal_border_cell),
+			IsometricTileResolver.TILE_ROAD_EDGE,
+			"%s horizontal route border resolves as a road edge"
+			% String(biome_id)
+		)
+		assert_true(
+			String(horizontal_border_id).ends_with("__horizontal"),
+			"%s horizontal route border selects the rotated road-border material"
+			% String(biome_id)
+		)
+		assert_true(
+			layer.get_resolved_material_asset_path(
+				horizontal_border_cell
+			).contains("road_border_defined"),
+			"%s horizontal route border uses the defined road-border source"
+			% String(biome_id)
+		)
+		assert_eq(
+			layer.get_resolved_tile_id(vertical_border_cell),
+			IsometricTileResolver.TILE_ROAD_EDGE,
+			"%s vertical route border resolves as a road edge"
+			% String(biome_id)
+		)
+		assert_true(
+			String(vertical_border_id).ends_with("__vertical"),
+			"%s vertical route border selects the native road-border material"
+			% String(biome_id)
+		)
+		assert_true(
+			layer.get_resolved_material_asset_path(
+				vertical_border_cell
+			).contains("road_border_defined"),
+			"%s vertical route border uses the defined road-border source"
+			% String(biome_id)
+		)
+		assert_true(
+			loaded_surface_ids.has(horizontal_border_id),
+			"%s loads the horizontal road-border texture variant"
+			% String(biome_id)
+		)
+		assert_true(
+			loaded_surface_ids.has(vertical_border_id),
+			"%s loads the vertical road-border texture variant"
+			% String(biome_id)
+		)
+		if biome_id == &"toxic_wastes":
+			var toxic_border_base_id := (
+				BiomeGeneratedArtCatalog.material_id_from_path(
+					layer.get_resolved_material_asset_path(horizontal_border_cell)
+				)
+			)
+			assert_true(
+				_surface_textures_have_same_pixels(
+					layer,
+					toxic_border_base_id,
+					horizontal_border_id
+				),
+				"toxic horizontal road border uses the native source texture"
+			)
+			assert_false(
+				_surface_textures_have_same_pixels(
+					layer,
+					toxic_border_base_id,
+					vertical_border_id
+				),
+				"toxic vertical road border rotates the horizontal source texture"
+			)
 		assert_true(
 			layer.get_resolved_material_asset_path(
 				Vector2i(4, 4)
 			).contains(expected_theme_fragment),
 			"%s hazard underlay uses its generated theme" % String(biome_id)
+		)
+		var main_road_probe := Vector2i(5, 11)
+		var vertical_main_road_probe := Vector2i(21, 6)
+		assert_eq(
+			layer.get_resolved_tile_id(main_road_probe),
+			IsometricTileResolver.TILE_MAIN_ROAD,
+			"%s main road keeps its semantic tile id" % String(biome_id)
+		)
+		assert_true(
+			layer.get_resolved_material_asset_path(main_road_probe).contains(
+				expected_theme_fragment
+			),
+			"%s main road uses its generated theme material"
+			% String(biome_id)
+		)
+		assert_true(
+			layer.get_resolved_material_asset_path(main_road_probe).contains(
+				"road_border_defined"
+			),
+			"%s main road renders with the defined-border road PNG"
+			% String(biome_id)
+		)
+		assert_true(
+			String(layer.get_resolved_material_asset_id(main_road_probe)).ends_with(
+				"__horizontal"
+			),
+			"%s horizontal main road uses the rotated road surface material"
+			% String(biome_id)
+		)
+		assert_eq(
+			layer.get_resolved_tile_id(vertical_main_road_probe),
+			IsometricTileResolver.TILE_MAIN_ROAD,
+			"%s vertical main road keeps its semantic tile id" % String(biome_id)
+		)
+		assert_true(
+			layer.get_resolved_material_asset_path(
+				vertical_main_road_probe
+			).contains("road_border_defined"),
+			"%s vertical main road renders with the defined-border road PNG"
+			% String(biome_id)
+		)
+		assert_true(
+			String(
+				layer.get_resolved_material_asset_id(vertical_main_road_probe)
+			).ends_with("__vertical"),
+			"%s vertical main road uses the native road surface material"
+			% String(biome_id)
+		)
+		assert_true(
+			loaded_surface_ids.has(
+				layer.get_resolved_material_asset_id(main_road_probe)
+			),
+			"%s loads the horizontal road surface texture variant"
+			% String(biome_id)
+		)
+		assert_true(
+			loaded_surface_ids.has(
+				layer.get_resolved_material_asset_id(vertical_main_road_probe)
+			),
+			"%s loads the vertical road surface texture variant"
+			% String(biome_id)
 		)
 		var route_probe := Vector2i(5, 17)
 		assert_eq(
@@ -941,13 +1255,18 @@ func test_generated_biome_runtime_consumption() -> void:
 			"%s route remains a terrain tile" % String(biome_id)
 		)
 		assert_true(
-			layer.get_resolved_material_asset_path(route_probe).is_empty(),
-			"%s route tile is not replaced by generated material"
+			layer.get_resolved_material_asset_path(route_probe).contains(
+				expected_theme_fragment
+			),
+			"%s route uses its generated theme material"
 			% String(biome_id)
 		)
 		assert_true(
-			layer.get_resolved_asset_path(route_probe).contains(String(route_tag)),
-			"%s route keeps its manifest SVG asset" % String(biome_id)
+			layer.get_resolved_material_asset_path(route_probe).contains(
+				"path_variation"
+			),
+			"%s route renders with the generated path PNG"
+			% String(biome_id)
 		)
 		var passage_probe := Vector2i(19, 3)
 		assert_eq(
@@ -961,13 +1280,30 @@ func test_generated_biome_runtime_consumption() -> void:
 			"%s passage remains a passage tile" % String(biome_id)
 		)
 		assert_true(
-			layer.get_resolved_material_asset_path(passage_probe).is_empty(),
-			"%s passage tile is not replaced by generated material"
+			layer.get_resolved_material_asset_path(passage_probe).contains(
+				expected_theme_fragment
+			),
+			"%s passage uses its generated theme material"
 			% String(biome_id)
 		)
 		assert_true(
-			layer.get_resolved_asset_path(passage_probe).contains(String(passage_tag)),
-			"%s passage keeps its manifest SVG asset" % String(biome_id)
+			layer.get_resolved_material_asset_path(passage_probe).contains(
+				"road_border_defined"
+			),
+			"%s passage renders with the defined-border road PNG"
+			% String(biome_id)
+		)
+		var passage_material_id := layer.get_resolved_material_asset_id(passage_probe)
+		assert_true(
+			String(passage_material_id).ends_with("__horizontal")
+			or String(passage_material_id).ends_with("__vertical"),
+			"%s passage road material is oriented"
+			% String(biome_id)
+		)
+		assert_true(
+			loaded_surface_ids.has(passage_material_id),
+			"%s loads the generated passage road texture variant"
+			% String(biome_id)
 		)
 		var rendered_material_ids: Dictionary = {}
 		for rendered_id in layer.get_rendered_surface_material_ids():
@@ -982,27 +1318,49 @@ func test_generated_biome_runtime_consumption() -> void:
 			assert_true(
 				rendered_material_ids.has(selected_id),
 				"%s renders selected material %s"
-				% [String(biome_id), String(selected_id)]
+			% [String(biome_id), String(selected_id)]
 			)
 		assert_true(
-			rendered_material_ids.has(route_texture_id),
-			"%s renders semantic route texture %s"
+			rendered_material_ids.has(horizontal_border_id),
+			"%s renders the horizontal road-border material"
+			% String(biome_id)
+		)
+		assert_true(
+			rendered_material_ids.has(vertical_border_id),
+			"%s renders the vertical road-border material"
+			% String(biome_id)
+		)
+		assert_true(
+			rendered_material_ids.has(
+				layer.get_resolved_material_asset_id(main_road_probe)
+			),
+			"%s renders the horizontal generated road material" % String(biome_id)
+		)
+		assert_true(
+			rendered_material_ids.has(
+				layer.get_resolved_material_asset_id(vertical_main_road_probe)
+			),
+			"%s renders the vertical generated road material" % String(biome_id)
+		)
+		assert_true(
+			rendered_material_ids.has(
+				layer.get_resolved_material_asset_id(route_probe)
+			),
+			"%s renders the generated route material" % String(biome_id)
+		)
+		assert_true(
+			rendered_material_ids.has(passage_material_id),
+			"%s renders the generated passage road material" % String(biome_id)
+		)
+		assert_true(
+			not rendered_material_ids.has(route_texture_id),
+			"%s no longer renders legacy semantic route texture %s"
 			% [String(biome_id), String(route_texture_id)]
 		)
 		assert_true(
-			rendered_material_ids.has(passage_texture_id),
-			"%s renders semantic passage texture %s"
+			not rendered_material_ids.has(passage_texture_id),
+			"%s no longer renders legacy semantic passage texture %s"
 			% [String(biome_id), String(passage_texture_id)]
-		)
-		assert_eq(
-			layer._forest_surface_texture_world_size(route_texture_id),
-			BiomeTileLayer.SEMANTIC_SURFACE_TEXTURE_WORLD_SIZE,
-			"%s route tile texture uses one-cell density" % String(biome_id)
-		)
-		assert_eq(
-			layer._forest_surface_texture_world_size(passage_texture_id),
-			BiomeTileLayer.SEMANTIC_SURFACE_TEXTURE_WORLD_SIZE,
-			"%s passage tile texture uses one-cell density" % String(biome_id)
 		)
 		if biome_id == &"toxic_wastes":
 			for rendered_id in rendered_material_ids:
@@ -1840,6 +2198,28 @@ func _find_surface_material_id(
 			return material_id
 	return &""
 
+func _surface_textures_have_same_pixels(
+	layer: BiomeTileLayer,
+	first_id: StringName,
+	second_id: StringName
+) -> bool:
+	var first_texture := layer._forest_surface_textures.get(first_id) as Texture2D
+	var second_texture := layer._forest_surface_textures.get(second_id) as Texture2D
+	if first_texture == null or second_texture == null:
+		return false
+	var first_image := first_texture.get_image()
+	var second_image := second_texture.get_image()
+	if (
+		first_image == null
+		or second_image == null
+		or first_image.is_empty()
+		or second_image.is_empty()
+	):
+		return false
+	if first_image.get_size() != second_image.get_size():
+		return false
+	return first_image.get_data() == second_image.get_data()
+
 func _manifest_surface_texture_id(section: StringName, tile_id: StringName) -> StringName:
 	return StringName("%s/%s" % [String(section), String(tile_id)])
 
@@ -1919,6 +2299,7 @@ func _assert_marsh_routes_are_lifted(
 		if (
 			not source_path.contains("path_variation")
 			and not source_path.contains("road_variation")
+			and not source_path.contains("road_border_defined")
 		):
 			continue
 		matched += 1
