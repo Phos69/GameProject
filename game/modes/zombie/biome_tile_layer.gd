@@ -52,7 +52,9 @@ const MARSH_SURFACE_TEXTURE_WORLD_SIZE := 512.0
 const MARSH_GROUND_TEXTURE_WORLD_SIZE := 1024.0
 const BURNING_SURFACE_TEXTURE_WORLD_SIZE := 512.0
 const GENERATED_SURFACE_RUN_OVERDRAW_PIXELS := 1.5
-const ROAD_BORDER_OVERLAY_HALF_WIDTH_TILES := 0.32
+# Mezza larghezza della strip di confine: 0.5 tile per lato = 1 tile totale,
+# proporzione della banda di bordo nell'asset madre (32% su ~3 tile di strada).
+const ROAD_BORDER_OVERLAY_HALF_WIDTH_TILES := 0.5
 const FOREST_SURFACE_TEXTURE_IDS: Array[StringName] = [
 	&"forest_grass",
 	&"forest_path",

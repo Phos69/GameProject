@@ -20,7 +20,12 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
   QA `biome_art_infected_plains` allineata al contratto post follow-up
   (base core + overlay `__edge_*`) e spacchettata in condizioni singole. GUT
   assets/environment e QA visuale (5 biomi, review, board generated_art)
-  verdi.
+  verdi. Tuning visibilita': strip a 1 tile
+  (`ROAD_BORDER_OVERLAY_HALF_WIDTH_TILES` 0.32→0.5), crop allineato al core
+  (`ROAD_BORDER_SIDE_STRIP_RATIO` 0.42→0.32, core + strip ricompongono
+  l'asset madre) e feather alpha ridotto (0.22→0.08): prima la banda di bordo
+  era quasi invisibile a schermo, ora il confine legge come nel PNG sorgente
+  (verificato con zoom su frozen, toxic e forest).
 - Unificazione strade biomi, fase 3 (`docs/biome_road_unification_plan.md`):
   fusi i rami route forest/generated del resolver in un percorso unico con
   helper passage condivisi (la logica endpoint/connector era quadruplicata);

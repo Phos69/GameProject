@@ -268,6 +268,18 @@ in condizioni singole. Verifica: GUT assets+environment verdi, QA dei biomi
 generated + infected_plains + review + board generated_art exit 0, ispezione
 confine su capture forest e frozen.
 
+**Tuning visibilita' strip 2026-07-09.** La prima resa della strip era
+invisibile a schermo: 0,64 tile totali con feather alpha 0,22 per lato
+lasciavano opaco solo un filo di pixel e il crop 0,42 comprimeva la banda di
+ciottoli. Nuovi valori: `ROAD_BORDER_SIDE_STRIP_RATIO = 0.32` (la strip
+mostra esattamente la banda che il core scarta: core + strip ricompongono
+l'asset madre), `ROAD_TRANSITION_OVERLAY_FEATHER_RATIO = 0.08` (feather
+minimo anti-rettangolo), `ROAD_BORDER_OVERLAY_HALF_WIDTH_TILES = 0.5`
+(strip da 1 tile, proporzione della banda nell'asset madre). Verificato con
+zoom 2x su frozen (banda ghiaia+neve) e toxic (ghiaia+muschio) e a zoom
+naturale su forest (cordolo chiaro): il confine ora legge come nel PNG
+sorgente. GUT assets verdi, QA 5 biomi + review exit 0.
+
 ### Fase 4 — Pulizia asset e non-strada
 
 - Decidere il destino degli asset morti: `road_variation_01` dei 4 temi

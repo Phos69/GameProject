@@ -16,8 +16,12 @@ const ROAD_CORE_CROP_MARGIN_RATIO := 0.32
 ## L'overlay bordo usa la fascia esterna piu una piccola porzione di strada,
 ## cosi il profilo ground->road resta leggibile anche quando viene compresso
 ## dentro mezza cella logica.
-const ROAD_BORDER_SIDE_STRIP_RATIO := 0.42
-const ROAD_TRANSITION_OVERLAY_FEATHER_RATIO := 0.22
+## Stessa frazione del crop core: la strip mostra esattamente la banda di
+## bordo che il core scarta, cosi' core + strip ricompongono l'asset madre.
+const ROAD_BORDER_SIDE_STRIP_RATIO := 0.32
+## Feather minimo: serve solo a non far leggere il rettangolo dell'overlay;
+## con valori alti la banda di bordo dell'asset sparisce in trasparenza.
+const ROAD_TRANSITION_OVERLAY_FEATHER_RATIO := 0.08
 # Blend ridotti (ART-VIS-FIX): a 0.16/0.24 route e ghiaccio diventavano quasi
 # indistinguibili dalla neve sovraesposta (VIS-002/VIS-006). Il minimo utile per
 # il contratto "snow softened" del test e' ~0.10.
