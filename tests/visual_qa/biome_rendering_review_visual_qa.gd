@@ -375,6 +375,8 @@ func _assert_generated_route_path(
 			not expect_oriented_id
 			or String(material_id).ends_with("__horizontal")
 			or String(material_id).ends_with("__vertical")
+			or String(material_id).ends_with("__core_horizontal")
+			or String(material_id).ends_with("__core_vertical")
 		)
 	):
 		return

@@ -2,11 +2,13 @@
 
 Stato: completato 2026-07-03. Tutti e cinque i biomi hanno il pass applicato,
 la QA dedicata verde e i guardrail GUT estesi; il review completo
-`biome_rendering_review_visual_qa.gd` chiude con exit code `0`. Dal pass
-2026-07-09 le strade piene e i passage road-like tra biomi dei temi generated
-renderizzano la superficie con `road_border_defined__vertical`/`__horizontal`
-del bioma, mantenendo solo `tile_id` e sezione `passage_tiles` per
-semantica/collisioni. Restano fuori
+`biome_rendering_review_visual_qa.gd` chiude con exit code `0`. Dal pass di
+unificazione strade 2026-07-09 (`docs/biome_road_unification_plan.md`, fasi
+0-1) le celle interne `main_road`/`road` dei temi generated renderizzano il
+core ritagliato `road_border_defined__core_vertical`/`__core_horizontal`,
+mentre edge, curve, incroci e passage road-like restano su
+`road_border_defined__vertical`/`__horizontal` del bioma, mantenendo solo
+`tile_id` e sezione `passage_tiles` per semantica/collisioni. Restano fuori
 scope i residui documentati in fondo a questo file (sezione "Residui e
 riclassificazioni").
 

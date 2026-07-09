@@ -997,6 +997,30 @@ func _register_road_border_orientation_textures(
 		)
 	)
 	_register_surface_texture(rotated_id, asset_path, rotated_texture)
+	var core_source := GENERATED_TEXTURE_TOOLS.build_road_core_surface_texture(
+		_load_generated_texture(asset_path),
+		biome_id,
+		asset_path,
+		source_orientation
+	)
+	if core_source == null:
+		return
+	_register_surface_texture(
+		GENERATED_ART_CATALOG.road_core_material_id(asset_path, source_orientation),
+		asset_path,
+		core_source
+	)
+	var core_rotated := (
+		GENERATED_TEXTURE_TOOLS.rotate_repeating_texture_clockwise(
+			core_source,
+			"%s|road_core_%s" % [asset_path, String(rotated_orientation)]
+		)
+	)
+	_register_surface_texture(
+		GENERATED_ART_CATALOG.road_core_material_id(asset_path, rotated_orientation),
+		asset_path,
+		core_rotated
+	)
 
 func _register_road_surface_orientation_textures(
 	asset_path: String,
@@ -1039,8 +1063,10 @@ func _register_forest_road_border_orientation_textures(
 		asset_path,
 		horizontal_texture
 	)
-	var vertical_core_texture := _build_forest_road_core_texture(
-		vertical_texture
+	var vertical_core_texture := GENERATED_TEXTURE_TOOLS.crop_road_core_texture(
+		vertical_texture,
+		GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_VERTICAL,
+		"%s|forest_road_core" % asset_path
 	)
 	_register_surface_texture(
 		FOREST_ROAD_CORE_VERTICAL_TEXTURE_ID,
@@ -1058,34 +1084,6 @@ func _register_forest_road_border_orientation_textures(
 		asset_path,
 		horizontal_core_texture
 	)
-
-func _build_forest_road_core_texture(
-	source_texture: Texture2D
-) -> Texture2D:
-	if source_texture == null:
-		return null
-	var image := source_texture.get_image()
-	if image == null or image.is_empty():
-		return null
-	if image.is_compressed():
-		var decompress_error := image.decompress()
-		if decompress_error != OK:
-			return null
-	image.convert(Image.FORMAT_RGBA8)
-	var horizontal_margin := roundi(float(image.get_width()) * 0.32)
-	var source_rect := Rect2i(
-		Vector2i(horizontal_margin, 0),
-		Vector2i(
-			image.get_width() - horizontal_margin * 2,
-			image.get_height()
-		)
-	)
-	if source_rect.size.x <= 0 or source_rect.size.y <= 0:
-		return null
-	var core_image := image.get_region(source_rect)
-	core_image.fix_alpha_edges()
-	core_image.generate_mipmaps()
-	return ImageTexture.create_from_image(core_image)
 
 func _apply_offset_ground_macro_texture() -> void:
 	var ground_id := &""

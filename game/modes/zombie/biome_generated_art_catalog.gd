@@ -5,37 +5,85 @@ const ASSET_ROOT := "res://assets/environment/isometric/generated_images"
 const EXPECTED_TOTAL_ASSET_COUNT := 195
 const EXPECTED_ACTIVE_ASSET_COUNT := 133
 const SURFACE_MACRO_CELL_SIZE := 8
-const COHERENT_SURFACE_SAMPLE_THEMES: Array[StringName] = [
-	&"frozen_tundra",
-	&"swamp",
-	&"urban_ruins",
-	&"volcanic",
-]
-const REGION_COHERENT_SURFACE_SAMPLE_THEMES: Array[StringName] = [
-	&"frozen_tundra",
-	&"swamp",
-	&"urban_ruins",
-	&"volcanic",
-]
-const GROUND_DETAIL_POOL_THEMES: Array[StringName] = [
-	&"desert",
-	&"forest",
-]
-const ROAD_BORDER_THEME_IDS: Array[StringName] = [
-	&"frozen_tundra",
-	&"swamp",
-	&"urban_ruins",
-	&"volcanic",
-]
+
 const ROAD_BORDER_ORIENTATION_HORIZONTAL: StringName = &"horizontal"
 const ROAD_BORDER_ORIENTATION_VERTICAL: StringName = &"vertical"
 const ROAD_BORDER_ORIENTATIONS: Array[StringName] = [
 	ROAD_BORDER_ORIENTATION_HORIZONTAL,
 	ROAD_BORDER_ORIENTATION_VERTICAL,
 ]
-const ROAD_BORDER_HORIZONTAL_SOURCE_THEME_IDS: Array[StringName] = [
-	&"urban_ruins",
-]
+
+const SAMPLING_REGION: StringName = &"region"
+const SAMPLING_MACRO_GROUND: StringName = &"macro_ground"
+const ROAD_STYLE_BORDER_DEFINED: StringName = &"border_defined"
+const ROAD_STYLE_LEGACY: StringName = &"legacy"
+
+## Contratto unico per tema. Ogni campo sostituisce una delle vecchie liste
+## parallele o dei branch per-tema sparsi nel file:
+## - sampling: SAMPLING_REGION = un solo asset per ruolo su tutta la regione;
+##   SAMPLING_MACRO_GROUND = ground per macro-cella 8x8, altri ruoli per cella.
+## - road_style: ROAD_STYLE_BORDER_DEFINED = le strade usano il PNG
+##   road_border_defined orientabile e road_variation/transition_ground_to_road
+##   sono declassati a detail; ROAD_STYLE_LEGACY = road_variation resta ROLE_ROAD.
+## - native_border_orientation: orientamento del PNG road_border_defined su
+##   disco; la variante opposta viene ruotata a runtime.
+## - ground_detail_in_pool: i detail entrano nel pool ground.
+## - detail_ground_variations: suffissi di base_ground_variation declassati a
+##   ROLE_DETAIL perche' rompono la superficie base (es. urban_ruins: il
+##   lichene chiaro 01 e la ghiaia bruna 04 leggevano come scacchiera di
+##   pannelli contro la coppia di rubble grigi, ART-VIS-FIX VIS-002).
+## - path_transitions: false = ground_to_path renderizza direttamente il path
+##   (taglio netto, nessuna texture intermedia).
+const THEME_CONTRACTS: Dictionary = {
+	&"desert": {
+		&"sampling": SAMPLING_MACRO_GROUND,
+		&"road_style": ROAD_STYLE_LEGACY,
+		&"native_border_orientation": ROAD_BORDER_ORIENTATION_VERTICAL,
+		&"ground_detail_in_pool": true,
+		&"detail_ground_variations": [],
+		&"path_transitions": true,
+	},
+	&"forest": {
+		&"sampling": SAMPLING_MACRO_GROUND,
+		&"road_style": ROAD_STYLE_LEGACY,
+		&"native_border_orientation": ROAD_BORDER_ORIENTATION_VERTICAL,
+		&"ground_detail_in_pool": true,
+		&"detail_ground_variations": [],
+		&"path_transitions": true,
+	},
+	&"frozen_tundra": {
+		&"sampling": SAMPLING_REGION,
+		&"road_style": ROAD_STYLE_BORDER_DEFINED,
+		&"native_border_orientation": ROAD_BORDER_ORIENTATION_VERTICAL,
+		&"ground_detail_in_pool": false,
+		&"detail_ground_variations": ["02", "03", "04"],
+		&"path_transitions": false,
+	},
+	&"swamp": {
+		&"sampling": SAMPLING_REGION,
+		&"road_style": ROAD_STYLE_BORDER_DEFINED,
+		&"native_border_orientation": ROAD_BORDER_ORIENTATION_VERTICAL,
+		&"ground_detail_in_pool": false,
+		&"detail_ground_variations": ["02", "03"],
+		&"path_transitions": false,
+	},
+	&"urban_ruins": {
+		&"sampling": SAMPLING_REGION,
+		&"road_style": ROAD_STYLE_BORDER_DEFINED,
+		&"native_border_orientation": ROAD_BORDER_ORIENTATION_HORIZONTAL,
+		&"ground_detail_in_pool": false,
+		&"detail_ground_variations": ["01", "04"],
+		&"path_transitions": false,
+	},
+	&"volcanic": {
+		&"sampling": SAMPLING_REGION,
+		&"road_style": ROAD_STYLE_BORDER_DEFINED,
+		&"native_border_orientation": ROAD_BORDER_ORIENTATION_VERTICAL,
+		&"ground_detail_in_pool": false,
+		&"detail_ground_variations": ["01", "03", "04"],
+		&"path_transitions": false,
+	},
+}
 
 const ROLE_GROUND: StringName = &"ground"
 const ROLE_PATH: StringName = &"path"
@@ -83,6 +131,46 @@ const CLIFF_ROLES: Array[StringName] = [
 ]
 
 static var _profiles: Dictionary = {}
+
+static func get_theme_contract(theme_id: StringName) -> Dictionary:
+	return (THEME_CONTRACTS.get(theme_id, {}) as Dictionary).duplicate(true)
+
+static func theme_native_border_orientation(theme_id: StringName) -> StringName:
+	return StringName(_theme_contract_value(
+		theme_id,
+		&"native_border_orientation",
+		ROAD_BORDER_ORIENTATION_VERTICAL
+	))
+
+static func _theme_sampling(theme_id: StringName) -> StringName:
+	return StringName(_theme_contract_value(
+		theme_id,
+		&"sampling",
+		SAMPLING_MACRO_GROUND
+	))
+
+static func _theme_uses_road_border(theme_id: StringName) -> bool:
+	return StringName(_theme_contract_value(
+		theme_id,
+		&"road_style",
+		ROAD_STYLE_LEGACY
+	)) == ROAD_STYLE_BORDER_DEFINED
+
+static func _theme_ground_detail_in_pool(theme_id: StringName) -> bool:
+	return bool(_theme_contract_value(theme_id, &"ground_detail_in_pool", false))
+
+static func _theme_detail_ground_variations(theme_id: StringName) -> Array:
+	return _theme_contract_value(theme_id, &"detail_ground_variations", []) as Array
+
+static func _theme_uses_path_transitions(theme_id: StringName) -> bool:
+	return bool(_theme_contract_value(theme_id, &"path_transitions", true))
+
+static func _theme_contract_value(
+	theme_id: StringName,
+	key: StringName,
+	default_value: Variant
+) -> Variant:
+	return (THEME_CONTRACTS.get(theme_id, {}) as Dictionary).get(key, default_value)
 
 static func has_generated_theme(biome_id: StringName) -> bool:
 	return not get_theme_id_for_biome(biome_id).is_empty()
@@ -210,9 +298,9 @@ static func select_surface_asset_path(
 		return ""
 	var sample_cell := cell
 	var theme_id := get_theme_id_for_biome(biome_id)
-	if REGION_COHERENT_SURFACE_SAMPLE_THEMES.has(theme_id):
+	if _theme_sampling(theme_id) == SAMPLING_REGION:
 		sample_cell = Vector2i.ZERO
-	elif role == ROLE_GROUND or COHERENT_SURFACE_SAMPLE_THEMES.has(theme_id):
+	elif role == ROLE_GROUND:
 		sample_cell = Vector2i(
 			floori(float(cell.x) / float(SURFACE_MACRO_CELL_SIZE)),
 			floori(float(cell.y) / float(SURFACE_MACRO_CELL_SIZE))
@@ -230,12 +318,8 @@ static func resolve_runtime_surface_role(
 	biome_id: StringName,
 	role: StringName
 ) -> StringName:
-	if (
-		biome_id != &"toxic_wastes"
-		and biome_id != &"burning_fields"
-		and biome_id != &"frozen_outskirts"
-		and biome_id != &"drowned_marsh"
-	):
+	var theme_id := get_theme_id_for_biome(biome_id)
+	if theme_id.is_empty() or _theme_uses_path_transitions(theme_id):
 		return role
 	match role:
 		ROLE_GROUND_TO_PATH:
@@ -290,9 +374,30 @@ static func oriented_road_surface_material_id(
 ) -> StringName:
 	return oriented_road_border_material_id(asset_path, orientation)
 
+## Materiale per l'interno della carreggiata: core ritagliato dal PNG
+## road_border_defined, senza le strisce di bordo laterali. Stessa convenzione
+## di naming del core forestale (forest_road_border__core_vertical).
+static func road_core_material_id(
+	asset_path: String,
+	orientation: StringName
+) -> StringName:
+	if asset_path.is_empty():
+		return &""
+	var safe_orientation := orientation
+	if not ROAD_BORDER_ORIENTATIONS.has(safe_orientation):
+		safe_orientation = ROAD_BORDER_ORIENTATION_VERTICAL
+	return StringName(
+		"%s__core_%s"
+		% [String(material_id_from_path(asset_path)), String(safe_orientation)]
+	)
+
 static func road_border_source_orientation(asset_path: String) -> StringName:
-	for theme_id in ROAD_BORDER_HORIZONTAL_SOURCE_THEME_IDS:
-		if asset_path.contains("/%s/" % String(theme_id)):
+	for theme_id in THEME_CONTRACTS:
+		if (
+			theme_native_border_orientation(theme_id)
+			== ROAD_BORDER_ORIENTATION_HORIZONTAL
+			and asset_path.contains("/%s/" % String(theme_id))
+		):
 			return ROAD_BORDER_ORIENTATION_HORIZONTAL
 	return ROAD_BORDER_ORIENTATION_VERTICAL
 
@@ -385,7 +490,7 @@ static func _surface_pool(
 	var resolved_role := role
 	if (
 		role == ROLE_ROAD
-		and ROAD_BORDER_THEME_IDS.has(get_theme_id_for_biome(biome_id))
+		and _theme_uses_road_border(get_theme_id_for_biome(biome_id))
 	):
 		resolved_role = ROLE_GROUND_TO_ROAD
 	if role == &"path_to_road":
@@ -398,7 +503,7 @@ static func _surface_pool(
 	return pool
 
 static func _ground_pool_accepts_detail(biome_id: StringName) -> bool:
-	return GROUND_DETAIL_POOL_THEMES.has(get_theme_id_for_biome(biome_id))
+	return _theme_ground_detail_in_pool(get_theme_id_for_biome(biome_id))
 
 static func _ensure_profiles() -> void:
 	if not _profiles.is_empty():
@@ -464,7 +569,7 @@ static func _append_directory_assets(
 			not cliff_assets
 			and role == ROLE_GROUND_TO_ROAD
 			and file_name.contains("road_border_defined")
-			and ROAD_BORDER_THEME_IDS.has(theme_id)
+			and _theme_uses_road_border(theme_id)
 		):
 			var road_paths := profile.get(ROLE_ROAD, PackedStringArray()) as PackedStringArray
 			road_paths.append(asset_path)
@@ -474,58 +579,23 @@ static func _surface_role_for_file(
 	theme_id: StringName,
 	file_name: String
 ) -> StringName:
-	if (
-		theme_id == &"frozen_tundra"
-		and (
-			file_name.contains("base_ground_variation_02")
-			or file_name.contains("base_ground_variation_03")
-			or file_name.contains("base_ground_variation_04")
-		)
-	):
-		return ROLE_DETAIL
-	if (
-		theme_id == &"swamp"
-		and (
-			file_name.contains("base_ground_variation_02")
-			or file_name.contains("base_ground_variation_03")
-		)
-	):
-		return ROLE_DETAIL
-	if (
-		theme_id == &"volcanic"
-		and (
-			file_name.contains("base_ground_variation_01")
-			or file_name.contains("base_ground_variation_03")
-			or file_name.contains("base_ground_variation_04")
-		)
-	):
-		return ROLE_DETAIL
-	if (
-		theme_id == &"urban_ruins"
-		and (
-			file_name.contains("base_ground_variation_01")
-			or file_name.contains("base_ground_variation_04")
-		)
-	):
-		# The light lichen sheet (01) and the brown gravel (04) contrast too much
-		# with the grey rubble pair: at macro-cell granularity they read as a
-		# checkerboard of panels (ART-VIS-FIX, VIS-002). Keep the tonally close
-		# rubble variants (02/03) as the base surface.
-		return ROLE_DETAIL
+	if file_name.contains("base_ground_variation"):
+		for variation in _theme_detail_ground_variations(theme_id):
+			if file_name.contains("base_ground_variation_%s" % String(variation)):
+				return ROLE_DETAIL
+		return ROLE_GROUND
 	if file_name.contains("transition_ground_to_path"):
 		return ROLE_GROUND_TO_PATH
 	if file_name.contains("road_border_defined"):
 		return ROLE_GROUND_TO_ROAD
 	if file_name.contains("transition_ground_to_road"):
-		if ROAD_BORDER_THEME_IDS.has(theme_id):
+		if _theme_uses_road_border(theme_id):
 			return ROLE_DETAIL
 		return ROLE_GROUND_TO_ROAD
-	if file_name.contains("base_ground_variation"):
-		return ROLE_GROUND
 	if file_name.contains("path_variation"):
 		return ROLE_PATH
 	if file_name.contains("road_variation"):
-		if ROAD_BORDER_THEME_IDS.has(theme_id):
+		if _theme_uses_road_border(theme_id):
 			return ROLE_DETAIL
 		return ROLE_ROAD
 	if file_name.contains("detail_decal"):

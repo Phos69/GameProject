@@ -126,6 +126,14 @@ const GENERATED_THEME_ROAD_BORDER_TILE_IDS: Array[StringName] = [
 	TILE_ROAD_CURVE_SOUTH,
 	TILE_ROAD_CURVE_WEST,
 ]
+# Celle interne della carreggiata: renderizzano il core ritagliato del
+# road_border_defined invece del PNG intero, cosi' le strisce di bordo non si
+# ripetono in mezzo alle strade larghe. Edge, curve, incroci e passage
+# mantengono il PNG di bordo completo.
+const GENERATED_THEME_ROAD_CORE_TILE_IDS: Array[StringName] = [
+	TILE_MAIN_ROAD,
+	TILE_ROAD,
+]
 const GENERATED_THEME_GENERATED_ROUTE_TILE_IDS: Array[StringName] = [
 	TILE_MAIN_ROAD,
 	TILE_ROAD,
@@ -1163,9 +1171,19 @@ func _generated_material_id_for_cell(
 				resolve_route_surface_orientation_for_cell(layout, cell, tile_id)
 			)
 		return GENERATED_ART_CATALOG.material_id_from_path(asset_path)
+	var border_orientation := resolve_road_border_orientation_for_cell(
+		layout,
+		cell,
+		tile_id
+	)
+	if GENERATED_THEME_ROAD_CORE_TILE_IDS.has(tile_id):
+		return GENERATED_ART_CATALOG.road_core_material_id(
+			asset_path,
+			border_orientation
+		)
 	return GENERATED_ART_CATALOG.oriented_road_border_material_id(
 		asset_path,
-		resolve_road_border_orientation_for_cell(layout, cell, tile_id)
+		border_orientation
 	)
 
 func resolve_route_surface_orientation_for_cell(

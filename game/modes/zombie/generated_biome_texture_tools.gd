@@ -9,6 +9,10 @@ const BURNING_SURFACE_EDGE_BLEND_PIXELS := 40
 const FROZEN_SURFACE_EDGE_BLEND_PIXELS := 40
 const MARSH_SURFACE_EDGE_BLEND_PIXELS := 40
 const GROUND_MACRO_SEAM_BLEND_PIXELS := 128
+## Frazione di larghezza del PNG road_border_defined occupata da ciascuna
+## striscia di bordo; il core interno e' la fascia centrale restante.
+## Stesso rapporto usato dal core forestale di infected_plains.
+const ROAD_CORE_CROP_MARGIN_RATIO := 0.32
 # Blend ridotti (ART-VIS-FIX): a 0.16/0.24 route e ghiaccio diventavano quasi
 # indistinguibili dalla neve sovraesposta (VIS-002/VIS-006). Il minimo utile per
 # il contratto "snow softened" del test e' ~0.10.
@@ -116,6 +120,92 @@ static func normalize_surface_texture(
 	if not asset_path.is_empty() and normalized != null:
 		_normalized_texture_cache[cache_key] = normalized
 	return normalized
+
+## Interno carreggiata: ritaglia le strisce di bordo dal PNG road_border_defined.
+## `source_orientation` indica dove corrono le strisce nel PNG sorgente:
+## &"vertical" = strisce a sinistra/destra, &"horizontal" = strisce in alto/basso.
+static func crop_road_core_texture(
+	source_texture: Texture2D,
+	source_orientation: StringName,
+	cache_key: String = "",
+	margin_ratio: float = ROAD_CORE_CROP_MARGIN_RATIO
+) -> Texture2D:
+	if source_texture == null:
+		return null
+	var full_key := ""
+	if not cache_key.is_empty():
+		full_key = "road_core_crop|%s|%s|%.2f" % [
+			cache_key,
+			String(source_orientation),
+			margin_ratio,
+		]
+		if _normalized_texture_cache.has(full_key):
+			return _normalized_texture_cache[full_key] as Texture2D
+	var image := _readable_texture_image(source_texture)
+	if image == null or image.is_empty():
+		return null
+	image.convert(Image.FORMAT_RGBA8)
+	var margin_x := 0
+	var margin_y := 0
+	if source_orientation == &"horizontal":
+		margin_y = roundi(float(image.get_height()) * margin_ratio)
+	else:
+		margin_x = roundi(float(image.get_width()) * margin_ratio)
+	var source_rect := Rect2i(
+		Vector2i(margin_x, margin_y),
+		Vector2i(
+			image.get_width() - margin_x * 2,
+			image.get_height() - margin_y * 2
+		)
+	)
+	if source_rect.size.x <= 0 or source_rect.size.y <= 0:
+		return null
+	var core_image := image.get_region(source_rect)
+	core_image.fix_alpha_edges()
+	core_image.generate_mipmaps()
+	var result := ImageTexture.create_from_image(core_image)
+	if not full_key.is_empty():
+		_normalized_texture_cache[full_key] = result
+	return result
+
+## Come normalize_surface_texture ma con il ritaglio core inserito prima
+## dell'atlas specchiato: ritagliare l'atlas gia' composto lascerebbe le
+## strisce di bordo duplicate al centro della carreggiata (toxic_wastes).
+static func build_road_core_surface_texture(
+	raw_texture: Texture2D,
+	biome_id: StringName,
+	asset_path: String,
+	source_orientation: StringName
+) -> Texture2D:
+	if raw_texture == null:
+		return null
+	var cache_key := "road_core_surface|%s|%s|%s" % [
+		String(biome_id),
+		asset_path,
+		String(source_orientation),
+	]
+	if not asset_path.is_empty() and _normalized_texture_cache.has(cache_key):
+		return _normalized_texture_cache[cache_key] as Texture2D
+	var normalized := _normalize_repeating_texture_uncached(
+		raw_texture,
+		surface_edge_trim_pixels(biome_id),
+		should_harmonize_surface_edges(biome_id),
+		surface_edge_blend_pixels(biome_id)
+	)
+	var core := crop_road_core_texture(normalized, source_orientation)
+	if core == null:
+		return null
+	if _surface_uses_mirrored_atlas(biome_id, asset_path):
+		core = _build_mirrored_repeat_atlas(core)
+	if biome_id == &"frozen_outskirts":
+		core = _harmonize_frozen_surface_texture(core, asset_path)
+	if biome_id == &"drowned_marsh":
+		core = _harmonize_swamp_surface_texture(core, asset_path)
+	if biome_id == &"burning_fields":
+		core = _harmonize_volcanic_surface_texture(core, asset_path)
+	if not asset_path.is_empty() and core != null:
+		_normalized_texture_cache[cache_key] = core
+	return core
 
 ## `cache_key` (di norma l'asset_path sorgente) abilita la cache di sessione:
 ## vuoto = normalizzazione sempre ricalcolata (input non identificabili per path).

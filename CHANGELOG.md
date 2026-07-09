@@ -8,6 +8,22 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Added
 
+- Unificazione strade biomi, fasi 0-1 (`docs/biome_road_unification_plan.md`):
+  `BiomeGeneratedArtCatalog` ora deriva sampling, stile strada, orientamento
+  nativo del bordo e declassamenti ground da un contratto unico per tema
+  (`THEME_CONTRACTS`), al posto di quattro liste parallele e dei branch
+  per-tema; comportamento runtime invariato (fase 0). Le celle interne di
+  `main_road`/`road` dei quattro biomi generated renderizzano il nuovo core
+  ritagliato dal PNG `road_border_defined` (materiali
+  `__core_vertical`/`__core_horizontal`, stesso crop 32% del core forestale,
+  con atlas specchiato e harmonize per-bioma preservati), cosi' le strisce di
+  bordo non si ripetono piu' in mezzo alle strade larghe; edge, curve, incroci
+  e passage mantengono il PNG di bordo orientato (fase 1). Il crop core
+  forestale e' condiviso in `GeneratedBiomeTextureTools.crop_road_core_texture`.
+  Guardrail aggiornati in `generated_texture_test.gd` e
+  `biome_rendering_review_visual_qa.gd`; GUT assets/environment e QA visuale
+  frozen/review verdi.
+
 - Chiusa `REL-001`: export Windows ripetibile da checkout pulito
   (`build/iso_local_sandbox.exe` 99,7 MB + `.pck` 44,4 MB, exit code 0),
   build smoke sull'eseguibile esportato PASS (flusso menu, Character Select,

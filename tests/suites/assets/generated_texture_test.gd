@@ -873,6 +873,14 @@ func test_generated_biome_runtime_consumption() -> void:
 		)
 		var first_rendered_id := &""
 		for rendered_id in layer.get_rendered_surface_material_ids():
+			var rendered_text := String(rendered_id)
+			if (
+				rendered_text.ends_with("__core_horizontal")
+				or rendered_text.ends_with("__core_vertical")
+			):
+				# I core strada sono ritagli del PNG di bordo: il contratto di
+				# larghezza qui sotto vale solo per le superfici a tile pieno.
+				continue
 			var rendered_path := String(
 				layer.get_forest_surface_art_asset_paths().get(rendered_id, "")
 			)
@@ -1205,9 +1213,9 @@ func test_generated_biome_runtime_consumption() -> void:
 		)
 		assert_true(
 			String(layer.get_resolved_material_asset_id(main_road_probe)).ends_with(
-				"__horizontal"
+				"__core_horizontal"
 			),
-			"%s horizontal main road uses the rotated road surface material"
+			"%s horizontal main road uses the rotated road core material"
 			% String(biome_id)
 		)
 		assert_eq(
@@ -1225,8 +1233,8 @@ func test_generated_biome_runtime_consumption() -> void:
 		assert_true(
 			String(
 				layer.get_resolved_material_asset_id(vertical_main_road_probe)
-			).ends_with("__vertical"),
-			"%s vertical main road uses the native road surface material"
+			).ends_with("__core_vertical"),
+			"%s vertical main road uses the native road core material"
 			% String(biome_id)
 		)
 		assert_true(
@@ -2399,6 +2407,15 @@ func _assert_frozen_route_textures_are_snow_softened(
 		if load_error != OK:
 			continue
 		var trimmed_source := _trimmed_image_copy(source_image, expected_trim)
+		var material_text := String(material_id)
+		if (
+			material_text.ends_with("__core_horizontal")
+			or material_text.ends_with("__core_vertical")
+		):
+			# I materiali core sono la banda centrale del PNG di bordo: il
+			# confronto va fatto contro la stessa banda della sorgente, non
+			# contro il PNG intero che include le fasce innevate laterali.
+			trimmed_source = _road_core_image_copy(trimmed_source)
 		var source_delta := _average_visible_rgb_delta_to_color(
 			trimmed_source,
 			FROZEN_SNOW_REFERENCE
@@ -2413,6 +2430,21 @@ func _assert_frozen_route_textures_are_snow_softened(
 			"%s texture is softened toward the snow palette" % label
 		)
 	assert_gt(matched, 0, "%s has generated route textures to validate" % label)
+
+func _road_core_image_copy(image: Image) -> Image:
+	if image == null or image.is_empty():
+		return image
+	var margin := roundi(
+		float(image.get_width())
+		* GeneratedBiomeTextureTools.ROAD_CORE_CROP_MARGIN_RATIO
+	)
+	var core_rect := Rect2i(
+		Vector2i(margin, 0),
+		Vector2i(image.get_width() - margin * 2, image.get_height())
+	)
+	if core_rect.size.x <= 0:
+		return image
+	return image.get_region(core_rect)
 
 func _trimmed_image_copy(image: Image, trim: int) -> Image:
 	if image == null or image.is_empty():
