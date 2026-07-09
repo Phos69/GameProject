@@ -807,19 +807,23 @@ multi-bioma.
   route generate preferiscono `road_cell_tags` diagonali e usano i rettangoli
   solo per compatibilita.
 - Nei biomi con `generated_theme_id`, il resolver applica materiali PNG generated
-  a ground, route piene e transizioni strada: `main_road`, `road` e
-  `road_intersection` usano il ruolo `road` con materiali runtime
-  `road_border_defined__vertical`/`__horizontal`, mentre `service_lane`, `ash_lane`,
+  a ground, route piene e transizioni strada. `road_border_defined` fornisce
+  core `__core_vertical`/`__core_horizontal` per la superficie base delle celle
+  road-like (`main_road`, `road`, `road_intersection`, `road_edge`,
+  `road_curve_*` e passage). Le texture `transition_ground_to_road_*` del tema
+  attivo forniscono overlay mono-lato `__edge_west/east/north/south` per le
+  celle route che toccano terreno non-route. Le varianti complete
+  `__vertical`/`__horizontal` restano registrate, ma non vengono piu usate come
+  materiale di una cella intera. `service_lane`, `ash_lane`,
   `packed_snow_path` e `wooden_walkway` usano il ruolo `path`. I passage
   road-like tra biomi (`bridge`, `snow_pass`, `broken_gate`, `burned_road` e
   relative entry/exit) mantengono `tile_id` e sezione `passage_tiles` per
-  collisioni/semantica, ma renderizzano la superficie con lo stesso
-  `road_border_defined__vertical`/`__horizontal` generated del bioma. Lo stesso
-  PNG `road_border_defined` alimenta anche `ground_to_road`, `road_edge` e
-  `road_curve_*`; la source orientation e per-tema (`urban_ruins` e nativo
-  orizzontale e viene ruotato per le strade verticali, gli altri temi attivi
-  restano nativi verticali). `road_variation` resta catalogato come
-  detail/storico e non e' la superficie runtime delle strade nei temi generated.
+  collisioni/semantica, ma renderizzano la superficie con lo stesso materiale
+  strada generated del bioma. Tutti i temi attivi hanno sorgente nativa
+  verticale dopo la normalizzazione di `urban_ruins`; il contratto conserva
+  comunque `native_border_orientation` per temi futuri. `road_variation` resta
+  catalogato come detail/storico e non e' la superficie runtime delle strade
+  nei temi generated.
 - `IsometricTileCatalog` possiede solo ID statici, sezioni manifest e liste di
   route/tile richiesti. `IsometricTileResolver` mantiene alias pubblici per i
   consumer esistenti e resta l'unico responsabile della scelta per-cella.
@@ -865,9 +869,10 @@ multi-bioma.
   per prato e route. I tile semantici `forest_path`, `forest_road`,
   `grass_to_path`, `grass_to_road`, `path_to_road` e i passage `road`/entry/exit
   mantengono ID e section originali per debug, ma le mesh runtime usano
-  `forest_road_border__horizontal`/`__vertical` sui margini e un core strada
-  derivato dallo stesso PNG per gli interni. Questo mantiene un taglio netto con
-  bordo definito verso il terreno su entrambi gli assi ed evita la
+  `forest_road_border_defined__core_horizontal`/`__core_vertical` come base e
+  `grass_to_road_generated__edge_west/east/north/south` solo sui margini che
+  toccano terreno non-route. Questo mantiene un taglio netto con
+  transizione definita verso il terreno su entrambi gli assi ed evita la
   sovrapposizione tra `forest_path`, `forest_road` e bordo strada. La texture
   base `forest_road_border` resta caricata come sorgente, ma non viene
   renderizzata come materiale unico non orientato.
@@ -884,17 +889,20 @@ multi-bioma.
   `drowned_marsh -> swamp`. Il resolver conserva `tile_id`, `section` e
   `role`, aggiunge `material_asset_id`/`material_asset_path` e il layer
   raggruppa le mesh per tale materiale. `urban_ruins` seleziona un materiale
-  stabile per ruolo sull'intera regione; `main_road`, `road`, incroci,
-  `road_edge`/`road_curve_*` e passage road-like tra biomi usano i PNG
-  `road_border_defined` orientati invece di `road_variation` o degli SVG
-  `passage_tiles/*`, mentre le lane tematiche usano `path_variation`. Il
-  resolver assegna a questi materiali un
-  suffisso runtime `__horizontal` o `__vertical` in base alla direzione della
-  route; `BiomeTileLayer` carica la variante verticale nativa e una variante
-  ruotata per i bordi nord/sud, cosi il taglio terreno/strada segue il lato
-  reale della strada in Tossico, Infuocato, Neve e Palude. Gli asset
-  `road_variation` e `transition_ground_to_road` restano catalogati come
-  detail/storico e non sono superfici runtime del Tossico.
+  stabile per ruolo sull'intera regione; `main_road`, `road`, incroci e
+  passage road-like tra biomi usano il core dei PNG `road_border_defined`
+  invece di `road_variation` o degli SVG `passage_tiles/*`; quando toccano
+  terreno non-route il layer aggiunge una strip overlay `__edge_*`, derivata da
+  `transition_ground_to_road_*`, sul lato reale della strada. Le lane tematiche
+  usano `path_variation`. Il resolver
+  assegna alla base un suffisso runtime `__core_horizontal`/`__core_vertical`;
+  `BiomeTileLayer` carica la variante verticale nativa, una variante ruotata e
+  gli overlay mono-lato di transizione con alpha feather per i bordi
+  nord/sud/est/ovest, cosi il taglio
+  terreno/strada segue il lato reale della strada in Tossico, Infuocato, Neve e
+  Palude. Gli asset `road_variation` restano catalogati come detail/storico,
+  mentre `transition_ground_to_road` non viene piu renderizzato come cella piena:
+  e' solo il sorgente degli overlay strada/prato.
   `frozen_tundra` applica lo stesso contratto di selezione regionale e bordo
   strada. Il ground usa una
   quilt runtime `2x2` a periodo world-space `1024`: quattro offset periodici
@@ -906,7 +914,8 @@ multi-bioma.
   contratto regionale e di bordo strada, limita il ground pieno alla base
   variation 02 e mantiene 01, 03 e 04 come detail; il repeat world-space e
   `512`. Il cambio di significato delle mappe `material_asset_*` invalida la
-  `TileBakeCache` tramite format version `22`.
+  `TileBakeCache` tramite la format version corrente (`26` dopo il follow-up
+  overlay mono-lato strada).
   `desert` e il set sostitutivo `forest` sono validati dal catalogo ma non
   hanno un consumer runtime.
   `IsometricCliffMeshBuilder` mantiene le 14 geometrie neighbor-aware per il

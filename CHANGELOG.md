@@ -8,6 +8,19 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Added
 
+- Unificazione strade biomi, sorgente strip confine
+  (`docs/biome_road_unification_plan.md`): l'overlay del confine strada/prato
+  ora ritaglia la fascia di bordo dal PNG madre `road_border_defined` della
+  strada dritta (per i temi generated crop pre-atlas con harmonize per-bioma
+  sulla striscia, nuovo
+  `GeneratedBiomeTextureTools.build_road_border_side_surface_texture`; per il
+  forest dalla `forest_road_border_defined` orientata). Le texture
+  `transition_ground_to_road_*` e `grass_to_road_generated` non sono piu'
+  sorgenti runtime dell'overlay e le relative API di selezione sono rimosse.
+  QA `biome_art_infected_plains` allineata al contratto post follow-up
+  (base core + overlay `__edge_*`) e spacchettata in condizioni singole. GUT
+  assets/environment e QA visuale (5 biomi, review, board generated_art)
+  verdi.
 - Unificazione strade biomi, fase 3 (`docs/biome_road_unification_plan.md`):
   fusi i rami route forest/generated del resolver in un percorso unico con
   helper passage condivisi (la logica endpoint/connector era quadruplicata);
@@ -39,9 +52,12 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
   ritagliato dal PNG `road_border_defined` (materiali
   `__core_vertical`/`__core_horizontal`, stesso crop 32% del core forestale,
   con atlas specchiato e harmonize per-bioma preservati), cosi' le strisce di
-  bordo non si ripetono piu' in mezzo alle strade larghe; edge, curve, incroci
-  e passage mantengono il PNG di bordo orientato (fase 1). Il crop core
-  forestale e' condiviso in `GeneratedBiomeTextureTools.crop_road_core_texture`.
+  bordo non si ripetono piu' in mezzo alle strade larghe; il follow-up
+  edge/core estende lo stesso criterio a incroci, edge/curve e passage, mentre
+  il bordo strada/prato viene disegnato come overlay mono-lato `__edge_*`
+  derivato da `grass_to_road` / `transition_ground_to_road`, invece del PNG
+  completo campionato come cella intera. Il crop core forestale
+  e' condiviso in `GeneratedBiomeTextureTools.crop_road_core_texture`.
   Guardrail aggiornati in `generated_texture_test.gd` e
   `biome_rendering_review_visual_qa.gd`; GUT assets/environment e QA visuale
   frozen/review verdi.
@@ -179,6 +195,21 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Changed
 
+- Corretto il confine strada/prato dopo il refactor route biomi: le celle
+  road-like (`main_road`, `road`, `road_intersection`, edge/curve e passage)
+  usano sempre il core `road_border_defined__core_*` come superficie base,
+  mentre `BiomeTileLayer` disegna sopra una strip `__edge_west/east/north/south`
+  ricavata dalle texture `grass_to_road_generated` /
+  `transition_ground_to_road_*`, solo sui lati che toccano terreno non-route.
+  La strip sta a cavallo del confine (0,32 tile fuori e 0,32 dentro) e usa
+  alpha feather ai margini, cosi le strade strette mantengono asfalto al centro
+  e non raddoppiano la transizione sui bordi larghi. La scelta
+  `transition_ground_to_road_*` ora preferisce la variante straight-road per
+  tema invece dell'hash seed. Il resolver
+  espone `route_cell_road_border_sides`, i controlli GUT coprono interni
+  strada, incroci, passage core/edge e UV delle strip, e
+  `TileBakeCache.FORMAT_VERSION` sale 24->26 per invalidare le mappe material
+  obsolete.
 - Completato il pass `UI-VIS-FIX` su gerarchia HUD, Character Select e boss
   HUD (finding `VIS-007`/`VIS-010`):
   - la card player e' compatta (240 px) e ad altezza contenuto, piazzata per
@@ -203,17 +234,17 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
   - la base occupata degli oggetti usa un bordo scuro invece dell'outline
     color accento che leggeva come marker di selezione;
   - i temi generati renderizzano le route a taglio netto: le transizioni verso
-    path restano path diretto, mentre strade piene, bordi e curve strada usano
-    asset `road_border_defined` tramite i ruoli `road` e `ground_to_road`;
-  - `main_road`, `road` e `road_intersection` dei biomi generated art usano ora
-    i PNG `road_border_defined` con materiali runtime orientati
-    (`__vertical`/`__horizontal`), mentre `service_lane`, `ash_lane`,
-    `packed_snow_path` e `wooden_walkway` usano `path_variation`; anche i
-    passage road-like tra biomi (`bridge`, `snow_pass`, `broken_gate`,
-    `burned_road` e relative entry/exit) renderizzano `road_border_defined`
-    orientato invece dei vecchi SVG `passage_tiles/*` e delle vecchie
-    `road_variation`, cosi le strade principali e i seam usano i nuovi asset
-    con bordo definito;
+    path restano path diretto, mentre strade piene usano il core derivato da
+    `road_border_defined` e bordi/curve aggiungono l'overlay mono-lato
+    ground-to-road;
+  - `main_road`, `road`, `road_intersection` e i passage road-like dei biomi
+    generated art usano ora i PNG `road_border_defined` con core `__core_*`
+    come base e overlay runtime `transition_ground_to_road_*__edge_*` solo sui
+    margini strada/prato,
+    mentre `service_lane`, `ash_lane`,
+    `packed_snow_path` e `wooden_walkway` usano `path_variation`; le vecchie
+    SVG `passage_tiles/*` e `road_variation` non sono piu la superficie
+    runtime delle strade principali;
   - i PNG `road_border_defined` dei generated theme e
     `forest_road_border_defined` della Pianura Infetta vengono registrati come
     due materiali runtime orientati (`__horizontal`/`__vertical`): `urban_ruins`
@@ -249,17 +280,17 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
     Palude aggiunge la vista `reed_wall`; la board
     `generated_biome_art_visual_qa.gd` mostra ora anche `BORDER V`/`BORDER H`
     per i quattro generated theme e ora espone anche `ROAD V`/`ROAD H`.
-  - `TileBakeCache.FORMAT_VERSION` sale progressivamente a `22` mano a mano
-    che ogni bioma normalizza i propri `material_asset_id` e i nuovi border
-    strada/passage, invalidando le cache persistite obsolete.
+  - `TileBakeCache.FORMAT_VERSION` sale progressivamente fino a `26` mano a
+    mano che ogni bioma normalizza i propri `material_asset_id` e i nuovi
+    materiali strada/passage, invalidando le cache persistite obsolete.
 
 - Pianura Infetta non renderizza piu `grass_to_path`, `grass_to_road` e
   `path_to_road` come texture intermedie: route principali, spoke
   `broken_street`, passage `road`/entry/exit e contatti verso terreno usano
-  `forest_road_border__horizontal`/`__vertical` sui margini e un core strada
-  derivato dallo stesso PNG per gli interni, mantenendo un taglio netto verso
-  il terreno su entrambi gli assi e senza sovrapporre piu `forest_path` o
-  `forest_road` sulle strade. `forest_tree` applica inoltre
+  il core strada derivato da `forest_road_border_defined` come base e overlay
+  `__edge_*` sui margini, mantenendo un taglio netto verso il terreno su
+  entrambi gli assi e senza sovrapporre piu `forest_path` o `forest_road` sulle
+  strade. `forest_tree` applica inoltre
   flip/tinta deterministici per ridurre la ripetizione senza cambiare
   collisioni o footprint.
 - Ricalibrato il rendering dei cliff verso void per la griglia `6x6`: il lip
@@ -480,6 +511,16 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Validation
 
+- `./tools/run_gut.ps1 -GutDir res://tests/suites/assets -Select generated_texture`:
+  26 test, 2.586 assert, passa.
+- `./tools/run_gut.ps1 -GutDir res://tests/suites/assets`: 66 test, 9.482
+  assert, passa.
+- `./tools/run_gut.ps1 -GutDir res://tests/suites/environment`: 37 test,
+  8.954 assert, passa.
+- `./tools/run_gut.ps1 -GutDir res://tests/suites/world_gen`: 48 test, 352
+  assert, passa.
+- `godot --path . --script res://tests/visual_qa/biome_rendering_review_visual_qa.gd`:
+  exit code 0, rigenerati i PNG in `build/qa/biome_rendering_review`.
 - `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/assets -Select generated_texture`:
   24 test, 1.953 assert, passa.
 - `./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/assets`: 64 test,

@@ -47,7 +47,7 @@ func _run() -> void:
 	await process_frame
 	_expect(layer.has_forest_surface_art_textures(), "forest surface textures load")
 	_expect(layer.get_missing_asset_count() == 0, "forest tile layer has no missing assets")
-	_expect(_route_surfaces_are_crisp(layer), "road transition cells render with defined road-border surfaces")
+	_expect_route_surfaces_are_crisp(layer)
 
 	await _add_tree_cluster(scene_root, layout, biome.palette)
 	for _frame in range(4):
@@ -79,20 +79,39 @@ func _make_layout() -> BiomeEnvironmentLayout:
 	layout.rebuild_terrain_classification()
 	return layout
 
-func _route_surfaces_are_crisp(layer: BiomeTileLayer) -> bool:
+func _expect_route_surfaces_are_crisp(layer: BiomeTileLayer) -> void:
 	var rendered_ids := layer.get_rendered_surface_material_ids()
-	return (
-		rendered_ids.has(&"forest_road_border_defined__horizontal")
-		and rendered_ids.has(&"forest_road_border_defined__vertical")
-		and rendered_ids.has(&"forest_road_border_defined__core_horizontal")
-		and rendered_ids.has(&"forest_road_border_defined__core_vertical")
-		and not rendered_ids.has(&"forest_path")
-		and not rendered_ids.has(&"forest_road")
-		and not rendered_ids.has(&"grass_to_path")
-		and not rendered_ids.has(&"grass_to_road")
-		and not rendered_ids.has(&"path_to_road")
-		and not rendered_ids.has(&"forest_road_border")
-	)
+	# Contratto post follow-up edge/core: la base delle route e' sempre il core
+	# ritagliato; il confine strada/prato e' un overlay a striscia ritagliato
+	# dallo stesso PNG madre road_border_defined, un lato per direzione.
+	var required_ids: Array[StringName] = [
+		&"forest_road_border_defined__core_horizontal",
+		&"forest_road_border_defined__core_vertical",
+		&"forest_road_border_defined__edge_north",
+		&"forest_road_border_defined__edge_south",
+		&"forest_road_border_defined__edge_west",
+		&"forest_road_border_defined__edge_east",
+	]
+	for required_id in required_ids:
+		_expect(
+			rendered_ids.has(required_id),
+			"route cells render %s" % String(required_id)
+		)
+	var legacy_ids: Array[StringName] = [
+		&"forest_road_border_defined__horizontal",
+		&"forest_road_border_defined__vertical",
+		&"forest_path",
+		&"forest_road",
+		&"grass_to_path",
+		&"grass_to_road",
+		&"path_to_road",
+		&"forest_road_border",
+	]
+	for legacy_id in legacy_ids:
+		_expect(
+			not rendered_ids.has(legacy_id),
+			"%s is not rendered as a route base surface" % String(legacy_id)
+		)
 
 func _add_tree_cluster(
 	scene_root: Node2D,

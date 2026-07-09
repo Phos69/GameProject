@@ -52,6 +52,7 @@ const MARSH_SURFACE_TEXTURE_WORLD_SIZE := 512.0
 const MARSH_GROUND_TEXTURE_WORLD_SIZE := 1024.0
 const BURNING_SURFACE_TEXTURE_WORLD_SIZE := 512.0
 const GENERATED_SURFACE_RUN_OVERDRAW_PIXELS := 1.5
+const ROAD_BORDER_OVERLAY_HALF_WIDTH_TILES := 0.32
 const FOREST_SURFACE_TEXTURE_IDS: Array[StringName] = [
 	&"forest_grass",
 	&"forest_path",
@@ -973,6 +974,11 @@ func _register_road_border_orientation_textures(
 		)
 	)
 	_register_surface_texture(rotated_id, asset_path, rotated_texture)
+	var vertical_texture := source_texture
+	var horizontal_texture := rotated_texture
+	if source_orientation == GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_HORIZONTAL:
+		vertical_texture = rotated_texture
+		horizontal_texture = source_texture
 	var core_source := GENERATED_TEXTURE_TOOLS.build_road_core_surface_texture(
 		_load_generated_texture(asset_path),
 		biome_id,
@@ -997,6 +1003,30 @@ func _register_road_border_orientation_textures(
 		asset_path,
 		core_rotated
 	)
+	for side in GENERATED_ART_CATALOG.ROAD_BORDER_SIDES:
+		var side_texture := (
+			GENERATED_TEXTURE_TOOLS.build_road_border_side_surface_texture(
+				_load_generated_texture(asset_path),
+				biome_id,
+				asset_path,
+				source_orientation,
+				side
+			)
+		)
+		if side_texture == null:
+			continue
+		side_texture = GENERATED_TEXTURE_TOOLS.fade_road_transition_overlay_texture(
+			side_texture,
+			side,
+			"%s|road_border_side_fade_%s" % [asset_path, String(side)]
+		)
+		if side_texture == null:
+			continue
+		_register_surface_texture(
+			GENERATED_ART_CATALOG.road_border_side_material_id(asset_path, side),
+			asset_path,
+			side_texture
+		)
 
 func _register_road_surface_orientation_textures(
 	asset_path: String,
@@ -1072,6 +1102,48 @@ func _register_forest_road_border_orientation_textures(
 		asset_path,
 		horizontal_core_texture
 	)
+	_register_road_border_side_textures(asset_path, vertical_texture, horizontal_texture)
+
+func _register_road_border_side_textures(
+	asset_path: String,
+	vertical_texture: Texture2D,
+	horizontal_texture: Texture2D
+) -> void:
+	_register_road_transition_side_textures(asset_path, vertical_texture, horizontal_texture)
+
+func _register_road_transition_side_textures(
+	asset_path: String,
+	vertical_texture: Texture2D,
+	horizontal_texture: Texture2D
+) -> void:
+	var side_textures := {
+		GENERATED_ART_CATALOG.ROAD_BORDER_SIDE_WEST: vertical_texture,
+		GENERATED_ART_CATALOG.ROAD_BORDER_SIDE_EAST: vertical_texture,
+		GENERATED_ART_CATALOG.ROAD_BORDER_SIDE_NORTH: horizontal_texture,
+		GENERATED_ART_CATALOG.ROAD_BORDER_SIDE_SOUTH: horizontal_texture,
+	}
+	for side_value in side_textures.keys():
+		var side := StringName(side_value)
+		var source_texture := side_textures[side] as Texture2D
+		var side_texture := GENERATED_TEXTURE_TOOLS.crop_road_border_side_texture(
+			source_texture,
+			side,
+			"%s|road_transition_side_%s" % [asset_path, String(side)]
+		)
+		if side_texture == null:
+			continue
+		side_texture = GENERATED_TEXTURE_TOOLS.fade_road_transition_overlay_texture(
+			side_texture,
+			side,
+			"%s|road_transition_side_fade_%s" % [asset_path, String(side)]
+		)
+		if side_texture == null:
+			continue
+		_register_surface_texture(
+			GENERATED_ART_CATALOG.road_border_side_material_id(asset_path, side),
+			asset_path,
+			side_texture
+		)
 
 func _apply_offset_ground_macro_texture() -> void:
 	var ground_id := &""
@@ -1195,6 +1267,12 @@ func _build_visual_chunk(chunk_rect: Rect2i, scale: float) -> void:
 			scale,
 			chunk_rect
 		)
+		var road_border_overlay_meshes := _build_road_border_overlay_meshes(
+			scale,
+			chunk_rect
+		)
+		for texture_id in road_border_overlay_meshes:
+			_forest_surface_meshes[texture_id] = road_border_overlay_meshes[texture_id]
 	for y in range(
 		chunk_rect.position.y,
 		chunk_rect.position.y + chunk_rect.size.y
@@ -1555,6 +1633,108 @@ func _build_forest_surface_meshes(
 			result[texture_id] = surface_mesh
 	return result
 
+func _build_road_border_overlay_meshes(
+	scale: float,
+	chunk_rect: Rect2i
+) -> Dictionary:
+	if resolver == null or layout == null:
+		return {}
+	var strips_by_texture := {}
+	for y in range(
+		chunk_rect.position.y,
+		chunk_rect.position.y + chunk_rect.size.y
+	):
+		for x in range(
+			chunk_rect.position.x,
+			chunk_rect.position.x + chunk_rect.size.x
+		):
+			var cell := Vector2i(x, y)
+			var sides := resolver.route_cell_road_border_sides(layout, cell)
+			if sides.is_empty():
+				continue
+			var asset_path := _road_border_overlay_asset_path(cell)
+			if asset_path.is_empty():
+				continue
+			for side in sides:
+				var texture_id := GENERATED_ART_CATALOG.road_border_side_material_id(
+					asset_path,
+					side
+				)
+				if not (_forest_surface_textures.get(texture_id) is Texture2D):
+					continue
+				if not strips_by_texture.has(texture_id):
+					strips_by_texture[texture_id] = []
+				(strips_by_texture[texture_id] as Array).append({
+					"rect": _road_border_overlay_rect(cell, side, scale),
+					"side": side,
+				})
+	var result := {}
+	for texture_id_value in strips_by_texture.keys():
+		var texture_id := StringName(texture_id_value)
+		var typed_strips: Array[Dictionary] = []
+		for strip_value in strips_by_texture[texture_id] as Array:
+			typed_strips.append(strip_value as Dictionary)
+		var surface_mesh := FOREST_GROUND_MESH_BUILDER_SCRIPT.build_edge_strip_mesh(
+			typed_strips,
+			_forest_surface_texture_world_size(texture_id)
+		)
+		if surface_mesh != null and surface_mesh.get_surface_count() > 0:
+			result[texture_id] = surface_mesh
+	return result
+
+## Sorgente dell'overlay di confine strada/prato: sempre il PNG madre
+## road_border_defined della strada dritta, da cui vengono ritagliate le
+## strisce laterali __edge_*. Le transition_ground_to_road sfumate non sono
+## piu' una sorgente runtime.
+func _road_border_overlay_asset_path(cell: Vector2i) -> String:
+	if _uses_generated_theme():
+		var generation_seed := layout.generation_seed if layout != null else 0
+		var border_path := GENERATED_ART_CATALOG.select_surface_asset_path(
+			biome_id,
+			GENERATED_ART_CATALOG.ROLE_ROAD,
+			generation_seed,
+			Vector2i.ZERO
+		)
+		if GENERATED_ART_CATALOG.is_road_border_asset_path(border_path):
+			return border_path
+	var forest_border_path := String(
+		_forest_surface_art_asset_paths.get(FOREST_ROAD_BORDER_TEXTURE_ID, "")
+	)
+	if not forest_border_path.is_empty():
+		return forest_border_path
+	var fallback_path := get_resolved_material_asset_path(cell)
+	if GENERATED_ART_CATALOG.is_road_border_asset_path(fallback_path):
+		return fallback_path
+	return ""
+
+func _road_border_overlay_rect(
+	cell: Vector2i,
+	side: StringName,
+	scale: float
+) -> Rect2:
+	var zone_offset := Vector2(float(layout.zone_size.x), float(layout.zone_size.y)) * 0.5
+	var left := (float(cell.x) - zone_offset.x) * scale
+	var right := (float(cell.x + 1) - zone_offset.x) * scale
+	var top := (float(cell.y) - zone_offset.y) * scale
+	var bottom := (float(cell.y + 1) - zone_offset.y) * scale
+	var half_width := scale * ROAD_BORDER_OVERLAY_HALF_WIDTH_TILES
+	var strip_width := half_width * 2.0
+	if side == GENERATED_ART_CATALOG.ROAD_BORDER_SIDE_WEST:
+		return Rect2(Vector2(left - half_width, top), Vector2(strip_width, bottom - top))
+	if side == GENERATED_ART_CATALOG.ROAD_BORDER_SIDE_EAST:
+		return Rect2(
+			Vector2(right - half_width, top),
+			Vector2(strip_width, bottom - top)
+		)
+	if side == GENERATED_ART_CATALOG.ROAD_BORDER_SIDE_NORTH:
+		return Rect2(Vector2(left, top - half_width), Vector2(right - left, strip_width))
+	if side == GENERATED_ART_CATALOG.ROAD_BORDER_SIDE_SOUTH:
+		return Rect2(
+			Vector2(left, bottom - half_width),
+			Vector2(right - left, strip_width)
+		)
+	return Rect2(Vector2(left - half_width, top), Vector2(strip_width, bottom - top))
+
 func _forest_surface_texture_world_size(texture_id: StringName) -> float:
 	if _is_manifest_surface_texture_id(texture_id):
 		return SEMANTIC_SURFACE_TEXTURE_WORLD_SIZE
@@ -1574,6 +1754,9 @@ func _forest_surface_texture_world_size(texture_id: StringName) -> float:
 			return BURNING_SURFACE_TEXTURE_WORLD_SIZE
 		if texture_name.contains("transition_"):
 			return 128.0
+	var transition_asset_path := String(_forest_surface_art_asset_paths.get(texture_id, ""))
+	if transition_asset_path.get_file().contains("grass_to_road"):
+		return 128.0
 	if FOREST_TRANSITION_TEXTURE_IDS.has(texture_id):
 		# Transition cells are one logical cell wide. A shorter repeat period makes
 		# both source materials survive mipmapped downscale without creating a

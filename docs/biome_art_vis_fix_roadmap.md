@@ -4,13 +4,13 @@ Stato: completato 2026-07-03. Tutti e cinque i biomi hanno il pass applicato,
 la QA dedicata verde e i guardrail GUT estesi; il review completo
 `biome_rendering_review_visual_qa.gd` chiude con exit code `0`. Dal pass di
 unificazione strade 2026-07-09 (`docs/biome_road_unification_plan.md`, fasi
-0-1) le celle interne `main_road`/`road` dei temi generated renderizzano il
-core ritagliato `road_border_defined__core_vertical`/`__core_horizontal`,
-mentre edge, curve, incroci e passage road-like restano su
-`road_border_defined__vertical`/`__horizontal` del bioma, mantenendo solo
-`tile_id` e sezione `passage_tiles` per semantica/collisioni. Restano fuori
-scope i residui documentati in fondo a questo file (sezione "Residui e
-riclassificazioni").
+0-3 + follow-up edge/core) le celle road-like interne dei temi generated
+(`main_road`, `road`, `road_intersection`, edge/curve e passage) renderizzano
+il core ritagliato `road_border_defined__core_vertical`/`__core_horizontal`
+come base; i margini che toccano terreno non-route ricevono una fascia overlay
+`transition_ground_to_road_*__edge_west/east/north/south`. `tile_id` e sezione
+`passage_tiles` restano per semantica/collisioni. Restano fuori scope i residui
+documentati in fondo a questo file (sezione "Residui e riclassificazioni").
 
 Questo documento spezza `ART-VIS-FIX` in pass piccoli, uno per bioma, per
 rendere piu rapido il ciclo agente -> screenshot -> correzione -> QA. La fonte
@@ -154,11 +154,13 @@ ground/path/road e per la scala degli oggetti forestali.
 Stato 2026-07-09: quarto pass strada eseguito. Il runtime mantiene i tile ID
 `forest_path`, `forest_road`, `grass_to_path`, `grass_to_road`, `path_to_road` e
 i passage `road`/entry/exit come semantica del resolver, ma sulle route della
-Pianura Infetta renderizza solo `forest_road_border_defined__vertical` o
-`__horizontal` sui margini e il core `__core_vertical`/`__core_horizontal`
-derivato dallo stesso PNG negli interni; dalla fase 3 dell'unificazione strade
-il materiale e' assegnato dal resolver con la stessa convenzione dei temi
-generated. Questo rimuove la sovrapposizione visiva tra terra,
+Pianura Infetta renderizza il core `forest_road_border_defined__core_vertical`/
+`__core_horizontal` come base e aggiunge `__edge_west/east/north/south` solo
+sui lati esposti verso terreno non-route, usando `grass_to_road_generated` come
+sorgente della transizione; dalla fase 3 dell'unificazione strade il materiale
+e' assegnato dal resolver con la stessa convenzione dei temi generated. Questo
+rimuove la
+sovrapposizione visiva tra terra,
 asfalto legacy e bordo strada definito senza ripetere l'erba dentro la
 carreggiata.
 Aggiunta QA dedicata in `tests/visual_qa/biome_art_infected_plains_visual_qa.gd`
@@ -196,13 +198,14 @@ Pass locale:
 Stato 2026-07-08: pass completato. Il ground pool usa solo la coppia coerente
 di rubble (variation 02/03: lichene chiaro e ghiaia bruna passano a `detail`),
 eliminando la scacchiera di pannelli per macro-cella. Le route dei temi
-generati usano i PNG `road_border_defined` orientati per
-`main_road`/`road`/incroci, bordi e passage `broken_gate` con relative
-entry/exit; dal pass di unificazione strade 2026-07-09 la source `urban_ruins`
-e' stata ruotata una tantum a nativa verticale come gli altri temi, quindi non
-serve piu' il caso speciale di orientamento. I `path_variation` restano per le
-lane tematiche, ora anche sui loro bordi e incroci quando nessuna strada
-principale attraversa la cella. Gli edifici generati sono stati
+generati usano i PNG `road_border_defined`: core `__core_*` come base per
+`main_road`/`road`/incroci e passage `broken_gate`, overlay `__edge_*` per i
+margini che toccano terreno non-route e relative entry/exit di perimetro; dal
+pass di unificazione strade 2026-07-09 la source `urban_ruins` e' stata ruotata
+una tantum a nativa verticale come gli altri temi, quindi non serve piu' il
+caso speciale di orientamento. I `path_variation` restano per le lane tematiche,
+ora anche sui loro bordi e incroci quando nessuna strada principale attraversa
+la cella. Gli edifici generati sono stati
 ridisegnati nel pass trasversale (vedi "Residui e riclassificazioni" per le
 pozze). QA dedicata:
 `tests/visual_qa/biome_art_toxic_wastes_visual_qa.gd`; guardrail esteso in
@@ -250,10 +253,10 @@ Pass locale:
 Stato 2026-07-08: pass completato. Damping selettivo dei pixel brace del
 ground (`VOLCANIC_EMBER_THRESHOLD`/`VOLCANIC_EMBER_DAMPING` in
 `GeneratedBiomeTextureTools`), route a taglio netto dal fix condiviso, cliff
-gia' trimmati/armonizzati e ora anche mipmappati. Le strade piene, i bordi e i
-passage `burned_road` con relative entry/exit usano `road_border_defined`
-volcanic come materiale runtime orientato (`__vertical`/`__horizontal`); le
-lane restano `path_variation`. QA
+gia' trimmati/armonizzati e ora anche mipmappati. Le strade piene e i passage
+`burned_road` con relative entry/exit usano `road_border_defined` volcanic:
+core `__core_*` come base e overlay `__edge_*` sui margini strada/prato; le lane restano
+`path_variation`. QA
 dedicata:
 `tests/visual_qa/biome_art_burning_fields_visual_qa.gd`; guardrail
 `_assert_volcanic_embers_are_damped` sulla coda calda e test asset su road
@@ -302,12 +305,12 @@ Pass locale:
 Stato 2026-07-08: pass strada riletto e corretto. Oltre al tono neutro
 anti-sovraesposizione (`FROZEN_GROUND_TONE`), al blend neve delle route ridotto
 a `0.10/0.12` e all'harmonize dei bordi contro la griglia bianca da repeat, i
-bordi strada `road_border_defined` ora vengono registrati come materiali
-runtime orientati: `__vertical` usa il PNG nativo, `__horizontal` usa la
-variante ruotata per i lati nord/sud delle strade. Le superfici strada piene
-usano `road_border_defined__vertical`/`__horizontal` invece dei vecchi SVG
-semantici e delle `road_variation`, inclusi i passage `snow_pass` e relative
-entry/exit ai seam. QA dedicata:
+bordi strada `road_border_defined` ora vengono registrati come core base,
+mentre gli overlay mono-lato derivano da `transition_ground_to_road_*`. Le
+superfici strada usano il core
+`road_border_defined__core_*` anche su edge/curve, con overlay solo sui margini
+strada/prato, inclusi i passage `snow_pass` e relative entry/exit ai seam. QA
+dedicata:
 `tests/visual_qa/biome_art_frozen_outskirts_visual_qa.gd`; guardrail
 `_assert_frozen_ground_is_toned_down`, seam score sui bordi e test asset su
 materiali strada orizzontali/verticali.
@@ -322,8 +325,9 @@ runtime una quilt periodica `2x2` da quattro offset dello stesso raster neve:
 le cuciture interne ed esterne sono armonizzate, la densita resta nativa e il
 periodo world-space sale a `1024` senza simmetrie specchiate o cambio materiale
 a macro-celle. Path e road restano a `512`; le celle `road_edge`/`road_curve_*`
-selezionano il materiale `road_border_defined` con orientamento coerente alla
-direzione della strada. La QA dedicata copre tre seed, due risoluzioni e sei
+e i bordi passage usano il core strada come base e overlay `road_border_defined`
+mono-lato con orientamento coerente al lato esposto. La QA dedicata copre tre
+seed, due risoluzioni e sei
 viste con zero chunk mancanti.
 
 File probabili:
@@ -355,9 +359,9 @@ Stato 2026-07-08: pass completato. Lift caldo di path/road
 54-58 vs fango 59-66), downscale `0.45` delle strip cliff + mipmap contro il
 glitter dorato dei bordi chasm, `reed_wall` ridisegnata come canneto verticale
 full-canvas (`preserveAspectRatio="none"` nel generator). Il
-`road_border_defined` swamp usa materiali runtime orientati
-(`__vertical`/`__horizontal`) per strade piene, bordi e passage `bridge` con
-relative entry/exit; le lane restano `path_variation` generated. QA dedicata:
+`road_border_defined` swamp usa core `__core_*` per strade piene e passage
+`bridge`, e overlay `__edge_*` per bordi strada/prato e relative entry/exit di
+perimetro; le lane restano `path_variation` generated. QA dedicata:
 `tests/visual_qa/biome_art_drowned_marsh_visual_qa.gd`; guardrail
 `_assert_marsh_routes_are_lifted` + contratto dimensioni cliff con downscale e
 test asset su road border orientato.

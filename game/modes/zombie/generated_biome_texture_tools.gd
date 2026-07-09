@@ -13,6 +13,11 @@ const GROUND_MACRO_SEAM_BLEND_PIXELS := 128
 ## striscia di bordo; il core interno e' la fascia centrale restante.
 ## Stesso rapporto usato dal core forestale di infected_plains.
 const ROAD_CORE_CROP_MARGIN_RATIO := 0.32
+## L'overlay bordo usa la fascia esterna piu una piccola porzione di strada,
+## cosi il profilo ground->road resta leggibile anche quando viene compresso
+## dentro mezza cella logica.
+const ROAD_BORDER_SIDE_STRIP_RATIO := 0.42
+const ROAD_TRANSITION_OVERLAY_FEATHER_RATIO := 0.22
 # Blend ridotti (ART-VIS-FIX): a 0.16/0.24 route e ghiaccio diventavano quasi
 # indistinguibili dalla neve sovraesposta (VIS-002/VIS-006). Il minimo utile per
 # il contratto "snow softened" del test e' ~0.10.
@@ -167,6 +172,159 @@ static func crop_road_core_texture(
 	if not full_key.is_empty():
 		_normalized_texture_cache[full_key] = result
 	return result
+
+## Ritaglia una sola fascia ground->road da una texture di transizione o,
+## come fallback, dal PNG road_border_defined. La texture risultante viene
+## mappata con UV locali sull'asse corto e world-space sull'asse lungo, quindi
+## non deve contenere entrambi i lati della strada.
+static func crop_road_border_side_texture(
+	source_texture: Texture2D,
+	side: StringName,
+	cache_key: String = "",
+	strip_ratio: float = ROAD_BORDER_SIDE_STRIP_RATIO
+) -> Texture2D:
+	if source_texture == null:
+		return null
+	var full_key := ""
+	if not cache_key.is_empty():
+		full_key = "road_border_side|%s|%s|%.2f" % [
+			cache_key,
+			String(side),
+			strip_ratio,
+		]
+		if _normalized_texture_cache.has(full_key):
+			return _normalized_texture_cache[full_key] as Texture2D
+	var image := _readable_texture_image(source_texture)
+	if image == null or image.is_empty():
+		return null
+	image.convert(Image.FORMAT_RGBA8)
+	var strip_w := clampi(
+		roundi(float(image.get_width()) * strip_ratio),
+		1,
+		image.get_width()
+	)
+	var strip_h := clampi(
+		roundi(float(image.get_height()) * strip_ratio),
+		1,
+		image.get_height()
+	)
+	var source_rect := Rect2i(Vector2i.ZERO, image.get_size())
+	match side:
+		&"west":
+			source_rect = Rect2i(Vector2i.ZERO, Vector2i(strip_w, image.get_height()))
+		&"east":
+			source_rect = Rect2i(
+				Vector2i(image.get_width() - strip_w, 0),
+				Vector2i(strip_w, image.get_height())
+			)
+		&"north":
+			source_rect = Rect2i(Vector2i.ZERO, Vector2i(image.get_width(), strip_h))
+		&"south":
+			source_rect = Rect2i(
+				Vector2i(0, image.get_height() - strip_h),
+				Vector2i(image.get_width(), strip_h)
+			)
+		_:
+			source_rect = Rect2i(Vector2i.ZERO, Vector2i(strip_w, image.get_height()))
+	var side_image := image.get_region(source_rect)
+	side_image.fix_alpha_edges()
+	side_image.generate_mipmaps()
+	var result := ImageTexture.create_from_image(side_image)
+	if not full_key.is_empty():
+		_normalized_texture_cache[full_key] = result
+	return result
+
+static func fade_road_transition_overlay_texture(
+	source_texture: Texture2D,
+	side: StringName,
+	cache_key: String = "",
+	feather_ratio: float = ROAD_TRANSITION_OVERLAY_FEATHER_RATIO
+) -> Texture2D:
+	if source_texture == null:
+		return null
+	var full_key := ""
+	if not cache_key.is_empty():
+		full_key = "road_transition_fade|%s|%s|%.2f" % [
+			cache_key,
+			String(side),
+			feather_ratio,
+		]
+		if _normalized_texture_cache.has(full_key):
+			return _normalized_texture_cache[full_key] as Texture2D
+	var image := _readable_texture_image(source_texture)
+	if image == null or image.is_empty():
+		return null
+	image.convert(Image.FORMAT_RGBA8)
+	var width := image.get_width()
+	var height := image.get_height()
+	var use_x_axis := side == &"west" or side == &"east"
+	var denom := float(maxi(width - 1, 1)) if use_x_axis else float(maxi(height - 1, 1))
+	var safe_feather := clampf(feather_ratio, 0.01, 0.49)
+	for y in range(height):
+		for x in range(width):
+			var axis_position := float(x) if use_x_axis else float(y)
+			var t := axis_position / denom
+			var fade_alpha := minf(t / safe_feather, (1.0 - t) / safe_feather)
+			fade_alpha = clampf(fade_alpha, 0.0, 1.0)
+			var color := image.get_pixel(x, y)
+			color.a *= fade_alpha
+			image.set_pixel(x, y, color)
+	image.fix_alpha_edges()
+	image.generate_mipmaps()
+	var result := ImageTexture.create_from_image(image)
+	if not full_key.is_empty():
+		_normalized_texture_cache[full_key] = result
+	return result
+
+## Striscia di bordo mono-lato ritagliata dal PNG madre road_border_defined,
+## con la stessa pipeline di normalize_surface_texture ma il crop inserito
+## prima dell'atlas specchiato (ritagliare l'atlas gia' composto non isola la
+## striscia, toxic_wastes) e gli harmonize per-bioma applicati alla striscia.
+static func build_road_border_side_surface_texture(
+	raw_texture: Texture2D,
+	biome_id: StringName,
+	asset_path: String,
+	source_orientation: StringName,
+	side: StringName
+) -> Texture2D:
+	if raw_texture == null:
+		return null
+	var cache_key := "road_border_side_surface|%s|%s|%s|%s" % [
+		String(biome_id),
+		asset_path,
+		String(source_orientation),
+		String(side),
+	]
+	if not asset_path.is_empty() and _normalized_texture_cache.has(cache_key):
+		return _normalized_texture_cache[cache_key] as Texture2D
+	var normalized := _normalize_repeating_texture_uncached(
+		raw_texture,
+		surface_edge_trim_pixels(biome_id),
+		should_harmonize_surface_edges(biome_id),
+		surface_edge_blend_pixels(biome_id)
+	)
+	if normalized == null:
+		return null
+	var side_needs_horizontal := side == &"north" or side == &"south"
+	var source_is_horizontal := source_orientation == &"horizontal"
+	var oriented := normalized
+	if side_needs_horizontal != source_is_horizontal:
+		oriented = rotate_repeating_texture_clockwise(
+			oriented,
+			"%s|road_border_side_orient_%s" % [asset_path, String(side)]
+		)
+	var strip := crop_road_border_side_texture(oriented, side)
+	if strip == null:
+		return null
+	if biome_id == &"frozen_outskirts":
+		strip = _harmonize_frozen_surface_texture(strip, asset_path)
+	if biome_id == &"drowned_marsh":
+		strip = _harmonize_swamp_surface_texture(strip, asset_path)
+	if biome_id == &"burning_fields":
+		strip = _harmonize_volcanic_surface_texture(strip, asset_path)
+	if not asset_path.is_empty() and strip != null:
+		_normalized_texture_cache[cache_key] = strip
+	return strip
 
 ## Come normalize_surface_texture ma con il ritaglio core inserito prima
 ## dell'atlas specchiato: ritagliare l'atlas gia' composto lascerebbe le

@@ -12,6 +12,16 @@ const ROAD_BORDER_ORIENTATIONS: Array[StringName] = [
 	ROAD_BORDER_ORIENTATION_HORIZONTAL,
 	ROAD_BORDER_ORIENTATION_VERTICAL,
 ]
+const ROAD_BORDER_SIDE_WEST: StringName = &"west"
+const ROAD_BORDER_SIDE_EAST: StringName = &"east"
+const ROAD_BORDER_SIDE_NORTH: StringName = &"north"
+const ROAD_BORDER_SIDE_SOUTH: StringName = &"south"
+const ROAD_BORDER_SIDES: Array[StringName] = [
+	ROAD_BORDER_SIDE_WEST,
+	ROAD_BORDER_SIDE_EAST,
+	ROAD_BORDER_SIDE_NORTH,
+	ROAD_BORDER_SIDE_SOUTH,
+]
 
 const SAMPLING_REGION: StringName = &"region"
 const SAMPLING_MACRO_GROUND: StringName = &"macro_ground"
@@ -389,6 +399,22 @@ static func road_core_material_id(
 	return StringName(
 		"%s__core_%s"
 		% [String(material_id_from_path(asset_path)), String(safe_orientation)]
+	)
+
+## Overlay mono-lato per la fascia strada/prato: la striscia di bordo viene
+## ritagliata dal PNG madre road_border_defined della strada dritta
+## (crop_road_border_side_texture), un lato per direzione.
+static func road_border_side_material_id(
+	asset_path: String,
+	side: StringName
+) -> StringName:
+	if asset_path.is_empty():
+		return &""
+	var safe_side := side
+	if not ROAD_BORDER_SIDES.has(safe_side):
+		safe_side = ROAD_BORDER_SIDE_WEST
+	return StringName(
+		"%s__edge_%s" % [String(material_id_from_path(asset_path)), String(safe_side)]
 	)
 
 static func road_border_source_orientation(asset_path: String) -> StringName:

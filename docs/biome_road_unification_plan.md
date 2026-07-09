@@ -1,7 +1,8 @@
 # Report differenze biomi + piano di unificazione strade
 
-Stato: 2026-07-09 — fasi 0-3 eseguite (vedi note in fondo alle rispettive
-sezioni); fasi 4-5 aperte. Il report differenze descrive lo stato
+Stato: 2026-07-09 — fasi 0-3 eseguite, follow-up edge/core e overlay mono-lato
+completati, sorgente strip riportata al PNG madre (vedi note in fondo alle
+rispettive sezioni); fasi 4-5 aperte. Il report differenze descrive lo stato
 *precedente* alle fasi eseguite.
 
 Fonte del problema percepito ("non si capisce piu niente"): oggi convivono
@@ -138,12 +139,12 @@ PNG, gia in `_build_forest_road_core_texture`) nella pipeline generated:
 
 - spostare la funzione in `GeneratedBiomeTextureTools` (parametrica su
   margine);
-- in `biome_tile_layer`, per ogni `road_border_defined` registrare **quattro**
-  materiali: `__border_vertical`, `__border_horizontal`, `__core_vertical`,
-  `__core_horizontal`;
-- nel resolver, le celle route **interne** (non edge/curve/incrocio) risolvono
-  il materiale `core`, le celle di bordo il materiale `border`. Il criterio
-  interno/bordo esiste gia (`_route_cell_touches_non_route`).
+- in `biome_tile_layer`, per ogni `road_border_defined` registrare core,
+  varianti orientate e overlay mono-lato (`__edge_west/east/north/south`);
+- nel resolver, le celle route **interne** (non a contatto con terreno
+  non-route) risolvono il materiale `core`, le celle di bordo il materiale
+  `core` piu overlay mono-lato. Il criterio interno/bordo e
+  `_route_cell_touches_non_route_surface`.
 
 Risultato: niente piu strisce di bordo ripetute in mezzo alle strade larghe;
 `infected_plains` e i 4 generated identici per costruzione.
@@ -155,12 +156,16 @@ orientamento sorgente e margine, `ROAD_CORE_CROP_MARGIN_RATIO = 0.32`);
 inserito *prima* dell'atlas specchiato (toxic) e degli harmonize per-bioma
 (snow blend frozen, route lift swamp, ember damping volcanic). Il tile layer
 registra `__core_vertical`/`__core_horizontal` accanto ai border; il resolver
-mappa `GENERATED_THEME_ROAD_CORE_TILE_IDS` (= `main_road`, `road`) al core via
+mappa `GENERATED_THEME_ROAD_CORE_TILE_IDS` al core via
 `road_core_material_id`. Il core forestale ora usa lo stesso crop condiviso.
-Nota di scope: `road_intersection` e i passage mantengono il border PNG
-intero (decisione del piano: solo le celle non edge/curve/incrocio passano al
-core). Verifica: GUT assets+environment verdi, QA `biome_art_frozen_outskirts`
-e `biome_rendering_review` exit 0, ispezione immagini frozen/toxic.
+Follow-up edge/core: `main_road`, `road`, `road_intersection` e i passage
+road-like usano il core come base anche quando toccano terreno non-route; il
+bordo visibile e una strip overlay `__edge_*`, non il PNG completo campionato
+come cella intera. Il follow-up successivo sostituisce il sorgente della strip:
+non piu crop di `road_border_defined`, ma texture di transizione
+`grass_to_road` / `transition_ground_to_road`. Verifica: GUT
+assets+environment verdi, QA `biome_art_frozen_outskirts` e
+`biome_rendering_review` exit 0, ispezione immagini frozen/toxic.
 
 ### Fase 2 — Bordi corretti anche per i path
 
@@ -223,12 +228,54 @@ all'obiettivo strade e resta una valutazione di Fase 4. Verifica: GUT
 assets+environment verdi, QA `biome_art_infected_plains` e
 `biome_rendering_review` exit 0, ispezione board route infected_plains.
 
+**Follow-up edge/core 2026-07-09.** Il resolver espone
+`route_cell_uses_road_border_material` e classifica il bordo strada/prato in
+base al contatto reale con celle non-route, non alla sola geometria del
+rettangolo strada. Gli incroci/hub interni e i passage road-like interni
+mantengono il core; perimetri, overlap a contatto col prato e bordi passage
+mantengono il core come base e ricevono overlay mono-lato solo sul lato
+esposto. `BiomeTileLayer` registra materiali `__edge_west/east/north/south`
+alpha-feathered dalle texture `grass_to_road_generated.png` e
+`transition_ground_to_road_*` e `IsometricForestGroundMeshBuilder.build_edge_strip_mesh`
+usa UV locali sull'asse corto per evitare prato dentro l'asfalto. La strip sta
+a cavallo del confine: 0,32 tile sul terreno e 0,32 tile sulla strada,
+lasciando core visibile anche sulle strade da un tile. Per i temi generated la
+scelta non usa piu l'hash seed: `BiomeGeneratedArtCatalog` preferisce la
+variante straight-road per tema (`urban_ruins` 02, `volcanic` 05,
+`frozen_tundra` 01, `swamp` 02).
+Bump
+`TileBakeCache.FORMAT_VERSION` 24->26. Guardrail in
+`generated_texture_test.gd` su interni strada, incroci, passage core, passage
+edge, uso delle texture di transizione e UV delle strip. Verifica: GUT assets mirato verde e
+`biome_rendering_review_visual_qa.gd` exit 0 con PNG rigenerati.
+
+**Pass sorgente strip 2026-07-09 (direzione artistica).** La strip `__edge_*`
+del confine strada/prato torna a essere ritagliata dal PNG madre
+`road_border_defined` della strada dritta, non dalle texture di transizione
+sfumate: le `transition_ground_to_road_*` e `grass_to_road_generated` non sono
+piu sorgenti runtime (rimosse le API
+`select_ground_to_road_transition_asset_path` /
+`get_ground_to_road_transition_asset_paths` e le registrazioni edge dai
+transition asset). Per i temi generated il ritaglio avviene pre-atlas con gli
+harmonize per-bioma applicati alla striscia
+(`GeneratedBiomeTextureTools.build_road_border_side_surface_texture`); per il
+forest la striscia viene ritagliata dalla `forest_road_border_defined`
+orientata. Fade alpha e geometria della strip invariati
+(`_road_border_overlay_asset_path` nel tile layer). La QA
+`biome_art_infected_plains` — rimasta ai requisiti pre follow-up (border pieni
+come superficie base) — e stata allineata al contratto attuale e spacchettata
+in condizioni singole. Verifica: GUT assets+environment verdi, QA dei biomi
+generated + infected_plains + review + board generated_art exit 0, ispezione
+confine su capture forest e frozen.
+
 ### Fase 4 — Pulizia asset e non-strada
 
-- Decidere il destino degli asset morti: `road_variation_01` e
-  `transition_ground_to_road_*` dei 4 temi (declassati a `detail` mai
-  campionato). Opzioni: (a) rimuoverli dal caricamento (non piu in
-  `get_all_surface_asset_paths` → meno VRAM), (b) eliminarli dal repo e
+- Decidere il destino degli asset morti: `road_variation_01` dei 4 temi
+  (declassato a `detail` mai campionato). Gli asset
+  `transition_ground_to_road_*` non sono piu morti: restano nel ruolo detail ma
+  vengono usati come sorgente degli overlay mono-lato strada/prato. Opzioni:
+  (a) rimuovere solo `road_variation_01` dal caricamento (non piu in
+  `get_all_surface_asset_paths` → meno VRAM), (b) eliminarlo dal repo e
   aggiornare `EXPECTED_TOTAL_ASSET_COUNT`/`EXPECTED_ACTIVE_ASSET_COUNT`.
   Consiglio: (a) subito, (b) dopo QA verde.
 - Tema `desert` e tema `forest` di `generated_images`: dichiararli
@@ -244,8 +291,8 @@ assets+environment verdi, QA `biome_art_infected_plains` e
 ### Fase 5 — QA e guardrail
 
 - Estendere `generated_texture_test.gd`: per ogni tema attivo, asserire che
-  esistano i 4 materiali strada (`core/border` x `H/V`) e che le lane non
-  risolvano materiali border stradali.
+  esistano i materiali strada base (`core` x `H/V`) e overlay (`edge` x 4), e
+  che le lane non risolvano materiali border stradali.
 - Rilanciare le 5 QA visuali dedicate + `biome_rendering_review_visual_qa.gd`
   (contratto: exit 0, `visible_missing_chunks == 0`), con vista ravvicinata
   interno-strada su carreggiata larga ≥ 2 tile (il difetto Fase 1 si vede solo
