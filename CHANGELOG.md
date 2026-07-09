@@ -8,6 +8,16 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Added
 
+- Unificazione strade biomi, fase 3 (`docs/biome_road_unification_plan.md`):
+  fusi i rami route forest/generated del resolver in un percorso unico con
+  helper passage condivisi (la logica endpoint/connector era quadruplicata);
+  il materiale route di `infected_plains` e' ora assegnato dal resolver con la
+  convenzione dei temi generated (`forest_road_border_defined__vertical`/
+  `__horizontal`/`__core_*` dal contratto manifest `forest_road_border`), i
+  texture id speciali `FOREST_ROAD_*` e la selezione per-cella duplicata sono
+  rimossi dal tile layer; tile id semantici e resa visiva invariati. Bump
+  `TileBakeCache.FORMAT_VERSION` 23→24. GUT assets/environment e QA visuale
+  infected_plains/review verdi.
 - Unificazione strade biomi, fase 2 (`docs/biome_road_unification_plan.md`):
   i bordi e gli incroci delle lane tematiche (`service_lane`, `ash_lane`,
   `packed_snow_path`, `wooden_walkway`, `broken_street`) renderizzano il

@@ -82,10 +82,10 @@ func _make_layout() -> BiomeEnvironmentLayout:
 func _route_surfaces_are_crisp(layer: BiomeTileLayer) -> bool:
 	var rendered_ids := layer.get_rendered_surface_material_ids()
 	return (
-		rendered_ids.has(&"forest_road_border__horizontal")
-		and rendered_ids.has(&"forest_road_border__vertical")
-		and rendered_ids.has(&"forest_road_border__core_horizontal")
-		and rendered_ids.has(&"forest_road_border__core_vertical")
+		rendered_ids.has(&"forest_road_border_defined__horizontal")
+		and rendered_ids.has(&"forest_road_border_defined__vertical")
+		and rendered_ids.has(&"forest_road_border_defined__core_horizontal")
+		and rendered_ids.has(&"forest_road_border_defined__core_vertical")
 		and not rendered_ids.has(&"forest_path")
 		and not rendered_ids.has(&"forest_road")
 		and not rendered_ids.has(&"grass_to_path")

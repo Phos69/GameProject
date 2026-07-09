@@ -97,13 +97,15 @@ transizione storici restano contratti e materiale di confronto QA, ma il
 runtime della Pianura Infetta non li usa piu come texture intermedia.
 Le route forestali visibili (`forest_path`, `forest_road`, `grass_to_path`,
 `grass_to_road`, `path_to_road`, `road` e relativi entry/exit) vengono
-renderizzate con `forest_road_border__vertical` oppure
-`forest_road_border__horizontal` sui margini e con un core strada derivato dallo
-stesso PNG negli interni, ottenendo un taglio netto con bordo strada definito su
-strade verticali e orizzontali senza sovrapporre il vecchio
-`forest_dirt_path_generated.png` o `forest_asphalt_generated.png`.
-`forest_road_border` resta il sorgente caricato, ma non viene piu usato come
-materiale unico non orientato.
+renderizzate con `forest_road_border_defined__vertical` oppure
+`forest_road_border_defined__horizontal` sui margini e con il core
+`forest_road_border_defined__core_vertical`/`__core_horizontal` negli interni
+(dalla fase 3 dell'unificazione strade il materiale viene assegnato dal
+resolver con la stessa convenzione dei temi generated), ottenendo un taglio
+netto con bordo strada definito su strade verticali e orizzontali senza
+sovrapporre il vecchio `forest_dirt_path_generated.png` o
+`forest_asphalt_generated.png`. `forest_road_border` resta il sorgente
+caricato, ma non viene piu usato come materiale unico non orientato.
 Wall e void mantengono i rispettivi materiali e colori.
 
 ### Set generati per bioma

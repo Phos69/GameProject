@@ -43,10 +43,6 @@ const ROCK_CLIFF_FACE_TEXTURE_ID := &"rock_cliff_face_texture"
 const LARGE_ROCK_OBJECT_ID := &"large_rock"
 const FOREST_GRASS_TEXTURE_ID := &"forest_grass"
 const FOREST_ROAD_BORDER_TEXTURE_ID := &"forest_road_border"
-const FOREST_ROAD_BORDER_HORIZONTAL_TEXTURE_ID := &"forest_road_border__horizontal"
-const FOREST_ROAD_BORDER_VERTICAL_TEXTURE_ID := &"forest_road_border__vertical"
-const FOREST_ROAD_CORE_HORIZONTAL_TEXTURE_ID := &"forest_road_border__core_horizontal"
-const FOREST_ROAD_CORE_VERTICAL_TEXTURE_ID := &"forest_road_border__core_vertical"
 const FOREST_SURFACE_TEXTURE_WORLD_SIZE := 256.0
 const SEMANTIC_SURFACE_TEXTURE_WORLD_SIZE := 256.0
 const TOXIC_SURFACE_TEXTURE_WORLD_SIZE := 1024.0
@@ -77,30 +73,10 @@ const FOREST_TRANSITION_TEXTURE_IDS: Array[StringName] = [
 	&"grass_to_road",
 	&"path_to_road",
 	&"forest_road_border",
-	FOREST_ROAD_BORDER_HORIZONTAL_TEXTURE_ID,
-	FOREST_ROAD_BORDER_VERTICAL_TEXTURE_ID
-]
-const FOREST_ROAD_BORDER_EDGE_SURFACE_TILE_IDS: Array[StringName] = [
-	&"grass_to_path", &"grass_to_road",
-	&"road_edge",
-	&"road_curve_north", &"road_curve_east",
-	&"road_curve_south", &"road_curve_west"
-]
-const FOREST_ROAD_BORDER_SURFACE_TILE_IDS: Array[StringName] = [
-	&"forest_path", &"forest_road",
-	&"grass_to_path", &"grass_to_road", &"path_to_road",
-	&"main_road",
-	&"road", &"road_entry", &"road_exit",
-	&"broken_street", &"service_lane", &"ash_lane",
-	&"packed_snow_path", &"wooden_walkway",
-	&"road_intersection", &"road_edge",
-	&"road_curve_north", &"road_curve_east",
-	&"road_curve_south", &"road_curve_west",
-	&"broken_gate", &"broken_gate_entry", &"broken_gate_exit",
-	&"burned_road", &"burned_road_entry", &"burned_road_exit",
-	&"bridge", &"bridge_entry", &"bridge_exit",
-	&"snow_pass", &"snow_pass_entry", &"snow_pass_exit",
-	&"bridge_broken", &"cliff_ramp"
+	# Materiali border derivati da forest_road_border_defined.png (naming
+	# catalogo, registrati in _register_forest_road_border_orientation_textures).
+	&"forest_road_border_defined__horizontal",
+	&"forest_road_border_defined__vertical"
 ]
 const GENERATED_THEME_TERRAIN_SURFACE_TILE_IDS: Array[StringName] = [
 	&"main_road",
@@ -1048,7 +1024,10 @@ func _register_forest_road_border_orientation_textures(
 	vertical_texture: Texture2D
 ) -> void:
 	_register_surface_texture(
-		FOREST_ROAD_BORDER_VERTICAL_TEXTURE_ID,
+		GENERATED_ART_CATALOG.oriented_road_border_material_id(
+			asset_path,
+			GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_VERTICAL
+		),
 		asset_path,
 		vertical_texture
 	)
@@ -1059,7 +1038,10 @@ func _register_forest_road_border_orientation_textures(
 		)
 	)
 	_register_surface_texture(
-		FOREST_ROAD_BORDER_HORIZONTAL_TEXTURE_ID,
+		GENERATED_ART_CATALOG.oriented_road_border_material_id(
+			asset_path,
+			GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_HORIZONTAL
+		),
 		asset_path,
 		horizontal_texture
 	)
@@ -1069,7 +1051,10 @@ func _register_forest_road_border_orientation_textures(
 		"%s|forest_road_core" % asset_path
 	)
 	_register_surface_texture(
-		FOREST_ROAD_CORE_VERTICAL_TEXTURE_ID,
+		GENERATED_ART_CATALOG.road_core_material_id(
+			asset_path,
+			GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_VERTICAL
+		),
 		asset_path,
 		vertical_core_texture
 	)
@@ -1080,7 +1065,10 @@ func _register_forest_road_border_orientation_textures(
 		)
 	)
 	_register_surface_texture(
-		FOREST_ROAD_CORE_HORIZONTAL_TEXTURE_ID,
+		GENERATED_ART_CATALOG.road_core_material_id(
+			asset_path,
+			GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_HORIZONTAL
+		),
 		asset_path,
 		horizontal_core_texture
 	)
@@ -1376,91 +1364,19 @@ func _surface_texture_id_for_cell(
 	cell: Vector2i,
 	tile_id: StringName
 ) -> StringName:
+	var material_id := get_resolved_material_asset_id(cell)
 	if _uses_generated_theme():
-		var material_id := get_resolved_material_asset_id(cell)
 		if not material_id.is_empty():
 			return material_id
 		return _manifest_surface_texture_id_for_cell(cell, tile_id)
-	return _forest_surface_texture_id_for_cell(cell, tile_id)
-
-func _forest_surface_texture_id_for_cell(
-	cell: Vector2i,
-	tile_id: StringName
-) -> StringName:
-	if FOREST_ROAD_BORDER_SURFACE_TILE_IDS.has(tile_id):
-		if (
-			FOREST_ROAD_BORDER_EDGE_SURFACE_TILE_IDS.has(tile_id)
-			or _forest_route_cell_touches_non_route(cell)
-		):
-			return _forest_road_border_texture_id_for_cell(cell, tile_id)
-		return _forest_road_core_texture_id_for_cell(cell, tile_id)
-	return _forest_surface_texture_id(tile_id)
-
-func _forest_road_core_texture_id_for_cell(
-	cell: Vector2i,
-	tile_id: StringName
-) -> StringName:
-	if resolver == null:
-		return FOREST_ROAD_CORE_VERTICAL_TEXTURE_ID
-	var orientation := resolver.resolve_road_border_orientation_for_cell(
-		layout,
-		cell,
-		tile_id
-	)
-	var texture_id := (
-		FOREST_ROAD_CORE_HORIZONTAL_TEXTURE_ID
-		if orientation == GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_HORIZONTAL
-		else FOREST_ROAD_CORE_VERTICAL_TEXTURE_ID
-	)
-	if _forest_surface_textures.get(texture_id) is Texture2D:
-		return texture_id
-	return _forest_road_border_texture_id_for_cell(cell, tile_id)
-
-func _forest_road_border_texture_id_for_cell(
-	cell: Vector2i,
-	tile_id: StringName
-) -> StringName:
-	if resolver == null:
-		return FOREST_ROAD_BORDER_TEXTURE_ID
-	var orientation := resolver.resolve_road_border_orientation_for_cell(
-		layout,
-		cell,
-		tile_id
-	)
-	if orientation == GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_HORIZONTAL:
-		return FOREST_ROAD_BORDER_HORIZONTAL_TEXTURE_ID
-	return FOREST_ROAD_BORDER_VERTICAL_TEXTURE_ID
-
-func _forest_route_cell_touches_non_route(cell: Vector2i) -> bool:
-	if layout == null:
-		return false
-	for offset in IsometricTileResolver.CARDINAL_OFFSETS:
-		if not _cell_is_forest_route_surface(cell + offset):
-			return true
-	return false
-
-func _cell_is_forest_route_surface(cell: Vector2i) -> bool:
-	if layout == null:
-		return false
+	# Forest: il resolver assegna i materiali border/core alle route con la
+	# stessa convenzione dei temi generated; il resto usa gli slot forestali.
 	if (
-		cell.x < 0
-		or cell.y < 0
-		or cell.x >= layout.zone_size.x
-		or cell.y >= layout.zone_size.y
+		not material_id.is_empty()
+		and _forest_surface_textures.get(material_id) is Texture2D
 	):
-		return false
-	if layout.has_road_cell(cell):
-		return true
-	for rect in layout.road_rects:
-		if rect.has_point(cell):
-			return true
-	for rect in layout.passage_rects:
-		if rect.has_point(cell):
-			return true
-	for rect in layout.passage_connector_rects:
-		if rect.has_point(cell):
-			return true
-	return false
+		return material_id
+	return _forest_surface_texture_id(tile_id)
 
 func _manifest_surface_texture_id_for_cell(
 	cell: Vector2i,
@@ -1500,7 +1416,7 @@ func _forest_surface_texture_id(tile_id: StringName) -> StringName:
 		return &""
 	if FOREST_GRASS_SURFACE_TILE_IDS.has(tile_id):
 		return FOREST_GRASS_TEXTURE_ID
-	if FOREST_ROAD_BORDER_SURFACE_TILE_IDS.has(tile_id):
+	if IsometricTileResolver.FOREST_ROUTE_SURFACE_TILE_IDS.has(tile_id):
 		return FOREST_ROAD_BORDER_TEXTURE_ID
 	match tile_id:
 		IsometricTileResolver.TILE_FOREST_CLIFF_EDGE, IsometricTileResolver.TILE_GROUND_TO_VOID_CLIFF:
@@ -1704,7 +1620,7 @@ func _append_underlay_run(
 func _forest_underlay_key(tile_id: StringName) -> StringName:
 	if resolver != null and resolver.is_void_transition_tile_id(tile_id):
 		return &"void"
-	if FOREST_ROAD_BORDER_SURFACE_TILE_IDS.has(tile_id):
+	if IsometricTileResolver.FOREST_ROUTE_SURFACE_TILE_IDS.has(tile_id):
 		return &"road"
 	match tile_id:
 		IsometricTileResolver.TILE_FOREST_VOID:

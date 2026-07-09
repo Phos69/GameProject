@@ -375,8 +375,8 @@ static func oriented_road_surface_material_id(
 	return oriented_road_border_material_id(asset_path, orientation)
 
 ## Materiale per l'interno della carreggiata: core ritagliato dal PNG
-## road_border_defined, senza le strisce di bordo laterali. Stessa convenzione
-## di naming del core forestale (forest_road_border__core_vertical).
+## road_border_defined, senza le strisce di bordo laterali. Vale per tutti i
+## biomi, incluso il forestale (forest_road_border_defined__core_vertical).
 static func road_core_material_id(
 	asset_path: String,
 	orientation: StringName

@@ -134,6 +134,60 @@ const GENERATED_THEME_ROAD_CORE_TILE_IDS: Array[StringName] = [
 	TILE_MAIN_ROAD,
 	TILE_ROAD,
 ]
+# Route del bioma forestale che renderizzano il materiale border/core derivato
+# da forest_road_border_defined.png con la stessa convenzione dei temi
+# generated. Include i passage: in foresta attraversano la mappa come strade.
+# Lista condivisa col tile layer (underlay e fallback texture).
+const FOREST_ROUTE_SURFACE_TILE_IDS: Array[StringName] = [
+	TILE_FOREST_PATH,
+	TILE_FOREST_ROAD,
+	TILE_GRASS_TO_PATH,
+	TILE_GRASS_TO_ROAD,
+	TILE_PATH_TO_ROAD,
+	TILE_MAIN_ROAD,
+	TILE_ROAD,
+	TILE_ROAD_ENTRY,
+	TILE_ROAD_EXIT,
+	TILE_BROKEN_STREET,
+	TILE_SERVICE_LANE,
+	TILE_ASH_LANE,
+	TILE_PACKED_SNOW_PATH,
+	TILE_WOODEN_WALKWAY,
+	TILE_ROAD_INTERSECTION,
+	TILE_ROAD_EDGE,
+	TILE_ROAD_CURVE_NORTH,
+	TILE_ROAD_CURVE_EAST,
+	TILE_ROAD_CURVE_SOUTH,
+	TILE_ROAD_CURVE_WEST,
+	TILE_BROKEN_GATE,
+	TILE_BROKEN_GATE_ENTRY,
+	TILE_BROKEN_GATE_EXIT,
+	TILE_BURNED_ROAD,
+	TILE_BURNED_ROAD_ENTRY,
+	TILE_BURNED_ROAD_EXIT,
+	TILE_BRIDGE,
+	TILE_BRIDGE_ENTRY,
+	TILE_BRIDGE_EXIT,
+	TILE_SNOW_PASS,
+	TILE_SNOW_PASS_ENTRY,
+	TILE_SNOW_PASS_EXIT,
+	TILE_BRIDGE_BROKEN,
+	TILE_CLIFF_RAMP,
+]
+# Route forestali che usano sempre il PNG di bordo intero (contatto col
+# terreno o geometria di margine); le altre usano il core se non toccano
+# celle non-route.
+const FOREST_ROUTE_BORDER_SURFACE_TILE_IDS: Array[StringName] = [
+	TILE_GRASS_TO_PATH,
+	TILE_GRASS_TO_ROAD,
+	TILE_ROAD_EDGE,
+	TILE_ROAD_CURVE_NORTH,
+	TILE_ROAD_CURVE_EAST,
+	TILE_ROAD_CURVE_SOUTH,
+	TILE_ROAD_CURVE_WEST,
+]
+# Contratto terrain del manifest che fornisce il PNG road border forestale.
+const FOREST_ROAD_BORDER_TERRAIN_ASSET_ID: StringName = &"forest_road_border"
 const GENERATED_THEME_GENERATED_ROUTE_TILE_IDS: Array[StringName] = [
 	TILE_MAIN_ROAD,
 	TILE_ROAD,
@@ -162,6 +216,8 @@ const GENERATED_THEME_GENERATED_PASSAGE_SURFACE_TILE_IDS: Array[StringName] = [
 ]
 
 var manifest: IsometricEnvironmentManifest
+var _forest_road_border_asset_path := ""
+var _forest_road_border_asset_path_resolved := false
 
 func _init(next_manifest: IsometricEnvironmentManifest = null) -> void:
 	manifest = next_manifest if next_manifest != null else IsometricEnvironmentManifest.get_shared()
@@ -460,141 +516,6 @@ func _resolve_forest_floor_tile_data(
 		&"forest_grass"
 	)
 
-func _resolve_forest_cell_route_tile_data(
-	layout: BiomeEnvironmentLayout,
-	cell: Vector2i,
-	route_tags: Array[StringName],
-	biome_cell: BiomeCell
-) -> Dictionary:
-	var passage_tag := _find_passage_tag(route_tags)
-	if not passage_tag.is_empty():
-		if RESOLVER_UTILS.cell_inside_any_rect(cell, layout.passage_rects):
-			var endpoint_tile := (
-				get_passage_exit_tile_id(passage_tag)
-				if _cell_on_outer_passage_edge(layout, cell)
-				else get_passage_entry_tile_id(passage_tag)
-			)
-			return _tile_data(
-				endpoint_tile,
-				TILE_SECTION_PASSAGE,
-				&"passage_exit" if String(endpoint_tile).ends_with("_exit") else &"passage_entry"
-			)
-		if _cell_on_inner_passage_entry(layout, cell):
-			return _tile_data(
-				get_passage_entry_tile_id(passage_tag),
-				TILE_SECTION_PASSAGE,
-				&"passage_entry"
-			)
-		return _tile_data(passage_tag, TILE_SECTION_PASSAGE, &"passage_connector")
-	if _cell_touches_void_or_fall(layout, cell, biome_cell):
-		return _tile_data(
-			TILE_GROUND_TO_VOID_CLIFF,
-			TILE_SECTION_TERRAIN,
-			&"ground_to_void_cliff"
-		)
-	if _cell_touches_wall_or_border(layout, cell, biome_cell):
-		return _tile_data(
-			TILE_GROUND_TO_MOUNTAIN_WALL,
-			TILE_SECTION_TERRAIN,
-			&"ground_to_mountain_wall"
-		)
-	if _array_has_forest_main_and_path(route_tags):
-		return _tile_data(TILE_PATH_TO_ROAD, TILE_SECTION_TERRAIN, &"path_to_road")
-	if _array_has_forest_main(route_tags):
-		return (
-			_tile_data(TILE_GRASS_TO_ROAD, TILE_SECTION_TERRAIN, &"grass_to_road")
-			if _route_cell_touches_non_route(layout, cell)
-			else _tile_data(TILE_FOREST_ROAD, TILE_SECTION_TERRAIN, &"forest_road")
-		)
-	if _array_has_forest_path(route_tags):
-		return (
-			_tile_data(TILE_GRASS_TO_PATH, TILE_SECTION_TERRAIN, &"grass_to_path")
-			if _route_cell_touches_non_route(layout, cell)
-			else _tile_data(TILE_FOREST_PATH, TILE_SECTION_TERRAIN, &"forest_path")
-		)
-	return _tile_data(TILE_FOREST_PATH, TILE_SECTION_TERRAIN, &"forest_path")
-
-func _resolve_forest_rect_route_tile_data(
-	layout: BiomeEnvironmentLayout,
-	cell: Vector2i,
-	matching_indices: Array[int],
-	biome_cell: BiomeCell
-) -> Dictionary:
-	var selected_passage_index := -1
-	var has_main := false
-	var has_path := false
-	for index in matching_indices:
-		var route_tag := _road_tag_for_index(layout, index)
-		has_main = has_main or _is_forest_main_tag(route_tag)
-		has_path = has_path or _is_forest_path_tag(route_tag)
-		if not _is_passage_type(route_tag):
-			continue
-		if RESOLVER_UTILS.cell_inside_any_rect(cell, layout.passage_rects):
-			var endpoint_tile := (
-				get_passage_exit_tile_id(route_tag)
-				if _cell_on_outer_passage_edge(layout, cell)
-				else get_passage_entry_tile_id(route_tag)
-			)
-			return _tile_data(
-				endpoint_tile,
-				TILE_SECTION_PASSAGE,
-				&"passage_exit" if String(endpoint_tile).ends_with("_exit") else &"passage_entry"
-			)
-		selected_passage_index = index
-	if selected_passage_index >= 0:
-		var selected_passage_tag := _road_tag_for_index(layout, selected_passage_index)
-		if _cell_on_inner_passage_entry(layout, cell):
-			return _tile_data(
-				get_passage_entry_tile_id(selected_passage_tag),
-				TILE_SECTION_PASSAGE,
-				&"passage_entry"
-			)
-		return _tile_data(
-			selected_passage_tag,
-			TILE_SECTION_PASSAGE,
-			&"passage_connector"
-		)
-	if _cell_touches_void_or_fall(layout, cell, biome_cell):
-		return _tile_data(
-			TILE_GROUND_TO_VOID_CLIFF,
-			TILE_SECTION_TERRAIN,
-			&"ground_to_void_cliff"
-		)
-	if _cell_touches_wall_or_border(layout, cell, biome_cell):
-		return _tile_data(
-			TILE_GROUND_TO_MOUNTAIN_WALL,
-			TILE_SECTION_TERRAIN,
-			&"ground_to_mountain_wall"
-		)
-	if has_main and has_path:
-		return _tile_data(TILE_PATH_TO_ROAD, TILE_SECTION_TERRAIN, &"path_to_road")
-	var selected_index := matching_indices[matching_indices.size() - 1]
-	var selected_tag := _road_tag_for_index(layout, selected_index)
-	if _is_forest_main_tag(selected_tag):
-		return (
-			_tile_data(TILE_GRASS_TO_ROAD, TILE_SECTION_TERRAIN, &"grass_to_road")
-			if _route_rect_edge_touches_non_route(layout, cell, selected_index)
-			else _tile_data(TILE_FOREST_ROAD, TILE_SECTION_TERRAIN, &"forest_road")
-		)
-	if _is_forest_path_tag(selected_tag):
-		return (
-			_tile_data(TILE_GRASS_TO_PATH, TILE_SECTION_TERRAIN, &"grass_to_path")
-			if _route_rect_edge_touches_non_route(layout, cell, selected_index)
-			else _tile_data(TILE_FOREST_PATH, TILE_SECTION_TERRAIN, &"forest_path")
-		)
-	var terrain_tile_id := _resolve_terrain_route_tile_id(
-		layout,
-		cell,
-		selected_index,
-		selected_tag,
-		matching_indices.size()
-	)
-	return _tile_data(
-		terrain_tile_id,
-		TILE_SECTION_TERRAIN,
-		_resolve_terrain_route_role(terrain_tile_id)
-	)
-
 func _resolve_route_tile_data(
 	layout: BiomeEnvironmentLayout,
 	cell: Vector2i,
@@ -606,54 +527,78 @@ func _resolve_route_tile_data(
 		return passage_rect_data
 	var cell_route_tags := layout.get_road_tags_at_cell(cell)
 	if not cell_route_tags.is_empty():
-		if _is_forest_biome(biome_id):
-			return _resolve_forest_cell_route_tile_data(layout, cell, cell_route_tags, biome_cell)
-		return _resolve_cell_route_tile_data(layout, cell, cell_route_tags)
+		return _resolve_cell_route_tile_data(
+			layout,
+			cell,
+			cell_route_tags,
+			biome_id,
+			biome_cell
+		)
 	var matching_indices: Array[int] = []
 	for index in range(layout.road_rects.size()):
 		if layout.road_rects[index].has_point(cell):
 			matching_indices.append(index)
 	if matching_indices.is_empty():
 		return {}
-	if _is_forest_biome(biome_id):
-		return _resolve_forest_rect_route_tile_data(
-			layout,
-			cell,
-			matching_indices,
-			biome_cell
-		)
+	return _resolve_rect_route_tile_data(
+		layout,
+		cell,
+		matching_indices,
+		biome_id,
+		biome_cell
+	)
+
+func _resolve_rect_route_tile_data(
+	layout: BiomeEnvironmentLayout,
+	cell: Vector2i,
+	matching_indices: Array[int],
+	biome_id: StringName,
+	biome_cell: BiomeCell
+) -> Dictionary:
+	var has_main := false
+	var has_path := false
 	var selected_passage_index := -1
 	for index in matching_indices:
-		var passage_tag := _road_tag_for_index(layout, index)
-		if not _is_passage_type(passage_tag):
+		var route_tag := _road_tag_for_index(layout, index)
+		has_main = has_main or _is_forest_main_tag(route_tag)
+		has_path = has_path or _is_forest_path_tag(route_tag)
+		if not _is_passage_type(route_tag):
 			continue
 		if RESOLVER_UTILS.cell_inside_any_rect(cell, layout.passage_rects):
-			var endpoint_tile := (
-				get_passage_exit_tile_id(passage_tag)
-				if _cell_on_outer_passage_edge(layout, cell)
-				else get_passage_entry_tile_id(passage_tag)
-			)
-			return _tile_data(
-				endpoint_tile,
-				TILE_SECTION_PASSAGE,
-				&"passage_exit" if String(endpoint_tile).ends_with("_exit") else &"passage_entry"
-			)
+			return _resolve_passage_endpoint_tile_data(layout, cell, route_tag)
 		selected_passage_index = index
 	if selected_passage_index >= 0:
-		var selected_passage_tag := _road_tag_for_index(layout, selected_passage_index)
-		if _cell_on_inner_passage_entry(layout, cell):
-			return _tile_data(
-				get_passage_entry_tile_id(selected_passage_tag),
-				TILE_SECTION_PASSAGE,
-				&"passage_entry"
-			)
-		return _tile_data(
-			selected_passage_tag,
-			TILE_SECTION_PASSAGE,
-			&"passage_connector"
+		return _resolve_passage_connector_tile_data(
+			layout,
+			cell,
+			_road_tag_for_index(layout, selected_passage_index)
 		)
+	var is_forest := _is_forest_biome(biome_id)
+	if is_forest:
+		var transition_data := _resolve_forest_route_transition_tile_data(
+			layout,
+			cell,
+			biome_cell
+		)
+		if not transition_data.is_empty():
+			return transition_data
+		if has_main and has_path:
+			return _tile_data(TILE_PATH_TO_ROAD, TILE_SECTION_TERRAIN, &"path_to_road")
 	var selected_index := matching_indices[matching_indices.size() - 1]
 	var selected_tag := _road_tag_for_index(layout, selected_index)
+	if is_forest:
+		if _is_forest_main_tag(selected_tag):
+			return (
+				_tile_data(TILE_GRASS_TO_ROAD, TILE_SECTION_TERRAIN, &"grass_to_road")
+				if _route_rect_edge_touches_non_route(layout, cell, selected_index)
+				else _tile_data(TILE_FOREST_ROAD, TILE_SECTION_TERRAIN, &"forest_road")
+			)
+		if _is_forest_path_tag(selected_tag):
+			return (
+				_tile_data(TILE_GRASS_TO_PATH, TILE_SECTION_TERRAIN, &"grass_to_path")
+				if _route_rect_edge_touches_non_route(layout, cell, selected_index)
+				else _tile_data(TILE_FOREST_PATH, TILE_SECTION_TERRAIN, &"forest_path")
+			)
 	var terrain_tile_id := _resolve_terrain_route_tile_id(
 		layout,
 		cell,
@@ -666,6 +611,27 @@ func _resolve_route_tile_data(
 		TILE_SECTION_TERRAIN,
 		_resolve_terrain_route_role(terrain_tile_id)
 	)
+
+# Nei route forestali il raccordo cliff/parete ha priorita' sulla superficie
+# strada; negli altri biomi i cliff sono gestiti dal renderer dedicato.
+func _resolve_forest_route_transition_tile_data(
+	layout: BiomeEnvironmentLayout,
+	cell: Vector2i,
+	biome_cell: BiomeCell
+) -> Dictionary:
+	if _cell_touches_void_or_fall(layout, cell, biome_cell):
+		return _tile_data(
+			TILE_GROUND_TO_VOID_CLIFF,
+			TILE_SECTION_TERRAIN,
+			&"ground_to_void_cliff"
+		)
+	if _cell_touches_wall_or_border(layout, cell, biome_cell):
+		return _tile_data(
+			TILE_GROUND_TO_MOUNTAIN_WALL,
+			TILE_SECTION_TERRAIN,
+			&"ground_to_mountain_wall"
+		)
+	return {}
 
 func _resolve_passage_rect_route_tile_data(
 	layout: BiomeEnvironmentLayout,
@@ -678,29 +644,48 @@ func _resolve_passage_rect_route_tile_data(
 		if not _is_passage_type(passage_tag):
 			continue
 		if RESOLVER_UTILS.cell_inside_any_rect(cell, layout.passage_rects):
-			var endpoint_tile := (
-				get_passage_exit_tile_id(passage_tag)
-				if _cell_on_outer_passage_edge(layout, cell)
-				else get_passage_entry_tile_id(passage_tag)
-			)
-			return _tile_data(
-				endpoint_tile,
-				TILE_SECTION_PASSAGE,
-				&"passage_exit" if String(endpoint_tile).ends_with("_exit") else &"passage_entry"
-			)
+			return _resolve_passage_endpoint_tile_data(layout, cell, passage_tag)
 		if RESOLVER_UTILS.cell_inside_any_rect(cell, layout.passage_connector_rects):
-			if _cell_on_inner_passage_entry(layout, cell):
-				return _tile_data(
-					get_passage_entry_tile_id(passage_tag),
-					TILE_SECTION_PASSAGE,
-					&"passage_entry"
-				)
-			return _tile_data(
-				passage_tag,
-				TILE_SECTION_PASSAGE,
-				&"passage_connector"
-			)
+			return _resolve_passage_connector_tile_data(layout, cell, passage_tag)
 	return {}
+
+func _resolve_passage_tile_data(
+	layout: BiomeEnvironmentLayout,
+	cell: Vector2i,
+	passage_tag: StringName
+) -> Dictionary:
+	if RESOLVER_UTILS.cell_inside_any_rect(cell, layout.passage_rects):
+		return _resolve_passage_endpoint_tile_data(layout, cell, passage_tag)
+	return _resolve_passage_connector_tile_data(layout, cell, passage_tag)
+
+func _resolve_passage_endpoint_tile_data(
+	layout: BiomeEnvironmentLayout,
+	cell: Vector2i,
+	passage_tag: StringName
+) -> Dictionary:
+	var endpoint_tile := (
+		get_passage_exit_tile_id(passage_tag)
+		if _cell_on_outer_passage_edge(layout, cell)
+		else get_passage_entry_tile_id(passage_tag)
+	)
+	return _tile_data(
+		endpoint_tile,
+		TILE_SECTION_PASSAGE,
+		&"passage_exit" if String(endpoint_tile).ends_with("_exit") else &"passage_entry"
+	)
+
+func _resolve_passage_connector_tile_data(
+	layout: BiomeEnvironmentLayout,
+	cell: Vector2i,
+	passage_tag: StringName
+) -> Dictionary:
+	if _cell_on_inner_passage_entry(layout, cell):
+		return _tile_data(
+			get_passage_entry_tile_id(passage_tag),
+			TILE_SECTION_PASSAGE,
+			&"passage_entry"
+		)
+	return _tile_data(passage_tag, TILE_SECTION_PASSAGE, &"passage_connector")
 
 func _road_tag_for_index(layout: BiomeEnvironmentLayout, index: int) -> StringName:
 	if index >= 0 and index < layout.road_rect_tags.size():
@@ -710,28 +695,36 @@ func _road_tag_for_index(layout: BiomeEnvironmentLayout, index: int) -> StringNa
 func _resolve_cell_route_tile_data(
 	layout: BiomeEnvironmentLayout,
 	cell: Vector2i,
-	route_tags: Array[StringName]
+	route_tags: Array[StringName],
+	biome_id: StringName,
+	biome_cell: BiomeCell
 ) -> Dictionary:
 	var passage_tag := _find_passage_tag(route_tags)
 	if not passage_tag.is_empty():
-		if RESOLVER_UTILS.cell_inside_any_rect(cell, layout.passage_rects):
-			var endpoint_tile := (
-				get_passage_exit_tile_id(passage_tag)
-				if _cell_on_outer_passage_edge(layout, cell)
-				else get_passage_entry_tile_id(passage_tag)
+		return _resolve_passage_tile_data(layout, cell, passage_tag)
+	if _is_forest_biome(biome_id):
+		var transition_data := _resolve_forest_route_transition_tile_data(
+			layout,
+			cell,
+			biome_cell
+		)
+		if not transition_data.is_empty():
+			return transition_data
+		if _array_has_forest_main_and_path(route_tags):
+			return _tile_data(TILE_PATH_TO_ROAD, TILE_SECTION_TERRAIN, &"path_to_road")
+		if _array_has_forest_main(route_tags):
+			return (
+				_tile_data(TILE_GRASS_TO_ROAD, TILE_SECTION_TERRAIN, &"grass_to_road")
+				if _route_cell_touches_non_route(layout, cell)
+				else _tile_data(TILE_FOREST_ROAD, TILE_SECTION_TERRAIN, &"forest_road")
 			)
-			return _tile_data(
-				endpoint_tile,
-				TILE_SECTION_PASSAGE,
-				&"passage_exit" if String(endpoint_tile).ends_with("_exit") else &"passage_entry"
+		if _array_has_forest_path(route_tags):
+			return (
+				_tile_data(TILE_GRASS_TO_PATH, TILE_SECTION_TERRAIN, &"grass_to_path")
+				if _route_cell_touches_non_route(layout, cell)
+				else _tile_data(TILE_FOREST_PATH, TILE_SECTION_TERRAIN, &"forest_path")
 			)
-		if _cell_on_inner_passage_entry(layout, cell):
-			return _tile_data(
-				get_passage_entry_tile_id(passage_tag),
-				TILE_SECTION_PASSAGE,
-				&"passage_entry"
-			)
-		return _tile_data(passage_tag, TILE_SECTION_PASSAGE, &"passage_connector")
+		return _tile_data(TILE_FOREST_PATH, TILE_SECTION_TERRAIN, &"forest_path")
 	if route_tags.size() > 1:
 		return _tile_data(
 			TILE_ROAD_INTERSECTION,
@@ -1123,11 +1116,10 @@ func _apply_generated_material(
 	cell: Vector2i,
 	biome_id: StringName
 ) -> Dictionary:
-	if (
-		tile_data.is_empty()
-		or not GENERATED_ART_CATALOG.has_generated_theme(biome_id)
-	):
+	if tile_data.is_empty():
 		return tile_data
+	if not GENERATED_ART_CATALOG.has_generated_theme(biome_id):
+		return _apply_forest_route_material(tile_data, layout, cell, biome_id)
 	var tile_id := StringName(tile_data.get("tile_id", &""))
 	if _uses_manifest_surface_tile(tile_id):
 		return tile_data
@@ -1167,6 +1159,68 @@ func _apply_generated_material(
 	result["material_asset_path"] = asset_path
 	result["asset_path"] = asset_path
 	return result
+
+## infected_plains usa lo stesso contratto materiale dei temi generated:
+## border/core orientati derivati dal PNG road border del manifest. Il tile
+## id semantico resta invariato; cambia solo material_asset_id/path.
+func _apply_forest_route_material(
+	tile_data: Dictionary,
+	layout: BiomeEnvironmentLayout,
+	cell: Vector2i,
+	biome_id: StringName
+) -> Dictionary:
+	if not _is_forest_biome(biome_id) or layout == null:
+		return tile_data
+	var tile_id := StringName(tile_data.get("tile_id", &""))
+	if not FOREST_ROUTE_SURFACE_TILE_IDS.has(tile_id):
+		return tile_data
+	var asset_path := forest_road_border_asset_path()
+	if asset_path.is_empty():
+		return tile_data
+	var orientation := resolve_road_border_orientation_for_cell(
+		layout,
+		cell,
+		tile_id
+	)
+	var uses_border := (
+		FOREST_ROUTE_BORDER_SURFACE_TILE_IDS.has(tile_id)
+		or _route_cell_touches_non_route_surface(layout, cell)
+	)
+	var material_id := (
+		GENERATED_ART_CATALOG.oriented_road_border_material_id(
+			asset_path,
+			orientation
+		)
+		if uses_border
+		else GENERATED_ART_CATALOG.road_core_material_id(asset_path, orientation)
+	)
+	var result := tile_data.duplicate(true)
+	result["material_asset_id"] = material_id
+	result["material_asset_path"] = asset_path
+	return result
+
+func forest_road_border_asset_path() -> String:
+	if _forest_road_border_asset_path_resolved:
+		return _forest_road_border_asset_path
+	_forest_road_border_asset_path_resolved = true
+	if manifest != null:
+		_forest_road_border_asset_path = String(
+			manifest.get_terrain_asset_contract(
+				FOREST_ROAD_BORDER_TERRAIN_ASSET_ID
+			).get("asset_path", "")
+		)
+	return _forest_road_border_asset_path
+
+# Come _route_cell_touches_non_route, ma considera route anche passage e
+# connector: decide border-vs-core, non il tile semantico.
+func _route_cell_touches_non_route_surface(
+	layout: BiomeEnvironmentLayout,
+	cell: Vector2i
+) -> bool:
+	for offset in CARDINAL_OFFSETS:
+		if not _cell_is_route_surface(layout, cell + offset):
+			return true
+	return false
 
 func _generated_material_id_for_cell(
 	layout: BiomeEnvironmentLayout,

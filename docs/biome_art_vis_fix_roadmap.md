@@ -154,9 +154,11 @@ ground/path/road e per la scala degli oggetti forestali.
 Stato 2026-07-09: quarto pass strada eseguito. Il runtime mantiene i tile ID
 `forest_path`, `forest_road`, `grass_to_path`, `grass_to_road`, `path_to_road` e
 i passage `road`/entry/exit come semantica del resolver, ma sulle route della
-Pianura Infetta renderizza solo `forest_road_border__vertical` o
-`forest_road_border__horizontal` sui margini e un core strada derivato dallo
-stesso PNG negli interni. Questo rimuove la sovrapposizione visiva tra terra,
+Pianura Infetta renderizza solo `forest_road_border_defined__vertical` o
+`__horizontal` sui margini e il core `__core_vertical`/`__core_horizontal`
+derivato dallo stesso PNG negli interni; dalla fase 3 dell'unificazione strade
+il materiale e' assegnato dal resolver con la stessa convenzione dei temi
+generated. Questo rimuove la sovrapposizione visiva tra terra,
 asfalto legacy e bordo strada definito senza ripetere l'erba dentro la
 carreggiata.
 Aggiunta QA dedicata in `tests/visual_qa/biome_art_infected_plains_visual_qa.gd`

@@ -1,7 +1,7 @@
 # Report differenze biomi + piano di unificazione strade
 
-Stato: 2026-07-09 — fasi 0, 1 e 2 eseguite (vedi note in fondo alle
-rispettive sezioni); fasi 3-5 aperte. Il report differenze descrive lo stato
+Stato: 2026-07-09 — fasi 0-3 eseguite (vedi note in fondo alle rispettive
+sezioni); fasi 4-5 aperte. Il report differenze descrive lo stato
 *precedente* alle fasi eseguite.
 
 Fonte del problema percepito ("non si capisce piu niente"): oggi convivono
@@ -200,6 +200,28 @@ contratto). GUT assets+environment verdi, QA toxic/review/generated_art exit 0.
   texture id speciali `FOREST_ROAD_*` spariscono dal tile layer.
 - I tile id legacy (`forest_road`, `grass_to_road`, ...) restano come
   semantica/QA, solo il mapping materiale cambia.
+
+**Eseguita 2026-07-09** (scope route). Resolver: i rami
+`_resolve_forest_cell/rect_route_tile_data` sono fusi in
+`_resolve_cell_route_tile_data`/`_resolve_rect_route_tile_data` (ramo unico
+con classificazione per-bioma e tile id legacy invariati); la logica passage,
+prima quadruplicata, vive in `_resolve_passage_tile_data` +
+`_resolve_passage_endpoint/connector_tile_data`. Il materiale route di
+`infected_plains` viene assegnato dal resolver (`_apply_forest_route_material`)
+con la convenzione dei temi generated: `forest_road_border_defined__vertical`/
+`__horizontal`/`__core_vertical`/`__core_horizontal` derivati dal contratto
+manifest `forest_road_border`. Tile layer: eliminati i texture id speciali
+`FOREST_ROAD_*`, la selezione per-cella duplicata
+(`_forest_road_border/core_texture_id_for_cell`,
+`_forest_route_cell_touches_non_route`) e le liste route locali (ora
+`IsometricTileResolver.FOREST_ROUTE_SURFACE_TILE_IDS`). Bump
+`TileBakeCache.FORMAT_VERSION` 23→24 (le mappe material forest ora sono
+popolate). Nota di scope: il terreno non-route forestale (grass, tall grass,
+mountain wall, transizioni cliff) resta sulla pipeline manifest/SVG dedicata —
+la migrazione degli asset forestali sotto `generated_images` non serve
+all'obiettivo strade e resta una valutazione di Fase 4. Verifica: GUT
+assets+environment verdi, QA `biome_art_infected_plains` e
+`biome_rendering_review` exit 0, ispezione board route infected_plains.
 
 ### Fase 4 — Pulizia asset e non-strada
 

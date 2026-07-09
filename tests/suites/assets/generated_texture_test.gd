@@ -128,7 +128,7 @@ func test_forest_route_transitions_render_with_route_surfaces() -> void:
 			Vector2i(4, 10),
 			layer.get_resolved_tile_id(Vector2i(4, 10))
 		),
-		&"forest_road_border__horizontal",
+		&"forest_road_border_defined__horizontal",
 		"forest horizontal road edge uses the rotated road-border surface"
 	)
 	assert_eq(
@@ -136,7 +136,7 @@ func test_forest_route_transitions_render_with_route_surfaces() -> void:
 			Vector2i(22, 4),
 			layer.get_resolved_tile_id(Vector2i(22, 4))
 		),
-		&"forest_road_border__vertical",
+		&"forest_road_border_defined__vertical",
 		"forest vertical road edge uses the native road-border surface"
 	)
 	assert_eq(
@@ -144,7 +144,7 @@ func test_forest_route_transitions_render_with_route_surfaces() -> void:
 			Vector2i(4, 12),
 			layer.get_resolved_tile_id(Vector2i(4, 12))
 		),
-		&"forest_road_border__core_horizontal",
+		&"forest_road_border_defined__core_horizontal",
 		"forest horizontal road interior uses the core derived from the defined road-border asset"
 	)
 	assert_eq(
@@ -152,7 +152,7 @@ func test_forest_route_transitions_render_with_route_surfaces() -> void:
 			Vector2i(24, 5),
 			layer.get_resolved_tile_id(Vector2i(24, 5))
 		),
-		&"forest_road_border__core_vertical",
+		&"forest_road_border_defined__core_vertical",
 		"forest vertical road interior uses the core derived from the defined road-border asset"
 	)
 	assert_eq(
@@ -165,7 +165,7 @@ func test_forest_route_transitions_render_with_route_surfaces() -> void:
 			Vector2i(13, 12),
 			layer.get_resolved_tile_id(Vector2i(13, 12))
 		),
-		&"forest_road_border__core_horizontal",
+		&"forest_road_border_defined__core_horizontal",
 		"forest path/road crossing renders as road core, not a grass border patch"
 	)
 	var rendered_ids := layer.get_rendered_surface_material_ids()
@@ -178,19 +178,19 @@ func test_forest_route_transitions_render_with_route_surfaces() -> void:
 		"forest asphalt texture is loaded but no longer rendered on route corridors"
 	)
 	assert_true(
-		rendered_ids.has(&"forest_road_border__horizontal"),
+		rendered_ids.has(&"forest_road_border_defined__horizontal"),
 		"horizontal defined road-border surface is rendered"
 	)
 	assert_true(
-		rendered_ids.has(&"forest_road_border__vertical"),
+		rendered_ids.has(&"forest_road_border_defined__vertical"),
 		"vertical defined road-border surface is rendered"
 	)
 	assert_true(
-		rendered_ids.has(&"forest_road_border__core_horizontal"),
+		rendered_ids.has(&"forest_road_border_defined__core_horizontal"),
 		"horizontal defined road core surface is rendered"
 	)
 	assert_true(
-		rendered_ids.has(&"forest_road_border__core_vertical"),
+		rendered_ids.has(&"forest_road_border_defined__core_vertical"),
 		"vertical defined road core surface is rendered"
 	)
 	assert_false(
@@ -234,7 +234,7 @@ func test_forest_road_passages_do_not_render_as_dirt_paths() -> void:
 	)
 	assert_eq(
 		layer._surface_texture_id_for_cell(connector_probe, connector_tile),
-		&"forest_road_border__core_horizontal",
+		&"forest_road_border_defined__core_horizontal",
 		"forest road connector interior renders with the derived core road material"
 	)
 	var connector_edge_probe := Vector2i(4, 5)
@@ -243,16 +243,16 @@ func test_forest_road_passages_do_not_render_as_dirt_paths() -> void:
 			connector_edge_probe,
 			layer.get_resolved_tile_id(connector_edge_probe)
 		),
-		&"forest_road_border__horizontal",
+		&"forest_road_border_defined__horizontal",
 		"forest road connector edge renders with the oriented defined road-border material"
 	)
 	var rendered_ids := layer.get_rendered_surface_material_ids()
 	assert_true(
-		rendered_ids.has(&"forest_road_border__horizontal"),
+		rendered_ids.has(&"forest_road_border_defined__horizontal"),
 		"forest road passage renders the defined road-border material"
 	)
 	assert_true(
-		rendered_ids.has(&"forest_road_border__core_horizontal"),
+		rendered_ids.has(&"forest_road_border_defined__core_horizontal"),
 		"forest road passage renders the derived core road material"
 	)
 	assert_false(
