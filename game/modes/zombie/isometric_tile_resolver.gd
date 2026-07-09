@@ -1362,16 +1362,22 @@ func _route_runs_horizontally(
 
 ## True se la cella route appartiene solo a lane tematiche (nessuna strada
 ## principale la attraversa): i suoi bordi/incroci renderizzano il materiale
-## path invece del bordo stradale.
+## path invece del bordo stradale. I passage road-like prevalgono sulle lane:
+## il generatore carva spoke di lane sotto i corridoi tra biomi, ma quelle
+## celle renderizzano asfalto e devono ricevere il bordo strada.
 func route_cell_uses_lane_surface(
 	layout: BiomeEnvironmentLayout,
 	cell: Vector2i
 ) -> bool:
 	if layout == null:
 		return false
+	if RESOLVER_UTILS.cell_inside_any_rect(cell, layout.passage_rects):
+		return false
+	if RESOLVER_UTILS.cell_inside_any_rect(cell, layout.passage_connector_rects):
+		return false
 	var found_lane := false
 	for tag in layout.get_road_tags_at_cell(cell):
-		if _is_road_border_main_tag(tag):
+		if _is_road_border_main_tag(tag) or _is_passage_type(tag):
 			return false
 		if _is_forest_path_tag(tag):
 			found_lane = true
@@ -1379,7 +1385,7 @@ func route_cell_uses_lane_surface(
 		if not layout.road_rects[index].has_point(cell):
 			continue
 		var tag := _road_tag_for_index(layout, index)
-		if _is_road_border_main_tag(tag):
+		if _is_road_border_main_tag(tag) or _is_passage_type(tag):
 			return false
 		if _is_forest_path_tag(tag):
 			found_lane = true

@@ -8,6 +8,18 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Added
 
+- Unificazione strade biomi, copertura bordo in survival
+  (`docs/biome_road_unification_plan.md`): i corridoi passage tra biomi
+  sorgono sopra spoke di lane del generatore e il tag lane sotto la cella
+  vetava l'overlay di confine — strade asfaltate con il bordo solo su alcuni
+  lati. Ora passage rect/connector o tag passage prevalgono sul tag lane in
+  `route_cell_uses_lane_surface` (le lane pure restano senza bordo). Diagnosi
+  con sonda headless sul mondo reale: celle coperte 51→147 (infected_plains)
+  e 61→180 (toxic_wastes). Nuovo guardrail
+  `test_passage_over_lane_spoke_keeps_road_border_overlay`, bump
+  `TileBakeCache.FORMAT_VERSION` 26→27; GUT assets/environment e review QA
+  verdi.
+
 - Unificazione strade biomi, sorgente strip confine
   (`docs/biome_road_unification_plan.md`): l'overlay del confine strada/prato
   ora ritaglia la fascia di bordo dal PNG madre `road_border_defined` della

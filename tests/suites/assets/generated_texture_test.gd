@@ -369,6 +369,53 @@ func test_road_transition_overlay_rect_straddles_route_edge() -> void:
 	assert_almost_eq(north_rect.size.y, expected_width, 0.001, "north overlay has symmetric transition width")
 	layer.free()
 
+func test_passage_over_lane_spoke_keeps_road_border_overlay() -> void:
+	# Il generatore voidfirst carva spoke di lane (service_lane/broken_street)
+	# sotto i corridoi passage tra biomi: quelle celle renderizzano asfalto
+	# road-like, quindi il tag lane non deve vetare l'overlay di confine.
+	var layout := BiomeEnvironmentLayout.new()
+	layout.zone_size = Vector2i(12, 12)
+	layout.add_floor_rect(Rect2i(Vector2i.ZERO, layout.zone_size), &"open_block")
+	var corridor := Rect2i(Vector2i(5, 0), Vector2i(3, 12))
+	layout.road_rects.append(corridor)
+	layout.road_rect_tags.append(&"broken_gate")
+	layout.passage_connector_rects.append(corridor)
+	for y in range(corridor.position.y, corridor.end.y):
+		for x in range(corridor.position.x, corridor.end.x):
+			layout.add_road_cell(Vector2i(x, y), &"service_lane")
+	layout.rebuild_terrain_classification()
+	var resolver := IsometricTileResolver.new(_manifest)
+	var corridor_edge := Vector2i(5, 6)
+	assert_false(
+		resolver.route_cell_uses_lane_surface(layout, corridor_edge),
+		"passage corridor over a lane spoke is not classified as lane surface"
+	)
+	var sides := resolver.route_cell_road_border_sides(layout, corridor_edge)
+	assert_true(
+		sides.has(BiomeGeneratedArtCatalog.ROAD_BORDER_SIDE_WEST),
+		"passage corridor west edge exposes the road/ground overlay side"
+	)
+	var lane_only_layout := BiomeEnvironmentLayout.new()
+	lane_only_layout.zone_size = Vector2i(12, 12)
+	lane_only_layout.add_floor_rect(
+		Rect2i(Vector2i.ZERO, lane_only_layout.zone_size),
+		&"open_block"
+	)
+	for y in range(3, 9):
+		lane_only_layout.add_road_cell(Vector2i(6, y), &"service_lane")
+	lane_only_layout.rebuild_terrain_classification()
+	assert_true(
+		resolver.route_cell_uses_lane_surface(lane_only_layout, Vector2i(6, 6)),
+		"pure lane spokes still use the lane surface without road border overlay"
+	)
+	assert_true(
+		resolver.route_cell_road_border_sides(
+			lane_only_layout,
+			Vector2i(6, 6)
+		).is_empty(),
+		"pure lane spokes expose no road border overlay sides"
+	)
+
 const GENERATED_BIOME_THEMES: Dictionary = {
 	&"toxic_wastes": &"urban_ruins",
 	&"burning_fields": &"volcanic",

@@ -280,6 +280,22 @@ zoom 2x su frozen (banda ghiaia+neve) e toxic (ghiaia+muschio) e a zoom
 naturale su forest (cordolo chiaro): il confine ora legge come nel PNG
 sorgente. GUT assets verdi, QA 5 biomi + review exit 0.
 
+**Fix copertura survival 2026-07-09.** Nel mondo reale i corridoi passage tra
+biomi sorgono sopra spoke di lane carvate dal generatore voidfirst
+(`service_lane`/`broken_street` come tag cella sotto rect
+`broken_gate`/`snow_pass`/...): `route_cell_uses_lane_surface` vedeva il tag
+lane e vetava l'overlay di confine su superfici che renderizzano asfalto
+road-like — da qui "strade" con il bordo e altre senza. Ora l'appartenenza a
+`passage_rects`/`passage_connector_rects` o un tag passage prevalgono sul tag
+lane (le lane pure restano senza bordo, per design Fase 2). Diagnosi con
+sonda headless sul mondo survival reale (seed 641004, 3x3): celle route
+coperte da overlay 51→147 (infected_plains) e 61→180 (toxic_wastes), gruppi
+mancanti residui solo lane pure e celle a ridosso del void. Guardrail GUT
+`test_passage_over_lane_spoke_keeps_road_border_overlay`; bump
+`TileBakeCache.FORMAT_VERSION` 26→27 (cambiano i material risolti su quelle
+celle). GUT assets+environment verdi, review QA exit 0, ispezione zoom sul
+corridoio toxic (banda presente su entrambi i lati).
+
 ### Fase 4 — Pulizia asset e non-strada
 
 - Decidere il destino degli asset morti: `road_variation_01` dei 4 temi
