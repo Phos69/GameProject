@@ -170,6 +170,10 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `BossSystem`: registro scene/compatibilita, spawn per ID, boss attivo e notifica sconfitta.
 - `BasicBoss`: boss modulare con targeting, movimento, fasi e pattern proiettile.
 - `RiftArchitect`: secondo boss con lane sweep, cross burst e visual dedicato.
+- `ZombieBossBase`: estensione boss condivisa per melee ostile e proiettili
+  zombie, senza duplicare health, fasi, drop o targeting.
+- `ZombieBossVisual`: sprite raster opzionale per i cinque boss zombie con
+  fallback procedurale profile-driven.
 - `SurvivalMode`: ciclo survival, condizione di sconfitta e inoltro richieste boss.
 - `ZombieModeController`: coordinatore interno del revamp survival per bioma, terrain, casse, ostacoli e hazard.
 - `BiomeManager`: registro biomi, regione/bioma corrente, layout procedurale corrente e selezione iniziale della `Pianura Infetta`.
@@ -1165,20 +1169,30 @@ multi-bioma.
 - `BossSystem` e l'unico proprietario dello spawn, risolve `boss_id` e impedisce boss attivi duplicati.
 - `wave_warden` e compatibile con survival, dungeon e tower defense.
 - `rift_architect` e compatibile con survival e dungeon; il dungeon lo richiede esplicitamente.
+- `grave_colossus`, `gore_charger`, `plague_spitter`, `bone_mortar` e
+  `carrion_shepherd` sono compatibili solo con Infinite Arena e survival.
 - Il boss riceve un dizionario di configurazione prima di entrare nell'albero.
 - `BasicBoss` usa `HealthComponent` e appartiene al gruppo `damageable_targets`.
 - Il targeting seleziona il player vivo piu vicino e supporta join/leave.
-- I pattern usano `ProjectileSystem` con una scena proiettile ostile separata.
-- Aimed e radial passano profili `WeaponVisualData` distinti allo stesso proiettile ostile.
-- La fase 1 usa una raffica mirata da tre proiettili.
-- Sotto il 50% di vita, la fase 2 alterna raffica radiale e mirata.
+- I pattern ranged usano `ProjectileSystem` con una scena proiettile ostile
+  separata e profili `WeaponVisualData` per identita, trail e hit feedback.
+- `ZombieBossBase` crea attacchi `MeleeAttack` configurati per il gruppo
+  `players` e il layer body; gli swing non possono colpire zombie o boss e
+  vengono cancellati alla morte del proprietario.
+- I cinque profili coprono chase/short-stop, orbita con carica bloccata,
+  kite/strafe, anchor/reposition e movimento ibrido a bande di distanza.
 - Gli attacchi schedulati entrano prima in uno stato di telegraph.
-- La raffica mirata mostra cono e corsie per 0,70 secondi e blocca la direzione annunciata.
-- La raffica radiale mostra raggi e countdown per 0,90 secondi.
-- Nessun proiettile viene creato durante il warning.
+- Archi melee, aree, corsie di carica, coni e raggi radiali sono visuali
+  innocui: hitbox e proiettili nascono solo alla fine del warning.
 - `attack_telegraph_started` e `attack_telegraph_finished` espongono il timing ai sistemi di presentazione.
 - `BossTelegraphVisual` puo essere sostituito senza cambiare pattern, danno o targeting.
 - `WaveWardenVisual` puo essere sostituito senza cambiare health, collisioni o timing.
+- `ZombieBossVisual` carica il PNG canonico se disponibile e conserva una
+  silhouette procedurale distinta per ogni profilo quando l'asset manca.
+- Ogni quinta wave survival seleziona deterministicamente la rotazione
+  `wave_warden`, `grave_colossus`, `gore_charger`, `plague_spitter`,
+  `bone_mortar`, `carrion_shepherd`; i boss zombie usano uno spawn camera-edge
+  validato, mentre il Warden conserva il punto storico delle arene compatte.
 - Il danno letale genera un effetto `boss_death` senza ritardare il segnale `died`.
 - La morte genera la `LootTable` boss, emette `died` e notifica `BossSystem`.
 - `HUDManager` legge il boss attivo da `BossSystem` e mostra nome, fase e vita.

@@ -343,8 +343,10 @@ Completato:
 - annunci temporanei per ondata, reward e boss senza riquadro status persistente;
 - boss reale ogni cinque ondate, integrato nel conteggio e nel completamento della wave;
 - sconfitta survival quando tutti i player attivi sono morti;
-- boss `Wave Warden` nella quinta ondata con due fasi;
-- raffica mirata e attacco radiale tramite proiettili ostili;
+- roster survival a rotazione: `Wave Warden`, `Grave Colossus`,
+  `Gore Charger`, `Plague Spitter`, `Bone Mortar` e `Carrion Shepherd`;
+- pattern boss melee, a carica, ranged e ibridi con telegraph dedicati;
+- cinque sprite boss zombie originali con alpha e fallback procedurale;
 - barra vita boss con nome, fase e vita corrente;
 - scaling boss in base all'ondata;
 - drop speciale garantito `Wave Cannon`;

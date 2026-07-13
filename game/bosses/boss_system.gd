@@ -19,6 +19,21 @@ signal boss_request_rejected(
 @export var rift_architect_scene: PackedScene = preload(
 	"res://game/bosses/rift_architect.tscn"
 )
+@export var grave_colossus_scene: PackedScene = preload(
+	"res://game/bosses/zombie/grave_colossus.tscn"
+)
+@export var gore_charger_scene: PackedScene = preload(
+	"res://game/bosses/zombie/gore_charger.tscn"
+)
+@export var plague_spitter_scene: PackedScene = preload(
+	"res://game/bosses/zombie/plague_spitter.tscn"
+)
+@export var bone_mortar_scene: PackedScene = preload(
+	"res://game/bosses/zombie/bone_mortar.tscn"
+)
+@export var carrion_shepherd_scene: PackedScene = preload(
+	"res://game/bosses/zombie/carrion_shepherd.tscn"
+)
 @export var boss_container_path: NodePath = NodePath("../../World/Bosses")
 
 var active_boss: Node
@@ -47,6 +62,35 @@ func _ready() -> void:
 			GameConstants.MODE_SURVIVAL,
 			GameConstants.MODE_DUNGEON
 		]
+	)
+	var zombie_boss_modes: Array[StringName] = [
+		GameConstants.MODE_INFINITE_ARENA,
+		GameConstants.MODE_SURVIVAL
+	]
+	register_boss_scene(
+		&"grave_colossus",
+		grave_colossus_scene,
+		zombie_boss_modes
+	)
+	register_boss_scene(
+		&"gore_charger",
+		gore_charger_scene,
+		zombie_boss_modes
+	)
+	register_boss_scene(
+		&"plague_spitter",
+		plague_spitter_scene,
+		zombie_boss_modes
+	)
+	register_boss_scene(
+		&"bone_mortar",
+		bone_mortar_scene,
+		zombie_boss_modes
+	)
+	register_boss_scene(
+		&"carrion_shepherd",
+		carrion_shepherd_scene,
+		zombie_boss_modes
 	)
 
 func register_boss_scene(

@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="WeaponVisualData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/weapons/weapon_visual_data.gd" id="1_visual"]
+
+[resource]
+script = ExtResource("1_visual")
+profile_id = &"grave_colossus_cleaver"
+primary_color = Color(0.16, 0.14, 0.12, 1)
+secondary_color = Color(0.72, 0.78, 0.68, 1)
+glow_color = Color(0.42, 0.86, 0.38, 0.28)
+projectile_color = Color(0.78, 0.88, 0.72, 1)
+projectile_glow_color = Color(0.40, 0.90, 0.34, 0.30)
+impact_vfx_id = &"heavy_cleave"
+outline_color = Color(0.56, 0.94, 0.48, 0.56)
+weapon_length = 40.0
+weapon_width = 13.0
+trail_length = 24.0
+trail_width = 10.0

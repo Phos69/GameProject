@@ -8,6 +8,18 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Added
 
+- Chiusa `BOSS-002` con cinque boss zombie asset-backed per Infinite Arena e
+  Zombie Survival: `Grave Colossus` e `Gore Charger` usano sweep, slam e
+  cariche melee; `Plague Spitter` e `Bone Mortar` usano ventagli, anelli e
+  raffiche a proiettile; `Carrion Shepherd` alterna bolt e falciata in base
+  alla distanza. Ogni boss possiede movimento, due pattern, telegraph e
+  warning HUD distinti; Survival li ruota dopo il `Wave Warden` nelle boss
+  wave 5-30 e ripete la sequenza. Aggiunti `ZombieBossBase`, targeting melee
+  ostile configurabile, `ZombieBossVisual` con fallback procedurale e cinque
+  PNG originali generati internamente con alpha. Registry, scene, asset e
+  rotazione sono coperti dalle suite GUT dedicate; suite completa verde
+  (260/260 test) e boot headless della scena principale riuscito.
+
 - Unificazione strade biomi, copertura bordo in survival
   (`docs/biome_road_unification_plan.md`): i corridoi passage tra biomi
   sorgono sopra spoke di lane del generatore e il tag lane sotto la cella

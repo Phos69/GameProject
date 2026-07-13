@@ -1,0 +1,54 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://game/bosses/zombie/plague_spitter.gd" id="1_boss"]
+[ext_resource type="Script" path="res://game/health/health_component.gd" id="2_health"]
+[ext_resource type="Script" path="res://game/visuals/boss_telegraph_visual.gd" id="3_telegraph"]
+[ext_resource type="Script" path="res://game/visuals/zombie_boss_visual.gd" id="4_visual"]
+[ext_resource type="Resource" path="res://game/drops/boss_loot.tres" id="5_loot"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_plague"]
+radius = 38.0
+
+[node name="PlagueSpitter" type="CharacterBody2D"]
+collision_layer = 2
+collision_mask = 1
+script = ExtResource("1_boss")
+boss_id = &"plague_spitter"
+display_name = "Plague Spitter"
+move_speed = 96.0
+acceleration = 640.0
+preferred_distance = 315.0
+retreat_distance = 205.0
+attack_cooldown = 1.48
+phase_two_health_ratio = 0.52
+projectile_damage = 12
+defense = 1
+kill_experience = 115
+projectile_speed = 255.0
+loot_table = ExtResource("5_loot")
+movement_style_id = &"kite_strafe"
+
+[node name="Visual" type="Node2D" parent="."]
+script = ExtResource("4_visual")
+profile_id = &"plague_spitter"
+sprite_path = "res://assets/sprites/bosses/zombie/plague_spitter.png"
+sprite_target_height = 174.0
+sprite_offset = Vector2(0, -43)
+body_color = Color(0.24, 0.38, 0.14, 1)
+armor_color = Color(0.25, 0.13, 0.31, 1)
+accent_color = Color(0.65, 0.96, 0.18, 1)
+phase_two_tint = Color(0.90, 1, 0.74, 1)
+shadow_size = Vector2(56, 15)
+
+[node name="TelegraphVisual" type="Node2D" parent="."]
+z_index = -1
+script = ExtResource("3_telegraph")
+warning_color = Color(0.62, 0.94, 0.16, 1)
+phase_color = Color(0.76, 0.34, 1, 1)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_plague")
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("2_health")
+max_health = 410

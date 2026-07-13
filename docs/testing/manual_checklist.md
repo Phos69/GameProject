@@ -218,8 +218,29 @@ build/qa/milestone_12_enemy_variants.png
 - Un player entrato durante la run riceve le ricompense delle ondate successive.
 - Ogni quinta ondata mostra il marker `BOSS`.
 - La quinta ondata genera due zombie di scorta e il `Wave Warden`.
+- Le boss wave 10/15/20/25/30 generano nell'ordine `Grave Colossus`,
+  `Gore Charger`, `Plague Spitter`, `Bone Mortar` e `Carrion Shepherd`;
+  la wave 35 riparte dal `Wave Warden`.
 - La wave non termina finche il boss e vivo.
 - Se tutti i player attivi muoiono, la run si arresta.
+
+## Regressione BOSS-002 roster zombie
+
+- Ogni boss usa lo sprite corretto; rimuovendo temporaneamente il PNG resta
+  visibile la sua silhouette procedurale dedicata.
+- `Grave Colossus` insegue, si ferma a corto raggio e alterna sweep/slam.
+- `Gore Charger` annuncia e percorre la corsia bloccata prima del colpo;
+  `horn_combo` resta leggibile come arco separato.
+- `Plague Spitter` mantiene distanza/strafe e distingue fan da spore ring.
+- `Bone Mortar` alterna soste e riposizionamenti; le ossa mostrano un arco
+  visuale mentre la traiettoria di collisione resta annunciata dal cono.
+- `Carrion Shepherd` usa bolt a distanza e falciata nella banda melee.
+- Nessun warning infligge danno; melee e proiettili colpiscono solo player.
+- Con quattro player, uno swing non colpisce due volte lo stesso bersaglio e
+  un player invulnerabile non consuma il limite degli altri hit validi.
+- Fase due, morte, loot, boss HUD, stop modalita e cambio modalita non lasciano
+  telegraph o swing orfani; i proiettili gia in volo scadono senza errori
+  anche dopo la liberazione del proprietario.
 
 ## Smoke test survival
 

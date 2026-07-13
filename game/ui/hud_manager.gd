@@ -629,6 +629,26 @@ func _on_boss_telegraph_started(
 			boss_warning_label.text = "LANE SWEEP - FIND THE GAP"
 		&"cross_burst":
 			boss_warning_label.text = "CROSS BURST - ROTATE"
+		&"cleaver_sweep":
+			boss_warning_label.text = "CLEAVER SWEEP - GET BEHIND"
+		&"grave_slam":
+			boss_warning_label.text = "GRAVE SLAM - CLEAR THE RING"
+		&"gore_charge":
+			boss_warning_label.text = "GORE CHARGE - LEAVE THE LANE"
+		&"horn_combo":
+			boss_warning_label.text = "HORN COMBO - BACK OFF"
+		&"plague_fan":
+			boss_warning_label.text = "PLAGUE FAN - CROSS THE GAPS"
+		&"spore_ring":
+			boss_warning_label.text = "SPORE RING - FIND A GAP"
+		&"bone_mortar":
+			boss_warning_label.text = "BONE MORTAR - SIDESTEP"
+		&"bone_shards":
+			boss_warning_label.text = "BONE SHARDS - ROTATE"
+		&"carrion_bolt":
+			boss_warning_label.text = "CARRION BOLT - BREAK LINE"
+		&"butcher_sweep":
+			boss_warning_label.text = "BUTCHER SWEEP - GET BEHIND"
 		_:
 			boss_warning_label.text = "AIMED VOLLEY - MOVE"
 	boss_warning_label.modulate = Color(1.0, 0.44, 0.24, 1.0)

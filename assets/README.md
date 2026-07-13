@@ -35,6 +35,16 @@ assets/
 - per artwork scalabile non pixel-art, documentare l'eccezione nel `.import`
   e verificare il risultato a 1280x720.
 
+### Boss zombie
+
+I cutout originali dei cinque boss zombie sono in
+`sprites/bosses/zombie/`. Sono raster non pixel-art generati internamente su
+chroma key, convertiti in RGBA con bordo morbido e importati con filtro
+lineare e size limit a 512 px; prompt, palette e processing sono registrati in
+`sprites/bosses/zombie/manifest.json`. Le scene usano il path canonico ma
+`ZombieBossVisual` mantiene un fallback procedurale per non rendere l'asset
+obbligatorio al bootstrap.
+
 ## Compressione
 
 - sprite e UI: lossless;

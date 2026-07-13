@@ -247,7 +247,7 @@ Ogni modalita deve poter richiedere un boss:
 - dungeon: boss alla fine del livello o area;
 - tower defense: boss nelle ondate principali.
 
-Boss implementato: `Wave Warden`.
+Roster boss condiviso: `Wave Warden`, `Rift Architect` e cinque boss zombie.
 
 - vita base: 360;
 - quinta ondata: 504 HP per lo scaling survival;
@@ -286,6 +286,22 @@ Identita visuale del `Wave Warden`:
 - proiettile piu grande e trail piu marcato delle altre armi.
 
 I boss futuri devono mantenere il contratto di vita, segnali, drop e integrazione modalita.
+
+Roster zombie di Infinite Arena e Zombie Survival:
+
+| Boss | Movimento | Pattern 1 | Pattern 2 | Ruolo |
+| --- | --- | --- | --- | --- |
+| `Grave Colossus` | inseguimento diretto con short-stop | `cleaver_sweep`, arco melee | `grave_slam`, area circolare | tank melee |
+| `Gore Charger` | orbita media | `gore_charge`, corsia e carica bloccata | `horn_combo`, arco melee | diver melee |
+| `Plague Spitter` | kite e strafe alternato | `plague_fan`, ventaglio da 7 | `spore_ring`, anello da 12 | zoner ranged |
+| `Bone Mortar` | ancora e burst di riposizionamento | `bone_mortar`, raffica arcuata da 4 | `bone_shards`, anello da 14 | artiglieria ranged |
+| `Carrion Shepherd` | bande di distanza ibride | `carrion_bolt`, raffica da 3 | `butcher_sweep`, arco melee | ibrido |
+
+Tutti hanno due fasi, telegraph innocui, scaling per wave, loot boss condiviso
+e silhouette raster distinta con fallback procedurale. In survival la
+rotazione delle boss wave e: wave 5 `Wave Warden`, 10 `Grave Colossus`, 15
+`Gore Charger`, 20 `Plague Spitter`, 25 `Bone Mortar`, 30
+`Carrion Shepherd`, poi riparte.
 
 ## Drop
 
@@ -818,7 +834,8 @@ Regole della run:
 - nei biomi avanzati il roster pesato sostituisce progressivamente questi ruoli con varianti tematiche;
 - numero player, tempo sopravvissuto e distanza dal bioma iniziale aumentano gradualmente la pressione;
 - ogni quinta ondata e marcata come boss wave;
-- ogni boss wave genera 2 zombie di scorta e il `Wave Warden`;
+- ogni boss wave genera 2 zombie di scorta e il boss successivo della
+  rotazione Warden/zombie;
 - la vita boss aumenta del 10% per ondata precedente;
 - il danno boss aumenta dell'8% per ondata precedente;
 - la wave termina solo quando scorte e boss sono morti;
@@ -867,7 +884,7 @@ Feedback visuali implementati:
 - anello e frammenti alla morte di uno zombie;
 - anello colorato alla raccolta di un pickup;
 - indicatori visuali di ricarica e danno sul survivor.
-- cono/raggi e countdown prima degli attacchi del `Wave Warden`;
+- cono/raggi, archi, aree e corsie con countdown prima degli attacchi boss;
 - impulso, HUD e cue audio per il cambio fase boss.
 - annunci centrali per preparazione, wave start, reward e boss;
 - pannello boss incorniciato con fase, vita e warning;

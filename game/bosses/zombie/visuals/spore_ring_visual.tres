@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="WeaponVisualData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/weapons/weapon_visual_data.gd" id="1_visual"]
+
+[resource]
+script = ExtResource("1_visual")
+profile_id = &"spore_ring"
+family_id = &"elemental"
+projectile_shape_id = &"acid_flask"
+impact_shape_id = &"toxic_spores"
+impact_vfx_id = &"toxic"
+primary_color = Color(0.18, 0.10, 0.25, 1)
+secondary_color = Color(0.78, 0.38, 1, 1)
+glow_color = Color(0.65, 0.30, 1, 0.44)
+muzzle_color = Color(0.84, 0.50, 1, 1)
+projectile_color = Color(0.72, 0.34, 0.94, 1)
+projectile_glow_color = Color(0.54, 0.20, 0.84, 0.42)
+projectile_scale = Vector2(0.92, 0.92)
+muzzle_size = 9.0
+trail_length = 19.0
+trail_width = 4.5

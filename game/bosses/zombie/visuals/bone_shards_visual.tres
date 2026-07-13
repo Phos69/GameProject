@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="WeaponVisualData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/weapons/weapon_visual_data.gd" id="1_visual"]
+
+[resource]
+script = ExtResource("1_visual")
+profile_id = &"bone_shards"
+family_id = &"bone"
+projectile_shape_id = &"ice_lance"
+impact_shape_id = &"seismic_crystal"
+impact_vfx_id = &"seismic"
+primary_color = Color(0.26, 0.25, 0.22, 1)
+secondary_color = Color(0.92, 0.90, 0.76, 1)
+glow_color = Color(0.78, 0.92, 1, 0.34)
+muzzle_color = Color(0.96, 0.96, 0.82, 1)
+projectile_color = Color(0.90, 0.88, 0.73, 1)
+projectile_glow_color = Color(0.70, 0.82, 0.88, 0.34)
+projectile_scale = Vector2(1.42, 0.62)
+muzzle_size = 8.0
+trail_length = 22.0
+trail_width = 3.5

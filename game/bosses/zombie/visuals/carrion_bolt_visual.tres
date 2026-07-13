@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="WeaponVisualData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/weapons/weapon_visual_data.gd" id="1_visual"]
+
+[resource]
+script = ExtResource("1_visual")
+profile_id = &"carrion_bolt"
+family_id = &"elemental"
+projectile_shape_id = &"unstable_void"
+impact_shape_id = &"unstable_void"
+impact_vfx_id = &"void"
+primary_color = Color(0.18, 0.06, 0.08, 1)
+secondary_color = Color(0.94, 0.20, 0.24, 1)
+glow_color = Color(0.92, 0.12, 0.28, 0.48)
+muzzle_color = Color(1, 0.30, 0.32, 1)
+projectile_color = Color(0.92, 0.18, 0.25, 1)
+projectile_glow_color = Color(0.78, 0.08, 0.18, 0.46)
+projectile_scale = Vector2(1.28, 0.82)
+muzzle_size = 11.0
+trail_length = 28.0
+trail_width = 5.5

@@ -17,6 +17,9 @@ var phase_pulse_remaining: float = 0.0
 var lane_spacing: float = 0.0
 var lane_gap_index: int = -1
 var cross_rotation: float = 0.0
+var warning_range: float = 0.0
+var warning_width: float = 0.0
+var warning_arc_degrees: float = 0.0
 var high_contrast: bool = false
 var reduced_motion: bool = false
 
@@ -93,6 +96,76 @@ func begin_cross(duration: float, count: int, rotation_offset: float) -> void:
 	rotation = 0.0
 	_show_active()
 
+func begin_projectile_cone(
+	pattern_id: StringName,
+	direction: Vector2,
+	duration: float,
+	count: int,
+	spread: float
+) -> void:
+	active_pattern = pattern_id
+	telegraph_duration = maxf(duration, 0.01)
+	time_remaining = telegraph_duration
+	projectile_count = maxi(count, 1)
+	spread_radians = maxf(spread, 0.0)
+	rotation = direction.angle()
+	_show_active()
+
+func begin_projectile_radial(
+	pattern_id: StringName,
+	duration: float,
+	count: int
+) -> void:
+	active_pattern = pattern_id
+	telegraph_duration = maxf(duration, 0.01)
+	time_remaining = telegraph_duration
+	projectile_count = maxi(count, 1)
+	spread_radians = 0.0
+	rotation = 0.0
+	_show_active()
+
+func begin_melee_arc(
+	pattern_id: StringName,
+	direction: Vector2,
+	duration: float,
+	range_value: float,
+	arc_degrees: float
+) -> void:
+	active_pattern = pattern_id
+	telegraph_duration = maxf(duration, 0.01)
+	time_remaining = telegraph_duration
+	warning_range = maxf(range_value, 1.0)
+	warning_arc_degrees = clampf(arc_degrees, 1.0, 360.0)
+	rotation = direction.angle()
+	_show_active()
+
+func begin_area(
+	pattern_id: StringName,
+	duration: float,
+	radius: float
+) -> void:
+	active_pattern = pattern_id
+	telegraph_duration = maxf(duration, 0.01)
+	time_remaining = telegraph_duration
+	warning_range = maxf(radius, 1.0)
+	rotation = 0.0
+	_show_active()
+
+func begin_charge_lane(
+	pattern_id: StringName,
+	direction: Vector2,
+	duration: float,
+	length: float,
+	width: float
+) -> void:
+	active_pattern = pattern_id
+	telegraph_duration = maxf(duration, 0.01)
+	time_remaining = telegraph_duration
+	warning_range = maxf(length, 1.0)
+	warning_width = maxf(width, 1.0)
+	rotation = direction.angle()
+	_show_active()
+
 func finish_telegraph() -> void:
 	active_pattern = &""
 	telegraph_duration = 0.0
@@ -148,6 +221,20 @@ func _draw() -> void:
 		_draw_lane_warning()
 	elif active_pattern == &"cross_burst":
 		_draw_cross_warning()
+	elif active_pattern in [
+		&"plague_fan", &"bone_mortar", &"carrion_bolt"
+	]:
+		_draw_aimed_warning()
+	elif active_pattern in [&"spore_ring", &"bone_shards"]:
+		_draw_radial_warning()
+	elif active_pattern in [
+		&"cleaver_sweep", &"horn_combo", &"butcher_sweep"
+	]:
+		_draw_melee_arc_warning()
+	elif active_pattern == &"grave_slam":
+		_draw_area_warning()
+	elif active_pattern == &"gore_charge":
+		_draw_charge_lane_warning()
 	if phase_pulse_remaining > 0.0:
 		_draw_phase_pulse()
 
@@ -344,6 +431,96 @@ func _draw_cross_warning() -> void:
 		40,
 		Color(0.30, 0.92, 1.0, 0.90 * pulse),
 		4.0,
+		true
+	)
+	_draw_countdown_ring()
+
+func _draw_melee_arc_warning() -> void:
+	var pulse := _warning_pulse(0.026)
+	var half_angle := deg_to_rad(warning_arc_degrees * 0.5)
+	var wedge := PackedVector2Array([Vector2.ZERO])
+	for index in range(25):
+		var ratio := float(index) / 24.0
+		var angle := lerpf(-half_angle, half_angle, ratio)
+		wedge.append(Vector2.RIGHT.rotated(angle) * warning_range)
+	draw_colored_polygon(wedge, Color(warning_color, 0.13 * pulse))
+	draw_arc(
+		Vector2.ZERO,
+		warning_range,
+		-half_angle,
+		half_angle,
+		28,
+		Color(warning_color, 0.92 * pulse),
+		5.0,
+		true
+	)
+	draw_line(
+		Vector2.ZERO,
+		Vector2.RIGHT.rotated(-half_angle) * warning_range,
+		Color(warning_color, 0.62 * pulse),
+		2.5,
+		true
+	)
+	draw_line(
+		Vector2.ZERO,
+		Vector2.RIGHT.rotated(half_angle) * warning_range,
+		Color(warning_color, 0.62 * pulse),
+		2.5,
+		true
+	)
+	_draw_countdown_ring()
+
+func _draw_area_warning() -> void:
+	var pulse := _warning_pulse(0.027)
+	draw_circle(
+		Vector2.ZERO,
+		warning_range,
+		Color(warning_color, 0.12 * pulse),
+		true,
+		-1.0,
+		true
+	)
+	draw_arc(
+		Vector2.ZERO,
+		warning_range,
+		0.0,
+		TAU,
+		44,
+		Color(warning_color, 0.88 * pulse),
+		5.0,
+		true
+	)
+	var impact_radius := lerpf(
+		warning_range,
+		countdown_radius * 0.55,
+		get_progress_ratio()
+	)
+	draw_arc(
+		Vector2.ZERO,
+		impact_radius,
+		0.0,
+		TAU,
+		36,
+		Color(warning_color, 0.72 * pulse),
+		3.0,
+		true
+	)
+	_draw_countdown_ring()
+
+func _draw_charge_lane_warning() -> void:
+	var pulse := _warning_pulse(0.026)
+	var rect := Rect2(
+		Vector2(38.0, -warning_width * 0.5),
+		Vector2(maxf(warning_range - 38.0, 1.0), warning_width)
+	)
+	draw_rect(rect, Color(warning_color, 0.12 * pulse), true)
+	draw_rect(rect, Color(warning_color, 0.88 * pulse), false, 4.0)
+	var front_x := lerpf(44.0, warning_range, get_progress_ratio())
+	draw_line(
+		Vector2(front_x, -warning_width * 0.55),
+		Vector2(front_x, warning_width * 0.55),
+		Color(warning_color, 0.96 * pulse),
+		6.0,
 		true
 	)
 	_draw_countdown_ring()

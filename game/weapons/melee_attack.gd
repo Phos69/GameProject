@@ -29,10 +29,13 @@ var trail_style: StringName = &""
 var effect_key: StringName = &""
 var visual_data: WeaponVisualData
 var attack_direction: Vector2 = Vector2.RIGHT
+var target_group: StringName = &"damageable_targets"
+var target_collision_mask: int = GameConstants.LAYER_DAMAGEABLE
 var phase: int = Phase.WINDUP
 var phase_timer: float = 0.0
 var age: float = 0.0
 var hit_targets: Dictionary = {}
+var successful_hit_count: int = 0
 var collision_shape: CollisionShape2D
 
 func configure(
@@ -52,7 +55,9 @@ func configure(
 	max_hits: int,
 	weapon_visual_data: WeaponVisualData = null,
 	trail_style_value: StringName = &"",
-	effect_key_value: StringName = &""
+	effect_key_value: StringName = &"",
+	target_group_value: StringName = &"damageable_targets",
+	target_collision_mask_value: int = GameConstants.LAYER_DAMAGEABLE
 ) -> void:
 	global_position = origin
 	attack_direction = (
@@ -76,6 +81,8 @@ func configure(
 	visual_data = weapon_visual_data
 	trail_style = trail_style_value
 	effect_key = effect_key_value
+	target_group = target_group_value
+	target_collision_mask = target_collision_mask_value
 
 func get_slash_shape_id() -> StringName:
 	return WEAPON_VISUAL_RENDERER.get_slash_shape_id(visual_data)
@@ -90,7 +97,7 @@ func get_slash_style_id() -> StringName:
 func _ready() -> void:
 	z_index = 3
 	collision_layer = 0
-	collision_mask = GameConstants.LAYER_DAMAGEABLE
+	collision_mask = target_collision_mask
 	monitorable = false
 	monitoring = false
 	body_entered.connect(_on_body_entered)
@@ -159,6 +166,10 @@ func _create_collision_shape() -> void:
 			var arc := ConvexPolygonShape2D.new()
 			arc.points = _arc_points()
 			collision_shape.shape = arc
+		&"circle":
+			var circle := CircleShape2D.new()
+			circle.radius = attack_range
+			collision_shape.shape = circle
 		&"dash":
 			var rectangle := RectangleShape2D.new()
 			rectangle.size = Vector2(attack_range, attack_width)
@@ -196,7 +207,7 @@ func _scan_overlaps() -> void:
 		_try_hit_target(body)
 	for area in get_overlapping_areas():
 		_try_hit_target(area)
-	_scan_damageable_targets_by_geometry()
+	_scan_target_group_by_geometry()
 
 func _on_body_entered(body: Node2D) -> void:
 	_try_hit_target(body)
@@ -209,7 +220,9 @@ func _try_hit_target(target: Node) -> void:
 		return
 	if target == null or target == owner_node:
 		return
-	if hit_targets.size() >= max_hit_count:
+	if not target_group.is_empty() and not target.is_in_group(target_group):
+		return
+	if successful_hit_count >= max_hit_count:
 		return
 	var target_id := target.get_instance_id()
 	if hit_targets.has(target_id):
@@ -237,14 +250,17 @@ func _try_hit_target(target: Node) -> void:
 		if health_component != null:
 			applied_damage = health_component.apply_damage(damage)
 	if applied_damage > 0:
+		successful_hit_count += 1
 		_apply_knockback(target)
 		hitstop_timer = maxf(hitstop_timer, hitstop_time)
 	hit_target.emit(target, applied_damage, hit_position)
-	if hit_targets.size() >= max_hit_count:
+	if successful_hit_count >= max_hit_count:
 		_finish()
 
-func _scan_damageable_targets_by_geometry() -> void:
-	for candidate in get_tree().get_nodes_in_group("damageable_targets"):
+func _scan_target_group_by_geometry() -> void:
+	if target_group.is_empty():
+		return
+	for candidate in get_tree().get_nodes_in_group(target_group):
 		if (
 			candidate == owner_node
 			or not (candidate is Node2D)
@@ -259,6 +275,8 @@ func _scan_damageable_targets_by_geometry() -> void:
 func _contains_world_point(world_position: Vector2) -> bool:
 	var local_point := to_local(world_position)
 	match attack_shape:
+		&"circle":
+			return local_point.length() <= attack_range
 		&"arc":
 			if local_point.x < 0.0:
 				return false
@@ -288,6 +306,25 @@ func _apply_knockback(target: Node) -> void:
 func _draw_attack_preview(color: Color, ratio: float) -> void:
 	var alpha := 0.16 + ratio * 0.24
 	match attack_shape:
+		&"circle":
+			draw_circle(
+				Vector2.ZERO,
+				attack_range,
+				Color(color, alpha * 0.28),
+				true,
+				-1.0,
+				true
+			)
+			draw_arc(
+				Vector2.ZERO,
+				attack_range,
+				0.0,
+				TAU,
+				40,
+				Color(color, alpha),
+				3.0,
+				true
+			)
 		&"arc":
 			var half_angle := deg_to_rad(arc_degrees * 0.5)
 			draw_arc(
@@ -567,6 +604,9 @@ func _draw_default_slash(
 	ratio: float,
 	alpha: float
 ) -> void:
+	if attack_shape == &"circle":
+		_draw_circle_slam(blade_color, glow_color, ratio, alpha)
+		return
 	if attack_shape == &"arc":
 		_draw_arc_slash(blade_color, glow_color, ratio, alpha, 0.86, 0.30)
 		return
@@ -594,6 +634,40 @@ func _draw_default_slash(
 		true
 	)
 
+func _draw_circle_slam(
+	blade_color: Color,
+	glow_color: Color,
+	ratio: float,
+	alpha: float
+) -> void:
+	var outer_radius := lerpf(attack_range * 0.42, attack_range, ratio)
+	for ring_index in range(3):
+		var ring_radius := maxf(
+			outer_radius - float(ring_index) * attack_range * 0.16,
+			8.0
+		)
+		draw_arc(
+			Vector2.ZERO,
+			ring_radius,
+			0.0,
+			TAU,
+			40,
+			Color(
+				blade_color if ring_index == 0 else glow_color,
+				alpha * (0.88 - float(ring_index) * 0.20)
+			),
+			5.0 - float(ring_index),
+			true
+		)
+	for index in range(8):
+		var direction := Vector2.RIGHT.rotated(TAU * float(index) / 8.0)
+		draw_line(
+			direction * outer_radius * 0.54,
+			direction * outer_radius,
+			Color(glow_color, alpha * 0.44),
+			2.5,
+			true
+		)
 func _arc_points() -> PackedVector2Array:
 	var points := PackedVector2Array([Vector2.ZERO])
 	var half_angle := deg_to_rad(arc_degrees * 0.5)

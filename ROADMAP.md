@@ -66,8 +66,17 @@ evitare sovrapposizioni.
   `crescent_barrage` del Wave Warden — ventaglio ampio a velocita' sfalsate
   con telegraph dedicato (fronte a mezzaluna che avanza col countdown, nessun
   danno nel warning, warning HUD "CRESCENT BARRAGE - SIDESTEP") in rotazione
-  a tre pattern dalla fase due. Contratto registry/ID e drop invariati; un
-  eventuale boss nuovo richiede una nuova voce in `TODO.md`.
+  a tre pattern dalla fase due. Contratto registry/ID e drop invariati.
+- `BOSS-002`: **completata 2026-07-13**. Obiettivo: ampliare la rotazione
+  survival con almeno cinque boss zombie senza duplicare combat condiviso.
+  Aggiunti `Grave Colossus`, `Gore Charger`, `Plague Spitter`, `Bone Mortar`
+  e `Carrion Shepherd`, ciascuno con movimento, due pattern, telegraph e
+  sprite alpha distinti; la sequenza wave 5-30 resta deterministica e si
+  ripete. Coinvolti `BossSystem`, `SurvivalMode`, `ZombieBossBase`, melee,
+  projectile, visual/HUD e asset boss. Accettazione: scene registrate e
+  caricabili, compatibilita limitata a Infinite Arena/Survival, warning senza
+  danno e asset con fallback; verificata con GUT enemies/assets, import e
+  smoke della scena principale.
 - `TD-001`: **completata 2026-07-08** con l'upgrade delle torri a tre livelli:
   interact sullo slot occupato, costo per livello (35/50 crediti) con rimborso
   su fallimento, statistiche scalate (danno x1.5, cadenza x1.2, gittata x1.1),

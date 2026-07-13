@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "generated_on": "2026-07-13",
+  "generator": "OpenAI image generation (built-in imagegen)",
+  "license": "Originali del progetto",
+  "processing": {
+    "background": "flat chroma key sampled from border",
+    "alpha": "remove_chroma_key.py --auto-key border --soft-matte --despill",
+    "godot_import_size_limit": 512,
+    "runtime_filter": "linear",
+    "fallback": "ZombieBossVisual procedural profile"
+  },
+  "shared_prompt_constraints": "One isolated full-body 2D game boss sprite; dark post-apocalyptic cartoon arcade style; 3/4 isometric view from slightly above; facing screen-right; bold near-black outline; crisp cel shading; chunky readable silhouette; generous padding; no shadow, floor, environment, UI, text, watermark or loose VFX; uniform flat #FF00FF chroma-key background with no magenta on the subject.",
+  "assets": [
+    {
+      "boss_id": "grave_colossus",
+      "path": "res://assets/sprites/bosses/zombie/grave_colossus.png",
+      "subject_prompt": "Chunky graveyard colossus zombie carrying a massive tombstone on its back and a rusted executioner cleaver, cracked stone armor, chains and cyan corpse glow; moss green, granite gray, rust brown and cyan palette."
+    },
+    {
+      "boss_id": "gore_charger",
+      "path": "res://assets/sprites/bosses/zombie/gore_charger.png",
+      "subject_prompt": "Hulking undead zombie built low and wide in an aggressive forward lean, enormous curved ram horns, cracked bone armor plates and powerful charging legs; dried blood, bone, charcoal, ember and corpse-green palette."
+    },
+    {
+      "boss_id": "plague_spitter",
+      "path": "res://assets/sprites/bosses/zombie/plague_spitter.png",
+      "subject_prompt": "Asymmetrical pear-shaped undead zombie with swollen translucent toxic sacs, nozzle-like distended jaw, thin braced legs and hooked claws; tar teal, corpse green, toxic lime and acid-yellow palette."
+    },
+    {
+      "boss_id": "bone_mortar",
+      "path": "res://assets/sprites/bosses/zombie/bone_mortar.png",
+      "subject_prompt": "Tall triangular undead artillery zombie whose spine and rib cage form a dorsal bone mortar, with braced tripod-like legs, vertebra ammunition and skull-like aiming head; indigo, aged bone, gunmetal and warning-orange palette."
+    },
+    {
+      "boss_id": "carrion_shepherd",
+      "path": "res://assets/sprites/bosses/zombie/carrion_shepherd.png",
+      "subject_prompt": "Lanky undead zombie herder with a long curved butcher scythe, clustered carrion-spore pods, elongated limbs and a sinister shepherd silhouette; bruised violet, corpse olive, old bone, amber and cold-cyan palette."
+    }
+  ]
+}

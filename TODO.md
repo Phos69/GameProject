@@ -5,8 +5,8 @@ prendere. Le milestone archiviate, le roadmap storiche e le baseline di validazi
 sono consolidate in `ROADMAP.md`, `CHANGELOG.md`, nei report specifici sotto
 `docs/` e in `docs/documentation_inventory.md`.
 
-Le milestone `UIUX-001`, `BOSS-001`, `TD-001` e `REL-001` sono completate e
-archiviate in `CHANGELOG.md` (dettagli in
+Le milestone `UIUX-001`, `BOSS-001`, `BOSS-002`, `TD-001` e `REL-001` sono
+completate e archiviate in `CHANGELOG.md` (dettagli in
 `docs/latest_commit_validation_report.md` e
 `docs/visual_qa_report_2026-07-01.md`).
 

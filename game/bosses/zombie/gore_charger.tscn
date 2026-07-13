@@ -1,0 +1,58 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://game/bosses/zombie/gore_charger.gd" id="1_boss"]
+[ext_resource type="Script" path="res://game/health/health_component.gd" id="2_health"]
+[ext_resource type="Script" path="res://game/visuals/boss_telegraph_visual.gd" id="3_telegraph"]
+[ext_resource type="Script" path="res://game/visuals/zombie_boss_visual.gd" id="4_visual"]
+[ext_resource type="Resource" path="res://game/drops/boss_loot.tres" id="5_loot"]
+[ext_resource type="Resource" path="res://game/bosses/zombie/visuals/gore_charger_horns_visual.tres" id="6_melee"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_charger"]
+radius = 43.0
+
+[node name="GoreCharger" type="CharacterBody2D"]
+collision_layer = 2
+collision_mask = 1
+script = ExtResource("1_boss")
+boss_id = &"gore_charger"
+display_name = "Gore Charger"
+move_speed = 108.0
+acceleration = 610.0
+preferred_distance = 238.0
+retreat_distance = 204.0
+attack_cooldown = 1.92
+phase_two_health_ratio = 0.56
+projectile_damage = 10
+defense = 3
+kill_experience = 130
+movement_style_id = &"medium_orbit_charge"
+melee_damage = 21
+melee_active_time = 0.14
+melee_knockback = 235.0
+melee_visual = ExtResource("6_melee")
+loot_table = ExtResource("5_loot")
+
+[node name="Visual" type="Node2D" parent="."]
+script = ExtResource("4_visual")
+profile_id = &"gore_charger"
+sprite_path = "res://assets/sprites/bosses/zombie/gore_charger.png"
+sprite_target_height = 180.0
+sprite_offset = Vector2(0, -43)
+body_color = Color(0.42, 0.16, 0.13, 1)
+armor_color = Color(0.74, 0.66, 0.48, 1)
+accent_color = Color(1, 0.25, 0.12, 1)
+phase_two_tint = Color(1, 0.80, 0.72, 1)
+shadow_size = Vector2(64, 17)
+
+[node name="TelegraphVisual" type="Node2D" parent="."]
+z_index = -1
+script = ExtResource("3_telegraph")
+warning_color = Color(1, 0.20, 0.08, 1)
+phase_color = Color(1, 0.62, 0.18, 1)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_charger")
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("2_health")
+max_health = 520

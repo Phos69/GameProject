@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="WeaponVisualData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/weapons/weapon_visual_data.gd" id="1_visual"]
+
+[resource]
+script = ExtResource("1_visual")
+profile_id = &"plague_fan"
+family_id = &"elemental"
+projectile_shape_id = &"toxic_spores"
+impact_shape_id = &"toxic_spores"
+impact_vfx_id = &"toxic"
+primary_color = Color(0.13, 0.22, 0.08, 1)
+secondary_color = Color(0.66, 0.96, 0.18, 1)
+glow_color = Color(0.46, 0.94, 0.16, 0.46)
+muzzle_color = Color(0.72, 1, 0.24, 1)
+projectile_color = Color(0.60, 0.95, 0.16, 1)
+projectile_glow_color = Color(0.40, 0.86, 0.12, 0.44)
+projectile_scale = Vector2(1.18, 0.86)
+muzzle_size = 11.0
+trail_length = 24.0
+trail_width = 5.5

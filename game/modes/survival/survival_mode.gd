@@ -7,6 +7,14 @@ signal survival_defeated(wave_index: int)
 @export var boss_spawn_position: Vector2 = Vector2(0.0, -220.0)
 @export var boss_health_scale_per_wave: float = 0.10
 @export var boss_damage_scale_per_wave: float = 0.08
+@export var boss_rotation: Array[StringName] = [
+	&"wave_warden",
+	&"grave_colossus",
+	&"gore_charger",
+	&"plague_spitter",
+	&"bone_mortar",
+	&"carrion_shepherd"
+]
 
 var wave_manager: WaveManager
 var ammo_director: SurvivalAmmoDirector
@@ -95,24 +103,64 @@ func stop_mode(keep_world: bool = false) -> void:
 func should_spawn_boss_for_wave(wave_index: int) -> bool:
 	return boss_wave_interval > 0 and wave_index % boss_wave_interval == 0
 
+func get_boss_id_for_wave(wave_index: int) -> StringName:
+	if not should_spawn_boss_for_wave(wave_index):
+		return &""
+	if boss_rotation.is_empty():
+		return &"wave_warden"
+	var boss_wave_number := floori(
+		float(wave_index) / float(maxi(boss_wave_interval, 1))
+	)
+	var rotation_index := posmod(boss_wave_number - 1, boss_rotation.size())
+	return boss_rotation[rotation_index]
+
 func _on_boss_wave_requested(wave_index: int) -> void:
 	var game_mode_manager = get_tree().get_first_node_in_group("game_mode_manager")
 	if game_mode_manager == null or wave_manager == null:
 		return
 	var wave_offset := maxi(wave_index - 1, 0)
+	var selected_boss_id := get_boss_id_for_wave(wave_index)
+	if selected_boss_id.is_empty():
+		selected_boss_id = &"wave_warden"
 	var config := {
-		"boss_id": &"wave_warden",
+		"boss_id": selected_boss_id,
 		"wave_index": wave_index,
 		"health_multiplier": 1.0 + float(wave_offset) * boss_health_scale_per_wave,
 		"damage_multiplier": 1.0 + float(wave_offset) * boss_damage_scale_per_wave
 	}
 	var boss: Node = game_mode_manager.request_boss(
 		StringName("survival_wave_%d" % wave_index),
-		boss_spawn_position,
+		_resolve_boss_spawn_position(wave_index, selected_boss_id),
 		null,
 		config
 	)
 	wave_manager.register_wave_boss(boss)
+
+func _resolve_boss_spawn_position(
+	wave_index: int,
+	boss_id: StringName
+) -> Vector2:
+	# Conserva il punto storico del Wave Warden (usato anche dai fixture e dalle
+	# arene compatte), mentre i boss zombie successivi seguono lo spawner
+	# camera-edge validato contro terreno, ostacoli, hazard e player.
+	if boss_id == &"wave_warden":
+		return boss_spawn_position
+	var zombie_spawner := get_tree().get_first_node_in_group(
+		"zombie_spawner"
+	) as ZombieSpawner
+	if zombie_spawner == null:
+		return boss_spawn_position
+	var biome = (
+		zombie_mode_controller.get_current_biome()
+		if zombie_mode_controller != null
+		and zombie_mode_controller.has_method("get_current_biome")
+		else null
+	)
+	return zombie_spawner.get_spawn_position(
+		wave_index * 31,
+		boss_id,
+		biome
+	)
 
 func _resolve_wave_manager() -> void:
 	if wave_manager == null:
@@ -139,4 +187,3 @@ func _resolve_zombie_mode_controller() -> void:
 		zombie_mode_controller = get_tree().get_first_node_in_group(
 			"zombie_mode_controller"
 		)
-
