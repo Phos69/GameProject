@@ -6,7 +6,10 @@ class_name IsometricEnvironmentObject
 
 const ASSET_SPRITE_NAME := "AssetSprite"
 const DAMAGE_OVERLAY_NAME := "DamageOverlay"
-const TILE_LAYER_ROCK_RENDER_MODE := &"tile_layer_rock_area"
+const TILE_LAYER_MESA_RENDER_MODE := &"tile_layer_rock_area"
+# Public compatibility alias for callers/tests written before mesas became a
+# shared multi-biome contract.
+const TILE_LAYER_ROCK_RENDER_MODE := TILE_LAYER_MESA_RENDER_MODE
 const ROCK_AREA_OCCLUDER_NAME := "RockAreaOccluder"
 const OCCLUSION_HORIZONTAL_MARGIN := 8.0
 const CLIFF_RELATION_OUTSIDE := &"outside"
@@ -20,7 +23,7 @@ const MISSING_ASSET_FALLBACK_STATUSES: Array[String] = [
 	"procedural_fallback",
 	"deprecated"
 ]
-const NATIVE_RASTER_OBJECT_IDS: Array[StringName] = [&"reed_wall", &"broken_fence"]
+const NATIVE_SVG_OBJECT_IDS: Array[StringName] = [&"reed_wall"]
 
 const CONTENT_ALPHA_THRESHOLD := 0.08
 const LEGACY_TILE_SCALE := IsoGridConfig.LEGACY_TILE_SCALE
@@ -98,13 +101,16 @@ func has_asset_sprite() -> bool:
 	)
 
 func has_asset_visual() -> bool:
-	return has_asset_sprite() or uses_tile_layer_rock_visual()
+	return has_asset_sprite() or uses_tile_layer_mesa_visual()
 
 func get_render_mode() -> StringName:
 	return render_mode
 
 func uses_tile_layer_rock_visual() -> bool:
-	return render_mode == TILE_LAYER_ROCK_RENDER_MODE
+	return uses_tile_layer_mesa_visual()
+
+func uses_tile_layer_mesa_visual() -> bool:
+	return render_mode == TILE_LAYER_MESA_RENDER_MODE
 
 func is_world_position_behind_cliff(world_position: Vector2) -> bool:
 	return (
@@ -147,7 +153,7 @@ func set_debug_footprint_visible(enabled: bool) -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	if uses_tile_layer_rock_visual():
+	if uses_tile_layer_mesa_visual():
 		if show_debug_footprint:
 			_draw_rect_debug_footprint()
 		return
@@ -222,13 +228,13 @@ func _load_asset_texture(contract: Dictionary) -> void:
 		return
 	asset_sprite.texture = null
 	asset_sprite.visible = false
-	if uses_tile_layer_rock_visual():
+	if uses_tile_layer_mesa_visual():
 		return
 	if asset_path.is_empty():
 		procedural_fallback_active = _contract_allows_procedural_fallback(contract)
 		return
 	var texture_size := SVG_TEXTURE_LOADER.DEFAULT_SIZE
-	if NATIVE_RASTER_OBJECT_IDS.has(obstacle_id):
+	if asset_path.ends_with(".svg") and NATIVE_SVG_OBJECT_IDS.has(obstacle_id):
 		var native_size := IsometricEnvironmentManifest.get_shared().get_native_visual_size(
 			obstacle_id
 		)
@@ -278,9 +284,15 @@ func _position_asset_sprite() -> void:
 	# Scaling is deterministic and comes from the manifest footprint/visual
 	# height contract (or, for scalable objects, the instance footprint).
 	# Generator randomness never changes the sprite dimensions.
-	# Scalable objects use a lower floor so a small instance does not clamp to the
-	# same scale as a large one: the art tracks the instance footprint linearly.
-	var min_scale := 0.04 if manifest.is_scalable(obstacle_id) else 0.25
+	# Authored high-resolution textures and scalable objects need a lower floor:
+	# their native source can be several hundred pixels wide even when the world
+	# footprint is intentionally small. SVGs keep the legacy 0.25 guard because
+	# they are rasterized near their target size by the loader.
+	var min_scale := (
+		0.04
+		if manifest.is_scalable(obstacle_id) or not asset_path.ends_with(".svg")
+		else 0.25
+	)
 	asset_sprite.scale = Vector2.ONE * clampf(scale_factor, min_scale, 4.0)
 	# Plant the *visible* art on the floor, not the raw canvas. High-res source
 	# PNGs (and SVGs) carry transparent padding, so resting the canvas bottom on

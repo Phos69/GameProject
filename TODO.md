@@ -5,8 +5,9 @@ prendere. Le milestone archiviate, le roadmap storiche e le baseline di validazi
 sono consolidate in `ROADMAP.md`, `CHANGELOG.md`, nei report specifici sotto
 `docs/` e in `docs/documentation_inventory.md`.
 
-Le milestone `UIUX-001`, `BOSS-001`, `BOSS-002`, `TD-001` e `REL-001` sono
-completate e archiviate in `CHANGELOG.md` (dettagli in
+Le milestone `UIUX-001`, `BOSS-001`, `BOSS-002`, `TD-001`, `REL-001` e
+`WORLD-UNIFY-001` sono completate e archiviate in `ROADMAP.md` e
+`CHANGELOG.md` (dettagli in `map_generation_report.md`,
 `docs/latest_commit_validation_report.md` e
 `docs/visual_qa_report_2026-07-01.md`).
 
@@ -29,10 +30,11 @@ Regole per nuove voci:
 - Residuo aperto: **solo i playtest manuali** — Infinite Arena 20 minuti,
   survival multi-bioma 20 minuti con 1-4 player e zoom variabile, dungeon con
   tre seed, tower defense 5 wave con tastiera/joypad, giudizio qualitativo su
-  "biomi pericolosi ma non frustranti" e raccolta screenshot dei mini-eventi
-  (vedi Decisioni Aperte). Rientrano qui anche l'ascolto reale del mix con
-  quattro pad e boss wave e l'ascolto di mix/SFX all'avvio della build
-  esportata (`docs/testing/manual_checklist.md`).
+  "biomi pericolosi ma non frustranti", leggibilita/densita delle feature
+  `WORLD-UNIFY-001` e raccolta screenshot dei mini-eventi (vedi Decisioni
+  Aperte). Rientrano qui anche l'ascolto reale del mix con quattro pad e boss
+  wave e l'ascolto di mix/SFX all'avvio della build esportata
+  (`docs/testing/manual_checklist.md`).
 - Obiettivo: affinare valori data-driven e performance dopo playtest reali su
   survival, dungeon, tower defense, RPG, biomi e boss.
 - Milestone collegata: post-roadmap bilanciamento Milestone 11.
@@ -47,7 +49,8 @@ Regole per nuove voci:
   in camera e nessuna crescita di chunk/memoria dopo percorsi di ritorno.
 - Test richiesto: playtest `Infinite Arena` 20 minuti, playtest survival
   multi-bioma 20 minuti con 1-4 player, attraversamento dei biomi con generated
-  art attiva e zoom variabile, dungeon con tre seed, tower defense 5 wave,
+  art attiva e zoom variabile, verifica manuale di collisione, Y-sort e densita
+  di chasm/mesa/prop/hazard, dungeon con tre seed, tower defense 5 wave,
   profiling renderizzato dello streaming chunk e regressione smoke principale.
 
 ## Decisioni Aperte

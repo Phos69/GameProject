@@ -311,15 +311,15 @@ Completato:
   bloccanti;
 - manifest `assets/environment/isometric/manifest.json` per censire ostacoli,
   props, border tematici, fall zone, draw mode oggetti e tag terrain/passaggi
-  da sostituire con versioni isometriche coerenti;
+  con versioni isometriche sostituibili ma contratti runtime stabili;
 - tile layer asset-driven per ground, strade diagonali, road connector e
   passaggi: entry/exit, ponti, snow pass, broken gate e burned road sono
   risolti come asset tile nel `75x75`, non come patch o frecce del gate;
-- oggetti e ostacoli asset-backed tramite SVG trasparenti e silhouette
-  isometriche dedicate per case, cabine, laboratori, recinti, muri, barili,
-  relitti, tronchi, ponti e crate, senza asset esterni obbligatori e senza
-  fallback barriera generico implicito; il loader runtime evita canvas opachi e
-  fallback placeholder generici;
+- oggetti e ostacoli asset-backed tramite SVG trasparenti, PNG e risorse
+  `AtlasTexture`: 23 prop usano 20 regioni generate dalle cinque tavole di
+  bioma, mantenendo footprint e collisioni; case, cabine, laboratori, recinti,
+  muri, barili, relitti, tronchi, ponti e crate restano disponibili senza asset
+  esterni obbligatori o fallback barriera generico implicito;
 - cinque biomi giocabili nella stessa run, con partenza forzata dalla `Pianura Infetta`;
 - spawn zombie delegato a `ZombieSpawner` dai bordi della camera, validato
   contro camera, player, walkable, hazard, fall zone e blocker, con fallback

@@ -8,6 +8,38 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Added
 
+- Promosse le cinque tavole prop generate a sorgenti runtime nel manifest
+  ambiente v10: 23 `object_scenes` usano 20 regioni `AtlasTexture` con alpha,
+  `filter_clip`, filename footprint e provenienza `openai_image_generation`.
+  Footprint, collisioni, anchor, sort e pool procedurali restano invariati; le
+  regioni condivise coprono le tre coppie tossiche, mentre `reed_wall` conserva
+  lo SVG verticale `1x3` perche la grafica palude disponibile rappresenta un
+  `marsh_log` orizzontale. Loader, scala high-resolution, asset generator,
+  suite asset/ostacoli e Visual QA accettano ora risorse `Texture2D` `.tres`.
+  Verifica finale: GUT 275/275 (28.521 assert), asset check su 131 contratti,
+  boot headless verde e board multi-bioma PASS con 210 catture rigenerate.
+
+- Completata `WORLD-UNIFY-001` sul generatore void-first condiviso da Zombie
+  Survival e Infinite Arena. Cinque `BiomeGenerationProfile` tipizzati
+  configurano mesa, chasm, props e hazard: ogni bioma genera almeno un chasm
+  interno salvo opt-out, mesa tematiche (10-16 in Pianura e 2-4 negli altri),
+  10-16 props pesati da almeno due categorie e, nei quattro biomi avanzati,
+  due hazard statici con placement sicuro. `BiomeEnvironmentLayout` separa
+  mesa, masse e props; `MesaPlacementPass`, `StaticHazardPlacementPass` e
+  `RandomPropPlacementPass` isolano le nuove responsabilita e quest'ultimo usa
+  una scansione esaustiva se il sampling non raggiunge il target. Stream RNG
+  dedicati evitano che un pass sposti le feature degli altri. `BiomeTileLayer` rende le mesa con corona `ground` e
+  pareti `cliff_face` per i cinque temi. La firma canonica layout-v2, la
+  revisione cache/generatore 2 e gli snapshot v5 invalidano dati precedenti o
+  alterati. Aggiunti guardrail deterministici multi-bioma, placement e fuzz su
+  20 seed x 5 biomi, oltre ai test mesh/collisione mesa e al fallback prop
+  forzato. Visual QA verde su 210 catture (tre seed, cinque biomi, due
+  risoluzioni e focus cliff/mesa/prop). Le cinque tavole originali sotto
+  `assets/environment/isometric/concepts/` sono state poi promosse al runtime
+  dal pass asset v10 sopra; giudizio manuale, 18 SVG non rappresentati e
+  cleanup del percorso legacy restano fuori dal core. I playtest `BAL-001` non
+  sono dichiarati completati.
+
 - Chiusa `BOSS-002` con cinque boss zombie asset-backed per Infinite Arena e
   Zombie Survival: `Grave Colossus` e `Gore Charger` usano sweep, slam e
   cariche melee; `Plague Spitter` e `Bone Mortar` usano ventagli, anelli e
@@ -397,6 +429,13 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Fixed
 
+- Unificato il contorno visuale dei `fall_zone_rects` adiacenti o
+  sovrapposti: `FallZoneBoundaryRuns` rasterizza l'unione logica dei void e
+  fornisce ai builder solo i segmenti esposti verso terreno. Lip e facce cliff
+  non disegnano piu' linee orizzontali o verticali sul lato condiviso fra due
+  chasm che costituiscono un unico vuoto; collisioni e classificazione terrain
+  restano invariate. Aggiunto un guardrail GUT su un'unione a T che verifica
+  l'assenza del seam condiviso e i conteggi delle mesh risultanti.
 - Rimosso il cap visuale duplicato delle `large_rock`/mesa: il top cobble viene
   disegnato una sola volta da `BiomeTileLayer` e `IsometricEnvironmentObject`
   non crea piu' `RockAreaOccluderVisual`, eliminando la lastra sovrapposta e
@@ -540,9 +579,16 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Validation
 
+- `./tools/run_gut.ps1`: 275/275 test, 28.521 assert, passa;
+  include fuzz 20 seed x 5 biomi e fallback prop forzato senza sampling.
+- `./tools/run_visual_qa.ps1 -SkipImport -Filter biome_rendering_review`: passa;
+  rigenerate 210 catture (3 seed x 5 biomi x 7 focus x 2 risoluzioni).
+- `./tools/run_visual_qa.ps1 -SkipImport -Filter rock_area`: passa.
+- Asset generator `--check`: 131 contratti; boot headless della scena principale
+  per 120 frame: exit code 0.
 - `./tools/run_gut.ps1 -GutDir res://tests/suites/assets -Select generated_texture`:
   26 test, 2.586 assert, passa.
-- `./tools/run_gut.ps1 -GutDir res://tests/suites/assets`: 66 test, 9.482
+- `./tools/run_gut.ps1 -GutDir res://tests/suites/assets`: 71 test, 10.236
   assert, passa.
 - `./tools/run_gut.ps1 -GutDir res://tests/suites/environment`: 37 test,
   8.954 assert, passa.

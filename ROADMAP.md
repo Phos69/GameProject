@@ -12,7 +12,10 @@ giocabili, la zombie survival usa il mondo isometrico seed-based con streaming
 incrementale di regioni e chunk camera-centrici, il roster RPG e le armi hanno
 pass data-driven, UI/audio/settings sono
 funzionali e la suite rapida GUT e pulita. Il lavoro attivo ora riguarda polish,
-scelte di espansione, QA piu profonda, bilanciamento e release readiness.
+scelte di espansione, QA piu profonda, bilanciamento e release readiness. Il
+goal esplicito `WORLD-UNIFY-001` del 2026-07-13 e completato: il contratto
+void-first condiviso include ora profili tipizzati, mesa, props casuali e hazard
+statici data-driven in tutti i biomi, senza introdurre un secondo generatore.
 
 ## Baseline Archiviata
 
@@ -24,15 +27,15 @@ senza un nuovo goal esplicito e una voce in `TODO.md`.
 | Fondazione runtime | Milestone 0-4: repo, progetto Godot, input, co-op locale, camera, player, combat, health, nemici, drop e pickup. | `README.md`, `ARCHITECTURE.md`, suite GUT core/combat/progression |
 | Modalita base | Milestone 5-9: survival a ondate, boss `Wave Warden`, dungeon lineare, tower defense base, save/load, menu, export preset e packaging iniziale. | `ARCHITECTURE.md`, `GAME_DESIGN.md`, `docs/latest_commit_validation_report.md` |
 | Visual gameplay e UX base | Milestone 10-21: readability survival, telegraph boss, varianti zombie, visual armi/torri, polish boss, shooter ranged, downed/revive, risultati run, audio mix, secondo boss, arena data-driven, accessibilita e profiling. | `CHANGELOG.md`, `docs/testing/manual_checklist.md` |
-| Zombie survival e mondo isometrico | Revamp zombie Z1-Z12, megamappa persistente, regioni `75x75` tile logici (`450x450` equivalenti legacy), survival standard `3x3`, terrain classification, hazard, streaming incrementale senza caricamento ai seam, chase cross-bioma, Infinite Arena con raised cliff `walled` e cleanup legacy. | `ARCHITECTURE.md`, `GAME_DESIGN.md`, suite `world_gen`, `environment`, `modes`, `soak` |
-| Asset isometrici e ostacoli | ISO-001, rewrite biomi R1-R3, manifest ambiente v9, tile/terrain/passaggi/cliff asset-driven, footprint slot-based, alberi/rocce 3x3, plateau rocciosi scalabili, cliff PNG seamless e generated biome art per quattro biomi avanzati. | `docs/obstacle_rendering.md`, `docs/forest_isometric_texture_system.md`, `docs/repo_fix_milestone_10_asset_fallback_policy.md` |
+| Zombie survival e mondo isometrico | Revamp zombie Z1-Z12, megamappa persistente, regioni `75x75` tile logici (`450x450` equivalenti legacy), survival standard `3x3`, terrain classification, hazard, streaming incrementale senza caricamento ai seam, chase cross-bioma, Infinite Arena con raised cliff `walled`; `WORLD-UNIFY-001` aggiunge profili per cinque biomi, chasm interni garantiti, mesa tematiche, props pesati e hazard statici avanzati. | `ARCHITECTURE.md`, `GAME_DESIGN.md`, `map_generation_report.md`, suite `world_gen`, `environment`, `modes`, `soak` |
+| Asset isometrici e ostacoli | ISO-001, rewrite biomi R1-R3, manifest ambiente v10, tile/terrain/passaggi/cliff asset-driven, footprint slot-based, alberi/rocce 3x3, plateau rocciosi scalabili, cliff PNG seamless, generated biome art e 23 prop promossi tramite 20 regioni AtlasTexture. | `docs/obstacle_rendering.md`, `docs/forest_isometric_texture_system.md`, `docs/repo_fix_milestone_10_asset_fallback_policy.md` |
 | RPG, armi e mercato | RPG Mode M1-M13, classi avanzate, inventario armi, 30 armi catalogo, mercato zombie ricorrente e WVIS W0-W8. | `docs/zombie_market.md`, `docs/weapon_visual_identity_validation_report.md`, `docs/rpg_character_visual_checklist.md` |
 | QA, tooling e documentazione | Cutover GUT, cleanup warning headless, server MCP locale read-only e cleanup documentale 2026-07-01. | `tools/mcp-server/README.md`, `docs/documentation_inventory.md`, `CHANGELOG.md` |
 
 ## Roadmap Attiva per Categoria
 
-La fonte operativa resta `TODO.md`; questa sezione raggruppa gli stessi item per
-evitare sovrapposizioni.
+La fonte operativa resta `TODO.md` per gli item aperti; questa sezione registra
+anche le milestone completate per evitare sovrapposizioni.
 
 ### Presentazione e UX
 
@@ -52,9 +55,11 @@ evitare sovrapposizioni.
   edifici laboratorio dalle vere supply crate; Neve e Palude chiudono la
   ripetizione del ground con una quilt non specchiata (periodo `1024`,
   path/road a `512`) e la componente Palude di `VIS-009` normalizza
-  `reed_wall`. Residui riclassificati: hazard tematici della pipeline
-  voidfirst in `BAL-001`, normalizzazione `large_rock`/`broken_fence`/
-  `forest_tree` dentro `UIUX-001` (VIS-009).
+  `reed_wall`. Gli hazard tematici della pipeline void-first sono stati
+  implementati da `WORLD-UNIFY-001`; in `BAL-001` resta solo il giudizio
+  qualitativo sul loro bilanciamento. La normalizzazione
+  `large_rock`/`broken_fence`/`forest_tree` e chiusa dentro `UIUX-001`
+  (VIS-009).
 - Decisione asset `final_quality` dei personaggi RPG: **risolta 2026-07-07** —
   restano polish opzionale documentato, fuori dal backlog attivo; riaprire solo
   con un nuovo goal esplicito e una voce in `TODO.md`.
@@ -84,6 +89,27 @@ evitare sovrapposizioni.
   riparazione, nuovi tipi torre e percorsi multipli restano fuori scope.
 - Le due aree non duplicano combat, projectile, drop, boss o sistemi UI gia
   condivisi.
+
+### Mondo procedurale
+
+- `WORLD-UNIFY-001`: **completata 2026-07-13**. I cinque
+  `BiomeGenerationProfile` tipizzati governano mesa, chasm, props pesati e
+  hazard; ogni layout ha almeno un chasm interno salvo opt-out, mesa tematiche
+  (10-16 in Pianura, 2-4 nei biomi avanzati) e 10-16 props da almeno due
+  categorie. Tossico, Infuocato, Neve e Palude ricevono due hazard statici
+  sicuri. Stream RNG separati, firma profonda layout-v2, revisione cache 2 e
+  snapshot v5 rendono esplicita l'invalidazione. Rendering mesa e guardrail
+  multi-bioma/fuzz 20 seed x 5 biomi coprono il contratto; i tre pass dedicati
+  tengono mesa, hazard e prop fuori dall'orchestratore e il fallback prop e
+  testato senza sampling. La board Visual QA ha prodotto 210 catture verdi.
+  Analisi ed esito in `map_generation_report.md`.
+- La promozione artistica richiesta e completata: 23 ID dei pool attivi usano
+  ora 20 regioni generate dalle cinque tavole, con contratti `final`. Il
+  giudizio qualitativo manuale, i 18 SVG non rappresentati dalle tavole e la
+  rimozione del percorso legacy restano polish o cleanup fuori dalla milestone
+  core; richiedono un nuovo goal, salvo il playtest gia incluso in `BAL-001`.
+  La chiusura non
+  riapre genericamente `BIO-001` o il pass artistico archiviato.
 
 ### QA, Bilanciamento e Performance
 
@@ -130,8 +156,10 @@ evitare sovrapposizioni.
    (pattern `crescent_barrage` + upgrade torri); di `BAL-001` restano i
    playtest manuali lunghi, che ora coprono anche le due espansioni.
 4. ~~Affrontare `REL-001`~~ — fatta il 2026-07-08 (export + build smoke +
-   attribuzioni; firma = blocco esterno documentato). L'unico lavoro aperto
-   sono i playtest manuali di `BAL-001`.
+   attribuzioni; firma = blocco esterno documentato).
+5. ~~Implementare `WORLD-UNIFY-001` per fasi~~ — fatto il 2026-07-13 con
+   profili tipizzati, guardrail/versionamento e contenuto condiviso. Restano i
+   playtest manuali di `BAL-001`, non dichiarati completati.
 
 ## Ridondanze e Conflitti Risolti
 

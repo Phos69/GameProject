@@ -2,25 +2,14 @@ extends SceneTree
 
 const OUTPUT_DIR := "res://build/qa/obstacle_assets"
 const ASSET_IDS: Array[StringName] = [
-	&"small_rock",
-	&"large_rock",
-	&"broken_fence",
-	&"ice_block",
-	&"metal_wreck",
-	&"fallen_log",
-	&"reed_wall",
-	&"abandoned_car",
-	&"burned_car",
-	&"ice_rock",
-	&"forest_tree",
-	&"dense_vegetation",
-	&"ruined_house",
-	&"abandoned_house",
-	&"lab_ruin",
-	&"burned_house",
-	&"snow_cabin",
-	&"sunken_house",
-	&"lab_block"
+	&"small_rock", &"large_rock", &"metal_wreck", &"fallen_log", &"reed_wall",
+	&"forest_tree", &"dense_vegetation", &"abandoned_house",
+	&"ruined_house", &"abandoned_car", &"broken_fence", &"wood_barrier",
+	&"lab_block", &"lab_ruin", &"pipe_stack", &"toxic_barrel",
+	&"chemical_barrel", &"industrial_fence", &"corroded_barrier",
+	&"burned_house", &"burned_car", &"charred_wall", &"scorched_barricade",
+	&"snow_cabin", &"ice_rock", &"ice_block", &"snow_wall",
+	&"sunken_house", &"sunken_wreck", &"dead_tree", &"marsh_log"
 ]
 
 var failures := PackedStringArray()
@@ -57,6 +46,13 @@ func _validate_asset(
 		var source := file.get_as_text()
 		file.close()
 		load_error = int(image.call("load_svg_from_string", source, 1.0))
+	elif asset_path.ends_with(".tres"):
+		var texture := ResourceLoader.load(asset_path) as Texture2D
+		_expect(texture != null, "%s Texture2D resource loads" % String(obstacle_id))
+		if texture == null:
+			return
+		image = texture.get_image()
+		load_error = OK if image != null and not image.is_empty() else ERR_CANT_CREATE
 	else:
 		load_error = image.load(ProjectSettings.globalize_path(asset_path))
 	_expect(load_error == OK, "%s asset rasterizes" % String(obstacle_id))
@@ -82,7 +78,7 @@ func _validate_asset(
 	else:
 		_expect(
 			image.get_width() >= expected_size.x and image.get_height() >= expected_size.y,
-			"%s source PNG supports deterministic runtime downscaling" % String(obstacle_id)
+			"%s source texture supports deterministic runtime downscaling" % String(obstacle_id)
 		)
 	_expect(_has_transparent_corners(image), "%s keeps a transparent canvas" % String(obstacle_id))
 	_expect(_opaque_coverage(image) >= 0.06, "%s has a substantial finished silhouette" % String(obstacle_id))

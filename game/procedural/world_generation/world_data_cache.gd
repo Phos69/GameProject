@@ -30,6 +30,11 @@ class_name WorldDataCache
 
 const DEFAULT_MAX_WORLDS: int = 8
 
+## Versione del contenuto generato, indipendente dal formato binario dello
+## snapshot. Un bump cambia la chiave LRU/disco anche a contesto invariato e
+## impedisce che un processo aggiornato adotti layout prodotti da regole vecchie.
+const GENERATOR_REVISION: int = 2
+
 ## Tier persistente su disco: a differenza della memoria (per-processo) sopravvive
 ## tra processi, cosi il mondo golden buildato dai test e' lo stesso usato dal
 ## gameplay. I file (snapshot via WorldSnapshotCodec) vivono qui sotto user://.
@@ -75,13 +80,22 @@ static var _misses: int = 0
 
 ## Identita dei DATI generati: esclude gameplay e render/runtime.
 static func canonical_key(context: Dictionary) -> String:
-	return _signature(context, GAMEPLAY_KEYS + NON_DATA_KEYS)
+	return _versioned_signature(context, GAMEPLAY_KEYS + NON_DATA_KEYS)
 
 ## Identita della SCENA bakeata (per il park del ZombieModeController): esclude
 ## solo il gameplay, tiene i toggle di render/runtime che cambiano cosa viene
 ## bakeato/streamato.
 static func build_signature(context: Dictionary) -> String:
-	return _signature(context, GAMEPLAY_KEYS)
+	return _versioned_signature(context, GAMEPLAY_KEYS)
+
+static func _versioned_signature(
+	context: Dictionary,
+	excluded: Array[StringName]
+) -> String:
+	return "generator_revision=%d|%s" % [
+		GENERATOR_REVISION,
+		_signature(context, excluded)
+	]
 
 static func _signature(context: Dictionary, excluded: Array[StringName]) -> String:
 	var excluded_set := {}

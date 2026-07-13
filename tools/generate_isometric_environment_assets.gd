@@ -58,7 +58,7 @@ func _run() -> void:
 			continue
 		if not asset_path.ends_with(".svg"):
 			if not exists:
-				_fail("missing authored raster asset: %s" % asset_path)
+				_fail("missing authored texture asset: %s" % asset_path)
 			else:
 				skipped_final += 1
 			continue
@@ -113,7 +113,11 @@ func _collect_asset_targets(manifest: IsometricEnvironmentManifest) -> Array[Dic
 			var asset_path := String(contract.get("asset_path", ""))
 			if asset_path.ends_with(".svg"):
 				result.append(contract)
-			elif asset_path.ends_with(".png") or asset_path.ends_with(".webp"):
+			elif (
+				asset_path.ends_with(".png")
+				or asset_path.ends_with(".webp")
+				or asset_path.ends_with(".tres")
+			):
 				result.append(contract)
 			elif not asset_path.is_empty():
 				_fail("%s/%s asset_path has an unsupported format: %s" % [String(section), String(asset_id), asset_path])

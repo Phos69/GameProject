@@ -370,6 +370,14 @@ func _assert_infinite_arena_world(biome_manager: BiomeManager) -> void:
 		return
 	assert_gt(layout.wall_segment_rects.size(), 0, "Infinite Arena layout emits perimeter wall segments")
 	_assert_no_perimeter_fall_zones(layout, "Infinite Arena layout")
+	assert_gt(layout.mesa_rects.size(), 0,
+		"Infinite Arena conserva le mesa del generatore condiviso")
+	assert_between(
+		layout.random_prop_rects.size(),
+		ObstacleLayoutGenerator.VOIDFIRST_PROP_MIN_COUNT,
+		ObstacleLayoutGenerator.VOIDFIRST_PROP_MAX_COUNT,
+		"Infinite Arena conserva i prop casuali del generatore condiviso"
+	)
 	assert_true(bool(layout.validation_report.get("is_valid", false)), "Infinite Arena layout passes validation")
 	_assert_raised_cliff_layout(layout)
 
@@ -388,6 +396,7 @@ func _assert_arena_terrain_is_solid(scene) -> void:
 # that every emitted fall zone is an internal chasm and none is a perimeter
 # (side-tagged) fall boundary.
 func _assert_no_perimeter_fall_zones(layout: BiomeEnvironmentLayout, label: String) -> void:
+	var internal_chasm_count := 0
 	for index in range(layout.hazard_ids.size()):
 		if layout.hazard_ids[index] != &"fall_zone":
 			continue
@@ -397,6 +406,10 @@ func _assert_no_perimeter_fall_zones(layout: BiomeEnvironmentLayout, label: Stri
 			&"internal",
 			"%s keeps a walled perimeter: fall zones are internal chasms only (got side '%s')" % [label, String(side)]
 		)
+		if side == &"internal":
+			internal_chasm_count += 1
+	assert_gt(internal_chasm_count, 0,
+		"%s garantisce almeno un chasm interno" % label)
 
 func _assert_raised_cliff_layout(layout: BiomeEnvironmentLayout) -> void:
 	assert_eq(

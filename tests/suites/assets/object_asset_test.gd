@@ -8,10 +8,20 @@ extends GutTest
 
 const REQUIRED_OBSTACLE_ASSET_IDS: Array[StringName] = [
 	&"ruined_house", &"burned_house", &"snow_cabin", &"sunken_house", &"lab_block",
+	&"abandoned_car", &"wood_barrier", &"lab_ruin", &"corroded_barrier",
+	&"scorched_barricade", &"ice_rock", &"sunken_wreck",
 	&"boundary_fence", &"toxic_boundary_wall", &"lava_boundary", &"ice_boundary", &"deep_water_boundary",
 	&"industrial_fence", &"charred_wall", &"snow_wall", &"ash_barrier", &"pipe_stack",
 	&"burned_car", &"ice_block", &"dead_tree", &"marsh_log", &"reed_wall",
 	&"broken_walkway", &"toxic_barrel", &"chemical_barrel", &"broken_fence"
+]
+const GENERATED_PROP_ASSET_IDS: Array[StringName] = [
+	&"ruined_house", &"abandoned_car", &"broken_fence", &"wood_barrier",
+	&"lab_block", &"lab_ruin", &"pipe_stack", &"toxic_barrel",
+	&"chemical_barrel", &"industrial_fence", &"corroded_barrier",
+	&"burned_house", &"burned_car", &"charred_wall", &"scorched_barricade",
+	&"snow_cabin", &"ice_rock", &"ice_block", &"snow_wall",
+	&"sunken_house", &"sunken_wreck", &"dead_tree", &"marsh_log"
 ]
 const REQUIRED_CRATE_ASSET_ID := &"supply_crate"
 const ISOMETRIC_OBJECT_SCRIPT = preload("res://game/modes/zombie/isometric_environment_object.gd")
@@ -131,7 +141,7 @@ func test_factory_obstacle_coverage() -> void:
 			assert_true(obstacle.has_ground_shadow(), "%s keeps ground shadow contract" % String(obstacle_id))
 			assert_eq(obstacle.get_obstacle_category(), _manifest.get_category(obstacle_id), "%s category comes from manifest" % String(obstacle_id))
 			assert_false(obstacle.uses_generic_fallback(), "%s avoids generic visual fallback" % String(obstacle_id))
-			if obstacle_id == &"reed_wall" or obstacle_id == &"broken_fence":
+			if obstacle_id == &"reed_wall":
 				var native_object := obstacle as IsometricEnvironmentObject
 				var native_size := _manifest.get_native_visual_size(obstacle_id)
 				var expected_size := Vector2(
@@ -147,6 +157,29 @@ func test_factory_obstacle_coverage() -> void:
 					native_object.asset_sprite.scale,
 					Vector2.ONE,
 					"%s keeps the manifest visual size at runtime" % String(obstacle_id)
+				)
+			elif GENERATED_PROP_ASSET_IDS.has(obstacle_id):
+				var generated_object := obstacle as IsometricEnvironmentObject
+				assert_true(
+					generated_object.asset_sprite.texture is AtlasTexture,
+					"%s uses the generated atlas region at runtime" % String(obstacle_id)
+				)
+				var rendered_size := (
+					generated_object.asset_sprite.texture.get_size()
+					* generated_object.asset_sprite.scale.abs()
+				)
+				var target_size := _manifest.get_native_visual_size(obstacle_id)
+				assert_gt(rendered_size.x, 8.0, "%s generated art remains visible" % String(obstacle_id))
+				assert_gt(rendered_size.y, 8.0, "%s generated art keeps visible height" % String(obstacle_id))
+				assert_lte(
+					rendered_size.x,
+					target_size.x + 0.1,
+					"%s generated art fits its horizontal footprint contract" % String(obstacle_id)
+				)
+				assert_lte(
+					rendered_size.y,
+					target_size.y + 0.1,
+					"%s generated art fits its vertical visual contract" % String(obstacle_id)
 				)
 		_check_collision_contract(obstacle_id, obstacle)
 		obstacle.queue_free()

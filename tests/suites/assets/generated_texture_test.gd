@@ -4,6 +4,10 @@ extends GutTest
 ## Migra e accorpa:
 ##   tests/forest_grass_generated_texture_smoke_test.gd
 ##   tests/void_cliff_generated_texture_smoke_test.gd
+
+const FALL_ZONE_BOUNDARY_RUNS_SCRIPT = preload(
+	"res://game/modes/zombie/cliffs/fall_zone_boundary_runs.gd"
+)
 ##   tests/forest_isometric_texture_transition_smoke_test.gd
 ##
 ## Verifica i contratti delle texture generate (esistenza/provenienza/tileability
@@ -1980,6 +1984,44 @@ func test_rectilinear_face_meshes() -> void:
 		and south_bounds.size.y >= 48.0,
 		"perimeter south cliff face starts at the fall boundary and keeps readable depth"
 	)
+
+func test_touching_fall_rectangles_share_one_void_outline() -> void:
+	# T-shaped union: the upper pit joins the left half of the lower pit. The
+	# shared x=4..8 boundary at y=6 must not become a horizontal cliff seam.
+	var rects: Array[Rect2i] = [
+		Rect2i(Vector2i(4, 2), Vector2i(4, 4)),
+		Rect2i(Vector2i(4, 6), Vector2i(8, 4)),
+	]
+	var sides: Array[StringName] = [&"internal", &"internal"]
+	var runs: Array[Dictionary] = FALL_ZONE_BOUNDARY_RUNS_SCRIPT.build(
+		rects,
+		sides,
+		Vector2i(16, 16)
+	)
+	assert_eq(runs.size(), 6, "touching rectangles expose only the six runs of their union outline")
+	var shared_seam_found := false
+	for run in runs:
+		var orientation := StringName(run.get("orientation", &""))
+		if (
+			int(run.get("boundary", -1)) == 6
+			and int(run.get("start", -1)) < 8
+			and int(run.get("end", -1)) > 4
+			and (
+				orientation == FALL_ZONE_BOUNDARY_RUNS_SCRIPT.TOP
+				or orientation == FALL_ZONE_BOUNDARY_RUNS_SCRIPT.BOTTOM
+			)
+		):
+			shared_seam_found = true
+	assert_false(shared_seam_found, "the joined void has no cliff run across its shared horizontal edge")
+
+	var border_builder := IsometricCliffBorderMeshBuilder.new()
+	border_builder.build(rects, sides, Vector2i(16, 16), 8.0)
+	assert_eq(border_builder.horizontal_segment_count, 3, "the joined void renders three exposed horizontal lip runs")
+	assert_eq(border_builder.vertical_segment_count, 3, "the joined void renders three exposed vertical lip runs")
+
+	var face_builder := RectilinearCliffFaceMeshBuilder.new()
+	face_builder.build(rects, sides, Vector2i(16, 16), 8.0)
+	assert_eq(face_builder.face_count, 6, "cliff faces follow the union outline instead of both source rectangles")
 
 func test_tile_layer_consumes_cliff_textures() -> void:
 	var palette := load("res://game/modes/zombie/biomes/infected_plains_palette.tres") as BiomePalette

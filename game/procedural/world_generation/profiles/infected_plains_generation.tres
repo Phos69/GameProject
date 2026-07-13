@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="BiomeGenerationProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/procedural/world_generation/profiles/biome_generation_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+biome_id = &"infected_plains"
+mesa_profile_id = &"forest"
+mesa_min_count = 10
+mesa_max_count = 16
+random_prop_ids = Array[StringName]([&"ruined_house", &"abandoned_house", &"abandoned_car", &"broken_fence", &"wood_barrier", &"small_rock", &"fallen_log"])
+random_prop_weights = Array[float]([0.6, 0.6, 1.2, 1.3, 1.2, 1.5, 1.0])
+static_hazard_max_count = 0

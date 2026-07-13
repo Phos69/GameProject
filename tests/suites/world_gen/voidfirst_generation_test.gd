@@ -302,6 +302,17 @@ func test_void_lottery_ratio() -> void:
 		var ratio := float(chasm) / float(total)
 		assert_between(ratio, 0.18, 0.30, "frazione chasm ~1:3 (got %0.3f)" % ratio)
 
+func test_void_lottery_explicit_opt_out() -> void:
+	var layout := BiomeEnvironmentLayout.new()
+	layout.zone_size = BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 99
+	ObstacleLayoutGenerator.new()._resolve_void_lottery(layout, rng, false)
+	assert_true(layout.fall_zone_rects.is_empty(),
+		"disable_internal_void sopprime esplicitamente tutti i chasm interni")
+	assert_false(layout.floor_rects.is_empty(),
+		"l'opt-out converte il void interno in pavimento walkable")
+
 func test_void_lottery_no_chasm_on_road() -> void:
 	var on_road := false
 	for chasm_rect in _layout.fall_zone_rects:
@@ -332,10 +343,14 @@ func test_void_lottery_coverage() -> void:
 func test_voidfirst_is_deterministic() -> void:
 	var a := WorldGen.voidfirst_layout(_biome, 565656)
 	var b := WorldGen.voidfirst_layout(_biome, 565656)
+	assert_eq(a.mesa_rects, b.mesa_rects, "le mesa sono deterministiche per seed fisso")
+	assert_eq(a.mesa_profile_ids, b.mesa_profile_ids, "i profili mesa sono deterministici")
 	assert_eq(a.rock_rects, b.rock_rects, "le rocce sono deterministiche per seed fisso")
 	assert_eq(a.forest_rects, b.forest_rects, "le foreste sono deterministiche per seed fisso")
 	assert_eq(a.obstacle_rects.size(), b.obstacle_rects.size(), "il numero di ostacoli e deterministico")
 	assert_eq(a.fall_zone_rects, b.fall_zone_rects, "la void lottery e deterministica per seed fisso")
+	assert_eq(a.random_prop_rects, b.random_prop_rects, "le posizioni prop sono deterministiche")
+	assert_eq(a.random_prop_ids, b.random_prop_ids, "gli id prop sono deterministici")
 	assert_eq(a.road_cell_tags.size(), b.road_cell_tags.size(), "il carving delle strade e deterministico")
 
 # --- integrazione live (M6) -----------------------------------------------

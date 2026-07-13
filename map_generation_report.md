@@ -1,350 +1,447 @@
-# Report — Generazione mappa: Zombie Survival vs Infinite Arena
+# Report - Generazione mondo e piano di unificazione dei biomi
 
-Data analisi: 2026-06-30. Branch: `master`.
-Scopo: mappare **tutti** i modi in cui viene generata la mappa, evidenziare le
-differenze tra `Zombie Survival` e `Infinite Arena` (alias "infinite wave") e
-indicare cosa serve per renderle coerenti.
+Data analisi: 2026-07-13. Implementazione core: 2026-07-13.
 
----
+**Stato: `WORLD-UNIFY-001` completata per il contratto runtime core.** Il
+documento conserva l'audit storico che ha motivato il lavoro, ma distingue
+esplicitamente le lacune iniziali dall'esito implementato.
 
-## 0. Sintesi (TL;DR)
+## Sintesi
 
-Le due modalità **condividono già lo stesso motore** di base
-(`ZombieModeController` → `BiomeManager` → `BiomeWorldGenerator`). Le differenze
-che percepisci **non nascono da motori diversi tra le modalità**, ma da tre
-divergenze interne al motore condiviso:
+La generazione e gia unificata a livello di orchestrazione e di layout:
 
-1. **Due pipeline di layout coesistono, scelte per BIOMA e non per modalità.**
-   `infected_plains` usa la pipeline nuova *void-first*; gli altri 4 biomi usano
-   la pipeline *legacy*. → Strade/ostacoli/void costruiti in modo diverso.
-2. **I cliff/void interni sono soppressi di proposito nell'arena murata.**
-   `Infinite Arena` passa `arena_boundary_mode = "walled"`, che (a) trasforma i
-   bordi esterni da *FALL* a *BLOCKED* (muri al posto del precipizio) e (b)
-   disattiva la "void lottery" dei burroni interni.
-3. **Lo streaming multi-regione è attivo solo in Zombie Survival.** L'arena è una
-   singola cella 1×1 senza streaming.
-
-Il **rendering** dei cliff è invece **già condiviso** (stesso `BiomeTileLayer` +
-`BiomeFallZone`), guidato unicamente da `layout.fall_zone_rects`: se il layout
-contiene fall zone, entrambe le modalità le disegnano in modo identico. La
-divergenza è quindi tutta in **generazione**, non in rendering.
-
-> Conferma dai documenti interni del repo:
-> - [`biome_generation_voidfirst_roadmap.md`](biome_generation_voidfirst_roadmap.md) —
->   "infected_plains usa la pipeline void-first […]; gli altri biomi restano sul
->   layout legacy".
-> - [`repo_fix_roadmap.md`](repo_fix_roadmap.md#L463-L484) — l'arena murata fu resa
->   *deliberatamente* "senza fall zone interne" disattivando la void lottery.
-
----
-
-## 1. Flusso condiviso (entrambe le modalità)
-
-```
-InfiniteArenaMode ──delega──► SurvivalMode ──► ZombieModeController.start_run(context)
-                                                      │
-                                                      ▼
-                                          BiomeManager.generate_world_data(context)
-                                                      │
-                                                      ▼
-                                          BiomeWorldGenerator.generate_world()
-                                            ├─ BiomeMapGenerator.generate_map()      (celle, bordi, passaggi)
-                                            └─ BiomeTerrainGenerator.generate_layouts_for_cells()
-                                                  └─ ObstacleLayoutGenerator         (rocce, strade, void, ostacoli)
-                                                  └─ FallBoundaryGenerator           (cliff perimetrali sui bordi FALL)
+```text
+ZombieModeController
+  -> BiomeManager
+  -> BiomeWorldGenerator
+  -> BiomeMapGenerator
+  -> BiomeTerrainGenerator
+  -> ObstacleLayoutGenerator.populate_layout_voidfirst()
 ```
 
-- `Infinite Arena` **non è un motore separato**: è un wrapper sottile attorno a
-  `SurvivalMode`. Vedi
-  [`infinite_arena_mode.gd`](game/modes/survival/infinite_arena_mode.gd#L25-L75):
-  costruisce un `context` e chiama `survival_mode.start_mode(context)`.
-- Tutto il mondo è costruito da
-  [`zombie_mode_controller.gd`](game/modes/zombie/zombie_mode_controller.gd#L79-L109)
-  in entrambi i casi.
+`Zombie Survival` usa una megamappa `3x3`; `Infinite Arena` usa lo stesso
+percorso in una cella `1x1`. La differenza corretta tra le due modalita e nel
+perimetro e nello streaming, non nel contenuto interno.
 
-### Cosa cambia nel `context` tra le due modalità
+Il report precedente del 2026-06-30 non descriveva piu il codice corrente:
 
-| Chiave context | Infinite Arena | Zombie Survival |
-|---|---|---|
-| `single_biome_arena` | `true` | (assente) |
-| `biome_map_width` / `height` | `1` × `1` | default `3` × `3` |
-| `biome_cell_width` / `height` | `500` × `500` | default `BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE` |
-| `arena_boundary_mode` | `"walled"` | (assente) |
-| `disable_world_runtime` | `true` | (assente → runtime attivo) |
-| `disable_region_streaming` | `true` | (assente → streaming attivo) |
+- tutti i cinque biomi passano gia da `populate_layout_voidfirst()`;
+- i chasm interni sono gia indipendenti da `arena_boundary_mode` e sono attivi
+  anche nell'arena murata;
+- rendering e gameplay dei cliff leggono gia lo stesso contratto
+  `fall_zone_rects`.
 
-Sorgente: [`infinite_arena_mode.gd:55-75`](game/modes/survival/infinite_arena_mode.gd#L55-L75).
+L'audit iniziale aveva identificato quattro lacune nel contratto condiviso:
 
-> Nota: con mappa 1×1 il `BiomeMapGenerator` assegna alla cella (0,0) il bioma di
-> partenza `infected_plains`
-> ([`biome_map_generator.gd:181`](game/procedural/world_generation/biome_map_generator.gd#L181)).
-> Quindi **Infinite Arena vede SEMPRE e SOLO il motore void-first**, mentre Zombie
-> Survival vede void-first sulla cella starter e legacy sulle altre 8 celle.
+1. vere mesa scalabili in ogni bioma;
+2. un pass di oggetti casuali pesato e data-driven;
+3. ripristino degli hazard statici tematici esclusi dal percorso attivo;
+4. garanzie e test non vacui per cliff, mesa, prop, determinismo e cache.
 
----
+## Esito implementazione
 
-## 2. Le DUE pipeline di layout (la causa principale dell'incoerenza)
+Il core e ora attivo nello stesso `populate_layout_voidfirst()`:
 
-Il punto di biforcazione è
-[`biome_terrain_generator.gd:38-46`](game/procedural/world_generation/biome_terrain_generator.gd#L38-L46):
+- cinque `BiomeGenerationProfile` tipizzati configurano mesa, props, chasm e
+  hazard senza spostare la responsabilita asset fuori dal manifest;
+- ogni bioma genera almeno un chasm interno salvo `disable_internal_void`,
+  mesa tematiche (10-16 nella Pianura, 2-4 negli altri) e 10-16 props pesati
+  appartenenti ad almeno due categorie;
+- Tossico, Infuocato, Neve e Palude generano due hazard statici tematici su
+  terreno sicuro; la Pianura mantiene solo le fall zone;
+- gli stream RNG `mesa`, `void`, `hazards` e `props` sono derivati
+  separatamente dal seed;
+- il rendering usa la stessa geometria mesa con profili `forest`,
+  `urban_ruins`, `volcanic`, `frozen_tundra` e `swamp`;
+- firma canonica `layout-v2`, revisione generatore/cache 2 e snapshot v5
+  rifiutano layout obsoleti o alterati;
+- i guardrail coprono cinque biomi, 20 seed per bioma, placement, pool,
+  determinismo, snapshot e mesh/collisione delle mesa; il fallback prop viene
+  inoltre provato senza rejection sampling.
 
-```gdscript
-if biome.biome_id == &"infected_plains":
-    obstacle_layout_generator.populate_layout_voidfirst(layout, cell, biome, context)
-else:
-    obstacle_layout_generator.populate_layout(layout, cell, biome, context)
-```
+Le tavole concept sono state promosse direttamente a sorgenti runtime senza
+ricampionamento: 20 regioni `AtlasTexture` servono 23 ID. Restano fuori dalla
+milestone core la valutazione qualitativa manuale, i 18 SVG non rappresentati
+e la rimozione del percorso legacy. I playtest lunghi restano esplicitamente
+in `BAL-001`.
 
-### 2A. Pipeline VOID-FIRST (`populate_layout_voidfirst`) — solo `infected_plains`
+## Ambito
 
-[`obstacle_layout_generator.gd:140-160`](game/procedural/world_generation/obstacle_layout_generator.gd#L140-L160):
+La milestone riguarda `Infinite Arena` e `Zombie Survival`, che consumano lo
+stesso mondo a biomi. Dungeon e Tower Defense restano generatori/modalita
+separati e non vanno assorbiti automaticamente.
 
-```
-_carve_passages          # corridoi inter-bioma come strade calpestabili
-_place_rocks             # ~10-16 rocce quadrate sul void
-_place_forests           # boschi quadrati riempiti di alberi
-_add_voidfirst_roads     # MODELLO "hub + spokes" (vedi §3)
+## Stato implementato per bioma
+
+| Bioma | Cliff nel void | Mesa reale | Oggetti variabili | Hazard statici tematici |
+| --- | --- | --- | --- | --- |
+| Pianura Infetta | >=1 salvo opt-out | 10-16, profilo `forest` | 10-16 pesati, >=2 categorie | no, oltre alle fall zone |
+| Tossico | >=1 salvo opt-out | 2-4, profilo `urban_ruins` | 10-16 pesati, >=2 categorie | 2: pozza tossica e gas |
+| Infuocato | >=1 salvo opt-out | 2-4, profilo `volcanic` | 10-16 pesati, >=2 categorie | 2: fuoco e lava |
+| Neve | >=1 salvo opt-out | 2-4, profilo `frozen_tundra` | 10-16 pesati, >=2 categorie | 2: ghiaccio e neve alta |
+| Palude | >=1 salvo opt-out | 2-4, profilo `swamp` | 10-16 pesati, >=2 categorie | 2: acqua profonda e fango |
+
+## Pipeline attiva
+
+`BiomeTerrainGenerator.generate_layout_for_cell()` crea un
+`BiomeEnvironmentLayout` e chiama sempre:
+
+```text
+_carve_passages
+_place_mesas
+_place_biome_masses
+_place_forests
+_add_voidfirst_roads
 _choose_voidfirst_spawn
-_add_voidfirst_paths     # sentieri nei boschi
+_add_voidfirst_paths
 _clear_trees_on_routes
 _add_connected_border_walls
 _line_roads_with_trees
-_resolve_void_lottery    # void residuo → pavimento o BURRONE (chasm)
+_resolve_void_lottery
+_place_voidfirst_theme_hazards
 _add_voidfirst_crates
+_place_voidfirst_random_props
+_update_generation_summary
 ```
 
-### 2B. Pipeline LEGACY (`populate_layout`) — tutti gli altri biomi
+La topologia, i passaggi e la classificazione completa vengono poi validati e
+materializzati da `WorldRegionStreamer`, `BiomeTileLayer`, `ObstacleSystem`,
+`HazardSystem` e `ResourceCrateSystem`.
 
-[`obstacle_layout_generator.gd:109-132`](game/procedural/world_generation/obstacle_layout_generator.gd#L109-L132):
+Il vecchio `populate_layout()` e ancora nello stesso file come riferimento, ma
+non e il percorso runtime. Le responsabilita richieste sono migrate nella
+pipeline void-first; la sua rimozione e cleanup fuori dalla milestone core.
 
+## Cliff nel void
+
+### Cosa funziona
+
+- `FallBoundaryGenerator` crea fall zone sui lati esterni `FALL`.
+- `_resolve_void_lottery()` converte circa un quarto delle patch residue in
+  chasm interni.
+- `_internal_void_enabled()` dipende solo da `disable_internal_void`, non dal
+  perimetro murato.
+- `BiomeTileLayer` costruisce lip e pareti; `BiomeFallZone`/`HazardSystem`
+  possiedono caduta, danno e recupero.
+- I quattro biomi avanzati possiedono gia set cliff generati e tipizzati.
+
+Va conservata la distinzione semantica:
+
+- `fall_zone`: cliff verso il void, attraversabile solo dal roll valido e
+  mortale al contatto;
+- `raised_cliff`: parete/mesa solida, blocca movimento e proiettili e non
+  applica caduta.
+
+### Gap rilevato nell'audit (risolto)
+
+Prima di `WORLD-UNIFY-001` la presenza di chasm non era un contratto
+quantitativo robusto: l'Infinite Arena poteva accettarne zero e un controllo
+generico poteva passare grazie al solo cliff perimetrale. Ora il profilo espone
+`internal_chasm_min_count = 1`, `_resolve_void_lottery()` applica il minimo e
+il fuzz verifica esplicitamente il chasm `internal` su 20 seed per bioma.
+
+Contratto implementato:
+
+- almeno un `internal` chasm per regione, salvo opt-out esplicito di test;
+- distanza minima da spawn, passaggi, crate e mesa;
+- limite alla frazione non calpestabile e connettivita sempre valida;
+- perimetro governato separatamente da `arena_boundary_mode`.
+
+## Mesa
+
+L'audit aveva trovato la mesa vera soltanto nella Pianura Infetta:
+`large_rock` era limitata al bioma forestale, `rock_rects` sovraccaricava anche
+edifici/barriere e `BiomeTileLayer` costruiva il plateau solo con forest ground.
+
+Il contratto implementato:
+
+- introduce `mesa_rects` e `mesa_profile_ids` separati da
+  `rock_rects`/`obstacle_rects`;
+- garantisce un range configurabile di mesa in tutti i profili;
+- usa il rettangolo come autorita per collisione, blocker e rendering;
+- generalizza il builder a tutti i terreni tematici;
+- usa il ruolo `ground` per la corona e `cliff_face` per le pareti dei temi
+  `urban_ruins`, `volcanic`, `frozen_tundra` e `swamp`;
+- lascia il nodo `large_rock` collision-only, evitando sprite/cap duplicati.
+
+In questo modo le mesa possono avere identita coerenti senza duplicare il
+renderer: cemento tossico, basalto, ghiaccio e pietra/torba della palude usano
+lo stesso volume geometrico e materiali diversi.
+
+## Oggetti casuali
+
+Prima della milestone la pipeline attiva aveva soltanto due forme di
+variabilita:
+
+- `_scatter_biome_masses()` randomizza posizione e quantita, ma sceglie gli ID
+  con `placed % scatter_ids.size()`;
+- `_fill_forests_with_trees()` popola cluster con un solo ID per bioma, fino a
+  limiti molto alti.
+
+Il pass generale mancava: `_add_block_props()` esisteva solo nel percorso
+legacy e il vecchio test accettava anche `block_rects` vuoto. Ora
+`_place_voidfirst_random_props()` lavora sul pavimento finale e registra in
+modo esplicito `random_prop_rects`/`random_prop_ids`.
+
+Il pass implementato:
+
+- sceglie da pool pesati del bioma;
+- conserva ID e footprint del catalogo oggetti/manifest;
+- piazza sul terreno finale, lontano da spawn, route, passaggi, void, mesa,
+  hazard e crate;
+- impone 10-16 elementi e almeno due categorie tematiche per regione;
+- entra nella firma profonda e quindi nelle chiavi stabili di persistenza.
+
+Pool iniziali implementati, tutti basati su ID esistenti:
+
+| Bioma | Landmark/massa | Prop e cover |
+| --- | --- | --- |
+| Pianura | `ruined_house`, `abandoned_house` | `abandoned_car`, `broken_fence`, `wood_barrier`, `small_rock`, `fallen_log` |
+| Tossico | `lab_block`, `lab_ruin` | `pipe_stack`, `chemical_barrel`, `toxic_barrel`, `industrial_fence`, `lab_wall`, `corroded_barrier` |
+| Infuocato | `burned_house` | `burned_car`, `metal_wreck`, `charred_wall`, `ash_barrier`, `scorched_barricade` |
+| Neve | `snow_cabin` | `ice_rock`, `ice_block`, `snow_wall`, `fallen_log` |
+| Palude | `sunken_house` | `sunken_wreck`, `dead_tree`, `marsh_log`, `reed_wall`, `broken_walkway` |
+
+## Hazard statici
+
+L'audit aveva rilevato che `_add_theme_hazards()` era chiamato soltanto da
+`populate_layout()` legacy e che il percorso unificato produceva normalmente
+solo `fall_zone`. Ora `_place_voidfirst_theme_hazards()` gira dopo la
+risoluzione del void e prima di crate/props. I quattro profili avanzati
+specificano due ID con relative dimensioni; il placement esclude route,
+passaggi, blocker, cliff lip e area protetta dello spawn. La valutazione
+qualitativa del budget pericoloso resta nel playtest manuale `BAL-001`.
+
+## Inventario grafico degli oggetti
+
+Il manifest censisce 43 `object_scenes`: 23 usano risorse `AtlasTexture`, due
+usano PNG (`forest_tree` e il materiale mesa di `large_rock`) e 18 conservano
+SVG. I pool void-first usano gli stessi ID tecnici, quindi la promozione non ha
+modificato scena, footprint, anchor, collisione o pesi di generazione.
+
+Le cinque tavole `2x2` con alpha sotto
+`assets/environment/isometric/concepts/` sono ora atlas runtime. Le risorse
+`objects/generated_props/*.tres` espongono regioni strette con `filter_clip`;
+tre coppie tossiche condividono consapevolmente la stessa grafica. Il motivo
+palude in basso a destra alimenta soltanto `marsh_log`: `reed_wall` mantiene lo
+SVG verticale per non deformare il footprint `1x3`.
+
+Priorita artistica consigliata:
+
+1. valutare manualmente scala, leggibilita e ripetizione dei 23 prop promossi;
+2. rifinire, solo se la review lo richiede, i materiali mesa tematici che usano
+   gia lo stesso volume della `large_rock`;
+3. ampliare i pool con i prop esistenti non ancora usati dal void-first;
+4. affrontare dopo hazard, casse, pickup e attori procedurali, che richiedono
+   anche un contratto sprite dedicato.
+
+Lo `status` di `large_rock` e dei 23 prop promossi e `final`; le nuove voci
+registrano source `openai_image_generation`, licenza e attribution. I 18 SVG
+residui conservano `base_complete` finche non esiste arte dedicata verificata.
+
+## Dati e responsabilita
+
+`BiomeDefinition` espone ora un `BiomeGenerationProfile` tipizzato per le
+feature unificate. `_voidfirst_palette()` resta come compatibilita per le
+regole consolidate di road/cluster e non e autorita sugli asset. Il manifest
+resta autorita su path, footprint e rendering; non diventa un secondo
+generatore.
+
+Contratto implementato:
+
+```text
+BiomeDefinition
+  -> BiomeGenerationProfile
+       -> mesa rules
+       -> weighted prop rules
+       -> void rules
+       -> hazard rules
+
+manifest.json
+  -> asset path, footprint, anchor, collision, blocking, source/licenza
 ```
-_add_roads               # CROCE fissa di 2 main road bordo-a-bordo (40 px) + passaggi
-_add_biome_navigation_features  # griglia fissa di 2 sentieri secondari (20 px)
-_add_internal_blocks     # taglia i rettangoli tra le strade in "blocchi"
-                         #   → blocchi full_void/partial_void = burroni interni
-_add_starter_water_crossing
-_add_large_obstacles / _add_secondary_obstacles / _add_starter_roadside_details
-_add_connected_border_walls
-_add_crates / _add_theme_hazards / _add_block_props
-_ensure_starter_*
+
+Le cinque `Resource` vivono sotto
+`game/procedural/world_generation/profiles/` e rendono il tuning delle feature
+visibile nell'Inspector. `MesaPlacementPass`, `StaticHazardPlacementPass` e
+`RandomPropPlacementPass` vivono sotto
+`game/procedural/world_generation/passes/`; l'orchestratore conserva solo
+l'ordine della pipeline e le API di compatibilita. Il fallback dei prop prova
+ogni ID/footprint a ogni origine legale e puo restare sotto il minimo soltanto
+quando non esiste piu spazio fisico valido.
+
+Gli stream indipendenti `mesa`, `void`, `hazards` e `props` derivano da
+`cell.seed`. Aggiungere o ritoccare un prop non sposta quindi mesa o cliff dello
+stesso seed; l'eventuale separazione futura di road/cluster/crate e cleanup,
+non requisito aperto della milestone core.
+
+## Determinismo, snapshot e cache
+
+L'audit iniziale aveva trovato firme basate soprattutto su topologia e conteggi,
+incapaci di proteggere il contenuto profondo. La migrazione ha aggiunto la firma
+canonica `layout-v2`, che normalizza e include:
+
+- `road_cell_tags`, floor e chasm;
+- mesa e relativi profili;
+- ID/rect/rotazione degli ostacoli;
+- hazard, crate e side dei bordi;
+- contenuto della revisione generativa.
+
+`BiomeCell` incorpora la firma profonda, `WorldDataCache.GENERATOR_REVISION`
+vale ora 2 e `WorldSnapshotCodec.FORMAT_VERSION` vale 5. I test di round-trip
+rifiutano sia snapshot della revisione precedente sia firme archiviate
+manomesse.
+
+## Piano di implementazione
+
+### Fase 0 - Guardrail e baseline — completata
+
+- Aggiunti seed sentinella per i cinque biomi e l'arena `1x1`.
+- Aggiunto `unified_biome_features_test.gd` con feature non vuote.
+- Rafforzati firma profonda e test determinismo.
+- Portate la revisione generatore/cache a 2 e la snapshot a v5.
+
+### Fase 1 - Profilo tipizzato e stream RNG — completata per il core
+
+- Creati `BiomeGenerationProfile` e regole pesate in cinque `.tres`.
+- Spostate nei profili le regole di mesa, prop, chasm e hazard; la palette
+  consolidata road/cluster resta compatibilita interna.
+- Separati gli stream RNG delle quattro feature casuali nuove.
+- Dichiarata l'incompatibilita dell'output tramite revisione e formato.
+
+### Fase 2 - Mesa condivise — completata
+
+- Separati `mesa_rects`/`mesa_profile_ids` dalle masse generiche.
+- Generalizzati `RectilinearRockAreaMeshBuilder`/`BiomeTileLayer` ai cinque
+  temi.
+- Garantite mesa per profilo senza bloccare hub, passaggi o pathfinding.
+- Estratto `MesaPlacementPass` e aggiunto il test mesh/collisione.
+
+### Fase 3 - Void e hazard — completata
+
+- Reso il minimo chasm esplicito e garantito almeno un interno.
+- Migrati gli hazard in `StaticHazardPlacementPass`, condiviso e data-driven.
+- Validati placement sicuro e raggiungibilita con guardrail automatici; resta
+  manuale il giudizio qualitativo sul budget di pericolo.
+
+### Fase 4 - Random props — completata
+
+- Aggiunto il placement dedicato sul terreno finale.
+- Migrati i pool esistenti con min/max, weight e clearance.
+- Resa esplicita l'appartenenza dei props nel layout senza duplicare la
+  responsabilita degli oggetti runtime.
+- Estratto `RandomPropPlacementPass`; rejection sampling e fallback scan
+  esaustivo proteggono quote obbligatorie e almeno due categorie.
+
+### Fase 5 - QA visuale e promozione asset completate
+
+- Promosse le cinque tavole a sorgenti atlas runtime: 20 regioni alpha per 23
+  ID, con footprint, pivot e fallback tecnici invariati.
+- Estesi loader, asset check, suite e Visual QA alle risorse Texture2D `.tres`.
+- Eseguita la board biomi su tre seed, cinque biomi e due risoluzioni con focus
+  distinti `fall_cliff`, `mesa` e `random_props`: 210 catture, runner verde.
+
+La promozione automatizzata e i focus QA sono completati; giudizio qualitativo
+manuale e nuova arte per i 18 SVG residui richiedono un nuovo goal artistico o
+il playtest `BAL-001` pertinente.
+
+### Fase 6 - Cleanup — differita fuori dal core
+
+- Rimuovere `populate_layout()` e helper legacy solo dopo parita e test verdi.
+- Mantenere aggiornati contratti runtime e regole di gioco.
+- Rilanciare soak/streaming e completare il playtest manuale in `BAL-001`.
+
+Il percorso legacy resta intenzionalmente disponibile; la nuova firma e il
+formato snapshot sono gia attivi. Nessun soak o playtest manuale viene chiuso
+da questa milestone.
+
+## Criteri di accettazione
+
+Per ogni bioma e per entrambe le modalita che consumano il generatore:
+
+- almeno un chasm interno con cliff verso il void;
+- almeno una mesa esplicita, non simulata da edifici o barriere;
+- numero di prop entro i limiti del profilo e almeno due categorie tematiche;
+- hazard statici presenti solo dove previsti dal profilo;
+- nessun overlap con spawn, route, passaggi, void, mesa, hazard o crate;
+- spawn, crate e passaggi raggiungibili;
+- stesso seed = stessi ID, rettangoli, rotazioni e ordine normalizzato;
+- seed diverso = variazione effettiva di ogni feature casuale;
+- unload/reload non duplica ne sposta oggetti;
+- zero asset mancanti, placeholder o fallback generici impliciti;
+- budget streaming e frame time di `BAL-001` invariati.
+
+I criteri strutturali e deterministici sopra sono coperti dai guardrail
+automatici della milestone. L'ultimo criterio prestazionale e il giudizio su
+leggibilita/densita richiedono i playtest manuali ancora aperti in `BAL-001`;
+non sono usati per dichiarare conclusi quei playtest.
+
+## Matrice test
+
+| Livello | Copertura | Stato milestone |
+| --- | --- | --- |
+| GUT world-gen | 5 biomi x seed sentinella: chasm, mesa, prop, hazard e validazione | verde |
+| GUT determinismo | firma profonda identica per stesso seed e diversa per seed alternativo | verde |
+| GUT placement | pool corretto, quote non vacue, zero overlap e terreno valido | verde |
+| GUT modalita | Survival e Arena condividono il contenuto e differiscono per perimetro/runtime | verde |
+| GUT asset | manifest, footprint, anchor e copertura degli ID generati | verde |
+| GUT cache | round-trip v5, firma alterata e snapshot precedente rifiutati | verde |
+| Fuzz | 20 seed x 5 biomi senza layout invalido | verde |
+| Visual QA | 3 seed x 5 biomi x 2 risoluzioni, focus cliff/mesa/prop | runner verde; giudizio manuale residuo |
+| Soak | attraversamento biomi, ritorno e streaming senza crescita o duplicati | resta in `BAL-001` |
+| Manuale | collisione/Y-sort, leggibilita e densita non frustrante | resta in `BAL-001` |
+
+Baseline storica verificata prima dell'implementazione:
+
+```text
+./tools/run_gut.ps1 -GutDir res://tests/suites/world_gen
+48/48 test passati, 352 assert, exit code 0
+
+./tools/run_gut.ps1 -GutDir res://tests/suites/assets
+70/70 test passati, 9545 assert, exit code 0
+
+godot --headless --path . --script res://tools/generate_isometric_environment_assets.gd -- --check
+131 contratti verificati, exit code 0
 ```
 
-### Conseguenza diretta
+Dopo l'implementazione, le suite mirate hanno incluso
+`unified_biome_features_test.gd`, `layout_signature_snapshot_test.gd` e
+`mesa_rendering_test.gd`: il primo esegue il fuzz richiesto su 20 seed per
+ognuno dei cinque biomi e forza anche il fallback prop senza sampling; gli
+altri proteggono firma/snapshot e geometria mesa.
 
-Dentro una singola partita di **Zombie Survival**, la cella di partenza
-(`infected_plains`, void-first) ha un *aspetto e una logica di strade/void diversi*
-dalle celle vicine (legacy). E **Infinite Arena** non vede mai la pipeline legacy.
-Questa è la radice di *"costruzione/rendering di strade non coerente"*.
+Validazione finale del 2026-07-13:
 
----
+```text
+./tools/run_gut.ps1
+275/275 test passati, 28.521 assert, exit code 0
 
-## 3. STRADE — come vengono generate
+godot_console --path . --rendering-method gl_compatibility --script res://tests/visual_qa/biome_rendering_review_visual_qa.gd
+210 catture (3 seed x 5 biomi x 7 focus x 2 risoluzioni), exit code 0
 
-### Void-first (`_add_voidfirst_roads` / `_collect_road_spokes`)
+godot --headless --path . --script res://tools/generate_isometric_environment_assets.gd -- --check
+131 contratti verificati, exit code 0
 
-[`obstacle_layout_generator.gd:360-442`](game/procedural/world_generation/obstacle_layout_generator.gd#L360-L442).
+godot --headless --path . --quit-after 5
+scena principale avviata, exit code 0
+```
 
-Modello unico **"hub + spokes"**: il centro del chunk è collegato con una strada
-("spoke") a ogni "uscita". Un'uscita è:
+## File principali coinvolti
 
-- un **passaggio inter-bioma** → spoke `broken_street` instradato in A* (aggira le
-  rocce) dal passaggio al centro → *"strade verso i biomi confinanti"*;
-- oppure, **se l'arena è murata**, ogni bordo senza passaggio → spoke `main_road`
-  fino al punto medio del lato → i 4 spoke insieme formano la **croce bordo-a-bordo**
-  → *"4 strade che vanno ai lati"*.
-
-> **Questo è già esattamente il comportamento che descrivi come desiderato.** Il
-> "muro = vicino" è ciò che permette a entrambe le modalità di usare un solo
-> percorso di codice: la croce a 4 è il caso degenere in cui ogni lato è un muro.
-
-### Legacy (`_add_roads`)
-
-[`obstacle_layout_generator.gd:783-810`](game/procedural/world_generation/obstacle_layout_generator.gd#L783-L810).
-
-- Disegna **sempre** una croce fissa di 2 `main_road` da bordo a bordo, *a
-  prescindere* da dove siano i passaggi.
-- Aggiunge i passaggi inter-bioma come rect separati.
-- `_add_biome_navigation_features` aggiunge una **griglia fissa** di 2 sentieri
-  secondari con ratio per-bioma
-  ([:812-838](game/procedural/world_generation/obstacle_layout_generator.gd#L812-L838)).
-
-→ Le strade legacy **non dipendono dai vicini** e spesso corrono in parallelo ai
-corridoi dei passaggi (il commento al void-first §3 spiega perché il vecchio
-modello fu abbandonato per le celle connesse). Questa è la seconda fonte di
-incoerenza nelle strade.
-
----
-
-## 4. CLIFF e VOID — come vengono generati e dove vengono soppressi
-
-Esistono **due tipi** di void/cliff:
-
-### 4A. Cliff PERIMETRALI (bordo del mondo)
-
-Decisi dal **tipo di bordo della cella** (`BiomeCell.BorderType`):
-
-- Default di ogni lato = **`FALL`**
-  ([`biome_cell.gd:42`](game/procedural/world_generation/biome_cell.gd#L42)).
-- Un lato con vicino diventa `CONNECTED`; un edge selezionato come bloccato diventa
-  `BLOCKED`.
-- [`FallBoundaryGenerator`](game/procedural/world_generation/fall_boundary_generator.gd)
-  aggiunge una striscia di fall zone (cliff verso il void) **solo** sui lati `FALL`.
-
-**Divergenza:** in Infinite Arena,
-[`_apply_outer_boundary_mode`](game/procedural/world_generation/biome_map_generator.gd#L308-L321)
-converte **tutti** i bordi esterni senza vicino in `BLOCKED` perché
-`arena_boundary_mode == "walled"`. Quindi:
-- Zombie Survival → bordi esterni `FALL` → **cliff perimetrali verso il void**.
-- Infinite Arena → bordi esterni `BLOCKED` → **muri**, nessun cliff perimetrale.
-
-### 4B. Void/burroni INTERNI
-
-- **Void-first:** `_resolve_void_lottery` sorteggia il void residuo in rapporto
-  1 burrone : 3 calpestabili
-  ([:641-684](game/procedural/world_generation/obstacle_layout_generator.gd#L641-L684)),
-  ma **solo se `allow_chasms`**.
-- **Legacy:** `_add_internal_blocks` crea blocchi `full_void`/`partial_void` →
-  `_apply_block_surface` li trasforma in `add_fall_zone_rect`
-  ([:1179-1204](game/procedural/world_generation/obstacle_layout_generator.gd#L1179-L1204)),
-  ma **solo se `allow_internal_void`**.
-
-**Divergenza:** entrambi i flag derivano da
-`not _is_walled_arena_context(context)`
-([:117](game/procedural/world_generation/obstacle_layout_generator.gd#L117) e
-[:148](game/procedural/world_generation/obstacle_layout_generator.gd#L148);
-helper a [:1062](game/procedural/world_generation/obstacle_layout_generator.gd#L1062)).
-Quindi nell'arena murata **non viene mai generato void interno**.
-
-### Riepilogo cliff/void
-
-| | Zombie Survival | Infinite Arena |
-|---|---|---|
-| Cliff perimetrali | Sì (bordi `FALL`) | No (bordi `BLOCKED`/muri) |
-| Void/burroni interni | Sì (lottery + blocchi void) | No (soppressi da `walled`) |
-
-Questo spiega le tue osservazioni 2 e 3: *"cliff con void generati solo in zombie
-survival"* e *"ci sono i cliff in zombie survival"*.
-
----
-
-## 5. RENDERING dei cliff — già condiviso
-
-Il rendering **non** è una fonte di divergenza tra le modalità. È guidato solo dal
-contenuto del layout:
-
-- Il terreno/ground dei cliff è disegnato dal
-  [`BiomeTileLayer`](game/modes/zombie/biome_tile_layer.gd) tramite
-  `IsometricCliffMeshBuilder` e `IsometricCliffBorderMeshBuilder`, a partire da
-  `layout.fall_zone_rects`
-  ([biome_tile_layer.gd:637-668](game/modes/zombie/biome_tile_layer.gd#L637-L668)).
-- La fisica di caduta + bordo "ledge" è
-  [`BiomeFallZone`](game/modes/zombie/biome_fall_zone.gd) (Area2D) +
-  [`IsometricCliffRenderer`](game/modes/zombie/isometric_cliff_renderer.gd).
-- Lo sfondo oltre il chunk è il "void backdrop" colorato col bioma
-  ([zombie_mode_controller.gd:462-489](game/modes/zombie/zombie_mode_controller.gd#L462-L489)).
-
-→ Conseguenza pratica: **se la generazione producesse fall zone anche nell'arena,
-verrebbero renderizzate identiche senza toccare il codice di rendering.**
-
----
-
-## 6. STREAMING / runtime — differenza strutturale (solo Survival)
-
-- Zombie Survival usa lo streaming multi-regione:
-  [`_stream_active_regions`](game/modes/zombie/zombie_mode_controller.gd#L521-L547)
-  con `WorldRegionStreamer` + `RegionSeamSystem` + `WorldRuntime`.
-- Infinite Arena disabilita tutto (`disable_region_streaming`,
-  `disable_world_runtime`) e prende il percorso diretto single-region:
-  `terrain_generator/obstacle_system/hazard_system/resource_crate_system.start_run(biome)`
-  ([zombie_mode_controller.gd:508-519](game/modes/zombie/zombie_mode_controller.gd#L508-L519)).
-
-Entrambi i percorsi consumano lo **stesso** `BiomeEnvironmentLayout`, quindi questa
-differenza è legittima (1 cella vs 9 celle) e **non** è causa delle incoerenze
-estetiche; va però tenuta presente perché qualsiasi modifica al layout deve
-funzionare su entrambi i percorsi.
-
----
-
-## 7. Tabella riassuntiva delle differenze
-
-| Aspetto | Zombie Survival | Infinite Arena | Condiviso? |
-|---|---|---|---|
-| Entry mode | `SurvivalMode` | `InfiniteArenaMode`→`SurvivalMode` | Sì (stesso controller) |
-| Mappa biomi | 3×3 multi-bioma | 1×1 (`infected_plains`) | Stesso generatore |
-| Pipeline layout | void-first (starter) **+ legacy** (altri) | **solo** void-first | ❌ split per-bioma |
-| Strade | hub+spokes (starter) **+ croce fissa legacy** | hub+spokes (croce a 4) | ❌ misto |
-| Bordi esterni | `FALL` → cliff sul void | `BLOCKED` → muri | ❌ per `walled` |
-| Void interno | Sì (lottery + blocchi) | No (soppresso) | ❌ per `walled` |
-| Rendering cliff | `BiomeTileLayer`/`BiomeFallZone` | idem | ✅ |
-| Streaming | multi-regione | single-region | ❌ (per design) |
-
----
-
-## 8. Mappatura osservazioni → cause radice
-
-1. **"Strade non coerenti / motore diverso"** → §2 (split pipeline per-bioma) + §3
-   (legacy croce fissa vs void-first hub+spokes). Causa primaria:
-   `biome_terrain_generator.gd:38`.
-2. **"Cliff con void solo in Zombie Survival e non in Infinite Wave"** → §4B:
-   `allow_internal_void = not _is_walled_arena_context` sopprime i burroni interni
-   nell'arena murata.
-3. **"Ci sono i cliff in Zombie Survival"** → §4A: i bordi esterni della survival
-   sono `FALL` (default), mentre l'arena li forza a `BLOCKED`.
-
----
-
-## 9. Raccomandazioni per unificare (obiettivo richiesto)
-
-Obiettivo dichiarato: **stesso motore per tutto**; condividere strade, cliff e void;
-le **uniche** differenze ammesse sono *generazione dei confini* e *numero di strade*
-(Survival: solo verso biomi confinanti; Arena: 4 strade ai lati — comportamento già
-implementato dal modello hub+spokes).
-
-Interventi proposti, in ordine di impatto:
-
-1. **Un solo motore di layout.** Instradare **tutti** i biomi su
-   `populate_layout_voidfirst` rimuovendo il branch in
-   [`biome_terrain_generator.gd:38-46`](game/procedural/world_generation/biome_terrain_generator.gd#L38-L46).
-   Richiede di rendere void-first "biome-aware" per tag terreno/ostacoli per-bioma
-   (oggi hardcoda asset tipo `large_rock`/`forest_tree`); la pipeline legacy resta
-   come riferimento finché la void-first non copre i 4 biomi tematici.
-2. **Disaccoppiare il void interno dalla modalità.** Far sì che la void lottery
-   (`_resolve_void_lottery`) e i blocchi void **non** dipendano da
-   `_is_walled_arena_context`, così i burroni interni compaiono anche nell'arena.
-   → cliff/void diventano *condivisi*, come richiesto.
-3. **Tenere il confine come unica leva esplicita.** Mantenere
-   `arena_boundary_mode = "walled"` come scelta *del solo bordo* (muro vs
-   precipizio), senza più usarlo per spegnere il void interno. Le strade restano
-   guidate dagli spoke (passaggi vs muri), già differenziate correttamente.
-4. **Decisione di design da confermare** (vedi sotto): nell'arena il *perimetro*
-   deve restare murato o diventare anch'esso cliff-verso-il-void come in Survival?
-   Da questa scelta dipende se il punto 3 va lasciato `walled` o cambiato.
-
-> Nota: oggi i contratti/test e i documenti (`ARCHITECTURE.md`, `GAME_DESIGN.md`,
-> `repo_fix_roadmap.md`) sanciscono esplicitamente "Infinite Arena = cella 500×500
-> murata e senza fall zone interne". Qualsiasi unificazione va accompagnata
-> dall'aggiornamento di quei contratti e dei test relativi
-> (`tests/suites/environment/fall_test.gd`, `tests/suites/modes/zombie_modes_test.gd`,
-> `tests/suites/assets/void_cliff_asset_test.gd`).
-
----
-
-## 10. File chiave (indice)
-
-| Ruolo | File |
-|---|---|
-| Entry Infinite Arena | [game/modes/survival/infinite_arena_mode.gd](game/modes/survival/infinite_arena_mode.gd) |
-| Entry Survival | [game/modes/survival/survival_mode.gd](game/modes/survival/survival_mode.gd) |
-| Orchestratore mondo | [game/modes/zombie/zombie_mode_controller.gd](game/modes/zombie/zombie_mode_controller.gd) |
-| Manager biomi | [game/modes/zombie/biome_manager.gd](game/modes/zombie/biome_manager.gd) |
-| Generatore mondo | [game/procedural/world_generation/biome_world_generator.gd](game/procedural/world_generation/biome_world_generator.gd) |
-| Mappa/bordi/passaggi | [game/procedural/world_generation/biome_map_generator.gd](game/procedural/world_generation/biome_map_generator.gd) |
-| Cella + tipi bordo | [game/procedural/world_generation/biome_cell.gd](game/procedural/world_generation/biome_cell.gd) |
-| Selettore pipeline | [game/procedural/world_generation/biome_terrain_generator.gd](game/procedural/world_generation/biome_terrain_generator.gd) |
-| **Layout (2 pipeline)** | [game/procedural/world_generation/obstacle_layout_generator.gd](game/procedural/world_generation/obstacle_layout_generator.gd) |
-| Cliff perimetrali | [game/procedural/world_generation/fall_boundary_generator.gd](game/procedural/world_generation/fall_boundary_generator.gd) |
-| Strade (passaggi) | [game/procedural/world_generation/biome_passage_generator.gd](game/procedural/world_generation/biome_passage_generator.gd) |
-| Rendering cliff (ground) | [game/modes/zombie/biome_tile_layer.gd](game/modes/zombie/biome_tile_layer.gd) |
-| Fall zone (fisica+bordo) | [game/modes/zombie/biome_fall_zone.gd](game/modes/zombie/biome_fall_zone.gd) |
-| Renderer cliff (sprite) | [game/modes/zombie/isometric_cliff_renderer.gd](game/modes/zombie/isometric_cliff_renderer.gd) |
-| Streaming regioni | [game/world/world_region_streamer.gd](game/world/world_region_streamer.gd) |
+- `game/procedural/world_generation/biome_terrain_generator.gd`
+- `game/procedural/world_generation/obstacle_layout_generator.gd`
+- `game/procedural/world_generation/profiles/biome_generation_profile.gd`
+- `game/procedural/world_generation/profiles/*.tres`
+- `game/procedural/world_generation/passes/*.gd`
+- `game/procedural/world_generation/world_data_cache.gd`
+- `game/procedural/world_generation/world_snapshot_codec.gd`
+- `game/modes/zombie/biome_definition.gd`
+- `game/modes/zombie/biome_environment_layout.gd`
+- `game/modes/zombie/biome_tile_layer.gd`
+- `game/modes/zombie/rocks/rectilinear_rock_area_mesh_builder.gd`
+- `assets/environment/isometric/manifest.json`
+- `tests/suites/world_gen/`, `environment/`, `obstacles/`, `assets/`, `modes/`
+- `tests/suites/world_gen/unified_biome_features_test.gd`
+- `tests/suites/world_gen/layout_signature_snapshot_test.gd`
+- `tests/suites/obstacles/mesa_rendering_test.gd`
+- `tests/visual_qa/biome_rendering_review_visual_qa.gd`

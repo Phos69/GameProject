@@ -2,6 +2,15 @@ extends RefCounted
 class_name ObstacleLayoutGenerator
 
 const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
+const MESA_PLACEMENT_PASS = preload(
+	"res://game/procedural/world_generation/passes/mesa_placement_pass.gd"
+)
+const STATIC_HAZARD_PLACEMENT_PASS = preload(
+	"res://game/procedural/world_generation/passes/static_hazard_placement_pass.gd"
+)
+const RANDOM_PROP_PLACEMENT_PASS = preload(
+	"res://game/procedural/world_generation/passes/random_prop_placement_pass.gd"
+)
 
 const ROAD_WIDTH := IsoGridConfig.ROAD_WIDTH_TILES
 const SECONDARY_ROAD_WIDTH := IsoGridConfig.SECONDARY_ROAD_WIDTH_TILES
@@ -28,6 +37,11 @@ const VOIDFIRST_ROCK_MAX_COUNT := 16
 const VOIDFIRST_ROCK_GAP := IsoGridConfig.VOIDFIRST_ROCK_GAP_TILES
 const VOIDFIRST_ROCK_MARGIN := IsoGridConfig.VOIDFIRST_ROCK_MARGIN_TILES
 const VOIDFIRST_ROCK_ATTEMPTS := 600
+# Real mesas use the same proven 3..5-cell footprint as the original plains
+# plateaus. Plains retain their historical density; advanced biomes use a lower
+# shared budget alongside their thematic solid masses.
+const VOIDFIRST_MESA_MIN_COUNT := MESA_PLACEMENT_PASS.MIN_COUNT
+const VOIDFIRST_MESA_MAX_COUNT := MESA_PLACEMENT_PASS.MAX_COUNT
 const VOIDFIRST_FOREST_MIN_SIZE := IsoGridConfig.VOIDFIRST_FOREST_MIN_SIZE_TILES
 const VOIDFIRST_FOREST_MAX_SIZE := IsoGridConfig.VOIDFIRST_FOREST_MAX_SIZE_TILES
 const VOIDFIRST_FOREST_MIN_COUNT := 4
@@ -58,6 +72,33 @@ const VOIDFIRST_MAX_LINE_TREES := 220
 const VOIDFIRST_VOID_PATCH := IsoGridConfig.VOIDFIRST_VOID_PATCH_TILES
 const VOIDFIRST_VOID_CHASM_DIVISOR := 4
 
+# Final-floor random props. They are intentionally much sparser than cluster
+# vegetation and have their own deterministic stream, so tuning the prop pool
+# cannot move roads, mesas or chasms for an existing seed.
+const VOIDFIRST_PROP_MIN_COUNT := RANDOM_PROP_PLACEMENT_PASS.MIN_COUNT
+const VOIDFIRST_PROP_MAX_COUNT := RANDOM_PROP_PLACEMENT_PASS.MAX_COUNT
+const VOIDFIRST_PROP_ATTEMPTS := RANDOM_PROP_PLACEMENT_PASS.ATTEMPTS
+const VOIDFIRST_PROP_BORDER_MARGIN := RANDOM_PROP_PLACEMENT_PASS.BORDER_MARGIN
+const VOIDFIRST_PROP_SPAWN_CLEARANCE := RANDOM_PROP_PLACEMENT_PASS.SPAWN_CLEARANCE
+# Static biome hazards are placed only after the void/floor lottery, so their
+# footprint is validated against the final terrain. The first two eligible IDs
+# in each BiomeDefinition reproduce the authored thematic pair without copying
+# layout coordinates from the legacy pipeline.
+const VOIDFIRST_HAZARD_MAX_COUNT := STATIC_HAZARD_PLACEMENT_PASS.MAX_COUNT
+const VOIDFIRST_HAZARD_ATTEMPTS_PER_ID := STATIC_HAZARD_PLACEMENT_PASS.ATTEMPTS_PER_ID
+const VOIDFIRST_HAZARD_BORDER_MARGIN := STATIC_HAZARD_PLACEMENT_PASS.BORDER_MARGIN
+const VOIDFIRST_HAZARD_ROUTE_CLEARANCE := STATIC_HAZARD_PLACEMENT_PASS.ROUTE_CLEARANCE
+const VOIDFIRST_HAZARD_SPAWN_CLEARANCE := STATIC_HAZARD_PLACEMENT_PASS.SPAWN_CLEARANCE
+const VOIDFIRST_HAZARD_SIZE_BY_ID: Dictionary = (
+	STATIC_HAZARD_PLACEMENT_PASS.FALLBACK_SIZE_BY_ID
+)
+const RNG_STREAM_SALTS: Dictionary = {
+	&"mesa": 0x13579BDF,
+	&"void": 0x2468ACE,
+	&"hazards": 0x31415927,
+	&"props": 0x5A17C9E3,
+}
+
 const GENERATED_OBSTACLE_CATEGORIES: Dictionary = {
 	&"abandoned_car": &"wreck",
 	&"abandoned_house": &"building",
@@ -68,6 +109,8 @@ const GENERATED_OBSTACLE_CATEGORIES: Dictionary = {
 	&"burned_car": &"wreck",
 	&"burned_house": &"building",
 	&"charred_wall": &"barrier",
+	&"chemical_barrel": &"barrel",
+	&"corroded_barrier": &"barrier",
 	&"dead_tree": &"tree",
 	&"dense_vegetation": &"dense_vegetation",
 	&"deep_water_boundary": &"border",
@@ -78,17 +121,21 @@ const GENERATED_OBSTACLE_CATEGORIES: Dictionary = {
 	&"ice_rock": &"rock",
 	&"industrial_fence": &"barrier",
 	&"lab_block": &"building",
+	&"lab_ruin": &"building",
 	&"lab_wall": &"barrier",
 	&"large_rock": &"rock",
 	&"lava_boundary": &"border",
 	&"marsh_log": &"log",
+	&"metal_wreck": &"wreck",
 	&"pipe_stack": &"barrier",
 	&"reed_wall": &"barrier",
 	&"ruined_house": &"building",
 	&"small_rock": &"rock",
 	&"snow_cabin": &"building",
 	&"snow_wall": &"barrier",
+	&"scorched_barricade": &"barrier",
 	&"sunken_house": &"building",
+	&"sunken_wreck": &"wreck",
 	&"toxic_barrel": &"barrel",
 	&"toxic_boundary_wall": &"border",
 	&"wood_barrier": &"barrier"
@@ -147,10 +194,15 @@ func populate_layout_voidfirst(
 ) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = maxi(cell.seed, 1)
+	var mesa_rng := _make_rng_stream(cell.seed, &"mesa")
+	var void_rng := _make_rng_stream(cell.seed, &"void")
+	var hazard_rng := _make_rng_stream(cell.seed, &"hazards")
+	var prop_rng := _make_rng_stream(cell.seed, &"props")
 	var allow_internal_void := _internal_void_enabled(context)
 	var palette := _voidfirst_palette(biome.biome_id)
 	_carve_passages(layout, cell)
-	_place_rocks(layout, biome, rng)
+	_place_mesas(layout, biome, mesa_rng)
+	_place_biome_masses(layout, biome, rng)
 	_place_forests(layout, biome, rng)
 	_add_voidfirst_roads(layout, rng, cell, context, palette)
 	_choose_voidfirst_spawn(layout)
@@ -158,9 +210,23 @@ func populate_layout_voidfirst(
 	_clear_trees_on_routes(layout, palette["cluster_id"])
 	_add_connected_border_walls(layout, cell, biome, context)
 	_line_roads_with_trees(layout, palette)
-	_resolve_void_lottery(layout, rng, allow_internal_void)
+	_resolve_void_lottery(
+		layout,
+		void_rng,
+		allow_internal_void,
+		_voidfirst_internal_chasm_min_count(biome)
+	)
+	_place_voidfirst_theme_hazards(layout, biome, hazard_rng)
 	_add_voidfirst_crates(layout, biome)
+	_place_voidfirst_random_props(layout, biome, prop_rng)
 	_update_generation_summary(layout, biome)
+
+func _make_rng_stream(seed: int, stream_id: StringName) -> RandomNumberGenerator:
+	var rng := RandomNumberGenerator.new()
+	var salt := int(RNG_STREAM_SALTS.get(stream_id, 1))
+	# Keep the derived seed positive/non-zero without relying on engine hash order.
+	rng.seed = maxi((absi(seed) ^ salt) & 0x7FFFFFFF, 1)
+	return rng
 
 # Place crates on the road cross around the spawn so they are always walkable and
 # comfortably reachable from the party start.
@@ -178,6 +244,32 @@ func _add_voidfirst_crates(
 	]
 	for index in range(offsets.size()):
 		_add_crate(layout, crate_ids[index % crate_ids.size()], anchor + offsets[index])
+
+# Place the static environmental identity of advanced biomes on final walkable
+# floor. Hazards never occupy routes, passages, blockers, cliff lips or the
+# protected spawn area; later crates and random props therefore see them as
+# already-reserved terrain.
+func _place_voidfirst_theme_hazards(
+	layout: BiomeEnvironmentLayout,
+	biome: BiomeDefinition,
+	rng: RandomNumberGenerator
+) -> int:
+	return STATIC_HAZARD_PLACEMENT_PASS.new().place(layout, biome, rng)
+
+# Final-floor prop pass. Unlike the earlier mass/cluster passes, these objects are
+# sparse ambient landmarks and cover chosen from weighted biome pools. Membership
+# is recorded explicitly for testing, snapshots and future persistence.
+func _place_voidfirst_random_props(
+	layout: BiomeEnvironmentLayout,
+	biome: BiomeDefinition,
+	rng: RandomNumberGenerator
+) -> int:
+	return RANDOM_PROP_PLACEMENT_PASS.new().place(
+		layout,
+		biome,
+		rng,
+		GENERATED_OBSTACLE_CATEGORIES
+	)
 
 func _voidfirst_center_reserved(layout: BiomeEnvironmentLayout) -> Rect2i:
 	# Keep the chunk centre clear of rocks so the main-road cross, player spawn and
@@ -216,70 +308,28 @@ func _carve_passages(layout: BiomeEnvironmentLayout, cell: BiomeCell) -> void:
 		_add_road_rect(layout, passage_rect, passage.passage_type)
 		_add_road_rect(layout, connector_rect, passage.passage_type)
 
-# M1 — place at least VOIDFIRST_ROCK_MIN_COUNT square rocks (side 3..5) on the
-# void canvas, non-overlapping and clear of passage corridors. Deterministic from
-# the cell seed. Rocks are scalable obstacles so their art/collision match the
-# chosen side.
-func _place_rocks(
+# M1a - place real square mesas on every biome's void canvas. The rectangle is
+# the terrain-volume authority; `large_rock` is a collision-only scalable blocker
+# at runtime. Plains mirrors the same rects into rock_rects for legacy consumers.
+func _place_mesas(
 	layout: BiomeEnvironmentLayout,
 	biome: BiomeDefinition,
 	rng: RandomNumberGenerator
 ) -> int:
-	# Only infected_plains owns a scalable rock-area asset (large_rock). Other biomes
-	# have no scalable rock, so they scatter natural-footprint thematic obstacles as
-	# the solid masses instead (same count/clearance budget, shared structure).
-	var palette := _voidfirst_palette(biome.biome_id)
-	if not bool(palette["rock_scalable"]):
-		return _scatter_biome_masses(layout, rng, palette["scatter_ids"])
-	var target := rng.randi_range(VOIDFIRST_ROCK_MIN_COUNT, VOIDFIRST_ROCK_MAX_COUNT)
-	var placed := _try_place_rocks(layout, rng, target, VOIDFIRST_ROCK_GAP)
-	# Guarantee the minimum even if rejection sampling was unlucky: relax the gap
-	# and keep trying until at least VOIDFIRST_ROCK_MIN_COUNT rocks exist.
-	if placed < VOIDFIRST_ROCK_MIN_COUNT:
-		placed += _try_place_rocks(
-			layout,
-			rng,
-			VOIDFIRST_ROCK_MIN_COUNT - placed,
-			1
-		)
-	return placed
+	return MESA_PLACEMENT_PASS.new().place(layout, biome, rng)
 
-func _try_place_rocks(
+# M1b - advanced biomes also scatter natural-footprint thematic objects as
+# solid masses. They are explicitly separate from mesa geometry.
+func _place_biome_masses(
 	layout: BiomeEnvironmentLayout,
-	rng: RandomNumberGenerator,
-	count: int,
-	gap: int
+	biome: BiomeDefinition,
+	rng: RandomNumberGenerator
 ) -> int:
-	var placed := 0
-	var attempts := 0
-	var lo := BORDER_THICKNESS + VOIDFIRST_ROCK_MARGIN
-	while placed < count and attempts < VOIDFIRST_ROCK_ATTEMPTS:
-		attempts += 1
-		var side := rng.randi_range(VOIDFIRST_ROCK_MIN_SIZE, VOIDFIRST_ROCK_MAX_SIZE)
-		var hi_x := layout.zone_size.x - lo - side
-		var hi_y := layout.zone_size.y - lo - side
-		if hi_x <= lo or hi_y <= lo:
-			continue
-		var rect := Rect2i(
-			Vector2i(rng.randi_range(lo, hi_x), rng.randi_range(lo, hi_y)),
-			Vector2i(side, side)
-		)
-		var padded := _inflate_rect(rect, gap)
-		if padded.intersects(_voidfirst_center_reserved(layout)):
-			continue
-		if _rect_overlaps_passage_corridor(layout, padded):
-			continue
-		if _intersects_any(padded, layout.rock_rects):
-			continue
-		layout.rock_rects.append(rect)
-		_add_obstacle(layout, &"large_rock", rect, &"rectangle", 0.0)
-		placed += 1
-	return placed
+	var palette := _voidfirst_palette(biome.biome_id)
+	if bool(palette["rock_scalable"]):
+		return 0
+	return _scatter_biome_masses(layout, rng, palette["scatter_ids"])
 
-# Non-plains counterpart of the rock pass: scatter natural-footprint thematic
-# obstacles on the void as the solid masses the road router weaves around (each
-# registered in rock_rects), reusing the scalable-rock count/clearance budget so
-# the shared void-first structure is preserved with biome-correct skins.
 func _scatter_biome_masses(
 	layout: BiomeEnvironmentLayout,
 	rng: RandomNumberGenerator,
@@ -293,7 +343,7 @@ func _scatter_biome_masses(
 	var lo := BORDER_THICKNESS + VOIDFIRST_ROCK_MARGIN
 	while placed < target and attempts < VOIDFIRST_ROCK_ATTEMPTS:
 		attempts += 1
-		var obstacle_id := scatter_ids[placed % scatter_ids.size()] as StringName
+		var obstacle_id := scatter_ids[rng.randi_range(0, scatter_ids.size() - 1)] as StringName
 		var footprint := _logical_footprint_tiles(obstacle_id)
 		if footprint.x <= 0 or footprint.y <= 0:
 			continue
@@ -310,9 +360,11 @@ func _scatter_biome_masses(
 			continue
 		if _rect_overlaps_passage_corridor(layout, padded):
 			continue
-		if _intersects_any(padded, layout.rock_rects):
+		if _intersects_any(padded, layout.mesa_rects):
 			continue
-		layout.rock_rects.append(rect)
+		if _intersects_any(padded, layout.mass_rects):
+			continue
+		layout.mass_rects.append(rect)
 		_add_obstacle(layout, obstacle_id, rect, &"rectangle", 0.0)
 		placed += 1
 	return placed
@@ -520,8 +572,8 @@ func _build_road_astar(layout: BiomeEnvironmentLayout) -> AStarGrid2D:
 	astar.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES
 	astar.default_compute_heuristic = AStarGrid2D.HEURISTIC_MANHATTAN
 	astar.update()
-	for rock in layout.rock_rects:
-		var inflated := _inflate_rect(rock, VOIDFIRST_ROAD_ROCK_CLEARANCE)
+	for solid_rect in _voidfirst_solid_rects(layout):
+		var inflated := _inflate_rect(solid_rect, VOIDFIRST_ROAD_ROCK_CLEARANCE)
 		var c0 := _to_coarse_cell(inflated.position, step, w, h)
 		var c1 := _to_coarse_cell(inflated.end - Vector2i.ONE, step, w, h)
 		for cy in range(c0.y, c1.y + 1):
@@ -613,7 +665,7 @@ func _carve_trail(
 	for _step in range(max_len):
 		var next := pos + direction
 		var band := _trail_band_rect(next, direction, width)
-		if _intersects_any(band, layout.rock_rects):
+		if _intersects_any(band, _voidfirst_solid_rects(layout)):
 			break
 		if (
 			band.position.x < 0
@@ -691,7 +743,7 @@ func _should_line_with_tree(layout: BiomeEnvironmentLayout, rect: Rect2i) -> boo
 		return false
 	# Skip if the road is already bounded here by a rock or forest.
 	var confine := _inflate_rect(rect, VOIDFIRST_ROAD_LINE_CONFINE)
-	if _intersects_any(confine, layout.rock_rects):
+	if _intersects_any(confine, _voidfirst_solid_rects(layout)):
 		return false
 	if _intersects_any(confine, layout.forest_rects):
 		return false
@@ -704,11 +756,13 @@ func _should_line_with_tree(layout: BiomeEnvironmentLayout, rect: Rect2i) -> boo
 func _resolve_void_lottery(
 	layout: BiomeEnvironmentLayout,
 	rng: RandomNumberGenerator,
-	allow_chasms: bool = true
+	allow_chasms: bool = true,
+	minimum_internal_chasms: int = 1
 ) -> void:
 	var occ := _compute_occupancy(layout)
 	var patch := VOIDFIRST_VOID_PATCH
 	var full_void: Array[Rect2i] = []
+	var partial_void: Array[Rect2i] = []
 	var py := 0
 	while py < layout.zone_size.y:
 		var px := 0
@@ -725,17 +779,35 @@ func _resolve_void_lottery(
 			if void_cells == total_cells and total_cells > 0:
 				full_void.append(rect)
 			elif void_cells > 0:
-				# Partial patch: fill the void slivers with walkable floor.
-				layout.add_floor_rect(rect, &"open_block")
+				partial_void.append(rect)
 			px += patch
 		py += patch
 
+	# A non-empty internal chasm is a generation contract, not a probabilistic
+	# side-effect. If the aligned patch grid found none, scan for the largest fully
+	# free internal square (down to one cell) before filling partial patches.
+	if allow_chasms and minimum_internal_chasms > 0 and full_void.is_empty():
+		var fallback := _find_internal_chasm_fallback(occ, layout.zone_size)
+		if fallback.size.x > 0 and fallback.size.y > 0:
+			full_void.append(fallback)
+	for rect in partial_void:
+		# Fall-zone classification wins over floor when the fallback lies inside an
+		# aligned partial patch; filling the remainder prevents raw void slivers.
+		layout.add_floor_rect(rect, &"open_block")
 	_shuffle_rects(full_void, rng)
 	if not allow_chasms:
 		for rect in full_void:
 			layout.add_floor_rect(rect, &"open_block")
 		return
-	var chasm_count := full_void.size() / VOIDFIRST_VOID_CHASM_DIVISOR
+	var chasm_count := 0
+	if not full_void.is_empty():
+		chasm_count = mini(
+			maxi(
+				maxi(minimum_internal_chasms, 0),
+				full_void.size() / VOIDFIRST_VOID_CHASM_DIVISOR
+			),
+			full_void.size()
+		)
 	var chasm_rects: Array[Rect2i] = []
 	for index in range(full_void.size()):
 		if index < chasm_count:
@@ -744,6 +816,20 @@ func _resolve_void_lottery(
 			layout.add_floor_rect(full_void[index], &"open_block")
 	for chasm_rect in _merge_row_runs(chasm_rects):
 		layout.add_fall_zone_rect(chasm_rect, &"internal")
+
+func _find_internal_chasm_fallback(
+	occ: PackedByteArray,
+	zone_size: Vector2i
+) -> Rect2i:
+	for side in range(VOIDFIRST_VOID_PATCH, 0, -1):
+		var max_x := zone_size.x - BORDER_THICKNESS - side
+		var max_y := zone_size.y - BORDER_THICKNESS - side
+		for y in range(BORDER_THICKNESS, max_y + 1):
+			for x in range(BORDER_THICKNESS, max_x + 1):
+				var rect := Rect2i(Vector2i(x, y), Vector2i(side, side))
+				if _count_void_cells(occ, rect, zone_size.x) == side * side:
+					return rect
+	return Rect2i()
 
 func _compute_occupancy(layout: BiomeEnvironmentLayout) -> PackedByteArray:
 	var total := layout.zone_size.x * layout.zone_size.y
@@ -838,12 +924,44 @@ func repair_layout(layout: BiomeEnvironmentLayout) -> void:
 		):
 			continue
 		if _intersects_route(layout, obstacle_rect):
+			var obstacle_id := (
+				layout.obstacle_ids[index]
+				if index < layout.obstacle_ids.size()
+				else &""
+			)
+			_remove_voidfirst_feature_membership(layout, obstacle_id, obstacle_rect)
 			layout.obstacle_rects.remove_at(index)
 			layout.obstacle_ids.remove_at(index)
 			layout.obstacle_positions.remove_at(index)
 			layout.obstacle_sizes.remove_at(index)
 			layout.obstacle_rotations.remove_at(index)
 			layout.obstacle_shape_ids.remove_at(index)
+
+func _remove_voidfirst_feature_membership(
+	layout: BiomeEnvironmentLayout,
+	obstacle_id: StringName,
+	rect: Rect2i
+) -> void:
+	if obstacle_id == &"large_rock":
+		var mesa_index := layout.mesa_rects.find(rect)
+		if mesa_index >= 0:
+			layout.mesa_rects.remove_at(mesa_index)
+			if mesa_index < layout.mesa_profile_ids.size():
+				layout.mesa_profile_ids.remove_at(mesa_index)
+		layout.rock_rects.erase(rect)
+	layout.mass_rects.erase(rect)
+	for prop_index in range(layout.random_prop_rects.size() - 1, -1, -1):
+		if layout.random_prop_rects[prop_index] != rect:
+			continue
+		if (
+			prop_index < layout.random_prop_ids.size()
+			and layout.random_prop_ids[prop_index] != obstacle_id
+		):
+			continue
+		layout.random_prop_rects.remove_at(prop_index)
+		if prop_index < layout.random_prop_ids.size():
+			layout.random_prop_ids.remove_at(prop_index)
+		break
 
 func refresh_generation_summary(
 	layout: BiomeEnvironmentLayout,
@@ -1458,6 +1576,7 @@ func _add_diagonal_road(
 	var delta := end - start
 	var steps := maxi(maxi(absi(delta.x), absi(delta.y)), 1)
 	var touched: Dictionary = {}
+	var solid_rects := _voidfirst_solid_rects(layout)
 	for step in range(steps + 1):
 		var t := float(step) / float(steps)
 		var center := Vector2i(
@@ -1477,7 +1596,7 @@ func _add_diagonal_road(
 				var cell_delta := cell - center
 				if Vector2(float(cell_delta.x), float(cell_delta.y)).length() > float(radius) + 0.35:
 					continue
-				if _cell_inside_any_rect(cell, layout.rock_rects):
+				if _cell_inside_any_rect(cell, solid_rects):
 					continue
 				layout.add_road_cell(cell, tag)
 				touched[_route_cell_key(layout, cell)] = true
@@ -2063,8 +2182,12 @@ func _wall_gaps_for_side(
 	axis_limit: int
 ) -> Array[Vector2i]:
 	var gaps := _passage_gaps_for_side(cell, side, axis_limit)
-	gaps.append_array(_road_gaps_for_side(layout, side, axis_limit))
-	gaps.append_array(_road_cell_gaps_for_side(layout, side, axis_limit))
+	# Decorative roads may reach a blocked edge, but they terminate against its
+	# wall. Only a CONNECTED side is allowed to turn route geometry into a physical
+	# opening; its authored passage remains the primary gap authority.
+	if cell.get_border(side) == BiomeCell.BorderType.CONNECTED:
+		gaps.append_array(_road_gaps_for_side(layout, side, axis_limit))
+		gaps.append_array(_road_cell_gaps_for_side(layout, side, axis_limit))
 	gaps.append_array(_void_gaps_for_side(layout, side, axis_limit))
 	gaps.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return a.x < b.x)
 	var merged: Array[Vector2i] = []
@@ -2524,6 +2647,11 @@ func _crate_ids(biome_id: StringName) -> Array[StringName]:
 		_:
 			return [&"common", &"medical", &"common"]
 
+func _voidfirst_internal_chasm_min_count(biome: BiomeDefinition) -> int:
+	if biome != null and biome.generation_profile != null:
+		return maxi(biome.generation_profile.internal_chasm_min_count, 0)
+	return 1
+
 # Per-biome asset palette for the void-first pipeline. infected_plains resolves to
 # the historical literals so its output stays byte-identical (rock-area + forest
 # rendering only exist for the forest biome). The four thematic biomes reuse
@@ -2641,6 +2769,18 @@ func _update_generation_summary(
 		int(block_counts.get(&"dense_vegetation", 0))
 		+ int(obstacle_counts.get(&"dense_vegetation", 0))
 	)
+	var random_prop_counts: Dictionary = {}
+	for prop_id in layout.random_prop_ids:
+		random_prop_counts[prop_id] = int(random_prop_counts.get(prop_id, 0)) + 1
+	var static_hazard_counts: Dictionary = {}
+	var static_hazard_count := 0
+	for hazard_id in layout.hazard_ids:
+		if hazard_id == &"fall_zone":
+			continue
+		static_hazard_count += 1
+		static_hazard_counts[hazard_id] = (
+			int(static_hazard_counts.get(hazard_id, 0)) + 1
+		)
 	layout.generation_summary = {
 		"biome_id": String(biome.biome_id) if biome != null else "",
 		"seed": layout.generation_seed,
@@ -2657,6 +2797,12 @@ func _update_generation_summary(
 		"water_segment_count": layout.water_rects.size(),
 		"car_count": car_count,
 		"fence_count": fence_count,
+		"mesa_count": layout.mesa_rects.size(),
+		"mass_count": layout.mass_rects.size(),
+		"random_prop_count": layout.random_prop_rects.size(),
+		"random_prop_counts": random_prop_counts,
+		"static_hazard_count": static_hazard_count,
+		"static_hazard_counts": static_hazard_counts,
 		"obstacle_counts": obstacle_counts,
 		"block_counts": block_counts
 	}
@@ -2683,6 +2829,16 @@ func _intersects_any(rect: Rect2i, others: Array[Rect2i]) -> bool:
 		if rect.intersects(other):
 			return true
 	return false
+
+func _voidfirst_solid_rects(layout: BiomeEnvironmentLayout) -> Array[Rect2i]:
+	var result: Array[Rect2i] = []
+	result.append_array(layout.mesa_rects)
+	result.append_array(layout.mass_rects)
+	# Direct unit fixtures and old snapshots may still carry only rock_rects.
+	for rect in layout.rock_rects:
+		if not result.has(rect):
+			result.append(rect)
+	return result
 
 func _cell_inside_any_rect(cell: Vector2i, rects: Array[Rect2i]) -> bool:
 	for rect in rects:

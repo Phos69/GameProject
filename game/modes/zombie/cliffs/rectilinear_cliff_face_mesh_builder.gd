@@ -14,6 +14,9 @@ const INTERNAL_LATERAL_WALL_WIDTH_TILES := 0.65
 # Horizontal lean of the lateral walls as a fraction of their drop depth. 0.0 is a
 # flat vertical strip; ~0.5 ≈ 27° from vertical, matching IsometricCliffMeshBuilder.
 const LATERAL_VOID_SLOPE := 0.5
+const FALL_ZONE_BOUNDARY_RUNS = preload(
+	"res://game/modes/zombie/cliffs/fall_zone_boundary_runs.gd"
+)
 
 var face_mesh: ArrayMesh
 var face_count: int = 0
@@ -32,24 +35,90 @@ func build(
 	if fall_zone_rects.is_empty() or logical_scale <= 0.0:
 		return
 	var buffers := _mesh_buffers()
-	var zone_bounds := Rect2i(Vector2i.ZERO, zone_size)
 	var zone_offset := Vector2(zone_size) * 0.5
-	for rect_index in range(fall_zone_rects.size()):
-		var source_rect := fall_zone_rects[rect_index]
-		var rect := source_rect.intersection(zone_bounds)
-		if rect.size.x <= 0 or rect.size.y <= 0:
-			continue
-		var world_rect := Rect2(
-			(Vector2(rect.position) - zone_offset) * logical_scale,
-			Vector2(rect.size) * logical_scale
-		)
-		var side := (
-			fall_zone_sides[rect_index]
-			if rect_index < fall_zone_sides.size()
-			else &"internal"
-		)
-		_append_faces(buffers, world_rect, side, logical_scale)
+	var boundary_runs: Array[Dictionary] = FALL_ZONE_BOUNDARY_RUNS.build(
+		fall_zone_rects,
+		fall_zone_sides,
+		zone_size
+	)
+	for run in boundary_runs:
+		_append_boundary_run(buffers, run, zone_offset, logical_scale)
 	face_mesh = _build_mesh(buffers)
+
+func _append_boundary_run(
+	buffers: Dictionary,
+	run: Dictionary,
+	zone_offset: Vector2,
+	logical_scale: float
+) -> void:
+	var orientation := StringName(run.get("orientation", &""))
+	var perimeter_side := StringName(run.get("perimeter_side", &"internal"))
+	var boundary := float(int(run.get("boundary", 0)))
+	var start := float(int(run.get("start", 0)))
+	var end := float(int(run.get("end", 0)))
+	var depth_cells := float(int(run.get("depth_cells", 1)))
+	if orientation == FALL_ZONE_BOUNDARY_RUNS.TOP or orientation == FALL_ZONE_BOUNDARY_RUNS.BOTTOM:
+		var left := (start - zone_offset.x) * logical_scale
+		var right := (end - zone_offset.x) * logical_scale
+		var boundary_y := (boundary - zone_offset.y) * logical_scale
+		var depth_rect := Rect2(
+			Vector2(left, boundary_y),
+			Vector2(right - left, depth_cells * logical_scale)
+		)
+		if orientation == FALL_ZONE_BOUNDARY_RUNS.TOP:
+			_append_horizontal_face(
+				buffers,
+				left,
+				right,
+				boundary_y,
+				_far_face_depth(depth_rect, perimeter_side, logical_scale),
+				1.0
+			)
+		else:
+			_append_horizontal_face(
+				buffers,
+				left,
+				right,
+				boundary_y,
+				_near_face_depth(depth_rect, perimeter_side, logical_scale),
+				-1.0
+			)
+		return
+	var top := (start - zone_offset.y) * logical_scale
+	var bottom := (end - zone_offset.y) * logical_scale
+	var boundary_x := (boundary - zone_offset.x) * logical_scale
+	var inward_width := depth_cells * logical_scale
+	if _is_perimeter_side(perimeter_side):
+		var depth_rect := Rect2(
+			Vector2(boundary_x, top),
+			Vector2(inward_width, bottom - top)
+		)
+		var drop_depth := _far_face_depth(depth_rect, perimeter_side, logical_scale)
+		var slant := minf(
+			drop_depth * LATERAL_VOID_SLOPE,
+			inward_width * 0.42
+		)
+		_append_lateral_wall(
+			buffers,
+			top,
+			bottom - minf(drop_depth, (bottom - top) * 0.5),
+			boundary_x,
+			drop_depth,
+			-slant if orientation == FALL_ZONE_BOUNDARY_RUNS.RIGHT else slant
+		)
+		return
+	var lateral_width := minf(
+		maxf(logical_scale * INTERNAL_LATERAL_WALL_WIDTH_TILES, 8.0),
+		inward_width * 0.18
+	)
+	_append_lateral_strip(
+		buffers,
+		top,
+		bottom,
+		boundary_x,
+		lateral_width,
+		1.0 if orientation == FALL_ZONE_BOUNDARY_RUNS.LEFT else -1.0
+	)
 
 func _append_faces(
 	buffers: Dictionary,

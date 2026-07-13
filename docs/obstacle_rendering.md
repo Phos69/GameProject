@@ -7,7 +7,7 @@ contiene le celle occupate; `ObstacleLayoutGenerator` centra su ogni richiesta i
 footprint canonico letto da `assets/environment/isometric/manifest.json`. Da quel
 rettangolo derivano posizione world-space, collisione, spawn blocker e base visiva.
 
-Il manifest v9 usa slot da `4x4` celle logiche (`8 px` world-space per cella):
+Il manifest v10 usa slot da `4x4` celle logiche (`8 px` world-space per cella):
 
 ```text
 obstacle_id -> footprint_slots -> footprint_tiles -> occupied_cells
@@ -28,18 +28,26 @@ allargare la collisione.
 ## Asset e anchor
 
 Gli asset sono organizzati per categoria e riportano il footprint nel filename.
-Gli SVG dichiarano anche il metadata `data-footprint-slots`; i PNG finali
-mantengono sorgente, licenza e attribuzione nel manifest. Esempi:
+Gli SVG dichiarano anche il metadata `data-footprint-slots`; PNG e risorse
+`Texture2D` finali mantengono sorgente, licenza e attribuzione nel manifest.
+Esempi:
 
 - `objects/rocks/rock_1x1.svg`;
-- `objects/fences/fence_2x1.svg`;
+- `objects/generated_props/broken_fence_2x1_generated.tres`;
 - `objects/trees/log_3x1.svg`;
 - `objects/trees/dense_forest_3x3.svg`;
 - `objects/trees/forest_tree_3x3.png`;
 - `edges/cliffs/textures/rock_plateau_top_generated.png` (top massa rocciosa scalabile);
 - `edges/cliffs/textures/rock_cliff_face_upward_generated.png` (faccia cliff rialzata);
-- `objects/houses/ruined_house_4x4.svg`;
-- `objects/houses/lab_block_6x6.svg`.
+- `objects/generated_props/ruined_house_4x4_generated.tres`;
+- `objects/generated_props/lab_block_6x6_generated.tres`.
+
+Le cinque tavole in `concepts/` sono atlas sorgente `1254x1254`. Ventitre
+contratti `object_scenes` espongono 20 regioni strette con alpha tramite
+`AtlasTexture`, `filter_clip` e filename col footprint; le tre coppie tossiche
+condivise conservano comunque target size e collisioni distinti. `reed_wall`
+resta SVG verticale `1x3`, perche il quadrante palude disponibile raffigura un
+`marsh_log` orizzontale.
 
 `IsometricEnvironmentObject` disegna sempre una base isometrica pari al footprint
 bloccante e ancora lo sprite a `iso_floor_center`/`bottom_center`. La dimensione
@@ -75,7 +83,7 @@ esplicitamente `blocks_movement` e `blocks_projectiles`.
 
 1. Aggiungere l'ID a `objects`, con categoria, `footprint_tiles`,
    `footprint_slots`, `visual_height_tiles`, collisione e blocchi.
-2. Aggiungere lo stesso ID a `object_scenes`, con SVG/PNG, anchor e biomi ammessi.
+2. Aggiungere lo stesso ID a `object_scenes`, con SVG/PNG/Texture2D, anchor e biomi ammessi.
 3. Usare un filename `snake_case` con suffisso `<larghezza>x<altezza>`.
 4. Generare l'asset mancante:
 
@@ -87,7 +95,7 @@ esplicitamente `blocks_movement` e `blocks_projectiles`.
    Il generatore verifica lo spazio usando gia il footprint canonico.
 6. Eseguire lo smoke del contratto e quello della pipeline asset.
 
-Per un PNG, il canvas sorgente puo essere piu grande della dimensione nativa:
+Per un PNG o un'`AtlasTexture`, il canvas sorgente puo essere piu grande della dimensione nativa:
 `IsometricEnvironmentObject` applica il downscale deterministico derivato da
 footprint e `visual_height_tiles`; corner trasparenti e copertura minima restano
 obbligatori.

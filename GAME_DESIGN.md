@@ -621,6 +621,8 @@ di survival, ma con un profilo compatto:
 - nessun fall boundary perimetrale nel profilo arena: il perimetro resta murato
   (raised cliff senza caduta), ma i void/chasm interni sono una feature condivisa
   con `Zombie Survival` e restano attivi anche nell'arena;
+- il contenuto interno resta quello del profilo bioma: mesa tematizzate, prop
+  casuali pesati e hazard statici non vengono rimossi dal perimetro murato;
 - ondate infinite, supply crate, boss wave e sistemi condivisi invariati.
 
 Dal menu/Continue la modalita passa ora dalla Character Select come le altre,
@@ -682,8 +684,8 @@ Il revamp zombie e completo come prima versione giocabile:
 - il default `3x3` e il contratto di `Zombie Survival`; l'arena `1x1`
   esiste solo come profilo debug/test tramite `single_biome_arena`, mentre
   `Infinite Arena` usa un mode id separato e context `arena_boundary_mode`;
-- lo stesso seed ricrea biomi, confini, passaggi, strade, ostacoli, casse e
-  fall zone;
+- lo stesso seed ricrea biomi, confini, passaggi, strade, mesa, prop casuali,
+  hazard, casse e fall zone;
 - ogni run parte dalla `Pianura Infetta`, il bioma iniziale semplice;
 - la topologia e un grafo connesso generato con spanning tree ed edge extra, quindi tutte le regioni sono raggiungibili e possono esistere loop;
 - il party attraversa passaggi fisici aperti tra territori confinanti; la
@@ -738,16 +740,30 @@ Identita dei biomi:
   strade principali orizzontali/verticali larghe 7 tile logici, sentieri
   tematici medi larghi 4 tile logici, passaggi fisici larghi 7 tile logici e
   blocchi interni;
+- ogni regione contiene almeno un chasm interno con cliff leggibile verso il
+  void, salvo l'opt-out esplicito usato dai test tecnici; il tipo di perimetro
+  non modifica questa regola;
+- ogni regione contiene mesa solide tematizzate: 10-16 nella Pianura Infetta e
+  2-4 nei quattro biomi avanzati. Le skin sono rispettivamente `forest`,
+  `urban_ruins`, `volcanic`, `frozen_tundra` e `swamp`; il top usa il terreno
+  del bioma e le pareti il relativo cliff, senza trasformarle in fall zone;
+- ogni regione aggiunge 10-16 oggetti casuali dal proprio pool pesato e deve
+  rappresentare almeno due categorie/ID tematici. Gli oggetti non possono
+  sovrapporsi a spawn, route, passaggi, void, mesa, hazard, crate o altri
+  blocker;
 - ogni layout generato contiene strade, corridoi e ostacoli grandi che
   influenzano movimento e combattimento invece di restare solo decorazione;
 - case, cabine, laboratori, barriere, barili, relitti, tronchi, ponti,
-  vegetazione densa, auto e crate usano sprite trasparenti SVG/PNG con
-  silhouette isometrica dedicata, non il placeholder generico unico;
+  vegetazione densa, auto e crate usano sprite trasparenti SVG/PNG o regioni
+  `AtlasTexture` con silhouette isometrica dedicata, non il placeholder
+  generico unico. Ventitre ID dei pool tematici leggono 20 grafiche generate
+  dalle tavole dei cinque biomi; la condivisione di una regione non modifica
+  footprint, collisione o peso di generazione dell'ID;
 - `forest_tree` occupa nove slot (`3x3`) e un footprint runtime `2x2` tile
-  logici; le `large_rock` void-first occupano quadrati da `3x3` a `5x5`
-  tile logici. Entrambi bloccano tutto il relativo
-  footprint per movimento e proiettili; non sono decorazioni soft. Il player
-  a nord della linea centrale della roccia viene coperto dal cliff, quello a
+  logici; le `large_rock` sono i blocker tecnici delle mesa e occupano quadrati
+  da `3x3` a `5x5` tile logici in tutti i biomi. Entrambi bloccano tutto il
+  relativo footprint per movimento e proiettili; non sono decorazioni soft. Il
+  player a nord della linea centrale della mesa viene coperto dal cliff, quello a
   sud resta davanti; in co-op la relazione viene risolta per ogni player. Top
   a lastre e tile cliff 3D estruse verso l'alto rendono leggibile il volume;
 - i lati collegati tra biomi hanno raised cliff tematici alti due tile logiche con
@@ -777,7 +793,14 @@ Zombie tematici:
 
 Regole hazard:
 
-- la `Pianura Infetta` contiene una fall zone visibile fuori dalle corsie centrali;
+- ogni regione contiene almeno un chasm/fall zone interno visibile fuori da
+  spawn, corsie principali, passaggi e mesa;
+- la `Pianura Infetta` non aggiunge hazard statici oltre a fall zone e chasm;
+  Tossico, Infuocato, Neve e Palude ne piazzano due per regione, scelti dal
+  profilo (`toxic_puddle`/`gas_cloud`, `fire_zone`/`lava_crack`,
+  `slippery_ice`/`deep_snow_slow`, `deep_water`/`mud_slow`);
+- gli hazard statici restano su floor valido e non si sovrappongono a spawn,
+  route, passaggi, ostacoli, mesa, fall zone, crate o altri hazard;
 - le fall zone rappresentano vuoto/caduta, restano distinte dagli hazard
   ambientali e sono gli unici gap attraversabili dal roll entro distanza
   valida;

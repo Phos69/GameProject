@@ -33,15 +33,30 @@ const TOP_BRIGHTNESS := 1.06
 
 var palette: BiomePalette
 var generation_seed: int = 0
+var top_texture_repeat_world_size: float = TOP_TEXTURE_REPEAT_WORLD_SIZE
+var face_texture_repeat_world_size: float = FACE_TEXTURE_REPEAT_WORLD_SIZE
 
 var top_mesh: ArrayMesh
 var face_mesh: ArrayMesh
 var area_count: int = 0
 var face_count: int = 0
 
-func configure(next_palette: BiomePalette, next_generation_seed: int) -> void:
+func configure(
+	next_palette: BiomePalette,
+	next_generation_seed: int,
+	next_top_texture_repeat_world_size: float = TOP_TEXTURE_REPEAT_WORLD_SIZE,
+	next_face_texture_repeat_world_size: float = FACE_TEXTURE_REPEAT_WORLD_SIZE
+) -> void:
 	palette = next_palette
 	generation_seed = next_generation_seed
+	top_texture_repeat_world_size = maxf(
+		next_top_texture_repeat_world_size,
+		1.0
+	)
+	face_texture_repeat_world_size = maxf(
+		next_face_texture_repeat_world_size,
+		1.0
+	)
 	reset()
 
 func reset() -> void:
@@ -51,19 +66,19 @@ func reset() -> void:
 	face_count = 0
 
 func build(
-	rock_rects: Array[Rect2i],
+	mesa_rects: Array[Rect2i],
 	zone_size: Vector2i,
 	logical_scale: float
 ) -> void:
 	reset()
-	if rock_rects.is_empty() or logical_scale <= 0.0:
+	if mesa_rects.is_empty() or logical_scale <= 0.0:
 		return
 	var top := _new_buffers()
 	var face := _new_buffers()
 	var zone_bounds := Rect2i(Vector2i.ZERO, zone_size)
 	var zone_offset := Vector2(zone_size) * 0.5
 	var raise := RAISE_HEIGHT_CELLS * logical_scale
-	for source_rect in rock_rects:
+	for source_rect in mesa_rects:
 		var rect := source_rect.intersection(zone_bounds)
 		if rect.size.x <= 0 or rect.size.y <= 0:
 			continue
@@ -98,7 +113,9 @@ func get_counts() -> Dictionary:
 	return {
 		"areas": area_count,
 		"faces": face_count,
-		"raise_height_cells": RAISE_HEIGHT_CELLS
+		"raise_height_cells": RAISE_HEIGHT_CELLS,
+		"top_texture_repeat_world_size": top_texture_repeat_world_size,
+		"face_texture_repeat_world_size": face_texture_repeat_world_size,
 	}
 
 func get_face_mesh() -> ArrayMesh:
@@ -114,8 +131,8 @@ func _append_wall(
 ) -> void:
 	# World-length UVs keep the cliff-face columns upright and at a constant scale
 	# regardless of the wall's run, so they never smear across a wide rock.
-	var run := ground_a.distance_to(ground_b) / FACE_TEXTURE_REPEAT_WORLD_SIZE
-	var rise := ground_a.distance_to(top_a) / FACE_TEXTURE_REPEAT_WORLD_SIZE
+	var run := ground_a.distance_to(ground_b) / face_texture_repeat_world_size
+	var rise := ground_a.distance_to(top_a) / face_texture_repeat_world_size
 	var ground_color := Color(
 		brightness * FACE_GROUND_SHADE,
 		brightness * FACE_GROUND_SHADE,
@@ -148,10 +165,10 @@ func _append_top(
 		buffers,
 		PackedVector2Array([nw, ne, se, sw]),
 		PackedVector2Array([
-			nw / TOP_TEXTURE_REPEAT_WORLD_SIZE,
-			ne / TOP_TEXTURE_REPEAT_WORLD_SIZE,
-			se / TOP_TEXTURE_REPEAT_WORLD_SIZE,
-			sw / TOP_TEXTURE_REPEAT_WORLD_SIZE
+			nw / top_texture_repeat_world_size,
+			ne / top_texture_repeat_world_size,
+			se / top_texture_repeat_world_size,
+			sw / top_texture_repeat_world_size
 		]),
 		PackedColorArray([crown, crown, crown, crown])
 	)

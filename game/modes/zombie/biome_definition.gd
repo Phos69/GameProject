@@ -30,6 +30,7 @@ class_name BiomeDefinition
 @export var hazard_ids: Array[StringName] = []
 @export var resource_tags: Array[StringName] = []
 @export var passage_type_ids: Array[StringName] = []
+@export var generation_profile: BiomeGenerationProfile
 @export var border_rules: Dictionary = {}
 @export var road_generation_rules: Dictionary = {}
 @export var building_generation_rules: Dictionary = {}

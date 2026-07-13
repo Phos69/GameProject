@@ -16,6 +16,9 @@ const RIM_WIDTH_TILES := 0.75
 const HORIZONTAL_ROCK_UV_START := 0.76
 const VERTICAL_ROCK_UV_START := 0.64
 const TEXTURE_REPEAT_WORLD_SIZE := 128.0
+const FALL_ZONE_BOUNDARY_RUNS = preload(
+	"res://game/modes/zombie/cliffs/fall_zone_boundary_runs.gd"
+)
 
 var horizontal_mesh: ArrayMesh
 var vertical_mesh: ArrayMesh
@@ -44,28 +47,21 @@ func build(
 		return
 	var horizontal := _mesh_buffers()
 	var vertical := _mesh_buffers()
-	var zone_bounds := Rect2i(Vector2i.ZERO, zone_size)
 	var zone_offset := Vector2(zone_size) * 0.5
 	var border_width := maxf(logical_scale * RIM_WIDTH_TILES, 12.0)
-	for rect_index in range(fall_zone_rects.size()):
-		var source_rect := fall_zone_rects[rect_index]
-		var rect := source_rect.intersection(zone_bounds)
-		if rect.size.x <= 0 or rect.size.y <= 0:
-			continue
-		var left := (float(rect.position.x) - zone_offset.x) * logical_scale
-		var right := (float(rect.end.x) - zone_offset.x) * logical_scale
-		var top := (float(rect.position.y) - zone_offset.y) * logical_scale
-		var bottom := (float(rect.end.y) - zone_offset.y) * logical_scale
-		var side := (
-			fall_zone_sides[rect_index]
-			if rect_index < fall_zone_sides.size()
-			else &"internal"
-		)
-		_append_rect_border(
+	var boundary_runs: Array[Dictionary] = FALL_ZONE_BOUNDARY_RUNS.build(
+		fall_zone_rects,
+		fall_zone_sides,
+		zone_size
+	)
+	for run in boundary_runs:
+		_append_boundary_run(
 			horizontal,
 			vertical,
-			Rect2(Vector2(left, top), Vector2(right - left, bottom - top)),
-			side,
+			run,
+			zone_offset,
+			zone_size,
+			logical_scale,
 			border_width
 		)
 	horizontal_mesh = _build_mesh(horizontal)
@@ -74,46 +70,63 @@ func build(
 func get_total_segment_count() -> int:
 	return horizontal_segment_count + vertical_segment_count + corner_count
 
-func _append_rect_border(
+func _append_boundary_run(
 	horizontal: Dictionary,
 	vertical: Dictionary,
-	rect: Rect2,
-	side: StringName,
+	run: Dictionary,
+	zone_offset: Vector2,
+	zone_size: Vector2i,
+	logical_scale: float,
 	border_width: float
 ) -> void:
-	var left := rect.position.x
-	var right := rect.end.x
-	var top := rect.position.y
-	var bottom := rect.end.y
-	# Horizontal strips own all four joins. Their rock portion reaches this far
-	# into the fall rectangle, so vertical strips stop exactly at that boundary
-	# instead of overlapping a separate corner tile.
+	var orientation := StringName(run.get("orientation", &""))
+	var boundary := float(int(run.get("boundary", 0)))
+	var start := float(int(run.get("start", 0)))
+	var end := float(int(run.get("end", 0)))
 	var joint_depth := border_width * (1.0 - HORIZONTAL_GRASS_RATIO)
-	match side:
-		&"north":
-			_append_horizontal(horizontal, left, right, bottom, border_width, true)
+	match orientation:
+		FALL_ZONE_BOUNDARY_RUNS.TOP:
+			_append_horizontal(
+				horizontal,
+				(start - zone_offset.x) * logical_scale,
+				(end - zone_offset.x) * logical_scale,
+				(boundary - zone_offset.y) * logical_scale,
+				border_width,
+				false
+			)
 			horizontal_segment_count += 1
 			corner_count += 2
-		&"south":
-			_append_horizontal(horizontal, left, right, top, border_width, false)
+		FALL_ZONE_BOUNDARY_RUNS.BOTTOM:
+			_append_horizontal(
+				horizontal,
+				(start - zone_offset.x) * logical_scale,
+				(end - zone_offset.x) * logical_scale,
+				(boundary - zone_offset.y) * logical_scale,
+				border_width,
+				true
+			)
 			horizontal_segment_count += 1
 			corner_count += 2
-		&"west":
-			_append_vertical(vertical, top, bottom, right, border_width, true)
+		FALL_ZONE_BOUNDARY_RUNS.LEFT, FALL_ZONE_BOUNDARY_RUNS.RIGHT:
+			var top := (start - zone_offset.y) * logical_scale
+			var bottom := (end - zone_offset.y) * logical_scale
+			# Horizontal strips own geometric joins. Do not trim an endpoint that
+			# reaches the map boundary, because there is no rendered outer rim there.
+			if int(start) > 0:
+				top += joint_depth
+			if int(end) < zone_size.y:
+				bottom -= joint_depth
+			_append_vertical(
+				vertical,
+				top,
+				bottom,
+				(boundary - zone_offset.x) * logical_scale,
+				border_width,
+				orientation == FALL_ZONE_BOUNDARY_RUNS.RIGHT
+			)
 			vertical_segment_count += 1
-			corner_count += 2
-		&"east":
-			_append_vertical(vertical, top, bottom, left, border_width, false)
-			vertical_segment_count += 1
-			corner_count += 2
-		_:
-			_append_horizontal(horizontal, left, right, top, border_width, false)
-			_append_horizontal(horizontal, left, right, bottom, border_width, true)
-			_append_vertical(vertical, top + joint_depth, bottom - joint_depth, left, border_width, false)
-			_append_vertical(vertical, top + joint_depth, bottom - joint_depth, right, border_width, true)
-			horizontal_segment_count += 2
-			vertical_segment_count += 2
-			corner_count += 4
+			if StringName(run.get("perimeter_side", &"internal")) != &"internal":
+				corner_count += 2
 
 func _append_horizontal(
 	buffers: Dictionary,

@@ -23,6 +23,8 @@ const FOCUS_CENTER := &"center"
 const FOCUS_PASSAGE := &"passage"
 const FOCUS_CLIFF := &"fall_cliff"
 const FOCUS_OBSTACLE := &"obstacle_hazard"
+const FOCUS_MESA := &"mesa"
+const FOCUS_RANDOM_PROPS := &"random_props"
 const FOCUS_CRATE := &"resource_crate"
 const FOCUS_REED_WALL := &"reed_wall"
 const FOCUS_ACTORS := &"actors"
@@ -33,6 +35,8 @@ const FOCUSES: Array[StringName] = [
 	FOCUS_PASSAGE,
 	FOCUS_CLIFF,
 	FOCUS_OBSTACLE,
+	FOCUS_MESA,
+	FOCUS_RANDOM_PROPS,
 	FOCUS_ACTORS
 ]
 const GENERATED_ROAD_SURFACE_TILE_IDS: Array[StringName] = [
@@ -541,23 +545,47 @@ func _focus_position(cell: BiomeCell, focus: StringName) -> Vector2:
 			if not layout.passage_rects.is_empty():
 				return offset + layout.rect_center_to_world(layout.passage_rects.front())
 		FOCUS_CLIFF:
-			if not layout.fall_zone_rects.is_empty():
+			var internal_fall_rect := _first_internal_fall_rect(layout)
+			if internal_fall_rect.size != Vector2i.ZERO:
 				var safe_cell := _find_walkable_cell_near_rect(
 					layout,
-					layout.fall_zone_rects.front(),
+					internal_fall_rect,
 					cell
 				)
 				if safe_cell != Vector2i(-1, -1):
 					return offset + layout.logical_to_world(safe_cell)
-				return offset + layout.rect_center_to_world(layout.fall_zone_rects.front())
+				return offset + layout.rect_center_to_world(internal_fall_rect)
 		FOCUS_OBSTACLE:
 			var hazard_position := _first_non_fall_hazard_focus(layout, cell)
 			if hazard_position != INVALID_FOCUS_POSITION:
 				return offset + hazard_position
 			if not layout.obstacle_positions.is_empty():
 				return offset + layout.obstacle_positions.front()
+			# Pre-unification forest snapshots may only carry the legacy mirror.
 			if not layout.rock_rects.is_empty():
 				return offset + layout.rect_center_to_world(layout.rock_rects.front())
+		FOCUS_MESA:
+			if not layout.mesa_rects.is_empty():
+				var mesa_cell := _find_walkable_cell_near_rect(
+					layout,
+					layout.mesa_rects.front(),
+					cell
+				)
+				if mesa_cell != Vector2i(-1, -1):
+					return offset + layout.logical_to_world(mesa_cell)
+				return offset + layout.rect_center_to_world(layout.mesa_rects.front())
+		FOCUS_RANDOM_PROPS:
+			if not layout.random_prop_rects.is_empty():
+				var prop_cell := _find_walkable_cell_near_rect(
+					layout,
+					layout.random_prop_rects.front(),
+					cell
+				)
+				if prop_cell != Vector2i(-1, -1):
+					return offset + layout.logical_to_world(prop_cell)
+				return offset + layout.rect_center_to_world(
+					layout.random_prop_rects.front()
+				)
 		FOCUS_CRATE:
 			if not layout.crate_cells.is_empty():
 				var crate_focus_cell := _find_walkable_cell_near_crate(
@@ -592,6 +620,16 @@ func _focus_position(cell: BiomeCell, focus: StringName) -> Vector2:
 		_:
 			pass
 	return offset + layout.logical_to_world(layout.player_spawn_cell)
+
+func _first_internal_fall_rect(layout: BiomeEnvironmentLayout) -> Rect2i:
+	for index in range(layout.hazard_ids.size()):
+		if layout.hazard_ids[index] != &"fall_zone":
+			continue
+		if index >= layout.hazard_rects.size():
+			continue
+		if index < layout.hazard_sides.size() and layout.hazard_sides[index] == &"internal":
+			return layout.hazard_rects[index]
+	return Rect2i()
 
 func _focus_marker_is_ready(
 	cell: BiomeCell,

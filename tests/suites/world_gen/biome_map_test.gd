@@ -69,14 +69,53 @@ func test_sample_cells_layout_invariants() -> void:
 			"%s spawn player walkable" % String(cell.id))
 		assert_false(layout.floor_rects.is_empty(),
 			"%s ha blocchi di pavimento walkable carved" % String(cell.id))
-		# Every biome now shares the void-first pipeline: solid masses (rock_rects),
-		# vegetation clusters (forest_rects) and void-lottery chasms (fall zones).
-		assert_false(layout.rock_rects.is_empty(), "%s ha masse solide void-first" % String(cell.id))
+		# Every biome shares explicit mesas, vegetation clusters and guaranteed
+		# internal chasms. Thematic masses are separate from mesa geometry.
+		assert_false(layout.mesa_rects.is_empty(), "%s ha mesa void-first" % String(cell.id))
+		assert_eq(layout.mesa_profile_ids.size(), layout.mesa_rects.size(),
+			"%s ha un profilo per ogni mesa" % String(cell.id))
+		for profile_id in layout.mesa_profile_ids:
+			assert_eq(profile_id, _expected_mesa_profile(cell.biome_id),
+				"%s usa il profilo mesa del bioma" % String(cell.id))
+		assert_eq(layout.obstacle_ids.count(&"large_rock"), layout.mesa_rects.size(),
+			"%s ha un blocker tecnico per ogni mesa" % String(cell.id))
+		if cell.biome_id == &"infected_plains":
+			assert_eq(layout.rock_rects, layout.mesa_rects,
+				"%s conserva il mirror rock legacy" % String(cell.id))
+		else:
+			assert_true(layout.rock_rects.is_empty(),
+				"%s non sovraccarica rock_rects con edifici" % String(cell.id))
+			assert_false(layout.mass_rects.is_empty(),
+				"%s ha masse tematiche separate" % String(cell.id))
 		assert_false(layout.forest_rects.is_empty(), "%s ha cluster di vegetazione void-first" % String(cell.id))
-		assert_false(layout.fall_zone_rects.is_empty(), "%s ha zone di caduta/void" % String(cell.id))
+		assert_true(_has_internal_chasm(layout), "%s ha un chasm interno" % String(cell.id))
+		assert_between(layout.random_prop_rects.size(),
+			ObstacleLayoutGenerator.VOIDFIRST_PROP_MIN_COUNT,
+			ObstacleLayoutGenerator.VOIDFIRST_PROP_MAX_COUNT,
+			"%s rispetta il budget random prop" % String(cell.id))
+		assert_eq(layout.random_prop_ids.size(), layout.random_prop_rects.size(),
+			"%s ha id/rect random prop paralleli" % String(cell.id))
 		assert_false(layout.obstacle_rects.is_empty(), "%s ha oggetti isometrici bloccanti" % String(cell.id))
 		assert_true(bool(layout.validation_report.get("is_valid", false)),
 			"%s passa la validazione connettivita/placement" % String(cell.id))
+
+func test_random_props_use_thematic_categories_and_clear_floor() -> void:
+	var categories := ObstacleLayoutGenerator.get_generated_obstacle_categories()
+	for cell in _sample_cells:
+		var layout := cell.generated_layout
+		if layout == null:
+			continue
+		var seen_categories: Dictionary = {}
+		for index in range(layout.random_prop_rects.size()):
+			var prop_id := layout.random_prop_ids[index]
+			var prop_rect := layout.random_prop_rects[index]
+			assert_has(_expected_random_prop_ids(cell.biome_id), prop_id,
+				"%s prop %s appartiene al pool tematico" % [String(cell.id), String(prop_id)])
+			seen_categories[categories.get(prop_id, &"")] = true
+			assert_true(_prop_is_clear(layout, index),
+				"%s prop %s e su floor senza overlap" % [String(cell.id), String(prop_id)])
+		assert_gte(seen_categories.size(), 2,
+			"%s usa almeno due categorie di prop" % String(cell.id))
 
 func test_sample_cells_roads() -> void:
 	for cell in _sample_cells:
@@ -282,3 +321,79 @@ func _expected_path_tag(biome_id: StringName) -> StringName:
 func _merge_tags(target: Dictionary, source: Dictionary) -> void:
 	for key in source.keys():
 		target[StringName(key)] = StringName(source[key])
+
+func _has_internal_chasm(layout: BiomeEnvironmentLayout) -> bool:
+	for index in range(layout.hazard_ids.size()):
+		if layout.hazard_ids[index] != &"fall_zone":
+			continue
+		if index < layout.hazard_sides.size() and layout.hazard_sides[index] == &"internal":
+			return true
+	return false
+
+func _prop_is_clear(layout: BiomeEnvironmentLayout, prop_index: int) -> bool:
+	var rect := layout.random_prop_rects[prop_index]
+	var prop_id := layout.random_prop_ids[prop_index]
+	if rect.has_point(layout.player_spawn_cell):
+		return false
+	for crate_cell in layout.crate_cells:
+		if rect.has_point(crate_cell):
+			return false
+	for mesa_rect in layout.mesa_rects:
+		if rect.intersects(mesa_rect):
+			return false
+	for hazard_rect in layout.hazard_rects:
+		if rect.intersects(hazard_rect):
+			return false
+	for passage_rect in layout.passage_rects + layout.passage_connector_rects:
+		if rect.intersects(passage_rect):
+			return false
+	for road_rect in layout.road_rects:
+		if rect.intersects(road_rect):
+			return false
+	for y in range(rect.position.y, rect.end.y):
+		for x in range(rect.position.x, rect.end.x):
+			var cell := Vector2i(x, y)
+			if layout.has_road_cell(cell) or layout.get_floor_tag_at_cell(cell).is_empty():
+				return false
+	for index in range(layout.random_prop_rects.size()):
+		if index != prop_index and rect.intersects(layout.random_prop_rects[index]):
+			return false
+	var skipped_self := false
+	for index in range(layout.obstacle_rects.size()):
+		if (
+			not skipped_self
+			and layout.obstacle_rects[index] == rect
+			and index < layout.obstacle_ids.size()
+			and layout.obstacle_ids[index] == prop_id
+		):
+			skipped_self = true
+			continue
+		if rect.intersects(layout.obstacle_rects[index]):
+			return false
+	return skipped_self
+
+func _expected_random_prop_ids(biome_id: StringName) -> Array[StringName]:
+	match biome_id:
+		&"toxic_wastes":
+			return [&"lab_ruin", &"chemical_barrel", &"toxic_barrel", &"pipe_stack", &"industrial_fence", &"lab_wall", &"corroded_barrier"]
+		&"burning_fields":
+			return [&"burned_house", &"burned_car", &"metal_wreck", &"charred_wall", &"ash_barrier", &"scorched_barricade"]
+		&"frozen_outskirts":
+			return [&"snow_cabin", &"ice_rock", &"ice_block", &"snow_wall", &"fallen_log"]
+		&"drowned_marsh":
+			return [&"sunken_house", &"sunken_wreck", &"dead_tree", &"marsh_log", &"reed_wall", &"broken_walkway"]
+		_:
+			return [&"ruined_house", &"abandoned_house", &"abandoned_car", &"broken_fence", &"wood_barrier", &"small_rock", &"fallen_log"]
+
+func _expected_mesa_profile(biome_id: StringName) -> StringName:
+	match biome_id:
+		&"toxic_wastes":
+			return &"urban_ruins"
+		&"burning_fields":
+			return &"volcanic"
+		&"frozen_outskirts":
+			return &"frozen_tundra"
+		&"drowned_marsh":
+			return &"swamp"
+		_:
+			return &"forest"

@@ -79,13 +79,19 @@ func get_signature() -> String:
 	for passage in passages:
 		passage_signature.append(passage.get_signature())
 	passage_signature.sort()
-	return "%s:%s:%s:%d:%s:%s" % [
+	var layout_signature := (
+		generated_layout.get_generation_signature()
+		if generated_layout != null
+		else "layout:none"
+	)
+	return "%s:%s:%s:%d:%s:%s:%s" % [
 		String(id),
 		String(biome_id),
 		str(grid),
 		seed,
 		"|".join(border_signature),
-		"|".join(passage_signature)
+		"|".join(passage_signature),
+		layout_signature
 	]
 
 # Copia indipendente della cella, SENZA i link ai vicini: i neighbors puntano ad

@@ -55,8 +55,8 @@ func _run() -> void:
 	)
 	await process_frame
 	await process_frame
-	_expect(layer.has_rock_area_art(), "tile layer owns the rock-area visual")
-	var counts := layer.get_rock_area_counts()
+	_expect(layer.has_mesa_area_art(), "tile layer owns the mesa-area visual")
+	var counts := layer.get_mesa_area_counts()
 	_expect(int(counts.get("areas", 0)) == 2, "both rock areas are rendered")
 	_expect(
 		int(counts.get("faces", 0)) == 6,
@@ -82,8 +82,10 @@ func _make_layout() -> BiomeEnvironmentLayout:
 	layout.add_floor_rect(Rect2i(Vector2i.ZERO, layout.zone_size), &"forest_grass")
 	var small := Rect2i(Vector2i(8, 20), Vector2i(15, 15))
 	var large := Rect2i(Vector2i(43, 13), Vector2i(30, 30))
-	layout.rock_rects.append(small)
-	layout.rock_rects.append(large)
+	layout.mesa_rects.append(small)
+	layout.mesa_rects.append(large)
+	layout.mesa_profile_ids.append(&"forest")
+	layout.mesa_profile_ids.append(&"forest")
 	layout.obstacle_rects.append(small)
 	layout.obstacle_rects.append(large)
 	layout.rebuild_terrain_classification()
@@ -96,8 +98,8 @@ func _add_occlusion_probes(
 	var system := ObstacleSystem.new()
 	scene_root.add_child(system)
 	await process_frame
-	for index in range(layout.rock_rects.size()):
-		var rect := layout.rock_rects[index]
+	for index in range(layout.mesa_rects.size()):
+		var rect := layout.mesa_rects[index]
 		var world_size := layout.rect_size_to_world(rect)
 		var rock := system.create_obstacle_instance(
 			&"large_rock",

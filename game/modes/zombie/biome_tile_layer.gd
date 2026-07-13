@@ -41,6 +41,7 @@ const CLIFF_LIP_TEXTURE_ID := &"cliff_lip_texture"
 const CLIFF_LIP_VERTICAL_TEXTURE_ID := &"cliff_lip_vertical_texture"
 const ROCK_CLIFF_FACE_TEXTURE_ID := &"rock_cliff_face_texture"
 const LARGE_ROCK_OBJECT_ID := &"large_rock"
+const FOREST_MESA_PROFILE_ID := &"forest"
 const FOREST_GRASS_TEXTURE_ID := &"forest_grass"
 const FOREST_ROAD_BORDER_TEXTURE_ID := &"forest_road_border"
 const FOREST_SURFACE_TEXTURE_WORLD_SIZE := 256.0
@@ -146,6 +147,7 @@ var _cliff_mesh_builder: IsometricCliffMeshBuilder
 var _cliff_border_mesh_builder: IsometricCliffBorderMeshBuilder
 var _rectilinear_cliff_face_mesh_builder: RectilinearCliffFaceMeshBuilder
 var _rock_area_mesh_builder: RectilinearRockAreaMeshBuilder
+var _mesa_area_mesh_builders: Dictionary = {}
 var _cliff_face_texture: Texture2D
 var _cliff_lip_texture: Texture2D
 var _cliff_lip_vertical_texture: Texture2D
@@ -157,6 +159,9 @@ var _surface_texture_ids: Array[StringName] = []
 var _cliff_art_asset_paths: Dictionary = {}
 var _cliff_variant_textures: Dictionary = {}
 var _rock_art_asset_paths: Dictionary = {}
+var _mesa_art_by_profile: Dictionary = {}
+var _mesa_art_asset_paths: Dictionary = {}
+var _mesa_profile_mismatch_count: int = 0
 var _grid_points: PackedVector2Array = PackedVector2Array()
 var _texture_dark_lines: PackedVector2Array = PackedVector2Array()
 var _texture_light_lines: PackedVector2Array = PackedVector2Array()
@@ -190,8 +195,8 @@ func prewarm_assets(
 		else IsometricEnvironmentManifest.get_shared()
 	)
 	_load_cliff_art_textures()
-	_load_rock_art_texture()
 	_load_forest_surface_art_textures()
+	_load_rock_art_texture()
 
 func configure(
 	next_layout: BiomeEnvironmentLayout,
@@ -211,22 +216,14 @@ func configure(
 	manifest = next_manifest if next_manifest != null else IsometricEnvironmentManifest.get_shared()
 	resolver = next_resolver if next_resolver != null else IsometricTileResolver.new(manifest)
 	_load_cliff_art_textures()
-	_load_rock_art_texture()
 	_load_forest_surface_art_textures()
+	_load_rock_art_texture()
 	_cliff_mesh_builder = CLIFF_MESH_BUILDER_SCRIPT.new() as IsometricCliffMeshBuilder
 	_cliff_border_mesh_builder = (
 		CLIFF_BORDER_MESH_BUILDER_SCRIPT.new() as IsometricCliffBorderMeshBuilder
 	)
 	_rectilinear_cliff_face_mesh_builder = (
 		RECTILINEAR_CLIFF_FACE_MESH_BUILDER_SCRIPT.new() as RectilinearCliffFaceMeshBuilder
-	)
-	_rock_area_mesh_builder = (
-		RECTILINEAR_ROCK_AREA_MESH_BUILDER_SCRIPT.new()
-		as RectilinearRockAreaMeshBuilder
-	)
-	_rock_area_mesh_builder.configure(
-		palette,
-		layout.generation_seed if layout != null else 0
 	)
 	_cliff_mesh_builder.configure(
 		palette,
@@ -486,21 +483,78 @@ func get_cliff_art_asset_paths() -> Dictionary:
 	return _cliff_art_asset_paths.duplicate(true)
 
 func has_rock_area_art() -> bool:
-	return (
-		_uses_forest_ground()
-		and _rock_top_texture != null
-		and _rock_cliff_face_texture != null
-		and _rock_area_mesh_builder != null
-		and _rock_area_mesh_builder.has_geometry()
-	)
+	return has_mesa_area_art()
+
+func has_mesa_area_art() -> bool:
+	for profile_id_value in _mesa_area_mesh_builders:
+		var profile_id := StringName(profile_id_value)
+		var builder := (
+			_mesa_area_mesh_builders.get(profile_id)
+			as RectilinearRockAreaMeshBuilder
+		)
+		var art := _mesa_art_by_profile.get(profile_id, {}) as Dictionary
+		if (
+			builder != null
+			and builder.has_geometry()
+			and art.get(&"top") is Texture2D
+			and art.get(&"face") is Texture2D
+		):
+			return true
+	return false
 
 func get_rock_area_counts() -> Dictionary:
-	if _rock_area_mesh_builder == null:
-		return {}
-	return _rock_area_mesh_builder.get_counts()
+	return get_mesa_area_counts()
+
+func get_mesa_area_counts() -> Dictionary:
+	var area_count := 0
+	var face_count := 0
+	var rendered_profiles := 0
+	for builder_value in _mesa_area_mesh_builders.values():
+		var builder := builder_value as RectilinearRockAreaMeshBuilder
+		if builder == null or not builder.has_geometry():
+			continue
+		var counts := builder.get_counts()
+		area_count += int(counts.get("areas", 0))
+		face_count += int(counts.get("faces", 0))
+		rendered_profiles += 1
+	return {
+		"areas": area_count,
+		"faces": face_count,
+		"profiles": rendered_profiles,
+		"profile_mismatches": _mesa_profile_mismatch_count,
+		"raise_height_cells": RectilinearRockAreaMeshBuilder.RAISE_HEIGHT_CELLS,
+	}
 
 func get_rock_art_asset_paths() -> Dictionary:
 	return _rock_art_asset_paths.duplicate(true)
+
+func get_mesa_art_asset_paths() -> Dictionary:
+	return _mesa_art_asset_paths.duplicate(true)
+
+func get_mesa_profile_render_report() -> Dictionary:
+	var report := {}
+	for profile_id_value in _mesa_area_mesh_builders:
+		var profile_id := StringName(profile_id_value)
+		var builder := (
+			_mesa_area_mesh_builders.get(profile_id)
+			as RectilinearRockAreaMeshBuilder
+		)
+		var entry := (
+			builder.get_counts() if builder != null else {}
+		) as Dictionary
+		entry["asset_paths"] = (
+			_mesa_art_asset_paths.get(profile_id, {}) as Dictionary
+		).duplicate(true)
+		entry["has_top_texture"] = (
+			(_mesa_art_by_profile.get(profile_id, {}) as Dictionary).get(&"top")
+			is Texture2D
+		)
+		entry["has_face_texture"] = (
+			(_mesa_art_by_profile.get(profile_id, {}) as Dictionary).get(&"face")
+			is Texture2D
+		)
+		report[profile_id] = entry
+	return report
 
 func has_forest_ground_art_texture() -> bool:
 	if _uses_generated_theme():
@@ -630,24 +684,46 @@ func _draw() -> void:
 	# BiomeTileChunk figli: _rebuild_ground_geometry() attiva sempre la modalita'
 	# a chunk. Qui restano solo le feature di livello regione (rocce, cliff,
 	# fessure), che non vengono spezzate sui confini dei chunk.
-	if has_rock_area_art():
-		# The ascending walls are drawn first; the raised crown is drawn afterwards
-		# so it masks the hidden upper wall triangles, mirroring how the void ground
-		# masks the geometry behind its lip.
-		var rock_face_mesh := _rock_area_mesh_builder.get_face_mesh()
-		if rock_face_mesh != null:
-			draw_mesh(
-				rock_face_mesh,
-				_rock_cliff_face_texture,
-				Transform2D.IDENTITY,
-				Color(1.12, 1.12, 1.12, 1.0)
+	if has_mesa_area_art():
+		# Each theme owns one region-level mesh. The collision-only `large_rock`
+		# instances never draw a sprite, so these faces and this crown remain the
+		# single visual authority and no cap is duplicated at obstacle Y-sort time.
+		var profile_ids: Array = _mesa_area_mesh_builders.keys()
+		profile_ids.sort()
+		for profile_id_value in profile_ids:
+			var profile_id := StringName(profile_id_value)
+			var builder := (
+				_mesa_area_mesh_builders.get(profile_id)
+				as RectilinearRockAreaMeshBuilder
 			)
-		draw_mesh(
-			_rock_area_mesh_builder.top_mesh,
-			_rock_top_texture,
-			Transform2D.IDENTITY,
-			Color(1.06, 1.06, 1.06, 1.0)
-		)
+			var art := _mesa_art_by_profile.get(profile_id, {}) as Dictionary
+			var top_texture := art.get(&"top") as Texture2D
+			var face_texture := art.get(&"face") as Texture2D
+			if (
+				builder == null
+				or not builder.has_geometry()
+				or top_texture == null
+				or face_texture == null
+			):
+				continue
+			var face_mesh := builder.get_face_mesh()
+			if face_mesh != null:
+				draw_mesh(
+					face_mesh,
+					face_texture,
+					Transform2D.IDENTITY,
+					Color(1.12, 1.12, 1.12, 1.0)
+					if profile_id == FOREST_MESA_PROFILE_ID
+					else Color.WHITE
+				)
+			draw_mesh(
+				builder.top_mesh,
+				top_texture,
+				Transform2D.IDENTITY,
+				Color(1.06, 1.06, 1.06, 1.0)
+				if profile_id == FOREST_MESA_PROFILE_ID
+				else Color.WHITE
+			)
 	if (
 		has_forest_cliff_border_art()
 		and _rectilinear_cliff_face_mesh_builder != null
@@ -818,37 +894,142 @@ func _load_rock_art_texture() -> void:
 	_rock_top_texture = null
 	_rock_cliff_face_texture = null
 	_rock_art_asset_paths.clear()
-	if manifest == null or not _uses_forest_ground():
+	_mesa_art_by_profile.clear()
+	_mesa_art_asset_paths.clear()
+	if layout == null:
 		return
-	var contract := manifest.get_object_asset_contract(LARGE_ROCK_OBJECT_ID)
-	var top_path := String(contract.get("asset_path", ""))
-	_rock_art_asset_paths[&"top"] = top_path
-	var face_contract := manifest.get_void_asset_contract(
-		ROCK_CLIFF_FACE_TEXTURE_ID
+	for profile_id in _mesa_profile_ids_for_render():
+		_load_mesa_profile_art(profile_id)
+	var default_profile := _default_mesa_profile_id()
+	var default_art := _mesa_art_by_profile.get(default_profile, {}) as Dictionary
+	var default_paths := (
+		_mesa_art_asset_paths.get(default_profile, {}) as Dictionary
 	)
-	var face_path := String(face_contract.get("asset_path", ""))
-	_rock_art_asset_paths[&"face"] = face_path
-	_rock_art_asset_paths[&"horizontal_border"] = String(
-		_cliff_art_asset_paths.get(CLIFF_LIP_TEXTURE_ID, "")
-	)
-	_rock_art_asset_paths[&"vertical_border"] = String(
-		_cliff_art_asset_paths.get(CLIFF_LIP_VERTICAL_TEXTURE_ID, "")
-	)
-	if top_path.is_empty():
+	_rock_top_texture = default_art.get(&"top") as Texture2D
+	_rock_cliff_face_texture = default_art.get(&"face") as Texture2D
+	_rock_art_asset_paths = default_paths.duplicate(true)
+
+func _load_mesa_profile_art(profile_id: StringName) -> void:
+	if _mesa_art_by_profile.has(profile_id):
 		return
-	_rock_top_texture = SVG_TEXTURE_LOADER.load_texture(
-		top_path,
-		palette.prop_color if palette != null else Color(0.34, 0.31, 0.27, 1.0),
-		palette.floor_color if palette != null else Color(0.48, 0.43, 0.34, 1.0),
-		Vector2i(512, 512)
-	)
-	if not face_path.is_empty():
-		_rock_cliff_face_texture = SVG_TEXTURE_LOADER.load_texture(
-			face_path,
-			palette.prop_color if palette != null else Color(0.34, 0.31, 0.27, 1.0),
-			palette.floor_color if palette != null else Color(0.48, 0.43, 0.34, 1.0),
-			Vector2i(512, 512)
+	var top_path := ""
+	var face_path := ""
+	var top_texture: Texture2D = null
+	var face_texture: Texture2D = null
+	if profile_id == FOREST_MESA_PROFILE_ID:
+		if manifest == null:
+			return
+		var contract := manifest.get_object_asset_contract(LARGE_ROCK_OBJECT_ID)
+		top_path = String(contract.get("asset_path", ""))
+		var face_contract := manifest.get_void_asset_contract(
+			ROCK_CLIFF_FACE_TEXTURE_ID
 		)
+		face_path = String(face_contract.get("asset_path", ""))
+		if not top_path.is_empty():
+			top_texture = SVG_TEXTURE_LOADER.load_texture(
+				top_path,
+				palette.prop_color if palette != null else Color(0.34, 0.31, 0.27, 1.0),
+				palette.floor_color if palette != null else Color(0.48, 0.43, 0.34, 1.0),
+				Vector2i(512, 512)
+			)
+		if not face_path.is_empty():
+			face_texture = SVG_TEXTURE_LOADER.load_texture(
+				face_path,
+				palette.prop_color if palette != null else Color(0.34, 0.31, 0.27, 1.0),
+				palette.floor_color if palette != null else Color(0.48, 0.43, 0.34, 1.0),
+				Vector2i(512, 512)
+			)
+	else:
+		top_path = _select_mesa_profile_asset_path(
+			profile_id,
+			GENERATED_ART_CATALOG.ROLE_GROUND
+		)
+		face_path = _select_mesa_profile_asset_path(
+			profile_id,
+			GENERATED_ART_CATALOG.ROLE_CLIFF_FACE
+		)
+		top_texture = _forest_surface_textures.get(
+			GENERATED_ART_CATALOG.material_id_from_path(top_path)
+		) as Texture2D
+		face_texture = _cliff_variant_textures.get(
+			GENERATED_ART_CATALOG.material_id_from_path(face_path)
+		) as Texture2D
+		if top_texture == null:
+			top_texture = _load_generated_surface_texture(top_path)
+		if face_texture == null:
+			face_texture = _load_generated_cliff_texture(face_path)
+	_mesa_art_by_profile[profile_id] = {
+		&"top": top_texture,
+		&"face": face_texture,
+	}
+	var top_role := GENERATED_ART_CATALOG.ROLE_GROUND
+	var face_role := GENERATED_ART_CATALOG.ROLE_CLIFF_FACE
+	if profile_id == FOREST_MESA_PROFILE_ID:
+		top_role = LARGE_ROCK_OBJECT_ID
+		face_role = ROCK_CLIFF_FACE_TEXTURE_ID
+	_mesa_art_asset_paths[profile_id] = {
+		&"top": top_path,
+		&"face": face_path,
+		&"top_role": top_role,
+		&"face_role": face_role,
+	}
+	if profile_id == FOREST_MESA_PROFILE_ID:
+		(_mesa_art_asset_paths[profile_id] as Dictionary)[&"horizontal_border"] = String(
+			_cliff_art_asset_paths.get(CLIFF_LIP_TEXTURE_ID, "")
+		)
+		(_mesa_art_asset_paths[profile_id] as Dictionary)[&"vertical_border"] = String(
+			_cliff_art_asset_paths.get(CLIFF_LIP_VERTICAL_TEXTURE_ID, "")
+		)
+
+func _select_mesa_profile_asset_path(
+	profile_id: StringName,
+	role: StringName
+) -> String:
+	var profile := GENERATED_ART_CATALOG.get_profile_for_theme(profile_id)
+	var pool := profile.get(role, PackedStringArray()) as PackedStringArray
+	if pool.is_empty():
+		return ""
+	var generation_seed := layout.generation_seed if layout != null else 0
+	var key := "%d|%s|mesa|%s" % [
+		generation_seed,
+		String(profile_id),
+		String(role),
+	]
+	return pool[posmod(key.hash(), pool.size())]
+
+func _mesa_profile_ids_for_render() -> Array[StringName]:
+	var result: Array[StringName] = []
+	if layout == null:
+		return result
+	if not layout.mesa_rects.is_empty():
+		for index in range(layout.mesa_rects.size()):
+			var profile_id := (
+				layout.mesa_profile_ids[index]
+				if index < layout.mesa_profile_ids.size()
+				else _default_mesa_profile_id()
+			)
+			profile_id = _normalize_mesa_profile_id(profile_id)
+			if not result.has(profile_id):
+				result.append(profile_id)
+	elif _uses_forest_ground() and not layout.rock_rects.is_empty():
+		# Compatibility is intentionally limited to the historical forest layout.
+		# Advanced-biome `rock_rects` used to mean generic building masses and must
+		# never be promoted silently to mesa geometry.
+		result.append(FOREST_MESA_PROFILE_ID)
+	return result
+
+func _default_mesa_profile_id() -> StringName:
+	if _uses_forest_ground():
+		return FOREST_MESA_PROFILE_ID
+	var generated_theme := GENERATED_ART_CATALOG.get_theme_id_for_biome(biome_id)
+	return generated_theme if not generated_theme.is_empty() else FOREST_MESA_PROFILE_ID
+
+func _normalize_mesa_profile_id(profile_id: StringName) -> StringName:
+	if profile_id == FOREST_MESA_PROFILE_ID:
+		return profile_id
+	if not GENERATED_ART_CATALOG.get_profile_for_theme(profile_id).is_empty():
+		return profile_id
+	return _default_mesa_profile_id()
 
 func _load_forest_surface_art_textures() -> void:
 	_forest_surface_textures.clear()
@@ -1190,8 +1371,13 @@ func _rebuild_ground_geometry() -> void:
 		_cliff_border_mesh_builder.reset()
 	if _rectilinear_cliff_face_mesh_builder != null:
 		_rectilinear_cliff_face_mesh_builder.reset()
-	if _rock_area_mesh_builder != null:
-		_rock_area_mesh_builder.reset()
+	for builder_value in _mesa_area_mesh_builders.values():
+		var mesa_builder := builder_value as RectilinearRockAreaMeshBuilder
+		if mesa_builder != null:
+			mesa_builder.reset()
+	_mesa_area_mesh_builders.clear()
+	_rock_area_mesh_builder = null
+	_mesa_profile_mismatch_count = 0
 	if layout == null or palette == null:
 		return
 	var scale := layout.logical_tile_scale
@@ -1220,16 +1406,7 @@ func _rebuild_ground_geometry() -> void:
 				layout.zone_size,
 				scale
 			)
-	if (
-		_uses_forest_ground()
-		and _rock_top_texture != null
-		and _rock_area_mesh_builder != null
-	):
-		_rock_area_mesh_builder.build(
-			layout.rock_rects,
-			layout.zone_size,
-			scale
-		)
+	_rebuild_mesa_geometry(scale)
 	# Ground/detail buffers now belong to BiomeTileChunk children.
 	_ground_mesh = null
 	_ground_underlay_mesh = null
@@ -1239,6 +1416,68 @@ func _rebuild_ground_geometry() -> void:
 	_texture_light_lines = PackedVector2Array()
 	_transition_lines = PackedVector2Array()
 	_depth_lines = PackedVector2Array()
+
+func _rebuild_mesa_geometry(scale: float) -> void:
+	var rect_groups := _mesa_rect_groups()
+	for profile_id_value in rect_groups:
+		var profile_id := StringName(profile_id_value)
+		var rects: Array[Rect2i] = []
+		rects.assign(rect_groups[profile_id] as Array)
+		if rects.is_empty():
+			continue
+		if not _mesa_art_by_profile.has(profile_id):
+			_load_mesa_profile_art(profile_id)
+		var art_paths := (
+			_mesa_art_asset_paths.get(profile_id, {}) as Dictionary
+		)
+		var top_path := String(art_paths.get(&"top", ""))
+		var top_repeat := RectilinearRockAreaMeshBuilder.TOP_TEXTURE_REPEAT_WORLD_SIZE
+		if profile_id != FOREST_MESA_PROFILE_ID and not top_path.is_empty():
+			top_repeat = _forest_surface_texture_world_size(
+				GENERATED_ART_CATALOG.material_id_from_path(top_path)
+			)
+		var builder := (
+			RECTILINEAR_ROCK_AREA_MESH_BUILDER_SCRIPT.new()
+			as RectilinearRockAreaMeshBuilder
+		)
+		builder.configure(
+			palette,
+			layout.generation_seed,
+			top_repeat,
+			RectilinearRockAreaMeshBuilder.FACE_TEXTURE_REPEAT_WORLD_SIZE
+		)
+		builder.build(rects, layout.zone_size, scale)
+		_mesa_area_mesh_builders[profile_id] = builder
+		if profile_id == _default_mesa_profile_id():
+			_rock_area_mesh_builder = builder
+
+func _mesa_rect_groups() -> Dictionary:
+	var groups := {}
+	if layout == null:
+		return groups
+	if not layout.mesa_rects.is_empty():
+		_mesa_profile_mismatch_count = abs(
+			layout.mesa_profile_ids.size() - layout.mesa_rects.size()
+		)
+		for index in range(layout.mesa_rects.size()):
+			var raw_profile_id := (
+				layout.mesa_profile_ids[index]
+				if index < layout.mesa_profile_ids.size()
+				else _default_mesa_profile_id()
+			)
+			var profile_id := _normalize_mesa_profile_id(raw_profile_id)
+			if profile_id != raw_profile_id:
+				_mesa_profile_mismatch_count += 1
+			if not groups.has(profile_id):
+				var new_rects: Array[Rect2i] = []
+				groups[profile_id] = new_rects
+			var profile_rects: Array[Rect2i] = []
+			profile_rects.assign(groups[profile_id] as Array)
+			profile_rects.append(layout.mesa_rects[index])
+			groups[profile_id] = profile_rects
+	elif _uses_forest_ground() and not layout.rock_rects.is_empty():
+		groups[FOREST_MESA_PROFILE_ID] = layout.rock_rects.duplicate()
+	return groups
 
 func _build_visual_chunk(chunk_rect: Rect2i, scale: float) -> void:
 	_ground_mesh = null
@@ -1843,7 +2082,7 @@ func _uses_generated_theme() -> bool:
 
 # True when the biome renders a textured ground surface: forest art for the forest
 # biome, or a per-biome surface theme. Gates surface-texture loading and the
-# underlay/surface meshes. Rock-area and forest cliff-border art stay forest-only.
+# underlay/surface meshes. Mesa art is selected independently from its profile id.
 func _uses_themed_ground() -> bool:
 	return _uses_forest_ground() or _uses_generated_theme()
 

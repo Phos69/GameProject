@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="BiomeGenerationProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/procedural/world_generation/profiles/biome_generation_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+biome_id = &"drowned_marsh"
+mesa_profile_id = &"swamp"
+random_prop_ids = Array[StringName]([&"sunken_house", &"sunken_wreck", &"dead_tree", &"marsh_log", &"reed_wall", &"broken_walkway"])
+random_prop_weights = Array[float]([0.6, 1.1, 1.4, 1.2, 1.2, 0.9])
+static_hazard_ids = Array[StringName]([&"deep_water", &"mud_slow"])
+static_hazard_sizes = Array[Vector2i]([Vector2i(7, 4), Vector2i(5, 4)])

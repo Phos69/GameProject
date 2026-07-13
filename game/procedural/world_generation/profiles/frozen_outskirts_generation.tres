@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="BiomeGenerationProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/procedural/world_generation/profiles/biome_generation_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+biome_id = &"frozen_outskirts"
+mesa_profile_id = &"frozen_tundra"
+random_prop_ids = Array[StringName]([&"snow_cabin", &"ice_rock", &"ice_block", &"snow_wall", &"fallen_log"])
+random_prop_weights = Array[float]([0.7, 1.4, 1.3, 1.2, 1.0])
+static_hazard_ids = Array[StringName]([&"slippery_ice", &"deep_snow_slow"])
+static_hazard_sizes = Array[Vector2i]([Vector2i(6, 4), Vector2i(5, 4)])

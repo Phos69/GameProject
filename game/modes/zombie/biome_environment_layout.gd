@@ -7,6 +7,21 @@ const DEFAULT_ZONE_SIZE := IsoGridConfig.BIOME_SIZE
 const PERIMETER_VISUAL_WALL: StringName = &"procedural_wall"
 const PERIMETER_VISUAL_RAISED_CLIFF: StringName = &"raised_cliff"
 const RAISED_CLIFF_HEIGHT_CELLS := IsoGridConfig.RAISED_CLIFF_HEIGHT_TILES
+const GENERATION_SIGNATURE_VERSION: int = 2
+
+# Runtime caches and diagnostic summaries are derived from the layout and may be
+# rebuilt without changing the generated world. Every other script property is
+# part of the deep signature automatically, including future mesa/prop fields.
+const SIGNATURE_EXCLUDED_PROPERTIES := {
+	"validation_report": true,
+	"generation_summary": true,
+	"terrain_classification_counts": true,
+	"terrain_classification_total": true,
+	"terrain_classification_complete": true,
+	"_terrain_class_cache": true,
+	"_floor_tag_cache": true,
+	"_wall_segment_cache": true,
+}
 
 @export var zone_size: Vector2i = DEFAULT_ZONE_SIZE
 @export var generation_seed: int = 0
@@ -56,10 +71,21 @@ var passage_rects: Array[Rect2i] = []
 var passage_connector_rects: Array[Rect2i] = []
 var bridge_rects: Array[Rect2i] = []
 var obstacle_rects: Array[Rect2i] = []
-# Void-first generation: square rock footprints (placed first) and square forest
-# regions (placed second). Forests skip rock cells; roads route around rocks.
+# Void-first generation. Mesas are first-class terrain volumes, with one profile
+# id per rect so the renderer can skin the same geometry for every biome. The
+# obstacle arrays still contain a collision-only `large_rock` record for each
+# mesa. `rock_rects` is retained as the infected-plains legacy mirror only.
+var mesa_rects: Array[Rect2i] = []
+var mesa_profile_ids: Array[StringName] = []
 var rock_rects: Array[Rect2i] = []
+# Thematic solid masses (buildings/barriers) are separate from mesas. They block
+# the road router but keep their natural manifest footprint and object identity.
+var mass_rects: Array[Rect2i] = []
 var forest_rects: Array[Rect2i] = []
+# Random-prop membership is explicit instead of being inferred from all obstacle
+# records. Entries are parallel and also exist in the obstacle arrays for runtime.
+var random_prop_rects: Array[Rect2i] = []
+var random_prop_ids: Array[StringName] = []
 var water_rects: Array[Rect2i] = []
 var fall_zone_rects: Array[Rect2i] = []
 var hazard_rects: Array[Rect2i] = []
@@ -274,17 +300,53 @@ func is_world_position_inside_zone(position: Vector2) -> bool:
 	)
 
 func get_generation_signature() -> String:
-	return "%d:%s:%d:%d:%d:%d:%d:%d:%d" % [
-		generation_seed,
-		str(zone_size),
-		floor_rects.size(),
-		block_rects.size(),
-		road_rects.size(),
-		road_cell_tags.size(),
-		obstacle_rects.size(),
-		fall_zone_rects.size(),
-		hazard_rects.size()
+	var property_names := PackedStringArray()
+	for property in get_property_list():
+		if int(property.get("usage", 0)) & PROPERTY_USAGE_SCRIPT_VARIABLE == 0:
+			continue
+		var property_name := String(property.get("name", ""))
+		if SIGNATURE_EXCLUDED_PROPERTIES.has(property_name):
+			continue
+		property_names.append(property_name)
+	property_names.sort()
+	var parts := PackedStringArray()
+	for property_name in property_names:
+		parts.append(_signature_frame(property_name))
+		parts.append(_signature_frame(_canonical_signature_value(get(property_name))))
+	var payload := "layout-v%d|%s" % [
+		GENERATION_SIGNATURE_VERSION,
+		"".join(parts),
 	]
+	return "layout-v%d:%s" % [
+		GENERATION_SIGNATURE_VERSION,
+		payload.sha256_text(),
+	]
+
+static func _canonical_signature_value(value: Variant) -> String:
+	if value is Dictionary:
+		var dictionary := value as Dictionary
+		var entries := PackedStringArray()
+		for key in dictionary.keys():
+			var key_signature := _canonical_signature_value(key)
+			var value_signature := _canonical_signature_value(dictionary[key])
+			entries.append(
+				_signature_frame(key_signature)
+				+ _signature_frame(value_signature)
+			)
+		entries.sort()
+		return "dictionary:%d:%s" % [dictionary.size(), "".join(entries)]
+	if value is Array:
+		var array := value as Array
+		var entries := PackedStringArray()
+		for item in array:
+			entries.append(_signature_frame(_canonical_signature_value(item)))
+		return "array:%d:%s" % [array.size(), "".join(entries)]
+	# var_to_bytes preserves the exact Variant type and value. Dictionaries need
+	# the sorted path above because their insertion order is not semantic.
+	return "variant:%d:%s" % [typeof(value), var_to_bytes(value).hex_encode()]
+
+static func _signature_frame(value: String) -> String:
+	return "%d:%s" % [value.length(), value]
 
 func add_road_cell(cell: Vector2i, terrain_tag: StringName) -> void:
 	if (
