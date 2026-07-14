@@ -25,6 +25,9 @@ func test_wave_cycle_helpers() -> void:
 	assert_false(WaveCycle.should_spawn_boss(4, 5), "wave 4 non e boss")
 	assert_false(WaveCycle.should_spawn_boss(0, 5), "wave 0 non e mai boss")
 	assert_false(WaveCycle.should_spawn_boss(5, 0), "intervallo 0 disabilita i boss")
+	assert_eq(WaveCycle.get_regular_enemy_count(4, 3, 2), 9, "wave prima del boss segue la curva minion")
+	assert_eq(WaveCycle.get_regular_enemy_count(5, 3, 2), 11, "boss wave mantiene la curva minion")
+	assert_eq(WaveCycle.get_regular_enemy_count(6, 3, 2), 13, "wave dopo il boss prosegue la curva minion")
 
 	var alive_node := Node.new()
 	add_child(alive_node)

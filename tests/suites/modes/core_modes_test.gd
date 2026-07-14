@@ -50,7 +50,6 @@ func test_survival_wave_flow() -> void:
 	wave_manager.enemy_count_growth = 1
 	wave_manager.boss_wave_interval = 3
 	survival_mode.boss_wave_interval = 3
-	wave_manager.boss_wave_escort_count = 4
 	wave_manager.spawn_points = [Vector2(1100.0, 0.0), Vector2(-1100.0, 0.0), Vector2(0.0, 700.0), Vector2(0.0, -700.0), Vector2(900.0, 500.0)]
 	wave_manager.wave_completed.connect(_on_survival_wave_completed)
 	wave_manager.boss_wave_requested.connect(_on_boss_wave_requested)
@@ -120,8 +119,8 @@ func test_survival_wave_flow() -> void:
 
 	assert_true(await _wait_for_wave_combat(wave_manager, 3), "wave three reaches combat state")
 	var wave_three_enemies := wave_manager.get_active_wave_enemies()
-	assert_eq(wave_three_enemies.size(), 4, "boss-marked wave spawns four escorts")
-	assert_eq(wave_manager.current_wave_enemy_total, 5, "boss counts toward the wave total")
+	assert_eq(wave_three_enemies.size(), 4, "boss-marked wave keeps the regular minion progression")
+	assert_eq(wave_manager.current_wave_enemy_total, 5, "boss is added beyond the regular wave total")
 	assert_true(wave_manager.get_active_boss() is BasicBoss, "boss-marked wave spawns a real boss")
 	assert_gt((wave_three_enemies[0] as BasicEnemy).health_component.max_health, wave_two_health, "boss-marked wave applies additional health scaling")
 	assert_true(_boss_waves.has(3), "wave manager marks wave three as a boss wave")
@@ -189,7 +188,6 @@ func test_tower_defense_flow() -> void:
 	wave_controller.base_enemy_count = 1
 	wave_controller.enemy_count_growth = 0
 	wave_controller.boss_wave_interval = 2
-	wave_controller.boss_wave_escort_count = 0
 	tower_defense_mode.defense_wave_completed.connect(_on_td_wave_completed)
 
 	game_mode_manager.set_mode(GameConstants.MODE_TOWER_DEFENSE, {"initial_delay": 0.0, "starting_credits": 75})
@@ -239,10 +237,10 @@ func test_tower_defense_flow() -> void:
 	assert_true(await _wait_for_tower_shot(), "the placed tower fires automatically")
 	assert_true(await _wait_for_td_wave(2), "boss wave completes after the tower kills the boss")
 	assert_eq(tower_defense_manager.base_health, base_health_before - 12, "destroyed boss does not damage the core")
-	assert_eq(tower_defense_manager.credits, 106, "boss bounty and wave reward are added to credits")
+	assert_eq(tower_defense_manager.credits, 110, "boss, minion bounty and wave reward are added to credits")
 	await wait_physics_frames(2)
 	assert_true("Core 238/250" in hud.status_label.text, "HUD displays core health")
-	assert_true("Credits 106" in hud.status_label.text, "HUD displays defense credits")
+	assert_true("Credits 110" in hud.status_label.text, "HUD displays defense credits")
 
 	tower_defense_manager.damage_base(tower_defense_manager.base_health)
 	await wait_physics_frames(1)

@@ -217,7 +217,8 @@ build/qa/milestone_12_enemy_variants.png
 - Un player puo entrare o uscire senza interrompere la wave.
 - Un player entrato durante la run riceve le ricompense delle ondate successive.
 - Ogni quinta ondata mostra il marker `BOSS`.
-- La quinta ondata genera due zombie di scorta e il `Wave Warden`.
+- La quinta ondata mantiene la progressione regolare (11 zombie con i valori
+  base, prima dei modificatori di bioma/pressione) e aggiunge il `Wave Warden`.
 - Le boss wave 10/15/20/25/30 generano nell'ordine `Grave Colossus`,
   `Gore Charger`, `Plague Spitter`, `Bone Mortar` e `Carrion Shepherd`;
   la wave 35 riparte dal `Wave Warden`.
@@ -469,8 +470,9 @@ Il test verifica seed deterministico, celle uniche, link, transizione fisica, co
 - Eliminare un nemico assegna 4 crediti.
 - Completare una wave assegna la ricompensa crediti mostrata nell'HUD.
 - Conteggio e statistiche dei nemici aumentano nelle ondate successive.
-- La quinta ondata genera tre scorte e il `Wave Warden`.
-- La boss wave termina solo quando scorte e boss sono morti o hanno raggiunto il core.
+- La quinta ondata mantiene la progressione regolare (12 raider con i valori
+  base) e aggiunge il `Wave Warden`.
+- La boss wave termina solo quando minion e boss sono morti o hanno raggiunto il core.
 - Se il core raggiunge 0 HP, la run entra in stato `DEFENSE FAILED`.
 - `F1` ripulisce arena e torri e riavvia survival.
 
@@ -1428,7 +1430,7 @@ build/qa/milestone_10_survival.png
 ## Regressione mercato zombie
 
 - Giocare wave 1-4: nessun mercato deve aprirsi.
-- Eliminare boss e scorte della wave 5: il mercato si apre una sola volta e non
+- Eliminare boss e minion della wave 5: il mercato si apre una sola volta e non
   compaiono nuovi zombie.
 - Verificare a 1280x720, 1024x768 e 960x540 che wallet, otto opzioni, costi,
   stats e pannelli P1-P4 siano leggibili senza tagli.

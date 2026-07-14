@@ -14,6 +14,16 @@ static func should_spawn_boss(wave_index: int, boss_wave_interval: int) -> bool:
 		and wave_index % boss_wave_interval == 0
 	)
 
+## Mantiene la stessa progressione dei minion in tutte le wave. Il boss viene
+## contato separatamente dai controller e non sostituisce parte della curva.
+static func get_regular_enemy_count(
+	wave_index: int,
+	base_enemy_count: int,
+	enemy_count_growth: int
+) -> int:
+	var wave_offset := maxi(wave_index - 1, 0)
+	return maxi(base_enemy_count + wave_offset * enemy_count_growth, 0)
+
 ## Rimuove in place dall'array i nodi non validi o in coda di cancellazione.
 ## Itera per indice e usa is_instance_valid sull'accesso indicizzato: cosi non
 ## lega mai un'istanza gia liberata a una variabile tipizzata Node.

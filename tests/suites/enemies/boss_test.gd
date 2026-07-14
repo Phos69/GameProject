@@ -62,8 +62,9 @@ func test_boss_wave_flow() -> void:
 	wave_manager.initial_delay = 100.0
 	wave_manager.intermission_duration = 0.20
 	wave_manager.spawn_interval = 0.0
+	wave_manager.base_enemy_count = 0
+	wave_manager.enemy_count_growth = 0
 	wave_manager.boss_wave_interval = 5
-	wave_manager.boss_wave_escort_count = 0
 	survival_mode.boss_wave_interval = 5
 	survival_mode.boss_spawn_position = Vector2.ZERO
 	wave_manager.wave_completed.connect(_on_wave_completed)

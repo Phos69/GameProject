@@ -24,7 +24,7 @@ func stop_run() -> void:
 
 func configure_wave(
 	wave_index: int,
-	is_boss_wave: bool,
+	_is_boss_wave: bool,
 	base_regular_total: int
 ) -> Dictionary:
 	var biome = get_current_biome()
@@ -34,7 +34,7 @@ func configure_wave(
 	if biome != null:
 		var pressure := _get_pressure_multipliers(biome)
 		biome_id = biome.biome_id
-		if not is_boss_wave:
+		if regular_total > 0:
 			regular_total = maxi(
 				1,
 				ceili(float(regular_total) * biome.wave_size_multiplier)

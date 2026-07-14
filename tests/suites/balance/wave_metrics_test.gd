@@ -78,7 +78,7 @@ func test_infinite_arena_metrics() -> void:
 		"boss registry exposes the survival wave boss"
 	)
 
-	_configure_fast_waves(wave_manager, survival_mode, 5, 3, 1, 5, 0.02)
+	_configure_fast_waves(wave_manager, survival_mode, 5, 3, 1, 0.02)
 	_reset_metrics()
 	assert_true(
 		game_mode_manager.set_mode(
@@ -178,7 +178,7 @@ func test_zombie_survival_metrics() -> void:
 	_guaranteed_money_loot = _make_guaranteed_money_loot(1)
 	_track_boss = false
 	_connect_metric_signals(wave_manager, drop_system, health_system, null)
-	_configure_fast_waves(wave_manager, survival_mode, 99, 6, 2, 0, 0.12)
+	_configure_fast_waves(wave_manager, survival_mode, 99, 6, 2, 0.12)
 	_reset_metrics()
 	assert_true(
 		game_mode_manager.set_mode(
@@ -264,7 +264,6 @@ func _configure_fast_waves(
 	boss_interval: int,
 	base_count: int,
 	growth: int,
-	boss_escort_count: int,
 	intermission: float
 ) -> void:
 	survival_mode.boss_wave_interval = boss_interval
@@ -274,7 +273,6 @@ func _configure_fast_waves(
 	wave_manager.spawn_interval = 0.0
 	wave_manager.base_enemy_count = base_count
 	wave_manager.enemy_count_growth = growth
-	wave_manager.boss_wave_escort_count = boss_escort_count
 
 func _reset_metrics() -> void:
 	_wave_start_frames.clear()

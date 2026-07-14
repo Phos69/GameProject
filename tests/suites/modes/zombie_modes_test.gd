@@ -110,7 +110,6 @@ func test_zombie_market() -> void:
 	wave_manager.spawn_interval = 0.001
 	wave_manager.base_enemy_count = 1
 	wave_manager.enemy_count_growth = 0
-	wave_manager.boss_wave_escort_count = 1
 	wave_manager.boss_wave_interval = 5
 	survival_mode.boss_wave_interval = 5
 	market.set_random_seed(20260620)

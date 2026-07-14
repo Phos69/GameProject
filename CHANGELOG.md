@@ -8,6 +8,13 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Added
 
+- Le boss wave di Survival, Infinite Arena e Tower Defense mantengono ora la
+  normale progressione numerica dei minion; il boss viene aggiunto come extra
+  invece di sostituire il conteggio con una piccola scorta fissa. Il
+  `WaveDirector` applica anche ai minion delle boss wave i normali modificatori
+  di bioma e pressione, con regressioni automatiche sulla continuita tra wave
+  precedente, boss wave e wave successiva.
+
 - Completata `ROSTER-001`: aggiunti quattro zombie elite tematici dalla wave 5
   (`Toxic Reaver`, `Ember Hound`, `Glacial Bulwark`, `Mire Stalker`) con
   selezione deterministica separata dal roster regolare e profili che

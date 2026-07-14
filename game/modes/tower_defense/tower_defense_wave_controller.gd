@@ -11,7 +11,6 @@ signal wave_completed(wave_index: int, reward_credits: int)
 @export var spawn_interval: float = 0.55
 @export var base_enemy_count: int = 4
 @export var enemy_count_growth: int = 2
-@export var boss_wave_escort_count: int = 3
 @export var boss_wave_interval: int = 5
 @export var enemy_health_scale_per_wave: float = 0.16
 @export var enemy_speed_scale_per_wave: float = 0.04
@@ -128,10 +127,10 @@ func _start_next_wave() -> void:
 		return
 	current_wave += 1
 	current_wave_is_boss = should_spawn_boss(current_wave)
-	var regular_count := (
-		boss_wave_escort_count
-		if current_wave_is_boss
-		else base_enemy_count + (current_wave - 1) * enemy_count_growth
+	var regular_count := WaveCycle.get_regular_enemy_count(
+		current_wave,
+		base_enemy_count,
+		enemy_count_growth
 	)
 	pending_spawn_count = maxi(regular_count, 0)
 	current_wave_total = pending_spawn_count + (1 if current_wave_is_boss else 0)

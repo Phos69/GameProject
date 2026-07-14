@@ -19,7 +19,6 @@ signal next_wave_block_changed(blocked: bool)
 @export var spawn_interval: float = 0.45
 @export var base_enemy_count: int = 3
 @export var enemy_count_growth: int = 2
-@export var boss_wave_escort_count: int = 2
 @export var health_scale_per_wave: float = 0.18
 @export var move_speed_scale_per_wave: float = 0.05
 @export var damage_scale_per_wave: float = 0.12
@@ -247,10 +246,10 @@ func _start_next_wave() -> void:
 	current_wave += 1
 	wave_running = true
 	current_wave_is_boss = should_spawn_boss(current_wave)
-	var base_regular_total := (
-		boss_wave_escort_count
-		if current_wave_is_boss
-		else base_enemy_count + (current_wave - 1) * enemy_count_growth
+	var base_regular_total := WaveCycle.get_regular_enemy_count(
+		current_wave,
+		base_enemy_count,
+		enemy_count_growth
 	)
 	var wave_config := _configure_current_wave(base_regular_total)
 	current_wave_regular_total = int(

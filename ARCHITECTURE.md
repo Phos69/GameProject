@@ -50,7 +50,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 24. `HazardSystem` genera fall zone e hazard ambientali, aggiorna posizioni sicure, status e modificatori movimento.
 25. `WaveManager` interroga `WaveDirector` per roster/scaling bioma e `ZombieSpawner` per spawn dai bordi camera, poi crea zombie tramite `EnemySystem`.
 26. `SurvivalMode` usa `GameModeManager` e `BossSystem` per creare il boss della quinta ondata.
-27. `WaveManager` conta scorte e boss prima di assegnare la ricompensa.
+27. `WaveManager` conta minion e boss prima di assegnare la ricompensa.
 28. `DungeonMode` genera un layout da seed, istanzia una `DungeonRoom` alla volta e usa nemici, drop e boss condivisi.
 29. `DungeonRoom` controlla pareti, portale e stato locked/unlocked della stanza corrente.
 30. `TowerDefenseMode` gestisce lifecycle, arena, player e richieste costruzione.
@@ -1195,7 +1195,8 @@ multi-bioma.
 - Le crate attive non aperte vengono rimosse quando survival si arresta.
 - Join e leave non modificano il conteggio nemici; i nuovi player partecipano alle ricompense successive.
 - Ogni quinta ondata emette `boss_wave_requested` e `SurvivalMode` la inoltra a `BossSystem`.
-- La boss wave usa due zombie di scorta e un boss registrato separatamente.
+- La boss wave mantiene il normale conteggio progressivo dei minion, inclusi
+  modificatori di bioma e pressione, e registra il boss come un combattente extra.
 - `WaveManager` include il boss nel conteggio e aspetta il suo segnale `died`.
 - Dopo una boss wave completata, `SurvivalMarketController` imposta il blocco
   generico `WaveManager.set_next_wave_blocked(true)`: il manager resta in
@@ -1287,6 +1288,8 @@ multi-bioma.
 - `DefenseTower` calcola target e origine di fuoco; `DefenseTowerVisual` presenta orientamento, rinculo e flash.
 - Il proiettile torre usa il profilo visuale `defense_tower` senza cambiare danno o collisioni.
 - Le boss wave richiedono il `Wave Warden` tramite `GameModeManager` e `BossSystem`.
+- Le boss wave mantengono il normale conteggio progressivo dei raider e
+  aggiungono il boss separatamente al totale dell'ondata.
 - `BasicBoss` mantiene il comportamento action normale, ma se riceve `path_points` usa il percorso e danneggia il core al termine.
 - La distruzione del core porta la modalita in stato `defeated` e ripulisce la wave.
 - Percorsi multipli, upgrade, vendita, riparazione e tipi torre aggiuntivi restano futuri.

@@ -670,7 +670,7 @@ legacy restano disponibili come fallback/debug, ma non definiscono il default:
 Mercato ricorrente:
 
 - le ondate 5, 10, 15 e successive sono boss wave;
-- eliminati boss e scorte, la run entra nel mercato prima della wave seguente;
+- eliminati boss e minion, la run entra nel mercato prima della wave seguente;
 - durante il mercato non partono spawn e combat input/danno ai player sono
   sospesi;
 - il denaro e un wallet comune: ogni acquisto di P1-P4 usa lo stesso saldo;
@@ -877,11 +877,12 @@ Regole della run:
   con la propria elite secondo `elite_spawn_chance`;
 - numero player, tempo sopravvissuto e distanza dal bioma iniziale aumentano gradualmente la pressione;
 - ogni quinta ondata e marcata come boss wave;
-- ogni boss wave genera 2 zombie di scorta e il boss successivo della
-  rotazione Warden/zombie;
+- ogni boss wave mantiene il numero progressivo di zombie previsto per quella
+  wave, con gli stessi modificatori di bioma/pressione, e aggiunge il boss
+  successivo della rotazione Warden/zombie come extra;
 - la vita boss aumenta del 10% per ondata precedente;
 - il danno boss aumenta dell'8% per ondata precedente;
-- la wave termina solo quando scorte e boss sono morti;
+- la wave termina solo quando minion e boss sono morti;
 - la run termina quando tutti i player attivi sono morti.
 
 Ricompense al completamento dell'ondata `N`:
@@ -993,7 +994,8 @@ Regole ondate:
 - 2 nemici aggiuntivi per ondata;
 - spawn ogni 0,55 secondi;
 - ricompensa completamento: `12 + 4N` crediti;
-- ogni quinta ondata genera 3 scorte e il `Wave Warden`;
+- ogni quinta ondata mantiene il conteggio progressivo dei raider (12 alla
+  quinta con i valori base) e aggiunge il `Wave Warden` come extra;
 - boss eliminato: 20 crediti;
 - boss arrivato al core: 55 danni.
 

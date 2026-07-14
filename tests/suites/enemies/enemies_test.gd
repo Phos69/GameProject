@@ -156,6 +156,8 @@ func test_wave_director_biome_scaling() -> void:
 	assert_true(biome_manager.set_current_biome(&"toxic_wastes"), "biome manager can switch to the toxic biome")
 	var toxic_config: Dictionary = wave_director.configure_wave(2, false, 10)
 	assert_gt(int(toxic_config.get("regular_total", 0)), 10, "toxic biome increases regular wave size")
+	var toxic_boss_config: Dictionary = wave_director.configure_wave(5, true, 10)
+	assert_eq(int(toxic_boss_config.get("regular_total", 0)), int(toxic_config.get("regular_total", 0)), "boss wave minions retain the same biome pressure as regular waves")
 	assert_gt(float(toxic_config.get("spawn_rate_multiplier", 1.0)), 1.0, "toxic biome changes spawn cadence")
 	var toxic_scaling: Dictionary = wave_director.get_wave_scaling_multipliers()
 	assert_true(float(toxic_scaling.get("health", 1.0)) > 1.0 and float(toxic_scaling.get("damage", 1.0)) > 1.0, "toxic biome changes enemy scaling")
