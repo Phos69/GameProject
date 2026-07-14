@@ -8,6 +8,7 @@ enemy_id = &"ice_armored_zombie"
 display_name = "Zombie Corazzato di Ghiaccio"
 visual_archetype = "tank"
 theme_id = &"frost"
+visual_sprite_path = "res://assets/sprites/enemies/zombie/tank_zombie.png"
 max_health = 112
 move_speed = 54.0
 acceleration = 330.0

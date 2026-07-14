@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "generated_on": "2026-07-14",
+  "generator": "OpenAI built-in image generation",
+  "use_case": "stylized-concept",
+  "license": "Project original",
+  "source_layout": "4x2 atlas, eight occupied cells",
+  "processing": [
+    "flat #ff00ff chroma-key source",
+    "border-sampled soft matte, despill and alpha conversion",
+    "deterministic 4x2 crop",
+    "512x512 transparent canvas with proportional fit",
+    "detached speck cleanup"
+  ],
+  "prompt_summary": "Eight full-body zombie game pictograms in consistent three-quarter isometric dark-arcade style: basic, runner, tank, shooter, Toxic Reaver, Ember Hound, Glacial Bulwark and Mire Stalker; no text, uniform chroma-key background.",
+  "assets": {
+    "basic": "basic_zombie.png",
+    "runner": "runner_zombie.png",
+    "tank": "tank_zombie.png",
+    "shooter": "shooter_zombie.png",
+    "toxic_reaver": "toxic_reaver.png",
+    "ember_hound": "ember_hound.png",
+    "glacial_bulwark": "glacial_bulwark.png",
+    "mire_stalker": "mire_stalker.png"
+  }
+}

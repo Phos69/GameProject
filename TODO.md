@@ -51,7 +51,8 @@ Regole per nuove voci:
   multi-bioma 20 minuti con 1-4 player, attraversamento dei biomi con generated
   art attiva e zoom variabile, verifica manuale di collisione, Y-sort e densita
   di chasm/mesa/prop/hazard, dungeon con tre seed, tower defense 5 wave,
-  profiling renderizzato dello streaming chunk e regressione smoke principale.
+  leggibilita delle quattro elite zombie tra 20-28 mob, profiling renderizzato
+  dello streaming chunk e regressione smoke principale.
 
 ## Decisioni Aperte
 

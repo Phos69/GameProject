@@ -105,6 +105,10 @@ arma base. Il dossier laterale usa `style_description` e
 `gameplay_sprite_path` per mostrare la preview gameplay. Per sostituire gli
 asset, popolare i path `assets/characters/<id>/...` nei `.tres` e validare la
 checklist `docs/rpg_character_visual_checklist.md`.
+I sette `gameplay_sprite_path` puntano ora a pittogrammi raster isometrici PNG
+con alpha e `PlayerVisual` li usa anche sul personaggio world-space durante il
+gameplay. Facing, bob, hit flash, stato downed/dead e arma equipaggiata restano
+layer runtime; se un path manca, torna disponibile la silhouette procedurale.
 
 Il pass combat RPG distingue anche il runtime arma: arco, pistola, bastone e
 fionda restano `projectile`, mentre ascia, spada e artigli usano hitbox melee
@@ -278,7 +282,7 @@ Completato:
   tile logici (`450x450` equivalenti legacy)
   chiusa da cliff rocciosi rialzati e solidi, ondate infinite, senza
   WorldRuntime, mappa esplorazione, fall boundary o streaming multi-regione;
-- selezione personaggio prima della zombie survival con quattro profili iniziali;
+- selezione personaggio prima di ogni modalita con sette profili disponibili;
 - statistiche classe RPG con HP, attacco, difesa, velocita, progressione XP e level-up per-run;
 - armi base RPG per arco, pistola, ascia e spada con range, scatter, ammo,
   reload e `attack_type` distinti;
@@ -330,7 +334,11 @@ Completato:
   all'ultima posizione sicura e invulnerabilita temporanea componibile;
 - feedback visuale/audio della caduta e rifiuto della zona da parte dello spawner zombie;
 - pozze tossiche, gas, fuoco, lava, ghiaccio, neve alta, acqua profonda e fango con danno o modifica movimento;
-- undici varianti zombie tematiche configurate tramite `BiomeEnemyProfile`;
+- quindici varianti zombie tematiche configurate tramite `BiomeEnemyProfile`,
+  incluse quattro elite da wave 5 (`Toxic Reaver`, `Ember Hound`,
+  `Glacial Bulwark`, `Mire Stalker`);
+- otto pittogrammi zombie raster con alpha per i quattro archetipi base e le
+  quattro elite, con fallback procedurale conservato;
 - HUD bioma con pericoli, risorse, status e annunci di transizione;
 - selezione di survival, dungeon e tower defense da tastiera o joypad;
 - ritorno al menu con `Esc` e arresto pulito della modalita attiva;

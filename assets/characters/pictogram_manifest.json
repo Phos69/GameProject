@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "generated_on": "2026-07-14",
+  "generator": "OpenAI built-in image generation",
+  "use_case": "stylized-concept",
+  "license": "Project original",
+  "source_layout": "4x2 atlas, seven occupied cells and one empty cell",
+  "processing": [
+    "flat #ff00ff chroma-key source",
+    "border-sampled soft matte, despill and alpha conversion",
+    "deterministic 4x2 crop",
+    "512x512 transparent canvas with proportional fit",
+    "detached speck cleanup"
+  ],
+  "prompt_summary": "Seven full-body survivor game pictograms in consistent three-quarter isometric dark-arcade style: Mira ranger, Dante gunslinger, Bruna berserker, Kael swordsman, Elio mage, Nina tamer with Briciola, and Rocco werewolf; no text, uniform chroma-key background.",
+  "assets": [
+    "ranger/sprites/ranger_gameplay_pictogram.png",
+    "pistoliere/sprites/pistoliere_gameplay_pictogram.png",
+    "berserker/sprites/berserker_gameplay_pictogram.png",
+    "spadaccino/sprites/spadaccino_gameplay_pictogram.png",
+    "mago/sprites/mago_gameplay_pictogram.png",
+    "domatrice/sprites/domatrice_gameplay_pictogram.png",
+    "licantropo/sprites/licantropo_gameplay_pictogram.png"
+  ]
+}

@@ -8,6 +8,21 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Added
 
+- Completata `ROSTER-001`: aggiunti quattro zombie elite tematici dalla wave 5
+  (`Toxic Reaver`, `Ember Hound`, `Glacial Bulwark`, `Mire Stalker`) con
+  selezione deterministica separata dal roster regolare e profili che
+  combinano resistenze, status, emersione e hazard condivisi. Generati e
+  integrati sette pittogrammi raster per preview e player world-space e otto
+  PNG zombie per archetipi base/elite; `PlayerVisual` carica il path del profilo
+  conservando facing, feedback di stato, layer arma e fallback procedurale,
+  mentre `ZombieVisual` conserva bob, facing, hit flash e fallback. Manifest e
+  attribuzioni registrano prompt e
+  chroma-key processing. Verifica: import Godot, GUT assets 74/74 (10.344
+  assert), GUT enemies 15/15 (560 assert), world_gen 58/58 (1.904 assert),
+  progression 13/13 (297 assert), ui_audio 12/12 (263 assert), Visual QA
+  world-space dei sette personaggi e build smoke della scena principale con
+  exit code 0.
+
 - Promosse le cinque tavole prop generate a sorgenti runtime nel manifest
   ambiente v10: 23 `object_scenes` usano 20 regioni `AtlasTexture` con alpha,
   `filter_clip`, filename footprint e provenienza `openai_image_generation`.

@@ -67,6 +67,16 @@ anche le milestone completate per evitare sovrapposizioni.
 
 ### Espansione Gameplay
 
+- `ROSTER-001`: **completata 2026-07-14**. Il roster regolare survival passa
+  da 11 a 15 profili tematici con `Toxic Reaver`, `Ember Hound`,
+  `Glacial Bulwark` e `Mire Stalker`. Le elite entrano dalla wave 5 tramite il
+  gate deterministico di `BiomeDefinition`, riusano `BasicEnemy` e combinano
+  resistenza, status, emersione e hazard gia condivisi. Il pass artistico
+  aggiunge sette pittogrammi personaggio, ora consumati anche da `PlayerVisual`
+  nel gameplay world-space, e otto zombie PNG con alpha, mantenendo i fallback
+  procedurali. Accettazione coperta da import, GUT assets/enemies/progression,
+  board Visual QA e build smoke della scena principale.
+
 - `BOSS-001`: **completata 2026-07-08** con il pattern avanzato
   `crescent_barrage` del Wave Warden — ventaglio ampio a velocita' sfalsate
   con telegraph dedicato (fronte a mezzaluna che avanza col countdown, nessun

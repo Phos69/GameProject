@@ -2,6 +2,7 @@ extends Node2D
 class_name ZombieVisual
 
 @export_enum("basic", "runner", "tank", "shooter") var archetype_id: String = "basic"
+@export_file("*.png") var sprite_path: String = ""
 
 var facing_direction: Vector2 = Vector2.LEFT
 var movement_ratio: float = 0.0
@@ -12,6 +13,7 @@ var flash_intensity: float = 1.0
 var reduced_motion: bool = false
 var biome_theme_id: StringName = &""
 var _screen_notifier: VisibleOnScreenNotifier2D
+var _sprite: Sprite2D
 
 func _ready() -> void:
 	add_to_group("visual_settings_consumers")
@@ -24,6 +26,7 @@ func _ready() -> void:
 	_screen_notifier = VisibleOnScreenNotifier2D.new()
 	_update_notifier_rect()
 	add_child(_screen_notifier)
+	_configure_sprite(sprite_path)
 
 func apply_visual_settings(settings: Dictionary) -> void:
 	flash_intensity = clampf(
@@ -40,6 +43,7 @@ func _process(delta: float) -> void:
 	if not reduced_motion:
 		animation_time += delta
 	hit_flash_timer = maxf(hit_flash_timer - delta, 0.0)
+	_update_sprite_pose()
 	if _screen_notifier == null or _screen_notifier.is_on_screen():
 		queue_redraw()
 
@@ -64,12 +68,54 @@ func play_hit() -> void:
 
 func configure_biome_style(
 	next_archetype_id: String,
-	next_theme_id: StringName
+	next_theme_id: StringName,
+	next_sprite_path: String = ""
 ) -> void:
 	archetype_id = next_archetype_id
 	biome_theme_id = next_theme_id
+	if not next_sprite_path.is_empty():
+		_configure_sprite(next_sprite_path)
 	_update_notifier_rect()
 	queue_redraw()
+
+func has_sprite_texture() -> bool:
+	return _sprite != null and _sprite.texture != null
+
+func _configure_sprite(next_sprite_path: String) -> void:
+	sprite_path = next_sprite_path
+	if _sprite == null:
+		_sprite = Sprite2D.new()
+		_sprite.name = "PictogramSprite"
+		_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		add_child(_sprite)
+	_sprite.texture = null
+	if sprite_path.is_empty() or not ResourceLoader.exists(sprite_path):
+		return
+	_sprite.texture = ResourceLoader.load(sprite_path) as Texture2D
+	_update_sprite_pose()
+
+func _update_sprite_pose() -> void:
+	if not has_sprite_texture():
+		return
+	var scale_value := 0.16
+	match archetype_id:
+		"runner":
+			scale_value = 0.15
+		"tank":
+			scale_value = 0.18
+		"shooter":
+			scale_value = 0.16
+	var bob := 0.0
+	if not reduced_motion:
+		bob = sin(animation_time * (9.0 if archetype_id == "runner" else 5.0)) * movement_ratio * 2.0
+	_sprite.position = Vector2(0.0, 2.0 + bob)
+	_sprite.scale = Vector2(scale_value, scale_value)
+	_sprite.flip_h = facing_direction.x > 0.05
+	_sprite.modulate = (
+		Color(1.0, 0.64, 0.58, 1.0)
+		if hit_flash_timer > 0.0
+		else Color.WHITE
+	)
 
 func _update_notifier_rect() -> void:
 	if _screen_notifier == null:
@@ -93,6 +139,8 @@ func get_silhouette_size() -> Vector2:
 
 func _draw() -> void:
 	_draw_biome_theme()
+	if has_sprite_texture():
+		return
 	match archetype_id:
 		"runner":
 			_draw_runner()

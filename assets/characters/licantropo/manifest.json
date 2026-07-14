@@ -23,7 +23,7 @@
   "file": {
     "portrait_rendered": "rendered/licantropo_portrait_full.png",
     "portrait_hud": "rendered/licantropo_portrait_full.png",
-    "gameplay_sprite": "sprites/licantropo_gameplay_iso.svg",
+    "gameplay_sprite": "sprites/licantropo_gameplay_pictogram.png",
     "sprite_sheet": "sprites/licantropo_sprite_sheet.svg",
     "hud_icon": "rendered/licantropo_portrait_full.png",
     "weapon_icon": "weapons/licantropo_weapon.svg",
@@ -75,6 +75,6 @@
     "Convertiti gli asset bitmap PNG in SVG testuali per rendere la pull request compatibile con ambienti che non accettano file binari.",
     "Ripristinato un portrait PNG definitivo per Character Select e slot di selezione player."
   ],
-  "source_format": "svg_text+png_portrait",
+  "source_format": "svg_text+png_portrait+pictogram",
   "binary_free": false
 }

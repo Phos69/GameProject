@@ -239,6 +239,22 @@ drop e wave. Le differenze sono dati di scena e presentazione visuale.
 Lo shooter estende `BasicEnemy` per health, targeting, scaling, morte e drop,
 ma possiede un attacco ranged dedicato. Il telegraph non applica danno.
 
+Elite tematiche dalla wave 5:
+
+- `Toxic Reaver`: 118 HP, armatura al 28%, 18 danni, veleno severo e nube
+  tossica alla morte; ruolo bruiser/zoning.
+- `Ember Hound`: 52 HP, velocita 195, attacco ogni 0,58 secondi, burn intenso
+  e piccola zona di fuoco alla morte; ruolo diver fragile.
+- `Glacial Bulwark`: 160 HP, armatura al 42%, velocita 48, 22 danni e freeze;
+  ruolo muro mobile prioritario.
+- `Mire Stalker`: 68 HP, velocita 145, emersione da 1,5 secondi, bleed e pozza
+  di fango alla morte; ruolo ambusher/control.
+
+Le elite usano gli stessi contratti `BasicEnemy`, health, scaling, drop,
+status e hazard delle varianti esistenti. Ogni bioma avanzato risolve la sua
+elite con chance deterministica separata dal roster regolare; nessuna elite
+entra prima della wave 5.
+
 ## Boss
 
 Ogni modalita deve poter richiedere un boss:
@@ -464,10 +480,12 @@ per-player. La card usa `portrait_hud_path`/`portrait_full_path` se disponibili,
 e arma.
 Il dossier scrollabile della Character Select segue il focus della card roster
 e mostra descrizione di stile, range derivato da `WeaponData` e una preview
-gameplay isometrica procedurale con arma/stance idle.
-`style_description` e `gameplay_sprite_path` completano il profilo dati per
-supportare testo di stile e future preview/sprite definitivi senza cambiare il
-menu o il contratto survival.
+gameplay isometrica con arma/stance idle. Lo stesso `gameplay_sprite_path`
+alimenta ora il corpo world-space in partita: il layer arma continua a seguire
+l'equipaggiamento reale, mentre facing, hit flash e stati downed/dead restano
+feedback runtime. Se l'asset non e disponibile, `PlayerVisual` usa il fallback
+procedurale controllato da palette. `style_description` completa il profilo
+dati senza cambiare il contratto survival.
 
 Statistiche attive:
 
@@ -784,10 +802,10 @@ Identita dei biomi:
 
 Zombie tematici:
 
-- Tossico: `toxic_zombie`, `toxic_exploder`;
-- Infuocato: `burned_zombie`, `fire_runner`, `fire_exploder`;
-- Neve: `frozen_zombie`, `ice_armored_zombie`, `heavy_slow_zombie`;
-- Palude: `drowned_zombie`, `marsh_zombie`, `water_emerging_zombie`;
+- Tossico: `toxic_zombie`, `toxic_exploder`, elite `toxic_reaver`;
+- Infuocato: `burned_zombie`, `fire_runner`, `fire_exploder`, elite `ember_hound`;
+- Neve: `frozen_zombie`, `ice_armored_zombie`, `heavy_slow_zombie`, elite `glacial_bulwark`;
+- Palude: `drowned_zombie`, `marsh_zombie`, `water_emerging_zombie`, elite `mire_stalker`;
 - i profili configurano statistiche, resistenze, status al contatto, emersione e hazard alla morte;
 - tutte le varianti riusano targeting, health, scaling, drop e AI di `BasicEnemy`.
 
@@ -855,6 +873,8 @@ Regole della run:
 - dalla wave 3, con almeno cinque zombie regolari, l'ultimo e un tank;
 - dalla wave 4 ogni quarto slot regolare e uno shooter, salvo lo slot tank;
 - nei biomi avanzati il roster pesato sostituisce progressivamente questi ruoli con varianti tematiche;
+- dalla wave 5 ogni bioma avanzato puo sostituire deterministicamente uno slot
+  con la propria elite secondo `elite_spawn_chance`;
 - numero player, tempo sopravvissuto e distanza dal bioma iniziale aumentano gradualmente la pressione;
 - ogni quinta ondata e marcata come boss wave;
 - ogni boss wave genera 2 zombie di scorta e il boss successivo della

@@ -8,6 +8,7 @@ enemy_id = &"fire_runner"
 display_name = "Zombie Runner Infuocato"
 visual_archetype = "runner"
 theme_id = &"fire"
+visual_sprite_path = "res://assets/sprites/enemies/zombie/runner_zombie.png"
 max_health = 20
 move_speed = 178.0
 acceleration = 1050.0

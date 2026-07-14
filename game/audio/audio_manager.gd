@@ -186,13 +186,13 @@ func play_enemy_feedback(
 			frequency = 105.0
 		&"survival_shooter":
 			frequency = 330.0
-		&"toxic_zombie", &"toxic_exploder":
+		&"toxic_zombie", &"toxic_exploder", &"toxic_reaver":
 			frequency = 285.0
-		&"burned_zombie", &"fire_runner", &"fire_exploder":
+		&"burned_zombie", &"fire_runner", &"fire_exploder", &"ember_hound":
 			frequency = 360.0
-		&"frozen_zombie", &"ice_armored_zombie", &"heavy_slow_zombie":
+		&"frozen_zombie", &"ice_armored_zombie", &"heavy_slow_zombie", &"glacial_bulwark":
 			frequency = 150.0
-		&"drowned_zombie", &"marsh_zombie", &"water_emerging_zombie":
+		&"drowned_zombie", &"marsh_zombie", &"water_emerging_zombie", &"mire_stalker":
 			frequency = 205.0
 	var cue_id := StringName("enemy_%s" % feedback_type)
 	var frames_written := play_cue(

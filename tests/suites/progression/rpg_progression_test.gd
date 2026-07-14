@@ -124,13 +124,34 @@ func test_character_registry_data() -> void:
 		assert_eq(profile.get("base_weapon_id", &""), data.base_weapon_id, "%s profile comes from resource weapon id" % str(character_id))
 		assert_eq(profile.get("super_id", &""), data.super_id, "%s profile comes from resource super id" % str(character_id))
 		assert_false(str(profile.get("style_description", "")).is_empty(), "%s profile exposes a style description" % str(character_id))
-		assert_false(str(profile.get("gameplay_sprite_path", "")).is_empty(), "%s profile exposes a future gameplay sprite path" % str(character_id))
+		assert_false(str(profile.get("gameplay_sprite_path", "")).is_empty(), "%s profile exposes a gameplay sprite path" % str(character_id))
 		var weapon := RpgCharacterRegistry.load_base_weapon(StringName(profile.get("base_weapon_id", &"")))
 		assert_not_null(weapon, "%s base weapon loads" % str(character_id))
 		if weapon != null:
 			assert_gt(weapon.max_range, 0.0, "%s base weapon exposes a readable range stat" % str(character_id))
 
 	assert_eq(RpgCharacterRegistry.get_character_profile(&"missing_class").get("id", &""), RpgCharacterRegistry.DEFAULT_CHARACTER_ID, "unknown character falls back to default profile")
+
+func test_character_gameplay_pictograms_reach_player_visual() -> void:
+	var player := _spawn_player()
+	await wait_physics_frames(2)
+	var visual := player.get_node_or_null("Visual") as PlayerVisual
+	assert_not_null(visual, "player exposes its world-space visual")
+	if visual == null:
+		player.queue_free()
+		return
+
+	for character_id in RpgCharacterRegistry.get_character_ids():
+		var profile := RpgCharacterRegistry.get_character_profile(character_id)
+		var expected_path := str(profile.get("gameplay_sprite_path", ""))
+		assert_true(player.apply_rpg_character(character_id), "%s can be applied to the player" % str(character_id))
+		assert_true(visual.has_character_texture(), "%s loads its gameplay pictogram in PlayerVisual" % str(character_id))
+		assert_eq(visual.character_texture_path, expected_path, "%s PlayerVisual uses the profile gameplay path" % str(character_id))
+
+	visual.set_character_profile({})
+	assert_false(visual.has_character_texture(), "procedural fallback remains available without an asset path")
+	player.queue_free()
+	await wait_physics_frames(1)
 
 # --- passive di classe (milestone_rpg_7_passives) ---------------------------
 

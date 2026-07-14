@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="BiomeEnemyProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/modes/zombie/biome_enemy_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+enemy_id = &"ember_hound"
+display_name = "Segugio di Brace"
+visual_archetype = "runner"
+theme_id = &"fire"
+visual_sprite_path = "res://assets/sprites/enemies/zombie/ember_hound.png"
+ai_level = 1
+max_health = 52
+move_speed = 195.0
+acceleration = 1100.0
+attack_range = 40.0
+attack_damage = 14
+attack_cooldown = 0.58
+kill_experience = 15
+incoming_damage_multiplier = 1.1
+contact_status_id = &"burn"
+contact_status_duration = 4.0
+contact_movement_multiplier = 0.90
+contact_damage_per_tick = 4
+death_hazard_id = &"fire_zone"
+death_hazard_duration = 3.0
+death_hazard_radius = 54.0

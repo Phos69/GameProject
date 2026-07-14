@@ -8,12 +8,16 @@ Usare questa checklist per verificare il pass 1 dei personaggi RPG a 1280x720, s
   `RpgCharacterData` e validato da
   `tests/rpg_character_asset_manifest_smoke_test.gd` (portrait full/hud, gameplay
   sprite, sprite sheet, weapon, icone passive/super). Tutti i 7 personaggi sono a
-  questo livello; il gameplay resta render procedurale (`PlayerVisual`).
+  questo livello; `PlayerVisual` carica il pittogramma gameplay e conserva il
+  render procedurale solo come fallback tecnico.
 - `final_quality`: arte definitiva rifinita a mano per personaggio (follow-up
   artistico, uno alla volta, partendo da `ranger_final_quality_pass`).
 - `portrait_hud_path` punta sempre al portrait HUD dedicato; `portrait_full_path`
   al portrait grande (PNG dove esiste, altrimenti SVG). Nessun asset esterno
   obbligatorio (pipeline mista SVG testuale + PNG in-repo).
+- `gameplay_sprite_path` punta per tutti i sette profili al pittogramma PNG
+  isometrico con alpha, consumato sia dalle preview sia dal corpo world-space;
+  gli SVG precedenti restano sorgenti/fallback in-repo.
 - QA visuale a 1280x720, 1024x768 e 960x540 in default/reduced motion/high
   contrast resta manuale (screenshot nel playtest end-to-end Milestone 11).
 
@@ -73,7 +77,8 @@ Usare questa checklist per verificare il pass 1 dei personaggi RPG a 1280x720, s
 I placeholder procedurali possono essere sostituiti popolando i path data-driven nei profili `RpgCharacterData`:
 
 - `portrait_full_path` e `portrait_hud_path` per menu/HUD.
-- `style_description` e `gameplay_sprite_path` per dossier e preview future.
+- `style_description` e `gameplay_sprite_path` per dossier, preview e corpo
+  world-space.
 - `sprite_sheet_path` e `animation_profile_id` per il corpo animato.
 - `weapon_sprite_path` per il visual arma separato.
 - `passive_icon_path` e `super_icon_path` per le icone UI.

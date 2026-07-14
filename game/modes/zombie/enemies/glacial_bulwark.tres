@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="BiomeEnemyProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/modes/zombie/biome_enemy_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+enemy_id = &"glacial_bulwark"
+display_name = "Baluardo Glaciale"
+visual_archetype = "tank"
+theme_id = &"frost"
+visual_sprite_path = "res://assets/sprites/enemies/zombie/glacial_bulwark.png"
+ai_level = 1
+max_health = 160
+move_speed = 48.0
+acceleration = 300.0
+attack_range = 62.0
+attack_damage = 22
+attack_cooldown = 1.4
+kill_experience = 22
+incoming_damage_multiplier = 0.58
+contact_status_id = &"freeze"
+contact_status_duration = 4.0
+contact_movement_multiplier = 0.45

@@ -8,6 +8,7 @@ enemy_id = &"fire_exploder"
 display_name = "Zombie Esplosivo"
 visual_archetype = "tank"
 theme_id = &"fire"
+visual_sprite_path = "res://assets/sprites/enemies/zombie/tank_zombie.png"
 max_health = 46
 move_speed = 74.0
 acceleration = 460.0

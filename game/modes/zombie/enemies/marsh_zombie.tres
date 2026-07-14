@@ -8,6 +8,7 @@ enemy_id = &"marsh_zombie"
 display_name = "Zombie Paludoso"
 visual_archetype = "tank"
 theme_id = &"marsh"
+visual_sprite_path = "res://assets/sprites/enemies/zombie/tank_zombie.png"
 max_health = 76
 move_speed = 62.0
 acceleration = 390.0

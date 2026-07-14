@@ -8,6 +8,7 @@ enemy_id = &"toxic_exploder"
 display_name = "Zombie Esplosivo Tossico"
 visual_archetype = "tank"
 theme_id = &"toxic"
+visual_sprite_path = "res://assets/sprites/enemies/zombie/tank_zombie.png"
 max_health = 54
 move_speed = 66.0
 acceleration = 430.0

@@ -2,6 +2,7 @@ extends Node2D
 class_name PlayerVisual
 
 const WEAPON_VISUAL_RENDERER := preload("res://game/weapons/weapon_visual_renderer.gd")
+const CHARACTER_TEXTURE_RECT := Rect2(-36.0, -49.0, 72.0, 72.0)
 
 @export var accent_color: Color = Color(0.18, 0.74, 0.95, 1.0)
 
@@ -23,6 +24,8 @@ var reduced_motion: bool = false
 var status_feedback_id: StringName = &""
 var status_feedback_timer: float = 0.0
 var character_profile: Dictionary = {}
+var character_texture: Texture2D
+var character_texture_path: String = ""
 var weapon_attack_type: StringName = &"projectile"
 var weapon_trail_style: StringName = &""
 var is_dodging: bool = false
@@ -91,7 +94,18 @@ func set_character_profile(profile: Dictionary) -> void:
 	character_profile = profile.duplicate(true)
 	if not character_profile.is_empty():
 		accent_color = Color(character_profile.get("palette_primary", accent_color))
+	_configure_character_texture(str(character_profile.get("gameplay_sprite_path", "")))
 	queue_redraw()
+
+func has_character_texture() -> bool:
+	return character_texture != null
+
+func _configure_character_texture(texture_path: String) -> void:
+	character_texture_path = texture_path
+	character_texture = null
+	if texture_path.is_empty() or not ResourceLoader.exists(texture_path):
+		return
+	character_texture = ResourceLoader.load(texture_path) as Texture2D
 
 func set_weapon_data(weapon_data: WeaponData) -> void:
 	weapon_visual_data = (
@@ -197,9 +211,12 @@ func _draw() -> void:
 			flash_intensity
 		)
 	if is_dead or is_downed:
-		_draw_dead_survivor(
-			display_color if is_downed else display_color.darkened(0.45)
-		)
+		if character_texture != null:
+			_draw_raster_dead_survivor(is_downed)
+		else:
+			_draw_dead_survivor(
+				display_color if is_downed else display_color.darkened(0.45)
+			)
 		return
 
 	var walk_phase := sin(animation_time * 11.0) * movement_ratio
@@ -219,6 +236,16 @@ func _draw() -> void:
 	elif rpg_component != null and rpg_component.is_beast_recovering():
 		beast_scale = 1.08
 	var outline_color := Color(0.035, 0.045, 0.055, 1.0)
+	if character_texture != null:
+		_draw_raster_survivor(
+			bob,
+			beast_scale,
+			character_id,
+			display_color,
+			visual_accent,
+			rpg_component
+		)
+		return
 
 	draw_set_transform(Vector2(0.0, -bob), 0.0, Vector2.ONE * beast_scale)
 	draw_colored_polygon(
@@ -267,45 +294,132 @@ func _draw() -> void:
 	draw_line(shoulder, hand, accent_color, 5.0, true)
 	draw_line(-shoulder, hand * 0.72, accent_color.darkened(0.12), 4.0, true)
 	var muzzle := _draw_weapon(hand, weapon_direction, display_color)
-
-	if fire_flash_timer > 0.0:
-		var muzzle_color := (
-			weapon_visual_data.muzzle_color
-			if weapon_visual_data != null
-			else Color(1.0, 0.78, 0.24, 0.95)
-		)
-		var base_flash_size := (
-			weapon_visual_data.muzzle_size
-			if weapon_visual_data != null
-			else 6.0
-		)
-		var flash_size := (
-			base_flash_size + fire_flash_timer * 45.0
-		) * maxf(flash_intensity, 0.1)
-		if _is_melee_weapon_attack():
-			_draw_melee_fire_feedback(
-				hand,
-				muzzle,
-				weapon_direction,
-				muzzle_color,
-				flash_size
-			)
-		else:
-			draw_colored_polygon(
-				PackedVector2Array([
-					muzzle + weapon_direction * flash_size,
-					muzzle + weapon_direction.orthogonal() * 4.0,
-					muzzle - weapon_direction.orthogonal() * 4.0
-				]),
-				Color(
-					muzzle_color,
-					0.95 * flash_intensity * glow_intensity
-				)
-			)
+	_draw_active_weapon_feedback(hand, muzzle, weapon_direction)
 
 	if rpg_component != null and rpg_component.is_beast_recovering():
 		_draw_beast_recovery_marker(visual_accent)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+func _draw_raster_survivor(
+	bob: float,
+	beast_scale: float,
+	character_id: StringName,
+	display_color: Color,
+	visual_accent: Color,
+	rpg_component: RpgPlayerComponent
+) -> void:
+	draw_colored_polygon(
+		_ellipse_points(Vector2(0.0, 18.0), Vector2(23.0, 8.0), 18),
+		Color(0.01, 0.015, 0.02, 0.52)
+	)
+	var facing_scale := 1.0 if facing_direction.x >= -0.05 else -1.0
+	draw_set_transform(
+		Vector2(0.0, -bob),
+		0.0,
+		Vector2(facing_scale * beast_scale, beast_scale)
+	)
+	if high_contrast:
+		draw_arc(Vector2(0.0, -12.0), 31.0, 0.0, TAU, 28, Color(1.0, 1.0, 1.0, 0.90), 3.0, true)
+	var texture_modulate := Color.WHITE
+	if hurt_flash_timer > 0.0:
+		texture_modulate = Color.WHITE.lerp(
+			Color(1.0, 0.55, 0.40, 1.0),
+			flash_intensity
+		)
+	if character_id == &"domatrice":
+		var texture_size := character_texture.get_size()
+		var source_rect := Rect2(
+			texture_size.x * 0.07,
+			0.0,
+			texture_size.x * 0.55,
+			texture_size.y
+		)
+		draw_texture_rect_region(
+			character_texture,
+			Rect2(-27.5, -49.0, 55.0, 72.0),
+			source_rect,
+			texture_modulate
+		)
+	else:
+		draw_texture_rect(
+			character_texture,
+			CHARACTER_TEXTURE_RECT,
+			false,
+			texture_modulate
+		)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+	var weapon_direction := facing_direction.normalized()
+	if weapon_direction.is_zero_approx():
+		weapon_direction = Vector2.RIGHT
+	var hand := weapon_direction * 15.0 + Vector2(0.0, -4.0)
+	if _is_melee_weapon_attack() and fire_flash_timer > 0.0:
+		hand += weapon_direction * 5.0
+	var muzzle := _draw_weapon(hand, weapon_direction, display_color)
+	_draw_active_weapon_feedback(hand, muzzle, weapon_direction)
+	if rpg_component != null and rpg_component.is_beast_recovering():
+		_draw_beast_recovery_marker(visual_accent)
+
+func _draw_raster_dead_survivor(downed: bool) -> void:
+	draw_colored_polygon(
+		_ellipse_points(Vector2(0.0, 9.0), Vector2(27.0, 10.0), 18),
+		Color(0.01, 0.015, 0.02, 0.56)
+	)
+	var side := 1.0 if facing_direction.x >= 0.0 else -1.0
+	draw_set_transform(Vector2(0.0, 5.0), side * 1.18, Vector2.ONE * 0.72)
+	var texture_modulate := (
+		Color(0.62, 0.66, 0.68, 0.88)
+		if downed
+		else Color(0.27, 0.27, 0.27, 0.78)
+	)
+	draw_texture_rect(
+		character_texture,
+		CHARACTER_TEXTURE_RECT,
+		false,
+		texture_modulate
+	)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+func _draw_active_weapon_feedback(
+	hand: Vector2,
+	muzzle: Vector2,
+	weapon_direction: Vector2
+) -> void:
+	if fire_flash_timer <= 0.0:
+		return
+	var muzzle_color := (
+		weapon_visual_data.muzzle_color
+		if weapon_visual_data != null
+		else Color(1.0, 0.78, 0.24, 0.95)
+	)
+	var base_flash_size := (
+		weapon_visual_data.muzzle_size
+		if weapon_visual_data != null
+		else 6.0
+	)
+	var flash_size := (
+		base_flash_size + fire_flash_timer * 45.0
+	) * maxf(flash_intensity, 0.1)
+	if _is_melee_weapon_attack():
+		_draw_melee_fire_feedback(
+			hand,
+			muzzle,
+			weapon_direction,
+			muzzle_color,
+			flash_size
+		)
+	else:
+		draw_colored_polygon(
+			PackedVector2Array([
+				muzzle + weapon_direction * flash_size,
+				muzzle + weapon_direction.orthogonal() * 4.0,
+				muzzle - weapon_direction.orthogonal() * 4.0
+			]),
+			Color(
+				muzzle_color,
+				0.95 * flash_intensity * glow_intensity
+			)
+		)
 
 func _draw_dodge_streak() -> void:
 	if not is_dodging:

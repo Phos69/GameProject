@@ -39,6 +39,7 @@ class_name BiomeDefinition
 @export var allowed_zombie_types: Array[StringName] = [&"survival_zombie"]
 @export var weighted_zombie_ids: Array[StringName] = [&"survival_zombie"]
 @export var weighted_zombie_values: Array[float] = [1.0]
+@export var elite_zombie_ids: Array[StringName] = []
 @export var base_enemy_id: StringName = &"survival_zombie"
 @export var runner_enemy_id: StringName = &"survival_runner"
 @export var tank_enemy_id: StringName = &"survival_tank"
@@ -48,6 +49,7 @@ class_name BiomeDefinition
 @export_range(1, 20) var tank_start_wave: int = 3
 @export_range(1, 20) var shooter_start_wave: int = 4
 @export_range(1, 20) var special_start_wave: int = 2
+@export_range(1, 20) var elite_start_wave: int = 5
 
 @export_range(0.2, 3.0, 0.05) var wave_size_multiplier: float = 1.0
 @export_range(0.2, 3.0, 0.05) var spawn_rate_multiplier: float = 1.0
@@ -71,6 +73,9 @@ func resolve_enemy_id(
 ) -> StringName:
 	if wave_index <= 1:
 		return base_enemy_id
+	var elite_enemy_id := _resolve_elite_enemy(wave_index, spawn_index)
+	if not elite_enemy_id.is_empty():
+		return elite_enemy_id
 	if _uses_legacy_survival_roster():
 		return _resolve_legacy_survival_enemy(wave_index, spawn_index, regular_total)
 	return _resolve_weighted_enemy(wave_index, spawn_index)
@@ -87,6 +92,8 @@ func has_enemy_type(enemy_id: StringName) -> bool:
 func get_safe_allowed_zombie_types(wave_index: int) -> Array[StringName]:
 	var result: Array[StringName] = []
 	for enemy_id in allowed_zombie_types:
+		if elite_zombie_ids.has(enemy_id):
+			continue
 		if enemy_id == base_enemy_id or wave_index >= special_start_wave:
 			result.append(enemy_id)
 	if result.is_empty():
@@ -124,13 +131,41 @@ func _resolve_legacy_survival_enemy(
 
 func _resolve_weighted_enemy(wave_index: int, spawn_index: int) -> StringName:
 	var candidates := get_safe_allowed_zombie_types(wave_index)
+	return _resolve_weighted_candidates(candidates, wave_index, spawn_index, 0)
+
+func _resolve_elite_enemy(wave_index: int, spawn_index: int) -> StringName:
+	if (
+		wave_index < elite_start_wave
+		or elite_spawn_chance <= 0.0
+		or elite_zombie_ids.is_empty()
+	):
+		return &""
+	if _deterministic_unit(wave_index + 41, spawn_index + 137) > elite_spawn_chance:
+		return &""
+	var candidates: Array[StringName] = []
+	for enemy_id in elite_zombie_ids:
+		if has_enemy_type(enemy_id) and get_spawn_weight(enemy_id) > 0.0:
+			candidates.append(enemy_id)
+	return _resolve_weighted_candidates(candidates, wave_index, spawn_index, 17)
+
+func _resolve_weighted_candidates(
+	candidates: Array[StringName],
+	wave_index: int,
+	spawn_index: int,
+	salt: int
+) -> StringName:
+	if candidates.is_empty():
+		return &""
 	var total_weight := 0.0
 	for enemy_id in candidates:
 		total_weight += get_spawn_weight(enemy_id)
 	if total_weight <= 0.0:
 		return base_enemy_id
 
-	var roll := _deterministic_unit(wave_index, spawn_index) * total_weight
+	var roll := _deterministic_unit(
+		wave_index + salt,
+		spawn_index + salt * 3
+	) * total_weight
 	var cursor := 0.0
 	for enemy_id in candidates:
 		cursor += get_spawn_weight(enemy_id)

@@ -23,7 +23,7 @@
   "file": {
     "portrait_rendered": "rendered/pistoliere_portrait_full.svg",
     "portrait_hud": "rendered/pistoliere_portrait_hud.svg",
-    "gameplay_sprite": "sprites/pistoliere_gameplay_iso.svg",
+    "gameplay_sprite": "sprites/pistoliere_gameplay_pictogram.png",
     "sprite_sheet": "sprites/pistoliere_sprite_sheet.svg",
     "hud_icon": "rendered/pistoliere_portrait_hud.svg",
     "weapon_icon": "weapons/pistoliere_weapon.svg",
@@ -74,6 +74,6 @@
     "Aggiornato il profilo dati Pistoliere per puntare alla sprite sheet definitiva di questa iterazione.",
     "Convertiti gli asset bitmap PNG in SVG testuali per rendere la pull request compatibile con ambienti che non accettano file binari."
   ],
-  "source_format": "svg_text",
-  "binary_free": true
+  "source_format": "svg_text+pictogram",
+  "binary_free": false
 }

@@ -8,6 +8,7 @@ enemy_id = &"water_emerging_zombie"
 display_name = "Zombie Emergente"
 visual_archetype = "runner"
 theme_id = &"marsh"
+visual_sprite_path = "res://assets/sprites/enemies/zombie/runner_zombie.png"
 max_health = 34
 move_speed = 132.0
 acceleration = 820.0

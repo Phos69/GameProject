@@ -8,6 +8,7 @@ enemy_id = &"frozen_zombie"
 display_name = "Zombie Ghiacciato"
 visual_archetype = "basic"
 theme_id = &"frost"
+visual_sprite_path = "res://assets/sprites/enemies/zombie/basic_zombie.png"
 max_health = 52
 move_speed = 78.0
 attack_damage = 9

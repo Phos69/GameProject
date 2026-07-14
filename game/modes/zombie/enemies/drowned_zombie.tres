@@ -8,6 +8,7 @@ enemy_id = &"drowned_zombie"
 display_name = "Zombie Annegato"
 visual_archetype = "basic"
 theme_id = &"marsh"
+visual_sprite_path = "res://assets/sprites/enemies/zombie/basic_zombie.png"
 max_health = 58
 move_speed = 76.0
 attack_damage = 10

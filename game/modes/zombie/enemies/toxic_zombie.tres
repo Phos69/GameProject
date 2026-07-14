@@ -8,6 +8,7 @@ enemy_id = &"toxic_zombie"
 display_name = "Zombie Tossico"
 visual_archetype = "basic"
 theme_id = &"toxic"
+visual_sprite_path = "res://assets/sprites/enemies/zombie/basic_zombie.png"
 max_health = 42
 move_speed = 88.0
 attack_damage = 8

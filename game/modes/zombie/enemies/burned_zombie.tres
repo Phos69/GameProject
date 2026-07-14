@@ -8,6 +8,7 @@ enemy_id = &"burned_zombie"
 display_name = "Zombie Bruciato"
 visual_archetype = "basic"
 theme_id = &"fire"
+visual_sprite_path = "res://assets/sprites/enemies/zombie/basic_zombie.png"
 max_health = 48
 move_speed = 92.0
 attack_damage = 10

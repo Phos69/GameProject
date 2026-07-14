@@ -27,6 +27,7 @@ loot_table = ExtResource("4_loot")
 [node name="Visual" type="Node2D" parent="."]
 script = ExtResource("3_visual")
 archetype_id = "tank"
+sprite_path = "res://assets/sprites/enemies/zombie/tank_zombie.png"
 
 [node name="HealthBarBackground" type="Line2D" parent="."]
 points = PackedVector2Array(-34, -42, 34, -42)

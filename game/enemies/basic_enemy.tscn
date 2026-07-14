@@ -15,6 +15,7 @@ script = ExtResource("1_basic_enemy")
 
 [node name="Visual" type="Node2D" parent="."]
 script = ExtResource("3_zombie_visual")
+sprite_path = "res://assets/sprites/enemies/zombie/basic_zombie.png"
 
 [node name="HealthBarBackground" type="Line2D" parent="."]
 points = PackedVector2Array(-22, -30, 22, -30)

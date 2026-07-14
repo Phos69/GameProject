@@ -5,6 +5,7 @@ class_name BiomeEnemyProfile
 @export var display_name: String = "Thematic Zombie"
 @export_enum("basic", "runner", "tank", "shooter") var visual_archetype: String = "basic"
 @export var theme_id: StringName = &"toxic"
+@export_file("*.png") var visual_sprite_path: String = ""
 
 ## AI level for pathfinding: 0 = avoid obstacles only (may fall into pits),
 ## 1 = also avoid pits (void / fall zones). Higher levels reserved for future.

@@ -58,6 +58,19 @@ func _validate_character(character_id: StringName) -> void:
 		assert_true(path.begins_with("res://assets/characters/"), "%s: %s stays in-repo (no external asset)" % [label, field])
 		assert_true(FileAccess.file_exists(path), "%s: %s file exists (%s)" % [label, field, path])
 
+	var gameplay_sprite_path := str(profile.get("gameplay_sprite_path", ""))
+	assert_true(
+		gameplay_sprite_path.ends_with("_gameplay_pictogram.png"),
+		"%s: gameplay preview uses the generated raster pictogram" % label
+	)
+	var pictogram := Image.load_from_file(
+		ProjectSettings.globalize_path(gameplay_sprite_path)
+	)
+	assert_false(pictogram.is_empty(), "%s: pictogram loads as Image" % label)
+	if not pictogram.is_empty():
+		assert_eq(pictogram.get_size(), Vector2i(512, 512), "%s: pictogram uses the canonical canvas" % label)
+		assert_lt(pictogram.get_pixel(0, 0).a, 0.01, "%s: pictogram background is transparent" % label)
+
 	assert_false(str(profile.get("animation_profile_id", "")).is_empty(),
 		"%s: animation_profile_id is set for idle/run/attack/reload/hurt/death/super" % label)
 	assert_true(str(profile.get("portrait_hud_path", "")).ends_with("_portrait_hud.svg"),

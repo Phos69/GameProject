@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="BiomeEnemyProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/modes/zombie/biome_enemy_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+enemy_id = &"toxic_reaver"
+display_name = "Mietitore Tossico"
+visual_archetype = "tank"
+theme_id = &"toxic"
+visual_sprite_path = "res://assets/sprites/enemies/zombie/toxic_reaver.png"
+ai_level = 1
+max_health = 118
+move_speed = 70.0
+acceleration = 450.0
+attack_range = 56.0
+attack_damage = 18
+attack_cooldown = 1.1
+kill_experience = 18
+incoming_damage_multiplier = 0.72
+contact_status_id = &"poison"
+contact_status_duration = 5.0
+contact_movement_multiplier = 0.72
+contact_damage_per_tick = 3
+death_hazard_id = &"toxic_cloud"
+death_hazard_duration = 5.0
+death_hazard_radius = 96.0

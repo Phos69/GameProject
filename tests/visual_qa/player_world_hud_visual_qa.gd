@@ -5,15 +5,21 @@ const CHARACTER_IDS: Array[StringName] = [
 	&"ranger",
 	&"pistoliere",
 	&"berserker",
-	&"spadaccino"
+	&"spadaccino",
+	&"mago",
+	&"domatrice",
+	&"licantropo"
 ]
-const HEALTH_RATIOS: Array[float] = [1.0, 0.55, 0.25, 0.80]
-const SUPER_AMOUNTS: Array[int] = [0, 45, 100, 100]
+const HEALTH_RATIOS: Array[float] = [1.0, 0.55, 0.25, 0.80, 0.70, 0.45, 0.90]
+const SUPER_AMOUNTS: Array[int] = [0, 45, 100, 100, 65, 85, 100]
 const POSITIONS: Array[Vector2] = [
-	Vector2(220.0, 260.0),
-	Vector2(500.0, 260.0),
-	Vector2(780.0, 260.0),
-	Vector2(1060.0, 260.0)
+	Vector2(180.0, 215.0),
+	Vector2(480.0, 215.0),
+	Vector2(780.0, 215.0),
+	Vector2(1080.0, 215.0),
+	Vector2(300.0, 500.0),
+	Vector2(620.0, 500.0),
+	Vector2(940.0, 500.0)
 ]
 
 var failures: PackedStringArray = []
@@ -35,11 +41,16 @@ func _run() -> void:
 
 	for index in range(CHARACTER_IDS.size()):
 		var player := player_scene.instantiate() as PlayerController
-		player.player_slot = index + 1
+		player.player_slot = index % 4 + 1
 		player.position = POSITIONS[index]
 		root.add_child(player)
 		player.set_physics_process(false)
 		player.apply_rpg_character(CHARACTER_IDS[index])
+		var visual := player.get_node_or_null("Visual") as PlayerVisual
+		_expect(
+			visual != null and visual.has_character_texture(),
+			"%s uses its raster gameplay pictogram" % String(CHARACTER_IDS[index])
+		)
 		player.rpg_component.add_experience(20 + index * 8)
 		player.rpg_component.add_adrenaline(SUPER_AMOUNTS[index])
 		player.health_component.current_health = roundi(

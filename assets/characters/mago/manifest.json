@@ -23,7 +23,7 @@
   "file": {
     "portrait_rendered": "rendered/mago_portrait_full.svg",
     "portrait_hud": "rendered/mago_portrait_hud.svg",
-    "gameplay_sprite": "sprites/mago_gameplay_iso.svg",
+    "gameplay_sprite": "sprites/mago_gameplay_pictogram.png",
     "sprite_sheet": "sprites/mago_sprite_sheet.svg",
     "hud_icon": "rendered/mago_portrait_hud.svg",
     "weapon_icon": "weapons/mago_weapon.svg",
@@ -78,6 +78,6 @@
     "La riga attack funge anche da cast per soddisfare il profilo magico senza duplicare frame identici.",
     "Convertiti gli asset bitmap PNG in SVG testuali per rendere la pull request compatibile con ambienti che non accettano file binari."
   ],
-  "source_format": "svg_text",
-  "binary_free": true
+  "source_format": "svg_text+pictogram",
+  "binary_free": false
 }

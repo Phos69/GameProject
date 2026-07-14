@@ -28,7 +28,11 @@ const BIOME_ENEMY_PROFILES = [
 	preload("res://game/modes/zombie/enemies/heavy_slow_zombie.tres"),
 	preload("res://game/modes/zombie/enemies/drowned_zombie.tres"),
 	preload("res://game/modes/zombie/enemies/marsh_zombie.tres"),
-	preload("res://game/modes/zombie/enemies/water_emerging_zombie.tres")
+	preload("res://game/modes/zombie/enemies/water_emerging_zombie.tres"),
+	preload("res://game/modes/zombie/enemies/toxic_reaver.tres"),
+	preload("res://game/modes/zombie/enemies/ember_hound.tres"),
+	preload("res://game/modes/zombie/enemies/glacial_bulwark.tres"),
+	preload("res://game/modes/zombie/enemies/mire_stalker.tres")
 ]
 
 func _ready() -> void:

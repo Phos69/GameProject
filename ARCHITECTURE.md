@@ -165,7 +165,9 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
   `current_region_id` e `last_seen_player_region_id` senza modificare target,
   health, status o drop.
 - `RangedEnemy`: specializzazione di `BasicEnemy` con distanza preferita, windup e proiettile ostile.
-- `ZombieVisual`: profili procedurali basic, runner e tank senza autorita gameplay.
+- `ZombieVisual`: pittogrammi raster opzionali per basic, runner, tank,
+  shooter ed elite; bob, facing e hit flash restano presentazionali, con
+  profili procedurali come fallback senza autorita gameplay.
 - `EnemyShotTelegraphVisual`: corsia e countdown ranged senza collisioni o danno.
 - `BossSystem`: registro scene/compatibilita, spawn per ID, boss attivo e notifica sconfitta.
 - `BasicBoss`: boss modulare con targeting, movimento, fasi e pattern proiettile.
@@ -368,9 +370,11 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
   marker e rispetta high contrast e reduced motion. La logica di calcolo vive in
   `compute_markers()` separata dal `_draw` per essere testabile in headless; non
   possiede ne modifica stato gameplay.
-- `PlayerVisual`: presentazione procedurale data-driven del player, con
-  silhouette e palette derivate dal profilo RPG; disegna l'arma equipaggiata
-  tramite `WeaponVisualRenderer` e non possiede piu il mini HUD.
+- `PlayerVisual`: presentazione data-driven del player. Carica il pittogramma
+  raster indicato da `RpgCharacterData.gameplay_sprite_path`, applica facing,
+  bob, hit flash e stati downed/dead, quindi disegna sopra l'arma equipaggiata
+  tramite `WeaponVisualRenderer`; se l'asset manca usa la silhouette
+  procedurale e non possiede il mini HUD.
 - `PlayerWorldHudVisual`: pacchetto UI world-space child del player; legge
   `HealthComponent`, `WeaponSystem` e `RpgPlayerComponent` e disegna il livello
   con gauge EXP circolare, vita orizzontale su due righe a soglie
@@ -614,7 +618,12 @@ ID negli smoke catalogo/pickup/projectile o melee e nella QA screenshot.
 - Basic, runner e tank riusano `BasicEnemy`; lo shooter lo estende e sostituisce solo movimento e attacco.
 - Il windup shooter blocca la direzione e crea il proiettile solo alla scadenza.
 - `EnemyShotTelegraphVisual` riceve direzione e durata ma non possiede autorita gameplay.
-- `ZombieVisual.archetype_id` cambia silhouette e animazione senza cambiare collisioni o statistiche.
+- `ZombieVisual.archetype_id` cambia silhouette/fallback e scala del
+  pittogramma senza cambiare collisioni o statistiche; `sprite_path` e
+  `BiomeEnemyProfile.visual_sprite_path` sono riferimenti opzionali in-repo.
+- `BiomeDefinition.elite_zombie_ids`, `elite_start_wave` ed
+  `elite_spawn_chance` separano il gate elite dal roster pesato regolare. La
+  selezione e deterministica per wave/spawn e non crea nuove scene o AI.
 - Runner: 18 HP, velocita 155, danno 6 e cooldown 0,62 secondi.
 - Tank: 90 HP, velocita 58, danno 18 e cooldown 1,25 secondi.
 
@@ -1357,7 +1366,12 @@ La documentazione, gli script e l'esempio di configurazione Codex vivono in
 
 `BiomeStatusRuntime` e il runtime unico dei malus ambientali e tematici: espone `apply_status(status_id, duration, intensity, source)`, `clear_status(status_id)`, `has_status(status_id)` e snapshot per HUD. `HazardSystem` lo possiede e resta la facciata usata da hazard, nemici, encounter e HUD; alla chiusura run resetta moltiplicatori movimento e status temporanei.
 
-Il flusso nemici e `WaveDirector -> EnemySystem -> BasicEnemy`: il director risolve un ID pesato dal `BiomeDefinition`, `EnemySystem` inietta il `BiomeEnemyProfile`, `BasicEnemy` applica statistiche, visual profile e status on-hit/on-death. `ZombieVisual` riceve solo archetipo e tema, mantenendo silhouette procedurali distinte senza autorita gameplay.
+Il flusso nemici e `WaveDirector -> EnemySystem -> BasicEnemy`: il director
+risolve prima l'eventuale gate elite e poi un ID pesato dal `BiomeDefinition`,
+`EnemySystem` inietta il `BiomeEnemyProfile`, `BasicEnemy` applica statistiche,
+visual profile e status on-hit/on-death. `ZombieVisual` riceve archetipo, tema e
+sprite raster opzionale; il PNG non possiede autorita gameplay e il disegno
+procedurale resta il fallback.
 
 `RandomEncounterSystem` e un sistema leggero seed-based per survival biome:
 produce ambush, elite pack, cursed crate, hazard burst, survivor cache e i

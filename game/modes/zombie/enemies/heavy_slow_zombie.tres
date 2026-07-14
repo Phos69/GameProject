@@ -8,6 +8,7 @@ enemy_id = &"heavy_slow_zombie"
 display_name = "Zombie Lento Pesante"
 visual_archetype = "tank"
 theme_id = &"frost"
+visual_sprite_path = "res://assets/sprites/enemies/zombie/tank_zombie.png"
 max_health = 138
 move_speed = 42.0
 acceleration = 270.0

@@ -32,18 +32,24 @@ func test_biome_themed_enemies() -> void:
 
 	var expected_profiles: Array[StringName] = [
 		&"toxic_zombie", &"toxic_exploder", &"burned_zombie", &"fire_runner", &"fire_exploder",
-		&"frozen_zombie", &"ice_armored_zombie", &"heavy_slow_zombie", &"drowned_zombie", &"marsh_zombie", &"water_emerging_zombie"
+		&"frozen_zombie", &"ice_armored_zombie", &"heavy_slow_zombie", &"drowned_zombie", &"marsh_zombie", &"water_emerging_zombie",
+		&"toxic_reaver", &"ember_hound", &"glacial_bulwark", &"mire_stalker"
 	]
 	for enemy_id in expected_profiles:
 		var profile := enemy_system.get_enemy_profile(enemy_id)
 		assert_not_null(profile, "%s has a data-driven profile" % String(enemy_id))
 		if profile == null:
 			continue
+		assert_true(
+			FileAccess.file_exists(profile.visual_sprite_path),
+			"%s has an in-repo pictogram" % String(enemy_id)
+		)
 		var enemy := enemy_system.spawn_enemy(enemy_id, Vector2(900.0, float(expected_profiles.find(enemy_id)) * 70.0)) as BasicEnemy
 		assert_not_null(enemy, "%s can be spawned" % String(enemy_id))
 		if enemy == null:
 			continue
 		assert_true(enemy.enemy_profile == profile and enemy.visual.biome_theme_id == profile.theme_id, "%s applies gameplay and visual profile" % String(enemy_id))
+		assert_true(enemy.visual.has_sprite_texture(), "%s loads its raster pictogram" % String(enemy_id))
 		enemy.queue_free()
 
 	var fire_runner := enemy_system.get_enemy_profile(&"fire_runner")
@@ -52,6 +58,14 @@ func test_biome_themed_enemies() -> void:
 	assert_true(fire_runner.move_speed > 150.0 and fire_runner.max_health < 30, "fire runner is fast and fragile")
 	assert_true(ice_armored.max_health > 100 and ice_armored.incoming_damage_multiplier < 1.0, "ice armored zombie is resistant")
 	assert_gte(water_emerging.emerge_duration, 1.0, "water zombie has a delayed emergence")
+	var toxic_reaver := enemy_system.get_enemy_profile(&"toxic_reaver")
+	var ember_hound := enemy_system.get_enemy_profile(&"ember_hound")
+	var glacial_bulwark := enemy_system.get_enemy_profile(&"glacial_bulwark")
+	var mire_stalker := enemy_system.get_enemy_profile(&"mire_stalker")
+	assert_true(toxic_reaver.max_health > 100 and toxic_reaver.contact_damage_per_tick >= 3, "toxic reaver combines armor and severe poison")
+	assert_gt(ember_hound.move_speed, fire_runner.move_speed, "ember hound is the fastest fire threat")
+	assert_true(glacial_bulwark.max_health >= 150 and glacial_bulwark.incoming_damage_multiplier < 0.6, "glacial bulwark is the toughest regular zombie")
+	assert_true(mire_stalker.emerge_duration >= 1.5 and mire_stalker.contact_status_id == &"bleed", "mire stalker ambushes and applies bleed")
 
 	transition_system.cooldown_timer = 0.0
 	transition_system.transition_to(&"toxic_wastes", &"east")
@@ -117,6 +131,24 @@ func test_wave_director_biome_scaling() -> void:
 		assert_gt((definition.get("allowed_zombie_types") as Array).size(), 0, "%s biome defines allowed zombies" % String(biome_id))
 		assert_gt((definition.get("resource_tags") as Array).size(), 0, "%s biome defines resources" % String(biome_id))
 		assert_gt(float(definition.get("difficulty_rating")), 0.0, "%s biome defines difficulty" % String(biome_id))
+
+	var expected_elites := {
+		&"toxic_wastes": &"toxic_reaver",
+		&"burning_fields": &"ember_hound",
+		&"frozen_outskirts": &"glacial_bulwark",
+		&"drowned_marsh": &"mire_stalker"
+	}
+	for biome_id in expected_elites:
+		var definition := biome_manager.get_biome_definition(biome_id) as BiomeDefinition
+		var elite_id := StringName(expected_elites[biome_id])
+		assert_false(
+			_resolves_enemy_in_window(definition, elite_id, definition.elite_start_wave - 1),
+			"%s stays out before the elite wave gate" % String(elite_id)
+		)
+		assert_true(
+			_resolves_enemy_in_window(definition, elite_id, definition.elite_start_wave),
+			"%s enters deterministically from the elite wave gate" % String(elite_id)
+		)
 
 	assert_eq(biome_manager.get_current_biome_id(), &"infected_plains", "run defaults to the starting biome")
 	assert_eq(wave_director.get_enemy_id_for_spawn(1, 0, 3), &"survival_zombie", "starting biome first wave keeps base zombies")
@@ -479,6 +511,18 @@ func _weights_for_edge(edge: StringName) -> Dictionary:
 	var weights := {&"north": 0.0, &"south": 0.0, &"east": 0.0, &"west": 0.0}
 	weights[edge] = 1.0
 	return weights
+
+func _resolves_enemy_in_window(
+	definition: BiomeDefinition,
+	enemy_id: StringName,
+	wave_index: int
+) -> bool:
+	if definition == null:
+		return false
+	for spawn_index in range(200):
+		if definition.resolve_enemy_id(wave_index, spawn_index, 200) == enemy_id:
+			return true
+	return false
 
 func _edge_match(edge: StringName, position: Vector2, visible_rect: Rect2) -> bool:
 	if visible_rect.has_point(position):

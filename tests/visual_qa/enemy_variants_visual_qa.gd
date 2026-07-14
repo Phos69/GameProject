@@ -80,9 +80,14 @@ func _run() -> void:
 			player.global_position = player_positions[player_slot - 1]
 
 	var enemy_specs := [
-		[&"survival_zombie", Vector2(-210.0, -75.0), &"chase"],
-		[&"survival_runner", Vector2(0.0, -95.0), &"chase"],
-		[&"survival_tank", Vector2(220.0, -65.0), &"attack"]
+		[&"survival_zombie", Vector2(-285.0, -120.0), &"chase"],
+		[&"survival_runner", Vector2(-95.0, -130.0), &"chase"],
+		[&"survival_tank", Vector2(95.0, -115.0), &"attack"],
+		[&"survival_shooter", Vector2(285.0, -120.0), &"attack"],
+		[&"toxic_reaver", Vector2(-270.0, 35.0), &"attack"],
+		[&"ember_hound", Vector2(-90.0, 30.0), &"chase"],
+		[&"glacial_bulwark", Vector2(95.0, 35.0), &"attack"],
+		[&"mire_stalker", Vector2(275.0, 30.0), &"chase"]
 	]
 	var spawned_enemies: Array[BasicEnemy] = []
 	for spec in enemy_specs:
@@ -103,7 +108,7 @@ func _run() -> void:
 	await process_frame
 	_expect(
 		spawned_enemies.size() == enemy_specs.size(),
-		"enemy variant roster marker contains all three archetypes"
+		"enemy variant roster board contains four base archetypes and four elites"
 	)
 	DirAccess.make_dir_recursive_absolute(
 		ProjectSettings.globalize_path(OUTPUT_DIRECTORY)

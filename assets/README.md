@@ -45,6 +45,16 @@ lineare e size limit a 512 px; prompt, palette e processing sono registrati in
 `ZombieBossVisual` mantiene un fallback procedurale per non rendere l'asset
 obbligatorio al bootstrap.
 
+### Personaggi e zombie regolari
+
+I sette pittogrammi gameplay dei personaggi sono PNG RGBA `512x512` sotto
+`characters/*/sprites/*_gameplay_pictogram.png`; provenienza, prompt sintetico
+e processing sono in `characters/pictogram_manifest.json`. I quattro archetipi
+zombie base e le quattro elite usano lo stesso contratto sotto
+`sprites/enemies/zombie/`, documentato dal relativo `manifest.json`.
+`PlayerVisual` e `ZombieVisual` mantengono fallback procedurali, quindi i raster
+non diventano requisiti di bootstrap.
+
 ## Compressione
 
 - sprite e UI: lossless;

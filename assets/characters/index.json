@@ -135,7 +135,7 @@
     }
   ],
   "next_recommended_iteration": "ranger_final_quality_pass",
-  "asset_format": "svg_text+png_portrait",
+  "asset_format": "svg_text+png_portrait+png_pictogram",
   "binary_free": false,
-  "pipeline_notes": "Pipeline mista in-repo: sorgenti SVG testuali piu portrait PNG opzionali; nessun asset esterno obbligatorio. portrait_hud_path usa sempre il portrait HUD dedicato; il gameplay resta procedurale (PlayerVisual) con weapon layer separato (WeaponData.visual_data)."
+  "pipeline_notes": "Pipeline mista in-repo: sorgenti SVG testuali, portrait PNG opzionali e sette pittogrammi gameplay PNG con alpha. PlayerVisual consuma gameplay_sprite_path nel world-space e conserva il disegno procedurale come fallback; WeaponData.visual_data mantiene il layer arma separato. Provenienza e processing dei pittogrammi sono registrati in assets/characters/pictogram_manifest.json."
 }

@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="BiomeEnemyProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/modes/zombie/biome_enemy_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+enemy_id = &"mire_stalker"
+display_name = "Predatore della Melma"
+visual_archetype = "runner"
+theme_id = &"marsh"
+visual_sprite_path = "res://assets/sprites/enemies/zombie/mire_stalker.png"
+ai_level = 1
+max_health = 68
+move_speed = 145.0
+acceleration = 900.0
+attack_range = 48.0
+attack_damage = 15
+attack_cooldown = 0.70
+kill_experience = 18
+incoming_damage_multiplier = 0.90
+contact_status_id = &"bleed"
+contact_status_duration = 5.0
+contact_movement_multiplier = 0.62
+contact_damage_per_tick = 2
+death_hazard_id = &"mud_pool"
+death_hazard_duration = 5.0
+death_hazard_radius = 80.0
+emerge_duration = 1.5

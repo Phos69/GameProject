@@ -23,7 +23,7 @@
   "file": {
     "portrait_rendered": "rendered/spadaccino_portrait_full.svg",
     "portrait_hud": "rendered/spadaccino_portrait_hud.svg",
-    "gameplay_sprite": "sprites/spadaccino_gameplay_iso.svg",
+    "gameplay_sprite": "sprites/spadaccino_gameplay_pictogram.png",
     "sprite_sheet": "sprites/spadaccino_sprite_sheet.svg",
     "hud_icon": "rendered/spadaccino_portrait_hud.svg",
     "weapon_icon": "weapons/spadaccino_weapon.svg",
@@ -74,6 +74,6 @@
     "Aggiornato il profilo dati Spadaccino per puntare alla sprite sheet definitiva di questa iterazione.",
     "Convertiti gli asset bitmap PNG in SVG testuali per rendere la pull request compatibile con ambienti che non accettano file binari."
   ],
-  "source_format": "svg_text",
-  "binary_free": true
+  "source_format": "svg_text+pictogram",
+  "binary_free": false
 }

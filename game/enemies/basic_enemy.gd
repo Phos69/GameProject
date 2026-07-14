@@ -419,7 +419,8 @@ func _apply_profile_visual() -> void:
 		return
 	visual.configure_biome_style(
 		enemy_profile.visual_archetype,
-		enemy_profile.theme_id
+		enemy_profile.theme_id,
+		enemy_profile.visual_sprite_path
 	)
 
 func _apply_contact_status(target_node: Node) -> void:
