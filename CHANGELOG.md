@@ -8,6 +8,11 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Changed
 
+- I chasm interni della pipeline void-first mantengono ora una tile logica di
+  distanza da strade e passaggi. Il margine riserva lo spazio del cliff lip e
+  impedisce che erba o roccia vengano disegnate sull'asfalto quando una buca
+  nasce accanto alla carreggiata. La revisione del generatore sale a 4 per
+  invalidare le cache mondo precedenti; aggiunta una regressione GUT dedicata.
 - Il manifest ambiente v12 separa footprint di placement e collisione fisica:
   `forest_tree` usa un cerchio di raggio 24 px e `dead_tree` uno di 12 px,
   entrambi centrati sulle radici a offset `(0, 24)`. Rimossa la base quadrata

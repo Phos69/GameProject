@@ -6,11 +6,11 @@ const SNAPSHOT_CODEC = preload(
 
 func test_cache_keys_carry_the_generation_revision() -> void:
 	assert_true(
-		WorldDataCache.canonical_key({}).begins_with("generator_revision=3|"),
+		WorldDataCache.canonical_key({}).begins_with("generator_revision=4|"),
 		"la cache dati non puo riusare chiavi della revisione pre-unificazione"
 	)
 	assert_true(
-		WorldDataCache.build_signature({}).begins_with("generator_revision=3|"),
+		WorldDataCache.build_signature({}).begins_with("generator_revision=4|"),
 		"anche la firma scena dichiara la revisione del generatore"
 	)
 

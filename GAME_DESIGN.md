@@ -821,7 +821,9 @@ Zombie tematici:
 Regole hazard:
 
 - ogni regione contiene almeno un chasm/fall zone interno visibile fuori da
-  spawn, corsie principali, passaggi e mesa;
+  spawn, corsie principali, passaggi e mesa; il bordo del chasm mantiene almeno
+  una tile logica libera da strade e passaggi, cosi il lip erboso/roccioso non
+  invade il materiale della route;
 - la `Pianura Infetta` non aggiunge hazard statici oltre a fall zone e chasm;
   Tossico, Infuocato, Neve e Palude ne piazzano due per regione, scelti dal
   profilo (`toxic_puddle`/`gas_cloud`, `fire_zone`/`lava_crack`,

@@ -315,19 +315,45 @@ func test_void_lottery_explicit_opt_out() -> void:
 	assert_false(layout.floor_rects.is_empty(),
 		"l'opt-out converte il void interno in pavimento walkable")
 
-func test_void_lottery_no_chasm_on_road() -> void:
-	var on_road := false
+func test_void_lottery_keeps_cliff_lip_clear_of_roads() -> void:
+	var too_close_to_road := false
 	for chasm_rect in _layout.fall_zone_rects:
-		for y in range(chasm_rect.position.y, chasm_rect.end.y):
-			for x in range(chasm_rect.position.x, chasm_rect.end.x):
+		var padded := chasm_rect.grow(
+			ObstacleLayoutGenerator.VOIDFIRST_CHASM_ROUTE_CLEARANCE
+		)
+		for y in range(padded.position.y, padded.end.y):
+			for x in range(padded.position.x, padded.end.x):
 				if _layout.has_road_cell(Vector2i(x, y)):
-					on_road = true
+					too_close_to_road = true
 					break
-			if on_road:
+			if too_close_to_road:
 				break
-		if on_road:
+		if too_close_to_road:
 			break
-	assert_false(on_road, "nessun chasm si sovrappone a una cella strada")
+	assert_false(
+		too_close_to_road,
+		"il lip di ogni chasm mantiene una tile libera dalle celle strada"
+	)
+
+func test_void_lottery_converts_route_near_patch_to_floor() -> void:
+	var layout := BiomeEnvironmentLayout.new()
+	layout.zone_size = Vector2i(9, 9)
+	for y in range(layout.zone_size.y):
+		layout.add_road_cell(Vector2i(6, y), &"main_road")
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 17
+	ObstacleLayoutGenerator.new()._resolve_void_lottery(layout, rng)
+	assert_false(layout.fall_zone_rects.is_empty(), "il fallback conserva il chasm obbligatorio")
+	assert_true(
+		layout.floor_rects.has(Rect2i(3, 3, 3, 3)),
+		"la patch adiacente alla strada viene convertita in terreno"
+	)
+	for chasm_rect in layout.fall_zone_rects:
+		assert_false(
+			chasm_rect.grow(ObstacleLayoutGenerator.VOIDFIRST_CHASM_ROUTE_CLEARANCE)
+				.has_point(Vector2i(6, chasm_rect.get_center().y)),
+			"il fallback non riporta il cliff lip accanto alla strada"
+		)
 
 func test_void_lottery_coverage() -> void:
 	# Layout dedicato: rebuild_terrain_classification muta lo stato, non tocco il condiviso.

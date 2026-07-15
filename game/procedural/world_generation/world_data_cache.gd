@@ -33,7 +33,7 @@ const DEFAULT_MAX_WORLDS: int = 8
 ## Versione del contenuto generato, indipendente dal formato binario dello
 ## snapshot. Un bump cambia la chiave LRU/disco anche a contesto invariato e
 ## impedisce che un processo aggiornato adotti layout prodotti da regole vecchie.
-const GENERATOR_REVISION: int = 3
+const GENERATOR_REVISION: int = 4
 
 ## Tier persistente su disco: a differenza della memoria (per-processo) sopravvive
 ## tra processi, cosi il mondo golden buildato dai test e' lo stesso usato dal

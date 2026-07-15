@@ -217,7 +217,7 @@ definito in `docs/top_down_cardinal_contract.md`.
   uno snapshot direttamente fuori dal lifecycle di `BiomeManager` deve chiamare
   `WorldDataCache.release_world_data()` quando ha finito, mentre cache e
   generatore lo fanno automaticamente su clear/evizione/teardown. La chiave
-  include `GENERATOR_REVISION = 3`; gli snapshot mondo usano il formato v6 e
+  include `GENERATOR_REVISION = 4`; gli snapshot mondo usano il formato v6 e
   vengono accettati solo se la firma canonica profonda del layout rigenerato
   coincide con quella persistita.
 - `WorldGridConfig`: centralizza la scala cartesiana e le conversioni legacy. Un tile logico vale `6x6` celle legacy, usa scala world `48.0` e mantiene gli asset alla loro scala legacy `8.0`.
@@ -238,7 +238,9 @@ definito in `docs/top_down_cardinal_contract.md`.
 - `ObstacleLayoutGenerator`: orchestra una sola pipeline void-first per i cinque
   biomi. Scava passaggi, strade principali da 7 tile logici e sentieri medi da
   4, delega le feature interne ai pass dedicati, risolve almeno un chasm
-  interno salvo `disable_internal_void` e aggiorna il riepilogo finale. Gli stream RNG
+  interno salvo `disable_internal_void`; ogni chasm mantiene una tile logica di
+  distanza da strade e passaggi, riservata al lip visivo del cliff, e aggiorna
+  il riepilogo finale. Gli stream RNG
   `mesa`, `void`, `hazards` e `props` sono derivati separatamente dal seed; il
   placement esclude spawn, route, passaggi, void, mesa, crate e altri blocker.
   Nel bioma starter restano inoltre casa, vegetazione densa, auto e il possibile

@@ -68,9 +68,13 @@ const VOIDFIRST_ROAD_LINE_NEAR := WorldGridConfig.VOIDFIRST_ROAD_LINE_NEAR_TILES
 const VOIDFIRST_ROAD_LINE_CONFINE := WorldGridConfig.VOIDFIRST_ROAD_LINE_CONFINE_TILES
 const VOIDFIRST_MAX_LINE_TREES := 220
 # Void lottery: the leftover void is split into floor / chasm patches at a fixed
-# ratio of 1 chasm : 3 walkable.
+# ratio of 1 chasm : 3 walkable. The route clearance leaves room for the cliff
+# lip without letting its ground material overlap roads or passage tiles.
 const VOIDFIRST_VOID_PATCH := WorldGridConfig.VOIDFIRST_VOID_PATCH_TILES
 const VOIDFIRST_VOID_CHASM_DIVISOR := 4
+const VOIDFIRST_CHASM_ROUTE_CLEARANCE := (
+	WorldGridConfig.VOIDFIRST_CHASM_ROUTE_CLEARANCE_TILES
+)
 
 # Final-floor random props. They are intentionally much sparser than cluster
 # vegetation and have their own deterministic stream, so tuning the prop pool
@@ -752,7 +756,8 @@ func _should_line_with_tree(layout: BiomeEnvironmentLayout, rect: Rect2i) -> boo
 # M5 — resolve the leftover void. The map is scanned in square patches: fully-void
 # patches enter a lottery (1 chasm : 3 walkable), partially-void patches are filled
 # with floor so no random void slivers remain. Chasms only ever land on fully-void
-# patches, so they never overwrite roads, obstacles or passages.
+# patches with enough route clearance for the visual cliff lip, so they never
+# overwrite or visually bleed onto roads, obstacles or passages.
 func _resolve_void_lottery(
 	layout: BiomeEnvironmentLayout,
 	rng: RandomNumberGenerator,
@@ -763,6 +768,7 @@ func _resolve_void_lottery(
 	var patch := VOIDFIRST_VOID_PATCH
 	var full_void: Array[Rect2i] = []
 	var partial_void: Array[Rect2i] = []
+	var route_near_void: Array[Rect2i] = []
 	var py := 0
 	while py < layout.zone_size.y:
 		var px := 0
@@ -777,7 +783,10 @@ func _resolve_void_lottery(
 			var void_cells := _count_void_cells(occ, rect, layout.zone_size.x)
 			var total_cells := rect.size.x * rect.size.y
 			if void_cells == total_cells and total_cells > 0:
-				full_void.append(rect)
+				if _chasm_has_route_clearance(layout, rect):
+					full_void.append(rect)
+				else:
+					route_near_void.append(rect)
 			elif void_cells > 0:
 				partial_void.append(rect)
 			px += patch
@@ -787,9 +796,11 @@ func _resolve_void_lottery(
 	# side-effect. If the aligned patch grid found none, scan for the largest fully
 	# free internal square (down to one cell) before filling partial patches.
 	if allow_chasms and minimum_internal_chasms > 0 and full_void.is_empty():
-		var fallback := _find_internal_chasm_fallback(occ, layout.zone_size)
+		var fallback := _find_internal_chasm_fallback(occ, layout)
 		if fallback.size.x > 0 and fallback.size.y > 0:
 			full_void.append(fallback)
+	for rect in route_near_void:
+		layout.add_floor_rect(rect, &"open_block")
 	for rect in partial_void:
 		# Fall-zone classification wins over floor when the fallback lies inside an
 		# aligned partial patch; filling the remainder prevents raw void slivers.
@@ -819,17 +830,34 @@ func _resolve_void_lottery(
 
 func _find_internal_chasm_fallback(
 	occ: PackedByteArray,
-	zone_size: Vector2i
+	layout: BiomeEnvironmentLayout
 ) -> Rect2i:
+	var zone_size := layout.zone_size
 	for side in range(VOIDFIRST_VOID_PATCH, 0, -1):
 		var max_x := zone_size.x - BORDER_THICKNESS - side
 		var max_y := zone_size.y - BORDER_THICKNESS - side
 		for y in range(BORDER_THICKNESS, max_y + 1):
 			for x in range(BORDER_THICKNESS, max_x + 1):
 				var rect := Rect2i(Vector2i(x, y), Vector2i(side, side))
-				if _count_void_cells(occ, rect, zone_size.x) == side * side:
+				if (
+					_count_void_cells(occ, rect, zone_size.x) == side * side
+					and _chasm_has_route_clearance(layout, rect)
+				):
 					return rect
 	return Rect2i()
+
+func _chasm_has_route_clearance(
+	layout: BiomeEnvironmentLayout,
+	rect: Rect2i
+) -> bool:
+	var padded := _inflate_rect(rect, VOIDFIRST_CHASM_ROUTE_CLEARANCE)
+	if _intersects_any(padded, layout.road_rects):
+		return false
+	if _intersects_any(padded, layout.passage_rects):
+		return false
+	if _intersects_any(padded, layout.passage_connector_rects):
+		return false
+	return not _rect_overlaps_road_cells(layout, padded)
 
 func _compute_occupancy(layout: BiomeEnvironmentLayout) -> PackedByteArray:
 	var total := layout.zone_size.x * layout.zone_size.y
