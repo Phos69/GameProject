@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "generated_on": "2026-07-13",
   "generator": "OpenAI image generation (built-in imagegen)",
   "license": "Originali del progetto",
@@ -10,7 +10,9 @@
     "runtime_filter": "linear",
     "fallback": "ZombieBossVisual procedural profile"
   },
-  "shared_prompt_constraints": "One isolated full-body 2D game boss sprite; dark post-apocalyptic cartoon arcade style; 3/4 isometric view from slightly above; facing screen-right; bold near-black outline; crisp cel shading; chunky readable silhouette; generous padding; no shadow, floor, environment, UI, text, watermark or loose VFX; uniform flat #FF00FF chroma-key background with no magenta on the subject.",
+  "projection": "orthogonal_top_down",
+  "volume_style": "controlled_perspective",
+  "shared_prompt_constraints": "One isolated full-body 2D game boss sprite; dark post-apocalyptic cartoon arcade style; elevated top-down view aligned to the screen-cardinal axes with controlled body depth; facing screen-right; no isometric floor plane or diamond base; bold near-black outline; crisp cel shading; chunky readable silhouette; generous padding; no shadow, floor, environment, UI, text, watermark or loose VFX; uniform flat #FF00FF chroma-key background with no magenta on the subject.",
   "assets": [
     {
       "boss_id": "grave_colossus",

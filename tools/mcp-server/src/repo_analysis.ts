@@ -67,7 +67,7 @@ export async function repoOverview(root: string): Promise<Record<string, unknown
   }
 
   return {
-    name: "Iso Local Sandbox",
+    name: "Local Action Sandbox",
     root,
     stack: {
       engine: "Godot 4.x",
@@ -92,7 +92,7 @@ export async function repoOverview(root: string): Promise<Record<string, unknown
       "game/player/player_controller.gd",
       "game/weapons/weapon_system.gd",
       "game/ui/hud_manager.gd",
-      "assets/environment/isometric/manifest.json",
+      "assets/environment/top_down/manifest.json",
       "tests/suites/_sanity/gut_bootstrap_test.gd"
     ]),
     documentationStatus: Object.fromEntries(
@@ -170,14 +170,15 @@ export async function gameSystemSummary(root: string): Promise<Record<string, un
         { path: "game/world/region_seam_system.gd", why: "world-space region transition tracking" }
       ])
     },
-    isometricRendering: {
-      summary: "Isometric rendering is asset-driven through the environment manifest, tile layer/resolver, SVG loader, cliff meshes and visual-only components.",
+    topDownRendering: {
+      summary: "Top-down cardinal rendering is asset-driven through the environment manifest, tile layer/resolver, texture loader, cliff meshes and visual-only controlled perspective.",
       evidence: systemEvidence(paths, [
-        { path: "assets/environment/isometric/manifest.json", why: "asset and fallback contract" },
+        { path: "docs/top_down_cardinal_contract.md", why: "projection and coordinate contract" },
+        { path: "assets/environment/top_down/manifest.json", why: "asset and fallback contract" },
         { path: "game/modes/zombie/biome_tile_layer.gd", why: "chunked tile drawing" },
-        { path: "game/modes/zombie/isometric_tile_resolver.gd", why: "terrain to tile selection" },
-        { path: "game/modes/zombie/isometric_svg_texture_loader.gd", why: "runtime SVG rasterization" },
-        { path: "game/modes/zombie/isometric_cliff_renderer.gd", why: "fall-zone cliff rendering" }
+        { path: "game/modes/zombie/biome_tile_resolver.gd", why: "terrain to tile selection" },
+        { path: "game/modes/zombie/environment_texture_loader.gd", why: "runtime SVG rasterization" },
+        { path: "game/modes/zombie/top_down_cliff_renderer.gd", why: "fall-zone cliff rendering" }
       ])
     },
     guiHud: {
@@ -197,7 +198,7 @@ export async function gameSystemSummary(root: string): Promise<Record<string, un
         { path: "assets/README.md", why: "asset pipeline notes" },
         { path: "assets/ATTRIBUTION.md", why: "license/attribution ledger" },
         { path: "assets/characters/index.json", why: "character asset index" },
-        { path: "assets/environment/isometric/manifest.json", why: "environment asset manifest" },
+        { path: "assets/environment/top_down/manifest.json", why: "environment asset manifest" },
         { path: "game/weapons/weapon_visual_data.gd", why: "weapon visual resource contract" }
       ])
     }
@@ -291,7 +292,7 @@ function categorizeAsset(repoPath: string): string {
   if (lower.includes("zombie") || lower.includes("enemy")) return "zombie";
   if (lower.startsWith("assets/characters") || lower.includes("player")) return "player";
   if (lower.includes("obstacle") || lower.includes("/objects/") || lower.includes("barrier") || lower.includes("rock")) return "obstacles";
-  if (lower.includes("biome") || lower.includes("environment/isometric") || lower.includes("/tiles/")) return "biomes";
+  if (lower.includes("biome") || lower.includes("environment/top_down") || lower.includes("/tiles/")) return "biomes";
   return "other";
 }
 
@@ -314,7 +315,7 @@ export async function assetInventory(root: string): Promise<Record<string, unkno
   }
 
   const manifestPaths = new Set<string>();
-  const manifestText = await readIfExists(root, "assets/environment/isometric/manifest.json", 500_000);
+  const manifestText = await readIfExists(root, "assets/environment/top_down/manifest.json", 500_000);
   if (manifestText) {
     try {
       collectStringPaths(JSON.parse(manifestText), manifestPaths);
@@ -370,7 +371,7 @@ export async function codexTaskBrief(root: string, input: Record<string, unknown
     [/player|input|joypad|controller|dodge/, "player/input", ["game/player/", "game/input/", "game/multiplayer/"], ["input mapping or local multiplayer regressions"], ["./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/progression"]],
     [/weapon|combat|damage|projectile|melee|drop/, "combat/weapons", ["game/weapons/", "game/combat/", "game/projectiles/", "game/drops/"], ["damage, ammo, reload or drop contract regressions"], ["./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/combat"]],
     [/ui|hud|menu|settings|audio/, "ui/audio", ["game/ui/", "game/settings/", "game/audio/"], ["focus, safe-area, save round-trip or audio bus regressions"], ["./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/ui_audio"]],
-    [/asset|sprite|isometric|obstacle|cliff|tile|render/, "assets/rendering", ["assets/", "game/modes/zombie/isometric_", "game/modes/zombie/biome_tile_layer.gd"], ["manifest fallback, footprint, collision or visual readability regressions"], ["./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/assets", "godot --headless --path . --script res://tools/generate_isometric_environment_assets.gd -- --check"]],
+    [/asset|sprite|top.?down|orthogonal|cardinal|obstacle|cliff|tile|render/, "assets/rendering", ["assets/", "game/modes/zombie/biome_tile_resolver.gd", "game/modes/zombie/biome_tile_layer.gd"], ["manifest fallback, footprint, collision or visual readability regressions"], ["./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/assets", "godot --headless --path . --script res://tools/generate_top_down_environment_assets.gd -- --check"]],
     [/roadmap|todo|docs|architecture|design/, "documentation", ["README.md", "ROADMAP.md", "TODO.md", "ARCHITECTURE.md", "GAME_DESIGN.md"], ["documentation drift against implemented contracts"], ["manual review of updated docs"]]
   ];
 

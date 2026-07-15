@@ -2,7 +2,7 @@ extends RefCounted
 class_name RectilinearCliffFaceMeshBuilder
 
 ## Builds continuous cliff faces aligned to rectangular fall-zone boundaries.
-## This replaces the per-cell diamond faces for the forest renderer only.
+## This replaces per-cell transition faces for the forest renderer only.
 ## Internal pits use clipped orthogonal side strips so the top/bottom faces own
 ## the corners. Perimeter east/west strips still use an oblique drop because they
 ## do not meet an internal lower face.
@@ -12,7 +12,7 @@ const PERIMETER_FACE_DEPTH_TILES := 1.15
 const PERIMETER_MIN_FACE_DEPTH := 42.0
 const INTERNAL_LATERAL_WALL_WIDTH_TILES := 0.65
 # Horizontal lean of the lateral walls as a fraction of their drop depth. 0.0 is a
-# flat vertical strip; ~0.5 ≈ 27° from vertical, matching IsometricCliffMeshBuilder.
+# flat vertical strip; ~0.5 ≈ 27° from vertical, matching TopDownCliffMeshBuilder.
 const LATERAL_VOID_SLOPE := 0.5
 const FALL_ZONE_BOUNDARY_RUNS = preload(
 	"res://game/modes/zombie/cliffs/fall_zone_boundary_runs.gd"

@@ -11,12 +11,12 @@ export type PromptDefinition = {
 
 export const PROMPTS: PromptDefinition[] = [
   {
-    name: "audit_isometric_generation",
-    description: "Audit isometric biome/world generation contracts before changing terrain, cliffs, obstacles or streaming.",
+    name: "audit_top_down_generation",
+    description: "Audit top-down cardinal biome/world contracts before changing terrain, cliffs, obstacles or streaming.",
     arguments: [{ name: "focus", description: "Optional subsystem or bug to focus on." }],
-    render: ({ focus }) => `Audit the isometric generation pipeline${focus ? ` with focus on: ${focus}` : ""}.
+    render: ({ focus }) => `Audit the top-down cardinal generation pipeline${focus ? ` with focus on: ${focus}` : ""}.
 
-Use repo_overview, game_system_summary, roadmap_context and search_project before editing. Inspect manifest, tile resolver, tile layer, world generation, streamer, obstacle and hazard contracts. Preserve terrain classification, collision, fall-zone behavior and existing GUT coverage. Return findings with files, risks and test plan.`
+Use repo_overview, game_system_summary, roadmap_context and search_project before editing. Inspect docs/top_down_cardinal_contract.md, manifest, tile resolver, tile layer, world generation, streamer, obstacle and hazard contracts. Preserve coordinate_system=orthogonal_top_down, volume_style=controlled_perspective, terrain classification, analog movement, collision, fall-zone behavior and existing GUT coverage. Ground and routes must stay screen-aligned and cardinal; volume may expose a controlled south facade without changing footprints. Return findings with files, risks and test plan.`
   },
   {
     name: "improve_zombie_mode",
@@ -48,7 +48,7 @@ Search for existing ownership boundaries before editing. Preserve public signals
     arguments: [{ name: "focus", description: "Asset category, biome or readability issue." }],
     render: ({ focus }) => `Run an asset quality pass${focus ? ` for: ${focus}` : ""}.
 
-Use asset_inventory, game_system_summary and search_project. Inspect manifest status, fallback paths, duplicate names, missing references and visual QA docs. Do not make external assets mandatory for the prototype. Document manual QA and asset check results.`
+Use asset_inventory, game_system_summary and search_project. Inspect docs/top_down_cardinal_contract.md, manifest status, fallback paths, duplicate names, missing references and visual QA docs. Require screen-aligned ground, cardinal routes and rectangular footprints; controlled perspective is allowed only on object volume. Do not make external assets mandatory for the prototype. Document manual QA and asset check results.`
   }
 ];
 

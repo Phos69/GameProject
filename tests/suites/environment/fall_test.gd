@@ -9,7 +9,7 @@ extends GutTest
 ## migra nella suite di integrazione environment.)
 
 const WorldGen = preload("res://tests/support/world_gen_helpers.gd")
-const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
+const WorldGridConfig = preload("res://game/core/world_grid_config.gd")
 
 const BORDER_IDS: Array[StringName] = [
 	&"boundary_fence", &"toxic_boundary_wall", &"lava_boundary", &"ice_boundary", &"deep_water_boundary"
@@ -60,9 +60,9 @@ func test_fall_boundaries() -> void:
 
 func test_odd_sized_fall_zone_centers_map_to_perimeter_cells() -> void:
 	var layout := BiomeEnvironmentLayout.new()
-	layout.zone_size = IsoGridConfig.BIOME_SIZE
-	layout.logical_tile_scale = IsoGridConfig.LOGICAL_TILE_SCALE
-	var thickness := IsoGridConfig.FALL_BOUNDARY_THICKNESS_TILES
+	layout.zone_size = WorldGridConfig.BIOME_SIZE
+	layout.logical_tile_scale = WorldGridConfig.LOGICAL_TILE_SCALE
+	var thickness := WorldGridConfig.FALL_BOUNDARY_THICKNESS_TILES
 	layout.add_fall_zone_rect(
 		Rect2i(Vector2i.ZERO, Vector2i(layout.zone_size.x, thickness)),
 		&"north"

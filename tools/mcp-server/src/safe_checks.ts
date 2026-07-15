@@ -82,11 +82,11 @@ export const SAFE_CHECKS: Record<string, SafeCheckSpec> = {
   },
   "asset:check": {
     name: "asset:check",
-    description: "Run the isometric environment asset generator in check mode.",
+    description: "Run the top-down cardinal environment asset generator in check mode.",
     defaultTimeoutMs: 120_000,
     buildCommand: () => ({
       command: process.env.GODOT || "godot",
-      args: ["--headless", "--path", ".", "--script", "res://tools/generate_isometric_environment_assets.gd", "--", "--check"]
+      args: ["--headless", "--path", ".", "--script", "res://tools/generate_top_down_environment_assets.gd", "--", "--check"]
     })
   },
   "mcp:build": {

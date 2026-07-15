@@ -21,7 +21,7 @@ const SENTINEL_SEEDS: Array[int] = [
 
 func test_unified_features_hold_and_vary_across_sentinel_seeds() -> void:
 	var categories := ObstacleLayoutGenerator.get_generated_obstacle_categories()
-	var manifest := IsometricEnvironmentManifest.get_shared()
+	var manifest := EnvironmentAssetManifest.get_shared()
 	for biome_id in BIOME_IDS:
 		var biome := WorldGen.load_biome(biome_id)
 		assert_not_null(biome, "carica %s" % biome_id)

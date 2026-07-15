@@ -3,6 +3,7 @@ class_name MainMenu
 
 signal mode_selected(mode_id: StringName)
 
+const PRODUCT_TITLE := "LOCAL ACTION SANDBOX"
 const CHARACTER_SLOT_COLORS: Array[Color] = [
 	Color(0.18, 0.74, 0.95, 1.0),
 	Color(0.95, 0.42, 0.34, 1.0),
@@ -256,7 +257,7 @@ func _create_ui() -> void:
 	menu_content = content
 
 	title_label = Label.new()
-	title_label.text = "ISO LOCAL SANDBOX"
+	title_label.text = PRODUCT_TITLE
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title_label.add_theme_font_size_override("font_size", 30)
 	title_label.modulate = Color(0.55, 0.88, 1.0, 1.0)

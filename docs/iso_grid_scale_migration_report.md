@@ -1,5 +1,9 @@
 # Report migrazione scala iso
 
+> Documento storico, superato il 2026-07-15 dal contratto
+> `docs/top_down_cardinal_contract.md`. Nomi e riferimenti di proiezione qui
+> sotto descrivono la migrazione originaria e non sono istruzioni operative.
+
 Data: 2026-07-02.
 
 ## Sintesi

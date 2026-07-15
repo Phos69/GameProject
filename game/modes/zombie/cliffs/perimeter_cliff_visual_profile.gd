@@ -2,7 +2,7 @@ extends RefCounted
 class_name PerimeterCliffVisualProfile
 
 const TEXTURE_LOADER := preload(
-	"res://game/modes/zombie/isometric_svg_texture_loader.gd"
+	"res://game/modes/zombie/environment_texture_loader.gd"
 )
 const GENERATED_ART_CATALOG := preload(
 	"res://game/modes/zombie/biome_generated_art_catalog.gd"
@@ -94,7 +94,7 @@ func _load_textures(
 			GENERATED_TEXTURE_TOOLS.should_harmonize_surface_edges(biome_id)
 		)
 		return
-	var manifest := IsometricEnvironmentManifest.get_shared()
+	var manifest := EnvironmentAssetManifest.get_shared()
 	var face_path := String(
 		manifest.get_void_asset_contract(FACE_TEXTURE_ID).get("asset_path", "")
 	)

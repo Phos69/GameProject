@@ -182,7 +182,7 @@ func _start_run_async(resolved_context: Dictionary) -> void:
 	_set_loading_phase("Preparazione mondo", 0.0, 0.1)
 	# Pre-warm shared, lazily-loaded resources on the main thread so the worker
 	# thread only ever reads them.
-	IsometricEnvironmentManifest.get_shared()
+	EnvironmentAssetManifest.get_shared()
 	if biome_manager != null:
 		biome_manager.begin_world_build()
 		# Opaque worker-thread phase: the bar eases across the band while it runs.

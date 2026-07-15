@@ -106,13 +106,18 @@ func _draw() -> void:
 		var to_region := graph.get_region(connection.to_region_id)
 		if from_region == null or to_region == null:
 			continue
-		draw_line(
+		var link_points := _get_cardinal_link_points(
 			_grid_to_panel(from_region.grid_position, grid_rect, cell_size, origin),
-			_grid_to_panel(to_region.grid_position, grid_rect, cell_size, origin),
-			_link_color_for(connection),
-			link_width,
-			true
+			_grid_to_panel(to_region.grid_position, grid_rect, cell_size, origin)
 		)
+		for point_index in range(link_points.size() - 1):
+			draw_line(
+				link_points[point_index],
+				link_points[point_index + 1],
+				_link_color_for(connection),
+				link_width,
+				true
+			)
 	for region in regions:
 		_draw_region(region, grid_rect, cell_size, origin)
 
@@ -123,21 +128,14 @@ func _draw_region(
 	origin: Vector2
 ) -> void:
 	var center := _grid_to_panel(region.grid_position, grid_rect, cell_size, origin)
-	var size := Vector2(cell_size * 0.74, cell_size * 0.52)
-	var points := PackedVector2Array([
-		center + Vector2(0.0, -size.y),
-		center + Vector2(size.x, 0.0),
-		center + Vector2(0.0, size.y),
-		center + Vector2(-size.x, 0.0)
-	])
+	var region_rect := _get_region_rect(center, cell_size)
 	var state := _state_for_region(region.region_id)
-	draw_colored_polygon(points, _color_for_state(state))
-	var closed := points.duplicate()
-	closed.append(points[0])
+	draw_rect(region_rect, _color_for_state(state), true)
 	var outline_width := 3.0 if high_contrast else 2.0
-	draw_polyline(
-		closed,
+	draw_rect(
+		region_rect,
 		Color.WHITE if state != WorldExplorationState.STATE_UNKNOWN else Color(0.22, 0.25, 0.27, 1.0),
+		false,
 		outline_width,
 		true
 	)
@@ -145,23 +143,63 @@ func _draw_region(
 		exploration_state != null
 		and exploration_state.current_region_id == region.region_id
 	)
-	# Loaded-as-data marker (active region that is not the current one): an
-	# axis-aligned square, geometrically distinct from the diamond so it reads
-	# without relying on color (high-contrast friendly).
+	# Loaded-as-data marker: quattro parentesi angolari esterne restano
+	# distinguibili dal rettangolo della regione anche senza affidarsi al colore.
 	if is_region_active(region.region_id) and not is_current:
-		var sx := size.x * 1.04
-		var sy := size.y * 1.18
-		var square := PackedVector2Array([
-			center + Vector2(-sx, -sy),
-			center + Vector2(sx, -sy),
-			center + Vector2(sx, sy),
-			center + Vector2(-sx, sy),
-			center + Vector2(-sx, -sy)
-		])
-		draw_polyline(square, LOADED_COLOR, outline_width, true)
+		_draw_loaded_brackets(region_rect.grow(cell_size * 0.10), outline_width)
 	if is_current:
-		draw_polyline(closed, CURRENT_COLOR, 5.0 if high_contrast else 4.0, true)
+		draw_rect(
+			region_rect,
+			CURRENT_COLOR,
+			false,
+			5.0 if high_contrast else 4.0,
+			true
+		)
 		draw_circle(center, maxf(cell_size * 0.11, 4.0), CURRENT_COLOR)
+
+func _get_region_rect(center: Vector2, cell_size: float) -> Rect2:
+	var half_extent := maxf(cell_size * 0.40, 12.0)
+	return Rect2(center - Vector2.ONE * half_extent, Vector2.ONE * half_extent * 2.0)
+
+func _get_cardinal_link_points(from: Vector2, to: Vector2) -> PackedVector2Array:
+	if is_equal_approx(from.x, to.x) or is_equal_approx(from.y, to.y):
+		return PackedVector2Array([from, to])
+	var middle_x := (from.x + to.x) * 0.5
+	return PackedVector2Array([
+		from,
+		Vector2(middle_x, from.y),
+		Vector2(middle_x, to.y),
+		to
+	])
+
+func _draw_loaded_brackets(rect: Rect2, line_width: float) -> void:
+	var arm := minf(rect.size.x, rect.size.y) * 0.22
+	_draw_loaded_bracket(rect.position, Vector2.RIGHT, Vector2.DOWN, arm, line_width)
+	_draw_loaded_bracket(
+		Vector2(rect.end.x, rect.position.y),
+		Vector2.LEFT,
+		Vector2.DOWN,
+		arm,
+		line_width
+	)
+	_draw_loaded_bracket(rect.end, Vector2.LEFT, Vector2.UP, arm, line_width)
+	_draw_loaded_bracket(
+		Vector2(rect.position.x, rect.end.y),
+		Vector2.RIGHT,
+		Vector2.UP,
+		arm,
+		line_width
+	)
+
+func _draw_loaded_bracket(
+	corner: Vector2,
+	horizontal_direction: Vector2,
+	vertical_direction: Vector2,
+	arm: float,
+	line_width: float
+) -> void:
+	draw_line(corner, corner + horizontal_direction * arm, LOADED_COLOR, line_width, true)
+	draw_line(corner, corner + vertical_direction * arm, LOADED_COLOR, line_width, true)
 
 func _build_ui() -> void:
 	var content := VBoxContainer.new()

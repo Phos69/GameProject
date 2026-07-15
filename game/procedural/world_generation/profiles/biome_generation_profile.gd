@@ -2,7 +2,7 @@ extends Resource
 class_name BiomeGenerationProfile
 
 ## Typed tuning contract for the feature passes shared by every void-first biome.
-## Asset paths, anchors and collision remain owned by the isometric manifest.
+## Asset paths, anchors and collision remain owned by the environment manifest.
 
 @export var biome_id: StringName = &"infected_plains"
 @export var mesa_profile_id: StringName = &"forest"

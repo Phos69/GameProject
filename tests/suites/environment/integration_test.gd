@@ -8,13 +8,13 @@ extends GutTest
 ##
 ## Migra e accorpa (batch corrente — streaming regioni):
 ##   tests/milestone_10_full_region_streaming_smoke_test.gd
-##   tests/milestone_10_isometric_performance_smoke_test.gd
+##   tests/milestone_10_top_down_performance_smoke_test.gd
 ##   tests/milestone_10_legacy_cleanup_smoke_test.gd
 
 const PERFORMANCE_ENEMY_IDS: Array[StringName] = [
 	&"survival_zombie", &"survival_runner", &"survival_tank", &"survival_shooter"
 ]
-const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
+const WorldGridConfig = preload("res://game/core/world_grid_config.gd")
 
 var _scene
 var _default_spawn_interval: float = 0.0
@@ -96,8 +96,8 @@ func after_all() -> void:
 		_scene.teardown()
 	_scene = null
 	WorldDataCache.clear()
-	IsometricEnvironmentManifest.clear_shared()
-	IsometricEnvironmentObject.clear_content_metrics_cache()
+	EnvironmentAssetManifest.clear_shared()
+	EnvironmentObject.clear_content_metrics_cache()
 	await wait_physics_frames(3)
 
 # --- streaming completo della regione corrente e dei vicini -----------------
@@ -233,9 +233,9 @@ func test_full_region_streaming() -> void:
 	assert_true(_crate_keys_unique(crate_system), "streamed crate keys are unique")
 
 # --- profilo prestazioni dello streaming bilanciato -------------------------
-# (milestone_10_isometric_performance)
+# (milestone_10_top_down_performance)
 
-func test_isometric_streaming_performance() -> void:
+func test_top_down_streaming_performance() -> void:
 	var local_multiplayer: LocalMultiplayerManager = _scene.node(&"local_multiplayer_manager") as LocalMultiplayerManager
 	var player_manager: PlayerManager = _scene.node(&"player_manager") as PlayerManager
 	var wave_manager: WaveManager = _scene.node(&"wave_manager") as WaveManager
@@ -253,7 +253,7 @@ func test_isometric_streaming_performance() -> void:
 	wave_manager.spawn_interval = 0.08
 	assert_true(_scene.start_survival({
 		"world_seed": 641004, "biome_map_width": 3, "biome_map_height": 3, "extra_edge_chance": 0.5
-	}), "survival starts with a 3x3 isometric world")
+	}), "survival starts with a 3x3 cardinal-grid world")
 	await wait_physics_frames(1)
 	await wait_physics_frames(1)
 	await wait_physics_frames(1)
@@ -267,7 +267,7 @@ func test_isometric_streaming_performance() -> void:
 		var region := biome_manager.get_world_graph().get_region(region_id)
 		var expected_tiles := (region.size_tiles.x * region.size_tiles.y if region != null
 			else BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE.x * BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE.y)
-		assert_eq(int(counts.get("tiles", 0)), expected_tiles, "%s has the full iso tile layer" % String(region_id))
+		assert_eq(int(counts.get("tiles", 0)), expected_tiles, "%s has the full top-down tile layer" % String(region_id))
 
 	var tile_layers = _scene.nodes(&"biome_tile_layers")
 	assert_gte(tile_layers.size(), streamed_ids.size(), "streamed regions expose chunked tile layers")
@@ -306,7 +306,7 @@ func test_isometric_streaming_performance() -> void:
 		await wait_physics_frames(1)
 	var profile_elapsed_usec := Time.get_ticks_usec() - profile_start
 	var average_frame_msec := float(profile_elapsed_usec) / 1000.0 / 120.0
-	gut.p("ISOMETRIC_PROFILE: %d streamed regions, %d enemies, avg %.2f ms"
+	gut.p("TOP_DOWN_PROFILE: %d streamed regions, %d enemies, avg %.2f ms"
 		% [streamed_ids.size(), spawned_enemies.size(), average_frame_msec])
 	# Tetto sul tempo per frame: il preset "balanced" evita i nodi per-tile, quindi
 	# una regressione vera (streaming a contenuto pieno di tutte le 9 regioni, o
@@ -314,7 +314,7 @@ func test_isometric_streaming_performance() -> void:
 	# 35 ms in un processo dedicato; qui il boot condiviso GUT ha un baseline più
 	# alto, quindi il tetto è 45 ms (mantiene il segnale anti-regressione senza
 	# essere flaky sul margine di 1 ms).
-	assert_lt(average_frame_msec, 45.0, "balanced isometric streaming stays within the frame budget")
+	assert_lt(average_frame_msec, 45.0, "balanced top-down streaming stays within the frame budget")
 
 	for enemy in spawned_enemies:
 		if is_instance_valid(enemy):
@@ -725,7 +725,7 @@ func test_biome_world_generation() -> void:
 	var base_layout := (start_cell.generated_layout if start_cell != null else null)
 	assert_not_null(base_layout, "starting biome has a generated layout")
 	if base_layout != null:
-		assert_eq(base_layout.zone_size, BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE, "starting biome uses the shared iso grid size")
+		assert_eq(base_layout.zone_size, BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE, "starting biome uses the shared cardinal grid size")
 		assert_true(not base_layout.rock_rects.is_empty() and not base_layout.forest_rects.is_empty(), "base biome (void-first) contains rocks and forests")
 		assert_true((not base_layout.road_rects.is_empty() or not base_layout.get_road_cells().is_empty()) and not base_layout.crate_cells.is_empty(),
 			"base biome has roads, corridors and resource crates")
@@ -1185,7 +1185,7 @@ func _assert_neighbor_crate_persistence(streamer, graph: WorldGraph, biome_manag
 		"re-streaming preserves the existing neighbor root")
 
 func _validate_cell(cell: BiomeCell) -> void:
-	assert_eq(Vector2i(cell.width, cell.height), BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE, "%s uses the shared iso grid size" % cell.id)
+	assert_eq(Vector2i(cell.width, cell.height), BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE, "%s uses the shared cardinal grid size" % cell.id)
 	assert_ne(cell.seed, 0, "%s has a local deterministic seed" % cell.id)
 	assert_not_null(cell.generated_layout, "%s has generated terrain" % cell.id)
 	if cell.generated_layout != null:
@@ -1346,7 +1346,7 @@ func _blocked_border_position(graph: WorldGraph, cell: BiomeCell) -> Vector2:
 	var scale := (
 		cell.generated_layout.logical_tile_scale
 		if cell.generated_layout != null
-		else IsoGridConfig.LOGICAL_TILE_SCALE
+		else WorldGridConfig.LOGICAL_TILE_SCALE
 	)
 	for side in BiomeCell.SIDES:
 		if region != null and not graph.get_connected_region_ids(cell.id).has(region.get_neighbor_region_id(side)):

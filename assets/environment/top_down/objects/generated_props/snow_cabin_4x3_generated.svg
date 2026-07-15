@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="198" height="192" viewBox="0 0 160 120" data-generated-by="generate_top_down_environment_assets" data-section="object_scenes" data-id="snow_cabin" data-footprint-slots="4x3">
+  <title>object_scenes snow_cabin</title>
+  <ellipse cx="80" cy="94" rx="54" ry="13" fill="#050608" opacity="0.38"/>
+  <rect x="34" y="26" width="92" height="70" rx="2" fill="#303a40" opacity="0.95"/>
+  <path d="M40 56 H120 V94 H40 Z" fill="#758d9b" stroke="#0b0c0d" stroke-width="2"/>
+  <path d="M120 56 L126 61 V90 L120 94 Z" fill="#596b76" stroke="#0b0c0d" stroke-width="2"/>
+  <path d="M44 68 H116 M44 78 H116" stroke="#000000" stroke-width="2" opacity="0.16"/>
+  <rect x="34" y="18" width="92" height="48" rx="3" fill="#425057" stroke="#0b0c0d" stroke-width="3"/>
+  <rect x="44" y="27" width="72" height="30" fill="none" stroke="#667a86" stroke-width="2" opacity="0.5"/>
+  <path d="M36 64 H124" fill="none" stroke="#000000" stroke-width="4" opacity="0.25"/>
+  <rect x="55" y="72" width="16" height="22" fill="#0a0c0c" stroke="#d6edf3" stroke-width="2" stroke-opacity="0.28"/>
+  <rect x="91" y="70" width="18" height="12" fill="#0d1315" stroke="#d6edf3" stroke-width="2" stroke-opacity="0.30"/>
+  <path d="M36 20 H124" fill="none" stroke="#edf8fb" stroke-width="6" stroke-linecap="round"/>
+  <path d="M48 54 C66 60 94 60 112 54" fill="none" stroke="#edf8fb" stroke-width="4" opacity="0.8"/>
+</svg>

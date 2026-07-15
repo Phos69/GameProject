@@ -1,15 +1,15 @@
 extends GutTest
-## Assets — Cache di rasterizzazione SVG del loader isometrico.
+## Assets — Cache di rasterizzazione SVG del loader ambiente.
 ##
 ## Migra:
-##   tests/isometric_texture_cache_smoke_test.gd  (loader, logica pura)
+##   tests/top_down_texture_cache_smoke_test.gd  (loader, logica pura)
 ##
 ## Verifica che il loader rasterizzi un SVG una sola volta per (path, size) e poi
 ## riusi la stessa istanza: tile layer, streaming regioni, cambi bioma e run
 ## successive non ricaricano gli stessi asset.
 
-const LOADER = preload("res://game/modes/zombie/isometric_svg_texture_loader.gd")
-const SVG_PATH := "res://assets/environment/isometric/tiles/shared/floor_base.svg"
+const LOADER = preload("res://game/modes/zombie/environment_texture_loader.gd")
+const SVG_PATH := "res://assets/environment/top_down/tiles/shared/floor_base.svg"
 
 func test_svg_rasterization_cache() -> void:
 	LOADER.clear_cache()
@@ -33,7 +33,7 @@ func test_svg_rasterization_cache() -> void:
 
 	# A non-svg path is served by the engine resource cache, not tracked here.
 	var png := LOADER.load_texture(
-		"res://assets/environment/isometric/tiles/forest/textures/forest_grass_generated.png",
+		"res://assets/environment/top_down/tiles/forest/textures/forest_grass_generated.png",
 		Color.WHITE,
 		Color(0.5, 0.5, 0.5)
 	)

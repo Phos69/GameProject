@@ -18,7 +18,8 @@ class_name TileBakeCache
 ## residuo, perche' richiede catturare tutto lo stato di render letto da _draw().
 
 # Bump quando cambia il formato serializzato o il significato delle mappe.
-const FORMAT_VERSION: int = 27
+const FORMAT_VERSION: int = 28
+const RENDER_CONTRACT_VERSION: String = "orthogonal_top_down:controlled_perspective:v1"
 const DIR: String = "user://world_cache/bake/"
 const EXT: String = ".bin"
 
@@ -35,13 +36,15 @@ static func make_key(
 	biome_id: StringName,
 	quality_preset: StringName,
 	layout_signature: String,
-	chunk_size: int
+	chunk_size: int,
+	render_contract_version: String = RENDER_CONTRACT_VERSION
 ) -> String:
-	return "%s|%s|%s|%d" % [
+	return "%s|%s|%s|%d|%s" % [
 		String(biome_id),
 		String(quality_preset),
 		layout_signature,
-		chunk_size
+		chunk_size,
+		render_contract_version
 	]
 
 # Ritorna il payload {tile_id, tile_section, tile_role, asset_path,

@@ -113,7 +113,7 @@ func _run() -> void:
 
 func _add_labels(scene_root: Node2D) -> void:
 	var title := _make_label(
-		"OSTACOLI ISOMETRICI - VALIDAZIONE 3x3",
+		"OSTACOLI TOP-DOWN - VALIDAZIONE 3x3",
 		Vector2(0.0, 24.0),
 		Vector2(1280.0, 48.0),
 		26,

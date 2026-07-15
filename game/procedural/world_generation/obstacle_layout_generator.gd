@@ -1,7 +1,7 @@
 extends RefCounted
 class_name ObstacleLayoutGenerator
 
-const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
+const WorldGridConfig = preload("res://game/core/world_grid_config.gd")
 const MESA_PLACEMENT_PASS = preload(
 	"res://game/procedural/world_generation/passes/mesa_placement_pass.gd"
 )
@@ -12,64 +12,64 @@ const RANDOM_PROP_PLACEMENT_PASS = preload(
 	"res://game/procedural/world_generation/passes/random_prop_placement_pass.gd"
 )
 
-const ROAD_WIDTH := IsoGridConfig.ROAD_WIDTH_TILES
-const SECONDARY_ROAD_WIDTH := IsoGridConfig.SECONDARY_ROAD_WIDTH_TILES
-const BORDER_THICKNESS := IsoGridConfig.BORDER_THICKNESS_TILES
+const ROAD_WIDTH := WorldGridConfig.ROAD_WIDTH_TILES
+const SECONDARY_ROAD_WIDTH := WorldGridConfig.SECONDARY_ROAD_WIDTH_TILES
+const BORDER_THICKNESS := WorldGridConfig.BORDER_THICKNESS_TILES
 # Perimeter walls are tiled as a contiguous run of segments so the whole side
-# reads as a continuous isometric wall instead of a single centred sprite.
-const WALL_SEGMENT_LENGTH := IsoGridConfig.WALL_SEGMENT_LENGTH_TILES
-const WALL_MIN_SEGMENT := IsoGridConfig.WALL_MIN_SEGMENT_TILES
+# reads as a continuous cardinal wall instead of a single centred sprite.
+const WALL_SEGMENT_LENGTH := WorldGridConfig.WALL_SEGMENT_LENGTH_TILES
+const WALL_MIN_SEGMENT := WorldGridConfig.WALL_MIN_SEGMENT_TILES
 # Small thematic props scattered inside internal blocks for ambient detail.
 const MAX_BLOCK_PROPS := 64
-const PROP_BLOCK_MARGIN := IsoGridConfig.PROP_BLOCK_MARGIN_TILES
-const MIN_RECT_GAP := IsoGridConfig.MIN_RECT_GAP_TILES
+const PROP_BLOCK_MARGIN := WorldGridConfig.PROP_BLOCK_MARGIN_TILES
+const MIN_RECT_GAP := WorldGridConfig.MIN_RECT_GAP_TILES
 const BLOCK_INSET := 0
-const MIN_BLOCK_SIZE := IsoGridConfig.MIN_BLOCK_SIZE_TILES
-const STARTER_RIVER_WIDTH := IsoGridConfig.STARTER_RIVER_WIDTH_TILES
-const STARTER_BRIDGE_EXTRA_WIDTH := IsoGridConfig.STARTER_BRIDGE_EXTRA_WIDTH_TILES
+const MIN_BLOCK_SIZE := WorldGridConfig.MIN_BLOCK_SIZE_TILES
+const STARTER_RIVER_WIDTH := WorldGridConfig.STARTER_RIVER_WIDTH_TILES
+const STARTER_BRIDGE_EXTRA_WIDTH := WorldGridConfig.STARTER_BRIDGE_EXTRA_WIDTH_TILES
 
 # --- Void-first generation (rocks -> forests -> roads -> tree borders -> void
 # lottery). The chunk starts as pure void and each pass carves into it. ---
-const VOIDFIRST_ROCK_MIN_SIZE := IsoGridConfig.VOIDFIRST_ROCK_MIN_SIZE_TILES
-const VOIDFIRST_ROCK_MAX_SIZE := IsoGridConfig.VOIDFIRST_ROCK_MAX_SIZE_TILES
+const VOIDFIRST_ROCK_MIN_SIZE := WorldGridConfig.VOIDFIRST_ROCK_MIN_SIZE_TILES
+const VOIDFIRST_ROCK_MAX_SIZE := WorldGridConfig.VOIDFIRST_ROCK_MAX_SIZE_TILES
 const VOIDFIRST_ROCK_MIN_COUNT := 10
 const VOIDFIRST_ROCK_MAX_COUNT := 16
-const VOIDFIRST_ROCK_GAP := IsoGridConfig.VOIDFIRST_ROCK_GAP_TILES
-const VOIDFIRST_ROCK_MARGIN := IsoGridConfig.VOIDFIRST_ROCK_MARGIN_TILES
+const VOIDFIRST_ROCK_GAP := WorldGridConfig.VOIDFIRST_ROCK_GAP_TILES
+const VOIDFIRST_ROCK_MARGIN := WorldGridConfig.VOIDFIRST_ROCK_MARGIN_TILES
 const VOIDFIRST_ROCK_ATTEMPTS := 600
 # Real mesas use the same proven 3..5-cell footprint as the original plains
 # plateaus. Plains retain their historical density; advanced biomes use a lower
 # shared budget alongside their thematic solid masses.
 const VOIDFIRST_MESA_MIN_COUNT := MESA_PLACEMENT_PASS.MIN_COUNT
 const VOIDFIRST_MESA_MAX_COUNT := MESA_PLACEMENT_PASS.MAX_COUNT
-const VOIDFIRST_FOREST_MIN_SIZE := IsoGridConfig.VOIDFIRST_FOREST_MIN_SIZE_TILES
-const VOIDFIRST_FOREST_MAX_SIZE := IsoGridConfig.VOIDFIRST_FOREST_MAX_SIZE_TILES
+const VOIDFIRST_FOREST_MIN_SIZE := WorldGridConfig.VOIDFIRST_FOREST_MIN_SIZE_TILES
+const VOIDFIRST_FOREST_MAX_SIZE := WorldGridConfig.VOIDFIRST_FOREST_MAX_SIZE_TILES
 const VOIDFIRST_FOREST_MIN_COUNT := 4
 const VOIDFIRST_FOREST_MAX_COUNT := 7
 const VOIDFIRST_FOREST_ATTEMPTS := 120
-const VOIDFIRST_FOREST_EDGE_MARGIN := IsoGridConfig.VOIDFIRST_FOREST_EDGE_MARGIN_TILES
+const VOIDFIRST_FOREST_EDGE_MARGIN := WorldGridConfig.VOIDFIRST_FOREST_EDGE_MARGIN_TILES
 # Trees fill a forest on a jittered grid; spacing > footprint keeps walkable gaps
 # between trunks so roads/paths can cross and zombies can navigate the interior.
-const VOIDFIRST_TREE_SPACING := IsoGridConfig.VOIDFIRST_TREE_SPACING_TILES
-const VOIDFIRST_TREE_JITTER := IsoGridConfig.VOIDFIRST_TREE_JITTER_TILES
+const VOIDFIRST_TREE_SPACING := WorldGridConfig.VOIDFIRST_TREE_SPACING_TILES
+const VOIDFIRST_TREE_JITTER := WorldGridConfig.VOIDFIRST_TREE_JITTER_TILES
 const VOIDFIRST_MAX_TREES := 240
 # Roads route on a coarse grid (cell = step logical cells) that treats rocks as
 # solid, so the carved corridor goes around rocks and through forests.
-const VOIDFIRST_ROUTE_STEP := IsoGridConfig.VOIDFIRST_ROUTE_STEP_TILES
-const VOIDFIRST_ROAD_ROCK_CLEARANCE := IsoGridConfig.VOIDFIRST_ROAD_ROCK_CLEARANCE_TILES
+const VOIDFIRST_ROUTE_STEP := WorldGridConfig.VOIDFIRST_ROUTE_STEP_TILES
+const VOIDFIRST_ROAD_ROCK_CLEARANCE := WorldGridConfig.VOIDFIRST_ROAD_ROCK_CLEARANCE_TILES
 # Trails (sentieri) are narrow routes that cross forests but stop at the first rock.
-const VOIDFIRST_PATH_WIDTH := IsoGridConfig.VOIDFIRST_PATH_WIDTH_TILES
-const VOIDFIRST_PATH_MAX_LEN := IsoGridConfig.VOIDFIRST_PATH_MAX_LEN_TILES
+const VOIDFIRST_PATH_WIDTH := WorldGridConfig.VOIDFIRST_PATH_WIDTH_TILES
+const VOIDFIRST_PATH_MAX_LEN := WorldGridConfig.VOIDFIRST_PATH_MAX_LEN_TILES
 const VOIDFIRST_PATH_COUNT := 3
 # Roads crossing open void get a tree lining where they are not already bounded by
 # a rock or forest ("confine").
-const VOIDFIRST_ROAD_LINE_SPACING := IsoGridConfig.VOIDFIRST_ROAD_LINE_SPACING_TILES
-const VOIDFIRST_ROAD_LINE_NEAR := IsoGridConfig.VOIDFIRST_ROAD_LINE_NEAR_TILES
-const VOIDFIRST_ROAD_LINE_CONFINE := IsoGridConfig.VOIDFIRST_ROAD_LINE_CONFINE_TILES
+const VOIDFIRST_ROAD_LINE_SPACING := WorldGridConfig.VOIDFIRST_ROAD_LINE_SPACING_TILES
+const VOIDFIRST_ROAD_LINE_NEAR := WorldGridConfig.VOIDFIRST_ROAD_LINE_NEAR_TILES
+const VOIDFIRST_ROAD_LINE_CONFINE := WorldGridConfig.VOIDFIRST_ROAD_LINE_CONFINE_TILES
 const VOIDFIRST_MAX_LINE_TREES := 220
 # Void lottery: the leftover void is split into floor / chasm patches at a fixed
 # ratio of 1 chasm : 3 walkable.
-const VOIDFIRST_VOID_PATCH := IsoGridConfig.VOIDFIRST_VOID_PATCH_TILES
+const VOIDFIRST_VOID_PATCH := WorldGridConfig.VOIDFIRST_VOID_PATCH_TILES
 const VOIDFIRST_VOID_CHASM_DIVISOR := 4
 
 # Final-floor random props. They are intentionally much sparser than cluster
@@ -237,10 +237,10 @@ func _add_voidfirst_crates(
 	var crate_ids := _crate_ids(biome.biome_id)
 	var anchor := layout.player_spawn_cell
 	var offsets: Array[Vector2i] = [
-		Vector2i(-IsoGridConfig.VOIDFIRST_CRATE_OFFSET_TILES, 0),
-		Vector2i(IsoGridConfig.VOIDFIRST_CRATE_OFFSET_TILES, 0),
-		Vector2i(0, -IsoGridConfig.VOIDFIRST_CRATE_OFFSET_TILES),
-		Vector2i(0, IsoGridConfig.VOIDFIRST_CRATE_OFFSET_TILES)
+		Vector2i(-WorldGridConfig.VOIDFIRST_CRATE_OFFSET_TILES, 0),
+		Vector2i(WorldGridConfig.VOIDFIRST_CRATE_OFFSET_TILES, 0),
+		Vector2i(0, -WorldGridConfig.VOIDFIRST_CRATE_OFFSET_TILES),
+		Vector2i(0, WorldGridConfig.VOIDFIRST_CRATE_OFFSET_TILES)
 	]
 	for index in range(offsets.size()):
 		_add_crate(layout, crate_ids[index % crate_ids.size()], anchor + offsets[index])
@@ -275,7 +275,7 @@ func _voidfirst_center_reserved(layout: BiomeEnvironmentLayout) -> Rect2i:
 	# Keep the chunk centre clear of rocks so the main-road cross, player spawn and
 	# crates always sit on walkable road.
 	var center := layout.zone_size / 2
-	var half := IsoGridConfig.CENTER_RESERVED_HALF_TILES
+	var half := WorldGridConfig.CENTER_RESERVED_HALF_TILES
 	return Rect2i(center - Vector2i(half, half), Vector2i(half * 2, half * 2))
 
 # Pick a guaranteed-walkable spawn: the centre if it is road, else the nearest
@@ -569,7 +569,7 @@ func _build_road_astar(layout: BiomeEnvironmentLayout) -> AStarGrid2D:
 	var astar := AStarGrid2D.new()
 	astar.region = Rect2i(0, 0, w, h)
 	astar.cell_size = Vector2.ONE
-	astar.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES
+	astar.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_NEVER
 	astar.default_compute_heuristic = AStarGrid2D.HEURISTIC_MANHATTAN
 	astar.update()
 	for solid_rect in _voidfirst_solid_rects(layout):
@@ -593,11 +593,11 @@ func _carve_astar_road(
 	var start_c := _nearest_open_coarse(astar, _to_coarse_cell(start_full, step, region.size.x, region.size.y))
 	var end_c := _nearest_open_coarse(astar, _to_coarse_cell(end_full, step, region.size.x, region.size.y))
 	if start_c.x < 0 or end_c.x < 0:
-		_add_diagonal_road(layout, start_full, end_full, ROAD_WIDTH, tag)
+		_add_cardinal_road(layout, start_full, end_full, ROAD_WIDTH, tag)
 		return
 	var path := astar.get_id_path(start_c, end_c)
 	if path.is_empty():
-		_add_diagonal_road(layout, start_full, end_full, ROAD_WIDTH, tag)
+		_add_cardinal_road(layout, start_full, end_full, ROAD_WIDTH, tag)
 		return
 	var prev := start_full
 	for coarse_cell in path:
@@ -605,9 +605,9 @@ func _carve_astar_road(
 			coarse_cell.x * step + step / 2,
 			coarse_cell.y * step + step / 2
 		)
-		_add_diagonal_road(layout, prev, center, ROAD_WIDTH, tag)
+		_add_cardinal_road(layout, prev, center, ROAD_WIDTH, tag)
 		prev = center
-	_add_diagonal_road(layout, prev, end_full, ROAD_WIDTH, tag)
+	_add_cardinal_road(layout, prev, end_full, ROAD_WIDTH, tag)
 
 func _to_coarse_cell(point: Vector2i, step: int, w: int, h: int) -> Vector2i:
 	return Vector2i(
@@ -1037,27 +1037,27 @@ func _add_starter_water_crossing(
 	var river_band := Rect2i(
 		Vector2i(
 			0,
-			river_y - _span_before_center(STARTER_RIVER_WIDTH) - IsoGridConfig.STARTER_RIVER_PADDING_TILES
+			river_y - _span_before_center(STARTER_RIVER_WIDTH) - WorldGridConfig.STARTER_RIVER_PADDING_TILES
 		),
 		Vector2i(
 			layout.zone_size.x,
-			STARTER_RIVER_WIDTH + IsoGridConfig.STARTER_RIVER_PADDING_TILES * 2
+			STARTER_RIVER_WIDTH + WorldGridConfig.STARTER_RIVER_PADDING_TILES * 2
 		)
 	)
 	var segment_width := int(ceil(float(layout.zone_size.x) / 3.0))
 	var offsets: Array[int] = [
 		0,
-		-IsoGridConfig.legacy_cells_to_new_tiles(5),
-		IsoGridConfig.legacy_cells_to_new_tiles(4)
+		-WorldGridConfig.legacy_cells_to_new_tiles(5),
+		WorldGridConfig.legacy_cells_to_new_tiles(4)
 	]
 	for index in range(3):
 		var start_x := clampi(
-			index * segment_width - IsoGridConfig.STARTER_BRIDGE_PADDING_TILES,
+			index * segment_width - WorldGridConfig.STARTER_BRIDGE_PADDING_TILES,
 			0,
 			layout.zone_size.x
 		)
 		var end_x := clampi(
-			(index + 1) * segment_width + IsoGridConfig.STARTER_BRIDGE_PADDING_TILES,
+			(index + 1) * segment_width + WorldGridConfig.STARTER_BRIDGE_PADDING_TILES,
 			0,
 			layout.zone_size.x
 		)
@@ -1087,11 +1087,11 @@ func _select_starter_river_y(
 		var river_band := Rect2i(
 			Vector2i(
 				0,
-				river_y - _span_before_center(STARTER_RIVER_WIDTH) - IsoGridConfig.STARTER_RIVER_PADDING_TILES
+				river_y - _span_before_center(STARTER_RIVER_WIDTH) - WorldGridConfig.STARTER_RIVER_PADDING_TILES
 			),
 			Vector2i(
 				layout.zone_size.x,
-				STARTER_RIVER_WIDTH + IsoGridConfig.STARTER_RIVER_PADDING_TILES * 2
+				STARTER_RIVER_WIDTH + WorldGridConfig.STARTER_RIVER_PADDING_TILES * 2
 			)
 		)
 		if _starter_river_band_is_clear(layout, river_band):
@@ -1123,11 +1123,11 @@ func _add_bridge_rects_over_water(
 		var bridge_rect := Rect2i(
 			Vector2i(
 				road_rect.position.x - _span_before_center(STARTER_BRIDGE_EXTRA_WIDTH),
-				river_band.position.y - IsoGridConfig.STARTER_BRIDGE_PADDING_TILES
+				river_band.position.y - WorldGridConfig.STARTER_BRIDGE_PADDING_TILES
 			),
 			Vector2i(
 				road_rect.size.x + STARTER_BRIDGE_EXTRA_WIDTH,
-				river_band.size.y + IsoGridConfig.STARTER_BRIDGE_PADDING_TILES * 2
+				river_band.size.y + WorldGridConfig.STARTER_BRIDGE_PADDING_TILES * 2
 			)
 		)
 		_add_road_rect(layout, bridge_rect, &"bridge")
@@ -1140,11 +1140,11 @@ func _add_bridge_rects_over_water(
 		Rect2i(
 			Vector2i(
 				center_x - _span_before_center(ROAD_WIDTH + STARTER_BRIDGE_EXTRA_WIDTH),
-				river_band.position.y - IsoGridConfig.STARTER_BRIDGE_PADDING_TILES
+				river_band.position.y - WorldGridConfig.STARTER_BRIDGE_PADDING_TILES
 			),
 			Vector2i(
 				ROAD_WIDTH + STARTER_BRIDGE_EXTRA_WIDTH,
-				river_band.size.y + IsoGridConfig.STARTER_BRIDGE_PADDING_TILES * 2
+				river_band.size.y + WorldGridConfig.STARTER_BRIDGE_PADDING_TILES * 2
 			)
 		),
 		&"bridge"
@@ -1157,19 +1157,19 @@ func _add_cover_cluster(
 	horizontal: bool
 ) -> void:
 	var first_size := (
-		IsoGridConfig.legacy_size_to_new_tiles(Vector2i(13, 6))
+		WorldGridConfig.legacy_size_to_new_tiles(Vector2i(13, 6))
 		if horizontal
-		else IsoGridConfig.legacy_size_to_new_tiles(Vector2i(6, 13))
+		else WorldGridConfig.legacy_size_to_new_tiles(Vector2i(6, 13))
 	)
 	var second_size := (
-		IsoGridConfig.legacy_size_to_new_tiles(Vector2i(10, 5))
+		WorldGridConfig.legacy_size_to_new_tiles(Vector2i(10, 5))
 		if horizontal
-		else IsoGridConfig.legacy_size_to_new_tiles(Vector2i(5, 10))
+		else WorldGridConfig.legacy_size_to_new_tiles(Vector2i(5, 10))
 	)
 	var second_offset := (
-		IsoGridConfig.legacy_size_to_new_tiles(Vector2i(18, 8))
+		WorldGridConfig.legacy_size_to_new_tiles(Vector2i(18, 8))
 		if horizontal
-		else IsoGridConfig.legacy_size_to_new_tiles(Vector2i(8, 18))
+		else WorldGridConfig.legacy_size_to_new_tiles(Vector2i(8, 18))
 	)
 	var first := Rect2i(anchor, first_size)
 	var second := Rect2i(
@@ -1565,41 +1565,22 @@ func _add_road_rect(
 		layout.add_bridge_rect(rect)
 	_add_route_metadata(layout, layout.rect_center_to_world(rect), maxf(float(maxi(rect.size.x, rect.size.y)) * layout.logical_tile_scale * 0.18, 28.0), tag)
 
-func _add_diagonal_road(
+func _add_cardinal_road(
 	layout: BiomeEnvironmentLayout,
 	start: Vector2i,
 	end: Vector2i,
 	width: int,
 	tag: StringName
 ) -> void:
-	var radius := maxi(_span_before_center(width), 1)
-	var delta := end - start
-	var steps := maxi(maxi(absi(delta.x), absi(delta.y)), 1)
 	var touched: Dictionary = {}
 	var solid_rects := _voidfirst_solid_rects(layout)
-	for step in range(steps + 1):
-		var t := float(step) / float(steps)
-		var center := Vector2i(
-			roundi(lerpf(float(start.x), float(end.x), t)),
-			roundi(lerpf(float(start.y), float(end.y), t))
-		)
-		for y in range(center.y - radius, center.y + radius + 1):
-			for x in range(center.x - radius, center.x + radius + 1):
-				var cell := Vector2i(x, y)
-				if (
-					cell.x < 0
-					or cell.y < 0
-					or cell.x >= layout.zone_size.x
-					or cell.y >= layout.zone_size.y
-				):
-					continue
-				var cell_delta := cell - center
-				if Vector2(float(cell_delta.x), float(cell_delta.y)).length() > float(radius) + 0.35:
-					continue
-				if _cell_inside_any_rect(cell, solid_rects):
-					continue
-				layout.add_road_cell(cell, tag)
-				touched[_route_cell_key(layout, cell)] = true
+	var elbow := Vector2i(end.x, start.y)
+	_add_cardinal_road_segment(
+		layout, start, elbow, width, tag, solid_rects, touched
+	)
+	_add_cardinal_road_segment(
+		layout, elbow, end, width, tag, solid_rects, touched
+	)
 	if touched.is_empty():
 		return
 	var midpoint := Vector2(
@@ -1608,10 +1589,43 @@ func _add_diagonal_road(
 	)
 	var world_midpoint := layout.logical_to_world(Vector2i(roundi(midpoint.x), roundi(midpoint.y)))
 	var world_radius := maxf(
-		Vector2(float(delta.x), float(delta.y)).length() * layout.logical_tile_scale * 0.10,
+		float(absi(end.x - start.x) + absi(end.y - start.y))
+			* layout.logical_tile_scale * 0.10,
 		34.0
 	)
 	_add_route_metadata(layout, world_midpoint, world_radius, tag)
+
+func _add_cardinal_road_segment(
+	layout: BiomeEnvironmentLayout,
+	start: Vector2i,
+	end: Vector2i,
+	width: int,
+	tag: StringName,
+	solid_rects: Array[Rect2i],
+	touched: Dictionary
+) -> void:
+	var before := _span_before_center(width)
+	var after := _span_after_center(width)
+	var min_x := mini(start.x, end.x)
+	var max_x := maxi(start.x, end.x)
+	var min_y := mini(start.y, end.y)
+	var max_y := maxi(start.y, end.y)
+	for center_y in range(min_y, max_y + 1):
+		for center_x in range(min_x, max_x + 1):
+			var center := Vector2i(center_x, center_y)
+			for y in range(center.y - before, center.y + after):
+				for x in range(center.x - before, center.x + after):
+					var cell := Vector2i(x, y)
+					if (
+						cell.x < 0
+						or cell.y < 0
+						or cell.x >= layout.zone_size.x
+						or cell.y >= layout.zone_size.y
+						or _cell_inside_any_rect(cell, solid_rects)
+					):
+						continue
+					layout.add_road_cell(cell, tag)
+					touched[_route_cell_key(layout, cell)] = true
 
 func _add_route_metadata(
 	layout: BiomeEnvironmentLayout,
@@ -2049,8 +2063,8 @@ func _prop_attempts_for_kind(kind: StringName, block_rect: Rect2i) -> int:
 	var equivalent_legacy_area := (
 		block_rect.size.x
 		* block_rect.size.y
-		* IsoGridConfig.NEW_TILE_SCALE
-		* IsoGridConfig.NEW_TILE_SCALE
+		* WorldGridConfig.NEW_TILE_SCALE
+		* WorldGridConfig.NEW_TILE_SCALE
 	)
 	var area_budget := int(float(equivalent_legacy_area) / 1100.0)
 	var density := 2
@@ -2228,8 +2242,8 @@ func _road_gaps_for_side(
 				finish = rect.end.y
 		if not touches_side:
 			continue
-		start = clampi(start - IsoGridConfig.WALL_GAP_PADDING_TILES, 0, axis_limit)
-		finish = clampi(finish + IsoGridConfig.WALL_GAP_PADDING_TILES, 0, axis_limit)
+		start = clampi(start - WorldGridConfig.WALL_GAP_PADDING_TILES, 0, axis_limit)
+		finish = clampi(finish + WorldGridConfig.WALL_GAP_PADDING_TILES, 0, axis_limit)
 		if finish > start:
 			gaps.append(Vector2i(start, finish))
 	return gaps
@@ -2263,13 +2277,13 @@ func _road_cell_gaps_for_side(
 				run_start = axis
 		elif run_start >= 0:
 			gaps.append(Vector2i(
-				clampi(run_start - IsoGridConfig.WALL_GAP_PADDING_TILES, 0, axis_limit),
-				clampi(axis + IsoGridConfig.WALL_GAP_PADDING_TILES, 0, axis_limit)
+				clampi(run_start - WorldGridConfig.WALL_GAP_PADDING_TILES, 0, axis_limit),
+				clampi(axis + WorldGridConfig.WALL_GAP_PADDING_TILES, 0, axis_limit)
 			))
 			run_start = -1
 	if run_start >= 0:
 		gaps.append(Vector2i(
-			clampi(run_start - IsoGridConfig.WALL_GAP_PADDING_TILES, 0, axis_limit),
+			clampi(run_start - WorldGridConfig.WALL_GAP_PADDING_TILES, 0, axis_limit),
 			axis_limit
 		))
 	return gaps
@@ -2341,12 +2355,12 @@ func _passage_gaps_for_side(
 		var span_before := _span_before_center(passage.width)
 		var span_after := _span_after_center(passage.width)
 		var start := clampi(
-			passage.position - span_before - IsoGridConfig.WALL_GAP_PADDING_TILES,
+			passage.position - span_before - WorldGridConfig.WALL_GAP_PADDING_TILES,
 			0,
 			axis_limit
 		)
 		var finish := clampi(
-			passage.position + span_after + IsoGridConfig.WALL_GAP_PADDING_TILES,
+			passage.position + span_after + WorldGridConfig.WALL_GAP_PADDING_TILES,
 			0,
 			axis_limit
 		)
@@ -2363,7 +2377,7 @@ func _add_border_segment(
 	obstacle_id: StringName
 ) -> void:
 	# Tile the [start, finish) span into contiguous wall-tile segments so the
-	# entire perimeter is a continuous isometric wall, recording the explicit
+	# entire perimeter is a continuous cardinal wall, recording the explicit
 	# wall contract on the layout for validation and rendering.
 	var cursor := start
 	while cursor < finish:
@@ -2425,10 +2439,10 @@ func _add_obstacle_if_clear(
 	return true
 
 func _legacy_rect_size(width: int, height: int, minimum: int = 1) -> Vector2i:
-	return IsoGridConfig.legacy_size_to_new_tiles(Vector2i(width, height), minimum)
+	return WorldGridConfig.legacy_size_to_new_tiles(Vector2i(width, height), minimum)
 
 func _legacy_cells(value: int, minimum: int = 1) -> int:
-	return IsoGridConfig.legacy_cells_to_new_tiles(value, minimum)
+	return WorldGridConfig.legacy_cells_to_new_tiles(value, minimum)
 
 func _span_before_center(span: int) -> int:
 	return maxi(floori(float(span) * 0.5), 0)
@@ -2440,8 +2454,8 @@ func _center_offset(size: Vector2i) -> Vector2i:
 	return Vector2i(_span_before_center(size.x), _span_before_center(size.y))
 
 func _logical_footprint_tiles(object_id: StringName) -> Vector2i:
-	return IsoGridConfig.legacy_size_to_new_tiles(
-		IsometricEnvironmentManifest.get_shared().get_footprint_tiles(object_id)
+	return WorldGridConfig.legacy_size_to_new_tiles(
+		EnvironmentAssetManifest.get_shared().get_footprint_tiles(object_id)
 	)
 
 func _contains_any_crate(rect: Rect2i, crate_cells: Array[Vector2i]) -> bool:
@@ -2451,7 +2465,7 @@ func _contains_any_crate(rect: Rect2i, crate_cells: Array[Vector2i]) -> bool:
 	return false
 
 func _canonical_obstacle_rect(obstacle_id: StringName, requested: Rect2i) -> Rect2i:
-	var manifest := IsometricEnvironmentManifest.get_shared()
+	var manifest := EnvironmentAssetManifest.get_shared()
 	if not manifest.has_object(obstacle_id):
 		return requested
 	# Border segments are intentionally variable-length tiles, and scalable
@@ -2471,10 +2485,10 @@ func _add_crates(
 	var crate_ids := _crate_ids(biome.biome_id)
 	var center := layout.zone_size / 2
 	var cells: Array[Vector2i] = [
-		center + Vector2i(-IsoGridConfig.LEGACY_CRATE_OFFSET_TILES, 0),
-		center + Vector2i(IsoGridConfig.LEGACY_CRATE_OFFSET_TILES, 0),
-		center + Vector2i(0, -IsoGridConfig.LEGACY_CRATE_OFFSET_TILES),
-		center + Vector2i(0, IsoGridConfig.LEGACY_CRATE_OFFSET_TILES)
+		center + Vector2i(-WorldGridConfig.LEGACY_CRATE_OFFSET_TILES, 0),
+		center + Vector2i(WorldGridConfig.LEGACY_CRATE_OFFSET_TILES, 0),
+		center + Vector2i(0, -WorldGridConfig.LEGACY_CRATE_OFFSET_TILES),
+		center + Vector2i(0, WorldGridConfig.LEGACY_CRATE_OFFSET_TILES)
 	]
 	for index in range(cells.size()):
 		_add_crate(layout, crate_ids[index % crate_ids.size()], cells[index])
@@ -2891,7 +2905,7 @@ func _passage_inner_anchor(
 	passage: BiomePassage,
 	zone_size: Vector2i
 ) -> Vector2i:
-	var edge_depth := IsoGridConfig.PASSAGE_EDGE_DEPTH_TILES
+	var edge_depth := WorldGridConfig.PASSAGE_EDGE_DEPTH_TILES
 	match passage.side:
 		&"north":
 			return Vector2i(passage.position, edge_depth)

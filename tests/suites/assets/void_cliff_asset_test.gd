@@ -23,12 +23,12 @@ const REQUIRED_TRANSITION_ASSET_IDS: Array[StringName] = [
 ]
 const SIDES: Array[StringName] = [&"north", &"south", &"east", &"west"]
 
-var _manifest: IsometricEnvironmentManifest
+var _manifest: EnvironmentAssetManifest
 var _biome_manager: BiomeManager
 var _cells: Array[BiomeCell]
 
 func before_all() -> void:
-	_manifest = IsometricEnvironmentManifest.reload_shared()
+	_manifest = EnvironmentAssetManifest.reload_shared()
 	_biome_manager = BiomeManager.new()
 	add_child(_biome_manager)
 	await wait_physics_frames(1)
@@ -68,36 +68,36 @@ func test_manifest_void_coverage() -> void:
 # --- resolver delle transizioni ---------------------------------------------
 
 func test_transition_resolver_coverage() -> void:
-	var resolver := IsometricTileResolver.new()
-	_expect_transition(resolver, [Vector2i.UP], IsometricTileResolver.TILE_VOID_EDGE_NORTH)
-	_expect_transition(resolver, [Vector2i.DOWN], IsometricTileResolver.TILE_VOID_EDGE_SOUTH)
-	_expect_transition(resolver, [Vector2i.RIGHT], IsometricTileResolver.TILE_VOID_EDGE_EAST)
-	_expect_transition(resolver, [Vector2i.LEFT], IsometricTileResolver.TILE_VOID_EDGE_WEST)
-	_expect_transition(resolver, [Vector2i.UP, Vector2i.RIGHT], IsometricTileResolver.TILE_VOID_CORNER_INNER_NORTH_EAST)
-	_expect_transition(resolver, [Vector2i.DOWN, Vector2i.RIGHT], IsometricTileResolver.TILE_VOID_CORNER_INNER_SOUTH_EAST)
-	_expect_transition(resolver, [Vector2i.DOWN, Vector2i.LEFT], IsometricTileResolver.TILE_VOID_CORNER_INNER_SOUTH_WEST)
-	_expect_transition(resolver, [Vector2i.UP, Vector2i.LEFT], IsometricTileResolver.TILE_VOID_CORNER_INNER_NORTH_WEST)
-	_expect_transition(resolver, [Vector2i(1, -1)], IsometricTileResolver.TILE_VOID_CORNER_OUTER_NORTH_EAST)
-	_expect_transition(resolver, [Vector2i(1, 1)], IsometricTileResolver.TILE_VOID_CORNER_OUTER_SOUTH_EAST)
-	_expect_transition(resolver, [Vector2i(-1, 1)], IsometricTileResolver.TILE_VOID_CORNER_OUTER_SOUTH_WEST)
-	_expect_transition(resolver, [Vector2i(-1, -1)], IsometricTileResolver.TILE_VOID_CORNER_OUTER_NORTH_WEST)
-	_expect_transition(resolver, [Vector2i.UP, Vector2i.DOWN], IsometricTileResolver.TILE_VOID_DIAGONAL_NORTH_EAST_SOUTH_WEST)
-	_expect_transition(resolver, [Vector2i.LEFT, Vector2i.RIGHT], IsometricTileResolver.TILE_VOID_DIAGONAL_NORTH_WEST_SOUTH_EAST)
+	var resolver := BiomeTileResolver.new()
+	_expect_transition(resolver, [Vector2i.UP], BiomeTileResolver.TILE_VOID_EDGE_NORTH)
+	_expect_transition(resolver, [Vector2i.DOWN], BiomeTileResolver.TILE_VOID_EDGE_SOUTH)
+	_expect_transition(resolver, [Vector2i.RIGHT], BiomeTileResolver.TILE_VOID_EDGE_EAST)
+	_expect_transition(resolver, [Vector2i.LEFT], BiomeTileResolver.TILE_VOID_EDGE_WEST)
+	_expect_transition(resolver, [Vector2i.UP, Vector2i.RIGHT], BiomeTileResolver.TILE_VOID_CORNER_INNER_NORTH_EAST)
+	_expect_transition(resolver, [Vector2i.DOWN, Vector2i.RIGHT], BiomeTileResolver.TILE_VOID_CORNER_INNER_SOUTH_EAST)
+	_expect_transition(resolver, [Vector2i.DOWN, Vector2i.LEFT], BiomeTileResolver.TILE_VOID_CORNER_INNER_SOUTH_WEST)
+	_expect_transition(resolver, [Vector2i.UP, Vector2i.LEFT], BiomeTileResolver.TILE_VOID_CORNER_INNER_NORTH_WEST)
+	_expect_transition(resolver, [Vector2i(1, -1)], BiomeTileResolver.TILE_VOID_CORNER_OUTER_NORTH_EAST)
+	_expect_transition(resolver, [Vector2i(1, 1)], BiomeTileResolver.TILE_VOID_CORNER_OUTER_SOUTH_EAST)
+	_expect_transition(resolver, [Vector2i(-1, 1)], BiomeTileResolver.TILE_VOID_CORNER_OUTER_SOUTH_WEST)
+	_expect_transition(resolver, [Vector2i(-1, -1)], BiomeTileResolver.TILE_VOID_CORNER_OUTER_NORTH_WEST)
+	_expect_transition(resolver, [Vector2i.UP, Vector2i.DOWN], BiomeTileResolver.TILE_VOID_DIAGONAL_NORTH_EAST_SOUTH_WEST)
+	_expect_transition(resolver, [Vector2i.LEFT, Vector2i.RIGHT], BiomeTileResolver.TILE_VOID_DIAGONAL_NORTH_WEST_SOUTH_EAST)
 	_expect_external_border_resolves_cliff(resolver)
 
 func test_cliff_corner_join_coverage() -> void:
-	var builder := IsometricCliffMeshBuilder.new()
+	var builder := TopDownCliffMeshBuilder.new()
 	var depth := 32.0
-	var south_east_faces := builder._cliff_faces(IsometricTileResolver.TILE_VOID_CORNER_INNER_SOUTH_EAST, Vector2.ZERO, 18.0, 10.0, depth)
+	var south_east_faces := builder._cliff_faces(BiomeTileResolver.TILE_VOID_CORNER_INNER_SOUTH_EAST, Vector2.ZERO, 18.0, 10.0, depth)
 	assert_eq(south_east_faces.size(), 2, "south-east cliff corner has two joined faces")
 	if south_east_faces.size() == 2:
 		var east_path: PackedVector2Array = south_east_faces[1].get("path", PackedVector2Array())
 		var east_drops: PackedVector2Array = south_east_faces[1].get("drops", PackedVector2Array())
 		assert_eq(east_path.size(), 2, "south-east lateral face omits the segment owned by the south face")
-		assert_true(east_drops.size() == 2 and east_drops[0].x < 0.0 and east_drops[1] == Vector2(0.0, IsometricCliffMeshBuilder.SOUTH_INSTANT_DEPTH),
+		assert_true(east_drops.size() == 2 and east_drops[0].x < 0.0 and east_drops[1] == Vector2(0.0, TopDownCliffMeshBuilder.SOUTH_INSTANT_DEPTH),
 			"south-east lateral face tapers into the shallow south drop")
 
-	var north_west_faces := builder._cliff_faces(IsometricTileResolver.TILE_VOID_CORNER_INNER_NORTH_WEST, Vector2.ZERO, 18.0, 10.0, depth)
+	var north_west_faces := builder._cliff_faces(BiomeTileResolver.TILE_VOID_CORNER_INNER_NORTH_WEST, Vector2.ZERO, 18.0, 10.0, depth)
 	assert_eq(north_west_faces.size(), 2, "north-west cliff corner has two joined faces")
 	if north_west_faces.size() == 2:
 		var west_path: PackedVector2Array = north_west_faces[1].get("path", PackedVector2Array())
@@ -105,17 +105,17 @@ func test_cliff_corner_join_coverage() -> void:
 		assert_eq(west_path.size(), 2, "north-west lateral face omits the segment owned by the north face")
 		assert_true(west_drops.size() == 2 and west_drops[0] == Vector2(0.0, depth), "north-west lateral face starts at the north face depth")
 
-	var upstream_faces := builder._cliff_faces(IsometricTileResolver.TILE_VOID_EDGE_WEST, Vector2(0.0, -12.0), 18.0, 10.0, depth, IsometricCliffMeshBuilder.SOUTH_INSTANT_DEPTH)
+	var upstream_faces := builder._cliff_faces(BiomeTileResolver.TILE_VOID_EDGE_WEST, Vector2(0.0, -12.0), 18.0, 10.0, depth, TopDownCliffMeshBuilder.SOUTH_INSTANT_DEPTH)
 	var upstream_path: PackedVector2Array = upstream_faces[0].get("path", PackedVector2Array())
 	var upstream_drops: PackedVector2Array = upstream_faces[0].get("drops", PackedVector2Array())
 	var stays_above_join := upstream_path.size() == upstream_drops.size()
 	for index in range(upstream_path.size()):
-		stays_above_join = stays_above_join and upstream_path[index].y + upstream_drops[index].y <= IsometricCliffMeshBuilder.SOUTH_INSTANT_DEPTH
+		stays_above_join = stays_above_join and upstream_path[index].y + upstream_drops[index].y <= TopDownCliffMeshBuilder.SOUTH_INSTANT_DEPTH
 	assert_true(stays_above_join, "lateral faces before a south corner do not extend below the join")
 
 	var palette := load("res://game/modes/zombie/biomes/infected_plains_palette.tres") as BiomePalette
 	builder.configure(palette, 44017)
-	builder.append_transition(IsometricTileResolver.TILE_VOID_EDGE_WEST, Vector2.ZERO, 18.0, 10.0)
+	builder.append_transition(BiomeTileResolver.TILE_VOID_EDGE_WEST, Vector2.ZERO, 18.0, 10.0)
 	var expected_void_color := Color(palette.background_color.darkened(0.68), 1.0)
 	var face_reaches_void_color := false
 	for color in builder._face_colors:
@@ -123,6 +123,52 @@ func test_cliff_corner_join_coverage() -> void:
 			face_reaches_void_color = true
 			break
 	assert_true(face_reaches_void_color, "cliff face gradient reaches the exact pure-void colour")
+
+func test_cliff_paths_follow_cardinal_cell_edges() -> void:
+	var builder := TopDownCliffMeshBuilder.new()
+	var north_faces := builder._cliff_faces(
+		BiomeTileResolver.TILE_VOID_EDGE_NORTH,
+		Vector2.ZERO,
+		18.0,
+		10.0,
+		32.0
+	)
+	var east_faces := builder._cliff_faces(
+		BiomeTileResolver.TILE_VOID_EDGE_EAST,
+		Vector2.ZERO,
+		18.0,
+		10.0,
+		32.0
+	)
+	var north_path: PackedVector2Array = north_faces[0].get("path", PackedVector2Array())
+	var east_path: PackedVector2Array = east_faces[0].get("path", PackedVector2Array())
+	assert_eq(
+		north_path,
+		PackedVector2Array([Vector2(-18.0, -10.0), Vector2(18.0, -10.0)]),
+		"north cliff follows the horizontal top edge of its rectangular cell"
+	)
+	assert_eq(
+		east_path,
+		PackedVector2Array([Vector2(18.0, -10.0), Vector2(18.0, 10.0)]),
+		"east cliff follows the vertical right edge of its rectangular cell"
+	)
+	var channel_faces := builder._cliff_faces(
+		BiomeTileResolver.TILE_VOID_DIAGONAL_NORTH_EAST_SOUTH_WEST,
+		Vector2.ZERO,
+		18.0,
+		10.0,
+		32.0
+	)
+	assert_eq(channel_faces.size(), 2, "legacy channel tile resolves to two cardinal edges")
+	for face in channel_faces:
+		var path: PackedVector2Array = face.get("path", PackedVector2Array())
+		assert_true(
+			path.size() == 2 and (
+				is_equal_approx(path[0].x, path[1].x)
+				or is_equal_approx(path[0].y, path[1].y)
+			),
+			"channel transition never cuts diagonally across a cell"
+		)
 
 # --- istanze BiomeFallZone e tile layer -------------------------------------
 
@@ -226,7 +272,7 @@ func test_hazard_system_runtime() -> void:
 
 # --- helper (porting dei test legacy) ---------------------------------------
 
-func _expect_transition(resolver: IsometricTileResolver, ground_offsets: Array[Vector2i], expected_tile_id: StringName) -> void:
+func _expect_transition(resolver: BiomeTileResolver, ground_offsets: Array[Vector2i], expected_tile_id: StringName) -> void:
 	var layout := BiomeEnvironmentLayout.new()
 	layout.zone_size = Vector2i(7, 7)
 	layout.generation_seed = 8128
@@ -238,7 +284,7 @@ func _expect_transition(resolver: IsometricTileResolver, ground_offsets: Array[V
 	assert_eq(resolver.resolve_tile_id(layout, center, &"toxic_wastes", &"balanced"), expected_tile_id,
 		"%s neighbor mask resolves to %s" % [str(ground_offsets), String(expected_tile_id)])
 
-func _expect_external_border_resolves_cliff(resolver: IsometricTileResolver) -> void:
+func _expect_external_border_resolves_cliff(resolver: BiomeTileResolver) -> void:
 	var layout := BiomeEnvironmentLayout.new()
 	layout.zone_size = Vector2i(7, 7)
 	layout.generation_seed = 8130
@@ -248,7 +294,7 @@ func _expect_external_border_resolves_cliff(resolver: IsometricTileResolver) -> 
 	var fall_cell := Vector2i(3, 1)
 	layout.add_fall_zone_rect(Rect2i(fall_cell, Vector2i.ONE), &"internal")
 	layout.rebuild_terrain_classification(biome_cell)
-	assert_eq(resolver.resolve_tile_id(layout, fall_cell, &"toxic_wastes", &"balanced", biome_cell), IsometricTileResolver.TILE_VOID_EDGE_NORTH,
+	assert_eq(resolver.resolve_tile_id(layout, fall_cell, &"toxic_wastes", &"balanced", biome_cell), BiomeTileResolver.TILE_VOID_EDGE_NORTH,
 		"fall zone beside an external border resolves an oriented cliff")
 
 func _layout_has_fall_side(layout: BiomeEnvironmentLayout, side: StringName) -> bool:

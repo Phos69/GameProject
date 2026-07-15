@@ -4,7 +4,7 @@ class_name SupplyCrateVisual
 const SUPPLY_CRATE_ASSET_ID := &"supply_crate"
 const ASSET_SPRITE_NAME := "AssetSprite"
 const SVG_TEXTURE_LOADER = preload(
-	"res://game/modes/zombie/isometric_svg_texture_loader.gd"
+	"res://game/modes/zombie/environment_texture_loader.gd"
 )
 
 var animation_time: float = 0.0
@@ -135,7 +135,7 @@ func _load_asset_sprite() -> void:
 	asset_sprite.centered = true
 	asset_sprite.visible = false
 	procedural_fallback_active = true
-	var manifest := IsometricEnvironmentManifest.get_shared()
+	var manifest := EnvironmentAssetManifest.get_shared()
 	var contract := manifest.get_object_asset_contract(SUPPLY_CRATE_ASSET_ID)
 	asset_path = String(contract.get("asset_path", ""))
 	if asset_path.is_empty():

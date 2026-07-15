@@ -69,13 +69,14 @@ describe("MCP tool handlers", () => {
   it("reads project context safely", async () => {
     const result = parseToolText(await callProjectTool(root, "read_project_context", { paths: ["README.md"], maxBytesPerFile: 2_000 }));
     expect(result.files[0].path).toBe("README.md");
-    expect(result.files[0].content).toContain("Iso Local Sandbox");
+    expect(result.files[0].content).toContain("Local Action Sandbox");
   });
 
   it("summarizes game systems with evidence paths", async () => {
     const summary = parseToolText(await callProjectTool(root, "game_system_summary"));
     expect(summary.systems.zombieMode.evidence.length).toBeGreaterThan(0);
     expect(summary.systems.weaponsCombat.evidence.length).toBeGreaterThan(0);
+    expect(summary.systems.topDownRendering.evidence.length).toBeGreaterThan(0);
   });
 
   it("creates a task brief from a textual goal", async () => {

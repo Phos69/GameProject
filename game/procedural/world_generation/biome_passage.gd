@@ -1,7 +1,7 @@
 extends RefCounted
 class_name BiomePassage
 
-const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
+const WorldGridConfig = preload("res://game/core/world_grid_config.gd")
 
 var from_cell_id: StringName = &""
 var to_cell_id: StringName = &""
@@ -10,7 +10,7 @@ var to_biome_id: StringName = &""
 var side: StringName = &"east"
 var opposite_side: StringName = &"west"
 var position: int = 100
-var width: int = IsoGridConfig.PASSAGE_WIDTH_TILES
+var width: int = WorldGridConfig.PASSAGE_WIDTH_TILES
 var passage_type: StringName = &"road"
 var from_world_origin: Vector2i = Vector2i.ZERO
 var to_world_origin: Vector2i = Vector2i.ZERO
@@ -34,7 +34,7 @@ func configure(
 	position = clampi(passage_position, 1, source_cell.height - 2)
 	width = clampi(
 		passage_width,
-		IsoGridConfig.PASSAGE_MIN_WIDTH_TILES,
+		WorldGridConfig.PASSAGE_MIN_WIDTH_TILES,
 		min(source_cell.width, source_cell.height)
 	)
 	passage_type = resolved_type
@@ -44,7 +44,7 @@ func configure(
 
 func get_local_rect(zone_size: Vector2i) -> Rect2i:
 	var span_before := _span_before_center(width)
-	var edge_depth := IsoGridConfig.PASSAGE_EDGE_DEPTH_TILES
+	var edge_depth := WorldGridConfig.PASSAGE_EDGE_DEPTH_TILES
 	match side:
 		&"north":
 			return Rect2i(
@@ -185,7 +185,7 @@ static func from_dict(data: Dictionary) -> BiomePassage:
 	passage.side = StringName(data.get("side", &"east"))
 	passage.opposite_side = StringName(data.get("opposite_side", &"west"))
 	passage.position = int(data.get("position", 100))
-	passage.width = int(data.get("width", IsoGridConfig.PASSAGE_WIDTH_TILES))
+	passage.width = int(data.get("width", WorldGridConfig.PASSAGE_WIDTH_TILES))
 	passage.passage_type = StringName(data.get("passage_type", &"road"))
 	passage.from_world_origin = data.get("from_world_origin", Vector2i.ZERO)
 	passage.to_world_origin = data.get("to_world_origin", Vector2i.ZERO)

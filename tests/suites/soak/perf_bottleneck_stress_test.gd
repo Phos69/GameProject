@@ -53,8 +53,8 @@ func after_all() -> void:
 		_scene.teardown()
 	_scene = null
 	WorldDataCache.clear()
-	IsometricEnvironmentManifest.clear_shared()
-	IsometricEnvironmentObject.clear_content_metrics_cache()
+	EnvironmentAssetManifest.clear_shared()
+	EnvironmentObject.clear_content_metrics_cache()
 	await wait_physics_frames(3)
 
 # --- H1: costo unitario delle query spaziali ---------------------------------

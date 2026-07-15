@@ -1,5 +1,9 @@
 # Latest Commit Validation Report
 
+> Registro storico di validazioni antecedenti alla migrazione top-down del
+> 2026-07-15. Conserva nomi e comandi dell'epoca come evidenza; per modifiche
+> correnti usare `docs/top_down_cardinal_contract.md` e le suite GUT attuali.
+
 Nota retention 2026-07-01: questo file e un report storico. Puo citare roadmap,
 prompt e milestone Markdown rimossi durante il cleanup documentale; per la
 documentazione operativa corrente usare `README.md`, `TODO.md`, `ROADMAP.md` e

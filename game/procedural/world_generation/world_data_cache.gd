@@ -3,7 +3,7 @@ class_name WorldDataCache
 
 ## Cache LRU di processo dei dati-mondo generati, condivisa da gioco e suite GUT.
 ##
-## Lo stato e statico (come IsometricEnvironmentManifest.get_shared): vive per
+## Lo stato e statico (come EnvironmentAssetManifest.get_shared): vive per
 ## l'intero processo, quindi la PRIMA costruzione di un dato mondo serve anche
 ## ogni run successiva e ogni suite di test successiva nello stesso processo.
 ##

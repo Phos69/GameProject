@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="120" viewBox="0 0 160 120" data-generated-by="generate_top_down_environment_assets" data-section="edge_tiles" data-id="forest_mountain_wall" data-footprint-slots="4x1">
+  <title>edge_tiles forest_mountain_wall</title>
+  <ellipse cx="80" cy="94" rx="54" ry="13" fill="#050608" opacity="0.38"/>
+  <rect x="18" y="22" width="124" height="64" rx="3" fill="#4d5b46" stroke="#c2b071" stroke-width="4"/>
+  <path d="M18 86 H142 L134 105 H26 Z" fill="#2c3235" stroke="#101010" stroke-width="3"/>
+  <path d="M28 36 H132 M28 54 H132 M28 72 H132" stroke="#c2b071" stroke-width="3" opacity="0.58"/>
+  <path d="M48 108 H112" fill="none" stroke="#c2b071" stroke-width="3" stroke-linecap="round" opacity="0.62"/>
+</svg>

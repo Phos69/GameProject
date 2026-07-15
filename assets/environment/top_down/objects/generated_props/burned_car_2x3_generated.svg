@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="99" height="128" viewBox="0 0 160 120" data-generated-by="generate_top_down_environment_assets" data-section="object_scenes" data-id="burned_car" data-footprint-slots="2x3">
+  <title>object_scenes burned_car</title>
+  <ellipse cx="80" cy="94" rx="54" ry="13" fill="#050608" opacity="0.38"/>
+  <rect x="44" y="27" width="20" height="10" rx="4" fill="#050607"/>
+  <rect x="98" y="27" width="20" height="10" rx="4" fill="#050607"/>
+  <rect x="44" y="83" width="20" height="10" rx="4" fill="#050607"/>
+  <rect x="98" y="83" width="20" height="10" rx="4" fill="#050607"/>
+  <path d="M46 34 H112 L128 49 V80 L114 91 H46 L33 80 V49 Z" fill="#7a3c2c" stroke="#090909" stroke-width="4"/>
+  <rect x="57" y="43" width="49" height="36" rx="7" fill="#101619" stroke="#f08a48" stroke-width="3"/>
+  <path d="M65 45 V77 M98 45 V77 M57 61 H106" stroke="#242a2f" stroke-width="3" opacity="0.62"/>
+  <path d="M35 79 H126 L114 96 H48 Z" fill="#582b20" stroke="#090909" stroke-width="3"/>
+  <path d="M48 88 H113" stroke="#f08a48" stroke-width="3" stroke-linecap="round" opacity="0.72"/>
+  <path d="M52 40 L78 58 L60 75 M92 42 L76 61 L101 80" fill="none" stroke="#160d09" stroke-width="5" stroke-linecap="round" opacity="0.86"/>
+  <path d="M48 108 H112" fill="none" stroke="#f08a48" stroke-width="3" stroke-linecap="round" opacity="0.62"/>
+</svg>

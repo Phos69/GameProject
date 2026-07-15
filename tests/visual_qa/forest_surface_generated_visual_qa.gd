@@ -3,7 +3,7 @@ extends SceneTree
 const OUTPUT_DIR := "res://build/qa/forest_surfaces"
 const OUTPUT_FILE := "forest_surface_materials.png"
 const TEXTURE_LOADER = preload(
-	"res://game/modes/zombie/isometric_svg_texture_loader.gd"
+	"res://game/modes/zombie/environment_texture_loader.gd"
 )
 const SURFACE_IDS: Array[StringName] = [
 	&"forest_grass",
@@ -41,7 +41,7 @@ func _run() -> void:
 	current_scene = board
 	_add_background(board)
 	_add_title(board)
-	var manifest := IsometricEnvironmentManifest.reload_shared()
+	var manifest := EnvironmentAssetManifest.reload_shared()
 	var palette := load(
 		"res://game/modes/zombie/biomes/infected_plains_palette.tres"
 	) as BiomePalette
@@ -111,7 +111,7 @@ func _add_surface_panel(board: Control, index: int, texture: Texture2D) -> void:
 	board.add_child(label)
 
 func _load_texture(
-	manifest: IsometricEnvironmentManifest,
+	manifest: EnvironmentAssetManifest,
 	asset_id: StringName,
 	palette: BiomePalette
 ) -> Texture2D:

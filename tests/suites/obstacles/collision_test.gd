@@ -22,7 +22,7 @@ const GENERATED_OBSTACLE_IDS: Array[String] = [
 ]
 
 func after_each() -> void:
-	IsometricEnvironmentManifest.clear_shared()
+	EnvironmentAssetManifest.clear_shared()
 
 # --- contratto di collisione dal manifest -----------------------------------
 
@@ -157,7 +157,7 @@ func _free_node(node: Node) -> void:
 		node.queue_free()
 	await wait_physics_frames(1)
 
-func _load_manifest() -> IsometricEnvironmentManifest:
-	var manifest := IsometricEnvironmentManifest.get_shared()
+func _load_manifest() -> EnvironmentAssetManifest:
+	var manifest := EnvironmentAssetManifest.get_shared()
 	assert_true(manifest.load_error.is_empty(), "manifest loads without error")
 	return manifest

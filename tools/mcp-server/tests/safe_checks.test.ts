@@ -22,4 +22,9 @@ describe("safe check allowlist", () => {
     const prepared = buildSafeCheckCommand(root, { check: "gut:area", area: "combat" });
     expect(prepared.args.join(" ")).toContain("res://tests/suites/combat");
   });
+
+  it("uses the top-down asset contract check", () => {
+    const prepared = buildSafeCheckCommand(root, { check: "asset:check" });
+    expect(prepared.args.join(" ")).toContain("res://tools/generate_top_down_environment_assets.gd");
+  });
 });

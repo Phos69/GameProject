@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="120" viewBox="0 0 160 120" data-generated-by="generate_top_down_environment_assets" data-section="void_tiles" data-id="void_corner_inner_north_west" data-footprint-slots="50x2">
+  <title>void_tiles void_corner_inner_north_west</title>
+  <ellipse cx="80" cy="94" rx="54" ry="13" fill="#050608" opacity="0.38"/>
+  <rect x="16" y="14" width="128" height="80" fill="#1b2230" stroke="#101722" stroke-width="3"/>
+  <path d="M16 94 H144 L136 112 H24 Z" fill="#05070b" stroke="#394056" stroke-width="2"/>
+  <path d="M38 96 L36 108 M60 96 L59 111 M82 96 L82 112 M104 96 L103 111 M126 96 L124 108" stroke="#394056" stroke-width="3" opacity="0.72"/>
+  <path d="M20 104 C43 97 58 110 80 103 C101 96 119 108 140 101" fill="none" stroke="#6d86b8" stroke-width="4" opacity="0.28"/>
+  <path d="M16 94 V14 H144" fill="none" stroke="#6d86b8" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M16 94 V14 H144" transform="translate(0 7)" fill="none" stroke="#020305" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity="0.82"/>
+  <path d="M48 108 H112" fill="none" stroke="#6d86b8" stroke-width="3" stroke-linecap="round" opacity="0.62"/>
+</svg>

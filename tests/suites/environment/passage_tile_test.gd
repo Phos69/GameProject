@@ -6,7 +6,7 @@ extends GutTest
 ## Build 3x3 condivisa in before_all (seed 641004).
 
 const WorldGen = preload("res://tests/support/world_gen_helpers.gd")
-const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
+const WorldGridConfig = preload("res://game/core/world_grid_config.gd")
 
 const WORLD_CONTEXT := {
 	"world_seed": 641004, "biome_map_width": 3, "biome_map_height": 3,
@@ -24,14 +24,14 @@ const REQUIRED_PASSAGE_TILES: Array[StringName] = [
 ]
 
 var _manager: BiomeManager
-var _manifest: IsometricEnvironmentManifest
-var _resolver: IsometricTileResolver
+var _manifest: EnvironmentAssetManifest
+var _resolver: BiomeTileResolver
 var _cells: Array[BiomeCell] = []
 var _graph: WorldGraph
 
 func before_all() -> void:
-	_manifest = IsometricEnvironmentManifest.reload_shared()
-	_resolver = IsometricTileResolver.new(_manifest)
+	_manifest = EnvironmentAssetManifest.reload_shared()
+	_resolver = BiomeTileResolver.new(_manifest)
 	_manager = WorldGen.start_biome_manager(self, WORLD_CONTEXT, "PassageTileManager")
 	await wait_physics_frames(1)
 	_cells = _manager.get_generated_biome_map()
@@ -133,7 +133,7 @@ func _assert_passage_rects(cell: BiomeCell, layout: BiomeEnvironmentLayout, pass
 	var local_rect := passage.get_local_rect(zone_size)
 	var connector_rect := passage.get_connector_rect(zone_size)
 	var expected_span := passage.width
-	var expected_edge_depth := IsoGridConfig.PASSAGE_EDGE_DEPTH_TILES
+	var expected_edge_depth := WorldGridConfig.PASSAGE_EDGE_DEPTH_TILES
 	if passage.side == &"north" or passage.side == &"south":
 		assert_eq(local_rect.size.x, expected_span, "%s %s larghezza apertura == span passaggio" % [String(cell.id), String(passage.side)])
 		assert_eq(local_rect.size.y, expected_edge_depth, "%s %s apertura mantiene la profondita di bordo" % [String(cell.id), String(passage.side)])
@@ -164,15 +164,15 @@ func _assert_passage_endpoint_tiles(cell: BiomeCell, layout: BiomeEnvironmentLay
 	var inner_data := _resolver.resolve_tile_data(layout, inner_probe, cell.biome_id, &"balanced", cell)
 	assert_eq(StringName(outer_data.get("tile_id", &"")), passage.get_exit_tile_id(), "%s %s apertura esterna usa exit tile" % [String(cell.id), String(passage.side)])
 	assert_eq(StringName(inner_data.get("tile_id", &"")), passage.get_entry_tile_id(), "%s %s apertura interna usa entry tile" % [String(cell.id), String(passage.side)])
-	assert_eq(StringName(outer_data.get("section", &"")), IsometricTileResolver.TILE_SECTION_PASSAGE, "%s %s exit tile e un asset passaggio" % [String(cell.id), String(passage.side)])
-	assert_eq(StringName(inner_data.get("section", &"")), IsometricTileResolver.TILE_SECTION_PASSAGE, "%s %s entry tile e un asset passaggio" % [String(cell.id), String(passage.side)])
+	assert_eq(StringName(outer_data.get("section", &"")), BiomeTileResolver.TILE_SECTION_PASSAGE, "%s %s exit tile e un asset passaggio" % [String(cell.id), String(passage.side)])
+	assert_eq(StringName(inner_data.get("section", &"")), BiomeTileResolver.TILE_SECTION_PASSAGE, "%s %s entry tile e un asset passaggio" % [String(cell.id), String(passage.side)])
 
 func _assert_passage_connector_tiles(cell: BiomeCell, layout: BiomeEnvironmentLayout, passage: BiomePassage) -> void:
 	var connector_rect := passage.get_connector_rect(cell.get_zone_size())
 	var probe := _connector_probe_away_from_opening(connector_rect, passage.side)
 	var tile_data := _resolver.resolve_tile_data(layout, probe, cell.biome_id, &"balanced", cell)
 	assert_eq(StringName(tile_data.get("tile_id", &"")), passage.passage_type, "%s %s connector usa tile del tipo passaggio" % [String(cell.id), String(passage.side)])
-	assert_eq(StringName(tile_data.get("section", &"")), IsometricTileResolver.TILE_SECTION_PASSAGE, "%s %s connector e un asset passaggio" % [String(cell.id), String(passage.side)])
+	assert_eq(StringName(tile_data.get("section", &"")), BiomeTileResolver.TILE_SECTION_PASSAGE, "%s %s connector e un asset passaggio" % [String(cell.id), String(passage.side)])
 
 func _passage_inner_probe_emits_entry(cell: BiomeCell, layout: BiomeEnvironmentLayout, passage: BiomePassage) -> bool:
 	var probe := _inner_probe(passage.get_local_rect(cell.get_zone_size()), passage.side)
@@ -211,15 +211,15 @@ func _layout_emits_road_connector(cell: BiomeCell, layout: BiomeEnvironmentLayou
 
 func _is_road_connector_tile(tile_id: StringName) -> bool:
 	return (
-		tile_id == IsometricTileResolver.TILE_ROAD_EDGE
-		or tile_id == IsometricTileResolver.TILE_ROAD_INTERSECTION
-		or tile_id == IsometricTileResolver.TILE_ROAD_CURVE_NORTH
-		or tile_id == IsometricTileResolver.TILE_ROAD_CURVE_EAST
-		or tile_id == IsometricTileResolver.TILE_ROAD_CURVE_SOUTH
-		or tile_id == IsometricTileResolver.TILE_ROAD_CURVE_WEST
-		or tile_id == IsometricTileResolver.TILE_GRASS_TO_PATH
-		or tile_id == IsometricTileResolver.TILE_GRASS_TO_ROAD
-		or tile_id == IsometricTileResolver.TILE_PATH_TO_ROAD
+		tile_id == BiomeTileResolver.TILE_ROAD_EDGE
+		or tile_id == BiomeTileResolver.TILE_ROAD_INTERSECTION
+		or tile_id == BiomeTileResolver.TILE_ROAD_CURVE_NORTH
+		or tile_id == BiomeTileResolver.TILE_ROAD_CURVE_EAST
+		or tile_id == BiomeTileResolver.TILE_ROAD_CURVE_SOUTH
+		or tile_id == BiomeTileResolver.TILE_ROAD_CURVE_WEST
+		or tile_id == BiomeTileResolver.TILE_GRASS_TO_PATH
+		or tile_id == BiomeTileResolver.TILE_GRASS_TO_ROAD
+		or tile_id == BiomeTileResolver.TILE_PATH_TO_ROAD
 	)
 
 func _is_passage_tag(tag: StringName) -> bool:

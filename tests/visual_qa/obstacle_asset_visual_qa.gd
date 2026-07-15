@@ -18,7 +18,7 @@ func _initialize() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
-	var manifest := IsometricEnvironmentManifest.reload_shared()
+	var manifest := EnvironmentAssetManifest.reload_shared()
 	var output_absolute := ProjectSettings.globalize_path(OUTPUT_DIR)
 	var directory_error := DirAccess.make_dir_recursive_absolute(output_absolute)
 	_expect(directory_error == OK, "visual QA output directory is available")
@@ -27,7 +27,7 @@ func _run() -> void:
 	_finish()
 
 func _validate_asset(
-	manifest: IsometricEnvironmentManifest,
+	manifest: EnvironmentAssetManifest,
 	obstacle_id: StringName,
 	output_absolute: String
 ) -> void:

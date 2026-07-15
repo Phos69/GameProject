@@ -16,7 +16,6 @@ enum EntityState {
 @export var move_speed: float = 260.0
 @export var acceleration: float = 1700.0
 @export var friction: float = 1900.0
-@export var iso_y_scale: float = 0.58
 @export var aim_line_length: float = 46.0
 @export var slot_colors: Array[Color] = [
 	Color(0.18, 0.74, 0.95, 1.0),
@@ -126,7 +125,7 @@ func _physics_process(delta: float) -> void:
 			dodge_component.physics_process_dodge(delta)
 		visual.set_motion(velocity, move_speed)
 		return
-	var desired_velocity: Vector2 = _movement_to_isometric(move_input) * move_speed
+	var desired_velocity: Vector2 = _movement_from_input(move_input) * move_speed
 
 	if desired_velocity.length_squared() > 0.01:
 		velocity = velocity.move_toward(desired_velocity, acceleration * delta)
@@ -187,12 +186,12 @@ func _handle_dodge_input(move_input: Vector2) -> bool:
 		return false
 	var dodge_direction := facing_direction
 	if move_input.length() > 0.20:
-		var move_direction := _movement_to_isometric(move_input)
+		var move_direction := _movement_from_input(move_input)
 		if move_direction.length_squared() > 0.01:
 			dodge_direction = move_direction.normalized()
 	return dodge_component.try_start(dodge_direction)
 
-func _movement_to_isometric(input_vector: Vector2) -> Vector2:
+func _movement_from_input(input_vector: Vector2) -> Vector2:
 	if input_vector.length_squared() <= 0.01:
 		return Vector2.ZERO
 	return input_vector.normalized() * minf(input_vector.length(), 1.0)
@@ -202,7 +201,7 @@ func _update_facing(move_input: Vector2) -> void:
 	if aim_input.length() > 0.20:
 		facing_direction = aim_input.normalized()
 	elif move_input.length() > 0.20:
-		var move_direction := _movement_to_isometric(move_input)
+		var move_direction := _movement_from_input(move_input)
 		if move_direction.length_squared() > 0.01:
 			facing_direction = move_direction.normalized()
 	_update_aim_line()

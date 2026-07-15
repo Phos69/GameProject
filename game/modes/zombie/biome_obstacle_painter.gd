@@ -221,7 +221,7 @@ static func _draw_raised_cliff_shadow(
 		Color(0.02, 0.025, 0.02, 0.34)
 	)
 
-static func draw_iso_perimeter_wall(
+static func draw_perimeter_wall(
 	canvas: CanvasItem,
 	obstacle_size: Vector2,
 	primary_color: Color,
@@ -451,12 +451,20 @@ static func _draw_vertical_wall(
 	wall_height: float
 ) -> void:
 	var half := obstacle_size * 0.5
-	var lift := Vector2(maxf(half.x * 1.15, 13.0), -wall_height)
+	var lift := Vector2(0.0, -wall_height)
+	var crown_inset := minf(wall_height * 0.18, obstacle_size.x * 0.22)
 
 	var bl := Vector2(-half.x, half.y)
 	var br := Vector2(half.x, half.y)
 	var tr := Vector2(half.x, -half.y)
 	var tl := Vector2(-half.x, -half.y)
+	# The footprint and crown both remain axis-aligned rectangles. A small
+	# symmetric inset exposes west/east faces without shearing the entire wall;
+	# the south face carries the apparent height.
+	var top_bl := bl + lift + Vector2(crown_inset, 0.0)
+	var top_br := br + lift + Vector2(-crown_inset, 0.0)
+	var top_tr := tr + lift + Vector2(-crown_inset, 0.0)
+	var top_tl := tl + lift + Vector2(crown_inset, 0.0)
 
 	var top_color := primary_color.lightened(0.18)
 	var near_color := primary_color.darkened(0.04)
@@ -473,25 +481,29 @@ static func _draw_vertical_wall(
 	)
 	canvas.draw_colored_polygon(PackedVector2Array([tl, tr, br, bl]), base_color)
 	canvas.draw_colored_polygon(
-		PackedVector2Array([bl, br, br + lift, bl + lift]),
+		PackedVector2Array([bl, br, top_br, top_bl]),
 		base_color.darkened(0.04)
 	)
 	canvas.draw_colored_polygon(
-		PackedVector2Array([tl, bl, bl + lift, tl + lift]),
+		PackedVector2Array([tl, bl, top_bl, top_tl]),
 		near_color
 	)
 	canvas.draw_colored_polygon(
-		PackedVector2Array([tl + lift, tr + lift, br + lift, bl + lift]),
+		PackedVector2Array([br, tr, top_tr, top_br]),
+		base_color.darkened(0.14)
+	)
+	canvas.draw_colored_polygon(
+		PackedVector2Array([top_tl, top_tr, top_br, top_bl]),
 		top_color
 	)
-	canvas.draw_line(tl + lift, bl + lift, accent_color, 2.0, true)
-	canvas.draw_line(tl + lift, tr + lift, accent_color.darkened(0.10), 1.5, true)
+	canvas.draw_line(top_bl, top_br, accent_color, 2.0, true)
+	canvas.draw_line(top_tl, top_tr, accent_color.darkened(0.10), 1.5, true)
 
 	var course := accent_color.darkened(0.40)
 	for depth in [0.34, 0.68]:
-		canvas.draw_line(tl + lift * depth, bl + lift * depth, course, 1.0, true)
-	_draw_wall_grooves(canvas, tl, bl, lift, accent_color)
-	_draw_wall_style_accent(canvas, tl, bl, lift, accent_color, draw_mode)
+		canvas.draw_line(bl + lift * depth, br + lift * depth, course, 1.0, true)
+	_draw_wall_grooves(canvas, bl, br, lift, accent_color)
+	_draw_wall_style_accent(canvas, bl, br, lift, accent_color, draw_mode)
 
 static func _draw_wall_grooves(
 	canvas: CanvasItem,

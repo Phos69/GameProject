@@ -5,7 +5,7 @@
   "arma": "Ascia",
   "passiva": "Furia di Sangue",
   "super": "Terremoto di Sangue",
-  "stile": "cartoon dark arcade, zombie survival isometrico",
+  "stile": "cartoon dark arcade, zombie survival top-down ortogonale con volume prospettico controllato",
   "palette": {
     "id": "berserker_rust",
     "primary": "#8f1f14",
@@ -70,7 +70,7 @@
     }
   },
   "iteration_changelog": [
-    "Creato primo set base completo per Berserker/Bruna Spaccaferro con portrait rendered, sprite isometrico, sprite sheet animabile, icone HUD e ascia.",
+    "Creato primo set base completo per Berserker/Bruna Spaccaferro con portrait rendered, sprite gameplay della precedente iterazione, sprite sheet animabile, icone HUD e ascia.",
     "Aggiornato il profilo dati Berserker per puntare alla sprite sheet definitiva di questa iterazione.",
     "Convertiti gli asset bitmap PNG in SVG testuali per rendere la pull request compatibile con ambienti che non accettano file binari.",
     "Ripristinato un portrait PNG definitivo per Character Select e slot di selezione player."

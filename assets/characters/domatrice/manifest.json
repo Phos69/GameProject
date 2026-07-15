@@ -5,7 +5,7 @@
   "arma": "Fionda magnetica",
   "passiva": "Briciola Attacca!",
   "super": "Branco di Rottami",
-  "stile": "cartoon dark arcade, zombie survival isometrico",
+  "stile": "cartoon dark arcade, zombie survival top-down ortogonale con volume prospettico controllato",
   "palette": {
     "id": "teal_copper",
     "primary": "#0a948c",
@@ -70,7 +70,7 @@
     }
   },
   "iteration_changelog": [
-    "Creato primo set base completo per Domatrice/Nina Bullone con portrait rendered, sprite isometrico, sprite sheet animabile, icone HUD, fionda magnetica e Briciola.",
+    "Creato primo set base completo per Domatrice/Nina Bullone con portrait rendered, sprite gameplay della precedente iterazione, sprite sheet animabile, icone HUD, fionda magnetica e Briciola.",
     "Aggiornato il profilo dati Domatrice per puntare alla sprite sheet definitiva di questa iterazione.",
     "Convertiti gli asset bitmap PNG in SVG testuali per rendere la pull request compatibile con ambienti che non accettano file binari.",
     "Ripristinato un portrait PNG definitivo per Character Select e slot di selezione player."

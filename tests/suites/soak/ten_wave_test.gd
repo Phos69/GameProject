@@ -103,8 +103,8 @@ func _cleanup_scene(scene) -> void:
 	scene = null
 	await wait_physics_frames(3)
 	WorldDataCache.clear()
-	IsometricEnvironmentManifest.clear_shared()
-	IsometricEnvironmentObject.clear_content_metrics_cache()
+	EnvironmentAssetManifest.clear_shared()
+	EnvironmentObject.clear_content_metrics_cache()
 	await wait_physics_frames(1)
 
 func _wait_for_wave_combat(wave_manager, wave_index: int) -> bool:

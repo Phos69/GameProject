@@ -8,7 +8,7 @@ extends GutTest
 const FALL_ZONE_BOUNDARY_RUNS_SCRIPT = preload(
 	"res://game/modes/zombie/cliffs/fall_zone_boundary_runs.gd"
 )
-##   tests/forest_isometric_texture_transition_smoke_test.gd
+##   tests/forest_top_down_texture_transition_smoke_test.gd
 ##
 ## Verifica i contratti delle texture generate (esistenza/provenienza/tileability
 ## di bordo, non qualità artistica), le mesh di cliff/bordo e il consumo runtime
@@ -23,20 +23,20 @@ const CLIFF_TEXTURE_IDS: Array[StringName] = [
 	&"cliff_face_texture", &"cliff_lip_texture", &"cliff_lip_vertical_texture"
 ]
 const TRANSITION_IDS: Array[StringName] = [
-	IsometricTileResolver.TILE_VOID_EDGE_NORTH, IsometricTileResolver.TILE_VOID_EDGE_EAST,
-	IsometricTileResolver.TILE_VOID_EDGE_SOUTH, IsometricTileResolver.TILE_VOID_EDGE_WEST,
-	IsometricTileResolver.TILE_VOID_CORNER_INNER_NORTH_EAST, IsometricTileResolver.TILE_VOID_CORNER_INNER_SOUTH_EAST,
-	IsometricTileResolver.TILE_VOID_CORNER_INNER_SOUTH_WEST, IsometricTileResolver.TILE_VOID_CORNER_INNER_NORTH_WEST,
-	IsometricTileResolver.TILE_VOID_CORNER_OUTER_NORTH_EAST, IsometricTileResolver.TILE_VOID_CORNER_OUTER_SOUTH_EAST,
-	IsometricTileResolver.TILE_VOID_CORNER_OUTER_SOUTH_WEST, IsometricTileResolver.TILE_VOID_CORNER_OUTER_NORTH_WEST,
-	IsometricTileResolver.TILE_VOID_DIAGONAL_NORTH_EAST_SOUTH_WEST, IsometricTileResolver.TILE_VOID_DIAGONAL_NORTH_WEST_SOUTH_EAST
+	BiomeTileResolver.TILE_VOID_EDGE_NORTH, BiomeTileResolver.TILE_VOID_EDGE_EAST,
+	BiomeTileResolver.TILE_VOID_EDGE_SOUTH, BiomeTileResolver.TILE_VOID_EDGE_WEST,
+	BiomeTileResolver.TILE_VOID_CORNER_INNER_NORTH_EAST, BiomeTileResolver.TILE_VOID_CORNER_INNER_SOUTH_EAST,
+	BiomeTileResolver.TILE_VOID_CORNER_INNER_SOUTH_WEST, BiomeTileResolver.TILE_VOID_CORNER_INNER_NORTH_WEST,
+	BiomeTileResolver.TILE_VOID_CORNER_OUTER_NORTH_EAST, BiomeTileResolver.TILE_VOID_CORNER_OUTER_SOUTH_EAST,
+	BiomeTileResolver.TILE_VOID_CORNER_OUTER_SOUTH_WEST, BiomeTileResolver.TILE_VOID_CORNER_OUTER_NORTH_WEST,
+	BiomeTileResolver.TILE_VOID_DIAGONAL_NORTH_EAST_SOUTH_WEST, BiomeTileResolver.TILE_VOID_DIAGONAL_NORTH_WEST_SOUTH_EAST
 ]
 const ROAD_BORDER_TILE_IDS: Array[StringName] = [
-	IsometricTileResolver.TILE_ROAD_EDGE,
-	IsometricTileResolver.TILE_ROAD_CURVE_NORTH,
-	IsometricTileResolver.TILE_ROAD_CURVE_EAST,
-	IsometricTileResolver.TILE_ROAD_CURVE_SOUTH,
-	IsometricTileResolver.TILE_ROAD_CURVE_WEST
+	BiomeTileResolver.TILE_ROAD_EDGE,
+	BiomeTileResolver.TILE_ROAD_CURVE_NORTH,
+	BiomeTileResolver.TILE_ROAD_CURVE_EAST,
+	BiomeTileResolver.TILE_ROAD_CURVE_SOUTH,
+	BiomeTileResolver.TILE_ROAD_CURVE_WEST
 ]
 const REQUIRED_FOREST_TILE_IDS: Array[StringName] = [
 	&"forest_grass", &"forest_grass_variant_01", &"forest_grass_variant_02", &"forest_tall_grass",
@@ -45,10 +45,10 @@ const REQUIRED_FOREST_TILE_IDS: Array[StringName] = [
 	&"ground_to_void_cliff", &"ground_to_mountain_wall"
 ]
 
-var _manifest: IsometricEnvironmentManifest
+var _manifest: EnvironmentAssetManifest
 
 func before_all() -> void:
-	_manifest = IsometricEnvironmentManifest.reload_shared()
+	_manifest = EnvironmentAssetManifest.reload_shared()
 
 # --- forest surface textures (forest_grass_generated_texture) ---------------
 
@@ -108,22 +108,22 @@ func test_forest_route_transitions_render_with_route_surfaces() -> void:
 	await wait_physics_frames(1)
 
 	assert_eq(
-		layer._forest_surface_texture_id(IsometricTileResolver.TILE_GRASS_TO_PATH),
+		layer._forest_surface_texture_id(BiomeTileResolver.TILE_GRASS_TO_PATH),
 		&"forest_road_border",
 		"forest grass/path contact renders with the defined road-border surface"
 	)
 	assert_eq(
-		layer._forest_surface_texture_id(IsometricTileResolver.TILE_FOREST_ROAD),
+		layer._forest_surface_texture_id(BiomeTileResolver.TILE_FOREST_ROAD),
 		&"forest_road_border",
 		"forest road interiors stay in the defined road-border material family"
 	)
 	assert_eq(
-		layer._forest_surface_texture_id(IsometricTileResolver.TILE_GRASS_TO_ROAD),
+		layer._forest_surface_texture_id(BiomeTileResolver.TILE_GRASS_TO_ROAD),
 		&"forest_road_border",
 		"forest grass/road contact renders with the defined road-border surface"
 	)
 	assert_eq(
-		layer._forest_surface_texture_id(IsometricTileResolver.TILE_PATH_TO_ROAD),
+		layer._forest_surface_texture_id(BiomeTileResolver.TILE_PATH_TO_ROAD),
 		&"forest_road_border",
 		"forest path/road crossing stays in the defined road-border material family"
 	)
@@ -161,7 +161,7 @@ func test_forest_route_transitions_render_with_route_surfaces() -> void:
 	)
 	assert_eq(
 		layer.get_resolved_tile_id(Vector2i(13, 12)),
-		IsometricTileResolver.TILE_PATH_TO_ROAD,
+		BiomeTileResolver.TILE_PATH_TO_ROAD,
 		"forest route crossing keeps the path-to-road semantic tile id"
 	)
 	assert_eq(
@@ -285,13 +285,13 @@ func test_forest_road_passages_do_not_render_as_dirt_paths() -> void:
 
 func test_surface_mesh_overdraw_expands_vertices_without_moving_uvs() -> void:
 	var run := Rect2i(Vector2i(1, 2), Vector2i(3, 1))
-	var base_mesh := IsometricForestGroundMeshBuilder.build_mesh(
+	var base_mesh := ForestGroundMeshBuilder.build_mesh(
 		[run],
 		Vector2i(8, 8),
 		24.0,
 		128.0
 	)
-	var overdraw_mesh := IsometricForestGroundMeshBuilder.build_mesh(
+	var overdraw_mesh := ForestGroundMeshBuilder.build_mesh(
 		[run],
 		Vector2i(8, 8),
 		24.0,
@@ -316,14 +316,14 @@ func test_surface_mesh_overdraw_expands_vertices_without_moving_uvs() -> void:
 	assert_eq(overdraw_uvs, base_uvs, "surface mesh overdraw leaves world-space UVs unchanged")
 
 func test_edge_strip_mesh_uses_local_cross_axis_uvs() -> void:
-	var west_mesh := IsometricForestGroundMeshBuilder.build_edge_strip_mesh(
+	var west_mesh := ForestGroundMeshBuilder.build_edge_strip_mesh(
 		[{
 			"rect": Rect2(Vector2(10.0, 20.0), Vector2(12.0, 96.0)),
 			"side": &"west",
 		}],
 		48.0
 	)
-	var north_mesh := IsometricForestGroundMeshBuilder.build_edge_strip_mesh(
+	var north_mesh := ForestGroundMeshBuilder.build_edge_strip_mesh(
 		[{
 			"rect": Rect2(Vector2(10.0, 20.0), Vector2(96.0, 12.0)),
 			"side": &"north",
@@ -388,7 +388,7 @@ func test_passage_over_lane_spoke_keeps_road_border_overlay() -> void:
 		for x in range(corridor.position.x, corridor.end.x):
 			layout.add_road_cell(Vector2i(x, y), &"service_lane")
 	layout.rebuild_terrain_classification()
-	var resolver := IsometricTileResolver.new(_manifest)
+	var resolver := BiomeTileResolver.new(_manifest)
 	var corridor_edge := Vector2i(5, 6)
 	assert_false(
 		resolver.route_cell_uses_lane_surface(layout, corridor_edge),
@@ -462,7 +462,7 @@ func test_generated_biome_catalog_contract() -> void:
 		"desert and replacement forest art remain explicitly unassigned"
 	)
 	var legacy_swamp_directory := DirAccess.open(
-		"res://assets/environment/isometric/tiles/swamp/textures"
+		"res://assets/environment/top_down/tiles/swamp/textures"
 	)
 	assert_true(
 		legacy_swamp_directory == null
@@ -1251,7 +1251,7 @@ func test_generated_biome_runtime_consumption() -> void:
 		)
 		assert_eq(
 			layer.get_resolved_tile_id(horizontal_border_cell),
-			IsometricTileResolver.TILE_ROAD_EDGE,
+			BiomeTileResolver.TILE_ROAD_EDGE,
 			"%s horizontal route border resolves as a road edge"
 			% String(biome_id)
 		)
@@ -1269,7 +1269,7 @@ func test_generated_biome_runtime_consumption() -> void:
 		)
 		assert_eq(
 			layer.get_resolved_tile_id(vertical_border_cell),
-			IsometricTileResolver.TILE_ROAD_EDGE,
+			BiomeTileResolver.TILE_ROAD_EDGE,
 			"%s vertical route border resolves as a road edge"
 			% String(biome_id)
 		)
@@ -1334,7 +1334,7 @@ func test_generated_biome_runtime_consumption() -> void:
 		var lane_border_cell := Vector2i(10, 5)
 		assert_eq(
 			layer.get_resolved_tile_id(lane_border_cell),
-			IsometricTileResolver.TILE_ROAD_EDGE,
+			BiomeTileResolver.TILE_ROAD_EDGE,
 			"%s lane border keeps the road edge tile id" % String(biome_id)
 		)
 		assert_true(
@@ -1388,7 +1388,7 @@ func test_generated_biome_runtime_consumption() -> void:
 		var vertical_main_road_probe := Vector2i(21, 6)
 		assert_eq(
 			layer.get_resolved_tile_id(main_road_probe),
-			IsometricTileResolver.TILE_MAIN_ROAD,
+			BiomeTileResolver.TILE_MAIN_ROAD,
 			"%s main road keeps its semantic tile id" % String(biome_id)
 		)
 		assert_true(
@@ -1422,7 +1422,7 @@ func test_generated_biome_runtime_consumption() -> void:
 		)
 		assert_eq(
 			layer.get_resolved_tile_id(vertical_main_road_probe),
-			IsometricTileResolver.TILE_MAIN_ROAD,
+			BiomeTileResolver.TILE_MAIN_ROAD,
 			"%s vertical main road keeps its semantic tile id" % String(biome_id)
 		)
 		assert_true(
@@ -1489,7 +1489,7 @@ func test_generated_biome_runtime_consumption() -> void:
 		var intersection_probe := Vector2i(21, 11)
 		assert_eq(
 			layer.get_resolved_tile_id(intersection_probe),
-			IsometricTileResolver.TILE_ROAD_INTERSECTION,
+			BiomeTileResolver.TILE_ROAD_INTERSECTION,
 			"%s internal road overlap keeps the intersection tile id"
 			% String(biome_id)
 		)
@@ -1868,7 +1868,7 @@ func test_transition_meshes() -> void:
 	assert_not_null(palette, "infected plains palette loads for cliff mesh QA")
 	if palette == null:
 		return
-	var builder := IsometricCliffMeshBuilder.new()
+	var builder := TopDownCliffMeshBuilder.new()
 	builder.configure(palette, 424242, true)
 	for index in range(TRANSITION_IDS.size()):
 		builder.append_transition(TRANSITION_IDS[index], Vector2(float(index % 7) * 100.0, float(index / 7) * 120.0), 42.0, 22.0)
@@ -1887,7 +1887,7 @@ func test_flush_pending_surface_matches_single_shot_build() -> void:
 		return
 	# Simula lo streaming a chunk: 3 batch flushati uno alla volta, come farebbe
 	# BiomeTileLayer._build_chunk_for_coord() per 3 chunk successivi.
-	var incremental := IsometricCliffMeshBuilder.new()
+	var incremental := TopDownCliffMeshBuilder.new()
 	incremental.configure(palette, 424242, true)
 	var batches := [
 		[TRANSITION_IDS[0], TRANSITION_IDS[1]],
@@ -1912,7 +1912,7 @@ func test_flush_pending_surface_matches_single_shot_build() -> void:
 	assert_eq(incremental.face_mesh.get_surface_count(), surfaces_before,
 		"flushing with nothing pending is a no-op")
 
-	var single_shot := IsometricCliffMeshBuilder.new()
+	var single_shot := TopDownCliffMeshBuilder.new()
 	single_shot.configure(palette, 424242, true)
 	for batch_index in range(batches.size()):
 		for tile_id in batches[batch_index]:
@@ -1936,7 +1936,7 @@ func test_flush_pending_surface_matches_single_shot_build() -> void:
 	)
 
 func test_rectangular_border_meshes() -> void:
-	var builder := IsometricCliffBorderMeshBuilder.new()
+	var builder := TopDownCliffBorderMeshBuilder.new()
 	builder.build([Rect2i(Vector2i(4, 5), Vector2i(6, 4))], [&"internal"], Vector2i(16, 16), 8.0)
 	assert_true(builder.horizontal_segment_count == 2 and builder.vertical_segment_count == 2 and builder.corner_count == 4,
 		"one fall rectangle builds two horizontal edges, two vertical edges and four corners")
@@ -2014,7 +2014,7 @@ func test_touching_fall_rectangles_share_one_void_outline() -> void:
 			shared_seam_found = true
 	assert_false(shared_seam_found, "the joined void has no cliff run across its shared horizontal edge")
 
-	var border_builder := IsometricCliffBorderMeshBuilder.new()
+	var border_builder := TopDownCliffBorderMeshBuilder.new()
 	border_builder.build(rects, sides, Vector2i(16, 16), 8.0)
 	assert_eq(border_builder.horizontal_segment_count, 3, "the joined void renders three exposed horizontal lip runs")
 	assert_eq(border_builder.vertical_segment_count, 3, "the joined void renders three exposed vertical lip runs")
@@ -2059,7 +2059,7 @@ func test_tile_layer_consumes_cliff_textures() -> void:
 	await wait_physics_frames(1)
 
 func test_void_transition_cells_do_not_receive_ground_surface() -> void:
-	var resolver := IsometricTileResolver.new(_manifest)
+	var resolver := BiomeTileResolver.new(_manifest)
 	var layout := BiomeEnvironmentLayout.new()
 	layout.zone_size = Vector2i(16, 16)
 	layout.generation_seed = 717171
@@ -2125,10 +2125,10 @@ func test_fall_gameplay_unchanged() -> void:
 	zone.queue_free()
 	await wait_physics_frames(1)
 
-# --- forest tile resolver su mappa generata (forest_iso_transition) ---------
+# --- forest tile resolver su mappa generata (forest_top_down_transition) ----
 
 func test_forest_tile_contracts() -> void:
-	var resolver := IsometricTileResolver.new(_manifest)
+	var resolver := BiomeTileResolver.new(_manifest)
 	for tile_id in REQUIRED_FOREST_TILE_IDS:
 		var section := resolver.resolve_tile_section(tile_id)
 		var contract := _manifest.get_asset_contract(section, tile_id)
@@ -2140,7 +2140,7 @@ func test_forest_tile_contracts() -> void:
 	assert_true(_string_name_array(biome_set.get("edge_tiles", [])).has(&"forest_mountain_wall"), "base biome asset set includes forest mountain wall")
 
 func test_generated_forest_resolver() -> void:
-	var resolver := IsometricTileResolver.new(_manifest)
+	var resolver := BiomeTileResolver.new(_manifest)
 	var biome_manager := BiomeManager.new()
 	add_child(biome_manager)
 	await wait_physics_frames(1)
@@ -2189,12 +2189,12 @@ func test_generated_forest_resolver() -> void:
 	assert_gt(layer.get_texture_detail_line_count(), 0, "forest tile layer bakes texture detail lines")
 	assert_gt(layer.get_suppressed_void_texture_count(), 0, "forest tile layer keeps pure void free of repeated tile texture")
 	assert_eq(layer.get_void_background_color(), ZombieModeController.get_void_background_color(palette), "forest void uses the same color as the off-world backdrop")
-	var cliff_underlay_key := layer._forest_underlay_key(IsometricTileResolver.TILE_VOID_EDGE_WEST)
+	var cliff_underlay_key := layer._forest_underlay_key(BiomeTileResolver.TILE_VOID_EDGE_WEST)
 	assert_true(cliff_underlay_key == &"void" and layer._forest_underlay_color(cliff_underlay_key) == layer.get_void_background_color(),
 		"forest cliff transition cells keep void colour behind the directional crest")
-	assert_true(layer._forest_surface_texture_id(IsometricTileResolver.TILE_VOID_EDGE_WEST).is_empty(),
+	assert_true(layer._forest_surface_texture_id(BiomeTileResolver.TILE_VOID_EDGE_WEST).is_empty(),
 		"forest cliff transition cells do not bake grass past the cliff edge")
-	assert_eq(layer._forest_surface_texture_id(IsometricTileResolver.TILE_GROUND_TO_VOID_CLIFF), &"forest_grass",
+	assert_eq(layer._forest_surface_texture_id(BiomeTileResolver.TILE_GROUND_TO_VOID_CLIFF), &"forest_grass",
 		"walkable ground beside void still reaches the cliff crest")
 	assert_gt(layer.get_cliff_transition_count(), 0, "forest tile layer bakes vertical cliff faces")
 	layer.free()
@@ -2202,7 +2202,7 @@ func test_generated_forest_resolver() -> void:
 	await wait_physics_frames(1)
 
 func test_synthetic_forest_wall() -> void:
-	var resolver := IsometricTileResolver.new(_manifest)
+	var resolver := BiomeTileResolver.new(_manifest)
 	var layout := BiomeEnvironmentLayout.new()
 	layout.zone_size = Vector2i(16, 16)
 	layout.generation_seed = 21
@@ -2234,9 +2234,9 @@ func _validate_generated_asset(contract: Dictionary, asset_id: StringName) -> vo
 	assert_lte(seam_score, 0.24, "%s opposite edges are visually tileable (score %.3f)" % [String(asset_id), seam_score])
 
 func _validate_lip_uv_direction(palette: BiomePalette) -> void:
-	var builder := IsometricCliffMeshBuilder.new()
+	var builder := TopDownCliffMeshBuilder.new()
 	builder.configure(palette, 424242, true)
-	builder.append_transition(IsometricTileResolver.TILE_VOID_EDGE_NORTH, Vector2.ZERO, 42.0, 22.0)
+	builder.append_transition(BiomeTileResolver.TILE_VOID_EDGE_NORTH, Vector2.ZERO, 42.0, 22.0)
 	builder.build_meshes()
 	var arrays := builder.lip_mesh.surface_get_arrays(0)
 	var vertices := arrays[Mesh.ARRAY_VERTEX] as PackedVector2Array
@@ -2492,23 +2492,42 @@ func _rgb_delta(first: Color, second: Color) -> float:
 func _edge_visible_matte_ratio(image: Image) -> float:
 	if image == null or image.is_empty():
 		return 1.0
-	var samples := 0
-	var matte_samples := 0
+	var edge_samples := 0
+	var edge_matte_samples := 0
 	var last_x := image.get_width() - 1
 	var last_y := image.get_height() - 1
 	for y in range(image.get_height()):
 		if _is_visible_white_matte(image.get_pixel(0, y)):
-			matte_samples += 1
+			edge_matte_samples += 1
 		if _is_visible_white_matte(image.get_pixel(last_x, y)):
-			matte_samples += 1
-		samples += 2
+			edge_matte_samples += 1
+		edge_samples += 2
 	for x in range(image.get_width()):
 		if _is_visible_white_matte(image.get_pixel(x, 0)):
-			matte_samples += 1
+			edge_matte_samples += 1
 		if _is_visible_white_matte(image.get_pixel(x, last_y)):
-			matte_samples += 1
-		samples += 2
-	return float(matte_samples) / float(maxi(samples, 1))
+			edge_matte_samples += 1
+		edge_samples += 2
+	var edge_ratio := float(edge_matte_samples) / float(maxi(edge_samples, 1))
+	# A matte is an anomalous white frame around darker art. Snow and other pale
+	# opaque materials are allowed to reach the image boundary, so compare the
+	# frame with a representative interior grid instead of treating white itself
+	# as an error.
+	var interior_samples := 0
+	var interior_matte_samples := 0
+	var inset_x := maxi(image.get_width() / 8, 1)
+	var inset_y := maxi(image.get_height() / 8, 1)
+	var step_x := maxi((image.get_width() - inset_x * 2) / 16, 1)
+	var step_y := maxi((image.get_height() - inset_y * 2) / 16, 1)
+	for y in range(inset_y, image.get_height() - inset_y, step_y):
+		for x in range(inset_x, image.get_width() - inset_x, step_x):
+			if _is_visible_white_matte(image.get_pixel(x, y)):
+				interior_matte_samples += 1
+			interior_samples += 1
+	var interior_ratio := (
+		float(interior_matte_samples) / float(maxi(interior_samples, 1))
+	)
+	return maxf(edge_ratio - interior_ratio, 0.0)
 
 func _find_surface_material_id(
 	layer: BiomeTileLayer,

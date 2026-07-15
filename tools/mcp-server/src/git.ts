@@ -104,7 +104,7 @@ export async function gitContext(root: string, input: Record<string, unknown> = 
     case "status": {
       // Porcelain output is stable and locale-independent (unlike plain status).
       const result = await runGit(root, ["status", "--porcelain=v1", "--branch"]);
-      return { command, ...result };
+      return { ...result, command };
     }
     case "log": {
       const maxCount = clampLogCount(input.maxCount);
@@ -120,7 +120,7 @@ export async function gitContext(root: string, input: Record<string, unknown> = 
         args.push("--", pathspec);
       }
       const result = await runGit(root, args);
-      return { command, maxCount, path: pathspec ?? null, ...result };
+      return { ...result, command, maxCount, path: pathspec ?? null };
     }
     case "diff": {
       const staged = input.staged === true;
@@ -133,7 +133,7 @@ export async function gitContext(root: string, input: Record<string, unknown> = 
         args.push("--", pathspec);
       }
       const result = await runGit(root, args);
-      return { command, staged, path: pathspec ?? null, ...result };
+      return { ...result, command, staged, path: pathspec ?? null };
     }
     default:
       throw new Error(`Unsupported git command '${command}'. Use one of: status, log, diff.`);

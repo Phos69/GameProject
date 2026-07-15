@@ -1,6 +1,6 @@
 # GameProject MCP Server
 
-Server MCP locale read-only per `Iso Local Sandbox`. Espone a Codex e ad altri client MCP un set di tool strutturati per leggere il contesto del progetto, interrogare architettura/roadmap/asset, cercare codice e avviare solo controlli allowlisted.
+Server MCP locale read-only per `Local Action Sandbox`. Espone a Codex e ad altri client MCP un set di tool strutturati per leggere il contesto del progetto, interrogare architettura/roadmap/asset, cercare codice e avviare solo controlli allowlisted.
 
 ## Posizione e stack
 
@@ -172,7 +172,7 @@ Output: path, riga, colonna e preview.
 
 Input: `{}`.
 
-Output: sintesi dei sistemi principali con evidenze file per zombie mode, player/input, armi/combat, nemici/boss, biomi/generazione, rendering isometrico, GUI/HUD e asset.
+Output: sintesi dei sistemi principali con evidenze file per zombie mode, player/input, armi/combat, nemici/boss, biomi/generazione, rendering top-down cardinale, GUI/HUD e asset.
 
 ### `roadmap_context`
 
@@ -277,7 +277,7 @@ Tipi (`kind`) supportati: `class_name`, `inner_class`, `extends`, `func`, `signa
 
 Il server espone questi template:
 
-- `audit_isometric_generation`
+- `audit_top_down_generation`
 - `improve_zombie_mode`
 - `implement_roadmap_milestone`
 - `refactor_gameplay_system`

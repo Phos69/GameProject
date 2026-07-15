@@ -8,8 +8,8 @@ signal obstacle_debug_overlay_changed(visible: bool)
 const BIOME_OBSTACLE_SCRIPT = preload(
 	"res://game/modes/zombie/biome_obstacle.gd"
 )
-const ISOMETRIC_OBJECT_FACTORY_SCRIPT = preload(
-	"res://game/modes/zombie/isometric_environment_object_factory.gd"
+const ENVIRONMENT_OBJECT_FACTORY_SCRIPT = preload(
+	"res://game/modes/zombie/environment_object_factory.gd"
 )
 
 @export var environment_container_path: NodePath = NodePath(
@@ -24,7 +24,7 @@ const BLOCKER_BUCKET_SIZE: float = 192.0
 var active_biome: BiomeDefinition
 var is_active: bool = false
 var active_obstacles: Array[Node2D] = []
-var manifest: IsometricEnvironmentManifest
+var manifest: EnvironmentAssetManifest
 var object_factory: RefCounted
 var debug_footprints_visible: bool = false
 
@@ -44,8 +44,8 @@ var _indexed_blocker_group_count: int = -1
 
 func _ready() -> void:
 	add_to_group("obstacle_system")
-	manifest = IsometricEnvironmentManifest.get_shared()
-	object_factory = ISOMETRIC_OBJECT_FACTORY_SCRIPT.new(manifest)
+	manifest = EnvironmentAssetManifest.get_shared()
+	object_factory = ENVIRONMENT_OBJECT_FACTORY_SCRIPT.new(manifest)
 	set_process_unhandled_key_input(true)
 
 func _exit_tree() -> void:
@@ -352,7 +352,7 @@ func _create_obstacle(
 	detail_color: Color
 ) -> BiomeObstacle:
 	if object_factory == null:
-		object_factory = ISOMETRIC_OBJECT_FACTORY_SCRIPT.new(manifest)
+		object_factory = ENVIRONMENT_OBJECT_FACTORY_SCRIPT.new(manifest)
 	var obstacle := object_factory.call(
 		"create_obstacle",
 		obstacle_id,

@@ -1,9 +1,9 @@
 {
-  "name": "@iso-local-sandbox/mcp-server",
+  "name": "@local-action-sandbox/mcp-server",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Read-only MCP server for the Iso Local Sandbox Godot project.",
+  "description": "Read-only MCP server for the Local Action Sandbox Godot project.",
   "bin": {
     "gameproject-mcp": "dist/src/server.js"
   },

@@ -6,7 +6,7 @@ Usare questa checklist per verificare il pass 1 dei personaggi RPG a 1280x720, s
 
 - `base_complete`: set asset completo e coerente, cablato nei campi
   `RpgCharacterData` e validato da
-  `tests/rpg_character_asset_manifest_smoke_test.gd` (portrait full/hud, gameplay
+  `tests/suites/assets/character_asset_test.gd` (portrait full/hud, gameplay
   sprite, sprite sheet, weapon, icone passive/super). Tutti i 7 personaggi sono a
   questo livello; `PlayerVisual` carica il pittogramma gameplay e conserva il
   render procedurale solo come fallback tecnico.
@@ -16,7 +16,8 @@ Usare questa checklist per verificare il pass 1 dei personaggi RPG a 1280x720, s
   al portrait grande (PNG dove esiste, altrimenti SVG). Nessun asset esterno
   obbligatorio (pipeline mista SVG testuale + PNG in-repo).
 - `gameplay_sprite_path` punta per tutti i sette profili al pittogramma PNG
-  isometrico con alpha, consumato sia dalle preview sia dal corpo world-space;
+  top-down con alpha e anchor `bottom_center`, consumato sia dalle preview sia
+  dal corpo world-space;
   gli SVG precedenti restano sorgenti/fallback in-repo.
 - QA visuale a 1280x720, 1024x768 e 960x540 in default/reduced motion/high
   contrast resta manuale (screenshot nel playtest end-to-end Milestone 11).
@@ -31,7 +32,7 @@ Usare questa checklist per verificare il pass 1 dei personaggi RPG a 1280x720, s
   portrait dedicato esiste; se manca, usa `gameplay_sprite_path`; se anche
   quello manca, usa il fallback procedurale coerente con palette e arma.
 - [ ] Il dossier laterale mostra descrizione di stile, range arma e preview
-  gameplay isometrica caricata da `gameplay_sprite_path`, con fallback
+  gameplay top-down caricata da `gameplay_sprite_path`, con fallback
   procedurale coerente se l'asset non e disponibile.
 - [ ] A 1280x720, 1024x768 e 960x540 il pannello resta dentro la safe-area; se
   lo spazio non basta, lo scroll mostra il contenuto senza tagli.

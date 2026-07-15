@@ -235,11 +235,11 @@ func _find_surface_focuses(layers: Array[Node]) -> Dictionary:
 
 func _surface_sample_key(tile_id: StringName) -> StringName:
 	match tile_id:
-		IsometricTileResolver.TILE_FOREST_ROAD:
+		BiomeTileResolver.TILE_FOREST_ROAD:
 			return &"road"
-		IsometricTileResolver.TILE_FOREST_PATH, IsometricTileResolver.TILE_GRASS_TO_PATH:
+		BiomeTileResolver.TILE_FOREST_PATH, BiomeTileResolver.TILE_GRASS_TO_PATH:
 			return &"path"
-		IsometricTileResolver.TILE_GRASS_TO_ROAD, IsometricTileResolver.TILE_PATH_TO_ROAD:
+		BiomeTileResolver.TILE_GRASS_TO_ROAD, BiomeTileResolver.TILE_PATH_TO_ROAD:
 			return &"transition"
 		_:
 			return &""

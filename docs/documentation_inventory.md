@@ -1,6 +1,6 @@
 # Documentation Inventory
 
-Data audit: 2026-07-01
+Data audit: 2026-07-15
 
 Questo inventario definisce quali Markdown sono documentazione viva, quali sono
 reference storiche consolidate e quali sono stati rimossi per ridurre rumore e
@@ -32,17 +32,14 @@ Documenti principali:
 
 Documenti tecnici ancora utili:
 
+- `docs/top_down_cardinal_contract.md`
 - `docs/zombie_market.md`
 - `docs/obstacle_rendering.md`
-- `docs/forest_isometric_texture_system.md`
-- `docs/biome_art_vis_fix_roadmap.md`
-- `docs/iso_grid_scale_migration_report.md`
-- `docs/visual_qa_report_2026-07-01.md`
-- `docs/repo_fix_milestone_10_asset_fallback_policy.md`
+- `docs/forest_top_down_texture_system.md`
 - `docs/weapon_visual_identity_validation_report.md`
-- `docs/latest_commit_validation_report.md`
 - `docs/rpg_character_visual_checklist.md`
-- `docs/testing/manual_checklist.md`
+- `docs/testing/manual_checklist.md` (solo indice operativo corrente; le
+  sezioni pre-cutover sono archivio e non sono fonte per nuovi asset)
 - `docs/testing/visual_qa.md`
 - `docs/testing/weapon_visual_identity_checklist.md`
 - `assets/README.md`
@@ -97,6 +94,17 @@ Generic docs rimossi nel follow-up:
 
 ## Note residue
 
-`CHANGELOG.md` e `docs/latest_commit_validation_report.md` possono ancora
-citare nomi di file rimossi per preservare l'evidenza storica. Non vanno usati
-come istruzioni operative per nuove feature.
+Documenti storici conservati come evidenza e marcati in apertura:
+
+- `docs/archive/manual_checklist_pre_cardinal_2026-07-15.md`;
+- `docs/iso_grid_scale_migration_report.md`;
+- `docs/latest_commit_validation_report.md`;
+- `docs/visual_qa_report_2026-07-01.md`;
+- `docs/biome_art_vis_fix_roadmap.md`;
+- `docs/biome_road_unification_plan.md`;
+- `docs/repo_fix_milestone_10_asset_fallback_policy.md`.
+
+`CHANGELOG.md` e questi report possono ancora citare nomi, percorsi e contratti
+precedenti per preservare la cronologia. Non vanno usati come istruzioni
+operative per nuove feature; prevale sempre
+`docs/top_down_cardinal_contract.md`.

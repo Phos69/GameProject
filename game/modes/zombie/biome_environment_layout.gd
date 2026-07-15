@@ -1,12 +1,12 @@
 extends Resource
 class_name BiomeEnvironmentLayout
 
-const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
+const WorldGridConfig = preload("res://game/core/world_grid_config.gd")
 
-const DEFAULT_ZONE_SIZE := IsoGridConfig.BIOME_SIZE
+const DEFAULT_ZONE_SIZE := WorldGridConfig.BIOME_SIZE
 const PERIMETER_VISUAL_WALL: StringName = &"procedural_wall"
 const PERIMETER_VISUAL_RAISED_CLIFF: StringName = &"raised_cliff"
-const RAISED_CLIFF_HEIGHT_CELLS := IsoGridConfig.RAISED_CLIFF_HEIGHT_TILES
+const RAISED_CLIFF_HEIGHT_CELLS := WorldGridConfig.RAISED_CLIFF_HEIGHT_TILES
 const GENERATION_SIGNATURE_VERSION: int = 2
 
 # Runtime caches and diagnostic summaries are derived from the layout and may be
@@ -25,7 +25,7 @@ const SIGNATURE_EXCLUDED_PROPERTIES := {
 
 @export var zone_size: Vector2i = DEFAULT_ZONE_SIZE
 @export var generation_seed: int = 0
-@export var logical_tile_scale: float = IsoGridConfig.LOGICAL_TILE_SCALE
+@export var logical_tile_scale: float = WorldGridConfig.LOGICAL_TILE_SCALE
 
 @export var terrain_patch_tags: Array[StringName] = []
 @export var terrain_patch_positions: Array[Vector2] = []
@@ -47,14 +47,14 @@ const SIGNATURE_EXCLUDED_PROPERTIES := {
 @export var hazard_sides: Array[StringName] = []
 
 @export_range(80.0, 500.0, 10.0) var central_corridor_width: float = (
-	IsoGridConfig.DEFAULT_CENTRAL_CORRIDOR_WORLD_WIDTH
+	WorldGridConfig.DEFAULT_CENTRAL_CORRIDOR_WORLD_WIDTH
 )
 
-# Explicit perimeter wall contract: the chunk is ringed by tall, isometric
+# Explicit perimeter wall contract: the chunk is ringed by tall, top-down
 # vertical walls. Walls are emitted as a contiguous run of tile-sized segments
 # (see ObstacleLayoutGenerator) instead of a single stretched obstacle per side,
 # so the whole perimeter reads as a continuous wall and not just a central tile.
-const PERIMETER_WALL_HEIGHT_CELLS := IsoGridConfig.PERIMETER_WALL_HEIGHT_TILES
+const PERIMETER_WALL_HEIGHT_CELLS := WorldGridConfig.PERIMETER_WALL_HEIGHT_TILES
 @export var wall_height_cells: int = PERIMETER_WALL_HEIGHT_CELLS
 @export var perimeter_visual_style: StringName = PERIMETER_VISUAL_WALL
 
@@ -201,13 +201,13 @@ func rect_size_to_world(rect: Rect2i) -> Vector2:
 
 func get_obstacle_record(
 	index: int,
-	manifest: IsometricEnvironmentManifest = null
+	manifest: EnvironmentAssetManifest = null
 ) -> Dictionary:
 	if index < 0 or index >= obstacle_ids.size() or index >= obstacle_rects.size():
 		return {}
 	var source_manifest := manifest
 	if source_manifest == null:
-		source_manifest = IsometricEnvironmentManifest.get_shared()
+		source_manifest = EnvironmentAssetManifest.get_shared()
 	var obstacle_id := obstacle_ids[index]
 	var occupied_cells := obstacle_rects[index]
 	var asset_contract := source_manifest.get_object_asset_contract(obstacle_id)
@@ -228,12 +228,12 @@ func get_obstacle_record(
 	}
 
 func validate_obstacle_records(
-	manifest: IsometricEnvironmentManifest = null
+	manifest: EnvironmentAssetManifest = null
 ) -> PackedStringArray:
 	var failures := PackedStringArray()
 	var source_manifest := manifest
 	if source_manifest == null:
-		source_manifest = IsometricEnvironmentManifest.get_shared()
+		source_manifest = EnvironmentAssetManifest.get_shared()
 	var count := obstacle_rects.size()
 	if (
 		obstacle_ids.size() != count
@@ -254,7 +254,7 @@ func validate_obstacle_records(
 			failures.append("%s[%d]: occupied cell rect is empty" % [String(obstacle_id), index])
 			continue
 		var legacy_footprint := source_manifest.get_footprint_tiles(obstacle_id)
-		var expected_logical_footprint := IsoGridConfig.legacy_size_to_new_tiles(
+		var expected_logical_footprint := WorldGridConfig.legacy_size_to_new_tiles(
 			legacy_footprint
 		)
 		if (
@@ -371,7 +371,7 @@ func add_floor_rect(rect: Rect2i, terrain_tag: StringName = &"floor_base") -> vo
 
 func get_floor_tag_at_cell(cell: Vector2i) -> StringName:
 	# Fast path: a per-cell index cache (built with the terrain classification) turns
-		# this from an O(floor_rects) scan into an O(1) lookup. On a full iso region with
+		# this from an O(floor_rects) scan into an O(1) lookup. On a full grid region with
 	# hundreds of floor rects this is the difference between a multi-second tile-layer
 	# bake and an instant one, since the tile resolver calls it for every cell.
 	if _floor_tag_cache.size() == zone_size.x * zone_size.y:

@@ -9,8 +9,8 @@ extends RefCounted
 const DEFAULT_TIMEOUT_MSEC := 150000
 const STABLE_READY_FRAMES := 3
 const DRAW_SETTLE_FRAMES := 2
-const ISOMETRIC_SVG_TEXTURE_LOADER = preload(
-	"res://game/modes/zombie/isometric_svg_texture_loader.gd"
+const ENVIRONMENT_TEXTURE_LOADER = preload(
+	"res://game/modes/zombie/environment_texture_loader.gd"
 )
 
 static func wait_for_capture_ready(
@@ -139,8 +139,8 @@ static func cleanup_scene(tree: SceneTree) -> void:
 	await tree.process_frame
 	await tree.process_frame
 	WorldDataCache.clear()
-	ISOMETRIC_SVG_TEXTURE_LOADER.clear_cache()
-	IsometricEnvironmentManifest.clear_shared()
+	ENVIRONMENT_TEXTURE_LOADER.clear_cache()
+	EnvironmentAssetManifest.clear_shared()
 	await tree.process_frame
 
 static func _capture_readiness(

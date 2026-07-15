@@ -1,7 +1,7 @@
 extends RefCounted
 class_name RandomPropPlacementPass
 
-const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
+const WorldGridConfig = preload("res://game/core/world_grid_config.gd")
 
 ## Default shared budget for sparse, final-floor biome props.
 const MIN_COUNT: int = 10
@@ -10,8 +10,8 @@ const ATTEMPTS: int = 1200
 const BORDER_MARGIN: int = 2
 const SPAWN_CLEARANCE: int = 6
 
-const BORDER_THICKNESS: int = IsoGridConfig.BORDER_THICKNESS_TILES
-const GAP: int = IsoGridConfig.MIN_RECT_GAP_TILES
+const BORDER_THICKNESS: int = WorldGridConfig.BORDER_THICKNESS_TILES
+const GAP: int = WorldGridConfig.MIN_RECT_GAP_TILES
 const REQUIRED_CATEGORY_COUNT: int = 2
 
 
@@ -341,7 +341,7 @@ func _fallback_pool(biome_id: StringName) -> Array[Dictionary]:
 
 func _validated_pool(source: Array[Dictionary]) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
-	var manifest := IsometricEnvironmentManifest.get_shared()
+	var manifest := EnvironmentAssetManifest.get_shared()
 	for rule in source:
 		var prop_id := StringName(rule.get("id", &""))
 		if prop_id.is_empty() or not manifest.has_object(prop_id):
@@ -447,8 +447,8 @@ func _category_for(prop_id: StringName, categories: Dictionary) -> StringName:
 
 
 func _logical_footprint_tiles(prop_id: StringName) -> Vector2i:
-	return IsoGridConfig.legacy_size_to_new_tiles(
-		IsometricEnvironmentManifest.get_shared().get_footprint_tiles(prop_id)
+	return WorldGridConfig.legacy_size_to_new_tiles(
+		EnvironmentAssetManifest.get_shared().get_footprint_tiles(prop_id)
 	)
 
 

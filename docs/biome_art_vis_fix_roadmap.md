@@ -1,5 +1,9 @@
 # Biome ART-VIS-FIX Roadmap
 
+> Roadmap completata e conservata come evidenza storica. Le indicazioni di
+> proiezione e i path precedenti sono superati da
+> `docs/top_down_cardinal_contract.md` e non vanno riutilizzati nei prompt.
+
 Stato: completato 2026-07-03. Tutti e cinque i biomi hanno il pass applicato,
 la QA dedicata verde e i guardrail GUT estesi; il review completo
 `biome_rendering_review_visual_qa.gd` chiude con exit code `0`. Dal pass di

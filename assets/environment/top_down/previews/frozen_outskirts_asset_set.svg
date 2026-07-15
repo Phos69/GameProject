@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="120" viewBox="0 0 160 120" data-generated-by="generate_top_down_environment_assets" data-section="biome_asset_sets" data-id="frozen_outskirts" data-footprint-slots="1x1">
+  <title>biome_asset_sets frozen_outskirts</title>
+  <ellipse cx="80" cy="94" rx="54" ry="13" fill="#050608" opacity="0.38"/>
+  <rect x="14" y="16" width="132" height="88" rx="5" fill="#7f99a8" stroke="#c2b071" stroke-width="4"/>
+  <circle cx="80" cy="60" r="20" fill="#334038" stroke="#0b0b0b" stroke-width="4"/>
+  <path d="M38 60 H122 M80 24 V96" stroke="#c2b071" stroke-width="4" opacity="0.75"/>
+  <path d="M48 108 H112" fill="none" stroke="#c2b071" stroke-width="3" stroke-linecap="round" opacity="0.62"/>
+</svg>

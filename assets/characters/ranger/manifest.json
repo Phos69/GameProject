@@ -5,7 +5,7 @@
   "arma": "Arco",
   "passiva": "Occhio del Predatore",
   "super": "Pioggia di Frecce",
-  "stile": "cartoon dark arcade, zombie survival isometrico",
+  "stile": "cartoon dark arcade, zombie survival top-down ortogonale con volume prospettico controllato",
   "palette": {
     "id": "ranger_forest",
     "primary": "#1f5733",
@@ -70,7 +70,7 @@
     }
   },
   "iteration_changelog": [
-    "Creato primo set base completo per Ranger/Mira Vento con portrait rendered, sprite isometrico, sprite sheet animabile, icone HUD e arma.",
+    "Creato primo set base completo per Ranger/Mira Vento con portrait rendered, sprite gameplay della precedente iterazione, sprite sheet animabile, icone HUD e arma.",
     "Aggiornato il profilo dati Ranger per puntare alla sprite sheet definitiva di questa iterazione.",
     "Convertiti gli asset bitmap PNG in SVG testuali per rendere la pull request compatibile con ambienti che non accettano file binari.",
     "Ripristinato un portrait PNG definitivo per Character Select e slot di selezione player."

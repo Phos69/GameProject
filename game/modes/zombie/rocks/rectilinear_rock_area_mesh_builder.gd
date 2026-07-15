@@ -1,7 +1,7 @@
 extends RefCounted
 class_name RectilinearRockAreaMeshBuilder
 
-const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
+const WorldGridConfig = preload("res://game/core/world_grid_config.gd")
 
 # Builds a raised rock plateau for each rock rect. It is the void cliff mirrored
 # upward: instead of the ground dropping into the void, the rock rim is lifted by
@@ -21,9 +21,9 @@ const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
 
 const TOP_TEXTURE_REPEAT_WORLD_SIZE := 256.0
 const FACE_TEXTURE_REPEAT_WORLD_SIZE := 128.0
-const RAISE_HEIGHT_CELLS: float = IsoGridConfig.RAISED_CLIFF_HEIGHT_TILES
+const RAISE_HEIGHT_CELLS: float = WorldGridConfig.RAISED_CLIFF_HEIGHT_TILES
 const LATERAL_LEAN_RATIO := 0.42
-# Per-side shading mirrors IsometricCliffMeshBuilder: front brightest, east lit,
+# Per-side shading mirrors TopDownCliffMeshBuilder: front brightest, east lit,
 # west in shadow; every wall darkens toward the ground and the crown is brightest.
 const FRONT_BRIGHTNESS := 1.0
 const EAST_BRIGHTNESS := 0.84

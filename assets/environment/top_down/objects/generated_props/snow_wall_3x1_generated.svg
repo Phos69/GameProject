@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="149" height="72" viewBox="0 0 160 120" data-generated-by="generate_top_down_environment_assets" data-section="object_scenes" data-id="snow_wall" data-footprint-slots="3x1">
+  <title>object_scenes snow_wall</title>
+  <ellipse cx="80" cy="94" rx="54" ry="13" fill="#050608" opacity="0.38"/>
+  <rect x="26" y="72" width="108" height="28" rx="3" fill="#242a2f" stroke="#d6edf3" stroke-width="3"/>
+  <rect x="34" y="48" width="92" height="40" fill="#7f99a8" stroke="#0b0b0b" stroke-width="4"/>
+  <path d="M48 52 V84 M68 52 V84 M88 52 V84 M108 52 V84" stroke="#d6edf3" stroke-width="3" opacity="0.82"/>
+  <path d="M48 108 H112" fill="none" stroke="#d6edf3" stroke-width="3" stroke-linecap="round" opacity="0.62"/>
+</svg>

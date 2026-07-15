@@ -1,7 +1,7 @@
 extends GutTest
 ## Shared mesa renderer: one raised mesh owner plus one collision-only blocker.
 
-const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
+const WorldGridConfig = preload("res://game/core/world_grid_config.gd")
 
 const BIOME_PROFILES: Dictionary = {
 	&"infected_plains": &"forest",
@@ -19,15 +19,15 @@ const PROFILE_TOP_REPEAT: Dictionary = {
 }
 const MESA_RECT := Rect2i(Vector2i(5, 5), Vector2i(6, 5))
 
-var _manifest: IsometricEnvironmentManifest
+var _manifest: EnvironmentAssetManifest
 
 func before_all() -> void:
-	_manifest = IsometricEnvironmentManifest.reload_shared()
+	_manifest = EnvironmentAssetManifest.reload_shared()
 
 func after_all() -> void:
 	_manifest = null
-	IsometricEnvironmentManifest.clear_shared()
-	IsometricEnvironmentObject.clear_content_metrics_cache()
+	EnvironmentAssetManifest.clear_shared()
+	EnvironmentObject.clear_content_metrics_cache()
 
 func test_all_biomes_render_one_themed_mesa_volume() -> void:
 	for biome_id_value in BIOME_PROFILES:
@@ -97,7 +97,7 @@ func test_large_rock_is_collision_only_for_shared_mesa_visuals() -> void:
 	var system := ObstacleSystem.new()
 	add_child(system)
 	await wait_physics_frames(1)
-	var size := Vector2(MESA_RECT.size) * IsoGridConfig.LOGICAL_TILE_SCALE
+	var size := Vector2(MESA_RECT.size) * WorldGridConfig.LOGICAL_TILE_SCALE
 	var blocker := system.create_obstacle_instance(
 		&"large_rock",
 		size,

@@ -363,7 +363,7 @@ func _spawn_effect(
 	return effect
 
 func _request_camera_shake(strength: float, duration: float) -> void:
-	var camera := get_viewport().get_camera_2d() as IsometricCameraController
+	var camera := get_viewport().get_camera_2d() as TopDownCameraController
 	if camera != null:
 		camera.request_shake(strength, duration)
 

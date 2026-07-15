@@ -1,13 +1,18 @@
-# Rendering ostacoli isometrici
+# Rendering ostacoli top-down
 
 ## Contratto unico
 
 La mappa logica resta la sorgente di verita. `BiomeEnvironmentLayout.obstacle_rects`
 contiene le celle occupate; `ObstacleLayoutGenerator` centra su ogni richiesta il
-footprint canonico letto da `assets/environment/isometric/manifest.json`. Da quel
+footprint canonico letto da `assets/environment/top_down/manifest.json`. Da quel
 rettangolo derivano posizione world-space, collisione, spawn blocker e base visiva.
 
-Il manifest v10 usa slot da `4x4` celle logiche (`8 px` world-space per cella):
+La base segue `coordinate_system: orthogonal_top_down`. Altezza, facciata sud e
+fianchi sono `controlled_perspective`: possono superare la base solo sul piano
+visivo e non spostano celle, anchor o collisioni. Il contratto generale e in
+`docs/top_down_cardinal_contract.md`.
+
+Il manifest v11 usa slot da `4x4` celle logiche (`8 px` world-space per cella):
 
 ```text
 obstacle_id -> footprint_slots -> footprint_tiles -> occupied_cells
@@ -28,29 +33,28 @@ allargare la collisione.
 ## Asset e anchor
 
 Gli asset sono organizzati per categoria e riportano il footprint nel filename.
-Gli SVG dichiarano anche il metadata `data-footprint-slots`; PNG e risorse
-`Texture2D` finali mantengono sorgente, licenza e attribuzione nel manifest.
+Gli SVG dichiarano anche il metadata `data-footprint-slots`; i PNG finali
+mantengono sorgente, licenza e attribuzione nel manifest.
 Esempi:
 
 - `objects/rocks/rock_1x1.svg`;
-- `objects/generated_props/broken_fence_2x1_generated.tres`;
+- `objects/generated_props/broken_fence_2x1_generated.svg`;
 - `objects/trees/log_3x1.svg`;
 - `objects/trees/dense_forest_3x3.svg`;
 - `objects/trees/forest_tree_3x3.png`;
 - `edges/cliffs/textures/rock_plateau_top_generated.png` (top massa rocciosa scalabile);
 - `edges/cliffs/textures/rock_cliff_face_upward_generated.png` (faccia cliff rialzata);
-- `objects/generated_props/ruined_house_4x4_generated.tres`;
-- `objects/generated_props/lab_block_6x6_generated.tres`.
+- `objects/generated_props/ruined_house_4x4_generated.svg`;
+- `objects/generated_props/lab_block_6x6_generated.svg`.
 
-Le cinque tavole in `concepts/` sono atlas sorgente `1254x1254`. Ventitre
-contratti `object_scenes` espongono 20 regioni strette con alpha tramite
-`AtlasTexture`, `filter_clip` e filename col footprint; le tre coppie tossiche
-condivise conservano comunque target size e collisioni distinti. `reed_wall`
-resta SVG verticale `1x3`, perche il quadrante palude disponibile raffigura un
-`marsh_log` orizzontale.
+I 23 prop che in precedenza condividevano cinque tavole raster sono ora SVG
+individuali. Il generatore assegna a ciascuno una pianta ortogonale, un
+footprint esplicito e, dove serve, una sola facciata sud prospettica. Le vecchie
+risorse `AtlasTexture` non sono piu caricate. `reed_wall` resta uno SVG
+verticale `1x3` dedicato.
 
-`IsometricEnvironmentObject` disegna sempre una base isometrica pari al footprint
-bloccante e ancora lo sprite a `iso_floor_center`/`bottom_center`. La dimensione
+`EnvironmentObject` usa sempre una base rettangolare pari al footprint
+bloccante e ancora lo sprite a `floor_center`/`bottom_center`. La dimensione
 dello sprite e deterministica: footprint e `visual_height_tiles` del manifest
 producono la dimensione nativa, senza scale casuali del generatore. I container
 world-space restano in Y-sort con `z_index = 0` e posizione derivata dal centro
@@ -88,7 +92,7 @@ esplicitamente `blocks_movement` e `blocks_projectiles`.
 4. Generare l'asset mancante:
 
    ```text
-   godot --headless --path . --script res://tools/generate_isometric_environment_assets.gd -- --write
+   godot --headless --path . --script res://tools/generate_top_down_environment_assets.gd -- --write
    ```
 
 5. Aggiungere l'ID al catalogo del generatore/bioma solo se deve essere piazzato.
@@ -96,7 +100,7 @@ esplicitamente `blocks_movement` e `blocks_projectiles`.
 6. Eseguire lo smoke del contratto e quello della pipeline asset.
 
 Per un PNG o un'`AtlasTexture`, il canvas sorgente puo essere piu grande della dimensione nativa:
-`IsometricEnvironmentObject` applica il downscale deterministico derivato da
+`EnvironmentObject` applica il downscale deterministico derivato da
 footprint e `visual_height_tiles`; corner trasparenti e copertura minima restano
 obbligatori.
 

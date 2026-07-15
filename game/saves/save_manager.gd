@@ -8,6 +8,14 @@ signal load_failed(path: String, reason: String)
 
 const SAVE_VERSION: int = 6
 const DEFAULT_SAVE_PATH: String = "user://savegame.json"
+# config/name changes the user:// directory. Keep the previous sibling only as
+# a read-once compatibility source; its cache and all other files stay behind.
+const LEGACY_USER_DATA_DIRECTORY: String = "Iso Local Sandbox"
+const LEGACY_SAVE_FILE_NAMES: Array[String] = [
+	"savegame.json",
+	"savegame.json.bak"
+]
+const LEGACY_SAVE_MIGRATION_MARKER: String = ".project_rename_save_migration_v1"
 
 @export var save_path: String = DEFAULT_SAVE_PATH
 @export var auto_load: bool = true
@@ -301,7 +309,109 @@ func _initialize() -> void:
 			world_runtime.region_runtime_changed.connect(region_runtime_callback)
 
 	if auto_load and _auto_persistence_enabled():
+		_try_migrate_legacy_default_save()
 		load_game()
+
+func _try_migrate_legacy_default_save() -> void:
+	if save_path != DEFAULT_SAVE_PATH:
+		return
+	var current_user_data_dir := OS.get_user_data_dir()
+	var legacy_user_data_dir := _legacy_user_data_dir_for(
+		current_user_data_dir
+	)
+	var migration_error := _migrate_legacy_save_files_once(
+		legacy_user_data_dir,
+		current_user_data_dir
+	)
+	if migration_error != OK:
+		push_warning(
+			"Legacy save migration skipped after an I/O error: %s"
+			% error_string(migration_error)
+		)
+
+static func _legacy_user_data_dir_for(current_user_data_dir: String) -> String:
+	return current_user_data_dir.get_base_dir().path_join(
+		LEGACY_USER_DATA_DIRECTORY
+	)
+
+func _migrate_legacy_save_files_once(
+	legacy_user_data_dir: String,
+	current_user_data_dir: String
+) -> Error:
+	if legacy_user_data_dir.simplify_path() == current_user_data_dir.simplify_path():
+		return OK
+	var marker_path := current_user_data_dir.path_join(
+		LEGACY_SAVE_MIGRATION_MARKER
+	)
+	if FileAccess.file_exists(marker_path):
+		return OK
+	if not DirAccess.dir_exists_absolute(current_user_data_dir):
+		var directory_error := DirAccess.make_dir_recursive_absolute(
+			current_user_data_dir
+		)
+		if directory_error != OK:
+			return directory_error
+	var first_error: Error = OK
+	for file_name: String in LEGACY_SAVE_FILE_NAMES:
+		var source_path := legacy_user_data_dir.path_join(file_name)
+		var destination_path := current_user_data_dir.path_join(file_name)
+		if not FileAccess.file_exists(source_path):
+			continue
+		if FileAccess.file_exists(destination_path):
+			continue
+		var migration_error := _copy_legacy_save_atomically(
+			source_path,
+			destination_path
+		)
+		if migration_error != OK and first_error == OK:
+			first_error = migration_error
+	if first_error != OK:
+		return first_error
+	var temporary_marker_path := marker_path + ".tmp"
+	if FileAccess.file_exists(temporary_marker_path):
+		var cleanup_error := DirAccess.remove_absolute(temporary_marker_path)
+		if cleanup_error != OK:
+			return cleanup_error
+	var marker_file := FileAccess.open(temporary_marker_path, FileAccess.WRITE)
+	if marker_file == null:
+		return ERR_CANT_OPEN
+	marker_file.store_line("complete")
+	var marker_error := marker_file.get_error()
+	marker_file.close()
+	if marker_error != OK:
+		DirAccess.remove_absolute(temporary_marker_path)
+		return marker_error
+	var marker_rename_error := DirAccess.rename_absolute(
+		temporary_marker_path,
+		marker_path
+	)
+	if marker_rename_error != OK:
+		DirAccess.remove_absolute(temporary_marker_path)
+	return marker_rename_error
+
+func _copy_legacy_save_atomically(
+	source_path: String,
+	destination_path: String
+) -> Error:
+	var temporary_path := destination_path + ".migration.tmp"
+	if FileAccess.file_exists(temporary_path):
+		var cleanup_error := DirAccess.remove_absolute(temporary_path)
+		if cleanup_error != OK:
+			return cleanup_error
+	var copy_error := DirAccess.copy_absolute(source_path, temporary_path)
+	if copy_error != OK:
+		return copy_error
+	# A destination created while the copy was in progress always wins.
+	if FileAccess.file_exists(destination_path):
+		DirAccess.remove_absolute(temporary_path)
+		return OK
+	var rename_error := DirAccess.rename_absolute(
+		temporary_path,
+		destination_path
+	)
+	if rename_error != OK:
+		DirAccess.remove_absolute(temporary_path)
+	return rename_error
 
 func _resolve_progression_manager() -> void:
 	if progression_manager == null:

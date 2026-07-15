@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="149" height="56" viewBox="0 0 160 120" data-generated-by="generate_top_down_environment_assets" data-section="object_scenes" data-id="scorched_barricade" data-footprint-slots="3x1">
+  <title>object_scenes scorched_barricade</title>
+  <ellipse cx="80" cy="94" rx="54" ry="13" fill="#050608" opacity="0.38"/>
+  <rect x="26" y="72" width="108" height="28" rx="3" fill="#242a2f" stroke="#c2b071" stroke-width="3"/>
+  <rect x="34" y="54" width="94" height="28" rx="3" fill="#7a3c2c" stroke="#0b0b0b" stroke-width="4"/>
+  <path d="M45 62 H116 M63 76 H101" stroke="#c2b071" stroke-width="4" stroke-linecap="round"/>
+  <path d="M48 108 H112" fill="none" stroke="#c2b071" stroke-width="3" stroke-linecap="round" opacity="0.62"/>
+</svg>

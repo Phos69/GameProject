@@ -1,6 +1,10 @@
-# Iso Local Sandbox
+# Local Action Sandbox
 
-Base sandbox per un gioco multiplayer locale isometrico/pseudo-isometrico ispirato al ritmo action di Enter the Gungeon, pensato per crescere nel tempo con interventi iterativi della IA.
+Base sandbox per un gioco multiplayer locale top-down su griglia ortogonale,
+con volume prospettico controllato, ispirato al ritmo action di Enter the
+Gungeon e pensato per crescere con interventi iterativi della IA. Il contratto
+visivo canonico e in
+[`docs/top_down_cardinal_contract.md`](docs/top_down_cardinal_contract.md).
 
 ## Obiettivo
 
@@ -105,7 +109,7 @@ arma base. Il dossier laterale usa `style_description` e
 `gameplay_sprite_path` per mostrare la preview gameplay. Per sostituire gli
 asset, popolare i path `assets/characters/<id>/...` nei `.tres` e validare la
 checklist `docs/rpg_character_visual_checklist.md`.
-I sette `gameplay_sprite_path` puntano ora a pittogrammi raster isometrici PNG
+I sette `gameplay_sprite_path` puntano ora a pittogrammi raster top-down PNG
 con alpha e `PlayerVisual` li usa anche sul personaggio world-space durante il
 gameplay. Facing, bob, hit flash, stato downed/dead e arma equipaggiata restano
 layer runtime; se un path manca, torna disponibile la silhouette procedurale.
@@ -159,8 +163,8 @@ godot --headless -s res://addons/gut/gut_cmdln.gd -gconfig=res://.gutconfig.soak
 tools/run_visual_qa.sh            # vedi docs/testing/visual_qa.md
 ./tools/run_visual_qa.ps1
 
-# Asset check isometrico.
-godot --headless --path . --script res://tools/generate_isometric_environment_assets.gd -- --check
+# Asset check top-down cardinale.
+godot --headless --path . --script res://tools/generate_top_down_environment_assets.gd -- --check
 ```
 
 > I runner legacy `tools/run_tests.sh` / `.ps1` ("un processo per file") sono
@@ -188,9 +192,9 @@ Export Windows:
 
 ```text
 godot --headless --path . --import
-godot --headless --path . --export-release "Windows Desktop" build/iso_local_sandbox.exe
-godot --headless --path . --export-pack "Windows Desktop" build/iso_local_sandbox.pck
-build/iso_local_sandbox.exe --rendering-method gl_compatibility -- --build-smoke
+godot --headless --path . --export-release "Windows Desktop" build/local_action_sandbox.exe
+godot --headless --path . --export-pack "Windows Desktop" build/local_action_sandbox.pck
+build/local_action_sandbox.exe --rendering-method gl_compatibility -- --build-smoke
 ```
 
 I template Windows ufficiali Godot `4.6.3` devono essere installati in
@@ -203,7 +207,7 @@ bloccati localmente dai template `windows_debug_x86_64.exe` e
 
 ```text
 game/
-  main/              bootstrap, scena principale, playground pseudo-isometrico
+  main/              bootstrap, scena principale, playground top-down cardinale
   core/              costanti e contratti condivisi
   input/             gestione input tastiera/joypad
   multiplayer/       predisposizione multiplayer locale
@@ -231,7 +235,7 @@ game/
   debug/             strumenti debug
 docs/                documentazione tecnica e checklist
 prompts/             prompt operativi per task IA futuri
-assets/              sprite, tileset, audio, font, UI e manifest isometrici
+assets/              sprite, tileset, audio, font, UI e manifest top-down
 tests/               test e checklist automatizzabili futuri
 ```
 
@@ -246,7 +250,7 @@ Completato:
 
 - repository Git inizializzato;
 - progetto Godot 4.x testuale;
-- scena principale con griglia pseudo-isometrica;
+- scena principale con griglia ortogonale top-down;
 - player controllabile;
 - camera che segue il gruppo player;
 - input manager per tastiera e joypad;
@@ -313,17 +317,18 @@ Completato:
 - dodge/roll per player con cooldown, invulnerabilita breve e validazione per
   piccoli gap/fall zone attraversabili, lasciando gli hazard ambientali
   bloccanti;
-- manifest `assets/environment/isometric/manifest.json` per censire ostacoli,
+- manifest `assets/environment/top_down/manifest.json` per censire ostacoli,
   props, border tematici, fall zone, draw mode oggetti e tag terrain/passaggi
-  con versioni isometriche sostituibili ma contratti runtime stabili;
-- tile layer asset-driven per ground, strade diagonali, road connector e
+  con asset top-down sostituibili ma contratti runtime stabili;
+- tile layer asset-driven per ground, strade cardinali, road connector e
   passaggi: entry/exit, ponti, snow pass, broken gate e burned road sono
   risolti come asset tile nel `75x75`, non come patch o frecce del gate;
-- oggetti e ostacoli asset-backed tramite SVG trasparenti, PNG e risorse
-  `AtlasTexture`: 23 prop usano 20 regioni generate dalle cinque tavole di
-  bioma, mantenendo footprint e collisioni; case, cabine, laboratori, recinti,
-  muri, barili, relitti, tronchi, ponti e crate restano disponibili senza asset
-  esterni obbligatori o fallback barriera generico implicito;
+- oggetti e ostacoli asset-backed tramite SVG trasparenti e PNG: i 23 prop dei
+  pool tematici puntano ciascuno a uno SVG cardinale individuale in
+  `objects/generated_props/`, mantenendo footprint e collisioni; case, cabine,
+  laboratori, recinti, muri, barili, relitti, tronchi, ponti e crate restano
+  disponibili senza asset esterni obbligatori o fallback barriera generico
+  implicito;
 - cinque biomi giocabili nella stessa run, con partenza forzata dalla `Pianura Infetta`;
 - spawn zombie delegato a `ZombieSpawner` dai bordi della camera, validato
   contro camera, player, walkable, hazard, fall zone e blocker, con fallback

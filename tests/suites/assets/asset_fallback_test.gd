@@ -15,11 +15,11 @@ const STANDARD_SURVIVAL_CONTEXT := {
 	"world_seed": 20260621, "biome_map_width": 3, "biome_map_height": 3, "extra_edge_chance": 0.5
 }
 
-var _manifest: IsometricEnvironmentManifest
+var _manifest: EnvironmentAssetManifest
 var _allowed_fallback_paths: Array[String] = []
 
 func before_all() -> void:
-	_manifest = IsometricEnvironmentManifest.reload_shared()
+	_manifest = EnvironmentAssetManifest.reload_shared()
 	var technical := _manifest.get_fallback_policy().get("technical_fallbacks", {}) as Dictionary
 	for key in technical.keys():
 		_append_unique_path(String(technical.get(key, "")))
@@ -139,7 +139,7 @@ func _assert_runtime_obstacle_assets(scene) -> void:
 		checked_runtime_obstacles += 1
 		if node.has_method("uses_generic_fallback"):
 			assert_false(bool(node.call("uses_generic_fallback")), "%s avoids generic fallback at runtime" % String(node.name))
-		var obstacle := node as IsometricEnvironmentObject
+		var obstacle := node as EnvironmentObject
 		if obstacle == null:
 			continue
 		if obstacle.is_perimeter_wall():

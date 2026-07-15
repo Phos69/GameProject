@@ -8,7 +8,7 @@ extends GutTest
 ##   tests/zombie_survival_world_contract_smoke_test.gd  (sintetico)
 ##   tests/infinite_arena_default_mode_smoke_test.gd     (main.tscn, async)
 
-const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
+const WorldGridConfig = preload("res://game/core/world_grid_config.gd")
 
 var _async_world_ready: bool = false
 
@@ -358,7 +358,7 @@ func _assert_infinite_arena_world(biome_manager: BiomeManager) -> void:
 	assert_eq(
 		Vector2i(start_cell.width, start_cell.height),
 		BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE,
-		"Infinite Arena cell uses the shared iso grid size"
+		"Infinite Arena cell uses the shared cardinal grid size"
 	)
 	assert_true(start_cell.passages.is_empty(), "Infinite Arena has no inter-biome passages")
 	for side in BiomeCell.SIDES:
@@ -464,7 +464,7 @@ func _assert_runtime_raised_cliffs(
 		assert_false(obstacle.uses_perimeter_visual_fallback(), "runtime raised cliff avoids procedural wall fallback")
 		assert_eq(
 			obstacle.get_wall_height(),
-			float(IsoGridConfig.RAISED_CLIFF_HEIGHT_TILES) * IsoGridConfig.LOGICAL_TILE_SCALE,
+			float(WorldGridConfig.RAISED_CLIFF_HEIGHT_TILES) * WorldGridConfig.LOGICAL_TILE_SCALE,
 			"runtime raised cliff uses the configured logical height"
 		)
 		assert_true(
@@ -479,7 +479,7 @@ func _assert_runtime_raised_cliffs(
 		var occupied_cells := record.get("occupied_cells", Rect2i()) as Rect2i
 		assert_eq(
 			obstacle.get_perimeter_uv_origin(),
-			Vector2(occupied_cells.position) * IsoGridConfig.LOGICAL_TILE_SCALE,
+			Vector2(occupied_cells.position) * WorldGridConfig.LOGICAL_TILE_SCALE,
 			"runtime raised cliff UV origin follows its generated wall segment"
 		)
 	var cell := biome_manager.get_current_biome_cell()

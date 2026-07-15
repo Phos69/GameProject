@@ -54,7 +54,7 @@ const VOLCANIC_EMBER_DAMPING := 0.34
 # a ogni configure() di regione (hitch sul main thread durante lo streaming) e
 # ogni chiamata caricava in VRAM una ImageTexture duplicata della stessa asset.
 # Il path identifica il contenuto sorgente perche' gli asset generati sono PNG
-# raster serviti dalla cache per-path di IsometricSvgTextureLoader.
+# raster serviti dalla cache per-path di EnvironmentTextureLoader.
 static var _normalized_texture_cache: Dictionary = {}
 
 static func clear_cache() -> void:

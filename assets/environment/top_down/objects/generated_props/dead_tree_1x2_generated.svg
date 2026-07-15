@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="56" height="176" viewBox="0 0 160 120" data-generated-by="generate_top_down_environment_assets" data-section="object_scenes" data-id="dead_tree" data-footprint-slots="1x2">
+  <title>object_scenes dead_tree</title>
+  <ellipse cx="80" cy="94" rx="54" ry="13" fill="#050608" opacity="0.38"/>
+  <ellipse cx="80" cy="68" rx="24" ry="18" fill="#355d59" opacity="0.76"/>
+  <path d="M82 104 C80 88 81 73 80 62 C79 46 78 32 78 18" stroke="#355d59" stroke-width="16" stroke-linecap="round" fill="none"/>
+  <path d="M80 62 L45 36 M80 62 L121 39 M81 76 L45 92 M81 76 L118 96" stroke="#355d59" stroke-width="12" stroke-linecap="round" fill="none"/>
+  <path d="M45 36 L32 24 M121 39 L136 27 M45 92 L29 103 M118 96 L133 108 M78 25 L68 12" stroke="#c2b071" stroke-width="6" stroke-linecap="round" fill="none"/>
+  <ellipse cx="82" cy="104" rx="14" ry="8" fill="#355d59" stroke="#0b0b0b" stroke-width="3"/>
+  <path d="M48 108 H112" fill="none" stroke="#c2b071" stroke-width="3" stroke-linecap="round" opacity="0.62"/>
+</svg>

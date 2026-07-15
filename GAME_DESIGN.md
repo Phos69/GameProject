@@ -6,7 +6,10 @@ Un action sandbox locale dove 1-4 giocatori affrontano arene, dungeon e difese a
 
 ## Direzione artistica
 
-- Arcade pseudo-isometrico, stylized e leggibile da distanza couch.
+- Arcade top-down su griglia ortogonale, stylized e leggibile da distanza
+  couch. Terreno e route sono cardinali; edifici, cliff e prop possono
+  conservare volume prospettico controllato secondo
+  `docs/top_down_cardinal_contract.md`.
 - Mood zombie survival post-apocalittico senza rumore visuale eccessivo.
 - Sfondo desaturato e scuro; player, nemici, pickup e pericoli usano accenti piu saturi.
 - Il colore slot identifica il player, ma ogni ruolo deve restare leggibile anche dalla silhouette.
@@ -43,7 +46,9 @@ variazioni visuali senza modificare il controller.
 ## Movimento e camera
 
 - Movimento fluido con tastiera o joypad.
-- Movimento pseudo-isometrico: input di movimento convertito su assi diagonali del playground.
+- Movimento analogico cartesiano: destra aumenta `X`, su diminuisce `Y` e
+  l'input non subisce trasformazioni di proiezione. Le diagonali restano
+  disponibili negli spazi aperti.
 - Ogni player puo eseguire un dodge/roll: `Shift`/`Ctrl` su tastiera player 1 o `B` sul joypad dello slot.
 - Il roll concede una breve invulnerabilita, mette in cooldown l'azione,
   sospende il fuoco durante la schivata e puo attraversare piccoli gap/fall
@@ -480,7 +485,7 @@ per-player. La card usa `portrait_hud_path`/`portrait_full_path` se disponibili,
 e arma.
 Il dossier scrollabile della Character Select segue il focus della card roster
 e mostra descrizione di stile, range derivato da `WeaponData` e una preview
-gameplay isometrica con arma/stance idle. Lo stesso `gameplay_sprite_path`
+gameplay top-down con arma/stance idle. Lo stesso `gameplay_sprite_path`
 alimenta ora il corpo world-space in partita: il layer arma continua a seguire
 l'equipaggiamento reale, mentre facing, hit flash e stati downed/dead restano
 feedback runtime. Se l'asset non e disponibile, `PlayerVisual` usa il fallback
@@ -772,11 +777,11 @@ Identita dei biomi:
 - ogni layout generato contiene strade, corridoi e ostacoli grandi che
   influenzano movimento e combattimento invece di restare solo decorazione;
 - case, cabine, laboratori, barriere, barili, relitti, tronchi, ponti,
-  vegetazione densa, auto e crate usano sprite trasparenti SVG/PNG o regioni
-  `AtlasTexture` con silhouette isometrica dedicata, non il placeholder
-  generico unico. Ventitre ID dei pool tematici leggono 20 grafiche generate
-  dalle tavole dei cinque biomi; la condivisione di una regione non modifica
-  footprint, collisione o peso di generazione dell'ID;
+  vegetazione densa, auto e crate usano sprite trasparenti SVG/PNG con
+  silhouette top-down dedicata e volume controllato, non il placeholder
+  generico unico. Ventitre ID dei pool tematici leggono altrettanti SVG
+  cardinali individuali; la sostituzione visuale non modifica footprint,
+  collisione o peso di generazione dell'ID;
 - `forest_tree` occupa nove slot (`3x3`) e un footprint runtime `2x2` tile
   logici; le `large_rock` sono i blocker tecnici delle mesa e occupano quadrati
   da `3x3` a `5x5` tile logici in tutti i biomi. Entrambi bloccano tutto il
@@ -823,7 +828,7 @@ Regole hazard:
   ambientali e sono gli unici gap attraversabili dal roll entro distanza
   valida;
 - il confine calpestabile/caduta usa cliff orientati sui quattro lati, angoli
-  interni/esterni e raccordi diagonali; la faccia verticale, le linee di
+  interni/esterni e raccordi d'angolo cardinali; la faccia verticale, le linee di
   discesa e il gradiente della parete verso il nero devono rendere il vuoto non
   ambiguo senza affidarsi al nero o alla semplice assenza di tile;
 - tutti gli orientamenti cliff condividono una faccia rocciosa e un lip

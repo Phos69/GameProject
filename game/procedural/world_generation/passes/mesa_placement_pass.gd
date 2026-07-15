@@ -1,7 +1,7 @@
 extends RefCounted
 class_name MesaPlacementPass
 
-const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
+const WorldGridConfig = preload("res://game/core/world_grid_config.gd")
 
 ## Shared mesa density used by advanced biomes. Infected plains keeps the denser
 ## legacy range below so extracting this pass does not alter existing seeds.
@@ -10,11 +10,11 @@ const MAX_COUNT: int = 4
 const PLAINS_MIN_COUNT: int = 10
 const PLAINS_MAX_COUNT: int = 16
 
-const MIN_SIZE: int = IsoGridConfig.VOIDFIRST_ROCK_MIN_SIZE_TILES
-const MAX_SIZE: int = IsoGridConfig.VOIDFIRST_ROCK_MAX_SIZE_TILES
-const GAP: int = IsoGridConfig.VOIDFIRST_ROCK_GAP_TILES
-const MARGIN: int = IsoGridConfig.VOIDFIRST_ROCK_MARGIN_TILES
-const BORDER_THICKNESS: int = IsoGridConfig.BORDER_THICKNESS_TILES
+const MIN_SIZE: int = WorldGridConfig.VOIDFIRST_ROCK_MIN_SIZE_TILES
+const MAX_SIZE: int = WorldGridConfig.VOIDFIRST_ROCK_MAX_SIZE_TILES
+const GAP: int = WorldGridConfig.VOIDFIRST_ROCK_GAP_TILES
+const MARGIN: int = WorldGridConfig.VOIDFIRST_ROCK_MARGIN_TILES
+const BORDER_THICKNESS: int = WorldGridConfig.BORDER_THICKNESS_TILES
 const MAX_ATTEMPTS: int = 600
 
 
@@ -172,7 +172,7 @@ func _mesa_profile_id(biome: BiomeDefinition) -> StringName:
 
 func _center_reserved_rect(layout: BiomeEnvironmentLayout) -> Rect2i:
 	var center := layout.zone_size / 2
-	var half := IsoGridConfig.CENTER_RESERVED_HALF_TILES
+	var half := WorldGridConfig.CENTER_RESERVED_HALF_TILES
 	return Rect2i(center - Vector2i(half, half), Vector2i(half * 2, half * 2))
 
 

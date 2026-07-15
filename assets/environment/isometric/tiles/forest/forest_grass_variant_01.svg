@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="160" height="120" viewBox="0 0 160 120" data-generated-by="generate_isometric_environment_assets" data-section="terrain_tiles" data-id="forest_grass_variant_01">
-  <title>terrain_tiles forest_grass_variant_01</title>
-  <ellipse cx="80" cy="86" rx="58" ry="17" fill="#142b16" opacity="0.38"/>
-  <polygon points="80,16 143,53 80,90 17,53" fill="#1f3719" stroke="#5a7132" stroke-width="4"/>
-  <path d="M31 54 C47 45 60 58 75 48 C91 38 110 56 129 50" fill="none" stroke="#152b13" stroke-width="4" opacity="0.45"/>
-  <path d="M45 48 L56 45 M58 66 L68 57 M82 35 L88 47 M108 68 L117 58 M121 49 L130 54" stroke="#7fa34f" stroke-width="2" stroke-linecap="round" opacity="0.58"/>
-  <path d="M57 43 L69 39 L74 43 M96 58 L108 54 L116 59" fill="none" stroke="#4f3d22" stroke-width="2" opacity="0.40"/>
-</svg>

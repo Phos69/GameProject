@@ -8,7 +8,7 @@ regole di gioco in `GAME_DESIGN.md`.
 ## Stato Corrente
 
 Il progetto ha superato il prototipo minimo: le tre modalita principali sono
-giocabili, la zombie survival usa il mondo isometrico seed-based con streaming
+giocabili, la zombie survival usa il mondo top-down cardinale seed-based con streaming
 incrementale di regioni e chunk camera-centrici, il roster RPG e le armi hanno
 pass data-driven, UI/audio/settings sono
 funzionali e la suite rapida GUT e pulita. Il lavoro attivo ora riguarda polish,
@@ -27,8 +27,8 @@ senza un nuovo goal esplicito e una voce in `TODO.md`.
 | Fondazione runtime | Milestone 0-4: repo, progetto Godot, input, co-op locale, camera, player, combat, health, nemici, drop e pickup. | `README.md`, `ARCHITECTURE.md`, suite GUT core/combat/progression |
 | Modalita base | Milestone 5-9: survival a ondate, boss `Wave Warden`, dungeon lineare, tower defense base, save/load, menu, export preset e packaging iniziale. | `ARCHITECTURE.md`, `GAME_DESIGN.md`, `docs/latest_commit_validation_report.md` |
 | Visual gameplay e UX base | Milestone 10-21: readability survival, telegraph boss, varianti zombie, visual armi/torri, polish boss, shooter ranged, downed/revive, risultati run, audio mix, secondo boss, arena data-driven, accessibilita e profiling. | `CHANGELOG.md`, `docs/testing/manual_checklist.md` |
-| Zombie survival e mondo isometrico | Revamp zombie Z1-Z12, megamappa persistente, regioni `75x75` tile logici (`450x450` equivalenti legacy), survival standard `3x3`, terrain classification, hazard, streaming incrementale senza caricamento ai seam, chase cross-bioma, Infinite Arena con raised cliff `walled`; `WORLD-UNIFY-001` aggiunge profili per cinque biomi, chasm interni garantiti, mesa tematiche, props pesati e hazard statici avanzati. | `ARCHITECTURE.md`, `GAME_DESIGN.md`, `map_generation_report.md`, suite `world_gen`, `environment`, `modes`, `soak` |
-| Asset isometrici e ostacoli | ISO-001, rewrite biomi R1-R3, manifest ambiente v10, tile/terrain/passaggi/cliff asset-driven, footprint slot-based, alberi/rocce 3x3, plateau rocciosi scalabili, cliff PNG seamless, generated biome art e 23 prop promossi tramite 20 regioni AtlasTexture. | `docs/obstacle_rendering.md`, `docs/forest_isometric_texture_system.md`, `docs/repo_fix_milestone_10_asset_fallback_policy.md` |
+| Zombie survival e mondo top-down | Revamp zombie Z1-Z12, megamappa persistente, regioni `75x75` tile logici (`450x450` equivalenti legacy), survival standard `3x3`, terrain classification, hazard, streaming incrementale senza caricamento ai seam, chase cross-bioma, Infinite Arena con raised cliff `walled`; `WORLD-UNIFY-001` aggiunge profili per cinque biomi, chasm interni garantiti, mesa tematiche, props pesati e hazard statici avanzati. | `ARCHITECTURE.md`, `GAME_DESIGN.md`, `map_generation_report.md`, suite `world_gen`, `environment`, `modes`, `soak` |
+| Asset top-down e ostacoli | `TOPDOWN-001`, rewrite biomi R1-R3, manifest ambiente, tile/terrain/passaggi/cliff asset-driven, footprint slot-based, alberi/rocce 3x3, plateau rocciosi scalabili, cliff PNG seamless, generated biome art e 23 prop SVG cardinali individuali. Il terreno usa assi H/V; il volume prospettico e separato dal footprint. | `docs/top_down_cardinal_contract.md`, `docs/obstacle_rendering.md`, `docs/forest_top_down_texture_system.md` |
 | RPG, armi e mercato | RPG Mode M1-M13, classi avanzate, inventario armi, 30 armi catalogo, mercato zombie ricorrente e WVIS W0-W8. | `docs/zombie_market.md`, `docs/weapon_visual_identity_validation_report.md`, `docs/rpg_character_visual_checklist.md` |
 | QA, tooling e documentazione | Cutover GUT, cleanup warning headless, server MCP locale read-only e cleanup documentale 2026-07-01. | `tools/mcp-server/README.md`, `docs/documentation_inventory.md`, `CHANGELOG.md` |
 
@@ -39,10 +39,21 @@ anche le milestone completate per evitare sovrapposizioni.
 
 ### Presentazione e UX
 
+- `TOPDOWN-001`: **completata 2026-07-15**. Renderer, manifest v11, cache,
+  generazione mondo, UI, branding, tooling e documentazione usano il contratto
+  `orthogonal_top_down`; movimento e mira restano analogici e il volume di
+  cliff, edifici, prop e attori usa `controlled_perspective`. I 23 prop ad
+  atlas sono stati sostituiti da 23 SVG cardinali individuali e i 66 materiali
+  cliff sono stati normalizzati. Seed, footprint, collisioni e save correnti
+  restano compatibili; il rename del progetto include una migrazione save
+  one-shot. Evidenza: GUT 286/286, check 131 asset e 66 cliff, Visual QA finale,
+  menu e oggetti verdi. Contratto e guardrail vivono in
+  `docs/top_down_cardinal_contract.md`.
+
 - `UIUX-001`: **completata 2026-07-07**. UI-VIS-FIX (2026-07-03) ha chiuso
   gerarchia HUD, Character Select e boss HUD; il pass finale del 2026-07-07 ha
   chiuso `WEAPON-VIS-FIX` (`VIS-011`), il main menu (`VIS-012`, fondale
-  isometrico nei toni dei biomi, card compatta, lingua italiana, safe area a
+  top-down nei toni dei biomi, card compatta, lingua italiana, safe area a
   tre risoluzioni) e i residui asset (`VIS-009`/`VIS-008`: fence a canvas
   nativa, large_rock riclassificato, forest_tree confermato hero asset).
   Regressione audio mix e suite GUT completa verdi (238/238). Resta solo
@@ -113,12 +124,12 @@ anche le milestone completate per evitare sovrapposizioni.
   tengono mesa, hazard e prop fuori dall'orchestratore e il fallback prop e
   testato senza sampling. La board Visual QA ha prodotto 210 catture verdi.
   Analisi ed esito in `map_generation_report.md`.
-- La promozione artistica richiesta e completata: 23 ID dei pool attivi usano
-  ora 20 regioni generate dalle cinque tavole, con contratti `final`. Il
-  giudizio qualitativo manuale, i 18 SVG non rappresentati dalle tavole e la
-  rimozione del percorso legacy restano polish o cleanup fuori dalla milestone
-  core; richiedono un nuovo goal, salvo il playtest gia incluso in `BAL-001`.
-  La chiusura non
+- La promozione cardinale richiesta e completata: i 23 ID dei pool attivi
+  usano 23 SVG individuali `final`, dichiarati dal manifest con source
+  `project_svg_generator` e attribution `environment_top_down_internal`. Le 23
+  risorse `.tres` e le cinque tavole concept raster del percorso precedente
+  sono state rimosse; resta aperto soltanto il giudizio qualitativo manuale gia
+  incluso in `BAL-001`. La chiusura non
   riapre genericamente `BIO-001` o il pass artistico archiviato.
 
 ### QA, Bilanciamento e Performance

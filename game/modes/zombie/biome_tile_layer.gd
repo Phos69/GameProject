@@ -7,22 +7,22 @@ const DEFAULT_CHUNK_SIZE := 10
 const PERFORMANCE_CHUNK_SIZE := 13
 const QUALITY_CHUNK_SIZE := 8
 const CLIFF_MESH_BUILDER_SCRIPT = preload(
-	"res://game/modes/zombie/cliffs/isometric_cliff_mesh_builder.gd"
+	"res://game/modes/zombie/cliffs/top_down_cliff_mesh_builder.gd"
 )
 const CLIFF_BORDER_MESH_BUILDER_SCRIPT = preload(
-	"res://game/modes/zombie/cliffs/isometric_cliff_border_mesh_builder.gd"
+	"res://game/modes/zombie/cliffs/top_down_cliff_border_mesh_builder.gd"
 )
 const RECTILINEAR_CLIFF_FACE_MESH_BUILDER_SCRIPT = preload(
 	"res://game/modes/zombie/cliffs/rectilinear_cliff_face_mesh_builder.gd"
 )
 const FOREST_GROUND_MESH_BUILDER_SCRIPT = preload(
-	"res://game/modes/zombie/ground/isometric_forest_ground_mesh_builder.gd"
+	"res://game/modes/zombie/ground/forest_ground_mesh_builder.gd"
 )
 const RECTILINEAR_ROCK_AREA_MESH_BUILDER_SCRIPT = preload(
 	"res://game/modes/zombie/rocks/rectilinear_rock_area_mesh_builder.gd"
 )
 const SVG_TEXTURE_LOADER = preload(
-	"res://game/modes/zombie/isometric_svg_texture_loader.gd"
+	"res://game/modes/zombie/environment_texture_loader.gd"
 )
 const TILE_BAKE_CACHE = preload(
 	"res://game/modes/zombie/tile_bake_cache.gd"
@@ -125,8 +125,8 @@ var palette: BiomePalette
 var biome_id: StringName = &""
 var quality_preset: StringName = &"balanced"
 var chunk_size: int = DEFAULT_CHUNK_SIZE
-var manifest: IsometricEnvironmentManifest
-var resolver: IsometricTileResolver
+var manifest: EnvironmentAssetManifest
+var resolver: BiomeTileResolver
 
 var _chunks: Array[Rect2i] = []
 var _tile_id_cache: Dictionary = {}
@@ -143,8 +143,8 @@ var _missing_asset_count: int = 0
 var _ground_mesh: ArrayMesh
 var _ground_underlay_mesh: ArrayMesh
 var _forest_surface_meshes: Dictionary = {}
-var _cliff_mesh_builder: IsometricCliffMeshBuilder
-var _cliff_border_mesh_builder: IsometricCliffBorderMeshBuilder
+var _cliff_mesh_builder: TopDownCliffMeshBuilder
+var _cliff_border_mesh_builder: TopDownCliffBorderMeshBuilder
 var _rectilinear_cliff_face_mesh_builder: RectilinearCliffFaceMeshBuilder
 var _rock_area_mesh_builder: RectilinearRockAreaMeshBuilder
 var _mesa_area_mesh_builders: Dictionary = {}
@@ -184,7 +184,7 @@ func prewarm_assets(
 	next_layout: BiomeEnvironmentLayout,
 	next_palette: BiomePalette,
 	next_biome_id: StringName,
-	next_manifest: IsometricEnvironmentManifest = null
+	next_manifest: EnvironmentAssetManifest = null
 ) -> void:
 	layout = next_layout
 	palette = next_palette
@@ -192,7 +192,7 @@ func prewarm_assets(
 	manifest = (
 		next_manifest
 		if next_manifest != null
-		else IsometricEnvironmentManifest.get_shared()
+		else EnvironmentAssetManifest.get_shared()
 	)
 	_load_cliff_art_textures()
 	_load_forest_surface_art_textures()
@@ -204,8 +204,8 @@ func configure(
 	next_biome_id: StringName,
 	next_quality_preset: StringName = &"balanced",
 	next_chunk_size: int = 0,
-	next_resolver: IsometricTileResolver = null,
-	next_manifest: IsometricEnvironmentManifest = null,
+	next_resolver: BiomeTileResolver = null,
+	next_manifest: EnvironmentAssetManifest = null,
 	async_build: bool = false,
 	build_all_chunks: bool = true
 ) -> void:
@@ -213,14 +213,14 @@ func configure(
 	palette = next_palette
 	biome_id = next_biome_id
 	quality_preset = next_quality_preset
-	manifest = next_manifest if next_manifest != null else IsometricEnvironmentManifest.get_shared()
-	resolver = next_resolver if next_resolver != null else IsometricTileResolver.new(manifest)
+	manifest = next_manifest if next_manifest != null else EnvironmentAssetManifest.get_shared()
+	resolver = next_resolver if next_resolver != null else BiomeTileResolver.new(manifest)
 	_load_cliff_art_textures()
 	_load_forest_surface_art_textures()
 	_load_rock_art_texture()
-	_cliff_mesh_builder = CLIFF_MESH_BUILDER_SCRIPT.new() as IsometricCliffMeshBuilder
+	_cliff_mesh_builder = CLIFF_MESH_BUILDER_SCRIPT.new() as TopDownCliffMeshBuilder
 	_cliff_border_mesh_builder = (
-		CLIFF_BORDER_MESH_BUILDER_SCRIPT.new() as IsometricCliffBorderMeshBuilder
+		CLIFF_BORDER_MESH_BUILDER_SCRIPT.new() as TopDownCliffBorderMeshBuilder
 	)
 	_rectilinear_cliff_face_mesh_builder = (
 		RECTILINEAR_CLIFF_FACE_MESH_BUILDER_SCRIPT.new() as RectilinearCliffFaceMeshBuilder
@@ -1080,12 +1080,12 @@ func _load_generated_theme_manifest_surface_textures() -> void:
 		&"terrain_tiles",
 		GENERATED_THEME_TERRAIN_SURFACE_TILE_IDS
 	):
-		_load_manifest_surface_texture(IsometricTileResolver.TILE_SECTION_TERRAIN, tile_id)
+		_load_manifest_surface_texture(BiomeTileResolver.TILE_SECTION_TERRAIN, tile_id)
 	for tile_id in _biome_manifest_surface_tile_ids(
 		&"passage_tiles",
 		GENERATED_THEME_PASSAGE_SURFACE_TILE_IDS
 	):
-		_load_manifest_surface_texture(IsometricTileResolver.TILE_SECTION_PASSAGE, tile_id)
+		_load_manifest_surface_texture(BiomeTileResolver.TILE_SECTION_PASSAGE, tile_id)
 
 func _biome_manifest_surface_tile_ids(
 	contract_key: StringName,
@@ -1489,8 +1489,12 @@ func _build_visual_chunk(chunk_rect: Rect2i, scale: float) -> void:
 	_transition_lines = PackedVector2Array()
 	_depth_lines = PackedVector2Array()
 	_suppressed_void_texture_count = 0
-	var half_w := scale * 0.62
-	var half_h := scale * 0.34
+	# The gameplay grid is screen-aligned: every fallback cell must cover exactly
+	# one logical square. Textured surface runs already use this contract; keeping
+	# the untextured path rectangular prevents a missing asset from reintroducing
+	# a rotated projection.
+	var half_w := scale * 0.5
+	var half_h := scale * 0.5
 	var vertices := PackedVector2Array()
 	var colors := PackedColorArray()
 	var indices := PackedInt32Array()
@@ -1553,15 +1557,15 @@ func _build_visual_chunk(chunk_rect: Rect2i, scale: float) -> void:
 						scale
 					)
 				continue
-			var top := center + Vector2(0.0, -half_h)
-			var right := center + Vector2(half_w, 0.0)
-			var bottom := center + Vector2(0.0, half_h)
-			var left := center + Vector2(-half_w, 0.0)
+			var top_left := center + Vector2(-half_w, -half_h)
+			var top_right := center + Vector2(half_w, -half_h)
+			var bottom_right := center + Vector2(half_w, half_h)
+			var bottom_left := center + Vector2(-half_w, half_h)
 			var base := vertices.size()
-			vertices.append(top)
-			vertices.append(right)
-			vertices.append(bottom)
-			vertices.append(left)
+			vertices.append(top_left)
+			vertices.append(top_right)
+			vertices.append(bottom_right)
+			vertices.append(bottom_left)
 			var color := _tile_color(tile_id)
 			for _index in range(4):
 				colors.append(color)
@@ -1571,14 +1575,14 @@ func _build_visual_chunk(chunk_rect: Rect2i, scale: float) -> void:
 			indices.append(base)
 			indices.append(base + 2)
 			indices.append(base + 3)
-			grid.append(top)
-			grid.append(right)
-			grid.append(right)
-			grid.append(bottom)
-			grid.append(bottom)
-			grid.append(left)
-			grid.append(left)
-			grid.append(top)
+			grid.append(top_left)
+			grid.append(top_right)
+			grid.append(top_right)
+			grid.append(bottom_right)
+			grid.append(bottom_right)
+			grid.append(bottom_left)
+			grid.append(bottom_left)
+			grid.append(top_left)
 			_append_texture_details(cell, tile_id, center, half_w, half_h)
 			if collect_cliff_transitions:
 				_append_cliff_transition_mesh(
@@ -1718,16 +1722,16 @@ func _manifest_surface_texture_id(section: StringName, tile_id: StringName) -> S
 
 func _manifest_surface_section_for_tile_id(tile_id: StringName) -> StringName:
 	if GENERATED_THEME_PASSAGE_SURFACE_TILE_IDS.has(tile_id):
-		return IsometricTileResolver.TILE_SECTION_PASSAGE
+		return BiomeTileResolver.TILE_SECTION_PASSAGE
 	if GENERATED_THEME_TERRAIN_SURFACE_TILE_IDS.has(tile_id):
-		return IsometricTileResolver.TILE_SECTION_TERRAIN
+		return BiomeTileResolver.TILE_SECTION_TERRAIN
 	return &""
 
 func _is_manifest_surface_texture_id(texture_id: StringName) -> bool:
 	var texture_key := String(texture_id)
 	return (
-		texture_key.begins_with("%s/" % String(IsometricTileResolver.TILE_SECTION_TERRAIN))
-		or texture_key.begins_with("%s/" % String(IsometricTileResolver.TILE_SECTION_PASSAGE))
+		texture_key.begins_with("%s/" % String(BiomeTileResolver.TILE_SECTION_TERRAIN))
+		or texture_key.begins_with("%s/" % String(BiomeTileResolver.TILE_SECTION_PASSAGE))
 	)
 
 func _forest_surface_texture_id(tile_id: StringName) -> StringName:
@@ -1735,14 +1739,14 @@ func _forest_surface_texture_id(tile_id: StringName) -> StringName:
 		return &""
 	if FOREST_GRASS_SURFACE_TILE_IDS.has(tile_id):
 		return FOREST_GRASS_TEXTURE_ID
-	if IsometricTileResolver.FOREST_ROUTE_SURFACE_TILE_IDS.has(tile_id):
+	if BiomeTileResolver.FOREST_ROUTE_SURFACE_TILE_IDS.has(tile_id):
 		return FOREST_ROAD_BORDER_TEXTURE_ID
 	match tile_id:
-		IsometricTileResolver.TILE_FOREST_CLIFF_EDGE, IsometricTileResolver.TILE_GROUND_TO_VOID_CLIFF:
+		BiomeTileResolver.TILE_FOREST_CLIFF_EDGE, BiomeTileResolver.TILE_GROUND_TO_VOID_CLIFF:
 			# Crest cells are surfaced as grass so the base ground reaches the void
 			# rect edge; the rock crest and descending wall come from the dedicated
-			# border/face meshes. Otherwise these cells drew a green isometric ground
-			# diamond outside the rock border, reading as a green seam tracing the cliff.
+			# border/face meshes. Otherwise these cells drew a duplicate ground quad
+			# outside the rock border, reading as a green seam tracing the cliff.
 			return FOREST_GRASS_TEXTURE_ID
 		_:
 			return &""
@@ -1773,7 +1777,10 @@ func _append_cliff_transition_mesh(
 		or not resolver.is_void_transition_tile_id(tile_id)
 	):
 		return
-	var cliff_depth := maxf(half_h * 8.0, 28.0)
+	# Preserve the established apparent depth after switching the cell fallback
+	# from a compressed projected tile to a full square. Depth is visual only and
+	# remains independent from the rectangular fall-zone collision.
+	var cliff_depth := maxf(scale * 2.72, 28.0)
 	var south_lookahead := ceili(cliff_depth / scale) + 1
 	_cliff_mesh_builder.append_transition(
 		tile_id,
@@ -2044,12 +2051,12 @@ func _append_underlay_run(
 func _forest_underlay_key(tile_id: StringName) -> StringName:
 	if resolver != null and resolver.is_void_transition_tile_id(tile_id):
 		return &"void"
-	if IsometricTileResolver.FOREST_ROUTE_SURFACE_TILE_IDS.has(tile_id):
+	if BiomeTileResolver.FOREST_ROUTE_SURFACE_TILE_IDS.has(tile_id):
 		return &"road"
 	match tile_id:
-		IsometricTileResolver.TILE_FOREST_VOID:
+		BiomeTileResolver.TILE_FOREST_VOID:
 			return &"void"
-		IsometricTileResolver.TILE_FOREST_MOUNTAIN_WALL, IsometricTileResolver.TILE_GROUND_TO_MOUNTAIN_WALL:
+		BiomeTileResolver.TILE_FOREST_MOUNTAIN_WALL, BiomeTileResolver.TILE_GROUND_TO_MOUNTAIN_WALL:
 			return &"wall"
 		_:
 			return &"grass"
@@ -2075,7 +2082,7 @@ func _forest_underlay_color(key: StringName) -> Color:
 			return Color(0.13, 0.24, 0.12, 1.0)
 
 func _uses_forest_ground() -> bool:
-	return biome_id == IsometricTileResolver.FOREST_BIOME_ID
+	return biome_id == BiomeTileResolver.FOREST_BIOME_ID
 
 func _uses_generated_theme() -> bool:
 	return GENERATED_ART_CATALOG.has_generated_theme(biome_id)
@@ -2180,83 +2187,83 @@ func _tile_color(tile_id: StringName) -> Color:
 	if resolver != null and resolver.is_void_transition_tile_id(tile_id):
 		return get_void_background_color()
 	match tile_id:
-		IsometricTileResolver.TILE_FOREST_GRASS:
+		BiomeTileResolver.TILE_FOREST_GRASS:
 			return Color(0.20, 0.34, 0.17, 1.0)
-		IsometricTileResolver.TILE_FOREST_GRASS_VARIANT_01:
+		BiomeTileResolver.TILE_FOREST_GRASS_VARIANT_01:
 			return Color(0.17, 0.30, 0.15, 1.0)
-		IsometricTileResolver.TILE_FOREST_GRASS_VARIANT_02:
+		BiomeTileResolver.TILE_FOREST_GRASS_VARIANT_02:
 			return Color(0.23, 0.36, 0.18, 1.0)
-		IsometricTileResolver.TILE_FOREST_TALL_GRASS:
+		BiomeTileResolver.TILE_FOREST_TALL_GRASS:
 			return Color(0.12, 0.25, 0.11, 1.0)
-		IsometricTileResolver.TILE_FOREST_PATH:
+		BiomeTileResolver.TILE_FOREST_PATH:
 			return Color(0.43, 0.31, 0.17, 1.0)
-		IsometricTileResolver.TILE_FOREST_ROAD:
+		BiomeTileResolver.TILE_FOREST_ROAD:
 			return Color(0.50, 0.38, 0.22, 1.0)
-		IsometricTileResolver.TILE_GRASS_TO_PATH:
+		BiomeTileResolver.TILE_GRASS_TO_PATH:
 			return Color(0.34, 0.31, 0.16, 1.0)
-		IsometricTileResolver.TILE_GRASS_TO_ROAD:
+		BiomeTileResolver.TILE_GRASS_TO_ROAD:
 			return Color(0.37, 0.32, 0.17, 1.0)
-		IsometricTileResolver.TILE_GRASS_TO_TALL_GRASS:
+		BiomeTileResolver.TILE_GRASS_TO_TALL_GRASS:
 			return Color(0.15, 0.28, 0.12, 1.0)
-		IsometricTileResolver.TILE_PATH_TO_ROAD:
+		BiomeTileResolver.TILE_PATH_TO_ROAD:
 			return Color(0.47, 0.35, 0.19, 1.0)
-		IsometricTileResolver.TILE_GROUND_TO_VOID_CLIFF:
+		BiomeTileResolver.TILE_GROUND_TO_VOID_CLIFF:
 			return Color(0.19, 0.28, 0.15, 1.0)
-		IsometricTileResolver.TILE_GROUND_TO_MOUNTAIN_WALL:
+		BiomeTileResolver.TILE_GROUND_TO_MOUNTAIN_WALL:
 			return Color(0.21, 0.25, 0.16, 1.0)
-		IsometricTileResolver.TILE_FOREST_CLIFF_EDGE:
+		BiomeTileResolver.TILE_FOREST_CLIFF_EDGE:
 			return Color(0.13, 0.21, 0.14, 1.0)
-		IsometricTileResolver.TILE_FOREST_VOID:
+		BiomeTileResolver.TILE_FOREST_VOID:
 			return Color(0.08, 0.14, 0.095, 1.0)
-		IsometricTileResolver.TILE_FOREST_MOUNTAIN_WALL:
+		BiomeTileResolver.TILE_FOREST_MOUNTAIN_WALL:
 			return Color(0.19, 0.21, 0.17, 1.0)
-		IsometricTileResolver.TILE_MAIN_ROAD, IsometricTileResolver.TILE_ROAD:
+		BiomeTileResolver.TILE_MAIN_ROAD, BiomeTileResolver.TILE_ROAD:
 			return Color(palette.lane_color, maxf(palette.lane_color.a, 0.46))
-		IsometricTileResolver.TILE_ROAD_INTERSECTION:
+		BiomeTileResolver.TILE_ROAD_INTERSECTION:
 			return Color(palette.lane_color.lightened(0.12), 0.58)
-		IsometricTileResolver.TILE_ROAD_EDGE:
+		BiomeTileResolver.TILE_ROAD_EDGE:
 			return Color(palette.lane_color.darkened(0.12), 0.50)
-		IsometricTileResolver.TILE_ROAD_CURVE_NORTH, IsometricTileResolver.TILE_ROAD_CURVE_EAST, IsometricTileResolver.TILE_ROAD_CURVE_SOUTH, IsometricTileResolver.TILE_ROAD_CURVE_WEST:
+		BiomeTileResolver.TILE_ROAD_CURVE_NORTH, BiomeTileResolver.TILE_ROAD_CURVE_EAST, BiomeTileResolver.TILE_ROAD_CURVE_SOUTH, BiomeTileResolver.TILE_ROAD_CURVE_WEST:
 			return Color(palette.lane_color.lightened(0.06), 0.54)
-		IsometricTileResolver.TILE_BROKEN_STREET:
+		BiomeTileResolver.TILE_BROKEN_STREET:
 			return Color(palette.lane_color.darkened(0.18), 0.52)
-		IsometricTileResolver.TILE_SERVICE_LANE:
+		BiomeTileResolver.TILE_SERVICE_LANE:
 			return Color(palette.gate_color.lightened(0.06), 0.52)
-		IsometricTileResolver.TILE_ASH_LANE, IsometricTileResolver.TILE_BURNED_ROAD:
+		BiomeTileResolver.TILE_ASH_LANE, BiomeTileResolver.TILE_BURNED_ROAD:
 			return Color(palette.hazard_color.darkened(0.22), 0.58)
-		IsometricTileResolver.TILE_PACKED_SNOW_PATH, IsometricTileResolver.TILE_SNOW_PASS:
+		BiomeTileResolver.TILE_PACKED_SNOW_PATH, BiomeTileResolver.TILE_SNOW_PASS:
 			return Color(palette.floor_color.lightened(0.22), 0.58)
-		IsometricTileResolver.TILE_WOODEN_WALKWAY, IsometricTileResolver.TILE_BRIDGE:
+		BiomeTileResolver.TILE_WOODEN_WALKWAY, BiomeTileResolver.TILE_BRIDGE:
 			return Color(palette.prop_color.lightened(0.08), 0.56)
-		IsometricTileResolver.TILE_BROKEN_GATE:
+		BiomeTileResolver.TILE_BROKEN_GATE:
 			return Color(palette.gate_color.darkened(0.10), 0.54)
-		IsometricTileResolver.TILE_BRIDGE_BROKEN:
+		BiomeTileResolver.TILE_BRIDGE_BROKEN:
 			return Color(palette.prop_color.darkened(0.18), 0.56)
-		IsometricTileResolver.TILE_CLIFF_RAMP:
+		BiomeTileResolver.TILE_CLIFF_RAMP:
 			return Color(palette.background_color.lightened(0.12), 0.54)
-		IsometricTileResolver.TILE_HAZARD_FLOOR:
+		BiomeTileResolver.TILE_HAZARD_FLOOR:
 			return Color(palette.hazard_color, 0.60)
-		IsometricTileResolver.TILE_BORDER_FLOOR:
+		BiomeTileResolver.TILE_BORDER_FLOOR:
 			return palette.floor_color.darkened(0.24)
-		IsometricTileResolver.TILE_VOID_EDGE_NEAR:
+		BiomeTileResolver.TILE_VOID_EDGE_NEAR:
 			return palette.background_color.darkened(0.38)
-		IsometricTileResolver.TILE_VOID_DEPTH:
+		BiomeTileResolver.TILE_VOID_DEPTH:
 			# The depth remains dark, but not pure black: cliff faces, fissures and
 			# low mist provide a readable visual descent from the walkable lip.
 			return palette.background_color.darkened(0.56)
-		IsometricTileResolver.TILE_FLOOR_VARIANT_01:
+		BiomeTileResolver.TILE_FLOOR_VARIANT_01:
 			return palette.alternate_floor_color
-		IsometricTileResolver.TILE_FLOOR_VARIANT_02:
+		BiomeTileResolver.TILE_FLOOR_VARIANT_02:
 			return palette.floor_color.lightened(0.035)
-		IsometricTileResolver.TILE_FLOOR_VARIANT_03:
+		BiomeTileResolver.TILE_FLOOR_VARIANT_03:
 			return palette.alternate_floor_color.darkened(0.045)
 		_:
 			return palette.floor_color
 
 func _is_untextured_void_tile(tile_id: StringName) -> bool:
 	return (
-		tile_id == IsometricTileResolver.TILE_VOID_DEPTH
-		or tile_id == IsometricTileResolver.TILE_FOREST_VOID
+		tile_id == BiomeTileResolver.TILE_VOID_DEPTH
+		or tile_id == BiomeTileResolver.TILE_FOREST_VOID
 	)
 
 func _uses_rectilinear_void_transition_art(tile_id: StringName) -> bool:
@@ -2277,17 +2284,17 @@ func _append_texture_details(
 		_append_cliff_texture(cell, center, half_w, half_h)
 		return
 	match tile_id:
-		IsometricTileResolver.TILE_FOREST_GRASS, IsometricTileResolver.TILE_FOREST_GRASS_VARIANT_01, IsometricTileResolver.TILE_FOREST_GRASS_VARIANT_02:
+		BiomeTileResolver.TILE_FOREST_GRASS, BiomeTileResolver.TILE_FOREST_GRASS_VARIANT_01, BiomeTileResolver.TILE_FOREST_GRASS_VARIANT_02:
 			_append_grass_texture(cell, center, half_w, half_h)
-		IsometricTileResolver.TILE_FOREST_TALL_GRASS:
+		BiomeTileResolver.TILE_FOREST_TALL_GRASS:
 			_append_tall_grass_texture(cell, center, half_w, half_h)
-		IsometricTileResolver.TILE_FOREST_PATH, IsometricTileResolver.TILE_GRASS_TO_PATH:
+		BiomeTileResolver.TILE_FOREST_PATH, BiomeTileResolver.TILE_GRASS_TO_PATH:
 			_append_path_texture(cell, center, half_w, half_h, false)
-		IsometricTileResolver.TILE_FOREST_ROAD, IsometricTileResolver.TILE_GRASS_TO_ROAD, IsometricTileResolver.TILE_PATH_TO_ROAD:
+		BiomeTileResolver.TILE_FOREST_ROAD, BiomeTileResolver.TILE_GRASS_TO_ROAD, BiomeTileResolver.TILE_PATH_TO_ROAD:
 			_append_path_texture(cell, center, half_w, half_h, true)
-		IsometricTileResolver.TILE_GRASS_TO_TALL_GRASS, IsometricTileResolver.TILE_GROUND_TO_MOUNTAIN_WALL:
+		BiomeTileResolver.TILE_GRASS_TO_TALL_GRASS, BiomeTileResolver.TILE_GROUND_TO_MOUNTAIN_WALL:
 			_append_transition_texture(cell, center, half_w, half_h)
-		IsometricTileResolver.TILE_GROUND_TO_VOID_CLIFF, IsometricTileResolver.TILE_FOREST_CLIFF_EDGE:
+		BiomeTileResolver.TILE_GROUND_TO_VOID_CLIFF, BiomeTileResolver.TILE_FOREST_CLIFF_EDGE:
 			_append_cliff_texture(cell, center, half_w, half_h)
 		_:
 			pass

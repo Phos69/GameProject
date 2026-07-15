@@ -1,7 +1,7 @@
 extends RefCounted
 class_name StaticHazardPlacementPass
 
-const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
+const WorldGridConfig = preload("res://game/core/world_grid_config.gd")
 
 const MAX_COUNT := 2
 const ATTEMPTS_PER_ID := 500
@@ -76,7 +76,7 @@ func _find_random_rect(
 	size: Vector2i,
 	rng: RandomNumberGenerator
 ) -> Rect2i:
-	var lo := IsoGridConfig.BORDER_THICKNESS_TILES + BORDER_MARGIN
+	var lo := WorldGridConfig.BORDER_THICKNESS_TILES + BORDER_MARGIN
 	var hi_x := layout.zone_size.x - lo - size.x
 	var hi_y := layout.zone_size.y - lo - size.y
 	if hi_x < lo or hi_y < lo:
@@ -92,7 +92,7 @@ func _find_random_rect(
 
 
 func _scan_rect(layout: BiomeEnvironmentLayout, size: Vector2i) -> Rect2i:
-	var lo := IsoGridConfig.BORDER_THICKNESS_TILES + BORDER_MARGIN
+	var lo := WorldGridConfig.BORDER_THICKNESS_TILES + BORDER_MARGIN
 	var max_x := layout.zone_size.x - lo - size.x
 	var max_y := layout.zone_size.y - lo - size.y
 	for y in range(lo, max_y + 1):

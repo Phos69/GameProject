@@ -35,7 +35,7 @@ var environment_container: Node
 var pickup_container: Node
 var current_region_id: StringName = &""
 var anchor_region_id: StringName = &""
-var manifest: IsometricEnvironmentManifest
+var manifest: EnvironmentAssetManifest
 var _is_streaming: bool = false
 var _pending_region_ids: Array[StringName] = []
 # {"region_id": StringName, "kind": &"obstacle"|&"hazard"|&"crate", "index": int,
@@ -52,7 +52,7 @@ var _entries: Dictionary = {}
 
 func _ready() -> void:
 	add_to_group("world_region_streamer")
-	manifest = IsometricEnvironmentManifest.get_shared()
+	manifest = EnvironmentAssetManifest.get_shared()
 	_chunk_visibility = (
 		WORLD_CHUNK_VISIBILITY_CONTROLLER_SCRIPT.new()
 		as WorldChunkVisibilityController

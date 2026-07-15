@@ -122,7 +122,7 @@ func _add_tree_cluster(
 	system.name = "QaObstacleSystem"
 	scene_root.add_child(system)
 	await process_frame
-	var manifest := IsometricEnvironmentManifest.get_shared()
+	var manifest := EnvironmentAssetManifest.get_shared()
 	var footprint := manifest.get_footprint_tiles(&"forest_tree")
 	var tree_size := Vector2(
 		float(footprint.x),

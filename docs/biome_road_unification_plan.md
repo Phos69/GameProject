@@ -1,5 +1,9 @@
 # Report differenze biomi + piano di unificazione strade
 
+> Piano completato e conservato come evidenza storica. I simboli e i percorsi
+> qui citati riflettono il repository prima di `TOPDOWN-001`; il contratto
+> operativo corrente e `docs/top_down_cardinal_contract.md`.
+
 Stato: 2026-07-09 — fasi 0-3 eseguite, follow-up edge/core e overlay mono-lato
 completati, sorgente strip riportata al PNG madre (vedi note in fondo alle
 rispettive sezioni); fasi 4-5 aperte. Il report differenze descrive lo stato

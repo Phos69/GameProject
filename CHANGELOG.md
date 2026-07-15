@@ -6,6 +6,32 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ## Unreleased
 
+### Changed
+
+- Completata `TOPDOWN-001`: definito il contratto `orthogonal_top_down` con
+  `controlled_perspective`, assi world-space cartesiani e movimento analogico
+  invariato. Documentazione e server MCP puntano ora al manifest
+  `assets/environment/top_down/manifest.json`, alle classi projection-neutral
+  e al generatore `generate_top_down_environment_assets.gd`; il generatore
+  produce ground e route H/V, con facciata sud separata dal footprint per gli
+  elementi dotati di volume. Changelog e report antecedenti al 2026-07-15
+  restano evidenza storica e non definiscono nuovi asset.
+- Sostituito il pass prop ad atlas del manifest v10: i 23 `object_scenes`
+  interessati puntano ora a 23 SVG cardinali individuali `final` in
+  `objects/generated_props/`, source `project_svg_generator` e attribution
+  `environment_top_down_internal`. Rimosse le 23 risorse `AtlasTexture` `.tres`
+  e le cinque tavole concept PNG; footprint, collisioni, anchor, sort e pool
+  procedurali restano invariati.
+- Aggiunto `tools/migrate_top_down_cliff_textures.gd`: normalizza in modo
+  deterministico i 66 PNG cliff dei sei temi, separando materiale overhead per
+  lip/angoli e materiale di parete per le facce. Il comando predefinito scrive
+  la libreria migrata; `--check` valida conteggio e dimensioni senza mutazioni.
+- Verifica finale `TOPDOWN-001`: import Godot PASS; GUT completo 286/286 con
+  28.914 assert; generatore ambiente 131/131 e cliff 66/66; Visual QA
+  `top_down_final`, menu e 31 oggetti campione PASS. Il boot reale di
+  `main.tscn`, streaming multi-bioma, salvataggi e UI cardinali sono inclusi
+  nelle suite verdi.
+
 ### Added
 
 - Le boss wave di Survival, Infinite Arena e Tower Defense mantengono ora la
@@ -30,16 +56,12 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
   world-space dei sette personaggi e build smoke della scena principale con
   exit code 0.
 
-- Promosse le cinque tavole prop generate a sorgenti runtime nel manifest
-  ambiente v10: 23 `object_scenes` usano 20 regioni `AtlasTexture` con alpha,
-  `filter_clip`, filename footprint e provenienza `openai_image_generation`.
-  Footprint, collisioni, anchor, sort e pool procedurali restano invariati; le
-  regioni condivise coprono le tre coppie tossiche, mentre `reed_wall` conserva
-  lo SVG verticale `1x3` perche la grafica palude disponibile rappresenta un
-  `marsh_log` orizzontale. Loader, scala high-resolution, asset generator,
-  suite asset/ostacoli e Visual QA accettano ora risorse `Texture2D` `.tres`.
-  Verifica finale: GUT 275/275 (28.521 assert), asset check su 131 contratti,
-  boot headless verde e board multi-bioma PASS con 210 catture rigenerate.
+- Il pass prop del manifest v10 aveva promosso cinque tavole a 20 regioni
+  `AtlasTexture` per 23 ID. Quel percorso e ora documentazione storica: il
+  manifest v11 usa gli SVG individuali descritti sopra e i relativi `.tres` e
+  concept PNG non sono piu presenti. La validazione del pass originale aveva
+  chiuso GUT 275/275 (28.521 assert), asset check su 131 contratti, boot
+  headless e board multi-bioma con 210 catture.
 
 - Completata `WORLD-UNIFY-001` sul generatore void-first condiviso da Zombie
   Survival e Infinite Arena. Cinque `BiomeGenerationProfile` tipizzati
@@ -56,11 +78,11 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
   alterati. Aggiunti guardrail deterministici multi-bioma, placement e fuzz su
   20 seed x 5 biomi, oltre ai test mesh/collisione mesa e al fallback prop
   forzato. Visual QA verde su 210 catture (tre seed, cinque biomi, due
-  risoluzioni e focus cliff/mesa/prop). Le cinque tavole originali sotto
-  `assets/environment/isometric/concepts/` sono state poi promosse al runtime
-  dal pass asset v10 sopra; giudizio manuale, 18 SVG non rappresentati e
-  cleanup del percorso legacy restano fuori dal core. I playtest `BAL-001` non
-  sono dichiarati completati.
+  risoluzioni e focus cliff/mesa/prop). Il successivo pass v10 aveva promosso
+  cinque tavole a sorgenti runtime, poi sostituite nella migrazione v11 dai 23
+  SVG cardinali individuali; tavole e ritagli `.tres` sono stati rimossi. Il
+  giudizio manuale resta in `BAL-001`, i cui playtest non sono dichiarati
+  completati.
 
 - Chiusa `BOSS-002` con cinque boss zombie asset-backed per Infinite Arena e
   Zombie Survival: `Grave Colossus` e `Gore Charger` usano sweep, slam e

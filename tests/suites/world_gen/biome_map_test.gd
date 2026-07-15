@@ -3,8 +3,8 @@ extends GutTest
 ## persistenza del grafo e roster tematici.
 ##
 ## Migra e accorpa:
-##   tests/isometric_biome_generation_rewrite_smoke_test.gd
-##   tests/isometric_biome_terrain_coverage_smoke_test.gd
+##   tests/top_down_biome_generation_rewrite_smoke_test.gd
+##   tests/top_down_biome_terrain_coverage_smoke_test.gd
 ##   tests/persistent_world_generation_smoke_test.gd
 ##   tests/biome_roster_smoke_test.gd
 ##
@@ -12,18 +12,18 @@ extends GutTest
 ## in before_all e riusata da tutti i test della suite.
 
 const WorldGen = preload("res://tests/support/world_gen_helpers.gd")
-const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
+const WorldGridConfig = preload("res://game/core/world_grid_config.gd")
 
 const MAP_SEED := 515151
 const BIOME_IDS := ["infected_plains", "toxic_wastes", "burning_fields", "frozen_outskirts", "drowned_marsh"]
 
 var _manager: BiomeManager
-var _manifest: IsometricEnvironmentManifest
+var _manifest: EnvironmentAssetManifest
 var _cells: Array[BiomeCell] = []
 var _sample_cells: Array[BiomeCell] = []
 
 func before_all() -> void:
-	_manifest = IsometricEnvironmentManifest.reload_shared()
+	_manifest = EnvironmentAssetManifest.reload_shared()
 	_manager = WorldGen.start_biome_manager(self, {
 		"world_seed": MAP_SEED,
 		"biome_map_width": 3,
@@ -48,11 +48,11 @@ func test_map_generates_nine_cells() -> void:
 	assert_gte(_sample_cells.size(), 5, "la mappa campiona ogni biome esistente")
 
 func test_generation_constants() -> void:
-	assert_eq(BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE, IsoGridConfig.BIOME_SIZE, "regioni logiche 75x75")
-	assert_eq(IsoGridConfig.LEGACY_EQUIVALENT_SIZE_TILES, 450, "75 tile nuovi equivalgono a 450 tile legacy")
-	assert_eq(ObstacleLayoutGenerator.ROAD_WIDTH, IsoGridConfig.ROAD_WIDTH_TILES, "strada principale larga 7 tile nuovi")
-	assert_eq(ObstacleLayoutGenerator.SECONDARY_ROAD_WIDTH, IsoGridConfig.SECONDARY_ROAD_WIDTH_TILES, "percorso secondario largo 4 tile nuovi")
-	assert_eq(BiomePassageGenerator.PASSAGE_WIDTH, IsoGridConfig.PASSAGE_WIDTH_TILES, "passaggio fisico largo 7 tile nuovi")
+	assert_eq(BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE, WorldGridConfig.BIOME_SIZE, "regioni logiche 75x75")
+	assert_eq(WorldGridConfig.LEGACY_EQUIVALENT_SIZE_TILES, 450, "75 tile nuovi equivalgono a 450 tile legacy")
+	assert_eq(ObstacleLayoutGenerator.ROAD_WIDTH, WorldGridConfig.ROAD_WIDTH_TILES, "strada principale larga 7 tile nuovi")
+	assert_eq(ObstacleLayoutGenerator.SECONDARY_ROAD_WIDTH, WorldGridConfig.SECONDARY_ROAD_WIDTH_TILES, "percorso secondario largo 4 tile nuovi")
+	assert_eq(BiomePassageGenerator.PASSAGE_WIDTH, WorldGridConfig.PASSAGE_WIDTH_TILES, "passaggio fisico largo 7 tile nuovi")
 
 # --- invarianti di layout per cella campione ------------------------------
 
@@ -95,7 +95,7 @@ func test_sample_cells_layout_invariants() -> void:
 			"%s rispetta il budget random prop" % String(cell.id))
 		assert_eq(layout.random_prop_ids.size(), layout.random_prop_rects.size(),
 			"%s ha id/rect random prop paralleli" % String(cell.id))
-		assert_false(layout.obstacle_rects.is_empty(), "%s ha oggetti isometrici bloccanti" % String(cell.id))
+		assert_false(layout.obstacle_rects.is_empty(), "%s ha oggetti top-down bloccanti" % String(cell.id))
 		assert_true(bool(layout.validation_report.get("is_valid", false)),
 			"%s passa la validazione connettivita/placement" % String(cell.id))
 
@@ -277,9 +277,9 @@ func _has_axis_road(layout: BiomeEnvironmentLayout, tag: StringName, width: int,
 		if index >= layout.road_rect_tags.size() or layout.road_rect_tags[index] != tag:
 			continue
 		var rect := layout.road_rects[index]
-		if vertical and rect.size.x == width and rect.size.y >= layout.zone_size.y - IsoGridConfig.SIDE_EDGE_MAX_THICKNESS_TILES:
+		if vertical and rect.size.x == width and rect.size.y >= layout.zone_size.y - WorldGridConfig.SIDE_EDGE_MAX_THICKNESS_TILES:
 			return true
-		if not vertical and rect.size.y == width and rect.size.x >= layout.zone_size.x - IsoGridConfig.SIDE_EDGE_MAX_THICKNESS_TILES:
+		if not vertical and rect.size.y == width and rect.size.x >= layout.zone_size.x - WorldGridConfig.SIDE_EDGE_MAX_THICKNESS_TILES:
 			return true
 	return false
 
@@ -294,14 +294,14 @@ func _has_main_road_cells(layout: BiomeEnvironmentLayout, vertical: bool) -> boo
 		if not (raw_tags.has(&"main_road") or raw_tags.has("main_road")):
 			continue
 		if vertical:
-			if cell.y <= IsoGridConfig.SIDE_EDGE_MAX_THICKNESS_TILES:
+			if cell.y <= WorldGridConfig.SIDE_EDGE_MAX_THICKNESS_TILES:
 				low = true
-			if cell.y >= z.y - IsoGridConfig.SIDE_EDGE_MAX_THICKNESS_TILES:
+			if cell.y >= z.y - WorldGridConfig.SIDE_EDGE_MAX_THICKNESS_TILES:
 				high = true
 		else:
-			if cell.x <= IsoGridConfig.SIDE_EDGE_MAX_THICKNESS_TILES:
+			if cell.x <= WorldGridConfig.SIDE_EDGE_MAX_THICKNESS_TILES:
 				low = true
-			if cell.x >= z.x - IsoGridConfig.SIDE_EDGE_MAX_THICKNESS_TILES:
+			if cell.x >= z.x - WorldGridConfig.SIDE_EDGE_MAX_THICKNESS_TILES:
 				high = true
 	return low and high
 

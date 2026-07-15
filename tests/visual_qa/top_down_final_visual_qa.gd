@@ -1,0 +1,618 @@
+extends SceneTree
+
+const OUTPUT_DIRECTORY: String = "res://build/qa"
+const WORLD_SEED: int = 641004
+const VISUAL_QA_RUNTIME = preload(
+	"res://tests/visual_qa/helpers/visual_qa_runtime.gd"
+)
+
+var failures: PackedStringArray = []
+
+func _initialize() -> void:
+	call_deferred("_run")
+
+func _run() -> void:
+	var main_scene := load("res://game/main/main.tscn") as PackedScene
+	_expect(main_scene != null, "main scene can be loaded for final top-down QA")
+	if main_scene == null:
+		_finish()
+		return
+
+	var main := main_scene.instantiate()
+	root.add_child(main)
+	current_scene = main
+	await process_frame
+	await process_frame
+
+	var game_mode_manager := get_first_node_in_group(
+		"game_mode_manager"
+	) as GameModeManager
+	var wave_manager := get_first_node_in_group("wave_manager") as WaveManager
+	var biome_manager := get_first_node_in_group("biome_manager") as BiomeManager
+	var enemy_system := get_first_node_in_group("enemy_system") as EnemySystem
+	var player_manager := get_first_node_in_group(
+		"player_manager"
+	) as PlayerManager
+	var seam_system = get_first_node_in_group("region_seam_system")
+	var streamer = get_first_node_in_group("world_region_streamer")
+	_expect(game_mode_manager != null, "game mode manager is available")
+	_expect(wave_manager != null, "wave manager is available")
+	_expect(biome_manager != null, "biome manager is available")
+	_expect(enemy_system != null, "enemy system is available")
+	_expect(player_manager != null, "player manager is available")
+	_expect(seam_system != null, "region seam system is available")
+	_expect(streamer != null, "world region streamer is available")
+	if (
+		game_mode_manager == null
+		or wave_manager == null
+		or biome_manager == null
+		or enemy_system == null
+		or player_manager == null
+		or seam_system == null
+		or streamer == null
+	):
+		_finish()
+		return
+
+	wave_manager.initial_delay = 100.0
+	_expect(
+		game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL, {
+			"world_seed": WORLD_SEED,
+			"biome_map_width": 3,
+			"biome_map_height": 3,
+			"extra_edge_chance": 0.5,
+			"async_world_build": false
+		}),
+		"survival starts for final top-down QA"
+	)
+	var world_ready: Dictionary = await VISUAL_QA_RUNTIME.wait_for_capture_ready(
+		self,
+		func() -> bool:
+			return (
+				biome_manager.get_world_graph() != null
+				and biome_manager.get_generated_biome_map().size() == 9
+			)
+	)
+	_expect(
+		bool(world_ready.get("ready", false)),
+		"final top-down world is capture-ready: %s"
+		% VISUAL_QA_RUNTIME.describe_failure(world_ready)
+	)
+
+	var player := player_manager.players.get(1) as PlayerController
+	_expect(player != null, "player one is available")
+	if player == null:
+		_finish()
+		return
+
+	DirAccess.make_dir_recursive_absolute(
+		ProjectSettings.globalize_path(OUTPUT_DIRECTORY)
+	)
+
+	await _capture_biome(
+		biome_manager,
+		streamer,
+		enemy_system,
+		player,
+		&"infected_plains",
+		&"center",
+		"plains_full_region.png"
+	)
+	await _capture_biome(
+		biome_manager,
+		streamer,
+		enemy_system,
+		player,
+		&"toxic_wastes",
+		&"fall",
+		"toxic_void_edge.png"
+	)
+	await _capture_biome(
+		biome_manager,
+		streamer,
+		enemy_system,
+		player,
+		&"burning_fields",
+		&"passage",
+		"ash_passage_crossing.png"
+	)
+	await _capture_biome(
+		biome_manager,
+		streamer,
+		enemy_system,
+		player,
+		&"frozen_outskirts",
+		&"obstacle",
+		"snow_objects_slots.png"
+	)
+	await _capture_biome(
+		biome_manager,
+		streamer,
+		enemy_system,
+		player,
+		&"drowned_marsh",
+		&"passage",
+		"marsh_bridge_void.png"
+	)
+	await _capture_cross_biome_chase(
+		biome_manager,
+		seam_system,
+		streamer,
+		enemy_system,
+		player
+	)
+
+	var survival_mode := get_first_node_in_group("survival_mode") as SurvivalMode
+	if survival_mode != null:
+		survival_mode.stop_mode()
+	_finish()
+
+func _capture_biome(
+	biome_manager: BiomeManager,
+	streamer,
+	enemy_system: EnemySystem,
+	player: PlayerController,
+	biome_id: StringName,
+	focus: StringName,
+	file_name: String
+) -> void:
+	var region_id: StringName = await _select_region_for_biome(
+		biome_manager,
+		biome_id
+	)
+	if region_id.is_empty():
+		return
+	var focus_position := _get_focus_position(
+		biome_manager,
+		streamer,
+		region_id,
+		focus
+	)
+	_move_node(player, focus_position)
+	_snap_camera(focus_position)
+	_clear_qa_enemies()
+	_spawn_biome_roster(enemy_system, biome_id, focus_position)
+	var capture_ready: Dictionary = (
+		await VISUAL_QA_RUNTIME.wait_for_capture_ready(
+			self,
+			func() -> bool: return _biome_capture_marker_is_ready(
+				biome_manager,
+				biome_id
+			)
+		)
+	)
+	_expect(
+		bool(capture_ready.get("ready", false)),
+		"%s scenario marker is capture-ready: %s"
+		% [
+			biome_id,
+			VISUAL_QA_RUNTIME.describe_failure(capture_ready)
+		]
+	)
+	_expect(
+		await _capture(file_name),
+		"%s screenshot is captured" % file_name
+	)
+
+func _select_region_for_biome(
+	biome_manager: BiomeManager,
+	biome_id: StringName
+) -> StringName:
+	var cell := _first_cell_for_biome(biome_manager, biome_id)
+	_expect(cell != null, "%s generated region exists" % String(biome_id))
+	if cell == null:
+		return &""
+	_expect(
+		biome_manager.set_current_region(cell.id),
+		"%s region is selected for visual QA" % String(biome_id)
+	)
+	await process_frame
+	await physics_frame
+	await process_frame
+	return cell.id
+
+func _first_cell_for_biome(
+	biome_manager: BiomeManager,
+	biome_id: StringName
+) -> BiomeCell:
+	for cell in biome_manager.get_generated_biome_map():
+		if cell.biome_id == biome_id and cell.generated_layout != null:
+			return cell
+	return null
+
+func _biome_capture_marker_is_ready(
+	biome_manager: BiomeManager,
+	biome_id: StringName
+) -> bool:
+	return (
+		biome_manager.get_current_biome_id() == biome_id
+		and get_nodes_in_group(
+			"milestone_10_final_qa_enemies"
+		).size() > 0
+	)
+
+func _get_focus_position(
+	biome_manager: BiomeManager,
+	streamer,
+	region_id: StringName,
+	focus: StringName
+) -> Vector2:
+	var cell := biome_manager.get_cell_by_region_id(region_id)
+	if cell == null or cell.generated_layout == null:
+		return Vector2.ZERO
+	var layout := cell.generated_layout
+	var offset: Vector2 = streamer.get_region_offset(region_id)
+	match focus:
+		&"fall":
+			if not layout.fall_zone_rects.is_empty():
+				var safe_focus_cell := _find_walkable_cell_near_rect(
+					layout,
+					layout.fall_zone_rects.front()
+				)
+				if safe_focus_cell != Vector2i(-1, -1):
+					return offset + layout.logical_to_world(safe_focus_cell)
+			if not layout.hazard_positions.is_empty():
+				return offset + layout.hazard_positions.front()
+		&"passage":
+			if not layout.passage_connector_rects.is_empty():
+				return offset + layout.rect_center_to_world(layout.passage_connector_rects.front())
+			if not layout.passage_rects.is_empty():
+				return offset + layout.rect_center_to_world(layout.passage_rects.front())
+			if not layout.fall_zone_rects.is_empty():
+				return offset + layout.rect_center_to_world(layout.fall_zone_rects.front())
+		&"obstacle":
+			if not layout.obstacle_positions.is_empty():
+				return offset + layout.obstacle_positions.front()
+	return offset
+
+func _find_walkable_cell_near_rect(
+	layout: BiomeEnvironmentLayout,
+	target_rect: Rect2i
+) -> Vector2i:
+	var expanded := target_rect.grow(4).intersection(
+		Rect2i(Vector2i.ZERO, layout.zone_size)
+	)
+	var target_center := Vector2(target_rect.position) + Vector2(target_rect.size) * 0.5
+	var best_cell := Vector2i(-1, -1)
+	var best_distance := INF
+	for y in range(expanded.position.y, expanded.end.y):
+		for x in range(expanded.position.x, expanded.end.x):
+			var candidate := Vector2i(x, y)
+			if (
+				layout.get_terrain_class_at_cell(candidate)
+				!= BiomeEnvironmentLayout.TERRAIN_WALKABLE
+			):
+				continue
+			var distance := Vector2(candidate).distance_squared_to(target_center)
+			if distance >= best_distance:
+				continue
+			best_distance = distance
+			best_cell = candidate
+	return best_cell
+
+func _spawn_biome_roster(
+	enemy_system: EnemySystem,
+	biome_id: StringName,
+	origin: Vector2
+) -> void:
+	var roster: Array[StringName] = [&"survival_zombie", &"survival_runner"]
+	match biome_id:
+		&"toxic_wastes":
+			roster = [&"toxic_zombie", &"toxic_exploder"]
+		&"burning_fields":
+			roster = [&"burned_zombie", &"fire_runner", &"fire_exploder"]
+		&"frozen_outskirts":
+			roster = [&"frozen_zombie", &"ice_armored_zombie", &"heavy_slow_zombie"]
+		&"drowned_marsh":
+			roster = [&"drowned_zombie", &"marsh_zombie", &"water_emerging_zombie"]
+	for index in range(roster.size()):
+		var enemy := enemy_system.spawn_enemy(
+			roster[index],
+			origin + Vector2(-170.0 + float(index) * 170.0, -95.0)
+		)
+		if enemy == null:
+			continue
+		enemy.add_to_group("milestone_10_final_qa_enemies")
+		enemy.set_physics_process(false)
+		var visual := enemy.get_node_or_null("Visual") as ZombieVisual
+		if visual != null:
+			visual.modulate = Color.WHITE
+			visual.set_state(&"chase")
+			visual.set_facing(Vector2.DOWN)
+
+func _capture_cross_biome_chase(
+	biome_manager: BiomeManager,
+	seam_system,
+	streamer,
+	enemy_system: EnemySystem,
+	player: PlayerController
+) -> void:
+	var graph := biome_manager.get_world_graph()
+	_expect(graph != null, "world graph exists for chase screenshots")
+	if graph == null:
+		return
+	var start_cell := biome_manager.get_cell_by_region_id(graph.start_region_id)
+	_expect(start_cell != null, "start region exists for chase screenshots")
+	if start_cell == null:
+		return
+	_expect(
+		biome_manager.set_current_region(start_cell.id),
+		"start region is selected for chase screenshots"
+	)
+	await process_frame
+	await physics_frame
+	var connection := _first_connection_for_cell(graph, start_cell)
+	_expect(connection != null, "start region has an open chase connection")
+	if connection == null:
+		return
+	var direction := _direction_for_side(connection.side)
+	var crossing_position: Vector2 = seam_system.get_crossing_position_for_connection(
+		connection,
+		graph.start_region_id
+	)
+	_clear_qa_enemies()
+	_move_node(player, crossing_position - direction * 70.0)
+	_snap_camera(player.global_position)
+	var enemy := enemy_system.spawn_enemy(
+		&"survival_zombie",
+		crossing_position - direction * 230.0,
+		null,
+		{"wave_index": 1}
+	) as BasicEnemy
+	_expect(enemy != null, "enemy spawns for chase screenshots")
+	if enemy == null:
+		return
+	enemy.add_to_group("milestone_10_final_qa_enemies")
+	enemy.detection_range = 4000.0
+	enemy.move_speed = 180.0
+	enemy.target_refresh_interval = 0.01
+	enemy.target = player
+	# Keep the chase actor deterministic while the world/zoom profile moves the
+	# player. The enemy traversal starts only after the party reaches the target
+	# region, so pathfinding timing cannot alter the streaming measurement.
+	enemy.set_physics_process(false)
+	var first_chase_ready: Dictionary = (
+		await VISUAL_QA_RUNTIME.wait_for_capture_ready(
+			self,
+			func() -> bool: return _first_chase_marker_is_ready(
+				enemy,
+				player,
+				start_cell
+			)
+		)
+	)
+	_expect(
+		bool(first_chase_ready.get("ready", false)),
+		"first chase marker is capture-ready: %s"
+		% VISUAL_QA_RUNTIME.describe_failure(first_chase_ready)
+	)
+	_expect(
+		await _capture("cross_biome_chase_sequence_01.png"),
+		"cross_biome_chase_sequence_01.png screenshot is captured"
+	)
+	var motion_profile: Dictionary = await _move_through_connection(
+		player,
+		seam_system,
+		streamer,
+		crossing_position,
+		direction,
+		connection.to_region_id
+	)
+	_expect(
+		bool(motion_profile.get("crossed", false)),
+		"continuous chase movement crosses the open biome seam"
+	)
+	_expect(
+		int(motion_profile.get("max_visible_missing_chunks", -1)) == 0,
+		"continuous movement and zoom keep visible_missing_chunks at zero"
+	)
+	enemy.set_physics_process(true)
+	for _frame in range(180):
+		await physics_frame
+		if (
+			is_instance_valid(enemy)
+			and not enemy.is_queued_for_deletion()
+			and enemy.current_region_id == connection.to_region_id
+		):
+			break
+	_expect(
+		is_instance_valid(enemy) and not enemy.is_queued_for_deletion(),
+		"chase screenshot enemy survives region crossing"
+	)
+	_expect(
+		is_instance_valid(enemy) and enemy.current_region_id == connection.to_region_id,
+		"chase screenshot enemy reaches target region"
+	)
+	var second_chase_ready: Dictionary = (
+		await VISUAL_QA_RUNTIME.wait_for_capture_ready(
+			self,
+			func() -> bool: return _second_chase_marker_is_ready(
+				enemy,
+				connection
+			)
+		)
+	)
+	_expect(
+		bool(second_chase_ready.get("ready", false)),
+		"second chase marker is capture-ready: %s"
+		% VISUAL_QA_RUNTIME.describe_failure(second_chase_ready)
+	)
+	_expect(
+		await _capture("cross_biome_chase_sequence_02.png"),
+		"cross_biome_chase_sequence_02.png screenshot is captured"
+	)
+
+func _move_through_connection(
+	player: PlayerController,
+	seam_system,
+	streamer,
+	crossing_position: Vector2,
+	direction: Vector2,
+	target_region_id: StringName
+) -> Dictionary:
+	var camera := root.get_camera_2d()
+	if camera == null:
+		return {
+			"crossed": false,
+			"max_visible_missing_chunks": -1
+		}
+	var camera_was_processing := camera.is_processing()
+	var original_zoom := camera.zoom
+	var start_position := crossing_position - direction * 70.0
+	var end_position := crossing_position + direction * 260.0
+	var max_visible_missing_chunks := 0
+	var crossed := false
+	camera.set_process(false)
+	for frame_index in range(90):
+		var progress := float(frame_index + 1) / 90.0
+		var next_position := start_position.lerp(
+			end_position,
+			progress
+		)
+		_move_node(player, next_position)
+		camera.global_position = next_position
+		camera.zoom = Vector2.ONE * lerpf(
+			original_zoom.x,
+			0.68,
+			sin(progress * PI)
+		)
+		camera.reset_smoothing()
+		if (
+			not crossed
+			and (next_position - crossing_position).dot(direction) >= 0.0
+		):
+			seam_system.cooldown_timer = 0.0
+			seam_system.try_update_region_for_position(next_position)
+		await process_frame
+		crossed = (
+			crossed
+			or StringName(streamer.current_region_id) == target_region_id
+		)
+		var stats: Dictionary = streamer.get_streaming_stats()
+		max_visible_missing_chunks = maxi(
+			max_visible_missing_chunks,
+			int(stats.get("visible_missing_chunks", 0))
+		)
+	camera.zoom = original_zoom
+	camera.set_process(camera_was_processing)
+	_snap_camera(end_position)
+	return {
+		"crossed": crossed,
+		"max_visible_missing_chunks": max_visible_missing_chunks
+	}
+
+func _first_connection_for_cell(
+	graph: WorldGraph,
+	cell: BiomeCell
+) -> WorldRegionConnection:
+	var region := graph.get_region(cell.id)
+	if region == null:
+		return null
+	for connection in region.connection_edges:
+		if connection.is_open and connection.physical_passage:
+			return connection
+	return null
+
+func _first_chase_marker_is_ready(
+	enemy: BasicEnemy,
+	player: PlayerController,
+	start_cell: BiomeCell
+) -> bool:
+	return (
+		is_instance_valid(enemy)
+		and enemy.target == player
+		and enemy.current_region_id == start_cell.id
+	)
+
+func _second_chase_marker_is_ready(
+	enemy: BasicEnemy,
+	connection: WorldRegionConnection
+) -> bool:
+	return (
+		is_instance_valid(enemy)
+		and not enemy.is_queued_for_deletion()
+		and enemy.current_region_id == connection.to_region_id
+	)
+
+func _direction_for_side(side: StringName) -> Vector2:
+	match side:
+		&"west":
+			return Vector2.LEFT
+		&"north":
+			return Vector2.UP
+		&"south":
+			return Vector2.DOWN
+		_:
+			return Vector2.RIGHT
+
+func _move_node(node: Node2D, position: Vector2) -> void:
+	node.global_position = position
+	if node is CharacterBody2D:
+		(node as CharacterBody2D).velocity = Vector2.ZERO
+
+func _snap_camera(position: Vector2) -> void:
+	var camera := root.get_camera_2d()
+	if camera == null:
+		return
+	camera.global_position = position
+	camera.reset_smoothing()
+
+func _clear_qa_enemies() -> void:
+	for enemy in get_nodes_in_group("milestone_10_final_qa_enemies"):
+		if is_instance_valid(enemy):
+			enemy.queue_free()
+
+func _capture(file_name: String) -> bool:
+	await process_frame
+	if VISUAL_QA_RUNTIME.has_loading_overlay(self):
+		return false
+	var image := root.get_texture().get_image()
+	if image == null or image.is_empty():
+		return false
+	var output_path := "%s/%s" % [OUTPUT_DIRECTORY, file_name]
+	var saved := image.save_png(ProjectSettings.globalize_path(output_path)) == OK
+	return saved and _image_has_world_detail(image)
+
+func _image_has_world_detail(image: Image) -> bool:
+	var sampled := 0
+	var contrast_samples := 0
+	for y in range(image.get_height() / 3, image.get_height() - 4, 8):
+		for x in range(0, image.get_width() - 4, 8):
+			var color := image.get_pixel(x, y)
+			var right := image.get_pixel(x + 4, y)
+			var down := image.get_pixel(x, y + 4)
+			var contrast := (
+				absf(color.r - right.r)
+				+ absf(color.g - right.g)
+				+ absf(color.b - right.b)
+				+ absf(color.r - down.r)
+				+ absf(color.g - down.g)
+				+ absf(color.b - down.b)
+			)
+			sampled += 1
+			if contrast >= 0.03:
+				contrast_samples += 1
+	return (
+		sampled > 0
+		and float(contrast_samples) / float(sampled) >= 0.08
+	)
+
+func _expect(condition: bool, message: String) -> void:
+	if condition:
+		print("PASS: ", message)
+		return
+	failures.append(message)
+	push_error("FAIL: " + message)
+
+func _finish() -> void:
+	var exit_code := 0
+	if failures.is_empty():
+		print("TOP_DOWN_FINAL_VISUAL_QA: PASS")
+	else:
+		exit_code = 1
+		print(
+			"TOP_DOWN_FINAL_VISUAL_QA: FAIL (%d)"
+			% failures.size()
+		)
+	await VISUAL_QA_RUNTIME.cleanup_scene(self)
+	quit(exit_code)

@@ -3,7 +3,7 @@ extends GutTest
 ##
 ## Migra: tests/milestone_10_object_asset_smoke_test.gd
 ## Verifica i contratti object_scenes, le silhouette runtime distinte via SVG
-## loader, la factory che crea ogni ostacolo come IsometricEnvironmentObject con
+## loader, la factory che crea ogni ostacolo come EnvironmentObject con
 ## collisione/sort coerenti, l'integrazione con ObstacleSystem e la supply crate.
 
 const REQUIRED_OBSTACLE_ASSET_IDS: Array[StringName] = [
@@ -24,19 +24,22 @@ const GENERATED_PROP_ASSET_IDS: Array[StringName] = [
 	&"sunken_house", &"sunken_wreck", &"dead_tree", &"marsh_log"
 ]
 const REQUIRED_CRATE_ASSET_ID := &"supply_crate"
-const ISOMETRIC_OBJECT_SCRIPT = preload("res://game/modes/zombie/isometric_environment_object.gd")
-const ISOMETRIC_OBJECT_FACTORY_SCRIPT = preload("res://game/modes/zombie/isometric_environment_object_factory.gd")
-const SVG_TEXTURE_LOADER = preload("res://game/modes/zombie/isometric_svg_texture_loader.gd")
+const ENVIRONMENT_OBJECT_SCRIPT = preload("res://game/modes/zombie/environment_object.gd")
+const ENVIRONMENT_OBJECT_FACTORY_SCRIPT = preload("res://game/modes/zombie/environment_object_factory.gd")
+const SVG_TEXTURE_LOADER = preload("res://game/modes/zombie/environment_texture_loader.gd")
+const SVG_FALLBACK_TEXTURE_BUILDER = preload(
+	"res://game/modes/zombie/top_down_fallback_texture_builder.gd"
+)
 
-var _manifest: IsometricEnvironmentManifest
+var _manifest: EnvironmentAssetManifest
 
 func before_all() -> void:
-	_manifest = IsometricEnvironmentManifest.reload_shared()
+	_manifest = EnvironmentAssetManifest.reload_shared()
 
 func test_manifest_valid() -> void:
 	assert_true(_manifest.load_error.is_empty(), "manifest loads")
 	assert_true(bool(_manifest.validate().get("is_valid", false)), "manifest validates")
-	assert_not_null(load("res://game/modes/zombie/isometric_environment_object.tscn") as PackedScene, "isometric environment object scene loads")
+	assert_not_null(load("res://game/modes/zombie/environment_object.tscn") as PackedScene, "top-down environment object scene loads")
 
 func test_asset_contract_coverage() -> void:
 	for obstacle_id in REQUIRED_OBSTACLE_ASSET_IDS:
@@ -107,8 +110,8 @@ func test_runtime_texture_shapes() -> void:
 	)
 
 func test_loader_fallback_shapes() -> void:
-	var house_path := "user://isometric_loader_house_test.svg"
-	var barrel_path := "user://isometric_loader_barrel_test.svg"
+	var house_path := "user://environment_loader_house_test.svg"
+	var barrel_path := "user://environment_loader_barrel_test.svg"
 	assert_true(_write_test_svg(house_path, &"ruined_house") and _write_test_svg(barrel_path, &"toxic_barrel"), "temporary SVG fallback fixtures are writable")
 	var house_texture := SVG_TEXTURE_LOADER.load_texture(house_path, Color(0.42, 0.38, 0.30, 1.0), Color(0.86, 0.68, 0.22, 1.0))
 	var barrel_texture := SVG_TEXTURE_LOADER.load_texture(barrel_path, Color(0.20, 0.52, 0.34, 1.0), Color(0.82, 0.96, 0.34, 1.0))
@@ -117,9 +120,23 @@ func test_loader_fallback_shapes() -> void:
 	if house_texture == null or barrel_texture == null:
 		return
 	assert_gt(_alpha_mask_difference_score(house_texture, barrel_texture), 0.04, "SVG fallback produces object-specific silhouettes")
+	var void_texture := SVG_FALLBACK_TEXTURE_BUILDER._build_void_texture(
+		Vector2i(128, 128),
+		Color(0.20, 0.24, 0.28, 1.0),
+		Color(0.08, 0.10, 0.12, 0.9),
+		Color(0.62, 0.72, 0.82, 1.0)
+	)
+	assert_not_null(void_texture, "cardinal void fallback texture builds")
+	if void_texture != null:
+		var void_image := void_texture.get_image()
+		assert_gt(
+			void_image.get_pixel(14, 38).a,
+			0.5,
+			"void fallback fills the corner of its axis-aligned rectangular surface"
+		)
 
 func test_factory_obstacle_coverage() -> void:
-	var factory := ISOMETRIC_OBJECT_FACTORY_SCRIPT.new(_manifest)
+	var factory := ENVIRONMENT_OBJECT_FACTORY_SCRIPT.new(_manifest)
 	for obstacle_id in REQUIRED_OBSTACLE_ASSET_IDS:
 		var size := _size_for(obstacle_id)
 		var shape_id := _layout_shape_for(obstacle_id)
@@ -130,8 +147,8 @@ func test_factory_obstacle_coverage() -> void:
 		add_child(obstacle)
 		obstacle.global_position = Vector2(320.0, 240.0)
 		await wait_physics_frames(1)
-		assert_eq(obstacle.get_script(), ISOMETRIC_OBJECT_SCRIPT, "%s uses IsometricEnvironmentObject scene path" % String(obstacle_id))
-		if obstacle.get_script() == ISOMETRIC_OBJECT_SCRIPT:
+		assert_eq(obstacle.get_script(), ENVIRONMENT_OBJECT_SCRIPT, "%s uses EnvironmentObject scene path" % String(obstacle_id))
+		if obstacle.get_script() == ENVIRONMENT_OBJECT_SCRIPT:
 			if obstacle.is_perimeter_wall():
 				assert_true(bool(obstacle.call("uses_procedural_fallback")), "%s uses the explicit tileable wall renderer" % String(obstacle_id))
 			else:
@@ -142,7 +159,7 @@ func test_factory_obstacle_coverage() -> void:
 			assert_eq(obstacle.get_obstacle_category(), _manifest.get_category(obstacle_id), "%s category comes from manifest" % String(obstacle_id))
 			assert_false(obstacle.uses_generic_fallback(), "%s avoids generic visual fallback" % String(obstacle_id))
 			if obstacle_id == &"reed_wall":
-				var native_object := obstacle as IsometricEnvironmentObject
+				var native_object := obstacle as EnvironmentObject
 				var native_size := _manifest.get_native_visual_size(obstacle_id)
 				var expected_size := Vector2(
 					roundi(native_size.x),
@@ -159,10 +176,14 @@ func test_factory_obstacle_coverage() -> void:
 					"%s keeps the manifest visual size at runtime" % String(obstacle_id)
 				)
 			elif GENERATED_PROP_ASSET_IDS.has(obstacle_id):
-				var generated_object := obstacle as IsometricEnvironmentObject
+				var generated_object := obstacle as EnvironmentObject
 				assert_true(
+					generated_object.get_asset_path().ends_with(".svg"),
+					"%s uses its dedicated cardinal SVG at runtime" % String(obstacle_id)
+				)
+				assert_false(
 					generated_object.asset_sprite.texture is AtlasTexture,
-					"%s uses the generated atlas region at runtime" % String(obstacle_id)
+					"%s no longer consumes a legacy atlas crop" % String(obstacle_id)
 				)
 				var rendered_size := (
 					generated_object.asset_sprite.texture.get_size()
@@ -204,8 +225,8 @@ func test_obstacle_system_integration() -> void:
 		for obstacle in active_obstacles:
 			var biome_obstacle := obstacle as BiomeObstacle
 			var obstacle_id := biome_obstacle.obstacle_id if biome_obstacle != null else &"unknown"
-			assert_eq(obstacle.get_script(), ISOMETRIC_OBJECT_SCRIPT, "%s obstacle system uses asset scene" % String(obstacle_id))
-			if obstacle.get_script() != ISOMETRIC_OBJECT_SCRIPT:
+			assert_eq(obstacle.get_script(), ENVIRONMENT_OBJECT_SCRIPT, "%s obstacle system uses asset scene" % String(obstacle_id))
+			if obstacle.get_script() != ENVIRONMENT_OBJECT_SCRIPT:
 				continue
 			if biome_obstacle != null and biome_obstacle.is_perimeter_wall():
 				assert_true(bool(obstacle.call("uses_procedural_fallback")), "%s runtime wall uses its tileable renderer" % String(obstacle_id))
@@ -220,7 +241,7 @@ func test_obstacle_system_integration() -> void:
 	await wait_physics_frames(1)
 
 func test_forest_tree_variation_is_visual_only() -> void:
-	var factory := ISOMETRIC_OBJECT_FACTORY_SCRIPT.new(_manifest)
+	var factory := ENVIRONMENT_OBJECT_FACTORY_SCRIPT.new(_manifest)
 	var tree_size := _size_for(&"forest_tree")
 	var first := factory.create_obstacle(
 		&"forest_tree",
@@ -244,10 +265,10 @@ func test_forest_tree_variation_is_visual_only() -> void:
 	assert_not_null(second, "second forest_tree creates")
 	if first == null or second == null:
 		return
-	var first_object := first as IsometricEnvironmentObject
-	var second_object := second as IsometricEnvironmentObject
-	assert_not_null(first_object, "first forest_tree uses isometric object")
-	assert_not_null(second_object, "second forest_tree uses isometric object")
+	var first_object := first as EnvironmentObject
+	var second_object := second as EnvironmentObject
+	assert_not_null(first_object, "first forest_tree uses top-down environment object")
+	assert_not_null(second_object, "second forest_tree uses top-down environment object")
 	if first_object == null or second_object == null:
 		first.queue_free()
 		second.queue_free()

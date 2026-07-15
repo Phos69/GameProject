@@ -1,9 +1,9 @@
 extends GutTest
-## Assets A4 — Contratto del manifest ambiente isometrico + copertura generata.
+## Assets A4 — Contratto del manifest ambiente top-down + copertura generata.
 ##
 ## Migra e accorpa:
 ##   tests/milestone_10_asset_manifest_v7_smoke_test.gd
-##   tests/isometric_environment_manifest_smoke_test.gd
+##   tests/top_down_environment_manifest_smoke_test.gd
 ##   tests/biome_obstacle_generation_smoke_test.gd
 ##
 ## Il manifest e la megamappa 3x3 (necessaria a verificare che ogni id generato
@@ -25,12 +25,12 @@ const BORDER_IDS: Array[StringName] = [
 	&"boundary_fence", &"toxic_boundary_wall", &"lava_boundary", &"ice_boundary", &"deep_water_boundary"
 ]
 
-var _manifest: IsometricEnvironmentManifest
+var _manifest: EnvironmentAssetManifest
 var _biome_manager: BiomeManager
 var _cells: Array[BiomeCell]
 
 func before_all() -> void:
-	_manifest = IsometricEnvironmentManifest.reload_shared()
+	_manifest = EnvironmentAssetManifest.reload_shared()
 	_biome_manager = BiomeManager.new()
 	add_child(_biome_manager)
 	await wait_physics_frames(1)

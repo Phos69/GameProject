@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="56" height="136" viewBox="0 0 160 120" preserveAspectRatio="none" data-generated-by="generate_top_down_environment_assets" data-section="object_scenes" data-id="reed_wall" data-footprint-slots="1x3">
+  <title>object_scenes reed_wall</title>
+  <ellipse cx="80" cy="94" rx="54" ry="13" fill="#050608" opacity="0.38"/>
+  <ellipse cx="80" cy="100" rx="56" ry="11" fill="#1b2f2d" opacity="0.78"/>
+  <path d="M26 104 C23 70 21 45 19 26" fill="none" stroke="#325754" stroke-width="7" stroke-linecap="round"/>
+  <path d="M40 104 C40 70 40 45 40 14" fill="none" stroke="#2f534f" stroke-width="7" stroke-linecap="round"/>
+  <path d="M54 104 C57 70 59 45 61 20" fill="none" stroke="#325754" stroke-width="7" stroke-linecap="round"/>
+  <path d="M68 104 C65 70 63 45 61 10" fill="none" stroke="#2f534f" stroke-width="7" stroke-linecap="round"/>
+  <path d="M82 104 C82 70 82 45 82 18" fill="none" stroke="#325754" stroke-width="7" stroke-linecap="round"/>
+  <path d="M96 104 C99 70 101 45 103 12" fill="none" stroke="#2f534f" stroke-width="7" stroke-linecap="round"/>
+  <path d="M110 104 C107 70 105 45 103 22" fill="none" stroke="#325754" stroke-width="7" stroke-linecap="round"/>
+  <path d="M124 104 C124 70 124 45 124 16" fill="none" stroke="#2f534f" stroke-width="7" stroke-linecap="round"/>
+  <path d="M138 104 C141 70 143 45 145 28" fill="none" stroke="#325754" stroke-width="7" stroke-linecap="round"/>
+  <ellipse cx="40" cy="20" rx="7" ry="11" fill="#5c4327" stroke="#241a10" stroke-width="2"/>
+  <ellipse cx="61" cy="16" rx="7" ry="11" fill="#5c4327" stroke="#241a10" stroke-width="2"/>
+  <ellipse cx="103" cy="18" rx="7" ry="11" fill="#5c4327" stroke="#241a10" stroke-width="2"/>
+  <ellipse cx="124" cy="22" rx="7" ry="11" fill="#5c4327" stroke="#241a10" stroke-width="2"/>
+  <path d="M40 96 L58 60 M96 98 L112 66 M68 100 L60 74" fill="none" stroke="#c2b071" stroke-width="4" stroke-linecap="round" opacity="0.55"/>
+</svg>

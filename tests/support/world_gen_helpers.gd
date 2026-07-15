@@ -1,12 +1,12 @@
 extends RefCounted
 ## Helper statici condivisi dalle suite GUT dell'area World Generation (A1).
 ##
-## Centralizzano la costruzione (costosa) dei layout iso e l'accesso ai
+## Centralizzano la costruzione (costosa) dei layout cardinali e l'accesso ai
 ## BiomeManager, così le suite possono costruire il mondo una sola volta in
 ## before_all e riusarlo tra i test.
 
 const STARTER_BIOME_PATH := "res://game/modes/zombie/biomes/infected_plains.tres"
-const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
+const WorldGridConfig = preload("res://game/core/world_grid_config.gd")
 
 ## Carica una BiomeDefinition di zombie mode dal suo id (nome file .tres).
 static func load_biome(biome_id: String) -> BiomeDefinition:
@@ -70,7 +70,7 @@ static func first_cell_per_biome(cells: Array[BiomeCell]) -> Array[BiomeCell]:
 
 ## Cella di sondaggio walkable appena dentro un passaggio (mirror dei test legacy).
 static func passage_probe_cell(passage: BiomePassage, zone_size: Vector2i) -> Vector2i:
-	var edge_depth := IsoGridConfig.PASSAGE_EDGE_DEPTH_TILES
+	var edge_depth := WorldGridConfig.PASSAGE_EDGE_DEPTH_TILES
 	match passage.side:
 		&"north":
 			return Vector2i(passage.position, edge_depth)

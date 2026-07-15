@@ -244,7 +244,7 @@ func test_visual_settings_and_performance_budget() -> void:
 	var boss_system: BossSystem = scene.node(&"boss_system") as BossSystem
 	var projectile_system: ProjectileSystem = scene.node(&"projectile_system") as ProjectileSystem
 	var hud: HUDManager = scene.node(&"hud_manager") as HUDManager
-	var camera: IsometricCameraController = scene.main.get_node_or_null("Camera2D") as IsometricCameraController
+	var camera: TopDownCameraController = scene.main.get_node_or_null("Camera2D") as TopDownCameraController
 	assert_not_null(visual_settings, "visual settings manager is available")
 	assert_not_null(save_manager, "save manager is available")
 	assert_not_null(game_mode_manager, "game mode manager is available")
@@ -427,7 +427,7 @@ func test_visual_settings_and_performance_budget() -> void:
 	# Il processo GUT condiviso ha una baseline di boot piu alta del vecchio
 	# processo dedicato (vedi M2): il tetto resta una guardia anti-regressione
 	# (una regressione vera e ~100 ms/frame), allineato al 45 ms gia adottato
-	# per il profilo isometrico in tile_layout/integration.
+	# per il profilo top-down in tile_layout/integration.
 	assert_lt(
 		average_frame_msec, 45.0,
 		"crowded profiling scenario stays within the frame budget"

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="56" height="64" viewBox="0 0 160 120" data-generated-by="generate_top_down_environment_assets" data-section="object_scenes" data-id="toxic_barrel" data-footprint-slots="1x1">
+  <title>object_scenes toxic_barrel</title>
+  <ellipse cx="80" cy="94" rx="54" ry="13" fill="#050608" opacity="0.38"/>
+  <ellipse cx="80" cy="80" rx="24" ry="9" fill="#2e7d60" stroke="#6fe0a5" stroke-width="3"/>
+  <path d="M56 48 C56 38 104 38 104 48 L104 80 C104 91 56 91 56 80 Z" fill="#2e7d60" stroke="#0a0a0a" stroke-width="4"/>
+  <ellipse cx="80" cy="48" rx="24" ry="9" fill="#2e7d60" stroke="#6fe0a5" stroke-width="3"/>
+  <path d="M58 61 C70 69 90 69 102 61 M58 73 C70 81 90 81 102 73" stroke="#6fe0a5" stroke-width="4" opacity="0.82"/>
+  <path d="M74 58 L86 58 M80 52 L80 64" stroke="#0b0b0b" stroke-width="3" stroke-linecap="round"/>
+  <path d="M48 108 H112" fill="none" stroke="#6fe0a5" stroke-width="3" stroke-linecap="round" opacity="0.62"/>
+</svg>

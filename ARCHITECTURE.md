@@ -2,7 +2,11 @@
 
 ## Visione tecnica
 
-Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena principale avvia un playground minimo e registra i sistemi base. Le modalita future devono usare sistemi comuni invece di duplicare gameplay.
+Il progetto e un sandbox Godot 4.x 2D con resa top-down cardinale su griglia
+ortogonale e volume prospettico controllato. La scena principale avvia un
+playground minimo e registra i sistemi base. Le modalita future devono usare
+sistemi comuni invece di duplicare gameplay. Il contratto di proiezione e
+definito in `docs/top_down_cardinal_contract.md`.
 
 ## Flusso runtime attuale
 
@@ -65,7 +69,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 39. `VideoSettingsManager` applica fullscreen, borderless, risoluzione, VSync
    e limite framerate.
 40. `VisualSettingsManager` distribuisce solo impostazioni presentazionali e le persiste nel save.
-41. `IsometricCameraController` segue il gruppo e applica shake solo tramite offset.
+41. `TopDownCameraController` segue il gruppo e applica shake solo tramite offset.
 42. `HUDManager` mostra schede slot leggere negli angoli, boss, mappa
     esplorazione e il pannello status persistente solo per Tower Defense;
     Survival/Infinite Arena lo tengono nascosto e `PlayerWorldHudVisual`
@@ -115,7 +119,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
 - `CharacterDetailPanel`: dossier scrollabile della Character Select con
   descrizione stile, stat leggibili, range arma e preview, aggiornato dal focus
   della card roster corrente.
-- `CharacterGameplayPreview`: preview procedurale isometrica del personaggio selezionato, con silhouette, palette e arma derivate dal profilo.
+- `CharacterGameplayPreview`: preview procedurale top-down del personaggio selezionato, con silhouette, palette e arma derivate dal profilo.
 - `RpgCharacterRegistry`: catalogo centralizzato dei personaggi RPG iniziali.
 - `RpgCharacterData`: risorsa dati per un profilo classe RPG selezionabile, inclusi nome proprio, descrizione stile, palette e riferimenti asset opzionali per portrait, preview gameplay, sprite, arma e icone.
 - `RpgPlayerComponent`: profilo RPG runtime, statistiche, XP per-run, adrenalina, passive automatiche, companion RPG, super e formule danno del player survival.
@@ -216,7 +220,7 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
   include `GENERATOR_REVISION = 2`; gli snapshot mondo usano il formato v5 e
   vengono accettati solo se la firma canonica profonda del layout rigenerato
   coincide con quella persistita.
-- `IsoGridConfig`: centralizza scala iso e conversioni legacy. Un tile logico vale `6x6` celle legacy, usa scala world `48.0` e mantiene gli asset al loro scale legacy `8.0`.
+- `WorldGridConfig`: centralizza la scala cartesiana e le conversioni legacy. Un tile logico vale `6x6` celle legacy, usa scala world `48.0` e mantiene gli asset alla loro scala legacy `8.0`.
 - `BiomeMapGenerator`: costruisce la griglia di `BiomeCell` `75x75` con default `3x3`, assegna tipi bioma, coordinate globali, vicini, seed locali e grafo connesso con loop.
 - `BorderGenerator`: calcola lati connessi e lati esterni di caduta per ogni cella bioma.
 - `BiomePassageGenerator`: crea passaggi condivisi e allineati tra celle
@@ -224,9 +228,9 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
   local/global e tile entry/exit derivati dal `passage_type`.
 - `BiomeTerrainGenerator`: genera il layout interno del bioma attivo e collega
   ostacoli, casse, hazard, summary deterministico e report di validazione.
-- `IsometricEnvironmentManifest`: legge `assets/environment/isometric/manifest.json`
+- `EnvironmentAssetManifest`: legge `assets/environment/top_down/manifest.json`
   come inventario di ostacoli, draw mode oggetto, border tematici, fall zone
-  procedurali, tag terrain generati e contratto asset v10 (`tile_sets`,
+  procedurali, tag terrain generati e contratto asset v11 (`tile_sets`,
   `tile_variants`, `terrain_tiles`, `edge_tiles`, `void_tiles`, `object_scenes`,
   `passage_tiles`, `biome_asset_sets`, `fallback_policy`). Il loader normalizza
   path, status, footprint, anchor, collisione, blocchi e attribution senza
@@ -298,17 +302,18 @@ Il progetto e un sandbox Godot 4.x 2D con resa pseudo-isometrica. La scena princ
   direttamente il proprio `BiomeTileLayer`. I vecchi `BiomeRegionGround` e
   `BiomeTerrainPatch` procedurali sono stati rimossi.
 - `ObstacleSystem`: genera e registra ostacoli fisici usati anche come spawn
-  blocker; nel percorso asset-driven delega a `IsometricEnvironmentObjectFactory`.
-- `IsometricEnvironmentObjectFactory`: legge il contratto `object_scenes` dal
-  manifest e istanzia `IsometricEnvironmentObject` quando esiste un asset,
+  blocker; nel percorso asset-driven delega a `EnvironmentObjectFactory`.
+- `EnvironmentObjectFactory`: legge il contratto `object_scenes` dal
+  manifest e istanzia `EnvironmentObject` quando esiste un asset,
   lasciando `BiomeObstacle` come fallback tecnico esplicito.
-- `IsometricEnvironmentObject`: scena base `StaticBody2D` per oggetti
+- `EnvironmentObject`: scena base `StaticBody2D` per oggetti
   slot-based con `Sprite2D`, ombra, anchor/footprint debug opzionale,
   collisione/layer/sort dal manifest e hook futuri per overlay danneggiato.
-  Ventitre prop usano risorse `AtlasTexture` che espongono 20 regioni delle
-  cinque tavole generate, senza cambiare footprint o collisioni; `lab_block` e
-  `lab_ruin` condividono consapevolmente il volume industriale ma restano
-  distinti dalla `supply_crate`. `reed_wall` usa il raster SVG nativo stretto e
+  Ventitre prop puntano a 23 SVG cardinali individuali in
+  `objects/generated_props/`; il manifest li registra come
+  `project_svg_generator` / `environment_top_down_internal`, senza cambiare
+  footprint o collisioni. Le precedenti risorse `AtlasTexture` dei prop non
+  fanno piu parte del runtime. `reed_wall` usa il raster SVG nativo stretto e
   verticale `56x136`, evitando che il loader canonico `160x120` lo riduca
   dentro la canvas; la scelta resta presentazionale e non altera il contratto
   fisico `1x3`.
@@ -840,17 +845,17 @@ multi-bioma.
   direttamente il proprio `BiomeTileLayer`. Il tile layer asset-driven e l'unico
   produttore di ground: i vecchi `BiomeRegionGround` e `BiomeTerrainPatch`
   procedurali sono stati rimossi.
-- `IsometricTileResolver` risolve deterministicamente ogni cella logica
+- `BiomeTileResolver` risolve deterministicamente ogni cella logica
   `75x75` in `floor_base`, varianti floor, route tile asset-driven
   (`main_road`, road tematiche, curve/edge/intersezioni), passage tile
   (`road`, `bridge`, `snow_pass`, `broken_gate`, `burned_road`, entry/exit),
   `hazard_floor`, `border_floor`, `void_depth` o una transizione cliff
   neighbor-aware. Le transizioni distinguono bordi north/south/east/west,
-  angoli interni/esterni e due raccordi diagonali. Le aperture di passaggio
+  angoli interni/esterni e raccordi d'angolo cardinali. Le aperture di passaggio
   dichiarate nei rettangoli hanno priorita sulle road decorative sovrapposte,
   cosi entry, exit e connector restano coerenti con il `passage_type`; le altre
-  route generate preferiscono `road_cell_tags` diagonali e usano i rettangoli
-  solo per compatibilita.
+  route generate usano segmenti H/V e curve tra lati cardinali; i rettangoli
+  dei passaggi restano la fonte geometrica delle aperture.
 - Nei biomi con `generated_theme_id`, il resolver applica materiali PNG generated
   a ground, route piene e transizioni strada. `road_border_defined` fornisce
   core `__core_vertical`/`__core_horizontal` per la superficie base delle celle
@@ -869,13 +874,13 @@ multi-bioma.
   comunque `native_border_orientation` per temi futuri. `road_variation` resta
   catalogato come detail/storico e non e' la superficie runtime delle strade
   nei temi generated.
-- `IsometricTileCatalog` possiede solo ID statici, sezioni manifest e liste di
-  route/tile richiesti. `IsometricTileResolver` mantiene alias pubblici per i
+- `BiomeTileCatalog` possiede solo ID statici, sezioni manifest e liste di
+  route/tile richiesti. `BiomeTileResolver` mantiene alias pubblici per i
   consumer esistenti e resta l'unico responsabile della scelta per-cella.
-- `IsometricTileResolverUtils` contiene helper statici condivisi dal resolver
+- `BiomeTileResolverUtils` contiene helper statici condivisi dal resolver
   per hashing stabile, membership in rettangoli e verifica path asset; non
   decide tile, sezioni o ruoli.
-- Per `infected_plains`, `IsometricTileResolver` usa il set forestale dedicato:
+- Per `infected_plains`, `BiomeTileResolver` usa il set forestale dedicato:
   `forest_grass`, `forest_tall_grass`, `forest_path`, `forest_road`,
   `forest_road_border`, `forest_void`, `forest_cliff_edge`,
   `forest_mountain_wall` e le transizioni `grass_to_path`, `grass_to_road`,
@@ -892,8 +897,8 @@ multi-bioma.
   chunk visibili; un worker in corso non espone il conteggio parziale come
   copertura totale.
   Quando il renderer rettilineo dei cliff e attivo, i `void_transition` non
-  emettono il diamond ground per-cella: facce e lip dedicati sono l'unica
-  sorgente visibile del pit, evitando punte scure fuori dal rettangolo void.
+  emettono un ground per-cella aggiuntivo: facce e lip dedicati sono l'unica
+  sorgente visibile del pit, evitando sovrapposizioni fuori dal rettangolo void.
   Le pareti laterali degli scavi interni sono strip rettilinee clipped tra
   faccia alta e bassa, cosi i corner restano chiusi dai face orizzontali senza
   wedge scuri sovrapposti.
@@ -921,7 +926,7 @@ multi-bioma.
   sovrapposizione tra `forest_path`, `forest_road` e bordo strada. La texture
   base `forest_road_border` resta caricata come sorgente, ma non viene
   renderizzata come materiale unico non orientato.
-  `IsometricForestGroundMeshBuilder` possiede la costruzione delle mesh; le
+  `ForestGroundMeshBuilder` possiede la costruzione delle mesh; le
   classi senza raster finale mantengono le proprie mesh colorate. Il
   layer pre-bake-a anche linee di dettaglio per grass, tall grass,
   path, road, transizioni e cliff; le celle pure `void_depth`/`forest_void`
@@ -968,7 +973,7 @@ multi-bioma.
   `ground` del tema e le pareti il ruolo `cliff_face`; la Pianura conserva i
   raster forestali dedicati. La geometria resta condivisa e viene emessa una
   sola volta dal tile layer.
-  `IsometricCliffMeshBuilder` mantiene le 14 geometrie neighbor-aware per il
+  `TopDownCliffMeshBuilder` mantiene le 14 geometrie neighbor-aware per il
   fallback non forestale. Nel forestale `FallZoneBoundaryRuns` calcola il
   contorno esposto dell'unione di tutti i `fall_zone_rects`: lati condivisi fra
   rettangoli adiacenti o sovrapposti non vengono consegnati ai builder e quindi
@@ -977,10 +982,10 @@ multi-bioma.
   continui: la parete lontana (nord) e quella vicina (sud) scendono dritte mentre
   le pareti laterali (est/ovest) sono sghembate verso l'interno del void
   (`LATERAL_VOID_SLOPE`) per rendere il burrone in finta prospettiva, come le
-  vecchie facce diamante EDGE E/W. Tutte campionano `cliff_face_texture` e la
+  precedenti facce EDGE E/W. Tutte campionano `cliff_face_texture` e la
   dissolvono verso il void. Nei fall perimetrali da una tile la faccia puo
   estendersi oltre la fall strip, ma il bordo alto resta ancorato al confine
-  terreno/caduta. `IsometricCliffBorderMeshBuilder` costruisce il lip con
+  terreno/caduta. `TopDownCliffBorderMeshBuilder` costruisce il lip con
   bordi raster distinti: due orizzontali, due verticali e quattro join
   geometrici; i fall perimetrali emettono solo il lato rivolto al terreno in
   base a `hazard_sides` e usano un rim sub-tile. Le celle walkable
@@ -1007,16 +1012,17 @@ multi-bioma.
 - Gli ostacoli runtime sono `StaticBody2D` sul layer `1`, quindi player e zombie
   li trattano come impedimento fisico.
 - Gli ostacoli appartengono anche ai gruppi `environment_obstacles` e `spawn_blockers`.
-- `ObstacleSystem` usa `IsometricEnvironmentObjectFactory` per preferire
-  `IsometricEnvironmentObject`: normalmente uno sprite asset-backed costruito
+- `ObstacleSystem` usa `EnvironmentObjectFactory` per preferire
+  `EnvironmentObject`: normalmente uno sprite asset-backed costruito
   dal contratto `object_scenes`, ancorato al pavimento e ordinato con
   `sort_offset`. Il render mode legacy `tile_layer_rock_area`, alias semantico
   delle mesa, rende il nodo `large_rock` collision-only e delega il visual a
   `BiomeTileLayer` tramite
   `RectilinearRockAreaMeshBuilder`. `BiomeObstacle` resta adapter/fallback
   quando il contratto dichiara esplicitamente un fallback procedurale.
-- Il loader accetta SVG, texture raster importate e risorse `Texture2D` `.tres`
-  come `AtlasTexture`. `forest_tree` mantiene il
+- Il loader accetta SVG, texture raster importate e, come estensione generica,
+  risorse `Texture2D` `.tres` quali `AtlasTexture`; nessun prop attivo usa
+  attualmente quest'ultimo formato. `forest_tree` mantiene il
   PNG trasparente originale e applica solo flip/tinta deterministici per ridurre
   la ripetizione; `large_rock` non usa piu una silhouette fissa e rende
   sull'intero `mesa_rect` un plateau rialzato con corona e pareti dedicate. La
@@ -1032,7 +1038,7 @@ multi-bioma.
   mano, quindi la superficie resta priva di linee procedurali. La corona viene
   disegnata una sola volta dal tile layer; il nodo oggetto non aggiunge un cap
   Y-sorted duplicato.
-- `IsometricEnvironmentObject.is_world_position_behind_cliff()` classifica una
+- `EnvironmentObject.is_world_position_behind_cliff()` classifica una
   posizione come dietro quando ricade nella larghezza della roccia e ha Y
   minore della linea centrale; Y maggiore/uguale significa davanti. Posizioni
   fuori dalla larghezza non vengono occluse. Non si cambia globalmente lo
@@ -1042,21 +1048,21 @@ multi-bioma.
   simmetricamente gli ostacoli creati da `WorldRegionStreamer`; le query
   `is_position_blocked` leggono tutti i nodi attivi nei gruppi
   `environment_obstacles`/`spawn_blockers`, inclusi i vicini.
-- `IsometricSvgTextureLoader` evita che il runtime dipenda dall'import editor:
+- `EnvironmentTextureLoader` evita che il runtime dipenda dall'import editor:
   rasterizza direttamente il contenuto SVG quando mantiene corner trasparenti,
   accetta la texture SVG importata solo se non introduce un canvas opaco,
   carica le altre `Texture2D` tramite `ResourceLoader` e, in fallback, delega la
-  silhouette isometrica categoriale al builder dedicato. Le texture raster
+  silhouette top-down categoriale al builder dedicato. Le texture raster
   ad alta risoluzione vengono scalate al target del manifest senza il clamp
   minimo pensato per gli SVG gia rasterizzati vicino alla dimensione finale.
-- `IsometricSvgFallbackTextureBuilder` rasterizza i fallback per
+- `TopDownFallbackTextureBuilder` rasterizza i fallback per
   `object_scenes`, `void_tiles` e slot generici usando i metadata
   `data-section`/`data-id`; non legge manifest, non possiede path asset e non
   cambia collisioni o regole gameplay. Gli SVG ambiente interni restano
   trasparenti e hanno silhouette specifiche per case, recinti, muri, barili,
   relitti, tronchi, ponti e crate.
 - `BiomeObstacle` legge `draw_mode` e `dedicated_draw` da
-  `IsometricEnvironmentManifest`; se un ID ricade su `generic_barrier`, deve
+  `EnvironmentAssetManifest`; se un ID ricade su `generic_barrier`, deve
   essere una scelta esplicita del manifest e non un fallback implicito.
 - `BiomeObstaclePainter` disegna i fallback procedurali piu pesanti
   (perimeter wall e boundary tematiche) dietro il dispatch di `BiomeObstacle`.
@@ -1065,7 +1071,7 @@ multi-bioma.
   rocciose; se uno dei raster manca torna al muro procedurale. Il nodo ostacolo
   resta proprietario di collision layer, shape, footprint, Y-sort, metadata e
   gruppi runtime: il cliff arena non usa `BiomeFallZone` e non applica caduta.
-- Il manifest v10 vieta fallback impliciti: ogni ID generato da ostacoli,
+- Il manifest v11 vieta fallback impliciti: ogni ID generato da ostacoli,
   terrain, passaggi, bordi o fall zone deve avere un contratto asset-driven con
   `asset_path`, `status`, `biome_ids`, `anchor`, footprint/collisione, sorgente,
   licenza, attribution e `fallback_path` quando l'asset e ancora assente.
@@ -1074,14 +1080,14 @@ multi-bioma.
   `placeholder`/`generic`, `generic_barrier` implicito o `NeighborGround_*`; i
   vecchi renderer/ground procedurali (`BiomeRegionGround`, `BiomeTerrainPatch`,
   `MultiRegionRenderer`) e i portali `BiomeTransitionGate` sono stati rimossi dal
-  codice. `tests/milestone_10_asset_fallback_policy_smoke_test.gd` blocca queste
-  regressioni insieme all'asset check.
+  codice. `tests/suites/assets/asset_fallback_test.gd` blocca queste regressioni
+  insieme ai contratti della suite asset.
 - `BiomeObstacle` costruisce la collisione dal manifest: `collision_shape`
   (`rectangle`/`circle`/`open`) guida lo shape runtime e `contains_global_position`,
   `blocks_movement` e `blocks_projectiles` guidano i bit di `collision_layer`,
   `is_jumpable_gap_anchor` espone `is_jumpable_obstacle()`. La stessa footprint
   serve collisione fisica, spawn blocker e validazione casse.
-- Il contratto v10 conserva gli slot legacy convertiti in tile logici:
+- Il contratto v11 conserva gli slot legacy convertiti in tile logici:
   `footprint_slots` resta l'inventario di design, `footprint_tiles` del manifest
   conserva la misura legacy e `BiomeEnvironmentLayout.obstacle_rects` conserva
   le celle logiche realmente occupate. `ObstacleLayoutGenerator` normalizza ogni
@@ -1117,12 +1123,12 @@ multi-bioma.
   `full_void` adiacenti al perimetro attraversano la fascia border e il loro
   intervallo viene escluso dai wall segment, evitando bordi sopra il vuoto.
 - Ogni layout conserva un corridoio centrale libero per l'AI diretta esistente.
-- `assets/environment/isometric/manifest.json` v10 contiene i draw mode oggetto
+- `assets/environment/top_down/manifest.json` contiene i draw mode oggetto
   legacy in `object_visuals`, i contratti asset per tile, terrain, edge, void,
   object scenes, passage tiles e asset set di bioma, inclusi i 14 tile cliff
   orientati, i materiali PNG `cliff_face_texture`/`cliff_lip_texture`,
-  `void_depth`, 23 risorse prop AtlasTexture, tile forestali, road connector e entry/exit
-  passaggio, `abandoned_car`, `dense_vegetation`, `forest_tree` e
+  `void_depth`, 23 SVG prop individuali, tile forestali, road connector e
+  entry/exit passaggio, `abandoned_car`, `dense_vegetation`, `forest_tree` e
   `large_rock`; i preset
   `performance`/`balanced`/`quality` restano disponibili per fallback ground e
   qualita del tile layer.
@@ -1359,7 +1365,7 @@ Contratto operativo:
   `asset_inventory` e `codex_task_brief` ricavano il contesto dai file reali
   della repo, non da supposizioni hardcoded;
 - i prompt MCP in `tools/mcp-server/src/prompts.ts` sono template operativi per
-  audit isometrico, zombie mode, milestone roadmap, refactor gameplay e asset
+  audit top-down cardinale, zombie mode, milestone roadmap, refactor gameplay e asset
   quality pass.
 
 La documentazione, gli script e l'esempio di configurazione Codex vivono in

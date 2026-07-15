@@ -1,7 +1,7 @@
 extends RefCounted
 class_name MapValidationSystem
 
-const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
+const WorldGridConfig = preload("res://game/core/world_grid_config.gd")
 
 const SIDES: Array[StringName] = [&"north", &"south", &"east", &"west"]
 
@@ -385,7 +385,7 @@ func _passage_probe_cell(
 	passage: BiomePassage,
 	zone_size: Vector2i
 ) -> Vector2i:
-	var edge_depth := IsoGridConfig.PASSAGE_EDGE_DEPTH_TILES
+	var edge_depth := WorldGridConfig.PASSAGE_EDGE_DEPTH_TILES
 	match passage.side:
 		&"north":
 			return Vector2i(passage.position, edge_depth)
@@ -405,22 +405,22 @@ func _rect_touches_side(
 		&"north":
 			return (
 				rect.position.y <= 0
-				and rect.size.y <= IsoGridConfig.SIDE_EDGE_MAX_THICKNESS_TILES
+				and rect.size.y <= WorldGridConfig.SIDE_EDGE_MAX_THICKNESS_TILES
 			)
 		&"south":
 			return (
 				rect.position.y + rect.size.y >= zone_size.y
-				and rect.size.y <= IsoGridConfig.SIDE_EDGE_MAX_THICKNESS_TILES
+				and rect.size.y <= WorldGridConfig.SIDE_EDGE_MAX_THICKNESS_TILES
 			)
 		&"west":
 			return (
 				rect.position.x <= 0
-				and rect.size.x <= IsoGridConfig.SIDE_EDGE_MAX_THICKNESS_TILES
+				and rect.size.x <= WorldGridConfig.SIDE_EDGE_MAX_THICKNESS_TILES
 			)
 		_:
 			return (
 				rect.position.x + rect.size.x >= zone_size.x
-				and rect.size.x <= IsoGridConfig.SIDE_EDGE_MAX_THICKNESS_TILES
+				and rect.size.x <= WorldGridConfig.SIDE_EDGE_MAX_THICKNESS_TILES
 			)
 
 func _clip_rect(rect: Rect2i, zone_size: Vector2i) -> Rect2i:

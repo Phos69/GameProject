@@ -8,6 +8,9 @@ extends GutTest
 ## last_mode sconosciuto e roundtrip dei binding join/leave del multiplayer.
 
 const TEMP_SAVE_PATH := "user://qa_save_edge_test.json"
+const MIGRATION_ROOT := "user://qa_save_migration_test"
+const MIGRATION_LEGACY_DIR := MIGRATION_ROOT + "/legacy"
+const MIGRATION_CURRENT_DIR := MIGRATION_ROOT + "/current"
 
 var _load_failures: Array[String] = []
 
@@ -100,6 +103,112 @@ func test_save_edge_cases() -> void:
 	await wait_physics_frames(1)
 	_remove_save_files()
 
+func test_legacy_project_save_migration_is_safe_and_one_shot() -> void:
+	_remove_migration_fixture()
+	assert_eq(
+		SaveManager._legacy_user_data_dir_for("/data/Local Action Sandbox"),
+		"/data/Iso Local Sandbox",
+		"legacy user data is resolved as a sibling of the current directory"
+	)
+	assert_eq(
+		DirAccess.make_dir_recursive_absolute(
+			ProjectSettings.globalize_path(MIGRATION_LEGACY_DIR + "/world_cache")
+		),
+		OK,
+		"legacy migration fixture is created"
+	)
+	_write_absolute_file(
+		MIGRATION_LEGACY_DIR + "/savegame.json",
+		"legacy-primary"
+	)
+	_write_absolute_file(
+		MIGRATION_LEGACY_DIR + "/savegame.json.bak",
+		"legacy-backup"
+	)
+	_write_absolute_file(
+		MIGRATION_LEGACY_DIR + "/world_cache/ignored.cache",
+		"must-not-migrate"
+	)
+
+	var save_manager := SaveManager.new()
+	var migration_error := save_manager._migrate_legacy_save_files_once(
+		ProjectSettings.globalize_path(MIGRATION_LEGACY_DIR),
+		ProjectSettings.globalize_path(MIGRATION_CURRENT_DIR)
+	)
+	assert_eq(migration_error, OK, "legacy saves migrate without an I/O error")
+	assert_eq(
+		_read_absolute_file(MIGRATION_CURRENT_DIR + "/savegame.json"),
+		"legacy-primary",
+		"the primary save is copied unchanged"
+	)
+	assert_eq(
+		_read_absolute_file(MIGRATION_CURRENT_DIR + "/savegame.json.bak"),
+		"legacy-backup",
+		"the backup save is copied unchanged"
+	)
+	assert_true(
+		FileAccess.file_exists(MIGRATION_LEGACY_DIR + "/savegame.json"),
+		"migration preserves the legacy source save"
+	)
+	assert_false(
+		DirAccess.dir_exists_absolute(
+			ProjectSettings.globalize_path(MIGRATION_CURRENT_DIR + "/world_cache")
+		),
+		"world_cache is deliberately not migrated"
+	)
+	assert_true(
+		FileAccess.file_exists(
+			MIGRATION_CURRENT_DIR + "/" + SaveManager.LEGACY_SAVE_MIGRATION_MARKER
+		),
+		"a completion marker makes the migration genuinely one-shot"
+	)
+
+	_write_absolute_file(
+		MIGRATION_LEGACY_DIR + "/savegame.json",
+		"changed-legacy-primary"
+	)
+	_write_absolute_file(
+		MIGRATION_LEGACY_DIR + "/savegame.json.bak",
+		"changed-legacy-backup"
+	)
+	migration_error = save_manager._migrate_legacy_save_files_once(
+		ProjectSettings.globalize_path(MIGRATION_LEGACY_DIR),
+		ProjectSettings.globalize_path(MIGRATION_CURRENT_DIR)
+	)
+	assert_eq(migration_error, OK, "repeated migration remains a no-op")
+	assert_eq(
+		_read_absolute_file(MIGRATION_CURRENT_DIR + "/savegame.json"),
+		"legacy-primary",
+		"an existing primary destination is never overwritten"
+	)
+	assert_eq(
+		_read_absolute_file(MIGRATION_CURRENT_DIR + "/savegame.json.bak"),
+		"legacy-backup",
+		"an existing backup destination is never overwritten"
+	)
+	DirAccess.remove_absolute(
+		ProjectSettings.globalize_path(MIGRATION_CURRENT_DIR + "/savegame.json")
+	)
+	DirAccess.remove_absolute(
+		ProjectSettings.globalize_path(MIGRATION_CURRENT_DIR + "/savegame.json.bak")
+	)
+	migration_error = save_manager._migrate_legacy_save_files_once(
+		ProjectSettings.globalize_path(MIGRATION_LEGACY_DIR),
+		ProjectSettings.globalize_path(MIGRATION_CURRENT_DIR)
+	)
+	assert_eq(migration_error, OK, "completed migration remains a no-op")
+	assert_false(
+		FileAccess.file_exists(MIGRATION_CURRENT_DIR + "/savegame.json"),
+		"a later deletion does not resurrect the legacy primary save"
+	)
+	assert_false(
+		FileAccess.file_exists(MIGRATION_CURRENT_DIR + "/savegame.json.bak"),
+		"a later deletion does not resurrect the legacy backup save"
+	)
+
+	save_manager.free()
+	_remove_migration_fixture()
+
 func _on_load_failed(_path: String, reason: String) -> void:
 	_load_failures.append(reason)
 
@@ -109,10 +218,49 @@ func _write_raw_save(content: String) -> void:
 		file.store_string(content)
 		file.close()
 
+func _write_absolute_file(path: String, content: String) -> void:
+	var absolute_path := ProjectSettings.globalize_path(path)
+	var file := FileAccess.open(absolute_path, FileAccess.WRITE)
+	assert_true(file != null, "%s can be written" % path)
+	if file != null:
+		file.store_string(content)
+		file.close()
+
+func _read_absolute_file(path: String) -> String:
+	var absolute_path := ProjectSettings.globalize_path(path)
+	if not FileAccess.file_exists(absolute_path):
+		return ""
+	return FileAccess.get_file_as_string(absolute_path)
+
 func _remove_save_files() -> void:
 	for suffix: String in ["", ".tmp", ".bak"]:
 		var path := TEMP_SAVE_PATH + suffix
 		if FileAccess.file_exists(path):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+
+func _remove_migration_fixture() -> void:
+	var files: Array[String] = [
+		MIGRATION_CURRENT_DIR + "/savegame.json",
+		MIGRATION_CURRENT_DIR + "/savegame.json.bak",
+		MIGRATION_CURRENT_DIR + "/savegame.json.migration.tmp",
+		MIGRATION_CURRENT_DIR + "/savegame.json.bak.migration.tmp",
+		MIGRATION_CURRENT_DIR + "/" + SaveManager.LEGACY_SAVE_MIGRATION_MARKER,
+		MIGRATION_CURRENT_DIR + "/" + SaveManager.LEGACY_SAVE_MIGRATION_MARKER + ".tmp",
+		MIGRATION_LEGACY_DIR + "/savegame.json",
+		MIGRATION_LEGACY_DIR + "/savegame.json.bak",
+		MIGRATION_LEGACY_DIR + "/world_cache/ignored.cache"
+	]
+	for path: String in files:
+		if FileAccess.file_exists(path):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	var directories: Array[String] = [
+		MIGRATION_LEGACY_DIR + "/world_cache",
+		MIGRATION_CURRENT_DIR,
+		MIGRATION_LEGACY_DIR,
+		MIGRATION_ROOT
+	]
+	for path: String in directories:
+		if DirAccess.dir_exists_absolute(ProjectSettings.globalize_path(path)):
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 
 func _new_main_scene_fixture():

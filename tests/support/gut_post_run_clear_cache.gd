@@ -8,7 +8,7 @@ extends GutHookScript
 ## run) e mantiene il cleanup confinato ai test.
 
 const SVG_TEXTURE_LOADER = preload(
-	"res://game/modes/zombie/isometric_svg_texture_loader.gd"
+	"res://game/modes/zombie/environment_texture_loader.gd"
 )
 const GENERATED_TEXTURE_TOOLS = preload(
 	"res://game/modes/zombie/generated_biome_texture_tools.gd"
@@ -19,7 +19,7 @@ func run() -> void:
 		await gut.get_tree().process_frame
 		await gut.get_tree().physics_frame
 	WorldDataCache.clear()
-	IsometricEnvironmentManifest.clear_shared()
+	EnvironmentAssetManifest.clear_shared()
 	SVG_TEXTURE_LOADER.clear_cache()
 	GENERATED_TEXTURE_TOOLS.clear_cache()
-	IsometricEnvironmentObject.clear_content_metrics_cache()
+	EnvironmentObject.clear_content_metrics_cache()

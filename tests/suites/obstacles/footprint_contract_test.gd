@@ -7,7 +7,7 @@ extends GutTest
 ##   tests/scalable_obstacle_smoke_test.gd
 ##
 ## Il manifest condiviso si carica una sola volta in before_all. I layout generati
-## (BiomeTerrainGenerator su una cella iso logica) sono l'operazione più costosa: si
+## (BiomeTerrainGenerator su una cella cardinale logica) sono l'operazione più costosa: si
 ## costruiscono dentro i test che li verificano. Il controllo su main.tscn è
 ## l'unico che boota la scena ed è isolato nell'ultimo test (via fixture condivisa)
 ## per non sporcare le query a gruppo degli altri.
@@ -15,7 +15,7 @@ extends GutTest
 const ROCK_AREA_MESH_BUILDER_SCRIPT = preload(
 	"res://game/modes/zombie/rocks/rectilinear_rock_area_mesh_builder.gd"
 )
-const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
+const WorldGridConfig = preload("res://game/core/world_grid_config.gd")
 
 const REQUIRED_FOOTPRINTS: Dictionary = {
 	Vector2i(1, 1): &"small_rock",
@@ -35,21 +35,21 @@ const FEATURE_IDS: Array[StringName] = [&"forest_tree"]
 const EXPECTED_SLOTS := Vector2i(3, 3)
 const EXPECTED_LEGACY_CELLS := Vector2i(12, 12)
 const EXPECTED_CELLS := Vector2i(2, 2)
-const LOGICAL_TILE_SCALE := IsoGridConfig.LOGICAL_TILE_SCALE
+const LOGICAL_TILE_SCALE := WorldGridConfig.LOGICAL_TILE_SCALE
 const ROCK_ID := &"large_rock"
 const NON_SCALABLE_ID := &"small_rock"
 const SMALL_CELLS := Vector2i(3, 3)
 const LARGE_CELLS := Vector2i(5, 5)
 
-var _manifest: IsometricEnvironmentManifest
+var _manifest: EnvironmentAssetManifest
 
 func before_all() -> void:
-	_manifest = IsometricEnvironmentManifest.reload_shared()
+	_manifest = EnvironmentAssetManifest.reload_shared()
 
 func after_all() -> void:
 	_manifest = null
-	IsometricEnvironmentManifest.clear_shared()
-	IsometricEnvironmentObject.clear_content_metrics_cache()
+	EnvironmentAssetManifest.clear_shared()
+	EnvironmentObject.clear_content_metrics_cache()
 
 # --- manifest a slot ---------------------------------------------------------
 
@@ -100,7 +100,7 @@ func test_authored_layouts() -> void:
 			assert_true(
 				layout.obstacle_sizes[index].is_equal_approx(
 					Vector2(_manifest.get_footprint_tiles(obstacle_id))
-					* IsoGridConfig.LEGACY_TILE_SCALE
+					* WorldGridConfig.LEGACY_TILE_SCALE
 				),
 				"%s authored %s size matches its legacy asset footprint" % [String(biome_id), String(obstacle_id)]
 			)
@@ -119,7 +119,7 @@ func test_runtime_object() -> void:
 	add_child(system)
 	await wait_physics_frames(1)
 	var obstacle_id := &"ruined_house"
-	var footprint := IsoGridConfig.legacy_size_to_new_tiles(
+	var footprint := WorldGridConfig.legacy_size_to_new_tiles(
 		_manifest.get_footprint_tiles(obstacle_id)
 	)
 	var world_size := Vector2(footprint) * LOGICAL_TILE_SCALE
@@ -134,7 +134,7 @@ func test_runtime_object() -> void:
 		assert_eq(obstacle.get_footprint_slots(), Vector2i(4, 4), "large house exposes its 4x4 footprint")
 		assert_eq(obstacle.z_index, 0, "runtime object participates in Y-sort")
 		assert_true(is_equal_approx(obstacle.get_sort_anchor_y(), _manifest.get_sort_offset(obstacle_id)), "sprite floor anchor uses the manifest sort offset")
-		assert_true(bool(obstacle.call("has_asset_sprite")), "runtime house uses its isometric asset")
+		assert_true(bool(obstacle.call("has_asset_sprite")), "runtime house uses its top-down asset")
 		system.register_streamed_obstacle(obstacle, obstacle_id)
 		system.set_debug_footprints_visible(true)
 		assert_true(system.are_debug_footprints_visible(), "F9 debug state is exposed")

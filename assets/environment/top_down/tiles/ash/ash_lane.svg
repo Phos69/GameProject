@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="120" viewBox="0 0 160 120" data-generated-by="generate_top_down_environment_assets" data-section="terrain_tiles" data-id="ash_lane" data-footprint-slots="1x1">
+  <title>terrain_tiles ash_lane</title>
+  <ellipse cx="80" cy="94" rx="54" ry="13" fill="#050608" opacity="0.38"/>
+  <rect x="12" y="12" width="136" height="96" fill="#7a3c2c" stroke="#f08a48" stroke-width="4"/>
+  <rect x="26" y="24" width="108" height="72" fill="none" stroke="#334038" stroke-width="3" opacity="0.42"/>
+  <path d="M12 60 H148" stroke="#f08a48" stroke-width="14" stroke-linecap="square" opacity="0.70"/>
+  <path d="M22 60 H138" stroke="#334038" stroke-width="4" stroke-linecap="square" opacity="0.38"/>
+  <path d="M48 108 H112" fill="none" stroke="#f08a48" stroke-width="3" stroke-linecap="round" opacity="0.62"/>
+</svg>

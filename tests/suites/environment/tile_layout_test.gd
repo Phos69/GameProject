@@ -1,18 +1,18 @@
 extends GutTest
 ## Environment A2 — Tile layer asset-driven, props interni dei blocchi e muri
-## perimetrali isometrici.
+## perimetrali top-down.
 ##
 ## Migra e accorpa:
 ##   tests/milestone_10_tile_layer_smoke_test.gd
-##   tests/isometric_block_props_smoke_test.gd
-##   tests/isometric_perimeter_wall_smoke_test.gd
+##   tests/top_down_block_props_smoke_test.gd
+##   tests/top_down_perimeter_wall_smoke_test.gd
 ##
 ## Ottimizzazione: una sola mappa 3x3 condivisa in before_all per gli invarianti
 ## per-cella; i casi standalone (void-edge gap, factory wall, integrazione
 ## TerrainGenerator) costruiscono scene/layout dedicati.
 
 const WorldGen = preload("res://tests/support/world_gen_helpers.gd")
-const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
+const WorldGridConfig = preload("res://game/core/world_grid_config.gd")
 
 const MAP_SEED := 515151
 
@@ -25,14 +25,14 @@ const PROP_IDS_BY_BIOME: Dictionary = {
 const DEFAULT_PROP_IDS: Array = [&"small_rock", &"broken_fence", &"fallen_log"]
 
 var _manager: BiomeManager
-var _manifest: IsometricEnvironmentManifest
-var _resolver: IsometricTileResolver
+var _manifest: EnvironmentAssetManifest
+var _resolver: BiomeTileResolver
 var _cells: Array[BiomeCell] = []
 var _sample_cells: Array[BiomeCell] = []
 
 func before_all() -> void:
-	_manifest = IsometricEnvironmentManifest.reload_shared()
-	_resolver = IsometricTileResolver.new(_manifest)
+	_manifest = EnvironmentAssetManifest.reload_shared()
+	_resolver = BiomeTileResolver.new(_manifest)
 	_manager = WorldGen.start_biome_manager(self, {
 		"world_seed": MAP_SEED, "biome_map_width": 3, "biome_map_height": 3,
 		"preserve_biome_sequence": false, "extra_edge_chance": 0.5
@@ -107,7 +107,7 @@ func test_resolver_coverage() -> void:
 					saw_passage_endpoint = true
 				elif _resolver.is_void_transition_tile_id(tile_id):
 					saw_void_edge = true
-				elif tile_id == IsometricTileResolver.TILE_VOID_DEPTH:
+				elif tile_id == BiomeTileResolver.TILE_VOID_DEPTH:
 					saw_void_depth = true
 				if (
 					(
@@ -124,7 +124,7 @@ func test_resolver_coverage() -> void:
 						)
 				if (
 					terrain_class == BiomeEnvironmentLayout.TERRAIN_HAZARD
-					and biome_id != IsometricTileResolver.FOREST_BIOME_ID
+					and biome_id != BiomeTileResolver.FOREST_BIOME_ID
 					and StringName(
 						tile_data.get("material_asset_id", &"")
 					).is_empty()
@@ -148,22 +148,22 @@ func test_resolver_coverage() -> void:
 		assert_true(_manifest.get_biome_asset_set_contract(biome_id).has("asset_path"), "%s ha un asset set contract" % String(biome_id))
 	assert_true(road_tile_errors.is_empty(), "ogni cella strada risolve a un route tile (%s)" % ", ".join(road_tile_errors))
 	var void_depth_probe := _resolver.resolve_tile_id(_cells[0].generated_layout, Vector2i(-1, -1), _cells[0].biome_id, &"balanced", _cells[0])
-	assert_eq(void_depth_probe, IsometricTileResolver.TILE_VOID_DEPTH, "celle fuori bound risolvono a void_depth")
+	assert_eq(void_depth_probe, BiomeTileResolver.TILE_VOID_DEPTH, "celle fuori bound risolvono a void_depth")
 	assert_gte(saw_biome_ids.size(), 5, "la coverage del resolver include 5 biome id")
 	assert_false(
-		saw_tile_ids.has(IsometricTileResolver.TILE_FLOOR_BASE)
-		or saw_tile_ids.has(IsometricTileResolver.TILE_FLOOR_VARIANT_01)
-		or saw_tile_ids.has(IsometricTileResolver.TILE_FLOOR_VARIANT_02),
+		saw_tile_ids.has(BiomeTileResolver.TILE_FLOOR_BASE)
+		or saw_tile_ids.has(BiomeTileResolver.TILE_FLOOR_VARIANT_01)
+		or saw_tile_ids.has(BiomeTileResolver.TILE_FLOOR_VARIANT_02),
 		"i biomi tematizzati non ricadono nei floor generici"
 	)
 	assert_true(
-		saw_tile_ids.has(IsometricTileResolver.TILE_FOREST_GRASS),
+		saw_tile_ids.has(BiomeTileResolver.TILE_FOREST_GRASS),
 		"il resolver emette il contratto ground testurizzato condiviso"
 	)
 	assert_true(saw_route_tile, "resolver emette route tile per road e passage rects")
 	assert_true(saw_passage_endpoint, "resolver emette tile endpoint per le aperture di bordo")
 	assert_true(saw_void_edge, "resolver emette tile di transizione cliff neighbor-aware")
-	assert_true(saw_void_depth or void_depth_probe == IsometricTileResolver.TILE_VOID_DEPTH, "resolver emette void_depth")
+	assert_true(saw_void_depth or void_depth_probe == BiomeTileResolver.TILE_VOID_DEPTH, "resolver emette void_depth")
 	assert_gt(
 		cliff_contact_count,
 		0,
@@ -256,6 +256,43 @@ func test_layer_chunking() -> void:
 	assert_lt(_resolver.get_floor_variants_for_preset(&"performance").size(), _resolver.get_floor_variants_for_preset(&"quality").size(),
 		"il preset performance riduce le varianti floor rispetto a quality")
 	performance_layer.free()
+
+func test_untextured_fallback_cells_use_axis_aligned_squares() -> void:
+	var layout := BiomeEnvironmentLayout.new()
+	layout.zone_size = Vector2i(2, 2)
+	layout.generation_seed = 70017
+	layout.add_floor_rect(Rect2i(Vector2i.ZERO, layout.zone_size), &"open_block")
+	layout.rebuild_terrain_classification()
+	var layer := BiomeTileLayer.new()
+	layer.configure(
+		layout,
+		_palette_for_biome(&"infected_plains"),
+		&"cardinal_geometry_test",
+		&"performance",
+		2,
+		null,
+		_manifest
+	)
+	var chunk := layer.get_node_or_null("Chunk_0_0") as BiomeTileChunk
+	assert_not_null(chunk, "fallback layer bakes its single chunk")
+	if chunk != null:
+		assert_not_null(chunk.ground_mesh, "fallback chunk owns untextured ground geometry")
+		if chunk.ground_mesh != null:
+			var bounds := chunk.ground_mesh.get_aabb()
+			var expected_size := Vector2(layout.zone_size) * layout.logical_tile_scale
+			assert_true(
+				Vector2(bounds.size.x, bounds.size.y).is_equal_approx(expected_size),
+				"fallback mesh covers the exact rectangular logical grid"
+			)
+		for index in range(0, chunk.grid_points.size(), 2):
+			var start := chunk.grid_points[index]
+			var finish := chunk.grid_points[index + 1]
+			assert_true(
+				is_equal_approx(start.x, finish.x)
+				or is_equal_approx(start.y, finish.y),
+				"every fallback grid segment is horizontal or vertical"
+			)
+	layer.free()
 
 func test_terrain_generator_integration() -> void:
 	var scene := Node2D.new()
@@ -392,7 +429,7 @@ func test_perimeter_walls() -> void:
 		assert_false(layout.wall_segment_rects.is_empty(), "%s registra segmenti di muro perimetrale espliciti" % String(cell.id))
 		assert_gte(
 			layout.wall_height_cells,
-			IsoGridConfig.RAISED_CLIFF_HEIGHT_TILES,
+			WorldGridConfig.RAISED_CLIFF_HEIGHT_TILES,
 			"%s muri perimetrali con contratto verticale alto" % String(cell.id)
 		)
 		for side in BiomeCell.SIDES:
@@ -442,7 +479,7 @@ func test_perimeter_void_world_edge_gap() -> void:
 		"le celle al bordo mondo dentro l'apertura restano void puro")
 
 func test_perimeter_wall_factory_render() -> void:
-	var factory = load("res://game/modes/zombie/isometric_environment_object_factory.gd").new()
+	var factory = load("res://game/modes/zombie/environment_object_factory.gd").new()
 	var wall = factory.create_obstacle(&"boundary_fence", Vector2(96.0, 32.0), &"rectangle", 0.0, Color(0.4, 0.4, 0.4, 1.0), Color(0.8, 0.7, 0.4, 1.0))
 	assert_not_null(wall, "la factory costruisce un ostacolo muro perimetrale")
 	if wall == null:
@@ -456,7 +493,7 @@ func test_perimeter_wall_factory_render() -> void:
 	)
 	assert_false(wall.has_raised_cliff_art(), "il factory wall generico non carica cliff art fuori dal profilo arena")
 	if wall.has_method("uses_procedural_fallback"):
-		assert_true(bool(wall.call("uses_procedural_fallback")), "il muro perimetrale usa il volume iso procedurale tileabile")
+		assert_true(bool(wall.call("uses_procedural_fallback")), "il muro perimetrale usa il volume top-down procedurale tileabile")
 	wall.free()
 
 # --- helper ---------------------------------------------------------------
@@ -479,7 +516,7 @@ func _find_first_floor_cell(layout: BiomeEnvironmentLayout, cell: BiomeCell) -> 
 		for x in range(layout.zone_size.x):
 			var probe := Vector2i(x, y)
 			var tile_id := _resolver.resolve_tile_id(layout, probe, cell.biome_id, &"balanced", cell)
-			if tile_id == IsometricTileResolver.TILE_FLOOR_BASE or tile_id == IsometricTileResolver.TILE_FLOOR_VARIANT_01 or tile_id == IsometricTileResolver.TILE_FLOOR_VARIANT_02:
+			if tile_id == BiomeTileResolver.TILE_FLOOR_BASE or tile_id == BiomeTileResolver.TILE_FLOOR_VARIANT_01 or tile_id == BiomeTileResolver.TILE_FLOOR_VARIANT_02:
 				return probe
 	return Vector2i(layout.zone_size.x / 2, layout.zone_size.y / 2)
 

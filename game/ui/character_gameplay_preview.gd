@@ -116,40 +116,29 @@ func _draw_background(rect: Rect2, primary: Color, accent: Color) -> void:
 	# Slot vuoto: fondale attenuato, senza griglia/cerchi fantasma (VIS-010).
 	var empty := character_profile.is_empty()
 	var line_alpha := 0.14 if empty else 0.38
-	var floor_center := Vector2(rect.size.x * 0.50, rect.size.y * 0.68)
-	# Il rombo resta dentro il controllo: prima usava mezze diagonali fisse
-	# (118x54) che sbordavano dalle card slot piu' piccole.
-	var half := Vector2(
-		minf(118.0, rect.size.x * 0.44),
-		minf(54.0, rect.size.y * 0.40)
-	)
-	var floor := PackedVector2Array([
-		floor_center + Vector2(0.0, -half.y),
-		floor_center + Vector2(half.x, 0.0),
-		floor_center + Vector2(0.0, half.y),
-		floor_center + Vector2(-half.x, 0.0)
-	])
-	var closed_floor := PackedVector2Array(floor)
-	closed_floor.append(floor[0])
-	draw_colored_polygon(floor, Color(0.055, 0.070, 0.076, 1.0))
-	draw_polyline(
-		closed_floor,
+	var floor_rect := _get_cardinal_floor_rect(rect)
+	draw_rect(floor_rect, Color(0.055, 0.070, 0.076, 1.0), true)
+	draw_rect(
+		floor_rect,
 		Color(0.18, 0.22, 0.24, 0.45 if empty else 0.9),
+		false,
 		2.0,
 		true
 	)
 	if not empty:
-		for index in range(-3, 4):
-			var offset := float(index) * half.x * 0.24
+		for column in range(1, 6):
+			var x := floor_rect.position.x + floor_rect.size.x * float(column) / 6.0
 			draw_line(
-				floor_center + Vector2(offset, -half.y),
-				floor_center + Vector2(offset + half.x, 0.0),
+				Vector2(x, floor_rect.position.y),
+				Vector2(x, floor_rect.end.y),
 				Color(0.11, 0.14, 0.15, 0.38),
 				1.0
 			)
+		for row in range(1, 4):
+			var y := floor_rect.position.y + floor_rect.size.y * float(row) / 4.0
 			draw_line(
-				floor_center + Vector2(offset, -half.y),
-				floor_center + Vector2(offset - half.x, 0.0),
+				Vector2(floor_rect.position.x, y),
+				Vector2(floor_rect.end.x, y),
 				Color(0.11, 0.14, 0.15, 0.38),
 				1.0
 			)
@@ -160,7 +149,8 @@ func _draw_background(rect: Rect2, primary: Color, accent: Color) -> void:
 		]:
 			draw_circle(marker + Vector2(0.0, 10.0), 13.0, Color(0.0, 0.0, 0.0, 0.24))
 			draw_circle(marker, 8.0, Color(0.05, 0.11, 0.08, 0.55))
-			draw_line(marker + Vector2(-5.0, 8.0), marker + Vector2(5.0, -6.0), Color(0.02, 0.05, 0.035, 0.7), 4.0, true)
+			draw_line(marker + Vector2(0.0, 8.0), marker + Vector2(0.0, -6.0), Color(0.02, 0.05, 0.035, 0.7), 4.0, true)
+			draw_line(marker + Vector2(-5.0, 0.0), marker + Vector2(5.0, 0.0), Color(0.02, 0.05, 0.035, 0.7), 2.0, true)
 		draw_arc(
 			rect.get_center(),
 			minf(rect.size.x, rect.size.y) * 0.44,
@@ -178,6 +168,14 @@ func _draw_background(rect: Rect2, primary: Color, accent: Color) -> void:
 		2.0,
 		true
 	)
+
+func _get_cardinal_floor_rect(rect: Rect2) -> Rect2:
+	var floor_size := Vector2(
+		minf(236.0, rect.size.x * 0.88),
+		minf(108.0, rect.size.y * 0.56)
+	)
+	var floor_center := rect.position + Vector2(rect.size.x * 0.50, rect.size.y * 0.66)
+	return Rect2(floor_center - floor_size * 0.5, floor_size)
 
 func _draw_player_preview(
 	origin: Vector2,

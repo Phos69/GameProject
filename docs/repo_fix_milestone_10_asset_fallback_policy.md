@@ -1,5 +1,9 @@
 # Repo Fix Milestone 10 - Asset Fallback Policy
 
+> Policy storica della Milestone 10, sostituita per proiezione, path e tooling
+> da `docs/top_down_cardinal_contract.md`. Resta valida solo come evidenza delle
+> decisioni e dei test eseguiti all'epoca.
+
 Data: 2026-06-21
 
 Questa nota chiude la Milestone 10 del pass repo-fix: asset, terrain,

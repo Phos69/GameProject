@@ -5,7 +5,7 @@
   "arma": "Spada",
   "passiva": "Guardia Perfetta",
   "super": "Lama Fantasma",
-  "stile": "cartoon dark arcade, zombie survival isometrico",
+  "stile": "cartoon dark arcade, zombie survival top-down ortogonale con volume prospettico controllato",
   "palette": {
     "id": "blade_night",
     "primary": "#142152",
@@ -70,7 +70,7 @@
     }
   },
   "iteration_changelog": [
-    "Creato primo set base completo per Spadaccino/Kael Guardia con portrait rendered, sprite isometrico, sprite sheet animabile, icone HUD e spada.",
+    "Creato primo set base completo per Spadaccino/Kael Guardia con portrait rendered, sprite gameplay della precedente iterazione, sprite sheet animabile, icone HUD e spada.",
     "Aggiornato il profilo dati Spadaccino per puntare alla sprite sheet definitiva di questa iterazione.",
     "Convertiti gli asset bitmap PNG in SVG testuali per rendere la pull request compatibile con ambienti che non accettano file binari."
   ],

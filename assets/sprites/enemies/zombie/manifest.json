@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "generated_on": "2026-07-14",
   "generator": "OpenAI built-in image generation",
   "use_case": "stylized-concept",
@@ -12,7 +12,9 @@
     "512x512 transparent canvas with proportional fit",
     "detached speck cleanup"
   ],
-  "prompt_summary": "Eight full-body zombie game pictograms in consistent three-quarter isometric dark-arcade style: basic, runner, tank, shooter, Toxic Reaver, Ember Hound, Glacial Bulwark and Mire Stalker; no text, uniform chroma-key background.",
+  "projection": "orthogonal_top_down",
+  "volume_style": "controlled_perspective",
+  "prompt_summary": "Eight full-body zombie game pictograms in a consistent elevated top-down dark-arcade style, aligned to screen-cardinal axes with controlled body depth and no isometric floor plane: basic, runner, tank, shooter, Toxic Reaver, Ember Hound, Glacial Bulwark and Mire Stalker; no text, uniform chroma-key background.",
   "assets": {
     "basic": "basic_zombie.png",
     "runner": "runner_zombie.png",

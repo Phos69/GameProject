@@ -80,7 +80,7 @@ Checklist manuale per il pass WVIS-001.
 
 - W7 verificata con quattro player equipaggiati con firearm, shotgun, melee ed
   elemental nello stesso scenario survival.
-- Sei pickup arma restano separati sul background isometrico e il placeholder
+- Sei pickup arma restano separati sul background top-down e il placeholder
   missing compare solo nel campione negativo dedicato.
 - Cinque proiettili diversi restano leggibili nello stesso frame con otto zombie.
 - La tavola melee mostra sei slash/hit profile distinti nello stesso scenario.

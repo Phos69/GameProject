@@ -5,7 +5,7 @@
   "arma": "Artigli",
   "passiva": "Odore del Sangue",
   "super": "Notte Bestiale",
-  "stile": "cartoon dark arcade, zombie survival isometrico",
+  "stile": "cartoon dark arcade, zombie survival top-down ortogonale con volume prospettico controllato",
   "palette": {
     "id": "moon_fury",
     "primary": "#292b33",
@@ -70,7 +70,7 @@
     }
   },
   "iteration_changelog": [
-    "Creato primo set base completo per Licantropo/Rocco Lunastorta con portrait rendered, sprite isometrico, sprite sheet animabile, icone HUD e artigli.",
+    "Creato primo set base completo per Licantropo/Rocco Lunastorta con portrait rendered, sprite gameplay della precedente iterazione, sprite sheet animabile, icone HUD e artigli.",
     "La riga super usa una forma bestiale piu grande con slash rossi per anticipare Notte Bestiale.",
     "Convertiti gli asset bitmap PNG in SVG testuali per rendere la pull request compatibile con ambienti che non accettano file binari.",
     "Ripristinato un portrait PNG definitivo per Character Select e slot di selezione player."

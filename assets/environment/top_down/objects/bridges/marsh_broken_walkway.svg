@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="149" height="56" viewBox="0 0 160 120" data-generated-by="generate_top_down_environment_assets" data-section="object_scenes" data-id="broken_walkway" data-footprint-slots="3x1">
+  <title>object_scenes broken_walkway</title>
+  <ellipse cx="80" cy="94" rx="54" ry="13" fill="#050608" opacity="0.38"/>
+  <rect x="24" y="42" width="112" height="60" fill="#242a2f" stroke="#c2b071" stroke-width="3"/>
+  <path d="M39 48 V96" stroke="#355d59" stroke-width="8" stroke-linecap="round"/>
+  <path d="M54 48 V96" stroke="#355d59" stroke-width="8" stroke-linecap="round"/>
+  <path d="M69 48 V96" stroke="#355d59" stroke-width="8" stroke-linecap="round"/>
+  <path d="M84 48 V96" stroke="#355d59" stroke-width="8" stroke-linecap="round"/>
+  <path d="M99 48 V96" stroke="#355d59" stroke-width="8" stroke-linecap="round"/>
+  <path d="M114 48 V96" stroke="#355d59" stroke-width="8" stroke-linecap="round"/>
+  <path d="M30 50 H130 M30 94 H130" stroke="#c2b071" stroke-width="4" stroke-linecap="round"/>
+  <path d="M48 108 H112" fill="none" stroke="#c2b071" stroke-width="3" stroke-linecap="round" opacity="0.62"/>
+</svg>

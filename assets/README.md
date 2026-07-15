@@ -63,13 +63,19 @@ non diventano requisiti di bootstrap.
 - musica lunga: OGG in streaming;
 - evitare compressione lossy su icone, testo rasterizzato e pixel art.
 
-## Ambiente isometrico (manifest)
+## Ambiente top-down cardinale (manifest)
 
-`environment/isometric/manifest.json` e la fonte di verita per gli oggetti
-ambientali del bioma (ostacoli, bordi, casse, cliff, passaggi). Dal manifest v10
+`environment/top_down/manifest.json` e la fonte di verita per gli oggetti
+ambientali del bioma (ostacoli, bordi, casse, cliff, passaggi). Il manifest v11
 contiene anche il contratto asset-driven per `tile_sets`, `tile_variants`,
 `terrain_tiles`, `edge_tiles`, `void_tiles`, `object_scenes`, `passage_tiles`,
 `biome_asset_sets` e `fallback_policy`.
+
+Il manifest dichiara `coordinate_system: orthogonal_top_down` e
+`volume_style: controlled_perspective`. Ground e route restano allineati agli
+assi; cliff, edifici e prop possono mostrare una facciata sud o sottili facce
+laterali, senza spostare footprint e collisioni. Il contratto completo vive in
+`docs/top_down_cardinal_contract.md`.
 
 Per ogni contratto il loader normalizza `asset_path`, `status`, `biome_ids`,
 `footprint_tiles`, `anchor`, `sort_offset`, `collision_shape`, flag
@@ -78,8 +84,9 @@ Gli status ammessi sono `final`, `base_complete`, `needs_polish`,
 `procedural_fallback`, `needs_asset` e `deprecated`.
 
 Gli `object_scenes` possono usare SVG generati, PNG/WebP finali oppure risorse
-Godot `Texture2D` `.tres` (per esempio `AtlasTexture`). Il tool SVG non
-riscrive le texture autorate: in `--check` ne verifica comunque la presenza,
+Godot `Texture2D` `.tres` (per esempio `AtlasTexture`) come estensione del
+loader. Nessun prop attivo usa attualmente `.tres`: il tool SVG non riscrive
+eventuali texture autorate e in `--check` ne verifica comunque la presenza,
 mentre trasparenza e copertura sono validate da
 `tests/visual_qa/obstacle_asset_visual_qa.gd`.
 
@@ -89,14 +96,14 @@ raccordo orizzontale (void verso il basso) e
 `grass_cliff_edge_vertical_generated.png` per i lati verticali. I bordi
 campionano solo la fascia rocciosa pura di questi raster
 (`HORIZONTAL_ROCK_UV_START`/`VERTICAL_ROCK_UV_START` in
-`IsometricCliffBorderMeshBuilder`), saltando il muschio verde della transizione
+`TopDownCliffBorderMeshBuilder`), saltando il muschio verde della transizione
 erba-roccia per non lasciare un seam verde sul perimetro. Le iterazioni
 `cliff_face_generated.png`, `cliff_lip_generated.png` e
 `grass_cliff_edge_generated.png` restano conservate come sorgenti di confronto. `RectilinearCliffFaceMeshBuilder` applica il materiale
 roccioso a pannelli continui orizzontali e verticali nel forestale; le 14
-geometrie di `IsometricCliffMeshBuilder` restano fallback non forestale. Il
+geometrie di `TopDownCliffMeshBuilder` restano fallback non forestale. Il
 raccordo della cresta usa mesh e raster dedicati costruiti da
-`IsometricCliffBorderMeshBuilder`; gli angoli hanno ownership orizzontale e non
+`TopDownCliffBorderMeshBuilder`; gli angoli hanno ownership orizzontale e non
 usano un tile sovrapposto. L'import limita il runtime a 512 px e genera
 mipmap; i sorgenti restano conservati per iterazioni.
 
@@ -106,7 +113,8 @@ Infinite Arena riusa inoltre i raster gia finali
 `BiomeObstaclePainter` li applica ai segmenti solidi con UV world-space
 continui e geometria distinta per lati orizzontali/verticali; non sono
 `fall_zone` e non modificano collisioni o danno. Se uno dei due raster non e
-disponibile, il runtime conserva il precedente muro isometrico procedurale.
+disponibile, il runtime conserva il muro top-down procedurale con volume
+controllato.
 
 Il prato forestale finale usa
 `tiles/forest/textures/forest_grass_generated.png`. `BiomeTileLayer` lo stende
@@ -133,7 +141,7 @@ Wall e void mantengono i rispettivi materiali e colori.
 
 ### Set generati per bioma
 
-I 195 sorgenti raster in `environment/isometric/generated_images/` sono
+I 195 sorgenti raster in `environment/top_down/generated_images/` sono
 organizzati per tema e ruolo. Il mapping runtime e:
 `toxic_wastes -> urban_ruins`, `burning_fields -> volcanic`,
 `frozen_outskirts -> frozen_tundra`, `drowned_marsh -> swamp`.
@@ -207,70 +215,82 @@ le varianti orientate di `road_border_defined`; gli asset
 Prima di importare o committare modifiche ai sorgenti:
 
 ```text
-godot --headless --path . --script res://tools/prepare_generated_biome_assets.gd -- --write
+godot --headless --path . --script res://tools/prepare_top_down_biome_assets.gd -- --write
 godot --headless --path . --import
-godot --headless --path . --script res://tools/prepare_generated_biome_assets.gd -- --check
+godot --headless --path . --script res://tools/prepare_top_down_biome_assets.gd -- --check
 ```
 
 Il tool rimuove le cornici bianche, compatta gutter interni e converte in alpha
 solo il matte esterno dei cutout cliff; neve e ghiaccio interni restano opachi.
 
-- Il loader `game/modes/zombie/isometric_environment_manifest.gd` legge e valida
+- Il loader `game/modes/zombie/environment_asset_manifest.gd` legge e valida
   il manifest; `ObstacleSystem` lo usa per `sort_offset` e flag di blocco e,
   dalla Milestone 10.5, passa gli `object_scenes` a
-  `IsometricEnvironmentObjectFactory`.
+  `EnvironmentObjectFactory`.
 - `visual_scene` che punta a uno script `.gd` resta il fallback tecnico legacy.
-  Nel contratto v10 il fallback normale e dichiarato da `fallback_path` e
+  Nel contratto v11 il fallback normale e dichiarato da `fallback_path` e
   `fallback_policy`; nessun file esterno e obbligatorio per il bootstrap.
-- Lo smoke `tests/isometric_environment_manifest_smoke_test.gd` verifica che ogni
+- La suite asset verifica che ogni
   `obstacle_id` dei biomi sia descritto, che nessun oggetto richieda asset
   esterni e che collisione/footprint/Y-sort restino coerenti.
-- Lo smoke `tests/milestone_10_asset_manifest_v7_smoke_test.gd` verifica che gli
-  ID generati da ostacoli, terrain, passaggi e fall zone abbiano un contratto v7
-  esplicito e che un asset pianificato ma assente resti sicuro tramite
-  `needs_asset` + `fallback_path`.
+- `tests/suites/assets/asset_fallback_test.gd` e
+  `manifest_contract_test.gd` verificano che gli ID generati da ostacoli,
+  terrain, passaggi e fall zone abbiano un contratto v11 esplicito e che un
+  asset pianificato ma assente resti sicuro tramite `needs_asset` e
+  `fallback_path`.
 - Per convertire un oggetto in arte esterna: aggiungere la risorsa al nodo
   presentazionale mantenendo il fallback dichiarato, aggiornare `asset_path` e
   `status` nel manifest e registrare la licenza in `ATTRIBUTION.md`.
 
-## Ambiente isometrico (asset generati)
+## Ambiente top-down cardinale (asset generati)
 
-`tools/generate_isometric_environment_assets.gd` genera SVG testuali interni
-dai contratti v10. Il tool lavora in modo conservativo:
+`tools/generate_top_down_environment_assets.gd` genera SVG testuali interni
+dai contratti v11. Il tool lavora in modo conservativo:
 
 ```text
-godot --headless --path . --script res://tools/generate_isometric_environment_assets.gd -- --dry-run
-godot --headless --path . --script res://tools/generate_isometric_environment_assets.gd -- --write
-godot --headless --path . --script res://tools/generate_isometric_environment_assets.gd -- --check
+godot --headless --path . --script res://tools/generate_top_down_environment_assets.gd -- --dry-run
+godot --headless --path . --script res://tools/generate_top_down_environment_assets.gd -- --write
+godot --headless --path . --script res://tools/generate_top_down_environment_assets.gd -- --check
+godot --headless --path . --script res://tools/generate_top_down_environment_assets.gd -- --write --overwrite-generated --migrate-projection
 ```
 
 - default: dry-run, nessuna scrittura;
 - `--write`: crea solo asset mancanti;
 - `--check`: fallisce se un `asset_path` SVG/raster/Texture2D del manifest non esiste;
 - `--overwrite-generated`: rigenera asset esistenti non marcati `final`;
-- gli asset con `status: final` non vengono mai sovrascritti dal tool.
+- `--overwrite-generated --migrate-projection`: unico percorso autorizzato per
+  riscrivere anche asset `final` durante un cutover esplicito della proiezione.
 
 Gli SVG generati includono metadata `data-generated-by`, `data-section`,
 `data-id` e `data-footprint-slots` per rendere il controllo manifest/file system
 ripetibile. Gli asset base sono originali del progetto: i terrain/passaggi
-espongono silhouette isometriche di route, mentre gli `object_scenes` usano
+espongono superfici rettangolari e route H/V, mentre gli `object_scenes` usano
 sprite trasparenti distinti per case, barriere, barili, relitti, tronchi, ponti
 e crate. I profili SVG residui restano fallback sostituibili; `lab_block` e
-`lab_ruin` usano ora la regione industriale generata, distinta dalla
+`lab_ruin` usano due SVG individuali distinti, entrambi separati dalla
 `supply_crate` compatta. `reed_wall` disattiva il letterboxing del viewBox e
 usa tutta la canvas nativa `56x136`, coerente con il footprint stretto `1x3`.
 Possono essere sostituiti gradualmente con arte
 `needs_polish`/`final` senza cambiare il contratto runtime.
 
-## Ambiente isometrico (tile layer runtime)
+I 66 materiali cliff generati vengono normalizzati separatamente dal tool di
+migrazione: le facce verticali mantengono soltanto materiale di parete, mentre
+lip e angoli ricevono materiale overhead senza silhouette inclinata.
 
-`game/modes/zombie/isometric_tile_resolver.gd` mappa ogni cella logica del
+```text
+godot --headless --path . --script res://tools/migrate_top_down_cliff_textures.gd
+godot --headless --path . --script res://tools/migrate_top_down_cliff_textures.gd -- --check
+```
+
+## Ambiente top-down cardinale (tile layer runtime)
+
+`game/modes/zombie/biome_tile_resolver.gd` mappa ogni cella logica del
 `BiomeEnvironmentLayout` in un tile asset-backed deterministico: `floor_base`,
 varianti floor, route tile (`main_road`, road tematiche, curve, edge e
 intersezioni), passage tile (`road`, `bridge`, `snow_pass`, `broken_gate`,
 `burned_road`, entry/exit), `hazard_floor`, `border_floor`, `void_edge_near` o
-`void_depth`. Le route generate usano `road_cell_tags` diagonali per seguire gli
-assi isometrici; i rettangoli restano per aperture e compatibilita. La variante
+`void_depth`. Le route generate usano segmenti orizzontali e verticali, curve e
+incroci fra lati cardinali; i rettangoli definiscono le aperture. La variante
 floor deriva da seed, cella e bioma.
 
 Per `infected_plains`, il resolver usa il set forestale dedicato:
@@ -279,7 +299,7 @@ Per `infected_plains`, il resolver usa il set forestale dedicato:
 `forest_mountain_wall` e le transizioni `grass_to_path`, `grass_to_road`,
 `grass_to_tall_grass`,
 `path_to_road`, `ground_to_void_cliff` e `ground_to_mountain_wall`. Gli asset
-vivono in `environment/isometric/tiles/forest/` e nelle cartelle `edges/`.
+vivono in `environment/top_down/tiles/forest/` e nelle cartelle `edges/`.
 Per il rendering, i tile di route forestali e i passage `road` mantengono i
 propri ID/section per debug, ma selezionano il core strada derivato da
 `forest_road_border_defined` come base e una fascia
@@ -287,7 +307,7 @@ propri ID/section per debug, ma selezionano il core strada derivato da
 
 `game/modes/zombie/biome_tile_layer.gd` e il ground primario asset-driven per
 `TerrainGenerator`: cache-a tutte le 250.000 celle della regione `500x500`, le
-divide in chunk e usa il manifest v10 come contratto per gli asset. I vecchi
+divide in chunk e usa il manifest v11 come contratto per gli asset. I vecchi
 `BiomeRegionGround` e `BiomeTerrainPatch` restano fallback tecnici solo quando
 la modalita asset viene disattivata.
 
@@ -300,13 +320,13 @@ tematiche pescano dal ruolo `path`. I `passage_tiles` e i relativi entry/exit re
 identificati come sezione/tile (`passage_tiles/bridge_entry`) per preservare
 semantica e debug, evitando connettori manifest fuori scala ai bordi regione.
 
-Il generator asset controlla 131 path unici del manifest: 95 SVG, 13 PNG e 23
-risorse `AtlasTexture` `.tres`, inclusi road connector, entry/exit dei passaggi,
-object scene per ostacoli/crate e tile forestali con transizioni.
+Il generator asset controlla 131 path unici del manifest: 118 SVG e 13 PNG,
+inclusi road connector, entry/exit dei passaggi, object scene per
+ostacoli/crate e tile forestali con transizioni.
 
-## Ambiente isometrico (oggetti runtime)
+## Ambiente top-down cardinale (oggetti runtime)
 
-Gli ostacoli generati dal layout usano `IsometricEnvironmentObject` come scena
+Gli ostacoli generati dal layout usano `EnvironmentObject` come scena
 base slot-based: uno `StaticBody2D` con collisione dal manifest, `Sprite2D`,
 ombra a terra, anchor al pavimento, `sort_offset` e footprint debug opzionale.
 `BiomeObstacle` resta il fallback tecnico quando il manifest dichiara un
@@ -330,24 +350,25 @@ riportano la dimensione nel filename; le case vivono in `objects/houses/`.
 `visual_height_tiles` aggiunge altezza solo sopra la base. La procedura completa
 e la checklist sono in `docs/obstacle_rendering.md`.
 
-Gli asset correnti sono misti: SVG generati in-repo, PNG finali e 23 regioni
-`AtlasTexture` ricavate dalle cinque tavole dei prop. In runtime headless
-`IsometricSvgTextureLoader` rasterizza gli SVG trasparenti quando manca la
-cache import, mentre carica PNG e risorse `Texture2D` tramite `ResourceLoader`.
+Gli asset correnti sono misti: SVG generati in-repo e PNG finali. I 23 prop
+promossi usano ciascuno un SVG cardinale dedicato in
+`objects/generated_props/`, con source `project_svg_generator` e attribution
+`environment_top_down_internal`. In runtime headless
+`EnvironmentTextureLoader` rasterizza gli SVG trasparenti quando manca la
+cache import, mentre carica i PNG tramite `ResourceLoader`.
 La supply crate usa lo stesso percorso tramite `object_scenes/supply_crate`;
 `reed_wall` richiede la propria dimensione nativa al loader per conservare
 l'altezza visuale prevista dal manifest.
 
-### Tavole concept degli oggetti per bioma
+### Prop cardinali generati
 
-`environment/isometric/concepts/` raccoglie cinque tavole raster per pianura
-infetta, lande tossiche, campi in fiamme, periferia gelata e palude sommersa.
-Dal manifest v10 sono atlas runtime: 20 regioni con alpha alimentano 23 ID
-tramite risorse in `objects/generated_props/`, senza ricampionare i pixel e
-senza modificare footprint, anchor, collisione o Y-sort. Il `reed_wall` resta
-SVG verticale `1x3`, perche il motivo palude disponibile rappresenta invece
-un `marsh_log` orizzontale. Mapping e provenienza sono nel `README.md` della
-cartella.
+`environment/top_down/concepts/` conserva soltanto il README di migrazione: le
+cinque tavole raster precedenti sono state rimosse e non sono sorgenti runtime.
+Anche le 23 risorse `AtlasTexture` `.tres` ritagliate da quelle tavole sono
+state eliminate. Il manifest v11 associa ciascuno dei 23 ID a uno SVG
+individuale in `objects/generated_props/`, senza modificare footprint, anchor,
+collisione o Y-sort. Il `reed_wall` resta uno SVG verticale `1x3` indipendente;
+mapping e guardrail sono documentati nel README della cartella `concepts/`.
 
 ## Sostituzione Placeholder
 

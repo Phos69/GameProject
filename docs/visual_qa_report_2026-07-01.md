@@ -1,5 +1,9 @@
 # Visual QA Report - 2026-07-01
 
+> Baseline visuale storica precedente a `TOPDOWN-001`. I riferimenti alla
+> vecchia proiezione e ai relativi tool non definiscono asset nuovi. Il
+> contratto operativo corrente e `docs/top_down_cardinal_contract.md`.
+
 ## Esito
 
 **NON PASS.**

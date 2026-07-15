@@ -663,7 +663,7 @@ func _find_route_transition_cell(
 			):
 				continue
 			var touches_ground := false
-			for offset in IsometricTileResolver.CARDINAL_OFFSETS:
+			for offset in BiomeTileResolver.CARDINAL_OFFSETS:
 				var neighbor := candidate + offset
 				if (
 					neighbor.x < 0

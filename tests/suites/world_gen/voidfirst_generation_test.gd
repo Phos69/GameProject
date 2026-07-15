@@ -15,7 +15,7 @@ extends GutTest
 ## costruiscono layout dedicati.
 
 const WorldGen = preload("res://tests/support/world_gen_helpers.gd")
-const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
+const WorldGridConfig = preload("res://game/core/world_grid_config.gd")
 
 # Seed con la tolleranza piu stretta (budget alberi forest-fill 240): se passa
 # qui passa anche per le altre invarianti, che sono strutturali.
@@ -25,12 +25,12 @@ const TREE_FOOTPRINT := Vector2i(2, 2)
 # tree-lining pass directly (the generator resolves the full palette per biome).
 const _PLAINS_LINE_PALETTE := {"line_vegetation": true, "cluster_id": &"forest_tree"}
 
-var _manifest: IsometricEnvironmentManifest
+var _manifest: EnvironmentAssetManifest
 var _biome: BiomeDefinition
 var _layout: BiomeEnvironmentLayout
 
 func before_all() -> void:
-	_manifest = IsometricEnvironmentManifest.reload_shared()
+	_manifest = EnvironmentAssetManifest.reload_shared()
 	_biome = WorldGen.load_starter_biome()
 	assert_not_null(_biome, "infected plains carica")
 	if _biome != null:
@@ -58,8 +58,8 @@ func test_rocks_placement() -> void:
 		if rect.size.x != rect.size.y:
 			all_square = false
 		if (
-			rect.size.x < IsoGridConfig.VOIDFIRST_ROCK_MIN_SIZE_TILES
-			or rect.size.x > IsoGridConfig.VOIDFIRST_ROCK_MAX_SIZE_TILES
+			rect.size.x < WorldGridConfig.VOIDFIRST_ROCK_MIN_SIZE_TILES
+			or rect.size.x > WorldGridConfig.VOIDFIRST_ROCK_MAX_SIZE_TILES
 		):
 			all_in_range = false
 	assert_true(all_square, "ogni roccia e quadrata")
@@ -95,8 +95,8 @@ func test_forests_placement() -> void:
 		if rect.size.x != rect.size.y:
 			all_square = false
 		if (
-			rect.size.x < IsoGridConfig.VOIDFIRST_FOREST_MIN_SIZE_TILES
-			or rect.size.x > IsoGridConfig.VOIDFIRST_FOREST_MAX_SIZE_TILES
+			rect.size.x < WorldGridConfig.VOIDFIRST_FOREST_MIN_SIZE_TILES
+			or rect.size.x > WorldGridConfig.VOIDFIRST_FOREST_MAX_SIZE_TILES
 		):
 			all_in_range = false
 	assert_true(all_square, "ogni foresta e quadrata")
@@ -186,7 +186,7 @@ func test_forced_forest_over_rock_keeps_rock_clear() -> void:
 
 func test_roads_reach_edges() -> void:
 	var z := _layout.zone_size
-	var thickness := IsoGridConfig.SIDE_EDGE_MAX_THICKNESS_TILES
+	var thickness := WorldGridConfig.SIDE_EDGE_MAX_THICKNESS_TILES
 	assert_true(_band_has_road(_layout, Rect2i(0, 0, thickness, z.y)), "strada raggiunge il bordo ovest")
 	assert_true(_band_has_road(_layout, Rect2i(z.x - thickness, 0, thickness, z.y)), "strada raggiunge il bordo est")
 	assert_true(_band_has_road(_layout, Rect2i(0, 0, z.x, thickness)), "strada raggiunge il bordo nord")
@@ -235,8 +235,8 @@ func test_trail_stops_at_rock() -> void:
 		layout,
 		Vector2i(layout.zone_size.x / 3, rock.position.y + rock.size.y / 2),
 		Vector2i(1, 0),
-		IsoGridConfig.VOIDFIRST_PATH_WIDTH_TILES,
-		IsoGridConfig.VOIDFIRST_PATH_MAX_LEN_TILES,
+		WorldGridConfig.VOIDFIRST_PATH_WIDTH_TILES,
+		WorldGridConfig.VOIDFIRST_PATH_MAX_LEN_TILES,
 		&"broken_street"
 	)
 	assert_gt(carved, 0, "il sentiero scava verso la roccia")
@@ -412,7 +412,7 @@ func _rect_in_any(rect: Rect2i, rects: Array[Rect2i]) -> bool:
 	return false
 
 func _rect_near_road(layout: BiomeEnvironmentLayout, rect: Rect2i) -> bool:
-	var near := IsoGridConfig.VOIDFIRST_ROAD_LINE_NEAR_TILES
+	var near := WorldGridConfig.VOIDFIRST_ROAD_LINE_NEAR_TILES
 	var band := Rect2i(rect.position - Vector2i(near, near), rect.size + Vector2i(near * 2, near * 2))
 	for y in range(band.position.y, band.end.y):
 		for x in range(band.position.x, band.end.x):
@@ -421,10 +421,10 @@ func _rect_near_road(layout: BiomeEnvironmentLayout, rect: Rect2i) -> bool:
 	return false
 
 func _carve_straight_road(layout: BiomeEnvironmentLayout) -> void:
-	var span_before := _span_before_center(IsoGridConfig.ROAD_WIDTH_TILES)
-	var span_after := _span_after_center(IsoGridConfig.ROAD_WIDTH_TILES)
+	var span_before := _span_before_center(WorldGridConfig.ROAD_WIDTH_TILES)
+	var span_after := _span_after_center(WorldGridConfig.ROAD_WIDTH_TILES)
 	var center_y := layout.zone_size.y / 2
-	for x in range(IsoGridConfig.BORDER_THICKNESS_TILES, layout.zone_size.x - IsoGridConfig.BORDER_THICKNESS_TILES):
+	for x in range(WorldGridConfig.BORDER_THICKNESS_TILES, layout.zone_size.x - WorldGridConfig.BORDER_THICKNESS_TILES):
 		for y in range(center_y - span_before, center_y + span_after):
 			layout.add_road_cell(Vector2i(x, y), &"main_road")
 

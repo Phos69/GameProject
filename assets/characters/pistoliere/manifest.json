@@ -5,7 +5,7 @@
   "arma": "Pistola",
   "passiva": "Mano Veloce",
   "super": "Scarica Finale",
-  "stile": "cartoon dark arcade, zombie survival isometrico",
+  "stile": "cartoon dark arcade, zombie survival top-down ortogonale con volume prospettico controllato",
   "palette": {
     "id": "gunslinger_dust",
     "primary": "#c2943d",
@@ -70,7 +70,7 @@
     }
   },
   "iteration_changelog": [
-    "Creato primo set base completo per Pistoliere/Dante Ferraglia con portrait rendered, sprite isometrico, sprite sheet animabile, icone HUD e pistola.",
+    "Creato primo set base completo per Pistoliere/Dante Ferraglia con portrait rendered, sprite gameplay della precedente iterazione, sprite sheet animabile, icone HUD e pistola.",
     "Aggiornato il profilo dati Pistoliere per puntare alla sprite sheet definitiva di questa iterazione.",
     "Convertiti gli asset bitmap PNG in SVG testuali per rendere la pull request compatibile con ambienti che non accettano file binari."
   ],

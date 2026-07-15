@@ -1,7 +1,7 @@
 extends RefCounted
 class_name BiomeGeneratedArtCatalog
 
-const ASSET_ROOT := "res://assets/environment/isometric/generated_images"
+const ASSET_ROOT := "res://assets/environment/top_down/generated_images"
 const EXPECTED_TOTAL_ASSET_COUNT := 195
 const EXPECTED_ACTIVE_ASSET_COUNT := 133
 const SURFACE_MACRO_CELL_SIZE := 8
@@ -187,7 +187,7 @@ static func has_generated_theme(biome_id: StringName) -> bool:
 
 static func get_theme_id_for_biome(biome_id: StringName) -> StringName:
 	var contract := (
-		IsometricEnvironmentManifest.get_shared()
+		EnvironmentAssetManifest.get_shared()
 		.get_biome_asset_set_contract(biome_id)
 	)
 	return StringName(contract.get("generated_theme_id", &""))
@@ -265,7 +265,7 @@ static func get_asset_descriptor(
 	if resolved_role.is_empty():
 		return {}
 	var set_contract := (
-		IsometricEnvironmentManifest.get_shared()
+		EnvironmentAssetManifest.get_shared()
 		.get_biome_asset_set_contract(biome_id)
 	)
 	return {
@@ -464,7 +464,7 @@ static func validate_catalog() -> PackedStringArray:
 	for biome_id_value in BIOME_THEME_IDS:
 		var biome_id := biome_id_value as StringName
 		var set_contract := (
-			IsometricEnvironmentManifest.get_shared()
+			EnvironmentAssetManifest.get_shared()
 			.get_biome_asset_set_contract(biome_id)
 		)
 		if (

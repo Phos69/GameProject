@@ -3,23 +3,23 @@ extends SceneTree
 const OUTPUT_DIR := "res://build/qa/void_cliffs"
 const OUTPUT_FILE := "void_cliff_generated_variants.png"
 const TEXTURE_LOADER = preload(
-	"res://game/modes/zombie/isometric_svg_texture_loader.gd"
+	"res://game/modes/zombie/environment_texture_loader.gd"
 )
 const TRANSITION_IDS: Array[StringName] = [
-	IsometricTileResolver.TILE_VOID_EDGE_NORTH,
-	IsometricTileResolver.TILE_VOID_EDGE_EAST,
-	IsometricTileResolver.TILE_VOID_EDGE_SOUTH,
-	IsometricTileResolver.TILE_VOID_EDGE_WEST,
-	IsometricTileResolver.TILE_VOID_CORNER_INNER_NORTH_EAST,
-	IsometricTileResolver.TILE_VOID_CORNER_INNER_SOUTH_EAST,
-	IsometricTileResolver.TILE_VOID_CORNER_INNER_SOUTH_WEST,
-	IsometricTileResolver.TILE_VOID_CORNER_INNER_NORTH_WEST,
-	IsometricTileResolver.TILE_VOID_CORNER_OUTER_NORTH_EAST,
-	IsometricTileResolver.TILE_VOID_CORNER_OUTER_SOUTH_EAST,
-	IsometricTileResolver.TILE_VOID_CORNER_OUTER_SOUTH_WEST,
-	IsometricTileResolver.TILE_VOID_CORNER_OUTER_NORTH_WEST,
-	IsometricTileResolver.TILE_VOID_DIAGONAL_NORTH_EAST_SOUTH_WEST,
-	IsometricTileResolver.TILE_VOID_DIAGONAL_NORTH_WEST_SOUTH_EAST
+	BiomeTileResolver.TILE_VOID_EDGE_NORTH,
+	BiomeTileResolver.TILE_VOID_EDGE_EAST,
+	BiomeTileResolver.TILE_VOID_EDGE_SOUTH,
+	BiomeTileResolver.TILE_VOID_EDGE_WEST,
+	BiomeTileResolver.TILE_VOID_CORNER_INNER_NORTH_EAST,
+	BiomeTileResolver.TILE_VOID_CORNER_INNER_SOUTH_EAST,
+	BiomeTileResolver.TILE_VOID_CORNER_INNER_SOUTH_WEST,
+	BiomeTileResolver.TILE_VOID_CORNER_INNER_NORTH_WEST,
+	BiomeTileResolver.TILE_VOID_CORNER_OUTER_NORTH_EAST,
+	BiomeTileResolver.TILE_VOID_CORNER_OUTER_SOUTH_EAST,
+	BiomeTileResolver.TILE_VOID_CORNER_OUTER_SOUTH_WEST,
+	BiomeTileResolver.TILE_VOID_CORNER_OUTER_NORTH_WEST,
+	BiomeTileResolver.TILE_VOID_DIAGONAL_NORTH_EAST_SOUTH_WEST,
+	BiomeTileResolver.TILE_VOID_DIAGONAL_NORTH_WEST_SOUTH_EAST
 ]
 const LABELS: Array[String] = [
 	"EDGE N", "EDGE E", "EDGE S", "EDGE W",
@@ -31,7 +31,7 @@ const LABELS: Array[String] = [
 var failures := PackedStringArray()
 
 class CliffQaBoard extends Node2D:
-	var builder: IsometricCliffMeshBuilder
+	var builder: TopDownCliffMeshBuilder
 	var face_texture: Texture2D
 	var lip_texture: Texture2D
 	var centers: Array[Vector2] = []
@@ -53,13 +53,23 @@ class CliffQaBoard extends Node2D:
 		var panel := Rect2(center - Vector2(72.0, 64.0), Vector2(144.0, 190.0))
 		draw_rect(panel, Color("111c21"), true)
 		draw_rect(panel, Color("43534a"), false, 1.0)
-		var diamond := PackedVector2Array([
-			center + Vector2(0.0, -20.0),
-			center + Vector2(44.0, 0.0),
-			center + Vector2(0.0, 20.0),
-			center + Vector2(-44.0, 0.0)
-		])
-		draw_colored_polygon(diamond, Color("26352a"))
+		var ground_rect := Rect2(
+			center - Vector2(44.0, 20.0),
+			Vector2(88.0, 40.0)
+		)
+		draw_rect(ground_rect, Color("26352a"), true)
+		draw_line(
+			Vector2(ground_rect.position.x, center.y),
+			Vector2(ground_rect.end.x, center.y),
+			Color("43534a"),
+			1.0
+		)
+		draw_line(
+			Vector2(center.x, ground_rect.position.y),
+			Vector2(center.x, ground_rect.end.y),
+			Color("43534a"),
+			1.0
+		)
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -74,13 +84,13 @@ func _run() -> void:
 	var palette := load(
 		"res://game/modes/zombie/biomes/infected_plains_palette.tres"
 	) as BiomePalette
-	var manifest := IsometricEnvironmentManifest.reload_shared()
+	var manifest := EnvironmentAssetManifest.reload_shared()
 	var board := CliffQaBoard.new()
 	board.name = "VoidCliffGeneratedQa"
 	board.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 	root.add_child(board)
 	current_scene = board
-	board.builder = IsometricCliffMeshBuilder.new()
+	board.builder = TopDownCliffMeshBuilder.new()
 	board.builder.configure(palette, 737373, true)
 	for index in range(TRANSITION_IDS.size()):
 		var center := Vector2(
@@ -112,7 +122,7 @@ func _run() -> void:
 	_finish()
 
 func _load_texture(
-	manifest: IsometricEnvironmentManifest,
+	manifest: EnvironmentAssetManifest,
 	asset_id: StringName,
 	palette: BiomePalette
 ) -> Texture2D:

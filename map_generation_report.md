@@ -6,6 +6,11 @@ Data analisi: 2026-07-13. Implementazione core: 2026-07-13.
 documento conserva l'audit storico che ha motivato il lavoro, ma distingue
 esplicitamente le lacune iniziali dall'esito implementato.
 
+Dal 2026-07-15 la presentazione segue
+`docs/top_down_cardinal_contract.md`: la generazione logica resta cartesiana,
+mentre ground e route sono H/V e il volume prospettico non modifica layout,
+footprint o collisioni.
+
 ## Sintesi
 
 La generazione e gia unificata a livello di orchestrazione e di layout:
@@ -59,11 +64,11 @@ Il core e ora attivo nello stesso `populate_layout_voidfirst()`:
   determinismo, snapshot e mesh/collisione delle mesa; il fallback prop viene
   inoltre provato senza rejection sampling.
 
-Le tavole concept sono state promosse direttamente a sorgenti runtime senza
-ricampionamento: 20 regioni `AtlasTexture` servono 23 ID. Restano fuori dalla
-milestone core la valutazione qualitativa manuale, i 18 SVG non rappresentati
-e la rimozione del percorso legacy. I playtest lunghi restano esplicitamente
-in `BAL-001`.
+I 23 ID prop promossi usano ora altrettanti SVG cardinali individuali, non
+regioni di atlas. Il manifest li registra come `project_svg_generator` /
+`environment_top_down_internal`; le 23 risorse `.tres` e le cinque tavole
+concept raster precedenti sono state rimosse. Restano fuori dalla milestone
+core la valutazione qualitativa manuale e i playtest lunghi di `BAL-001`.
 
 ## Ambito
 
@@ -214,21 +219,20 @@ qualitativa del budget pericoloso resta nel playtest manuale `BAL-001`.
 
 ## Inventario grafico degli oggetti
 
-Il manifest censisce 43 `object_scenes`: 23 usano risorse `AtlasTexture`, due
-usano PNG (`forest_tree` e il materiale mesa di `large_rock`) e 18 conservano
-SVG. I pool void-first usano gli stessi ID tecnici, quindi la promozione non ha
-modificato scena, footprint, anchor, collisione o pesi di generazione.
+Il manifest censisce 43 `object_scenes`: 41 usano SVG individuali e due usano
+PNG (`forest_tree` e il materiale mesa di `large_rock`). I pool void-first usano
+gli stessi ID tecnici, quindi la migrazione non ha modificato scena, footprint,
+anchor, collisione o pesi di generazione.
 
-Le cinque tavole `2x2` con alpha sotto
-`assets/environment/isometric/concepts/` sono ora atlas runtime. Le risorse
-`objects/generated_props/*.tres` espongono regioni strette con `filter_clip`;
-tre coppie tossiche condividono consapevolmente la stessa grafica. Il motivo
-palude in basso a destra alimenta soltanto `marsh_log`: `reed_wall` mantiene lo
-SVG verticale per non deformare il footprint `1x3`.
+I 23 prop precedentemente ritagliati da cinque tavole raster sono stati
+ricreati in `objects/generated_props/*.svg`. Ogni file espone una pianta
+rettangolare cardinale indipendente; gli eventuali volumi mostrano soltanto la
+facciata sud e non alterano collisione o footprint. La cartella `concepts/`
+conserva esclusivamente il registro e il guardrail della migrazione.
 
 Priorita artistica consigliata:
 
-1. valutare manualmente scala, leggibilita e ripetizione dei 23 prop promossi;
+1. valutare manualmente scala, leggibilita e ripetizione dei 23 prop cardinali;
 2. rifinire, solo se la review lo richiede, i materiali mesa tematici che usano
    gia lo stesso volume della `large_rock`;
 3. ampliare i pool con i prop esistenti non ancora usati dal void-first;
@@ -236,8 +240,9 @@ Priorita artistica consigliata:
    anche un contratto sprite dedicato.
 
 Lo `status` di `large_rock` e dei 23 prop promossi e `final`; le nuove voci
-registrano source `openai_image_generation`, licenza e attribution. I 18 SVG
-residui conservano `base_complete` finche non esiste arte dedicata verificata.
+registrano source `project_svg_generator`, licenza `Project original` e
+attribution `environment_top_down_internal`. I 18 SVG residui conservano
+`base_complete` finche non esiste arte dedicata verificata.
 
 ## Dati e responsabilita
 
@@ -335,9 +340,10 @@ manomesse.
 
 ### Fase 5 - QA visuale e promozione asset completate
 
-- Promosse le cinque tavole a sorgenti atlas runtime: 20 regioni alpha per 23
-  ID, con footprint, pivot e fallback tecnici invariati.
-- Estesi loader, asset check, suite e Visual QA alle risorse Texture2D `.tres`.
+- Ricreati i 23 prop come SVG cardinali individuali, con footprint, pivot e
+  fallback tecnici invariati.
+- Rimossi i 23 ritagli `AtlasTexture` `.tres` e le cinque tavole concept PNG;
+  loader, asset check, suite e Visual QA validano i nuovi path SVG.
 - Eseguita la board biomi su tre seed, cinque biomi e due risoluzioni con focus
   distinti `fall_cliff`, `mesa` e `random_props`: 210 catture, runner verde.
 
@@ -400,7 +406,7 @@ Baseline storica verificata prima dell'implementazione:
 ./tools/run_gut.ps1 -GutDir res://tests/suites/assets
 70/70 test passati, 9545 assert, exit code 0
 
-godot --headless --path . --script res://tools/generate_isometric_environment_assets.gd -- --check
+godot --headless --path . --script res://tools/generate_top_down_environment_assets.gd -- --check
 131 contratti verificati, exit code 0
 ```
 
@@ -419,7 +425,7 @@ Validazione finale del 2026-07-13:
 godot_console --path . --rendering-method gl_compatibility --script res://tests/visual_qa/biome_rendering_review_visual_qa.gd
 210 catture (3 seed x 5 biomi x 7 focus x 2 risoluzioni), exit code 0
 
-godot --headless --path . --script res://tools/generate_isometric_environment_assets.gd -- --check
+godot --headless --path . --script res://tools/generate_top_down_environment_assets.gd -- --check
 131 contratti verificati, exit code 0
 
 godot --headless --path . --quit-after 5
@@ -439,7 +445,7 @@ scena principale avviata, exit code 0
 - `game/modes/zombie/biome_environment_layout.gd`
 - `game/modes/zombie/biome_tile_layer.gd`
 - `game/modes/zombie/rocks/rectilinear_rock_area_mesh_builder.gd`
-- `assets/environment/isometric/manifest.json`
+- `assets/environment/top_down/manifest.json`
 - `tests/suites/world_gen/`, `environment/`, `obstacles/`, `assets/`, `modes/`
 - `tests/suites/world_gen/unified_biome_features_test.gd`
 - `tests/suites/world_gen/layout_signature_snapshot_test.gd`

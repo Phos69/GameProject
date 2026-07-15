@@ -2,7 +2,7 @@ extends Area2D
 class_name BiomeFallZone
 
 const CLIFF_RENDERER_SCRIPT = preload(
-	"res://game/modes/zombie/isometric_cliff_renderer.gd"
+	"res://game/modes/zombie/top_down_cliff_renderer.gd"
 )
 const VALID_FALL_SIDES: Array[StringName] = [&"north", &"south", &"east", &"west"]
 
@@ -229,10 +229,10 @@ func _inner_edge(half: Vector2) -> Array:
 func _ensure_cliff_renderer() -> void:
 	if cliff_renderer != null and is_instance_valid(cliff_renderer):
 		return
-	cliff_renderer = get_node_or_null("IsometricCliffRenderer") as Node2D
+	cliff_renderer = get_node_or_null("TopDownCliffRenderer") as Node2D
 	if cliff_renderer == null:
 		cliff_renderer = CLIFF_RENDERER_SCRIPT.new() as Node2D
-		cliff_renderer.name = "IsometricCliffRenderer"
+		cliff_renderer.name = "TopDownCliffRenderer"
 		add_child(cliff_renderer)
 		cliff_renderer.owner = owner
 

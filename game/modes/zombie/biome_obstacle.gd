@@ -1,7 +1,7 @@
 extends StaticBody2D
 class_name BiomeObstacle
 
-const IsoGridConfig = preload("res://game/core/iso_grid_config.gd")
+const WorldGridConfig = preload("res://game/core/world_grid_config.gd")
 
 # Collision layer bits, aligned with the combat contract in ARCHITECTURE.md.
 # Bit 1 keeps obstacles physical blockers for player/zombie movement; bit 6
@@ -47,7 +47,7 @@ func configure(
 	next_sort_offset: float = 0.0
 ) -> void:
 	obstacle_id = next_obstacle_id
-	var manifest := IsometricEnvironmentManifest.get_shared()
+	var manifest := EnvironmentAssetManifest.get_shared()
 	obstacle_category = manifest.get_category(obstacle_id)
 	draw_mode = manifest.get_object_draw_mode(obstacle_id)
 	dedicated_draw = manifest.object_has_dedicated_draw(obstacle_id)
@@ -55,7 +55,7 @@ func configure(
 	projectile_blocking = manifest.blocks_projectiles(obstacle_id)
 	jumpable = manifest.is_jumpable_gap_anchor(obstacle_id)
 	legacy_footprint_tiles = manifest.get_footprint_tiles(obstacle_id)
-	footprint_tiles = IsoGridConfig.legacy_size_to_new_tiles(legacy_footprint_tiles)
+	footprint_tiles = WorldGridConfig.legacy_size_to_new_tiles(legacy_footprint_tiles)
 	footprint_slots = manifest.get_footprint_slots(obstacle_id)
 	visual_height_tiles = manifest.get_visual_height_tiles(obstacle_id)
 	obstacle_size = Vector2(
@@ -134,11 +134,11 @@ func get_visual_base_size() -> Vector2:
 	return obstacle_size
 
 func is_footprint_contract_aligned(
-	logical_tile_scale: float = IsoGridConfig.LOGICAL_TILE_SCALE
+	logical_tile_scale: float = WorldGridConfig.LOGICAL_TILE_SCALE
 ) -> bool:
 	# Scalable obstacles (rocks) intentionally use a per-instance footprint, so the
 	# fixed manifest footprint check does not apply to them.
-	if is_perimeter_wall() or IsometricEnvironmentManifest.get_shared().is_scalable(obstacle_id):
+	if is_perimeter_wall() or EnvironmentAssetManifest.get_shared().is_scalable(obstacle_id):
 		return true
 	var expected := Vector2(footprint_tiles) * logical_tile_scale
 	return obstacle_size.is_equal_approx(expected)
@@ -247,13 +247,13 @@ func is_perimeter_wall() -> bool:
 func get_wall_height() -> float:
 	if perimeter_cliff_profile.wall_height > 0.0:
 		return perimeter_cliff_profile.wall_height
-	# Tall, readable isometric wall: clearly taller than the footprint thickness.
+	# Tall, readable wall volume: clearly taller than the footprint thickness.
 	var thickness := minf(obstacle_size.x, obstacle_size.y)
 	return maxf(50.0, thickness * 1.4)
 
 func _draw() -> void:
 	if is_perimeter_wall():
-		_draw_iso_perimeter_wall()
+		_draw_perimeter_wall()
 		return
 	_draw_ground_shadow()
 	match draw_mode:
@@ -340,7 +340,7 @@ func _ellipse_points(center: Vector2, radius: Vector2, segments: int) -> PackedV
 		points.append(center + Vector2(cos(angle) * radius.x, sin(angle) * radius.y))
 	return points
 
-func _draw_iso_perimeter_wall() -> void:
+func _draw_perimeter_wall() -> void:
 	if has_raised_cliff_art():
 		BIOME_OBSTACLE_PAINTER.draw_raised_perimeter_cliff(
 			self,
@@ -352,7 +352,7 @@ func _draw_iso_perimeter_wall() -> void:
 			perimeter_cliff_profile.uv_origin
 		)
 		return
-	BIOME_OBSTACLE_PAINTER.draw_iso_perimeter_wall(
+	BIOME_OBSTACLE_PAINTER.draw_perimeter_wall(
 		self,
 		obstacle_size,
 		primary_color,
