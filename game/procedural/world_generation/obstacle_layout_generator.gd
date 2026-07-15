@@ -2518,13 +2518,15 @@ func _add_obstacle(
 	obstacle_id: StringName,
 	rect: Rect2i,
 	shape_id: StringName,
-	rotation_radians: float
+	_rotation_radians: float
 ) -> void:
 	layout.obstacle_rects.append(rect)
 	layout.obstacle_ids.append(obstacle_id)
-	layout.obstacle_positions.append(layout.rect_center_to_world(rect))
+	layout.obstacle_positions.append(
+		layout.obstacle_rect_center_to_world(rect, obstacle_id)
+	)
 	layout.obstacle_sizes.append(layout.rect_size_to_world(rect))
-	layout.obstacle_rotations.append(rotation_radians)
+	layout.obstacle_rotations.append(0.0)
 	layout.obstacle_shape_ids.append(shape_id)
 
 func _add_crate(

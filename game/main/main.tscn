@@ -171,11 +171,13 @@ script = ExtResource("12_tower_defense_manager")
 y_sort_enabled = true
 
 [node name="Players" type="Node2D" parent="World"]
+y_sort_enabled = true
 
 [node name="Enemies" type="Node2D" parent="World"]
 y_sort_enabled = true
 
 [node name="Bosses" type="Node2D" parent="World"]
+y_sort_enabled = true
 
 [node name="Pickups" type="Node2D" parent="World"]
 y_sort_enabled = true

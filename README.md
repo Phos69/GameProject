@@ -325,7 +325,10 @@ Completato:
   risolti come asset tile nel `75x75`, non come patch o frecce del gate;
 - oggetti e ostacoli asset-backed tramite SVG trasparenti e PNG: i 23 prop dei
   pool tematici puntano ciascuno a uno SVG cardinale individuale in
-  `objects/generated_props/`, mantenendo footprint e collisioni; case, cabine,
+  `objects/generated_props/`; oggetti, hazard e fall zone restano a rotazione
+  zero, gli alberi
+  separano il footprint della chioma dal collider circolare alle radici e le
+  mesa rendono corona/facce nel proprio nodo Y-sorted. Case, cabine,
   laboratori, recinti, muri, barili, relitti, tronchi, ponti e crate restano
   disponibili senza asset esterni obbligatori o fallback barriera generico
   implicito;

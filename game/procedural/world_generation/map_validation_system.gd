@@ -28,6 +28,7 @@ func validate_layout(
 	var main_road_report := _validate_main_roads(cell, layout)
 	var water_crossing_failures := _find_unbridged_water_crossings(layout)
 	var route_obstacle_failures := _find_route_obstacle_overlaps(layout)
+	var rotation_failures := _find_non_cardinal_environment_rotations(layout)
 	var classification_report := layout.get_classification_report()
 	var is_valid := (
 		not visited.is_empty()
@@ -39,6 +40,7 @@ func validate_layout(
 		and bool(main_road_report.get("is_valid", false))
 		and water_crossing_failures.is_empty()
 		and route_obstacle_failures.is_empty()
+		and rotation_failures.is_empty()
 		and bool(classification_report.get("is_complete", false))
 	)
 	return {
@@ -52,8 +54,21 @@ func validate_layout(
 		"main_road_report": main_road_report,
 		"water_crossing_errors": water_crossing_failures,
 		"route_obstacle_errors": route_obstacle_failures,
+		"environment_rotation_errors": rotation_failures,
 		"terrain_classification": classification_report
 	}
+
+func _find_non_cardinal_environment_rotations(
+	layout: BiomeEnvironmentLayout
+) -> PackedStringArray:
+	var failures := PackedStringArray()
+	for index in range(layout.obstacle_rotations.size()):
+		if not is_zero_approx(layout.obstacle_rotations[index]):
+			failures.append("obstacle_rotation:%d" % index)
+	for index in range(layout.hazard_rotations.size()):
+		if not is_zero_approx(layout.hazard_rotations[index]):
+			failures.append("hazard_rotation:%d" % index)
+	return failures
 
 func validate_world_graph(graph: WorldGraph) -> Dictionary:
 	if graph == null:

@@ -15,7 +15,7 @@ class_name WorldSnapshotCodec
 
 # Bump quando cambia il formato serializzato: snapshot con format_version diverso
 # vengono ignorati e rigenerati (guardia di drift, lato cache su disco).
-const FORMAT_VERSION: int = 5
+const FORMAT_VERSION: int = 6
 
 static func world_data_to_dict(world_data: Dictionary) -> Dictionary:
 	var cell_dicts: Array = []
@@ -48,7 +48,8 @@ static func world_data_from_dict(data: Dictionary) -> Dictionary:
 		var cell := BiomeCell.from_dict(cell_dict as Dictionary)
 		cells.append(cell)
 		cells_by_id[cell.id] = cell
-	# La firma v5 copre il contenuto profondo dei layout. Oltre al version check,
+	# La firma snapshot v6 copre il contenuto profondo dei layout. Oltre al
+	# version check,
 	# rifiuta quindi snapshot correnti corrotti o incoerenti invece di fidarsi del
 	# testo salvato nel blob.
 	var stored_signature := String(data.get("signature", ""))

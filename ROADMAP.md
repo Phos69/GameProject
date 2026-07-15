@@ -39,14 +39,17 @@ anche le milestone completate per evitare sovrapposizioni.
 
 ### Presentazione e UX
 
-- `TOPDOWN-001`: **completata 2026-07-15**. Renderer, manifest v11, cache,
+- `TOPDOWN-001`: **completata 2026-07-15**. Renderer, manifest v12, cache,
   generazione mondo, UI, branding, tooling e documentazione usano il contratto
   `orthogonal_top_down`; movimento e mira restano analogici e il volume di
   cliff, edifici, prop e attori usa `controlled_perspective`. I 23 prop ad
   atlas sono stati sostituiti da 23 SVG cardinali individuali e i 66 materiali
-  cliff sono stati normalizzati. Seed, footprint, collisioni e save correnti
-  restano compatibili; il rename del progetto include una migrazione save
-  one-shot. Evidenza: GUT 286/286, check 131 asset e 66 cliff, Visual QA finale,
+  cliff sono stati normalizzati. Il follow-up ostacoli separa footprint e
+  collider alle radici, blocca a zero le rotazioni di ostacoli/hazard/fall zone
+  e rende le mesa come nodi
+  Y-sorted; firma layout v3, revisione generatore 3 e snapshot v6 rigenerano le
+  cache precedenti. Il rename del progetto include una migrazione save one-shot.
+  Evidenza: GUT, check 131 asset e 66 cliff, Visual QA finale,
   menu e oggetti verdi. Contratto e guardrail vivono in
   `docs/top_down_cardinal_contract.md`.
 
@@ -118,8 +121,8 @@ anche le milestone completate per evitare sovrapposizioni.
   hazard; ogni layout ha almeno un chasm interno salvo opt-out, mesa tematiche
   (10-16 in Pianura, 2-4 nei biomi avanzati) e 10-16 props da almeno due
   categorie. Tossico, Infuocato, Neve e Palude ricevono due hazard statici
-  sicuri. Stream RNG separati, firma profonda layout-v2, revisione cache 2 e
-  snapshot v5 rendono esplicita l'invalidazione. Rendering mesa e guardrail
+  sicuri. Stream RNG separati, firma profonda layout-v3, revisione cache 3 e
+  snapshot v6 rendono esplicita l'invalidazione. Rendering mesa e guardrail
   multi-bioma/fuzz 20 seed x 5 biomi coprono il contratto; i tre pass dedicati
   tengono mesa, hazard e prop fuori dall'orchestratore e il fallback prop e
   testato senza sampling. La board Visual QA ha prodotto 210 catture verdi.

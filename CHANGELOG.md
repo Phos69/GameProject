@@ -8,6 +8,24 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Changed
 
+- Il manifest ambiente v12 separa footprint di placement e collisione fisica:
+  `forest_tree` usa un cerchio di raggio 24 px e `dead_tree` uno di 12 px,
+  entrambi centrati sulle radici a offset `(0, 24)`. Rimossa la base quadrata
+  permanente dagli oggetti asset-backed; `F9` mostra ora la shape reale e
+  player, boss e ostacoli condividono il sort anchor a terra.
+- Tutti gli ostacoli, gli hazard e le fall zone ambiente sono bloccati a rotazione
+  zero nella generazione attiva, nei percorsi legacy, nei layout manuali, nella
+  validazione e come guardia runtime. Il campione RNG storico viene comunque
+  consumato per non spostare ID e placement;
+  firma layout v3, revisione generatore 3 e snapshot v6 invalidano le cache con
+  vecchi angoli.
+- Corretto il centro world-space geometrico delle mesa di lato pari: le mesa
+  `3x3`-`5x5` hanno ora collider e visual sulla stessa origine anche nelle
+  regioni dispari `75x75`.
+  Corona e tre facce sono renderizzate dal singolo `large_rock` Y-sorted;
+  `BiomeTileLayer` non produce piu il batch mesa a profondita fissa, consentendo
+  attori simultaneamente dietro e davanti. Il repeat UV sul nodo impedisce che
+  coordinate world-space fuori `0..1` stirino una riga della texture sulla corona.
 - Completata `TOPDOWN-001`: definito il contratto `orthogonal_top_down` con
   `controlled_perspective`, assi world-space cartesiani e movimento analogico
   invariato. Documentazione e server MCP puntano ora al manifest

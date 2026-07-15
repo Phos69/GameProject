@@ -90,6 +90,14 @@ func test_authored_layouts() -> void:
 		if biome == null or biome.environment_layout == null:
 			continue
 		var layout := biome.environment_layout
+		assert_true(
+			_all_rotations_are_zero(layout.obstacle_rotations),
+			"%s authored obstacles remain cardinal" % String(biome_id)
+		)
+		assert_true(
+			_all_rotations_are_zero(layout.hazard_rotations),
+			"%s authored hazards remain cardinal" % String(biome_id)
+		)
 		for index in range(layout.obstacle_ids.size()):
 			if index >= layout.obstacle_sizes.size():
 				assert_true(false, "%s authored obstacle arrays align" % String(biome_id))
@@ -104,6 +112,12 @@ func test_authored_layouts() -> void:
 				),
 				"%s authored %s size matches its legacy asset footprint" % [String(biome_id), String(obstacle_id)]
 			)
+
+func _all_rotations_are_zero(rotations: Array[float]) -> bool:
+	for rotation_radians in rotations:
+		if not is_zero_approx(rotation_radians):
+			return false
+	return true
 
 func test_void_identity() -> void:
 	var cliff := _manifest.get_object_asset_contract(&"fall_zone")
@@ -157,7 +171,7 @@ func test_generated_layout_records() -> void:
 			generator.queue_free()
 			return
 		var record_failures := layout.validate_obstacle_records(_manifest)
-		assert_true(record_failures.is_empty(), "logical rectangles, collision sizes and assets share one footprint")
+		assert_true(record_failures.is_empty(), "logical rectangles, placement sizes and assets share one footprint")
 		for failure in record_failures:
 			push_error("obstacle record: " + failure)
 		for index in range(layout.obstacle_rects.size()):
@@ -168,6 +182,16 @@ func test_generated_layout_records() -> void:
 			assert_eq(bool(record.get("blocks_movement", false)), _manifest.blocks_movement(StringName(record.get("type", &""))),
 				"render record keeps the collision contract")
 			assert_false(String(record.get("asset_path", "")).is_empty(), "generated obstacle cannot become invisible collision")
+			assert_true(
+				(record.get("placement_size", Vector2.ZERO) as Vector2).is_equal_approx(
+					layout.obstacle_sizes[index]
+				),
+				"render record keeps placement size separate from physical collision"
+			)
+			var record_id := StringName(record.get("type", &""))
+			if record_id == &"forest_tree":
+				assert_eq(record.get("collision_size"), Vector2(48.0, 48.0), "tree record exposes its compact root collider")
+				assert_eq(record.get("collision_offset"), Vector2(0.0, 24.0), "tree record exposes the root offset")
 	generator.queue_free()
 	await wait_physics_frames(1)
 
@@ -199,14 +223,20 @@ func test_3x3_feature_obstacle() -> void:
 		add_child(obstacle)
 		await wait_physics_frames(1)
 		assert_eq(obstacle.get_footprint_slots(), EXPECTED_SLOTS, "%s keeps 3x3 runtime slots" % String(obstacle_id))
-		assert_true(obstacle.get_visual_base_size().is_equal_approx(world_size), "%s base matches its collision" % String(obstacle_id))
+		assert_true(obstacle.get_visual_base_size().is_equal_approx(world_size), "%s keeps its 2x2 placement footprint" % String(obstacle_id))
 		assert_true(obstacle.is_footprint_contract_aligned(), "%s runtime footprint is aligned" % String(obstacle_id))
-		assert_true(obstacle.contains_global_position(obstacle.global_position), "%s blocks its center" % String(obstacle_id))
-		assert_true(obstacle.contains_global_position(obstacle.global_position + world_size * 0.49), "%s blocks the full 3x3 rectangle" % String(obstacle_id))
+		assert_eq(obstacle.get_collision_size(), Vector2(48.0, 48.0), "%s uses a compact root collider" % String(obstacle_id))
+		assert_eq(obstacle.get_collision_offset(), Vector2(0.0, 24.0), "%s moves its collider to the roots" % String(obstacle_id))
+		var root_center := obstacle.to_global(obstacle.get_collision_offset())
+		assert_true(obstacle.contains_global_position(root_center), "%s blocks the root center" % String(obstacle_id))
+		assert_true(obstacle.contains_global_position(root_center + Vector2(23.0, 0.0)), "%s blocks inside the root radius" % String(obstacle_id))
+		assert_false(obstacle.contains_global_position(root_center + Vector2(25.0, 0.0)), "%s does not expose a square placement hitbox" % String(obstacle_id))
+		assert_false(obstacle.contains_global_position(obstacle.global_position + world_size * 0.49), "%s canopy corner is not physical collision" % String(obstacle_id))
 		assert_true(bool(obstacle.call("has_asset_sprite")), "%s loads its generated sprite" % String(obstacle_id))
 		var collision := obstacle.get_node_or_null("CollisionShape2D") as CollisionShape2D
-		var rectangle := collision.shape as RectangleShape2D if collision != null else null
-		assert_true(rectangle != null and rectangle.size.is_equal_approx(world_size), "%s collision is a 3x3 rectangle" % String(obstacle_id))
+		var circle := collision.shape as CircleShape2D if collision != null else null
+		assert_true(circle != null and is_equal_approx(circle.radius, 24.0), "%s collision is a root-centered circle" % String(obstacle_id))
+		assert_true(collision != null and collision.position.is_equal_approx(Vector2(0.0, 24.0)), "%s physics shape follows the root offset" % String(obstacle_id))
 		obstacle.queue_free()
 		await wait_physics_frames(1)
 	system.queue_free()
@@ -233,7 +263,7 @@ func test_3x3_feature_obstacle() -> void:
 			continue
 		var rect := layout.obstacle_rects[index]
 		assert_eq(rect.size, EXPECTED_CELLS, "%s placement owns exactly 2x2 logical cells" % String(obstacle_id))
-		assert_true(layout.obstacle_sizes[index].is_equal_approx(Vector2(EXPECTED_CELLS) * LOGICAL_TILE_SCALE), "%s placement and collision share one size" % String(obstacle_id))
+		assert_true(layout.obstacle_sizes[index].is_equal_approx(Vector2(EXPECTED_CELLS) * LOGICAL_TILE_SCALE), "%s placement reserves its full canopy footprint" % String(obstacle_id))
 		for sample in [rect.position, rect.position + _center_offset(rect.size), rect.end - Vector2i.ONE]:
 			assert_eq(layout.get_terrain_class_at_cell(sample), BiomeEnvironmentLayout.TERRAIN_OBSTACLE, "%s occupied sample is classified as obstacle" % String(obstacle_id))
 	var record_failures := layout.validate_obstacle_records(_manifest)
@@ -285,11 +315,17 @@ func test_scalable_obstacle() -> void:
 	if small != null and large != null:
 		_expect_collision_size(small, Vector2(SMALL_CELLS) * LOGICAL_TILE_SCALE, "small rock")
 		_expect_collision_size(large, Vector2(LARGE_CELLS) * LOGICAL_TILE_SCALE, "large rock")
-		assert_true(bool(small.call("has_asset_visual")), "small rock delegates to an asset-backed area visual")
-		assert_true(bool(large.call("has_asset_visual")), "large rock delegates to an asset-backed area visual")
-		assert_true(StringName(small.call("get_render_mode")) == &"tile_layer_rock_area", "large_rock selects the tile-layer area render mode")
-		assert_true(bool(small.call("uses_tile_layer_rock_visual")), "small rock suppresses per-instance art")
-		assert_true(bool(large.call("uses_tile_layer_rock_visual")), "large rock suppresses per-instance art")
+		assert_true(bool(small.call("has_asset_visual")), "small rock owns an asset-backed mesa visual")
+		assert_true(bool(large.call("has_asset_visual")), "large rock owns an asset-backed mesa visual")
+		assert_true(StringName(small.call("get_render_mode")) == &"y_sorted_mesa", "large_rock selects the per-instance Y-sorted mesa render mode")
+		assert_true(bool(small.call("has_mesa_visual")), "small rock builds its own mesa geometry")
+		assert_true(bool(large.call("has_mesa_visual")), "large rock builds its own mesa geometry")
+		var small_counts := small.call("get_mesa_geometry_counts") as Dictionary
+		var large_counts := large.call("get_mesa_geometry_counts") as Dictionary
+		assert_eq(int(small_counts.get("areas", 0)), 1, "small rock owns one mesa area")
+		assert_eq(int(large_counts.get("areas", 0)), 1, "large rock owns one mesa area")
+		assert_eq(int(small_counts.get("faces", 0)), 3, "small rock owns its front and side faces")
+		assert_eq(int(large_counts.get("faces", 0)), 3, "large rock owns its front and side faces")
 		assert_false(bool(small.call("has_asset_sprite")), "small rock does not stretch a sprite")
 		assert_false(bool(large.call("has_asset_sprite")), "large rock does not stretch a sprite")
 		assert_true(bool(small.call("is_world_position_behind_cliff", Vector2(0.0, -100.0))), "position north of the sort line is behind the cliff")
@@ -311,7 +347,9 @@ func test_scalable_obstacle() -> void:
 	var rect := Rect2i(Vector2i(40, 40), LARGE_CELLS)
 	layout.obstacle_rects.append(rect)
 	layout.obstacle_ids.append(ROCK_ID)
-	layout.obstacle_positions.append(layout.rect_center_to_world(rect))
+	layout.obstacle_positions.append(
+		layout.obstacle_rect_center_to_world(rect, ROCK_ID)
+	)
 	layout.obstacle_sizes.append(layout.rect_size_to_world(rect))
 	layout.obstacle_rotations.append(0.0)
 	layout.obstacle_shape_ids.append(&"rectangle")
@@ -366,8 +404,12 @@ func test_main_scene_obstacle_system() -> void:
 	await wait_physics_frames(1)
 	var system: ObstacleSystem = scene.node(&"obstacle_system") as ObstacleSystem
 	var environment_props: Node2D = scene.main.get_node_or_null("World/EnvironmentProps") as Node2D
+	var players: Node2D = scene.main.get_node_or_null("World/Players") as Node2D
+	var bosses: Node2D = scene.main.get_node_or_null("World/Bosses") as Node2D
 	assert_not_null(system, "main scene exposes the shared obstacle system")
 	assert_true(environment_props != null and environment_props.y_sort_enabled, "main scene keeps environment obstacles in Y-sort")
+	assert_true(players != null and players.y_sort_enabled, "main scene keeps players in the same Y-sort space")
+	assert_true(bosses != null and bosses.y_sort_enabled, "main scene keeps bosses in the same Y-sort space")
 	scene.teardown()
 	scene = null
 	await wait_physics_frames(1)

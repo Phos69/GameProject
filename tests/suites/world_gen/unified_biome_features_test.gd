@@ -54,6 +54,26 @@ func test_unified_features_hold_and_vary_across_sentinel_seeds() -> void:
 		var hazard_variants: Dictionary = {}
 		for seed_value in SENTINEL_SEEDS:
 			var layout := WorldGen.voidfirst_layout(biome, seed_value)
+			assert_eq(
+				layout.obstacle_rotations.size(),
+				layout.obstacle_ids.size(),
+				"%s/%d mantiene paralleli i record di rotazione" % [biome_id, seed_value]
+			)
+			assert_true(
+				_all_obstacle_rotations_are_zero(layout),
+				"%s/%d blocca tutti gli ostacoli sugli assi cardinali"
+				% [biome_id, seed_value]
+			)
+			assert_eq(
+				layout.hazard_rotations.size(),
+				layout.hazard_ids.size(),
+				"%s/%d mantiene paralleli i record hazard" % [biome_id, seed_value]
+			)
+			assert_true(
+				_all_hazard_rotations_are_zero(layout),
+				"%s/%d blocca tutti gli hazard sugli assi cardinali"
+				% [biome_id, seed_value]
+			)
 			assert_gte(layout.mesa_rects.size(), biome.generation_profile.mesa_min_count,
 				"%s/%d rispetta la quota minima mesa" % [biome_id, seed_value])
 			assert_eq(layout.mesa_profile_ids.size(), layout.mesa_rects.size(),
@@ -111,6 +131,12 @@ func test_random_prop_scan_fallback_reaches_the_profile_minimum() -> void:
 	layout.player_spawn_cell = layout.zone_size / 2
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 734521
+	var reference_rng := RandomNumberGenerator.new()
+	reference_rng.seed = rng.seed
+	var expected_target := reference_rng.randi_range(
+		biome.generation_profile.random_prop_min_count,
+		biome.generation_profile.random_prop_max_count
+	)
 	var placed: int = RANDOM_PROP_PLACEMENT_PASS.new().place(
 		layout,
 		biome,
@@ -128,6 +154,19 @@ func test_random_prop_scan_fallback_reaches_the_profile_minimum() -> void:
 		"il fallback registra ogni rettangolo prop")
 	assert_eq(layout.random_prop_ids.size(), placed,
 		"il fallback registra ogni ID prop")
+	assert_eq(placed, expected_target,
+		"il pavimento aperto permette di completare il target estratto")
+	assert_eq(layout.obstacle_rotations.size(), placed,
+		"ogni prop registra una rotazione runtime")
+	assert_true(_all_obstacle_rotations_are_zero(layout),
+		"i prop del fallback restano dritti sugli assi cardinali")
+	for _index in range(placed):
+		reference_rng.randf_range(-0.35, 0.35)
+	assert_eq(
+		rng.state,
+		reference_rng.state,
+		"il lock cardinale conserva un campione RNG di rotazione per prop"
+	)
 	var categories := ObstacleLayoutGenerator.get_generated_obstacle_categories()
 	var seen_categories: Dictionary = {}
 	for prop_id in layout.random_prop_ids:
@@ -150,6 +189,18 @@ func _has_internal_chasm(layout: BiomeEnvironmentLayout) -> bool:
 		if index < layout.hazard_sides.size() and layout.hazard_sides[index] == &"internal":
 			return true
 	return false
+
+func _all_obstacle_rotations_are_zero(layout: BiomeEnvironmentLayout) -> bool:
+	for rotation_radians in layout.obstacle_rotations:
+		if not is_zero_approx(rotation_radians):
+			return false
+	return true
+
+func _all_hazard_rotations_are_zero(layout: BiomeEnvironmentLayout) -> bool:
+	for rotation_radians in layout.hazard_rotations:
+		if not is_zero_approx(rotation_radians):
+			return false
+	return true
 
 func _static_hazard_records(layout: BiomeEnvironmentLayout) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []

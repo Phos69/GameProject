@@ -784,11 +784,15 @@ Identita dei biomi:
   collisione o peso di generazione dell'ID;
 - `forest_tree` occupa nove slot (`3x3`) e un footprint runtime `2x2` tile
   logici; le `large_rock` sono i blocker tecnici delle mesa e occupano quadrati
-  da `3x3` a `5x5` tile logici in tutti i biomi. Entrambi bloccano tutto il
-  relativo footprint per movimento e proiettili; non sono decorazioni soft. Il
+  da `3x3` a `5x5` tile logici in tutti i biomi. Le mesa bloccano tutto il
+  relativo footprint per movimento e proiettili; gli alberi riservano lo spazio
+  della chioma ma bloccano soltanto il cerchio centrato sulle radici. Il
   player a nord della linea centrale della mesa viene coperto dal cliff, quello a
   sud resta davanti; in co-op la relazione viene risolta per ogni player. Top
   a lastre e tile cliff 3D estruse verso l'alto rendono leggibile il volume;
+- tutti gli ostacoli, gli hazard e le fall zone ambiente restano dritti a
+  rotazione zero sugli assi H/V;
+  il movimento e la mira degli attori rimangono analogici;
 - i lati collegati tra biomi hanno raised cliff tematici alti due tile logiche con
   almeno un passaggio raggiungibile; ogni regione rende il proprio lato con il
   proprio tema. I lati senza vicino diventano fall zone con visuale

@@ -8,10 +8,10 @@ const WorldGridConfig = preload("res://game/core/world_grid_config.gd")
 ## The manifest is the single source of truth for how environment objects are
 ## converted to the orthogonal top-down pipeline: collision shape, footprint,
 ## blocking flags, procedural draw mode, asset contract and ground sort offset.
-## Manifest v11 separates the normal asset path from the technical fallback path,
-## validates the projection/volume contract and keeps footprint slots authoritative:
-## missing art is allowed only when the entry explicitly declares a fallback or a
-## needs_asset/procedural_fallback status.
+## Manifest v12 separates placement footprint from physical collision, keeps
+## object orientation cardinal, and retains the v11 asset/fallback contract.
+## Missing art is allowed only when the entry explicitly declares a fallback or
+## a needs_asset/procedural_fallback status.
 
 const MANIFEST_PATH: String = "res://assets/environment/top_down/manifest.json"
 const EXPECTED_COORDINATE_SYSTEM: String = "orthogonal_top_down"
@@ -368,6 +368,20 @@ func get_collision_shape(object_id: StringName) -> StringName:
 		return StringName((objects[object_id] as Dictionary).get("collision_shape", &"rectangle"))
 	return &"rectangle"
 
+func get_collision_size_ratio(object_id: StringName) -> Vector2:
+	if objects.has(object_id):
+		return (objects[object_id] as Dictionary).get(
+			"collision_size_ratio", Vector2.ONE
+		) as Vector2
+	return Vector2.ONE
+
+func get_collision_offset_ratio(object_id: StringName) -> Vector2:
+	if objects.has(object_id):
+		return (objects[object_id] as Dictionary).get(
+			"collision_offset_ratio", Vector2.ZERO
+		) as Vector2
+	return Vector2.ZERO
+
 func is_jumpable_gap_anchor(object_id: StringName) -> bool:
 	if objects.has(object_id):
 		return bool((objects[object_id] as Dictionary).get("is_jumpable_gap_anchor", false))
@@ -414,6 +428,25 @@ func validate() -> Dictionary:
 		var collision_shape := String(entry.get("collision_shape", ""))
 		if not COLLISION_SHAPES.has(collision_shape):
 			failures.append("%s: unknown collision_shape '%s'" % [object_id, collision_shape])
+		var collision_size_ratio := entry.get(
+			"collision_size_ratio", Vector2.ONE
+		) as Vector2
+		if (
+			collision_size_ratio.x <= 0.0
+			or collision_size_ratio.y <= 0.0
+			or collision_size_ratio.x > 2.0
+			or collision_size_ratio.y > 2.0
+		):
+			failures.append(
+				"%s: collision_size_ratio must stay within (0, 2]" % object_id
+			)
+		var collision_offset_ratio := entry.get(
+			"collision_offset_ratio", Vector2.ZERO
+		) as Vector2
+		if absf(collision_offset_ratio.x) > 1.0 or absf(collision_offset_ratio.y) > 1.0:
+			failures.append(
+				"%s: collision_offset_ratio must stay within [-1, 1]" % object_id
+			)
 		var footprint := entry.get("footprint_tiles", Vector2i.ZERO) as Vector2i
 		if footprint.x <= 0 or footprint.y <= 0:
 			failures.append("%s: footprint_tiles must be positive" % object_id)
@@ -528,6 +561,20 @@ func _normalize_asset_contract(section: StringName, entry: Dictionary) -> Dictio
 		"anchor": StringName(str(entry.get("anchor", asset_contract_defaults.get("anchor", &"floor_center")))),
 		"sort_offset": float(entry.get("sort_offset", _resolve_contract_sort_offset(section, legacy_object))),
 		"collision_shape": String(entry.get("collision_shape", _resolve_contract_collision_shape(section, legacy_object))),
+		"collision_size_ratio": _normalize_vector2(
+			entry.get(
+				"collision_size_ratio",
+				legacy_object.get("collision_size_ratio", Vector2.ONE)
+			),
+			Vector2.ONE
+		),
+		"collision_offset_ratio": _normalize_vector2(
+			entry.get(
+				"collision_offset_ratio",
+				legacy_object.get("collision_offset_ratio", Vector2.ZERO)
+			),
+			Vector2.ZERO
+		),
 		"blocks_movement": bool(entry.get("blocks_movement", _resolve_contract_blocks_movement(section, legacy_object))),
 		"blocks_projectiles": bool(entry.get("blocks_projectiles", _resolve_contract_blocks_projectiles(section, legacy_object))),
 		"source": String(entry.get("source", asset_contract_defaults.get("source", "internal_generated"))),
@@ -558,6 +605,15 @@ func _normalize_string_name_array(value: Variant) -> Array[StringName]:
 	elif value != null:
 		result.append(StringName(str(value)))
 	return result
+
+func _normalize_vector2(value: Variant, default_value: Vector2) -> Vector2:
+	if value is Vector2:
+		return value as Vector2
+	if value is Array:
+		var values := value as Array
+		if values.size() >= 2:
+			return Vector2(float(values[0]), float(values[1]))
+	return default_value
 
 func _resolve_contract_footprint(
 	section: StringName,
@@ -815,6 +871,14 @@ func _normalize_object(entry: Dictionary) -> Dictionary:
 		"dedicated_draw": bool(entry.get("dedicated_draw", visual_style.get("dedicated_draw", false))),
 		"fallback": String(entry.get("fallback", visual_style.get("fallback", ""))),
 		"collision_shape": String(entry.get("collision_shape", "rectangle")),
+		"collision_size_ratio": _normalize_vector2(
+			entry.get("collision_size_ratio", Vector2.ONE),
+			Vector2.ONE
+		),
+		"collision_offset_ratio": _normalize_vector2(
+			entry.get("collision_offset_ratio", Vector2.ZERO),
+			Vector2.ZERO
+		),
 		"footprint_tiles": footprint,
 		"footprint_slots": footprint_slots,
 		"visual_height_tiles": maxi(int(entry.get("visual_height_tiles", 0)), 0),

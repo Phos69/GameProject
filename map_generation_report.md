@@ -58,7 +58,7 @@ Il core e ora attivo nello stesso `populate_layout_voidfirst()`:
   separatamente dal seed;
 - il rendering usa la stessa geometria mesa con profili `forest`,
   `urban_ruins`, `volcanic`, `frozen_tundra` e `swamp`;
-- firma canonica `layout-v2`, revisione generatore/cache 2 e snapshot v5
+- firma canonica `layout-v3`, revisione generatore/cache 3 e snapshot v6
   rifiutano layout obsoleti o alterati;
 - i guardrail coprono cinque biomi, 20 seed per bioma, placement, pool,
   determinismo, snapshot e mesh/collisione delle mesa; il fallback prop viene
@@ -167,7 +167,8 @@ Il contratto implementato:
 - generalizza il builder a tutti i terreni tematici;
 - usa il ruolo `ground` per la corona e `cliff_face` per le pareti dei temi
   `urban_ruins`, `volcanic`, `frozen_tundra` e `swamp`;
-- lascia il nodo `large_rock` collision-only, evitando sprite/cap duplicati.
+- rende corona e facce sul singolo nodo `large_rock` Y-sorted; il tile layer
+  conserva report/risoluzione dei materiali ma non disegna un batch duplicato.
 
 In questo modo le mesa possono avere identita coerenti senza duplicare il
 renderer: cemento tossico, basalto, ghiaccio e pietra/torba della palude usano
@@ -284,7 +285,7 @@ non requisito aperto della milestone core.
 
 L'audit iniziale aveva trovato firme basate soprattutto su topologia e conteggi,
 incapaci di proteggere il contenuto profondo. La migrazione ha aggiunto la firma
-canonica `layout-v2`, che normalizza e include:
+canonica `layout-v3`, che normalizza e include:
 
 - `road_cell_tags`, floor e chasm;
 - mesa e relativi profili;
@@ -371,7 +372,8 @@ Per ogni bioma e per entrambe le modalita che consumano il generatore:
 - hazard statici presenti solo dove previsti dal profilo;
 - nessun overlap con spawn, route, passaggi, void, mesa, hazard o crate;
 - spawn, crate e passaggi raggiungibili;
-- stesso seed = stessi ID, rettangoli, rotazioni e ordine normalizzato;
+- stesso seed = stessi ID, rettangoli e ordine normalizzato; tutte le rotazioni
+  ambiente (ostacoli, hazard e fall zone) restano zero;
 - seed diverso = variazione effettiva di ogni feature casuale;
 - unload/reload non duplica ne sposta oggetti;
 - zero asset mancanti, placeholder o fallback generici impliciti;

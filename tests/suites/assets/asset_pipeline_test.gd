@@ -51,9 +51,9 @@ var _manifest: EnvironmentAssetManifest
 func before_all() -> void:
 	_manifest = EnvironmentAssetManifest.reload_shared()
 
-func test_manifest_v11_top_down_contract() -> void:
+func test_manifest_v12_top_down_contract() -> void:
 	assert_true(_manifest.load_error.is_empty(), "asset pipeline manifest loads")
-	assert_gte(_manifest.version, 11, "asset pipeline uses manifest v11")
+	assert_gte(_manifest.version, 12, "asset pipeline uses the split-collision manifest v12")
 	assert_eq(
 		_manifest.coordinate_system,
 		"orthogonal_top_down",
@@ -168,7 +168,7 @@ func test_docs_and_tooling() -> void:
 	var attribution := _read_text("res://assets/ATTRIBUTION.md")
 	assert_true(readme.contains("generate_top_down_environment_assets.gd"), "asset README documents the generator")
 	assert_true(readme.contains("--dry-run"), "asset README documents dry-run")
-	assert_true(attribution.contains("Contratto asset ambiente top-down"), "attribution tracks the v11 top-down contract")
+	assert_true(attribution.contains("Contratto asset ambiente top-down"), "attribution tracks the v12 top-down contract")
 	assert_true(attribution.contains("Asset ambiente SVG generati"), "attribution tracks generated SVG assets")
 	var tool_source := _read_text("res://tools/generate_top_down_environment_assets.gd")
 	assert_true(tool_source.contains("status == \"final\""), "generator contains final asset overwrite guard")

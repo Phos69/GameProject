@@ -86,23 +86,33 @@ func build(
 		var right := (float(rect.end.x) - zone_offset.x) * logical_scale
 		var north := (float(rect.position.y) - zone_offset.y) * logical_scale
 		var south := (float(rect.end.y) - zone_offset.y) * logical_scale
-		var lean := minf(raise * LATERAL_LEAN_RATIO, float(rect.size.x) * logical_scale * 0.3)
-		# Ground footprint corners (rock meets grass).
-		var b_nw := Vector2(left, north)
-		var b_ne := Vector2(right, north)
-		var b_se := Vector2(right, south)
-		var b_sw := Vector2(left, south)
-		# Raised, inset crown corners.
-		var t_nw := Vector2(left + lean, north - raise)
-		var t_ne := Vector2(right - lean, north - raise)
-		var t_se := Vector2(right - lean, south - raise)
-		var t_sw := Vector2(left + lean, south - raise)
-		# Side walls first, then the front wall on top of them at the corners.
-		_append_wall(face, b_nw, b_sw, t_sw, t_nw, WEST_BRIGHTNESS)
-		_append_wall(face, b_se, b_ne, t_ne, t_se, EAST_BRIGHTNESS)
-		_append_wall(face, b_sw, b_se, t_se, t_sw, FRONT_BRIGHTNESS)
-		_append_top(top, t_nw, t_ne, t_se, t_sw)
-		area_count += 1
+		_append_area(
+			top,
+			face,
+			Rect2(Vector2(left, north), Vector2(right - left, south - north)),
+			raise,
+			Vector2.ZERO
+		)
+	top_mesh = _build_mesh(top)
+	face_mesh = _build_mesh(face)
+
+func build_local_size(
+	world_size: Vector2,
+	logical_scale: float,
+	world_uv_origin: Vector2 = Vector2.ZERO
+) -> void:
+	reset()
+	if world_size.x <= 0.0 or world_size.y <= 0.0 or logical_scale <= 0.0:
+		return
+	var top := _new_buffers()
+	var face := _new_buffers()
+	_append_area(
+		top,
+		face,
+		Rect2(-world_size * 0.5, world_size),
+		RAISE_HEIGHT_CELLS * logical_scale,
+		world_uv_origin
+	)
 	top_mesh = _build_mesh(top)
 	face_mesh = _build_mesh(face)
 
@@ -120,6 +130,35 @@ func get_counts() -> Dictionary:
 
 func get_face_mesh() -> ArrayMesh:
 	return face_mesh
+
+func _append_area(
+	top: Dictionary,
+	face: Dictionary,
+	ground_rect: Rect2,
+	raise: float,
+	world_uv_origin: Vector2
+) -> void:
+	var left := ground_rect.position.x
+	var right := ground_rect.end.x
+	var north := ground_rect.position.y
+	var south := ground_rect.end.y
+	var lean := minf(raise * LATERAL_LEAN_RATIO, ground_rect.size.x * 0.3)
+	# Ground footprint corners (rock meets grass).
+	var b_nw := Vector2(left, north)
+	var b_ne := Vector2(right, north)
+	var b_se := Vector2(right, south)
+	var b_sw := Vector2(left, south)
+	# Raised, inset crown corners.
+	var t_nw := Vector2(left + lean, north - raise)
+	var t_ne := Vector2(right - lean, north - raise)
+	var t_se := Vector2(right - lean, south - raise)
+	var t_sw := Vector2(left + lean, south - raise)
+	# Side walls first, then the front wall on top of them at the corners.
+	_append_wall(face, b_nw, b_sw, t_sw, t_nw, WEST_BRIGHTNESS)
+	_append_wall(face, b_se, b_ne, t_ne, t_se, EAST_BRIGHTNESS)
+	_append_wall(face, b_sw, b_se, t_se, t_sw, FRONT_BRIGHTNESS)
+	_append_top(top, t_nw, t_ne, t_se, t_sw, world_uv_origin)
+	area_count += 1
 
 func _append_wall(
 	buffers: Dictionary,
@@ -158,17 +197,18 @@ func _append_top(
 	nw: Vector2,
 	ne: Vector2,
 	se: Vector2,
-	sw: Vector2
+	sw: Vector2,
+	world_uv_origin: Vector2
 ) -> void:
 	var crown := Color(TOP_BRIGHTNESS, TOP_BRIGHTNESS, TOP_BRIGHTNESS, 1.0)
 	_append_quad(
 		buffers,
 		PackedVector2Array([nw, ne, se, sw]),
 		PackedVector2Array([
-			nw / top_texture_repeat_world_size,
-			ne / top_texture_repeat_world_size,
-			se / top_texture_repeat_world_size,
-			sw / top_texture_repeat_world_size
+			(nw + world_uv_origin) / top_texture_repeat_world_size,
+			(ne + world_uv_origin) / top_texture_repeat_world_size,
+			(se + world_uv_origin) / top_texture_repeat_world_size,
+			(sw + world_uv_origin) / top_texture_repeat_world_size
 		]),
 		PackedColorArray([crown, crown, crown, crown])
 	)

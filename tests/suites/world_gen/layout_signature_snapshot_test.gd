@@ -6,11 +6,11 @@ const SNAPSHOT_CODEC = preload(
 
 func test_cache_keys_carry_the_generation_revision() -> void:
 	assert_true(
-		WorldDataCache.canonical_key({}).begins_with("generator_revision=2|"),
+		WorldDataCache.canonical_key({}).begins_with("generator_revision=3|"),
 		"la cache dati non puo riusare chiavi della revisione pre-unificazione"
 	)
 	assert_true(
-		WorldDataCache.build_signature({}).begins_with("generator_revision=2|"),
+		WorldDataCache.build_signature({}).begins_with("generator_revision=3|"),
 		"anche la firma scena dichiara la revisione del generatore"
 	)
 
@@ -18,7 +18,7 @@ func test_deep_signature_tracks_generated_content_not_only_counts() -> void:
 	var baseline := _make_layout()
 	var baseline_signature := baseline.get_generation_signature()
 	assert_true(
-		baseline_signature.begins_with("layout-v2:"),
+		baseline_signature.begins_with("layout-v3:"),
 		"la firma dichiara la versione del contratto profondo"
 	)
 
@@ -99,7 +99,7 @@ func test_cell_signature_includes_the_deep_layout_signature() -> void:
 		"due celle identiche con contenuto interno diverso hanno firme diverse"
 	)
 
-func test_snapshot_v5_roundtrips_deep_content_and_rejects_v4() -> void:
+func test_snapshot_v6_roundtrips_deep_content_and_rejects_v5() -> void:
 	var source_cell := _make_cell(_make_layout())
 	var cells: Array[BiomeCell] = [source_cell]
 	var source_world := {
@@ -111,11 +111,11 @@ func test_snapshot_v5_roundtrips_deep_content_and_rejects_v4() -> void:
 		"seed_record": {"global_seed": 770041},
 	}
 	var encoded := SNAPSHOT_CODEC.world_data_to_dict(source_world)
-	assert_eq(int(encoded.get("format_version", -1)), 5,
+	assert_eq(int(encoded.get("format_version", -1)), 6,
 		"il codec scrive il nuovo formato snapshot")
 
 	var decoded := SNAPSHOT_CODEC.world_data_from_dict(encoded)
-	assert_false(decoded.is_empty(), "lo snapshot v5 e decodificato")
+	assert_false(decoded.is_empty(), "lo snapshot v6 e decodificato")
 	var decoded_cell := (decoded.get("cells", []) as Array)[0] as BiomeCell
 	assert_not_null(decoded_cell.generated_layout, "il layout profondo sopravvive")
 	assert_eq(
@@ -133,14 +133,14 @@ func test_snapshot_v5_roundtrips_deep_content_and_rejects_v4() -> void:
 	tampered_layout["random_prop_ids"] = [&"burned_car"]
 	assert_true(
 		SNAPSHOT_CODEC.world_data_from_dict(tampered).is_empty(),
-		"un blob v5 con layout alterato e firma stale viene rifiutato"
+		"un blob v6 con layout alterato e firma stale viene rifiutato"
 	)
 
-	var legacy_v4 := encoded.duplicate(true)
-	legacy_v4["format_version"] = 4
+	var legacy_v5 := encoded.duplicate(true)
+	legacy_v5["format_version"] = 5
 	assert_true(
-		SNAPSHOT_CODEC.world_data_from_dict(legacy_v4).is_empty(),
-		"un blob v4 viene rifiutato e dovra essere rigenerato"
+		SNAPSHOT_CODEC.world_data_from_dict(legacy_v5).is_empty(),
+		"un blob v5 viene rifiutato e dovra essere rigenerato"
 	)
 	WorldDataCache.release_world_data(decoded)
 
@@ -162,7 +162,7 @@ func _make_layout() -> BiomeEnvironmentLayout:
 	layout.obstacle_ids = [&"large_rock", &"abandoned_car"]
 	layout.obstacle_positions = [Vector2(-1176, -1320), Vector2(312, -744)]
 	layout.obstacle_sizes = [Vector2(240, 192), Vector2(48, 48)]
-	layout.obstacle_rotations = [0.0, 1.5707963267949]
+	layout.obstacle_rotations = [0.0, 0.0]
 	layout.obstacle_shape_ids = [&"rectangle", &"rectangle"]
 	layout.crate_cells = [Vector2i(26, 26)]
 	layout.crate_ids = [&"common"]

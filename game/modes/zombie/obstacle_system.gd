@@ -11,6 +11,7 @@ const BIOME_OBSTACLE_SCRIPT = preload(
 const ENVIRONMENT_OBJECT_FACTORY_SCRIPT = preload(
 	"res://game/modes/zombie/environment_object_factory.gd"
 )
+const SORT_ANCHOR_META: StringName = &"environment_obstacle_sort_anchor"
 
 @export var environment_container_path: NodePath = NodePath(
 	"../../../../World/EnvironmentProps"
@@ -226,19 +227,35 @@ func _insert_blocker(blocker: Node2D) -> void:
 ## (node_contains_position): rettangolo ruotato per gli ostacoli/zone, cerchio
 ## per shape circolari e per il fallback zone_radius dei nodi generici.
 static func _blocker_cover_extents(blocker: Node2D) -> Vector2:
-	var size_value = blocker.get("obstacle_size")
+	var size_value: Variant = (
+		blocker.call("get_collision_size")
+		if blocker.has_method("get_collision_size")
+		else blocker.get("obstacle_size")
+	)
 	if not size_value is Vector2:
 		size_value = blocker.get("zone_size")
 	if size_value is Vector2:
 		var half := (size_value as Vector2) * 0.5
+		var center_offset := Vector2.ZERO
+		if blocker.has_method("get_collision_offset"):
+			center_offset = blocker.call("get_collision_offset") as Vector2
 		if blocker.get("collision_shape_id") == &"circle":
-			return Vector2(maxf(half.x, 8.0), maxf(half.x, 8.0))
+			var radius := minf(half.x, half.y)
+			return center_offset.abs() + Vector2(
+				maxf(radius, 8.0),
+				maxf(radius, 8.0)
+			)
 		var cos_r := absf(cos(blocker.global_rotation))
 		var sin_r := absf(sin(blocker.global_rotation))
-		return Vector2(
+		var rotated_half := Vector2(
 			maxf(cos_r * half.x + sin_r * half.y, 8.0),
 			maxf(sin_r * half.x + cos_r * half.y, 8.0)
 		)
+		var rotated_offset := Vector2(
+			cos_r * absf(center_offset.x) + sin_r * absf(center_offset.y),
+			sin_r * absf(center_offset.x) + cos_r * absf(center_offset.y)
+		)
+		return rotated_half + rotated_offset
 	var radius := maxf(float(blocker.get_meta("zone_radius", 32.0)), 8.0)
 	return Vector2(radius, radius)
 
@@ -321,18 +338,28 @@ func _generate_obstacles() -> void:
 			index,
 			obstacle_id
 		)
-		container.add_child(obstacle)
+		attach_obstacle_at_layout_center(
+			container,
+			obstacle,
+			layout.obstacle_positions[index]
+		)
 		if index < layout.obstacle_rects.size():
 			obstacle.set_meta("obstacle_record", layout.get_obstacle_record(index, manifest))
 		if manifest != null and not manifest.blocks_movement(obstacle_id):
 			obstacle.remove_from_group("spawn_blockers")
 			obstacle.remove_from_group("environment_obstacles")
-		obstacle.global_position = layout.obstacle_positions[index]
 		configure_perimeter_obstacle_visual(
 			obstacle,
 			layout,
 			index,
 			active_biome.biome_id
+		)
+		configure_mesa_obstacle_visual(
+			obstacle,
+			layout,
+			index,
+			active_biome.biome_id,
+			palette
 		)
 		active_obstacles.append(obstacle)
 		_apply_debug_visibility(obstacle)
@@ -382,7 +409,11 @@ func _create_obstacle(
 func _clear_runtime() -> void:
 	for obstacle in active_obstacles:
 		if is_instance_valid(obstacle):
-			obstacle.queue_free()
+			var sort_anchor := obstacle.get_parent()
+			if sort_anchor != null and sort_anchor.has_meta(SORT_ANCHOR_META):
+				sort_anchor.queue_free()
+			else:
+				obstacle.queue_free()
 	active_obstacles.clear()
 	_blocker_buckets.clear()
 	_blocker_index_dirty = true
@@ -430,6 +461,59 @@ static func configure_perimeter_obstacle_visual(
 		layout.wall_height_cells,
 		layout.logical_tile_scale,
 		biome_id
+	)
+
+static func attach_obstacle_at_layout_center(
+	parent: Node,
+	obstacle: BiomeObstacle,
+	layout_center: Vector2
+) -> Node2D:
+	if parent == null or obstacle == null:
+		return null
+	var sort_anchor := Node2D.new()
+	sort_anchor.name = "%sSortAnchor" % obstacle.name
+	sort_anchor.set_meta(SORT_ANCHOR_META, true)
+	var anchor_offset := obstacle.get_sort_anchor_offset()
+	sort_anchor.set_meta("sort_anchor_offset", anchor_offset)
+	sort_anchor.position = layout_center + anchor_offset
+	parent.add_child(sort_anchor)
+	sort_anchor.add_child(obstacle)
+	obstacle.position = -anchor_offset
+	obstacle.set_meta("layout_center", layout_center)
+	obstacle.set_meta("sort_anchor_offset", anchor_offset)
+	return sort_anchor
+
+static func configure_mesa_obstacle_visual(
+	obstacle: BiomeObstacle,
+	layout: BiomeEnvironmentLayout,
+	index: int,
+	biome_id: StringName,
+	palette: BiomePalette
+) -> void:
+	if (
+		obstacle == null
+		or layout == null
+		or obstacle.obstacle_id != &"large_rock"
+		or not obstacle.has_method("configure_mesa_visual")
+		or index < 0
+		or index >= layout.obstacle_rects.size()
+	):
+		return
+	var mesa_rect := layout.obstacle_rects[index]
+	var mesa_index := layout.mesa_rects.find(mesa_rect)
+	var profile_id: StringName = &"forest"
+	if mesa_index >= 0 and mesa_index < layout.mesa_profile_ids.size():
+		profile_id = layout.mesa_profile_ids[mesa_index]
+	elif biome_id != &"infected_plains":
+		profile_id = BiomeGeneratedArtCatalog.get_theme_id_for_biome(biome_id)
+	obstacle.call(
+		"configure_mesa_visual",
+		profile_id,
+		biome_id,
+		layout.generation_seed,
+		palette,
+		layout.logical_tile_scale,
+		layout.obstacle_positions[index]
 	)
 
 func _sort_offset_for(obstacle_id: StringName) -> float:

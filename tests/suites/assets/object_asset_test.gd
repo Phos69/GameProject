@@ -158,7 +158,7 @@ func test_factory_obstacle_coverage() -> void:
 			assert_true(obstacle.has_ground_shadow(), "%s keeps ground shadow contract" % String(obstacle_id))
 			assert_eq(obstacle.get_obstacle_category(), _manifest.get_category(obstacle_id), "%s category comes from manifest" % String(obstacle_id))
 			assert_false(obstacle.uses_generic_fallback(), "%s avoids generic visual fallback" % String(obstacle_id))
-			if obstacle_id == &"reed_wall":
+			if obstacle_id in [&"reed_wall", &"dead_tree"]:
 				var native_object := obstacle as EnvironmentObject
 				var native_size := _manifest.get_native_visual_size(obstacle_id)
 				var expected_size := Vector2(
@@ -279,9 +279,11 @@ func test_forest_tree_variation_is_visual_only() -> void:
 	second.global_position = Vector2(216.0, 180.0)
 	await wait_physics_frames(2)
 
-	assert_eq(first.obstacle_size, second.obstacle_size, "forest_tree visual variation keeps collision size")
-	assert_true(first.contains_global_position(first.global_position), "first tree still blocks its center")
-	assert_true(second.contains_global_position(second.global_position), "second tree still blocks its center")
+	assert_eq(first.obstacle_size, second.obstacle_size, "forest_tree visual variation keeps placement size")
+	assert_eq(first.get_collision_size(), Vector2(48.0, 48.0), "first tree keeps its compact root collider")
+	assert_eq(second.get_collision_size(), Vector2(48.0, 48.0), "second tree keeps its compact root collider")
+	assert_true(first.contains_global_position(first.to_global(first.get_collision_offset())), "first tree still blocks its roots")
+	assert_true(second.contains_global_position(second.to_global(second.get_collision_offset())), "second tree still blocks its roots")
 	assert_true(first_object.asset_sprite != null and second_object.asset_sprite != null, "forest_tree sprites are available")
 	if first_object.asset_sprite != null and second_object.asset_sprite != null:
 		assert_true(
@@ -329,21 +331,29 @@ func _check_collision_contract(obstacle_id: StringName, obstacle: BiomeObstacle)
 	assert_eq(obstacle.collision_mask, 0, "%s collision mask remains passive environment" % String(obstacle_id))
 	assert_true(is_equal_approx(obstacle.sort_offset, _manifest.get_sort_offset(obstacle_id)), "%s sort offset comes from manifest" % String(obstacle_id))
 	assert_eq(obstacle.z_index, 0, "%s participates in Y-sort" % String(obstacle_id))
-	var expects_center_hit := _manifest.get_collision_shape(obstacle_id) != &"open"
-	assert_eq(obstacle.contains_global_position(obstacle.global_position), expects_center_hit, "%s center containment matches collision shape" % String(obstacle_id))
+	var expects_collider_hit := _manifest.get_collision_shape(obstacle_id) != &"open"
+	var collider_center := obstacle.to_global(obstacle.get_collision_offset())
+	assert_eq(obstacle.contains_global_position(collider_center), expects_collider_hit, "%s collider-center containment matches collision shape" % String(obstacle_id))
 	var shape := obstacle.get_node_or_null("CollisionShape2D") as CollisionShape2D
 	assert_not_null(shape, "%s collision shape node exists" % String(obstacle_id))
 	if shape == null:
 		return
+	assert_true(shape.position.is_equal_approx(obstacle.get_collision_offset()), "%s CollisionShape2D follows the manifest offset" % String(obstacle_id))
 	match _manifest.get_collision_shape(obstacle_id):
 		&"circle":
 			assert_true(shape.shape is CircleShape2D, "%s uses circle collision" % String(obstacle_id))
+			var circle := shape.shape as CircleShape2D
+			assert_true(is_equal_approx(circle.radius, minf(obstacle.get_collision_size().x, obstacle.get_collision_size().y) * 0.5), "%s circle radius follows the manifest collision size" % String(obstacle_id))
 		&"open":
 			assert_true(shape.disabled, "%s disables open collision" % String(obstacle_id))
 		_:
 			assert_true(shape.shape is RectangleShape2D, "%s uses rectangle collision" % String(obstacle_id))
 
 func _size_for(obstacle_id: StringName) -> Vector2:
+	if obstacle_id == &"forest_tree":
+		return Vector2(96.0, 96.0)
+	if obstacle_id == &"dead_tree":
+		return Vector2(48.0, 96.0)
 	var footprint := _manifest.get_object_asset_contract(obstacle_id).get("footprint_tiles", Vector2i(6, 4)) as Vector2i
 	return Vector2(maxf(float(footprint.x) * 8.0, 32.0), maxf(float(footprint.y) * 8.0, 28.0))
 

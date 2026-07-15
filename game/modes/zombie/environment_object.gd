@@ -6,6 +6,7 @@ class_name EnvironmentObject
 
 const ASSET_SPRITE_NAME := "AssetSprite"
 const DAMAGE_OVERLAY_NAME := "DamageOverlay"
+const MESA_RENDER_MODE := &"y_sorted_mesa"
 const TILE_LAYER_MESA_RENDER_MODE := &"tile_layer_rock_area"
 # Public compatibility alias for callers/tests written before mesas became a
 # shared multi-biome contract.
@@ -18,12 +19,18 @@ const CLIFF_RELATION_FRONT := &"front"
 const SVG_TEXTURE_LOADER = preload(
 	"res://game/modes/zombie/environment_texture_loader.gd"
 )
+const MESA_MESH_BUILDER = preload(
+	"res://game/modes/zombie/rocks/rectilinear_rock_area_mesh_builder.gd"
+)
+const MESA_ART_RESOLVER = preload(
+	"res://game/modes/zombie/rocks/mesa_visual_art_resolver.gd"
+)
 const MISSING_ASSET_FALLBACK_STATUSES: Array[String] = [
 	"needs_asset",
 	"procedural_fallback",
 	"deprecated"
 ]
-const NATIVE_SVG_OBJECT_IDS: Array[StringName] = [&"reed_wall"]
+const NATIVE_SVG_OBJECT_IDS: Array[StringName] = [&"reed_wall", &"dead_tree"]
 
 const CONTENT_ALPHA_THRESHOLD := 0.08
 const LEGACY_TILE_SCALE := WorldGridConfig.LEGACY_TILE_SCALE
@@ -36,6 +43,11 @@ var damage_overlay: Sprite2D
 var procedural_fallback_active: bool = false
 var render_mode: StringName = &"sprite"
 var _asset_variation_pending: bool = false
+var _mesa_mesh_builder: RectilinearRockAreaMeshBuilder
+var _mesa_top_texture: Texture2D
+var _mesa_face_texture: Texture2D
+var _mesa_profile_id: StringName = &""
+var _mesa_art_asset_paths: Dictionary = {}
 
 # Opaque-content metrics (bounds + width profile, texture pixels) keyed by
 # asset_path. The same asset always loads at one deterministic size, so it is
@@ -101,16 +113,39 @@ func has_asset_sprite() -> bool:
 	)
 
 func has_asset_visual() -> bool:
-	return has_asset_sprite() or uses_tile_layer_mesa_visual()
+	return has_asset_sprite() or has_mesa_visual()
 
 func get_render_mode() -> StringName:
 	return render_mode
 
 func uses_tile_layer_rock_visual() -> bool:
-	return uses_tile_layer_mesa_visual()
+	return uses_mesa_visual()
 
 func uses_tile_layer_mesa_visual() -> bool:
-	return render_mode == TILE_LAYER_MESA_RENDER_MODE
+	return uses_mesa_visual()
+
+func uses_mesa_visual() -> bool:
+	return render_mode in [MESA_RENDER_MODE, TILE_LAYER_MESA_RENDER_MODE]
+
+func has_mesa_visual() -> bool:
+	return (
+		uses_mesa_visual()
+		and _mesa_mesh_builder != null
+		and _mesa_mesh_builder.has_geometry()
+		and _mesa_top_texture != null
+		and _mesa_face_texture != null
+	)
+
+func get_mesa_profile_id() -> StringName:
+	return _mesa_profile_id
+
+func get_mesa_art_asset_paths() -> Dictionary:
+	return _mesa_art_asset_paths.duplicate(true)
+
+func get_mesa_geometry_counts() -> Dictionary:
+	if _mesa_mesh_builder == null:
+		return {}
+	return _mesa_mesh_builder.get_counts()
 
 func is_world_position_behind_cliff(world_position: Vector2) -> bool:
 	return (
@@ -132,9 +167,19 @@ func classify_world_position_relative_to_cliff(
 	var local_position := to_local(world_position)
 	if absf(local_position.x) > obstacle_size.x * 0.5 + OCCLUSION_HORIZONTAL_MARGIN:
 		return CLIFF_RELATION_OUTSIDE
-	return CLIFF_RELATION_BEHIND if local_position.y < 0.0 else CLIFF_RELATION_FRONT
+	return (
+		CLIFF_RELATION_BEHIND
+		if world_position.y < get_cliff_sort_line_y()
+		else CLIFF_RELATION_FRONT
+	)
 
 func get_cliff_sort_line_y() -> float:
+	var sort_anchor := get_parent() as Node2D
+	if (
+		sort_anchor != null
+		and sort_anchor.has_meta(ObstacleSystem.SORT_ANCHOR_META)
+	):
+		return sort_anchor.global_position.y
 	return global_position.y
 
 func uses_procedural_fallback() -> bool:
@@ -153,7 +198,26 @@ func set_debug_footprint_visible(enabled: bool) -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	if uses_tile_layer_mesa_visual():
+	if uses_mesa_visual():
+		if has_mesa_visual():
+			var face_mesh := _mesa_mesh_builder.get_face_mesh()
+			if face_mesh != null:
+				draw_mesh(
+					face_mesh,
+					_mesa_face_texture,
+					Transform2D.IDENTITY,
+					Color(1.12, 1.12, 1.12, 1.0)
+					if _mesa_profile_id == &"forest"
+					else Color.WHITE
+				)
+			draw_mesh(
+				_mesa_mesh_builder.top_mesh,
+				_mesa_top_texture,
+				Transform2D.IDENTITY,
+				Color(1.06, 1.06, 1.06, 1.0)
+				if _mesa_profile_id == &"forest"
+				else Color.WHITE
+			)
 		if show_debug_footprint:
 			_draw_rect_debug_footprint()
 		return
@@ -161,7 +225,6 @@ func _draw() -> void:
 		super._draw()
 		return
 	_draw_ground_shadow()
-	_draw_occupied_base()
 	if show_debug_footprint:
 		_draw_rect_debug_footprint()
 
@@ -194,6 +257,7 @@ func _apply_asset_contract() -> void:
 	_ensure_visual_nodes()
 	_load_asset_texture(contract)
 	_position_asset_sprite()
+	_ensure_default_mesa_visual()
 	_update_damage_overlay()
 
 func _ensure_visual_nodes() -> void:
@@ -228,7 +292,7 @@ func _load_asset_texture(contract: Dictionary) -> void:
 		return
 	asset_sprite.texture = null
 	asset_sprite.visible = false
-	if uses_tile_layer_mesa_visual():
+	if uses_mesa_visual():
 		return
 	if asset_path.is_empty():
 		procedural_fallback_active = _contract_allows_procedural_fallback(contract)
@@ -307,18 +371,21 @@ func _position_asset_sprite() -> void:
 	var content_bottom_local := (content_bottom - canvas_center.y) * asset_sprite.scale.y
 	var content_height_local := content_rect.size.y * asset_sprite.scale.y
 	var floor_y := clampf(sort_offset, 0.0, obstacle_size.y * 0.5 + 12.0)
-	# Seat the asset so the row where the art first spans the footprint width sits
-	# on the collision front edge (obstacle_size.y * 0.5 — the square rect built in
-	# BiomeObstacle._rebuild_collision). The narrow "skirt" below that row (tree
-	# roots, rock base) spills past the edge, so the art blankets the whole
-	# occupied tile and the obstacle-terrain "hitbox" patch never peeks out. Wide
-	# assets (no skirt) just rest on the front edge.
+	# Seat ordinary wide assets on the south edge of their placement footprint.
+	# A narrow authored skirt may extend below that edge without changing logical
+	# cells. Tree roots use the explicit collision contract in the branch below,
+	# so their canopy footprint never becomes a hidden square hitbox.
 	var skirt_height := _content_skirt_height(metrics, obstacle_size.x * 0.5, asset_sprite.scale.x)
 	var skirt_local := minf(skirt_height * asset_sprite.scale.y, obstacle_size.y * 0.35)
 	var base_y := maxf(
 		obstacle_size.y * 0.5 + skirt_local,
 		floor_y + maxf(obstacle_size.y * 0.25, 6.0)
 	)
+	if obstacle_category == &"tree":
+		# The opaque roots rest on the south edge of the root collider. The
+		# placement footprint still reserves canopy spacing but no longer moves
+		# either the visible trunk or its physical hitbox.
+		base_y = collision_offset.y + minf(collision_size.x, collision_size.y) * 0.5
 	match anchor_id:
 		&"bottom_center", &"floor_center":
 			asset_sprite.position = Vector2(anchor_x, base_y - content_bottom_local)
@@ -341,6 +408,55 @@ func _queue_asset_variation() -> void:
 		return
 	_asset_variation_pending = true
 	set_process(true)
+
+func configure_mesa_visual(
+	profile_id: StringName,
+	biome_id: StringName,
+	generation_seed: int,
+	palette: BiomePalette,
+	logical_tile_scale: float,
+	world_uv_origin: Vector2 = Vector2.ZERO
+) -> void:
+	if not uses_mesa_visual():
+		return
+	var art := MESA_ART_RESOLVER.resolve(
+		profile_id,
+		biome_id,
+		generation_seed,
+		palette,
+		EnvironmentAssetManifest.get_shared()
+	)
+	_mesa_profile_id = StringName(art.get("profile_id", &"forest"))
+	_mesa_top_texture = art.get("top_texture") as Texture2D
+	_mesa_face_texture = art.get("face_texture") as Texture2D
+	_mesa_art_asset_paths = {
+		"top": String(art.get("top_path", "")),
+		"face": String(art.get("face_path", "")),
+	}
+	_mesa_mesh_builder = MESA_MESH_BUILDER.new() as RectilinearRockAreaMeshBuilder
+	_mesa_mesh_builder.configure(
+		palette,
+		generation_seed,
+		float(art.get("top_repeat_world_size", 256.0)),
+		float(art.get("face_repeat_world_size", 128.0))
+	)
+	_mesa_mesh_builder.build_local_size(
+		obstacle_size,
+		logical_tile_scale,
+		world_uv_origin
+	)
+	queue_redraw()
+
+func _ensure_default_mesa_visual() -> void:
+	if not uses_mesa_visual() or _mesa_mesh_builder != null:
+		return
+	configure_mesa_visual(
+		&"forest",
+		&"infected_plains",
+		0,
+		null,
+		WorldGridConfig.LOGICAL_TILE_SCALE
+	)
 
 func _apply_asset_variation() -> void:
 	if asset_sprite == null:
@@ -513,19 +629,16 @@ func _apply_collision_layers() -> void:
 	collision_mask = 0
 
 func _draw_rect_debug_footprint() -> void:
-	var footprint_rect := Rect2(-obstacle_size * 0.5, obstacle_size)
-	draw_rect(footprint_rect, Color(0.15, 0.60, 0.95, 0.12), true)
-	draw_rect(footprint_rect, Color(0.30, 0.80, 1.0, 0.88), false, 2.5)
-
-func _draw_occupied_base() -> void:
-	if not blocks_movement:
+	var fill := Color(0.15, 0.60, 0.95, 0.16)
+	var outline := Color(0.30, 0.80, 1.0, 0.92)
+	if collision_shape_id == &"circle":
+		var radius := minf(collision_size.x, collision_size.y) * 0.5
+		draw_circle(collision_offset, radius, fill)
+		draw_arc(collision_offset, radius, 0.0, TAU, 40, outline, 2.5, true)
 		return
-	var footprint_rect := Rect2(-obstacle_size * 0.5, obstacle_size)
-	var base_color := primary_color.darkened(0.46)
-	base_color.a = 0.72 if obstacle_category in [&"building", &"dense_vegetation"] else 0.48
-	draw_rect(footprint_rect, base_color, true)
-	# Subtle dark rim: an accent-coloured outline reads as a selection/loot
-	# marker under large objects (ART-VIS-FIX, VIS-005).
-	var rim_color := primary_color.darkened(0.62)
-	rim_color.a = 0.55
-	draw_rect(footprint_rect, rim_color, false, 1.5, true)
+	var collision_rect := Rect2(
+		collision_offset - collision_size * 0.5,
+		collision_size
+	)
+	draw_rect(collision_rect, fill, true)
+	draw_rect(collision_rect, outline, false, 2.5)

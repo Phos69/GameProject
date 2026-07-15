@@ -55,14 +55,15 @@ func _run() -> void:
 	)
 	await process_frame
 	await process_frame
-	_expect(layer.has_mesa_area_art(), "tile layer owns the mesa-area visual")
+	_expect(layer.has_mesa_area_art(), "tile layer retains mesa geometry metadata")
+	_expect(not layer.renders_mesa_area_batch(), "tile layer does not draw a mesa batch")
 	var counts := layer.get_mesa_area_counts()
-	_expect(int(counts.get("areas", 0)) == 2, "both rock areas are rendered")
+	_expect(int(counts.get("areas", 0)) == 2, "both rock areas are reported")
 	_expect(
 		int(counts.get("faces", 0)) == 6,
-		"each raised plateau emits a front and two oblique side walls"
+		"both plateau definitions report three visible faces"
 	)
-	await _add_occlusion_probes(scene_root, layout)
+	await _add_mesas_and_occlusion_probes(scene_root, layout, biome)
 	_add_labels(scene_root)
 	await process_frame
 	var image := root.get_texture().get_image()
@@ -86,36 +87,87 @@ func _make_layout() -> BiomeEnvironmentLayout:
 	layout.mesa_rects.append(large)
 	layout.mesa_profile_ids.append(&"forest")
 	layout.mesa_profile_ids.append(&"forest")
-	layout.obstacle_rects.append(small)
-	layout.obstacle_rects.append(large)
+	for rect in layout.mesa_rects:
+		layout.obstacle_rects.append(rect)
+		layout.obstacle_ids.append(&"large_rock")
+		layout.obstacle_positions.append(
+			layout.obstacle_rect_center_to_world(rect, &"large_rock")
+		)
+		layout.obstacle_sizes.append(layout.rect_size_to_world(rect))
+		layout.obstacle_rotations.append(0.0)
+		layout.obstacle_shape_ids.append(&"rectangle")
 	layout.rebuild_terrain_classification()
 	return layout
 
-func _add_occlusion_probes(
+func _add_mesas_and_occlusion_probes(
 	scene_root: Node2D,
-	layout: BiomeEnvironmentLayout
+	layout: BiomeEnvironmentLayout,
+	biome: BiomeDefinition
 ) -> void:
 	var system := ObstacleSystem.new()
 	scene_root.add_child(system)
 	await process_frame
 	for index in range(layout.mesa_rects.size()):
 		var rect := layout.mesa_rects[index]
-		var world_size := layout.rect_size_to_world(rect)
+		var world_size := layout.obstacle_sizes[index]
 		var rock := system.create_obstacle_instance(
 			&"large_rock",
 			world_size,
 			&"rectangle",
-			0.0,
+			layout.obstacle_rotations[index],
 			Color("514a3e"),
 			Color("b5a178")
-		)
+		) as EnvironmentObject
 		_expect(rock != null, "occlusion rock %d is created" % index)
 		if rock == null:
 			continue
-		scene_root.add_child(rock)
-		rock.position = Vector2(640.0, 380.0) + layout.rect_center_to_world(rect)
-		var behind_position := rock.position + Vector2(0.0, -world_size.y * 0.5 - 10.0)
-		var front_position := rock.position + Vector2(0.0, world_size.y * 0.5 + 28.0)
+		var layout_center := Vector2(640.0, 380.0) + layout.obstacle_positions[index]
+		var sort_anchor := ObstacleSystem.attach_obstacle_at_layout_center(
+			scene_root,
+			rock,
+			layout_center
+		)
+		ObstacleSystem.configure_mesa_obstacle_visual(
+			rock,
+			layout,
+			index,
+			&"infected_plains",
+			biome.palette
+		)
+		_expect(sort_anchor != null, "rock %d owns a Y-sort wrapper" % index)
+		_expect(
+			sort_anchor != null and sort_anchor.has_meta(ObstacleSystem.SORT_ANCHOR_META),
+			"rock %d participates in actor front/back sorting" % index
+		)
+		_expect(rock.rotation == 0.0, "rock %d remains screen-cardinal" % index)
+		_expect(rock.has_mesa_visual(), "rock %d owns its raised local mesh" % index)
+		var geometry := rock.get_mesa_geometry_counts()
+		_expect(int(geometry.get("areas", 0)) == 1, "rock %d owns one crown" % index)
+		_expect(int(geometry.get("faces", 0)) == 3, "rock %d owns three faces" % index)
+		_expect(
+			rock.global_position.is_equal_approx(layout_center),
+			"rock %d visual remains on the layout center" % index
+		)
+		_expect(
+			rock.get_collision_size().is_equal_approx(world_size),
+			"rock %d collision matches the visual base size" % index
+		)
+		_expect(
+			rock.get_collision_offset().is_zero_approx(),
+			"rock %d collision and visual share one local origin" % index
+		)
+		var collision_node := rock.get_node_or_null("CollisionShape2D") as CollisionShape2D
+		var rectangle := (
+			collision_node.shape as RectangleShape2D
+			if collision_node != null
+			else null
+		)
+		_expect(
+			rectangle != null and rectangle.size.is_equal_approx(world_size),
+			"rock %d physical rectangle follows the mesh footprint" % index
+		)
+		var behind_position := rock.global_position + Vector2(0.0, -world_size.y * 0.5 - 10.0)
+		var front_position := rock.global_position + Vector2(0.0, world_size.y * 0.5 + 28.0)
 		_expect(rock.is_world_position_behind_cliff(behind_position), "north probe is behind rock %d" % index)
 		_expect(rock.is_world_position_in_front_of_cliff(front_position), "south probe is in front of rock %d" % index)
 		var behind_probe := OcclusionProbe.new()
@@ -132,7 +184,7 @@ func _add_occlusion_probes(
 
 func _add_labels(scene_root: Node2D) -> void:
 	var title := Label.new()
-	title.text = "AREE ROCCIOSE - PLATEAU RIALZATI (CLIFF INVERTITO)"
+	title.text = "MESA CARDINALI - COLLISIONE E MESH LOCALI Y-SORTED"
 	title.position = Vector2(0.0, 24.0)
 	title.size = Vector2(1280.0, 42.0)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

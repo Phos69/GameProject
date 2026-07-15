@@ -506,16 +506,26 @@ func _commit_obstacle(
 		index + 1
 	]
 	obstacle.obstacle_key = _region_obstacle_key(region_id, index, obstacle_id)
-	parent.add_child(obstacle)
+	ObstacleSystem.attach_obstacle_at_layout_center(
+		parent,
+		obstacle,
+		layout.obstacle_positions[index]
+	)
 	if manifest != null and not manifest.blocks_movement(obstacle_id):
 		obstacle.remove_from_group("spawn_blockers")
 		obstacle.remove_from_group("environment_obstacles")
-	obstacle.position = layout.obstacle_positions[index]
 	ObstacleSystem.configure_perimeter_obstacle_visual(
 		obstacle,
 		layout,
 		index,
 		biome.biome_id
+	)
+	ObstacleSystem.configure_mesa_obstacle_visual(
+		obstacle,
+		layout,
+		index,
+		biome.biome_id,
+		biome.palette
 	)
 	obstacle.set_meta("region_id", region_id)
 	if index < layout.obstacle_rects.size():

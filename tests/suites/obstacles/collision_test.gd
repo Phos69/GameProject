@@ -64,6 +64,65 @@ func test_obstacle_runtime_contract() -> void:
 	assert_false(open_obstacle.contains_global_position(open_obstacle.global_position), "open obstacle does not block positions")
 	await _free_node(open_obstacle)
 
+func test_tree_colliders_are_root_centered_circles() -> void:
+	var forest_tree := _build_obstacle(&"forest_tree", Vector2(96.0, 96.0))
+	_assert_root_circle_contract(forest_tree, Vector2(48.0, 48.0), Vector2(0.0, 24.0), 24.0, "forest_tree")
+	await _free_node(forest_tree)
+
+	var dead_tree := _build_obstacle(&"dead_tree", Vector2(48.0, 96.0))
+	_assert_root_circle_contract(dead_tree, Vector2(24.0, 24.0), Vector2(0.0, 24.0), 12.0, "dead_tree")
+	await _free_node(dead_tree)
+
+func test_obstacle_rotation_is_locked_to_cardinal_axes() -> void:
+	var obstacle := BiomeObstacle.new()
+	add_child(obstacle)
+	var requested_rotation := 0.35
+	var manifest := _load_manifest()
+	obstacle.configure(
+		&"burned_car",
+		Vector2(96.0, 144.0),
+		&"rectangle",
+		requested_rotation,
+		Color(0.4, 0.4, 0.4, 1.0),
+		Color(0.8, 0.8, 0.4, 1.0),
+		manifest.get_sort_offset(&"burned_car")
+	)
+	assert_true(is_zero_approx(obstacle.rotation), "runtime obstacle ignores non-cardinal layout rotation")
+	assert_true(bool(obstacle.get_meta("cardinal_rotation_locked", false)), "runtime obstacle records the cardinal lock")
+	assert_true(is_equal_approx(float(obstacle.get_meta("requested_rotation_radians", 0.0)), requested_rotation), "requested legacy rotation remains available for diagnostics")
+	await _free_node(obstacle)
+
+func test_hazard_rotations_are_locked_to_cardinal_axes() -> void:
+	var requested_rotation := -0.27
+	var hazard := BiomeHazardZone.new()
+	add_child(hazard)
+	hazard.configure(
+		&"toxic_puddle",
+		Vector2(144.0, 80.0),
+		requested_rotation,
+		Color(0.2, 0.9, 0.4, 0.8)
+	)
+	assert_true(is_zero_approx(hazard.rotation), "runtime hazard ignores non-cardinal layout rotation")
+	assert_true(bool(hazard.get_meta("cardinal_rotation_locked", false)), "runtime hazard records the cardinal lock")
+	assert_true(is_equal_approx(float(hazard.get_meta("requested_rotation_radians", 0.0)), requested_rotation), "hazard keeps the stale angle only as diagnostics")
+	await _free_node(hazard)
+
+	var fall_zone := BiomeFallZone.new()
+	add_child(fall_zone)
+	fall_zone.configure(
+		&"fall_zone",
+		Vector2(192.0, 96.0),
+		requested_rotation,
+		Color(0.9, 0.5, 0.2, 1.0),
+		&"cliff",
+		&"north",
+		42
+	)
+	assert_true(is_zero_approx(fall_zone.rotation), "runtime fall zone stays aligned to the cardinal grid")
+	assert_true(bool(fall_zone.get_meta("cardinal_rotation_locked", false)), "fall zone records the cardinal lock")
+	assert_true(is_equal_approx(float(fall_zone.get_meta("requested_rotation_radians", 0.0)), requested_rotation), "fall zone keeps the stale angle only as diagnostics")
+	await _free_node(fall_zone)
+
 # --- query jumpable/non-jumpable dell'ObstacleSystem ------------------------
 
 func test_obstacle_system_queries() -> void:
@@ -133,6 +192,27 @@ func _build_obstacle(obstacle_id: StringName, size: Vector2) -> BiomeObstacle:
 	obstacle.configure(obstacle_id, size, &"rectangle", 0.0,
 		Color(0.4, 0.4, 0.4, 1.0), Color(0.8, 0.8, 0.4, 1.0), manifest.get_sort_offset(obstacle_id))
 	return obstacle
+
+func _assert_root_circle_contract(
+	obstacle: BiomeObstacle,
+	expected_size: Vector2,
+	expected_offset: Vector2,
+	expected_radius: float,
+	label: String
+) -> void:
+	assert_not_null(obstacle, "%s builds" % label)
+	if obstacle == null:
+		return
+	assert_eq(obstacle.get_collision_size(), expected_size, "%s collider size follows the root contract" % label)
+	assert_eq(obstacle.get_collision_offset(), expected_offset, "%s collider is centered on the roots" % label)
+	var collision := obstacle.get_node_or_null("CollisionShape2D") as CollisionShape2D
+	var circle := collision.shape as CircleShape2D if collision != null else null
+	assert_true(circle != null and is_equal_approx(circle.radius, expected_radius), "%s uses the expected circular root radius" % label)
+	assert_true(collision != null and collision.position.is_equal_approx(expected_offset), "%s physics shape uses the root offset" % label)
+	var root_center := obstacle.to_global(expected_offset)
+	assert_true(obstacle.contains_global_position(root_center), "%s blocks its root center" % label)
+	assert_true(obstacle.contains_global_position(root_center + Vector2(expected_radius - 1.0, 0.0)), "%s blocks just inside its root radius" % label)
+	assert_false(obstacle.contains_global_position(root_center + Vector2(expected_radius + 1.0, 0.0)), "%s does not retain the old square hitbox" % label)
 
 func _spawn_projectile(origin: Vector2, direction: Vector2) -> Node:
 	var scene := load("res://game/projectiles/projectile.tscn") as PackedScene

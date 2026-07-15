@@ -158,7 +158,9 @@ func test_forced_forest_over_rock_keeps_rock_clear() -> void:
 	layout.rock_rects.append(rock)
 	layout.obstacle_rects.append(rock)
 	layout.obstacle_ids.append(&"large_rock")
-	layout.obstacle_positions.append(layout.rect_center_to_world(rock))
+	layout.obstacle_positions.append(
+		layout.obstacle_rect_center_to_world(rock, &"large_rock")
+	)
 	layout.obstacle_sizes.append(layout.rect_size_to_world(rock))
 	layout.obstacle_rotations.append(0.0)
 	layout.obstacle_shape_ids.append(&"rectangle")

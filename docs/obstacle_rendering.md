@@ -5,24 +5,28 @@
 La mappa logica resta la sorgente di verita. `BiomeEnvironmentLayout.obstacle_rects`
 contiene le celle occupate; `ObstacleLayoutGenerator` centra su ogni richiesta il
 footprint canonico letto da `assets/environment/top_down/manifest.json`. Da quel
-rettangolo derivano posizione world-space, collisione, spawn blocker e base visiva.
+rettangolo derivano posizione world-space, classificazione delle celle e spazio
+riservato dal generatore. La collisione fisica puo essere piu piccola e spostata
+rispetto al footprint tramite `collision_size_ratio` e
+`collision_offset_ratio`; il renderer non la deduce mai dall'immagine.
 
 La base segue `coordinate_system: orthogonal_top_down`. Altezza, facciata sud e
 fianchi sono `controlled_perspective`: possono superare la base solo sul piano
 visivo e non spostano celle, anchor o collisioni. Il contratto generale e in
 `docs/top_down_cardinal_contract.md`.
 
-Il manifest v11 usa slot da `4x4` celle logiche (`8 px` world-space per cella):
+Il manifest v12 usa slot da `4x4` celle legacy (`8 px` world-space per cella):
 
 ```text
 obstacle_id -> footprint_slots -> footprint_tiles -> occupied_cells
-            -> collision/blocks -> asset_path + visual_height_tiles
+            -> collision shape/size/offset -> asset_path + visual_height_tiles
 ```
 
 `BiomeEnvironmentLayout.get_obstacle_record()` espone il record completo usato dal
 runtime: tipo, categoria, slot, celle, asset/variante, altezza e proprieta di
-collisione. `validate_obstacle_records()` fallisce se rettangolo logico, posizione,
-dimensione collisione o asset non coincidono. I segmenti `border` sono l'unica
+collisione. `validate_obstacle_records()` fallisce se rettangolo logico, anchor di
+placement, dimensione riservata o asset non coincidono e rifiuta ogni rotazione
+non zero. I segmenti `border` sono l'unica
 eccezione: possono avere lunghezza variabile per chiudere il perimetro.
 
 Le dimensioni piccole supportate e coperte da smoke sono `1x1`, `2x1`, `1x2`,
@@ -53,16 +57,25 @@ footprint esplicito e, dove serve, una sola facciata sud prospettica. Le vecchie
 risorse `AtlasTexture` non sono piu caricate. `reed_wall` resta uno SVG
 verticale `1x3` dedicato.
 
-`EnvironmentObject` usa sempre una base rettangolare pari al footprint
-bloccante e ancora lo sprite a `floor_center`/`bottom_center`. La dimensione
+`EnvironmentObject` non disegna piu una base rettangolare permanente sotto gli
+asset e ancora lo sprite a `floor_center`/`bottom_center`. La dimensione
 dello sprite e deterministica: footprint e `visual_height_tiles` del manifest
 producono la dimensione nativa, senza scale casuali del generatore. I container
-world-space restano in Y-sort con `z_index = 0` e posizione derivata dal centro
-del rettangolo logico; `sort_offset` ancora lo sprite al pavimento. Tetti e chiome
-possono cosi coprire gli attori dietro senza cambiare ordine durante il movimento.
+world-space restano in Y-sort con `z_index = 0`. Un nodo anchor separato viene
+posizionato sul punto di contatto a terra, mentre il body conserva il centro del
+rettangolo logico. Tetti e chiome possono cosi coprire gli attori dietro e passare
+sotto quelli davanti. Ostacoli, hazard e fall zone sono bloccati a rotazione `0`:
+movimento e mira degli attori restano analogici, ma gli asset rimangono dritti
+sugli assi H/V.
 
 `forest_tree` resta il riferimento per l'ostacolo singolo `3x3`: occupa nove
-slot di design e un footprint runtime `2x2` tile logici. `large_rock` e invece
+slot di design e riserva un footprint runtime `96x96`, ma usa un collider
+circolare di raggio `24 px` centrato sulle radici a offset `(0, 24)`. Anche
+`dead_tree` conserva il placement `48x96` e usa un cerchio di raggio `12 px`
+allo stesso offset verticale. Il loro anchor Y-sort coincide col centro del
+collider, non col centro della chioma.
+
+`large_rock` e invece
 scalabile: il void-first genera rettangoli quadrati da `3x3` a `5x5` tile logici e
 `RectilinearRockAreaMeshBuilder` trasforma ogni `rock_rect` in un plateau
 rialzato, cioe il void cliff specchiato verso l'alto. La corona cobble
@@ -74,10 +87,12 @@ dalla camera e non viene emessa. Le pareti sono disegnate per prime e la corona
 le copre, mascherando i triangoli alti come fa il void con il suo lip. Lo shading
 e per lato (fronte chiaro, est illuminato, ovest in ombra) con gradiente verso la
 base; non ci sono fenditure o lip disegnati a mano, quindi la superficie resta
-priva di linee procedurali. Il nodo `large_rock` non disegna uno sprite e non
-ridisegna la corona: mantiene solo collisione, blocker e overlay `F9`, mentre il
-tile layer produce l'unico top visibile. Entrambi bloccano movimento e
-proiettili sull'intera area dichiarata.
+priva di linee procedurali. Ogni nodo `large_rock` costruisce una sola mesh locale
+per il proprio `mesa_rect`, con collider e visual centrati sulla stessa posizione
+world-space anche per rettangoli di lato pari. Il tile layer conserva i report di
+geometria ma non disegna un secondo batch: la mesa partecipa allo Y-sort e puo
+coprire un attore a nord mentre resta dietro a un attore a sud. Movimento e
+proiettili restano bloccati sull'intera area dichiarata.
 
 Void/fall zone usano contratti `void_tiles`/cliff separati e non sono ostacoli
 solidi. Pareti, case, vegetazione e rocce usano invece `object_scenes` e dichiarano
@@ -106,14 +121,16 @@ obbligatori.
 
 ## Debug e verifica
 
-Durante una run survival, `F9` mostra/nasconde la base e il contorno dei footprint
-degli ostacoli attivi. `F8` continua a mostrare il riepilogo della generazione dei
+Durante una run survival, `F9` mostra/nasconde il collider fisico reale degli
+ostacoli attivi: cerchio alle radici per gli alberi, rettangolo per i blocker che
+lo dichiarano. L'overlay non viene disegnato nel gameplay normale. `F8` continua
+a mostrare il riepilogo della generazione dei
 biomi. Check manuale dopo modifiche a rendering o collisioni:
 
 - attraversare davanti e dietro una casa e un gruppo di alberi, verificando Y-sort
   stabile e nessun flicker;
-- provare tutti i lati del footprint: il blocco fisico deve iniziare e finire sulla
-  base disegnata;
+- provare tutti i lati del collider mostrato da `F9`: il blocco fisico deve
+  iniziare e finire sul contorno, senza quadrati invisibili sotto le chiome;
 - verificare almeno un esempio per ciascuna delle nove dimensioni piccole;
 - verificare che vegetazione densa, case, rocce, recinzioni e cliff siano
   distinguibili senza overlay;

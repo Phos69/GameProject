@@ -268,13 +268,17 @@ func _register_prop(
 	layout: BiomeEnvironmentLayout,
 	prop_id: StringName,
 	rect: Rect2i,
-	rotation_radians: float
+	_rotation_radians: float
 ) -> void:
 	layout.obstacle_rects.append(rect)
 	layout.obstacle_ids.append(prop_id)
-	layout.obstacle_positions.append(layout.rect_center_to_world(rect))
+	layout.obstacle_positions.append(
+		layout.obstacle_rect_center_to_world(rect, prop_id)
+	)
 	layout.obstacle_sizes.append(layout.rect_size_to_world(rect))
-	layout.obstacle_rotations.append(rotation_radians)
+	# Keep consuming the caller's RNG sample for seed compatibility, but the
+	# cardinal top-down contract locks every environment object to screen axes.
+	layout.obstacle_rotations.append(0.0)
 	layout.obstacle_shape_ids.append(&"rectangle")
 	layout.random_prop_rects.append(rect)
 	layout.random_prop_ids.append(prop_id)

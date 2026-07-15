@@ -56,6 +56,12 @@ Non sono consentiti nei contratti operativi o negli asset nuovi:
 - basi prospettiche incorporate sotto prop e personaggi;
 - facce laterali che spostano collisione o punto di ancoraggio.
 
+Il divieto riguarda deformazioni prospettiche implicite. Un oggetto puo invece
+dichiarare esplicitamente un collider piu piccolo e un offset rispetto al
+footprint di placement: e il caso degli alberi, che riservano spazio per la
+chioma ma collidono soltanto attorno alle radici. Collider e sort anchor devono
+condividere lo stesso punto a terra.
+
 ## Contratto asset
 
 Il manifest ambiente vive in
@@ -71,6 +77,12 @@ Il manifest ambiente vive in
 Gli ID semantici, i footprint, le collisioni e i pool procedurali restano
 stabili durante la sostituzione grafica. Il renderer non deduce collisioni
 dall'alpha dell'immagine.
+
+Oggetti, hazard e fall zone ambiente sono orientati a rotazione `0` sugli assi
+dello schermo.
+Il generatore puo continuare a consumare campioni RNG legacy per conservare la
+sequenza del seed, ma non li applica a sprite o collider. Flip puramente
+presentazionali non cambiano orientamento, anchor o collisione.
 
 Anchor ammessi per oggetti e attori:
 
@@ -126,7 +138,9 @@ Ogni modifica a rendering o asset richiede:
 
 ## Compatibilita
 
-Seed, coordinate logiche, stato esplorazione, ID asset, footprint e collisioni
-non cambiano per effetto della migrazione visiva. Le cache di rendering devono
-invece includere la versione del contratto e venire invalidate quando cambia
-la geometria visuale.
+Seed, celle logiche, stato esplorazione, ID asset e footprint restano stabili
+durante una sostituzione puramente grafica. Una revisione esplicita del contratto
+fisico, come il collider alle radici, deve incrementare firma layout, revisione
+generatore e formato snapshot: i dati precedenti vengono rigenerati invece di
+essere reinterpretati. Anche le cache di rendering vengono invalidate quando
+cambia la geometria visuale.

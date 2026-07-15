@@ -66,7 +66,7 @@ non diventano requisiti di bootstrap.
 ## Ambiente top-down cardinale (manifest)
 
 `environment/top_down/manifest.json` e la fonte di verita per gli oggetti
-ambientali del bioma (ostacoli, bordi, casse, cliff, passaggi). Il manifest v11
+ambientali del bioma (ostacoli, bordi, casse, cliff, passaggi). Il manifest v12
 contiene anche il contratto asset-driven per `tile_sets`, `tile_variants`,
 `terrain_tiles`, `edge_tiles`, `void_tiles`, `object_scenes`, `passage_tiles`,
 `biome_asset_sets` e `fallback_policy`.
@@ -74,11 +74,13 @@ contiene anche il contratto asset-driven per `tile_sets`, `tile_variants`,
 Il manifest dichiara `coordinate_system: orthogonal_top_down` e
 `volume_style: controlled_perspective`. Ground e route restano allineati agli
 assi; cliff, edifici e prop possono mostrare una facciata sud o sottili facce
-laterali, senza spostare footprint e collisioni. Il contratto completo vive in
+laterali. Il footprint di placement resta logico, mentre collider e sort anchor
+possono avere size/offset espliciti per aderire al contatto a terra. Il contratto completo vive in
 `docs/top_down_cardinal_contract.md`.
 
 Per ogni contratto il loader normalizza `asset_path`, `status`, `biome_ids`,
-`footprint_tiles`, `anchor`, `sort_offset`, `collision_shape`, flag
+`footprint_tiles`, `anchor`, `sort_offset`, `collision_shape`,
+`collision_size_ratio`, `collision_offset_ratio`, flag
 `blocks_*`, `source`, `license`, `attribution_key` e `fallback_path`.
 Gli status ammessi sono `final`, `base_complete`, `needs_polish`,
 `procedural_fallback`, `needs_asset` e `deprecated`.
@@ -228,14 +230,14 @@ solo il matte esterno dei cutout cliff; neve e ghiaccio interni restano opachi.
   dalla Milestone 10.5, passa gli `object_scenes` a
   `EnvironmentObjectFactory`.
 - `visual_scene` che punta a uno script `.gd` resta il fallback tecnico legacy.
-  Nel contratto v11 il fallback normale e dichiarato da `fallback_path` e
+  Nel contratto v12 il fallback normale e dichiarato da `fallback_path` e
   `fallback_policy`; nessun file esterno e obbligatorio per il bootstrap.
 - La suite asset verifica che ogni
   `obstacle_id` dei biomi sia descritto, che nessun oggetto richieda asset
   esterni e che collisione/footprint/Y-sort restino coerenti.
 - `tests/suites/assets/asset_fallback_test.gd` e
   `manifest_contract_test.gd` verificano che gli ID generati da ostacoli,
-  terrain, passaggi e fall zone abbiano un contratto v11 esplicito e che un
+  terrain, passaggi e fall zone abbiano un contratto v12 esplicito e che un
   asset pianificato ma assente resti sicuro tramite `needs_asset` e
   `fallback_path`.
 - Per convertire un oggetto in arte esterna: aggiungere la risorsa al nodo
@@ -245,7 +247,7 @@ solo il matte esterno dei cutout cliff; neve e ghiaccio interni restano opachi.
 ## Ambiente top-down cardinale (asset generati)
 
 `tools/generate_top_down_environment_assets.gd` genera SVG testuali interni
-dai contratti v11. Il tool lavora in modo conservativo:
+dai contratti v12. Il tool lavora in modo conservativo:
 
 ```text
 godot --headless --path . --script res://tools/generate_top_down_environment_assets.gd -- --dry-run
@@ -307,7 +309,7 @@ propri ID/section per debug, ma selezionano il core strada derivato da
 
 `game/modes/zombie/biome_tile_layer.gd` e il ground primario asset-driven per
 `TerrainGenerator`: cache-a tutte le 250.000 celle della regione `500x500`, le
-divide in chunk e usa il manifest v11 come contratto per gli asset. I vecchi
+divide in chunk e usa il manifest v12 come contratto per gli asset. I vecchi
 `BiomeRegionGround` e `BiomeTerrainPatch` restano fallback tecnici solo quando
 la modalita asset viene disattivata.
 
@@ -328,17 +330,21 @@ ostacoli/crate e tile forestali con transizioni.
 
 Gli ostacoli generati dal layout usano `EnvironmentObject` come scena
 base slot-based: uno `StaticBody2D` con collisione dal manifest, `Sprite2D`,
-ombra a terra, anchor al pavimento, `sort_offset` e footprint debug opzionale.
+ombra a terra, anchor al pavimento e collider debug opzionale. Un wrapper
+Y-sorted usa il punto di contatto a terra, mentre il body conserva il centro del
+placement; la rotazione runtime e sempre zero.
 `BiomeObstacle` resta il fallback tecnico quando il manifest dichiara un
 fallback procedurale esplicito.
 
-Le `large_rock` scalabili usano il render mode `tile_layer_rock_area`: il nodo
-oggetto conserva collisione e overlay `F9`, mentre `BiomeTileLayer` sostituisce
-lo sprite stirato con un plateau rialzato sull'intero `rock_rect` (il void cliff
-specchiato verso l'alto). La corona cobble e sollevata e rientra in un mesa, con
+Le `large_rock` scalabili usano il render mode `y_sorted_mesa`: ogni nodo
+oggetto conserva collisione, overlay `F9` e la propria mesh locale, mentre
+`BiomeTileLayer` non disegna un batch duplicato a profondita fissa. Il plateau
+occupa l'intero `mesa_rect` (il void cliff specchiato verso l'alto). La corona
+cobble e sollevata e rientra in un mesa, con
 tre pareti continue a colonne (fronte sud + due fianchi obliqui) che salgono dal
 prato fino al bordo. Visual e collisione derivano dallo stesso rettangolo; il top
-e disegnato una sola volta dal tile layer per evitare lastre duplicate o shiftate.
+e disegnato una sola volta dal nodo `large_rock` per evitare lastre duplicate o
+shiftate.
 Il top usa
 `edges/cliffs/textures/rock_plateau_top_generated.png`; le pareti usano
 `rock_cliff_face_upward_generated.png` con shading per lato. Non e una fascia
@@ -365,9 +371,10 @@ l'altezza visuale prevista dal manifest.
 `environment/top_down/concepts/` conserva soltanto il README di migrazione: le
 cinque tavole raster precedenti sono state rimosse e non sono sorgenti runtime.
 Anche le 23 risorse `AtlasTexture` `.tres` ritagliate da quelle tavole sono
-state eliminate. Il manifest v11 associa ciascuno dei 23 ID a uno SVG
-individuale in `objects/generated_props/`, senza modificare footprint, anchor,
-collisione o Y-sort. Il `reed_wall` resta uno SVG verticale `1x3` indipendente;
+state eliminate. Il manifest v12 associa ciascuno dei 23 ID a uno SVG
+individuale in `objects/generated_props/`. Il cutover degli SVG ha conservato i
+contratti fisici; il follow-up v12 rende espliciti l'anchor e il collider alle
+radici di `dead_tree`. Il `reed_wall` resta uno SVG verticale `1x3` indipendente;
 mapping e guardrail sono documentati nel README della cartella `concepts/`.
 
 ## Sostituzione Placeholder

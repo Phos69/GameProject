@@ -7,7 +7,7 @@ const DEFAULT_ZONE_SIZE := WorldGridConfig.BIOME_SIZE
 const PERIMETER_VISUAL_WALL: StringName = &"procedural_wall"
 const PERIMETER_VISUAL_RAISED_CLIFF: StringName = &"raised_cliff"
 const RAISED_CLIFF_HEIGHT_CELLS := WorldGridConfig.RAISED_CLIFF_HEIGHT_TILES
-const GENERATION_SIGNATURE_VERSION: int = 2
+const GENERATION_SIGNATURE_VERSION: int = 3
 
 # Runtime caches and diagnostic summaries are derived from the layout and may be
 # rebuilt without changing the generated world. Every other script property is
@@ -196,6 +196,21 @@ func logical_to_world(cell: Vector2i) -> Vector2:
 func rect_center_to_world(rect: Rect2i) -> Vector2:
 	return logical_to_world(rect.position + rect.size / 2)
 
+func rect_geometric_center_to_world(rect: Rect2i) -> Vector2:
+	return (
+		Vector2(rect.position)
+		+ Vector2(rect.size) * 0.5
+		- Vector2(zone_size) * 0.5
+	) * logical_tile_scale
+
+func obstacle_rect_center_to_world(rect: Rect2i, obstacle_id: StringName) -> Vector2:
+	# Raised mesa geometry is built from cell boundaries, so even-sized mesas
+	# need their half-cell geometric center. Other records retain the established
+	# logical-cell anchor used by hazards, routes, and legacy placement tests.
+	if obstacle_id == &"large_rock":
+		return rect_geometric_center_to_world(rect)
+	return rect_center_to_world(rect)
+
 func rect_size_to_world(rect: Rect2i) -> Vector2:
 	return Vector2(rect.size) * logical_tile_scale
 
@@ -211,6 +226,14 @@ func get_obstacle_record(
 	var obstacle_id := obstacle_ids[index]
 	var occupied_cells := obstacle_rects[index]
 	var asset_contract := source_manifest.get_object_asset_contract(obstacle_id)
+	var placement_size := rect_size_to_world(occupied_cells)
+	var collision_size := placement_size * source_manifest.get_collision_size_ratio(
+		obstacle_id
+	)
+	collision_size = Vector2(
+		maxf(collision_size.x, 4.0),
+		maxf(collision_size.y, 4.0)
+	)
 	return {
 		"type": obstacle_id,
 		"category": source_manifest.get_category(obstacle_id),
@@ -219,10 +242,21 @@ func get_obstacle_record(
 		"footprint_tiles": occupied_cells.size,
 		"occupied_cells": occupied_cells,
 		"logical_tile_scale": logical_tile_scale,
+		"placement_size": placement_size,
 		"asset_path": String(asset_contract.get("asset_path", "")),
 		"asset_variant": obstacle_id,
 		"visual_height_tiles": source_manifest.get_visual_height_tiles(obstacle_id),
 		"collision_shape": source_manifest.get_collision_shape(obstacle_id),
+		"collision_size": collision_size,
+		"collision_offset": (
+			placement_size
+			* source_manifest.get_collision_offset_ratio(obstacle_id)
+		),
+		"rotation_radians": (
+			obstacle_rotations[index]
+			if index < obstacle_rotations.size()
+			else 0.0
+		),
 		"blocks_movement": source_manifest.blocks_movement(obstacle_id),
 		"blocks_projectiles": source_manifest.blocks_projectiles(obstacle_id)
 	}
@@ -272,10 +306,17 @@ func validate_obstacle_records(
 					str(legacy_footprint)
 				]
 			)
-		if not obstacle_positions[index].is_equal_approx(rect_center_to_world(rect)):
+		if not obstacle_positions[index].is_equal_approx(
+			obstacle_rect_center_to_world(rect, obstacle_id)
+		):
 			failures.append("%s[%d]: world anchor differs from occupied cells" % [String(obstacle_id), index])
 		if not obstacle_sizes[index].is_equal_approx(rect_size_to_world(rect)):
-			failures.append("%s[%d]: collision size differs from occupied cells" % [String(obstacle_id), index])
+			failures.append("%s[%d]: placement size differs from occupied cells" % [String(obstacle_id), index])
+		if not is_zero_approx(obstacle_rotations[index]):
+			failures.append(
+				"%s[%d]: obstacle rotation must be zero in cardinal top-down"
+				% [String(obstacle_id), index]
+			)
 		var asset_path := String(
 			source_manifest.get_object_asset_contract(obstacle_id).get("asset_path", "")
 		)
@@ -450,7 +491,7 @@ func add_fall_zone_rect(rect: Rect2i, side: StringName = &"") -> void:
 func add_hazard_rect(
 	rect: Rect2i,
 	hazard_id: StringName,
-	rotation_radians: float = 0.0,
+	_rotation_radians: float = 0.0,
 	side: StringName = &""
 ) -> void:
 	var clipped := _clip_rect(rect)
@@ -460,7 +501,7 @@ func add_hazard_rect(
 	hazard_ids.append(hazard_id)
 	hazard_positions.append(rect_center_to_world(clipped))
 	hazard_sizes.append(rect_size_to_world(clipped))
-	hazard_rotations.append(rotation_radians)
+	hazard_rotations.append(0.0)
 	hazard_sides.append(side)
 	if hazard_id == &"deep_water":
 		water_rects.append(clipped)

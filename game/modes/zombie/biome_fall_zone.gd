@@ -33,7 +33,10 @@ func configure(
 	)
 	fall_side = _normalize_fall_side(next_fall_side)
 	visual_seed = next_visual_seed
-	rotation = rotation_radians
+	# Fall geometry and its collision must stay aligned with the cardinal grid.
+	rotation = 0.0
+	set_meta("requested_rotation_radians", rotation_radians)
+	set_meta("cardinal_rotation_locked", true)
 	edge_color = warning_color
 	collision_layer = 0
 	collision_mask = GameConstants.LAYER_BODIES

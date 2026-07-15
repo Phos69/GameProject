@@ -573,7 +573,9 @@ func _focus_position(cell: BiomeCell, focus: StringName) -> Vector2:
 				)
 				if mesa_cell != Vector2i(-1, -1):
 					return offset + layout.logical_to_world(mesa_cell)
-				return offset + layout.rect_center_to_world(layout.mesa_rects.front())
+				return offset + layout.rect_geometric_center_to_world(
+					layout.mesa_rects.front()
+				)
 		FOCUS_RANDOM_PROPS:
 			if not layout.random_prop_rects.is_empty():
 				var prop_cell := _find_walkable_cell_near_rect(

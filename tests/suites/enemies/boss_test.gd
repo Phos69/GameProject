@@ -72,6 +72,11 @@ func test_boss_wave_flow() -> void:
 	projectile_system.projectile_spawned.connect(_on_boss_projectile_spawned)
 
 	game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL)
+	# Starting a fresh world deliberately resets every player to its spawn point.
+	# Place this combat fixture afterwards so it never depends on an environment
+	# collider pushing player and boss apart.
+	player_one.global_position = Vector2(180.0, 0.0)
+	player_two.global_position = Vector2(-700.0, 300.0)
 	wave_manager.current_wave = 4
 	wave_manager.state_timer = 0.0
 	assert_true(await _wait_for_boss_wave(wave_manager), "fifth wave starts as a boss wave")
@@ -218,6 +223,9 @@ func test_boss_telegraph() -> void:
 	_clear_boss_projectiles()
 
 	var pattern_count_before_radial := _patterns.size()
+	# Keep subsequent projectile-shape assertions independent from a projectile
+	# legitimately reaching the target while the test advances physics frames.
+	player.global_position = Vector2(0.0, 1200.0)
 	assert_true(boss.start_attack_telegraph(&"radial_burst"), "radial burst can enter its telegraph state")
 	assert_true(_boss_projectiles.is_empty(), "radial warning appears before any damaging projectile")
 	assert_true(telegraph_visual != null and telegraph_visual.active_pattern == &"radial_burst", "radial telegraph exposes every outgoing lane")

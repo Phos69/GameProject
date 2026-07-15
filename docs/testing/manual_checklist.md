@@ -36,8 +36,9 @@ Per iterazioni mirate sulla mappa:
   curve e incroci collegano esclusivamente lati N/E/S/W.
 - Cliff, mesa ed edifici possono mostrare una superficie superiore e una
   facciata sud, ma non spostano il footprint logico.
-- Con `F9`, footprint e celle bloccate risultano rettangolari e coincidono con
-  collisioni e passaggi visibili.
+- Con `F9`, i collider reali coincidono con il blocco fisico: cerchi centrati
+  sulle radici per gli alberi e rettangoli allineati H/V per gli altri blocker.
+- Nessun quadrato opaco resta visibile sotto gli asset con `F9` disattivato.
 - Player, zombie, boss e prop non incorporano un piano sotto lo sprite.
 - Alberi e soggetti alti possono superare il bordo nord e restano ordinati via
   Y-sort sul loro `floor_center`/`bottom_center`.
@@ -50,6 +51,9 @@ Per iterazioni mirate sulla mappa:
   ritaglio da tavola concept o una base inclinata.
 - Auto, relitti, barriere e muri hanno asse principale H/V; gli edifici hanno
   tetto rettangolare e, al massimo, facciata sud controllata.
+- Ogni ostacolo, hazard e fall zone resta a rotazione zero. Attraversando a
+  nord/sud di alberi e mesa, l'attore passa rispettivamente dietro/davanti senza
+  salti di layer.
 - Verificare trasparenza, scala, contatto col terreno e assenza di aloni chiari
   a `1280x720` e `960x540`.
 - Un asset mancante attiva un fallback top-down con lo stesso footprint.

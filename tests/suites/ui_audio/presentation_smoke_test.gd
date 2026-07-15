@@ -110,6 +110,9 @@ func test_presentation_contracts() -> void:
 	var pickup_scene := load("res://game/drops/drop_pickup.tscn") as PackedScene
 	var pickup := pickup_scene.instantiate() as DropPickup
 	pickup.setup({"type": GameConstants.DROP_HEALTH, "amount": 10})
+	# Keep presentation fixtures out of the player's pickup radius. The test must
+	# not rely on an oversized environment collider moving the player away first.
+	pickup.position = Vector2(-360.0, -240.0)
 	scene.main.get_node("World/Pickups").add_child(pickup)
 	await wait_physics_frames(1)
 	var pickup_visual := pickup.get_node_or_null("Visual") as DropPickupVisual
@@ -120,6 +123,7 @@ func test_presentation_contracts() -> void:
 
 	var crate_scene := load("res://game/drops/supply_crate.tscn") as PackedScene
 	var crate := crate_scene.instantiate() as SupplyCrate
+	crate.position = Vector2(-480.0, -240.0)
 	scene.main.get_node("World/Pickups").add_child(crate)
 	await wait_physics_frames(1)
 	assert_true(crate.get_node_or_null("Visual") is SupplyCrateVisual, "supply crate uses a graphic visual without a label")

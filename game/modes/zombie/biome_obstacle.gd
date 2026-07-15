@@ -25,6 +25,8 @@ var footprint_slots: Vector2i = Vector2i(2, 2)
 var visual_height_tiles: int = 0
 var shape_id: StringName = &"rectangle"
 var collision_shape_id: StringName = &"rectangle"
+var collision_size: Vector2 = Vector2(48.0, 40.0)
+var collision_offset: Vector2 = Vector2.ZERO
 var blocks_movement: bool = true
 var projectile_blocking: bool = true
 var jumpable: bool = false
@@ -62,6 +64,12 @@ func configure(
 		maxf(next_size.x, 12.0),
 		maxf(next_size.y, 12.0)
 	)
+	collision_size = obstacle_size * manifest.get_collision_size_ratio(obstacle_id)
+	collision_size = Vector2(
+		maxf(collision_size.x, 4.0),
+		maxf(collision_size.y, 4.0)
+	)
+	collision_offset = obstacle_size * manifest.get_collision_offset_ratio(obstacle_id)
 	# The manifest collision_shape is authoritative; the layout shape only acts
 	# as a fallback for shapes the runtime does not build directly.
 	collision_shape_id = _resolve_collision_shape(
@@ -69,7 +77,12 @@ func configure(
 		next_shape_id
 	)
 	shape_id = collision_shape_id
-	rotation = rotation_radians
+	# Environment objects are locked to the screen-cardinal axes. Keep the
+	# requested value as diagnostics so stale cached layouts are visible without
+	# allowing them to rotate either the sprite or its physical collider.
+	rotation = 0.0
+	set_meta("requested_rotation_radians", rotation_radians)
+	set_meta("cardinal_rotation_locked", true)
 	primary_color = base_color
 	accent_color = detail_color
 	sort_offset = next_sort_offset
@@ -82,14 +95,20 @@ func configure(
 	# z_index 0 so obstacles take part in the World Y-sort together with zombies
 	# and pickups instead of flatly covering them.
 	z_index = 0
-	sort_anchor_y = clampf(sort_offset, 0.0, obstacle_size.y * 0.5 + 12.0)
+	sort_anchor_y = get_sort_anchor_offset().y
 	set_meta("sort_anchor_y", sort_anchor_y)
 	set_meta("footprint_tiles", footprint_tiles)
 	set_meta("legacy_footprint_tiles", legacy_footprint_tiles)
 	set_meta("footprint_slots", footprint_slots)
 	set_meta("visual_height_tiles", visual_height_tiles)
+	set_meta("collision_size", collision_size)
+	set_meta("collision_offset", collision_offset)
 	set_meta("footprint_contract_aligned", is_footprint_contract_aligned())
 	set_meta("zone_radius", get_clearance_radius())
+	# Mesh-backed obstacles use world-space UVs that can cross 0..1. Enabling
+	# repeat on the owning CanvasItem prevents mesa crowns/faces from stretching
+	# a clamped edge row into visible bands.
+	texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 	_rebuild_collision()
 	queue_redraw()
 
@@ -102,18 +121,19 @@ func _ready() -> void:
 func contains_global_position(world_position: Vector2) -> bool:
 	if collision_shape_id == &"open":
 		return false
-	var local_position := to_local(world_position)
+	var local_position := to_local(world_position) - collision_offset
 	if collision_shape_id == &"circle":
-		var radius := obstacle_size.x * 0.5
+		var radius := minf(collision_size.x, collision_size.y) * 0.5
 		return local_position.length_squared() <= radius * radius
-	var half_size := obstacle_size * 0.5
+	var half_size := collision_size * 0.5
 	return (
 		absf(local_position.x) <= half_size.x
 		and absf(local_position.y) <= half_size.y
 	)
 
 func get_clearance_radius() -> float:
-	return maxf(obstacle_size.x, obstacle_size.y) * 0.58
+	var half_extent := collision_size * 0.5 + collision_offset.abs()
+	return maxf(half_extent.x, half_extent.y) * 1.16
 
 func get_obstacle_category() -> StringName:
 	return obstacle_category
@@ -132,6 +152,22 @@ func get_sort_anchor_y() -> float:
 
 func get_visual_base_size() -> Vector2:
 	return obstacle_size
+
+func get_collision_size() -> Vector2:
+	return collision_size
+
+func get_collision_offset() -> Vector2:
+	return collision_offset
+
+func get_sort_anchor_offset() -> Vector2:
+	if obstacle_id == &"large_rock":
+		return Vector2.ZERO
+	if obstacle_category == &"tree":
+		return collision_offset
+	return Vector2(
+		0.0,
+		clampf(sort_offset, 0.0, obstacle_size.y * 0.5 + 12.0)
+	)
 
 func is_footprint_contract_aligned(
 	logical_tile_scale: float = WorldGridConfig.LOGICAL_TILE_SCALE
@@ -228,17 +264,18 @@ func _rebuild_collision() -> void:
 		collision_shape = CollisionShape2D.new()
 		collision_shape.name = "CollisionShape2D"
 		add_child(collision_shape)
+	collision_shape.position = collision_offset
 	if collision_shape_id == &"open":
 		collision_shape.disabled = true
 		return
 	collision_shape.disabled = false
 	if collision_shape_id == &"circle":
 		var circle := CircleShape2D.new()
-		circle.radius = obstacle_size.x * 0.5
+		circle.radius = minf(collision_size.x, collision_size.y) * 0.5
 		collision_shape.shape = circle
 		return
 	var rectangle := RectangleShape2D.new()
-	rectangle.size = obstacle_size
+	rectangle.size = collision_size
 	collision_shape.shape = rectangle
 
 func is_perimeter_wall() -> bool:
@@ -324,9 +361,13 @@ func _draw() -> void:
 
 func _draw_ground_shadow() -> void:
 	var shadow_y := clampf(sort_offset, 0.0, obstacle_size.y * 0.5 + 8.0)
+	var shadow_width := obstacle_size.x
+	if obstacle_category == &"tree":
+		shadow_y = collision_offset.y
+		shadow_width = collision_size.x
 	var radius := Vector2(
-		maxf(obstacle_size.x * 0.52, 10.0),
-		maxf(obstacle_size.x * 0.16, 5.0)
+		maxf(shadow_width * 0.52, 10.0),
+		maxf(shadow_width * 0.16, 5.0)
 	)
 	draw_colored_polygon(
 		_ellipse_points(Vector2(0.0, shadow_y), radius, 18),

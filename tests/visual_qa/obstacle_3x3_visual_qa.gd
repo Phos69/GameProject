@@ -3,52 +3,75 @@ extends SceneTree
 const OUTPUT_DIR := "res://build/qa/obstacle_3x3"
 const GAMEPLAY_FILE := "obstacle_3x3_gameplay.png"
 const FOOTPRINT_FILE := "obstacle_3x3_footprints.png"
-const FEATURE_IDS: Array[StringName] = [&"forest_tree"]
-const FEATURE_LABELS: Array[String] = ["ALBERO 3x3"]
+const FEATURE_IDS: Array[StringName] = [&"forest_tree", &"dead_tree"]
+const FEATURE_LABELS: Array[String] = ["FOREST TREE", "DEAD TREE"]
 const FEATURE_NOTES: Array[String] = [
-	"9 slot bloccanti | movimento + proiettili"
+	"placement 2x2 | radici diametro 48 | Y-sort radici",
+	"placement 1x2 | radici diametro 24 | Y-sort radici",
 ]
-const FEATURE_CENTERS: Array[Vector2] = [Vector2(640.0, 455.0)]
-const FEATURE_WORLD_SIZES: Array[Vector2] = [Vector2(96.0, 96.0)]
+const FEATURE_CENTERS: Array[Vector2] = [Vector2(350.0, 455.0), Vector2(930.0, 455.0)]
+const FEATURE_WORLD_SIZES: Array[Vector2] = [Vector2(96.0, 96.0), Vector2(48.0, 96.0)]
+const PANEL_RECTS: Array[Rect2] = [
+	Rect2(60.0, 92.0, 560.0, 552.0),
+	Rect2(660.0, 92.0, 560.0, 552.0),
+]
 
 var failures := PackedStringArray()
 
 class QaBackdrop extends Node2D:
 	var debug_footprints := false
+	var feature_centers: Array[Vector2] = []
+	var feature_sizes: Array[Vector2] = []
+	var panel_rects: Array[Rect2] = []
 
 	func _draw() -> void:
 		draw_rect(Rect2(Vector2.ZERO, Vector2(1280.0, 720.0)), Color("10171c"))
-		_draw_panel(Rect2(344.0, 92.0, 592.0, 552.0))
-		_draw_grid(Vector2(640.0, 455.0))
+		for index in range(feature_centers.size()):
+			_draw_panel(panel_rects[index])
+			_draw_grid(feature_centers[index], feature_sizes[index])
 
 	func _draw_panel(rect: Rect2) -> void:
 		draw_rect(rect, Color("18242a"), true)
 		draw_rect(rect, Color("61735e"), false, 2.0)
 
-	func _draw_grid(center: Vector2) -> void:
-		for row in range(-2, 3):
-			for column in range(-2, 3):
-				var tile_center := center + Vector2(
-					float(column - row) * 16.0,
-					float(column + row) * 8.0
-				)
-				var in_footprint: bool = abs(column) <= 1 and abs(row) <= 1
+	func _draw_grid(center: Vector2, world_size: Vector2) -> void:
+		var cell_size := 48.0
+		var footprint_cells := Vector2i(
+			roundi(world_size.x / cell_size),
+			roundi(world_size.y / cell_size)
+		)
+		var grid_origin := center - Vector2(
+			(3.0 if footprint_cells.x % 2 == 0 else 2.5) * cell_size,
+			(3.0 if footprint_cells.y % 2 == 0 else 2.5) * cell_size
+		)
+		var placement_rect := Rect2(center - world_size * 0.5, world_size)
+		for row in range(6):
+			for column in range(6):
+				var cell_position := grid_origin + Vector2(column, row) * cell_size
+				var cell_rect := Rect2(cell_position, Vector2.ONE * cell_size)
+				var in_footprint := placement_rect.has_point(cell_rect.get_center())
 				var fill: Color = Color("344b38") if not in_footprint else Color("485a36")
 				if debug_footprints and in_footprint:
-					fill = Color(0.78, 0.18, 0.13, 0.42)
-				var points := PackedVector2Array([
-					tile_center + Vector2(0.0, -8.0),
-					tile_center + Vector2(16.0, 0.0),
-					tile_center + Vector2(0.0, 8.0),
-					tile_center + Vector2(-16.0, 0.0)
-				])
-				draw_colored_polygon(points, fill)
-				var outline := points.duplicate()
-				outline.append(points[0])
-				draw_polyline(outline, Color(0.58, 0.69, 0.49, 0.72), 1.0, true)
-				if debug_footprints and in_footprint:
-					draw_line(tile_center + Vector2(-4.0, -4.0), tile_center + Vector2(4.0, 4.0), Color("ffb15c"), 1.5)
-					draw_line(tile_center + Vector2(4.0, -4.0), tile_center + Vector2(-4.0, 4.0), Color("ffb15c"), 1.5)
+					fill = Color(0.78, 0.48, 0.13, 0.28)
+				draw_rect(cell_rect, fill, true)
+				draw_rect(cell_rect, Color(0.58, 0.69, 0.49, 0.72), false, 1.0)
+		draw_line(center + Vector2(-150.0, 0.0), center + Vector2(150.0, 0.0), Color("a8c59a"), 1.5)
+		draw_line(center + Vector2(0.0, -150.0), center + Vector2(0.0, 150.0), Color("a8c59a"), 1.5)
+
+class QaActor extends Node2D:
+	var body_color := Color.WHITE
+
+	func _draw() -> void:
+		draw_circle(Vector2(0.0, -30.0), 13.0, body_color.lightened(0.12))
+		draw_rect(Rect2(-12.0, -29.0, 24.0, 29.0), body_color, true)
+		draw_ellipse_shadow()
+
+	func draw_ellipse_shadow() -> void:
+		var points := PackedVector2Array()
+		for index in range(16):
+			var angle := TAU * float(index) / 16.0
+			points.append(Vector2(cos(angle) * 15.0, sin(angle) * 5.0))
+		draw_colored_polygon(points, Color(0.0, 0.0, 0.0, 0.35))
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -68,8 +91,15 @@ func _run() -> void:
 	var backdrop := QaBackdrop.new()
 	backdrop.name = "Backdrop"
 	backdrop.z_index = -10
+	backdrop.feature_centers.assign(FEATURE_CENTERS)
+	backdrop.feature_sizes.assign(FEATURE_WORLD_SIZES)
+	backdrop.panel_rects.assign(PANEL_RECTS)
 	scene_root.add_child(backdrop)
 	_add_labels(scene_root)
+	var world := Node2D.new()
+	world.name = "YSortedWorld"
+	world.y_sort_enabled = true
+	scene_root.add_child(world)
 
 	var system := ObstacleSystem.new()
 	system.name = "ObstacleSystem"
@@ -91,9 +121,27 @@ func _run() -> void:
 		if obstacle == null:
 			continue
 		obstacle.name = String(obstacle_id).to_pascal_case()
-		obstacle.position = FEATURE_CENTERS[index]
-		scene_root.add_child(obstacle)
+		ObstacleSystem.attach_obstacle_at_layout_center(
+			world,
+			obstacle,
+			FEATURE_CENTERS[index]
+		)
 		obstacles.append(obstacle)
+
+	for index in range(FEATURE_CENTERS.size()):
+		var center := FEATURE_CENTERS[index]
+		_add_actor(
+			world,
+			center + Vector2(0.0, 15.0),
+			Color("4e8cc9"),
+			"BehindActor%d" % index
+		)
+		_add_actor(
+			world,
+			center + Vector2(0.0, 55.0),
+			Color("e39b47"),
+			"FrontActor%d" % index
+		)
 
 	await process_frame
 	await process_frame
@@ -111,6 +159,13 @@ func _run() -> void:
 		_expect(obstacle.has_debug_footprint(), "%s exposes its collision overlay" % obstacle.name)
 	_finish()
 
+func _add_actor(parent: Node2D, world_position: Vector2, color: Color, actor_name: String) -> void:
+	var actor := QaActor.new()
+	actor.name = actor_name
+	actor.position = world_position
+	actor.body_color = color
+	parent.add_child(actor)
+
 func _add_labels(scene_root: Node2D) -> void:
 	var title := _make_label(
 		"OSTACOLI TOP-DOWN - VALIDAZIONE 3x3",
@@ -122,10 +177,11 @@ func _add_labels(scene_root: Node2D) -> void:
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	scene_root.add_child(title)
 	for index in range(FEATURE_LABELS.size()):
+		var panel := PANEL_RECTS[index]
 		var label := _make_label(
 			FEATURE_LABELS[index],
-			Vector2(344.0, 110.0),
-			Vector2(592.0, 34.0),
+			panel.position + Vector2(0.0, 18.0),
+			Vector2(panel.size.x, 34.0),
 			20,
 			Color("e8f0d2")
 		)
@@ -133,8 +189,8 @@ func _add_labels(scene_root: Node2D) -> void:
 		scene_root.add_child(label)
 		var note := _make_label(
 			FEATURE_NOTES[index],
-			Vector2(344.0, 596.0),
-			Vector2(592.0, 28.0),
+			Vector2(panel.position.x, panel.end.y - 48.0),
+			Vector2(panel.size.x, 28.0),
 			15,
 			Color("9fb398")
 		)

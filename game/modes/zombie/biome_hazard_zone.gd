@@ -22,7 +22,11 @@ func configure(
 		maxf(next_size.x, 24.0),
 		maxf(next_size.y, 20.0)
 	)
-	rotation = rotation_radians
+	# Environment hazards share the cardinal H/V contract with solid obstacles.
+	# Keep stale/generated angles only as diagnostics; never rotate art or physics.
+	rotation = 0.0
+	set_meta("requested_rotation_radians", rotation_radians)
+	set_meta("cardinal_rotation_locked", true)
 	hazard_color = next_color
 	damage_per_tick = maxi(int(config.get("damage", 0)), 0)
 	tick_interval = maxf(float(config.get("tick_interval", 1.0)), 0.1)

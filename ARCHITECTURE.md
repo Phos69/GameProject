@@ -217,7 +217,7 @@ definito in `docs/top_down_cardinal_contract.md`.
   uno snapshot direttamente fuori dal lifecycle di `BiomeManager` deve chiamare
   `WorldDataCache.release_world_data()` quando ha finito, mentre cache e
   generatore lo fanno automaticamente su clear/evizione/teardown. La chiave
-  include `GENERATOR_REVISION = 2`; gli snapshot mondo usano il formato v5 e
+  include `GENERATOR_REVISION = 3`; gli snapshot mondo usano il formato v6 e
   vengono accettati solo se la firma canonica profonda del layout rigenerato
   coincide con quella persistita.
 - `WorldGridConfig`: centralizza la scala cartesiana e le conversioni legacy. Un tile logico vale `6x6` celle legacy, usa scala world `48.0` e mantiene gli asset alla loro scala legacy `8.0`.
@@ -230,10 +230,10 @@ definito in `docs/top_down_cardinal_contract.md`.
   ostacoli, casse, hazard, summary deterministico e report di validazione.
 - `EnvironmentAssetManifest`: legge `assets/environment/top_down/manifest.json`
   come inventario di ostacoli, draw mode oggetto, border tematici, fall zone
-  procedurali, tag terrain generati e contratto asset v11 (`tile_sets`,
+  procedurali, tag terrain generati e contratto asset v12 (`tile_sets`,
   `tile_variants`, `terrain_tiles`, `edge_tiles`, `void_tiles`, `object_scenes`,
   `passage_tiles`, `biome_asset_sets`, `fallback_policy`). Il loader normalizza
-  path, status, footprint, anchor, collisione, blocchi e attribution senza
+  path, status, footprint, anchor, collision shape/size/offset, blocchi e attribution senza
   rendere obbligatori asset esterni.
 - `ObstacleLayoutGenerator`: orchestra una sola pipeline void-first per i cinque
   biomi. Scava passaggi, strade principali da 7 tile logici e sentieri medi da
@@ -285,7 +285,7 @@ definito in `docs/top_down_cardinal_contract.md`.
   `mass_rects`, prop casuali con ID, bridge, water/deep-water rects, ostacoli
   fisici, casse e hazard per un bioma, con classificazione completa del `75x75`
   e `generation_summary` per debug. `get_generation_signature()` produce la
-  firma canonica `layout-v2` di tutti i campi serializzabili; `rock_rects` resta
+  firma canonica `layout-v3` di tutti i campi serializzabili; `rock_rects` resta
   solo mirror legacy delle mesa della Pianura Infetta.
 - `WaveDirector`: composizione wave e scaling basati sul bioma corrente.
 - `ZombieSpawner`: spawn dai bordi della camera con distanza minima dai player,
@@ -307,7 +307,7 @@ definito in `docs/top_down_cardinal_contract.md`.
   manifest e istanzia `EnvironmentObject` quando esiste un asset,
   lasciando `BiomeObstacle` come fallback tecnico esplicito.
 - `EnvironmentObject`: scena base `StaticBody2D` per oggetti
-  slot-based con `Sprite2D`, ombra, anchor/footprint debug opzionale,
+  slot-based con `Sprite2D`, ombra, collider debug opzionale,
   collisione/layer/sort dal manifest e hook futuri per overlay danneggiato.
   Ventitre prop puntano a 23 SVG cardinali individuali in
   `objects/generated_props/`; il manifest li registra come
@@ -315,8 +315,8 @@ definito in `docs/top_down_cardinal_contract.md`.
   footprint o collisioni. Le precedenti risorse `AtlasTexture` dei prop non
   fanno piu parte del runtime. `reed_wall` usa il raster SVG nativo stretto e
   verticale `56x136`, evitando che il loader canonico `160x120` lo riduca
-  dentro la canvas; la scelta resta presentazionale e non altera il contratto
-  fisico `1x3`.
+  dentro la canvas; `dead_tree` conserva analogamente la canvas nativa verticale.
+  La scelta resta presentazionale e non altera il footprint di placement.
 - `BiomeObstacle`: fallback compatibile che conserva draw mode procedurali
   data-driven dal manifest per distinguere gli ostacoli dei biomi senza cambiare
   collisioni o placement.
@@ -708,7 +708,7 @@ multi-bioma.
 - Cambi audio e visuali attivano lo stesso autosave differito.
 - Cambi della regione corrente o dello stato esplorazione possono attivare autosave quando l'auto-persistenza e abilitata.
 - `PersistentWorldState` serializza seed, firma mondo, regione corrente, posizione party e snapshot esplorazione senza salvare il layout completo rigenerabile.
-- `WorldSnapshotCodec` formato v5 salva anche la firma `layout-v2`; snapshot di
+- `WorldSnapshotCodec` formato v6 salva anche la firma `layout-v3`; snapshot di
   formato precedente o con layout alterato vengono rifiutati invece di
   contaminare cache e stato esplorazione.
 - File assente, root non valida o versione non supportata non modificano lo stato runtime.
@@ -971,8 +971,9 @@ multi-bioma.
   Le `mesa_rects` vengono raggruppate per `mesa_profile_ids`: `forest`,
   `urban_ruins`, `volcanic`, `frozen_tundra` e `swamp`. Il top usa il ruolo
   `ground` del tema e le pareti il ruolo `cliff_face`; la Pianura conserva i
-  raster forestali dedicati. La geometria resta condivisa e viene emessa una
-  sola volta dal tile layer.
+  raster forestali dedicati. Il tile layer risolve e valida gli stessi profili,
+  ma il volume visibile viene emesso una volta per ciascun nodo `large_rock`
+  Y-sorted, non come batch di terreno.
   `TopDownCliffMeshBuilder` mantiene le 14 geometrie neighbor-aware per il
   fallback non forestale. Nel forestale `FallZoneBoundaryRuns` calcola il
   contorno esposto dell'unione di tutti i `fall_zone_rects`: lati condivisi fra
@@ -1014,11 +1015,10 @@ multi-bioma.
 - Gli ostacoli appartengono anche ai gruppi `environment_obstacles` e `spawn_blockers`.
 - `ObstacleSystem` usa `EnvironmentObjectFactory` per preferire
   `EnvironmentObject`: normalmente uno sprite asset-backed costruito
-  dal contratto `object_scenes`, ancorato al pavimento e ordinato con
-  `sort_offset`. Il render mode legacy `tile_layer_rock_area`, alias semantico
-  delle mesa, rende il nodo `large_rock` collision-only e delega il visual a
-  `BiomeTileLayer` tramite
-  `RectilinearRockAreaMeshBuilder`. `BiomeObstacle` resta adapter/fallback
+  dal contratto `object_scenes`, ancorato al pavimento e ordinato tramite un
+  nodo sort anchor. Il render mode `y_sorted_mesa` rende corona e facce sul
+  singolo nodo `large_rock` tramite `RectilinearRockAreaMeshBuilder`; il vecchio
+  ID `tile_layer_rock_area` resta solo un alias di lettura. `BiomeObstacle` resta adapter/fallback
   quando il contratto dichiara esplicitamente un fallback procedurale.
 - Il loader accetta SVG, texture raster importate e, come estensione generica,
   risorse `Texture2D` `.tres` quali `AtlasTexture`; nessun prop attivo usa
@@ -1035,9 +1035,9 @@ multi-bioma.
   per prime e la corona le copre, mascherando i triangoli alti. Il top usa
   `rock_plateau_top_generated.png`, le pareti `rock_cliff_face_upward_generated.png`
   con shading per lato e gradiente verso la base; nessuna fissure/lip disegnata a
-  mano, quindi la superficie resta priva di linee procedurali. La corona viene
-  disegnata una sola volta dal tile layer; il nodo oggetto non aggiunge un cap
-  Y-sorted duplicato.
+  mano, quindi la superficie resta priva di linee procedurali. Corona e facce
+  vengono disegnate una sola volta dal nodo oggetto Y-sorted; il tile layer non
+  aggiunge un cap duplicato a `z_index` fisso.
 - `EnvironmentObject.is_world_position_behind_cliff()` classifica una
   posizione come dietro quando ricade nella larghezza della roccia e ha Y
   minore della linea centrale; Y maggiore/uguale significa davanti. Posizioni
@@ -1071,7 +1071,7 @@ multi-bioma.
   rocciose; se uno dei raster manca torna al muro procedurale. Il nodo ostacolo
   resta proprietario di collision layer, shape, footprint, Y-sort, metadata e
   gruppi runtime: il cliff arena non usa `BiomeFallZone` e non applica caduta.
-- Il manifest v11 vieta fallback impliciti: ogni ID generato da ostacoli,
+- Il manifest v12 vieta fallback impliciti: ogni ID generato da ostacoli,
   terrain, passaggi, bordi o fall zone deve avere un contratto asset-driven con
   `asset_path`, `status`, `biome_ids`, `anchor`, footprint/collisione, sorgente,
   licenza, attribution e `fallback_path` quando l'asset e ancora assente.
@@ -1084,23 +1084,32 @@ multi-bioma.
   insieme ai contratti della suite asset.
 - `BiomeObstacle` costruisce la collisione dal manifest: `collision_shape`
   (`rectangle`/`circle`/`open`) guida lo shape runtime e `contains_global_position`,
+  `collision_size_ratio` e `collision_offset_ratio` separano il collider dal
+  footprint di placement,
   `blocks_movement` e `blocks_projectiles` guidano i bit di `collision_layer`,
-  `is_jumpable_gap_anchor` espone `is_jumpable_obstacle()`. La stessa footprint
-  serve collisione fisica, spawn blocker e validazione casse.
-- Il contratto v11 conserva gli slot legacy convertiti in tile logici:
+  `is_jumpable_gap_anchor` espone `is_jumpable_obstacle()`. Le query spaziali
+  indicizzano la vera shape e il suo offset; spawn e casse conservano la
+  clearance definita dal blocker.
+- Il contratto v12 conserva gli slot legacy convertiti in tile logici:
   `footprint_slots` resta l'inventario di design, `footprint_tiles` del manifest
   conserva la misura legacy e `BiomeEnvironmentLayout.obstacle_rects` conserva
   le celle logiche realmente occupate. `ObstacleLayoutGenerator` normalizza ogni
   oggetto non-border al footprint convertito prima delle query di spazio;
-  posizione, collisione e base visiva derivano poi dallo stesso rettangolo.
+  posizione e spazio riservato derivano dallo stesso rettangolo. Ogni ostacolo
+  registra rotazione zero; lo stesso lock vale per hazard e fall zone. Un valore
+  legacy non zero viene conservato solo come metadata diagnostico e non raggiunge
+  visual o collider. `MapValidationSystem` rifiuta record ambiente non cardinali.
 - `forest_tree` dichiara slot `3x3` (`12x12` celle legacy, `2x2` tile logici).
   Le `large_rock` void-first rappresentano le mesa e sono quadrati scalabili da
   `3x3` a `5x5` tile logici: `mesa_rect`, size collisione e sorgente del visual
   coincidono; la
   corona sollevata si estende oltre il footprint solo come overhang
   presentazionale per l'occlusione.
-  Alberi e rocce bloccano movimento e proiettili sull'intero rettangolo, non
-  sull'estensione grafica.
+  Le rocce bloccano movimento e proiettili sull'intero rettangolo. `forest_tree`
+  usa invece un cerchio di raggio `24 px` a offset `(0, 24)` dentro il placement
+  `96x96`; `dead_tree` usa raggio `12 px` allo stesso offset dentro `48x96`.
+  Il sort anchor coincide col centro delle radici e nessuna base quadrata viene
+  disegnata sotto gli asset.
 - `BiomeEnvironmentLayout.get_obstacle_record()` espone tipo, categoria,
   footprint, celle, asset/variante, altezza e blocchi. La validazione rifiuta
   mismatch o ostacoli solidi privi di asset; `ObstacleSystem` propaga il record

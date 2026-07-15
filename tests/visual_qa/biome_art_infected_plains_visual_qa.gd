@@ -127,7 +127,7 @@ func _add_tree_cluster(
 	var tree_size := Vector2(
 		float(footprint.x),
 		float(footprint.y)
-	) * layout.logical_tile_scale
+	) * WorldGridConfig.LEGACY_TILE_SCALE
 	var tree_cells: Array[Vector2i] = [
 		Vector2i(12, 10),
 		Vector2i(18, 9),
@@ -147,8 +147,11 @@ func _add_tree_cluster(
 		if tree == null:
 			continue
 		tree.name = "ForestTreeQa%d" % index
-		scene_root.add_child(tree)
-		tree.global_position = LAYER_ORIGIN + layout.logical_to_world(tree_cells[index])
+		ObstacleSystem.attach_obstacle_at_layout_center(
+			scene_root,
+			tree,
+			LAYER_ORIGIN + layout.logical_to_world(tree_cells[index])
+		)
 		if tree.has_method("has_asset_visual"):
 			_expect(bool(tree.call("has_asset_visual")), "forest_tree QA instance %d uses asset visual" % index)
 

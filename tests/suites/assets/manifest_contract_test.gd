@@ -248,7 +248,7 @@ func test_scene_y_sort() -> void:
 	if packed == null:
 		return
 	var state := packed.get_state()
-	var required := {"World": false, "Enemies": false, "Pickups": false, "EnvironmentProps": false}
+	var required := {"World": false, "Players": false, "Enemies": false, "Bosses": false, "Pickups": false, "EnvironmentProps": false}
 	for node_index in range(state.get_node_count()):
 		var node_name := String(state.get_node_name(node_index))
 		if not required.has(node_name):
@@ -267,7 +267,7 @@ func _assert_contract_shape(contract: Dictionary, label: String) -> void:
 	if contract.is_empty():
 		return
 	for key in ["asset_path", "status", "biome_ids", "footprint_tiles", "anchor", "sort_offset",
-			"collision_shape", "blocks_movement", "blocks_projectiles", "source", "license", "attribution_key"]:
+			"collision_shape", "collision_size_ratio", "collision_offset_ratio", "blocks_movement", "blocks_projectiles", "source", "license", "attribution_key"]:
 		assert_true(contract.has(key), "%s declares %s" % [label, key])
 	assert_false(String(contract.get("asset_path", "")).is_empty(), "%s asset_path is explicit" % label)
 	assert_false(String(contract.get("source", "")).is_empty(), "%s source is explicit" % label)

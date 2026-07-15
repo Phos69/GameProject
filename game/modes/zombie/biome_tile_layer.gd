@@ -502,6 +502,11 @@ func has_mesa_area_art() -> bool:
 			return true
 	return false
 
+func renders_mesa_area_batch() -> bool:
+	# Geometry reports remain available for validation, but the terrain canvas no
+	# longer draws this batch. Runtime mesa visuals belong to Y-sorted blockers.
+	return false
+
 func get_rock_area_counts() -> Dictionary:
 	return get_mesa_area_counts()
 
@@ -684,46 +689,9 @@ func _draw() -> void:
 	# BiomeTileChunk figli: _rebuild_ground_geometry() attiva sempre la modalita'
 	# a chunk. Qui restano solo le feature di livello regione (rocce, cliff,
 	# fessure), che non vengono spezzate sui confini dei chunk.
-	if has_mesa_area_art():
-		# Each theme owns one region-level mesh. The collision-only `large_rock`
-		# instances never draw a sprite, so these faces and this crown remain the
-		# single visual authority and no cap is duplicated at obstacle Y-sort time.
-		var profile_ids: Array = _mesa_area_mesh_builders.keys()
-		profile_ids.sort()
-		for profile_id_value in profile_ids:
-			var profile_id := StringName(profile_id_value)
-			var builder := (
-				_mesa_area_mesh_builders.get(profile_id)
-				as RectilinearRockAreaMeshBuilder
-			)
-			var art := _mesa_art_by_profile.get(profile_id, {}) as Dictionary
-			var top_texture := art.get(&"top") as Texture2D
-			var face_texture := art.get(&"face") as Texture2D
-			if (
-				builder == null
-				or not builder.has_geometry()
-				or top_texture == null
-				or face_texture == null
-			):
-				continue
-			var face_mesh := builder.get_face_mesh()
-			if face_mesh != null:
-				draw_mesh(
-					face_mesh,
-					face_texture,
-					Transform2D.IDENTITY,
-					Color(1.12, 1.12, 1.12, 1.0)
-					if profile_id == FOREST_MESA_PROFILE_ID
-					else Color.WHITE
-				)
-			draw_mesh(
-				builder.top_mesh,
-				top_texture,
-				Transform2D.IDENTITY,
-				Color(1.06, 1.06, 1.06, 1.0)
-				if profile_id == FOREST_MESA_PROFILE_ID
-				else Color.WHITE
-			)
+	# Mesa volumes are rendered by their individual `large_rock` obstacle nodes.
+	# Keeping them out of this z=-9 terrain layer lets the environment Y-sort put
+	# one actor behind a mesa while another remains in front of it.
 	if (
 		has_forest_cliff_border_art()
 		and _rectilinear_cliff_face_mesh_builder != null

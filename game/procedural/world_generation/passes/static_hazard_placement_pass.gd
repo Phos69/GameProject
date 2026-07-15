@@ -36,11 +36,10 @@ func place(
 			rect = _scan_rect(layout, size)
 		if rect.size.x <= 0 or rect.size.y <= 0:
 			continue
-		layout.add_hazard_rect(
-			rect,
-			hazard_id,
-			rng.randf_range(-0.16, 0.16)
-		)
+		# Consume the historical angle sample so later RNG-driven placement stays
+		# seed-compatible; the layout cardinal lock stores rotation zero.
+		var legacy_rotation_sample := rng.randf_range(-0.16, 0.16)
+		layout.add_hazard_rect(rect, hazard_id, legacy_rotation_sample)
 		placed += 1
 	return placed
 

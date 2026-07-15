@@ -143,7 +143,9 @@ func _register_mesa(
 	# Complete runtime obstacle record; `large_rock` is collision-only for mesas.
 	layout.obstacle_rects.append(rect)
 	layout.obstacle_ids.append(&"large_rock")
-	layout.obstacle_positions.append(layout.rect_center_to_world(rect))
+	layout.obstacle_positions.append(
+		layout.obstacle_rect_center_to_world(rect, &"large_rock")
+	)
 	layout.obstacle_sizes.append(layout.rect_size_to_world(rect))
 	layout.obstacle_rotations.append(0.0)
 	layout.obstacle_shape_ids.append(&"rectangle")
