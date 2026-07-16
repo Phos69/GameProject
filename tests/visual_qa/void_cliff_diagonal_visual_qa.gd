@@ -57,7 +57,7 @@ func _run() -> void:
 	var counts := layer.get_forest_cliff_border_counts()
 	_expect(
 		int(counts.get("terrain_transition_corners", 0)) == 8,
-		"six external corners and two diagonal quarters build rounded dirt joins"
+		"six external corners and two recessed diagonal sectors build rounded joins"
 	)
 	var image := root.get_texture().get_image()
 	_expect(

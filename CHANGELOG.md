@@ -20,8 +20,9 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
   di tutte le mesa tematizzate. I corner dirt sono ora rotondi ovunque: la
   maschera delle strade usa distanza euclidea da segmenti indicizzati per cella,
   mentre mesa e fall zone generano raccordi radiali a quarto di cerchio.
-  I vertici checkerboard, dove due void si toccano solo in diagonale, ricevono
-  due quarti opposti invece di lasciare quattro fasce dirt a forma di croce.
+  Nei vertici checkerboard, dove due void si toccano solo in diagonale, le
+  quattro run vengono accorciate e raccordate da due settori anulari incassati:
+  flat rock e dirt non convergono piu in una croce.
   Collisione e regola di caduta restano invariate.
 - Nella Pianura Infetta il tratto roccioso piatto prima del void riusa ora
   `rock_plateau_top_generated.png`, la stessa superficie top delle mesa, con UV

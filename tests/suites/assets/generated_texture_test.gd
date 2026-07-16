@@ -1840,24 +1840,51 @@ func test_diagonal_fall_corners_receive_rounded_dirt_joins() -> void:
 		else:
 			rounded_quadrants["south_east"] += 1
 	assert_gt(
-		int(rounded_quadrants["north_east"]),
-		0,
-		"the north-east terrain quadrant receives a radial dirt join"
-	)
-	assert_gt(
-		int(rounded_quadrants["south_west"]),
-		0,
-		"the south-west terrain quadrant receives a radial dirt join"
-	)
-	assert_eq(
 		int(rounded_quadrants["north_west"]),
 		0,
-		"the north-west void quadrant receives no diagonal dirt fan"
+		"the north-west void corner receives a recessed radial dirt join"
 	)
-	assert_eq(
+	assert_gt(
 		int(rounded_quadrants["south_east"]),
 		0,
-		"the south-east void quadrant receives no diagonal dirt fan"
+		"the south-east void corner receives a recessed radial dirt join"
+	)
+	assert_eq(
+		int(rounded_quadrants["north_east"]),
+		0,
+		"the north-east terrain corner receives no redundant dirt fan"
+	)
+	assert_eq(
+		int(rounded_quadrants["south_west"]),
+		0,
+		"the south-west terrain corner receives no redundant dirt fan"
+	)
+
+	var compact_builder := TopDownCliffBorderMeshBuilder.new()
+	compact_builder.build(
+		[
+			Rect2i(Vector2i(2, 2), Vector2i.ONE),
+			Rect2i(Vector2i(3, 3), Vector2i.ONE),
+		],
+		sides,
+		Vector2i(8, 8),
+		48.0
+	)
+	assert_eq(
+		compact_builder.terrain_transition_corner_count,
+		8,
+		"one-tile diagonal voids retain both bounded checkerboard joins"
+	)
+	var compact_arrays := compact_builder.terrain_transition_mesh.surface_get_arrays(0)
+	var compact_vertices := compact_arrays[Mesh.ARRAY_VERTEX] as PackedVector2Array
+	var compact_vertices_are_finite := true
+	for vertex in compact_vertices:
+		compact_vertices_are_finite = (
+			compact_vertices_are_finite and vertex.is_finite()
+		)
+	assert_true(
+		compact_vertices_are_finite,
+		"short checkerboard runs clamp their corner radius to finite geometry"
 	)
 
 func test_projected_corner_seams_cover_l_t_cross_and_mirrors() -> void:

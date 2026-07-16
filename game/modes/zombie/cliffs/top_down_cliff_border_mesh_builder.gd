@@ -38,6 +38,7 @@ const TRANSITION_INNER_FEATHER_WIDTH_TILES: float = (
 const TRANSITION_INNER_FEATHER_MIN_WIDTH := 1.0
 const TRANSITION_TEXTURE_REPEAT_WORLD_SIZE := 256.0
 const ROUND_CORNER_SEGMENTS := 6
+const DIAGONAL_CORNER_RADIUS_TILES := 1.25
 
 var horizontal_mesh: ArrayMesh
 var vertical_mesh: ArrayMesh
@@ -82,6 +83,7 @@ func build(
 		fall_zone_sides,
 		zone_size
 	)
+	_annotate_diagonal_corner_radii(boundary_runs)
 	for run in boundary_runs:
 		_append_boundary_run(
 			horizontal,
@@ -246,8 +248,28 @@ func _append_boundary_run(
 	var end_corner := StringName(run.get("end_corner", &""))
 	match orientation:
 		FALL_ZONE_BOUNDARY_RUNS.TOP:
-			var top_left := (start - zone_offset.x) * logical_scale
-			var top_right := (end - zone_offset.x) * logical_scale
+			var original_top_left := (start - zone_offset.x) * logical_scale
+			var original_top_right := (end - zone_offset.x) * logical_scale
+			var top_left := original_top_left
+			var top_right := original_top_right
+			var horizontal_start_corner := start_corner
+			var horizontal_end_corner := end_corner
+			var start_diagonal_radius := _run_diagonal_corner_radius(
+				run,
+				&"start",
+				logical_scale
+			)
+			var end_diagonal_radius := _run_diagonal_corner_radius(
+				run,
+				&"end",
+				logical_scale
+			)
+			if start_corner == FALL_ZONE_BOUNDARY_RUNS.CORNER_DIAGONAL:
+				top_left += start_diagonal_radius
+				horizontal_start_corner = FALL_ZONE_BOUNDARY_RUNS.CORNER_STRAIGHT
+			if end_corner == FALL_ZONE_BOUNDARY_RUNS.CORNER_DIAGONAL:
+				top_right -= end_diagonal_radius
+				horizontal_end_corner = FALL_ZONE_BOUNDARY_RUNS.CORNER_STRAIGHT
 			if StringName(run.get("start_corner", &"")) == FALL_ZONE_BOUNDARY_RUNS.CORNER_CONCAVE:
 				concave_corner_count += 1
 			if StringName(run.get("end_corner", &"")) == FALL_ZONE_BOUNDARY_RUNS.CORNER_CONCAVE:
@@ -260,15 +282,58 @@ func _append_boundary_run(
 				(boundary - zone_offset.y) * logical_scale,
 				border_width,
 				false,
-				start_corner,
-				end_corner,
+				horizontal_start_corner,
+				horizontal_end_corner,
 				logical_scale
 			)
+			var boundary_y := (boundary - zone_offset.y) * logical_scale
+			if start_corner == FALL_ZONE_BOUNDARY_RUNS.CORNER_DIAGONAL:
+				_append_diagonal_cliff_corner(
+					horizontal,
+					terrain_transition,
+					Vector2(original_top_left, boundary_y),
+					FALL_ZONE_BOUNDARY_RUNS.TOP,
+					true,
+					start_diagonal_radius,
+					border_width,
+					logical_scale
+				)
+			if end_corner == FALL_ZONE_BOUNDARY_RUNS.CORNER_DIAGONAL:
+				_append_diagonal_cliff_corner(
+					horizontal,
+					terrain_transition,
+					Vector2(original_top_right, boundary_y),
+					FALL_ZONE_BOUNDARY_RUNS.TOP,
+					false,
+					end_diagonal_radius,
+					border_width,
+					logical_scale
+				)
 			horizontal_segment_count += 1
 			corner_count += 2
 		FALL_ZONE_BOUNDARY_RUNS.BOTTOM:
-			var bottom_left := (start - zone_offset.x) * logical_scale
-			var bottom_right := (end - zone_offset.x) * logical_scale
+			var original_bottom_left := (start - zone_offset.x) * logical_scale
+			var original_bottom_right := (end - zone_offset.x) * logical_scale
+			var bottom_left := original_bottom_left
+			var bottom_right := original_bottom_right
+			var horizontal_start_corner := start_corner
+			var horizontal_end_corner := end_corner
+			var start_diagonal_radius := _run_diagonal_corner_radius(
+				run,
+				&"start",
+				logical_scale
+			)
+			var end_diagonal_radius := _run_diagonal_corner_radius(
+				run,
+				&"end",
+				logical_scale
+			)
+			if start_corner == FALL_ZONE_BOUNDARY_RUNS.CORNER_DIAGONAL:
+				bottom_left += start_diagonal_radius
+				horizontal_start_corner = FALL_ZONE_BOUNDARY_RUNS.CORNER_STRAIGHT
+			if end_corner == FALL_ZONE_BOUNDARY_RUNS.CORNER_DIAGONAL:
+				bottom_right -= end_diagonal_radius
+				horizontal_end_corner = FALL_ZONE_BOUNDARY_RUNS.CORNER_STRAIGHT
 			if StringName(run.get("start_corner", &"")) == FALL_ZONE_BOUNDARY_RUNS.CORNER_CONCAVE:
 				concave_corner_count += 1
 			if StringName(run.get("end_corner", &"")) == FALL_ZONE_BOUNDARY_RUNS.CORNER_CONCAVE:
@@ -281,15 +346,56 @@ func _append_boundary_run(
 				(boundary - zone_offset.y) * logical_scale,
 				border_width,
 				true,
-				start_corner,
-				end_corner,
+				horizontal_start_corner,
+				horizontal_end_corner,
 				logical_scale
 			)
+			var boundary_y := (boundary - zone_offset.y) * logical_scale
+			if start_corner == FALL_ZONE_BOUNDARY_RUNS.CORNER_DIAGONAL:
+				_append_diagonal_cliff_corner(
+					horizontal,
+					terrain_transition,
+					Vector2(original_bottom_left, boundary_y),
+					FALL_ZONE_BOUNDARY_RUNS.BOTTOM,
+					true,
+					start_diagonal_radius,
+					border_width,
+					logical_scale
+				)
+			if end_corner == FALL_ZONE_BOUNDARY_RUNS.CORNER_DIAGONAL:
+				_append_diagonal_cliff_corner(
+					horizontal,
+					terrain_transition,
+					Vector2(original_bottom_right, boundary_y),
+					FALL_ZONE_BOUNDARY_RUNS.BOTTOM,
+					false,
+					end_diagonal_radius,
+					border_width,
+					logical_scale
+				)
 			horizontal_segment_count += 1
 			corner_count += 2
 		FALL_ZONE_BOUNDARY_RUNS.LEFT, FALL_ZONE_BOUNDARY_RUNS.RIGHT:
 			var top := (start - zone_offset.y) * logical_scale
 			var bottom := (end - zone_offset.y) * logical_scale
+			var vertical_start_corner := start_corner
+			var vertical_end_corner := end_corner
+			var start_diagonal_radius := _run_diagonal_corner_radius(
+				run,
+				&"start",
+				logical_scale
+			)
+			var end_diagonal_radius := _run_diagonal_corner_radius(
+				run,
+				&"end",
+				logical_scale
+			)
+			if start_corner == FALL_ZONE_BOUNDARY_RUNS.CORNER_DIAGONAL:
+				top += start_diagonal_radius
+				vertical_start_corner = FALL_ZONE_BOUNDARY_RUNS.CORNER_STRAIGHT
+			if end_corner == FALL_ZONE_BOUNDARY_RUNS.CORNER_DIAGONAL:
+				bottom -= end_diagonal_radius
+				vertical_end_corner = FALL_ZONE_BOUNDARY_RUNS.CORNER_STRAIGHT
 			# Once the crest is kept on walkable terrain, horizontal and vertical
 			# strips overlap only at concave corners (the single walkable quadrant).
 			# The horizontal strip owns that join. Convex corners occupy different
@@ -312,8 +418,8 @@ func _append_boundary_run(
 				(boundary - zone_offset.x) * logical_scale,
 				border_width,
 				orientation == FALL_ZONE_BOUNDARY_RUNS.RIGHT,
-				start_corner,
-				end_corner,
+				vertical_start_corner,
+				vertical_end_corner,
 				logical_scale
 			)
 			vertical_segment_count += 1
@@ -579,6 +685,81 @@ func _transition_inner_feather_width(logical_scale: float) -> float:
 		TRANSITION_INNER_FEATHER_MIN_WIDTH
 	)
 
+func _annotate_diagonal_corner_radii(boundary_runs: Array[Dictionary]) -> void:
+	var radius_by_vertex := {}
+	for run in boundary_runs:
+		var orientation := StringName(run.get("orientation", &""))
+		var boundary := int(run.get("boundary", 0))
+		var start := int(run.get("start", 0))
+		var end := int(run.get("end", 0))
+		var span_tiles := maxf(float(end - start), 0.0)
+		for endpoint in [&"start", &"end"]:
+			if (
+				StringName(run.get("%s_corner" % endpoint, &""))
+				!= FALL_ZONE_BOUNDARY_RUNS.CORNER_DIAGONAL
+			):
+				continue
+			var axis := start if endpoint == &"start" else end
+			var vertex := (
+				Vector2i(axis, boundary)
+				if (
+					orientation == FALL_ZONE_BOUNDARY_RUNS.TOP
+					or orientation == FALL_ZONE_BOUNDARY_RUNS.BOTTOM
+				)
+				else Vector2i(boundary, axis)
+			)
+			var radius_tiles := minf(
+				DIAGONAL_CORNER_RADIUS_TILES,
+				span_tiles * 0.45
+			)
+			radius_by_vertex[vertex] = minf(
+				float(
+					radius_by_vertex.get(
+						vertex,
+						DIAGONAL_CORNER_RADIUS_TILES
+					)
+				),
+				radius_tiles
+			)
+	for run in boundary_runs:
+		var orientation := StringName(run.get("orientation", &""))
+		var boundary := int(run.get("boundary", 0))
+		var start := int(run.get("start", 0))
+		var end := int(run.get("end", 0))
+		for endpoint in [&"start", &"end"]:
+			if (
+				StringName(run.get("%s_corner" % endpoint, &""))
+				!= FALL_ZONE_BOUNDARY_RUNS.CORNER_DIAGONAL
+			):
+				continue
+			var axis := start if endpoint == &"start" else end
+			var vertex := (
+				Vector2i(axis, boundary)
+				if (
+					orientation == FALL_ZONE_BOUNDARY_RUNS.TOP
+					or orientation == FALL_ZONE_BOUNDARY_RUNS.BOTTOM
+				)
+				else Vector2i(boundary, axis)
+			)
+			run["%s_diagonal_radius_tiles" % endpoint] = float(
+				radius_by_vertex.get(vertex, DIAGONAL_CORNER_RADIUS_TILES)
+			)
+
+func _run_diagonal_corner_radius(
+	run: Dictionary,
+	endpoint: StringName,
+	logical_scale: float
+) -> float:
+	return maxf(
+		float(
+			run.get(
+				"%s_diagonal_radius_tiles" % endpoint,
+				DIAGONAL_CORNER_RADIUS_TILES
+			)
+		) * logical_scale,
+		1.0
+	)
+
 func _transition_inner_color() -> Color:
 	# The solid color is shared by the dirt core and the inner endpoints of both
 	# feathers; only their far endpoints become transparent.
@@ -586,6 +767,187 @@ func _transition_inner_color() -> Color:
 
 func _transition_outer_color() -> Color:
 	return Color(1.0, 1.0, 1.0, 0.0)
+
+func _append_diagonal_cliff_corner(
+	rock_buffers: Dictionary,
+	transition_buffers: Dictionary,
+	vertex: Vector2,
+	orientation: StringName,
+	is_start: bool,
+	corner_radius: float,
+	border_width: float,
+	logical_scale: float
+) -> void:
+	var center := vertex
+	var start_angle := 0.0
+	var end_angle := 0.0
+	match orientation:
+		FALL_ZONE_BOUNDARY_RUNS.TOP:
+			if is_start:
+				center += Vector2(corner_radius, corner_radius)
+				start_angle = PI
+				end_angle = PI * 1.5
+			else:
+				center += Vector2(-corner_radius, corner_radius)
+				start_angle = PI * 1.5
+				end_angle = TAU
+		FALL_ZONE_BOUNDARY_RUNS.BOTTOM:
+			if is_start:
+				center += Vector2(corner_radius, -corner_radius)
+				start_angle = PI * 0.5
+				end_angle = PI
+			else:
+				center += Vector2(-corner_radius, -corner_radius)
+				start_angle = 0.0
+				end_angle = PI * 0.5
+		_:
+			return
+	var rock_depth := _horizontal_rock_depth(border_width)
+	var rock_outer_radius := corner_radius + rock_depth
+	_append_textured_ring_sector(
+		rock_buffers,
+		center,
+		start_angle,
+		end_angle,
+		corner_radius,
+		rock_outer_radius
+	)
+	_append_profiled_transition_sector(
+		transition_buffers,
+		center,
+		start_angle,
+		end_angle,
+		rock_outer_radius,
+		_transition_core_width(logical_scale),
+		_transition_width(logical_scale),
+		minf(
+			_transition_inner_feather_width(logical_scale),
+			rock_depth * 0.5
+		)
+	)
+	terrain_transition_corner_count += 1
+
+func _append_textured_ring_sector(
+	buffers: Dictionary,
+	center: Vector2,
+	start_angle: float,
+	end_angle: float,
+	inner_radius: float,
+	outer_radius: float
+) -> void:
+	var repeat_size := (
+		FLAT_ROCK_TEXTURE_REPEAT_WORLD_SIZE
+		if not sample_full_texture
+		else TEXTURE_REPEAT_WORLD_SIZE
+	)
+	for segment_index in range(ROUND_CORNER_SEGMENTS):
+		var start_weight := float(segment_index) / float(ROUND_CORNER_SEGMENTS)
+		var end_weight := float(segment_index + 1) / float(ROUND_CORNER_SEGMENTS)
+		var angle_a := lerpf(start_angle, end_angle, start_weight)
+		var angle_b := lerpf(start_angle, end_angle, end_weight)
+		var direction_a := Vector2(cos(angle_a), sin(angle_a))
+		var direction_b := Vector2(cos(angle_b), sin(angle_b))
+		var inner_a := center + direction_a * inner_radius
+		var outer_a := center + direction_a * outer_radius
+		var outer_b := center + direction_b * outer_radius
+		var inner_b := center + direction_b * inner_radius
+		_append_colored_polygon_quad(
+			buffers,
+			PackedVector2Array([inner_a, outer_a, outer_b, inner_b]),
+			PackedVector2Array([
+				inner_a / repeat_size,
+				outer_a / repeat_size,
+				outer_b / repeat_size,
+				inner_b / repeat_size,
+			]),
+			PackedColorArray([
+				Color.WHITE,
+				Color.WHITE,
+				Color.WHITE,
+				Color.WHITE,
+			])
+		)
+
+func _append_profiled_transition_sector(
+	buffers: Dictionary,
+	center: Vector2,
+	start_angle: float,
+	end_angle: float,
+	rock_outer_radius: float,
+	core_width: float,
+	transition_width: float,
+	inner_feather_width: float
+) -> void:
+	_append_colored_ring_sector(
+		buffers,
+		center,
+		start_angle,
+		end_angle,
+		maxf(rock_outer_radius - inner_feather_width, 0.0),
+		rock_outer_radius,
+		_transition_outer_color(),
+		_transition_inner_color()
+	)
+	_append_colored_ring_sector(
+		buffers,
+		center,
+		start_angle,
+		end_angle,
+		rock_outer_radius,
+		rock_outer_radius + core_width,
+		_transition_inner_color(),
+		_transition_inner_color()
+	)
+	_append_colored_ring_sector(
+		buffers,
+		center,
+		start_angle,
+		end_angle,
+		rock_outer_radius + core_width,
+		rock_outer_radius + transition_width,
+		_transition_inner_color(),
+		_transition_outer_color()
+	)
+
+func _append_colored_ring_sector(
+	buffers: Dictionary,
+	center: Vector2,
+	start_angle: float,
+	end_angle: float,
+	inner_radius: float,
+	outer_radius: float,
+	inner_color: Color,
+	outer_color: Color
+) -> void:
+	if outer_radius <= inner_radius + 0.001:
+		return
+	for segment_index in range(ROUND_CORNER_SEGMENTS):
+		var start_weight := float(segment_index) / float(ROUND_CORNER_SEGMENTS)
+		var end_weight := float(segment_index + 1) / float(ROUND_CORNER_SEGMENTS)
+		var angle_a := lerpf(start_angle, end_angle, start_weight)
+		var angle_b := lerpf(start_angle, end_angle, end_weight)
+		var direction_a := Vector2(cos(angle_a), sin(angle_a))
+		var direction_b := Vector2(cos(angle_b), sin(angle_b))
+		var inner_a := center + direction_a * inner_radius
+		var outer_a := center + direction_a * outer_radius
+		var outer_b := center + direction_b * outer_radius
+		var inner_b := center + direction_b * inner_radius
+		_append_colored_polygon_quad(
+			buffers,
+			PackedVector2Array([inner_a, outer_a, outer_b, inner_b]),
+			PackedVector2Array([
+				inner_a / TRANSITION_TEXTURE_REPEAT_WORLD_SIZE,
+				outer_a / TRANSITION_TEXTURE_REPEAT_WORLD_SIZE,
+				outer_b / TRANSITION_TEXTURE_REPEAT_WORLD_SIZE,
+				inner_b / TRANSITION_TEXTURE_REPEAT_WORLD_SIZE,
+			]),
+			PackedColorArray([
+				inner_color,
+				outer_color,
+				outer_color,
+				inner_color,
+			])
+		)
 
 func _append_convex_dirt_corners(
 	buffers: Dictionary,
@@ -606,33 +968,12 @@ func _append_convex_dirt_corners(
 			core_radius,
 			outer_radius
 		)
-	elif start_corner == FALL_ZONE_BOUNDARY_RUNS.CORNER_DIAGONAL:
-		# At a checkerboard vertex, the geometrically adjacent quadrant belongs
-		# to the other void. Join the two bands through the opposite walkable
-		# quadrant instead of painting another arm into the central cross.
-		_append_profiled_dirt_corner(
-			buffers,
-			start_center,
-			PI * 1.5 if top_side else 0.0,
-			TAU if top_side else PI * 0.5,
-			core_radius,
-			outer_radius
-		)
 	if end_corner == FALL_ZONE_BOUNDARY_RUNS.CORNER_CONVEX:
 		_append_profiled_dirt_corner(
 			buffers,
 			end_center,
 			PI * 1.5 if top_side else 0.0,
 			TAU if top_side else PI * 0.5,
-			core_radius,
-			outer_radius
-		)
-	elif end_corner == FALL_ZONE_BOUNDARY_RUNS.CORNER_DIAGONAL:
-		_append_profiled_dirt_corner(
-			buffers,
-			end_center,
-			PI if top_side else PI * 0.5,
-			PI * 1.5 if top_side else PI,
 			core_radius,
 			outer_radius
 		)
@@ -914,16 +1255,37 @@ func _append_colored_quad(
 	quad_uvs: PackedVector2Array,
 	quad_colors: PackedColorArray
 ) -> void:
+	_append_colored_polygon_quad(
+		buffers,
+		PackedVector2Array([
+			rect.position,
+			Vector2(rect.end.x, rect.position.y),
+			rect.end,
+			Vector2(rect.position.x, rect.end.y),
+		]),
+		quad_uvs,
+		quad_colors
+	)
+
+func _append_colored_polygon_quad(
+	buffers: Dictionary,
+	quad_vertices: PackedVector2Array,
+	quad_uvs: PackedVector2Array,
+	quad_colors: PackedColorArray
+) -> void:
+	if (
+		quad_vertices.size() != 4
+		or quad_uvs.size() != 4
+		or quad_colors.size() != 4
+	):
+		return
 	var vertices := buffers["vertices"] as PackedVector2Array
 	var colors := buffers["colors"] as PackedColorArray
 	var uvs := buffers["uvs"] as PackedVector2Array
 	var indices := buffers["indices"] as PackedInt32Array
 	var base := vertices.size()
-	vertices.append(rect.position)
-	vertices.append(Vector2(rect.end.x, rect.position.y))
-	vertices.append(rect.end)
-	vertices.append(Vector2(rect.position.x, rect.end.y))
 	for index in range(4):
+		vertices.append(quad_vertices[index])
 		colors.append(quad_colors[index])
 		uvs.append(quad_uvs[index])
 	indices.append(base)
