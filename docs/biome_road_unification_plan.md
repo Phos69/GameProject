@@ -2,7 +2,14 @@
 
 > Piano completato e conservato come evidenza storica. I simboli e i percorsi
 > qui citati riflettono il repository prima di `TOPDOWN-001`; il contratto
-> operativo corrente e `docs/top_down_cardinal_contract.md`.
+> cardinale corrente e `docs/top_down_cardinal_contract.md`.
+>
+> **Nota di supersessione 2026-07-15.** Il contratto runtime core/edge/corner e
+> overlay mono-lato descritto in questo piano e stato sostituito dal sistema in
+> `docs/terrain_boundary_mask_system.md`: classifier visuale, maschera regionale
+> RGBA, superfici full-bleed grass/path/asphalt e divisore di terra in alpha.
+> Le fasi e i follow-up seguenti restano una cronologia corretta del lavoro
+> eseguito, ma non sono istruzioni per l'implementazione corrente.
 
 Stato: 2026-07-09 — fasi 0-3 eseguite, follow-up edge/core e overlay mono-lato
 completati, sorgente strip riportata al PNG madre (vedi note in fondo alle
@@ -283,6 +290,35 @@ minimo anti-rettangolo), `ROAD_BORDER_OVERLAY_HALF_WIDTH_TILES = 0.5`
 zoom 2x su frozen (banda ghiaia+neve) e toxic (ghiaia+muschio) e a zoom
 naturale su forest (cordolo chiaro): il confine ora legge come nel PNG
 sorgente. GUT assets verdi, QA 5 biomi + review exit 0.
+
+**Follow-up asset lineare forest 2026-07-15.** Il nuovo PNG
+`forest_road_border_defined.png` mantiene la propria densita' sull'asse corto:
+il crop al 32% occupa `FOREST_ROAD_BORDER_OVERLAY_WIDTH_WORLD = 81.92` px world
+e termina sul limite della carreggiata, invece di essere compresso e centrato
+in una tile. Un materiale canvas armonizza la porzione spaziale esterna del
+crop col ground canonico; ghiaia e asfalto non vengono ritinti. Il clamp di
+mezzo texel sull'asse corto evita che il repeat ricampioni il prato sul limite
+interno; un overlap di 2 px fa terminare il feather sopra il core asfaltato,
+mentre il feather forestale viene applicato solo al margine esterno e non rende
+trasparente il terminale asfaltato. I biomi generated conservano larghezza e
+centraggio precedenti. Verifica: GUT `generated_texture` e Visual QA
+`biome_art_infected_plains` verdi.
+
+**Follow-up angoli forest 2026-07-15.** I raster
+`forest_road_border_convex.png` e `forest_road_border_concave.png` completano
+le strip lineari. `BiomeTileResolver.route_corner_at_vertex` classifica un
+vertice in base alle quattro celle adiacenti: una route produce un convesso,
+tre route un concavo; rette, diagonali disgiunte e interni pieni restano senza
+macro. `BiomeTileLayer` genera le quattro rotazioni dai soli due sorgenti,
+ancora ogni macro 256x256 al quadrante speciale e la disegna nello stesso pass
+overlay sopra le strip. Il materiale dedicato armonizza la vegetazione senza
+ritintare l'asfalto e sfuma il perimetro del quadrato. Verifica mirata: GUT
+`generated_texture` 32/32 e Visual QA `biome_art_infected_plains` verde.
+
+Le strip vivono in un canvas figlio con z relativo superiore al terreno base:
+la parte che si estende sul prato non viene quindi coperta dal draw di un chunk
+adiacente. Il pass separato vale anche per perimetro e raccordi dell'hub
+centrale, ma resta sotto cliff, ostacoli e attori.
 
 **Fix copertura survival 2026-07-09.** Nel mondo reale i corridoi passage tra
 biomi sorgono sopra spoke di lane carvate dal generatore voidfirst

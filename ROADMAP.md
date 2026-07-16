@@ -39,6 +39,21 @@ anche le milestone completate per evitare sovrapposizioni.
 
 ### Presentazione e UX
 
+- `TERRAIN-MASK-001`: **completata 2026-07-15**. Il renderer del terreno usa
+  un classificatore condiviso per quattro superfici (`grass`, `path`,
+  `asphalt`, `void`) e una maschera regionale RGBA a 8 px/tile: RGB seleziona
+  le texture esistenti forestali/generated ai lati del confine, mentre alpha
+  applica il nuovo divisore ripetibile di terra compatta. Shader e
+  `TerrainSurfaceCanvas` campionano la stessa maschera per ogni chunk e una fase
+  world-space continua tra regioni; il void resta uniforme e il contratto cache
+  sale a v29. Criterio di accettazione:
+  confini generati una sola volta per regione, divisore presente tra superfici
+  diverse senza dipendere da core/edge/corner stradali, materiali gameplay e
+  semantica del void invariati. Evidenza: test CPU
+  `terrain_boundary_mask_test.gd`, suite `assets`/`environment`/`obstacles`/
+  `world_gen` e Visual QA `infected_plains` piu review multi-bioma da 210
+  capture, tutti PASS.
+
 - `TOPDOWN-001`: **completata 2026-07-15**. Renderer, manifest v12, cache,
   generazione mondo, UI, branding, tooling e documentazione usano il contratto
   `orthogonal_top_down`; movimento e mira restano analogici e il volume di

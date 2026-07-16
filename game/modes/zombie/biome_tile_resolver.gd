@@ -119,45 +119,8 @@ const GENERATED_THEME_MANIFEST_SURFACE_TILE_IDS: Array[StringName] = [
 	TILE_BRIDGE_BROKEN,
 	TILE_CLIFF_RAMP
 ]
-const GENERATED_THEME_ROAD_BORDER_TILE_IDS: Array[StringName] = [
-	TILE_ROAD_EDGE,
-	TILE_ROAD_CURVE_NORTH,
-	TILE_ROAD_CURVE_EAST,
-	TILE_ROAD_CURVE_SOUTH,
-	TILE_ROAD_CURVE_WEST,
-]
-# Celle interne della carreggiata: renderizzano il core ritagliato del
-# road_border_defined invece del PNG intero, cosi' le strisce di bordo non si
-# ripetono in mezzo alle strade larghe. Il bordo visibile viene aggiunto dal
-# tile layer come overlay mono-lato sulle celle che toccano terreno non-route.
-const GENERATED_THEME_ROAD_CORE_TILE_IDS: Array[StringName] = [
-	TILE_MAIN_ROAD,
-	TILE_ROAD,
-	TILE_ROAD_INTERSECTION,
-	TILE_ROAD_EDGE,
-	TILE_ROAD_CURVE_NORTH,
-	TILE_ROAD_CURVE_EAST,
-	TILE_ROAD_CURVE_SOUTH,
-	TILE_ROAD_CURVE_WEST,
-	TILE_BRIDGE,
-	TILE_SNOW_PASS,
-	TILE_BROKEN_GATE,
-	TILE_BURNED_ROAD,
-	TILE_ROAD_ENTRY,
-	TILE_ROAD_EXIT,
-	TILE_BRIDGE_ENTRY,
-	TILE_BRIDGE_EXIT,
-	TILE_SNOW_PASS_ENTRY,
-	TILE_SNOW_PASS_EXIT,
-	TILE_BROKEN_GATE_ENTRY,
-	TILE_BROKEN_GATE_EXIT,
-	TILE_BURNED_ROAD_ENTRY,
-	TILE_BURNED_ROAD_EXIT,
-]
-# Route del bioma forestale che renderizzano il materiale border/core derivato
-# da forest_road_border_defined.png con la stessa convenzione dei temi
-# generated. Include i passage: in foresta attraversano la mappa come strade.
-# Lista condivisa col tile layer (underlay e fallback texture).
+# Route del bioma forestale classificate come path oppure asphalt dalla
+# TerrainSurfaceClassifier. Gli ID semantici restano pubblici e invariati.
 const FOREST_ROUTE_SURFACE_TILE_IDS: Array[StringName] = [
 	TILE_FOREST_PATH,
 	TILE_FOREST_ROAD,
@@ -194,8 +157,8 @@ const FOREST_ROUTE_SURFACE_TILE_IDS: Array[StringName] = [
 	TILE_BRIDGE_BROKEN,
 	TILE_CLIFF_RAMP,
 ]
-# Contratto terrain del manifest che fornisce il PNG road border forestale.
-const FOREST_ROAD_BORDER_TERRAIN_ASSET_ID: StringName = &"forest_road_border"
+const FOREST_PATH_TERRAIN_ASSET_ID: StringName = &"forest_path"
+const FOREST_ROAD_TERRAIN_ASSET_ID: StringName = &"forest_road"
 const GENERATED_THEME_GENERATED_ROUTE_TILE_IDS: Array[StringName] = [
 	TILE_MAIN_ROAD,
 	TILE_ROAD,
@@ -205,6 +168,11 @@ const GENERATED_THEME_GENERATED_ROUTE_TILE_IDS: Array[StringName] = [
 	TILE_PACKED_SNOW_PATH,
 	TILE_WOODEN_WALKWAY,
 	TILE_ROAD_INTERSECTION,
+	TILE_ROAD_EDGE,
+	TILE_ROAD_CURVE_NORTH,
+	TILE_ROAD_CURVE_EAST,
+	TILE_ROAD_CURVE_SOUTH,
+	TILE_ROAD_CURVE_WEST,
 ]
 const GENERATED_THEME_GENERATED_PASSAGE_SURFACE_TILE_IDS: Array[StringName] = [
 	TILE_BRIDGE,
@@ -224,8 +192,7 @@ const GENERATED_THEME_GENERATED_PASSAGE_SURFACE_TILE_IDS: Array[StringName] = [
 ]
 
 var manifest: EnvironmentAssetManifest
-var _forest_road_border_asset_path := ""
-var _forest_road_border_asset_path_resolved := false
+var _forest_route_asset_paths: Dictionary = {}
 
 func _init(next_manifest: EnvironmentAssetManifest = null) -> void:
 	manifest = next_manifest if next_manifest != null else EnvironmentAssetManifest.get_shared()
@@ -1139,15 +1106,9 @@ func _apply_generated_material(
 	var material_role := _generated_surface_role(tile_id)
 	if material_role.is_empty():
 		return tile_data
-	if (
-		(
-			GENERATED_THEME_ROAD_BORDER_TILE_IDS.has(tile_id)
-			or tile_id == TILE_ROAD_INTERSECTION
-		)
-		and route_cell_uses_lane_surface(layout, cell)
-	):
-		# Bordi e incroci di una lane: il margine resta materiale path, non
-		# il bordo della strada principale (unificazione strade, Fase 2).
+	if is_route_surface_cell(layout, cell) and route_cell_uses_lane_surface(layout, cell):
+		# Le lane mantengono il proprio riempimento path anche quando il tile ID
+		# semantico descrive edge, curva o incrocio.
 		material_role = GENERATED_ART_CATALOG.ROLE_PATH
 	material_role = GENERATED_ART_CATALOG.resolve_runtime_surface_role(
 		biome_id,
@@ -1163,19 +1124,16 @@ func _apply_generated_material(
 	if asset_path.is_empty():
 		return tile_data
 	var result := tile_data.duplicate(true)
-	result["material_asset_id"] = _generated_material_id_for_cell(
-		layout,
-		cell,
-		tile_id,
+	result["material_asset_id"] = GENERATED_ART_CATALOG.material_id_from_path(
 		asset_path
 	)
 	result["material_asset_path"] = asset_path
 	result["asset_path"] = asset_path
 	return result
 
-## infected_plains usa lo stesso contratto materiale dei temi generated:
-## border/core orientati derivati dal PNG road border del manifest. Il tile
-## id semantico resta invariato; cambia solo material_asset_id/path.
+## La Pianura Infetta conserva gli ID semantici legacy, ma le route tornano a
+## usare le texture full-bleed dedicate: dirt path per le lane e asphalt per
+## main road/passaggi. Il divisore e' composto separatamente dalla maschera.
 func _apply_forest_route_material(
 	tile_data: Dictionary,
 	layout: BiomeEnvironmentLayout,
@@ -1187,34 +1145,30 @@ func _apply_forest_route_material(
 	var tile_id := StringName(tile_data.get("tile_id", &""))
 	if not FOREST_ROUTE_SURFACE_TILE_IDS.has(tile_id):
 		return tile_data
-	var asset_path := forest_road_border_asset_path()
+	var material_id := (
+		FOREST_PATH_TERRAIN_ASSET_ID
+		if route_cell_uses_lane_surface(layout, cell)
+		else FOREST_ROAD_TERRAIN_ASSET_ID
+	)
+	var asset_path := _forest_route_asset_path(material_id)
 	if asset_path.is_empty():
 		return tile_data
-	var orientation := resolve_road_border_orientation_for_cell(
-		layout,
-		cell,
-		tile_id
-	)
-	var material_id := GENERATED_ART_CATALOG.road_core_material_id(
-		asset_path,
-		orientation
-	)
 	var result := tile_data.duplicate(true)
 	result["material_asset_id"] = material_id
 	result["material_asset_path"] = asset_path
+	result["asset_path"] = asset_path
 	return result
 
-func forest_road_border_asset_path() -> String:
-	if _forest_road_border_asset_path_resolved:
-		return _forest_road_border_asset_path
-	_forest_road_border_asset_path_resolved = true
+func _forest_route_asset_path(asset_id: StringName) -> String:
+	if _forest_route_asset_paths.has(asset_id):
+		return String(_forest_route_asset_paths[asset_id])
+	var asset_path := ""
 	if manifest != null:
-		_forest_road_border_asset_path = String(
-			manifest.get_terrain_asset_contract(
-				FOREST_ROAD_BORDER_TERRAIN_ASSET_ID
-			).get("asset_path", "")
+		asset_path = String(
+			manifest.get_terrain_asset_contract(asset_id).get("asset_path", "")
 		)
-	return _forest_road_border_asset_path
+	_forest_route_asset_paths[asset_id] = asset_path
+	return asset_path
 
 # Come _route_cell_touches_non_route, ma considera route anche passage e
 # connector: decide border-vs-core, non il tile semantico.
@@ -1227,142 +1181,10 @@ func _route_cell_touches_non_route_surface(
 			return true
 	return false
 
-func _generated_material_id_for_cell(
-	layout: BiomeEnvironmentLayout,
-	cell: Vector2i,
-	tile_id: StringName,
-	asset_path: String
-) -> StringName:
-	if not GENERATED_ART_CATALOG.is_road_border_asset_path(asset_path):
-		if GENERATED_ART_CATALOG.is_orientable_road_surface_asset_path(asset_path):
-			return GENERATED_ART_CATALOG.oriented_road_surface_material_id(
-				asset_path,
-				resolve_route_surface_orientation_for_cell(layout, cell, tile_id)
-			)
-		return GENERATED_ART_CATALOG.material_id_from_path(asset_path)
-	var border_orientation := resolve_road_border_orientation_for_cell(
-		layout,
-		cell,
-		tile_id
-	)
-	if GENERATED_THEME_ROAD_CORE_TILE_IDS.has(tile_id):
-		if not route_cell_uses_lane_surface(layout, cell):
-			return GENERATED_ART_CATALOG.road_core_material_id(
-				asset_path,
-				border_orientation
-			)
-	return GENERATED_ART_CATALOG.oriented_road_border_material_id(
-		asset_path,
-		border_orientation
-	)
-
-func resolve_route_surface_orientation_for_cell(
-	layout: BiomeEnvironmentLayout,
-	cell: Vector2i,
-	tile_id: StringName
-) -> StringName:
-	match tile_id:
-		TILE_ROAD_CURVE_EAST, TILE_ROAD_CURVE_WEST:
-			return GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_HORIZONTAL
-		TILE_ROAD_CURVE_NORTH, TILE_ROAD_CURVE_SOUTH:
-			return GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_VERTICAL
-		TILE_ROAD_INTERSECTION:
-			return (
-				GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_HORIZONTAL
-				if _route_runs_horizontally(layout, cell, true)
-				else GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_VERTICAL
-			)
-		TILE_MAIN_ROAD, TILE_ROAD, TILE_FOREST_ROAD, TILE_BRIDGE, TILE_SNOW_PASS, TILE_BROKEN_GATE, TILE_BURNED_ROAD, TILE_ROAD_ENTRY, TILE_ROAD_EXIT, TILE_BRIDGE_ENTRY, TILE_BRIDGE_EXIT, TILE_SNOW_PASS_ENTRY, TILE_SNOW_PASS_EXIT, TILE_BROKEN_GATE_ENTRY, TILE_BROKEN_GATE_EXIT, TILE_BURNED_ROAD_ENTRY, TILE_BURNED_ROAD_EXIT:
-			return (
-				GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_HORIZONTAL
-				if _route_runs_horizontally(layout, cell, true)
-				else GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_VERTICAL
-			)
-		_:
-			return GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_VERTICAL
-
-func resolve_road_border_orientation_for_cell(
-	layout: BiomeEnvironmentLayout,
-	cell: Vector2i,
-	tile_id: StringName
-) -> StringName:
-	if (
-		GENERATED_THEME_GENERATED_ROUTE_TILE_IDS.has(tile_id)
-		or GENERATED_THEME_GENERATED_PASSAGE_SURFACE_TILE_IDS.has(tile_id)
-		or tile_id == TILE_FOREST_ROAD
-		or tile_id == TILE_FOREST_PATH
-	):
-		return (
-			GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_HORIZONTAL
-			if _route_runs_horizontally(layout, cell, true)
-			else GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_VERTICAL
-		)
-	match tile_id:
-		TILE_ROAD_CURVE_EAST, TILE_ROAD_CURVE_WEST:
-			return GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_HORIZONTAL
-		TILE_ROAD_CURVE_NORTH, TILE_ROAD_CURVE_SOUTH:
-			return GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_VERTICAL
-		TILE_PATH_TO_ROAD:
-			return (
-				GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_HORIZONTAL
-				if _route_runs_horizontally(layout, cell, true)
-				else GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_VERTICAL
-			)
-		TILE_GRASS_TO_ROAD, TILE_GRASS_TO_PATH:
-			return (
-				GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_HORIZONTAL
-				if _route_runs_horizontally(layout, cell)
-				else GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_VERTICAL
-			)
-		TILE_ROAD_EDGE:
-			return (
-				GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_HORIZONTAL
-				if _route_runs_horizontally(layout, cell)
-				else GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_VERTICAL
-			)
-		_:
-			return GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_VERTICAL
-
-func _route_runs_horizontally(
-	layout: BiomeEnvironmentLayout,
-	cell: Vector2i,
-	prefer_main_road: bool = false
-) -> bool:
-	if layout == null:
-		return false
-	if prefer_main_road:
-		var main_orientation := _matching_main_road_orientation(layout, cell)
-		if not main_orientation.is_empty():
-			return main_orientation == GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_HORIZONTAL
-	var horizontal_neighbors := (
-		int(_cell_is_route_surface(layout, cell + Vector2i.LEFT))
-		+ int(_cell_is_route_surface(layout, cell + Vector2i.RIGHT))
-	)
-	var vertical_neighbors := (
-		int(_cell_is_route_surface(layout, cell + Vector2i.UP))
-		+ int(_cell_is_route_surface(layout, cell + Vector2i.DOWN))
-	)
-	if horizontal_neighbors != vertical_neighbors:
-		return horizontal_neighbors > vertical_neighbors
-	for index in range(layout.road_rects.size() - 1, -1, -1):
-		if not layout.road_rects[index].has_point(cell):
-			continue
-		var rect := layout.road_rects[index]
-		if rect.size.x != rect.size.y:
-			return rect.size.x > rect.size.y
-		if _is_passage_type(_road_tag_for_index(layout, index)):
-			continue
-	for rect in layout.passage_rects:
-		if rect.has_point(cell) and rect.size.x != rect.size.y:
-			return rect.size.x > rect.size.y
-	for rect in layout.passage_connector_rects:
-		if rect.has_point(cell) and rect.size.x != rect.size.y:
-			return rect.size.x > rect.size.y
-	return true
 
 ## True se la cella route appartiene solo a lane tematiche (nessuna strada
-## principale la attraversa): i suoi bordi/incroci renderizzano il materiale
-## path invece del bordo stradale. I passage road-like prevalgono sulle lane:
+## principale la attraversa): la maschera la classifica come path. I passage
+## road-like prevalgono sulle lane:
 ## il generatore carva spoke di lane sotto i corridoi tra biomi, ma quelle
 ## celle renderizzano asfalto e devono ricevere il bordo strada.
 func route_cell_uses_lane_surface(
@@ -1377,7 +1199,7 @@ func route_cell_uses_lane_surface(
 		return false
 	var found_lane := false
 	for tag in layout.get_road_tags_at_cell(cell):
-		if _is_road_border_main_tag(tag) or _is_passage_type(tag):
+		if _is_primary_road_tag(tag) or _is_passage_type(tag):
 			return false
 		if _is_forest_path_tag(tag):
 			found_lane = true
@@ -1385,65 +1207,23 @@ func route_cell_uses_lane_surface(
 		if not layout.road_rects[index].has_point(cell):
 			continue
 		var tag := _road_tag_for_index(layout, index)
-		if _is_road_border_main_tag(tag) or _is_passage_type(tag):
+		if _is_primary_road_tag(tag) or _is_passage_type(tag):
 			return false
 		if _is_forest_path_tag(tag):
 			found_lane = true
 	return found_lane
 
-## True se una route road-like deve ricevere overlay bordo sopra il core:
-## solo le celle che toccano prato/terreno non-route, mai le lane path.
-func route_cell_uses_road_border_material(
+
+## Query visuale pubblica per il classificatore della maschera. Passage e
+## connector sono inclusi; la classificazione gameplay resta nel layout.
+func is_route_surface_cell(
 	layout: BiomeEnvironmentLayout,
 	cell: Vector2i
 ) -> bool:
-	if layout == null:
-		return false
-	if route_cell_uses_lane_surface(layout, cell):
-		return false
-	return _route_cell_touches_non_route_surface(layout, cell)
+	return _cell_is_route_surface(layout, cell)
 
-## Lati cardinali della cella route su cui va sovrapposta la fascia
-## road_border_defined mono-lato. La superficie base resta sempre core.
-func route_cell_road_border_sides(
-	layout: BiomeEnvironmentLayout,
-	cell: Vector2i
-) -> Array[StringName]:
-	var result: Array[StringName] = []
-	if layout == null:
-		return result
-	if not _cell_is_route_surface(layout, cell):
-		return result
-	if route_cell_uses_lane_surface(layout, cell):
-		return result
-	if not _cell_is_route_surface(layout, cell + Vector2i.LEFT):
-		result.append(GENERATED_ART_CATALOG.ROAD_BORDER_SIDE_WEST)
-	if not _cell_is_route_surface(layout, cell + Vector2i.RIGHT):
-		result.append(GENERATED_ART_CATALOG.ROAD_BORDER_SIDE_EAST)
-	if not _cell_is_route_surface(layout, cell + Vector2i.UP):
-		result.append(GENERATED_ART_CATALOG.ROAD_BORDER_SIDE_NORTH)
-	if not _cell_is_route_surface(layout, cell + Vector2i.DOWN):
-		result.append(GENERATED_ART_CATALOG.ROAD_BORDER_SIDE_SOUTH)
-	return result
 
-func _matching_main_road_orientation(
-	layout: BiomeEnvironmentLayout,
-	cell: Vector2i
-) -> StringName:
-	for index in range(layout.road_rects.size() - 1, -1, -1):
-		if not layout.road_rects[index].has_point(cell):
-			continue
-		if not _is_road_border_main_tag(_road_tag_for_index(layout, index)):
-			continue
-		var rect := layout.road_rects[index]
-		return (
-			GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_HORIZONTAL
-			if rect.size.x >= rect.size.y
-			else GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_VERTICAL
-		)
-	return &""
-
-func _is_road_border_main_tag(tag: StringName) -> bool:
+func _is_primary_road_tag(tag: StringName) -> bool:
 	return tag == TILE_MAIN_ROAD or tag == TILE_ROAD or tag == TILE_FOREST_ROAD
 
 func _cell_is_route_surface(
@@ -1467,8 +1247,7 @@ func _cell_is_route_surface(
 
 func _uses_manifest_surface_tile(tile_id: StringName) -> bool:
 	if (
-		GENERATED_THEME_ROAD_BORDER_TILE_IDS.has(tile_id)
-		or GENERATED_THEME_GENERATED_ROUTE_TILE_IDS.has(tile_id)
+		GENERATED_THEME_GENERATED_ROUTE_TILE_IDS.has(tile_id)
 		or GENERATED_THEME_GENERATED_PASSAGE_SURFACE_TILE_IDS.has(tile_id)
 	):
 		return false
@@ -1491,9 +1270,9 @@ func _generated_surface_role(tile_id: StringName) -> StringName:
 		TILE_GRASS_TO_PATH:
 			return GENERATED_ART_CATALOG.ROLE_PATH
 		TILE_GRASS_TO_ROAD, TILE_PATH_TO_ROAD:
-			return GENERATED_ART_CATALOG.ROLE_GROUND_TO_ROAD
+			return GENERATED_ART_CATALOG.ROLE_ROAD
 		TILE_ROAD_EDGE, TILE_ROAD_CURVE_NORTH, TILE_ROAD_CURVE_EAST, TILE_ROAD_CURVE_SOUTH, TILE_ROAD_CURVE_WEST:
-			return GENERATED_ART_CATALOG.ROLE_GROUND_TO_ROAD
+			return GENERATED_ART_CATALOG.ROLE_ROAD
 	if GENERATED_THEME_GENERATED_PASSAGE_SURFACE_TILE_IDS.has(tile_id):
 		return GENERATED_ART_CATALOG.ROLE_ROAD
 	if _is_passage_endpoint_tile(tile_id) or PASSAGE_ROUTE_TILE_IDS.has(tile_id):

@@ -3,6 +3,9 @@
 > Roadmap completata e conservata come evidenza storica. Le indicazioni di
 > proiezione e i path precedenti sono superati da
 > `docs/top_down_cardinal_contract.md` e non vanno riutilizzati nei prompt.
+> Anche il successivo contratto road core/edge descritto sotto e storico: dal
+> 2026-07-15 il runtime usa `docs/terrain_boundary_mask_system.md`, con texture
+> full-bleed e divisore in terra generato dalla maschera regionale.
 
 Stato: completato 2026-07-03. Tutti e cinque i biomi hanno il pass applicato,
 la QA dedicata verde e i guardrail GUT estesi; il review completo

@@ -380,7 +380,8 @@ func _stream_region(
 		layout,
 		biome,
 		is_current,
-		async_tiles
+		async_tiles,
+		offset
 	)
 	# Percorso sincrono (avvio run): tutto il contenuto e' pronto nello stesso
 	# frame. Percorso asincrono (regione entrata nel raggio durante il gameplay):
@@ -426,7 +427,8 @@ func _stream_tile_layer(
 	layout: BiomeEnvironmentLayout,
 	biome: BiomeDefinition,
 	is_current: bool,
-	async_build: bool
+	async_build: bool,
+	terrain_texture_world_origin: Vector2
 ) -> BiomeTileLayer:
 	var tile_layer := BIOME_TILE_LAYER_SCRIPT.new() as BiomeTileLayer
 	if tile_layer == null:
@@ -442,7 +444,8 @@ func _stream_tile_layer(
 		null,
 		null,
 		async_build,
-		false
+		false,
+		terrain_texture_world_origin
 	)
 	if terrain_generator != null and terrain_generator.has_method("register_streamed_tile_layer"):
 		terrain_generator.register_streamed_tile_layer(tile_layer, is_current)

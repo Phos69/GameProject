@@ -27,14 +27,16 @@ const SAMPLING_REGION: StringName = &"region"
 const SAMPLING_MACRO_GROUND: StringName = &"macro_ground"
 const ROAD_STYLE_BORDER_DEFINED: StringName = &"border_defined"
 const ROAD_STYLE_LEGACY: StringName = &"legacy"
+const ROAD_STYLE_SURFACE: StringName = &"surface"
 
 ## Contratto unico per tema. Ogni campo sostituisce una delle vecchie liste
 ## parallele o dei branch per-tema sparsi nel file:
 ## - sampling: SAMPLING_REGION = un solo asset per ruolo su tutta la regione;
 ##   SAMPLING_MACRO_GROUND = ground per macro-cella 8x8, altri ruoli per cella.
-## - road_style: ROAD_STYLE_BORDER_DEFINED = le strade usano il PNG
-##   road_border_defined orientabile e road_variation/transition_ground_to_road
-##   sono declassati a detail; ROAD_STYLE_LEGACY = road_variation resta ROLE_ROAD.
+## - road_style: ROAD_STYLE_SURFACE = road_variation e' la texture full-bleed
+##   consumata dal renderer a maschera; ROAD_STYLE_BORDER_DEFINED conserva il
+##   vecchio mapping per temi non attivi/tooling; ROAD_STYLE_LEGACY mantiene il
+##   catalogo storico senza imporre il compositing runtime.
 ## - native_border_orientation: orientamento del PNG road_border_defined su
 ##   disco; la variante opposta viene ruotata a runtime.
 ## - ground_detail_in_pool: i detail entrano nel pool ground.
@@ -63,7 +65,7 @@ const THEME_CONTRACTS: Dictionary = {
 	},
 	&"frozen_tundra": {
 		&"sampling": SAMPLING_REGION,
-		&"road_style": ROAD_STYLE_BORDER_DEFINED,
+		&"road_style": ROAD_STYLE_SURFACE,
 		&"native_border_orientation": ROAD_BORDER_ORIENTATION_VERTICAL,
 		&"ground_detail_in_pool": false,
 		&"detail_ground_variations": ["02", "03", "04"],
@@ -71,7 +73,7 @@ const THEME_CONTRACTS: Dictionary = {
 	},
 	&"swamp": {
 		&"sampling": SAMPLING_REGION,
-		&"road_style": ROAD_STYLE_BORDER_DEFINED,
+		&"road_style": ROAD_STYLE_SURFACE,
 		&"native_border_orientation": ROAD_BORDER_ORIENTATION_VERTICAL,
 		&"ground_detail_in_pool": false,
 		&"detail_ground_variations": ["02", "03"],
@@ -79,7 +81,7 @@ const THEME_CONTRACTS: Dictionary = {
 	},
 	&"urban_ruins": {
 		&"sampling": SAMPLING_REGION,
-		&"road_style": ROAD_STYLE_BORDER_DEFINED,
+		&"road_style": ROAD_STYLE_SURFACE,
 		&"native_border_orientation": ROAD_BORDER_ORIENTATION_VERTICAL,
 		&"ground_detail_in_pool": false,
 		&"detail_ground_variations": ["01", "04"],
@@ -87,7 +89,7 @@ const THEME_CONTRACTS: Dictionary = {
 	},
 	&"volcanic": {
 		&"sampling": SAMPLING_REGION,
-		&"road_style": ROAD_STYLE_BORDER_DEFINED,
+		&"road_style": ROAD_STYLE_SURFACE,
 		&"native_border_orientation": ROAD_BORDER_ORIENTATION_VERTICAL,
 		&"ground_detail_in_pool": false,
 		&"detail_ground_variations": ["01", "03", "04"],
@@ -217,6 +219,18 @@ static func get_all_surface_asset_paths(
 ) -> PackedStringArray:
 	var result := PackedStringArray()
 	for role in SURFACE_ROLES:
+		result.append_array(get_asset_paths_for_role(biome_id, role))
+	return result
+
+
+## Superfici consumate dal renderer a maschera. Transizioni e detail restano
+## catalogati per compatibilita' e tooling, ma non occupano sampler o VRAM nel
+## terreno runtime.
+static func get_runtime_surface_asset_paths(
+	biome_id: StringName
+) -> PackedStringArray:
+	var result := PackedStringArray()
+	for role in [ROLE_GROUND, ROLE_PATH, ROLE_ROAD]:
 		result.append_array(get_asset_paths_for_role(biome_id, role))
 	return result
 

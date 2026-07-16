@@ -135,6 +135,28 @@ func test_full_region_streaming() -> void:
 	assert_true(_same_ids(streamed, expected_active), "streamer contains current region plus connected neighbors")
 	for region_id in expected_active:
 		assert_eq(int(streamer.get_content_level(region_id)), 2, "%s is streamed as FULL gameplay content" % String(region_id))
+	var nonzero_texture_origins := 0
+	for layer_node in _scene.nodes(&"biome_tile_layers"):
+		var streamed_layer := layer_node as BiomeTileLayer
+		var region_root := (
+			streamed_layer.get_parent() as Node2D
+			if streamed_layer != null
+			else null
+		)
+		if streamed_layer == null or region_root == null:
+			continue
+		assert_eq(
+			streamed_layer.terrain_texture_world_origin,
+			region_root.position,
+			"streamed terrain reuses its region offset for continuous texture UVs"
+		)
+		if not streamed_layer.terrain_texture_world_origin.is_zero_approx():
+			nonzero_texture_origins += 1
+	assert_gt(
+		nonzero_texture_origins,
+		0,
+		"at least one neighboring region exercises a non-zero texture phase"
+	)
 	var distant_id := _find_distant_region(graph, current_cell.id)
 	if not distant_id.is_empty():
 		assert_eq(int(streamer.get_content_level(distant_id)), 0, "distant regions remain uninstantiated data")

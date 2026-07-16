@@ -8,6 +8,25 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Changed
 
+- Completata `TERRAIN-MASK-001`: il rendering non deriva piu' strip, core e
+  corner separati per ogni strada. `TerrainSurfaceClassifier` distingue le
+  quattro superfici `grass`, `path`, `asphalt` e `void`; una maschera RGBA
+  regionale a 8 px/tile conserva nei canali RGB i pesi delle superfici e in
+  alpha il divisore tra celle diverse. Ogni chunk campiona la stessa maschera
+  con `TerrainSurfaceCanvas` e uno shader dedicato, riusando le texture
+  forestali o generated gia' presenti; il void resta un colore profondo
+  uniforme. La fase UV include l'offset della regione streammata e resta
+  continua sui seam. `TileBakeCache.FORMAT_VERSION` sale a 29 per invalidare i
+  bake del precedente contratto edge/core/corner.
+- Validazione `TERRAIN-MASK-001`: GUT `assets`, `environment`, `obstacles` e
+  `world_gen` verdi per 201 test e 23.654 assert; import e boot della scena
+  principale PASS; generatore top-down `132/132`; Visual QA della Pianura
+  Infetta, tavola materiali generated e review completa dei cinque biomi
+  (`210` capture) PASS.
+- Il collider del player e ora un rettangolo a terra `28x16` centrato sulla sua
+  ombra. Il contatto con le mesa conserva la distanza laterale precedente,
+  elimina il gap visivo sul bordo sud e allinea correttamente anche il limite
+  nord; aggiunta una regressione fisica sui due bordi verticali.
 - I chasm interni della pipeline void-first mantengono ora una tile logica di
   distanza da strade e passaggi. Il margine riserva lo spazio del cliff lip e
   impedisce che erba o roccia vengano disegnate sull'asfalto quando una buca
@@ -56,6 +75,12 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
   nelle suite verdi.
 
 ### Added
+
+- Aggiunto il raster originale `terrain_divider_dirt_generated.png`, materiale
+  di terra compatta ripetibile usato dal canale divisore della maschera. Il
+  contratto CPU e coperto da `terrain_boundary_mask_test.gd`; la Visual QA
+  `biome_art_infected_plains_visual_qa.gd` e' verde con texture esistenti,
+  divisore, void uniforme e capture finale.
 
 - Le boss wave di Survival, Infinite Arena e Tower Defense mantengono ora la
   normale progressione numerica dei minion; il boss viene aggiunto come extra

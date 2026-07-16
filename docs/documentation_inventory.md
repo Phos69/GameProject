@@ -36,6 +36,7 @@ Documenti tecnici ancora utili:
 - `docs/zombie_market.md`
 - `docs/obstacle_rendering.md`
 - `docs/forest_top_down_texture_system.md`
+- `docs/terrain_boundary_mask_system.md`
 - `docs/weapon_visual_identity_validation_report.md`
 - `docs/rpg_character_visual_checklist.md`
 - `docs/testing/manual_checklist.md` (solo indice operativo corrente; le

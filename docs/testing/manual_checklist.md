@@ -38,6 +38,9 @@ Per iterazioni mirate sulla mappa:
   facciata sud, ma non spostano il footprint logico.
 - Con `F9`, i collider reali coincidono con il blocco fisico: cerchi centrati
   sulle radici per gli alberi e rettangoli allineati H/V per gli altri blocker.
+- Avvicinare il player ai quattro lati di una mesa: l'ombra deve raggiungere il
+  bordo fisico; in particolare non deve restare un gap a sud ne oltrepassare il
+  limite a nord.
 - Nessun quadrato opaco resta visibile sotto gli asset con `F9` disattivato.
 - Player, zombie, boss e prop non incorporano un piano sotto lo sprite.
 - Alberi e soggetti alti possono superare il bordo nord e restano ordinati via
@@ -58,11 +61,35 @@ Per iterazioni mirate sulla mappa:
   a `1280x720` e `960x540`.
 - Un asset mancante attiva un fallback top-down con lo stesso footprint.
 
+## Maschera confini terrain
+
+Il contratto tecnico completo e in `docs/terrain_boundary_mask_system.md`.
+
+- In tutti e cinque i biomi, erba, sentiero e asfalto devono conservare la
+  propria texture; il divisore di terra copre soltanto il cambio tra classi
+  visuali diverse.
+- Tile ID diversi della stessa superficie non creano linee interne: controllare
+  in particolare strada, incrocio, passage ed entry/exit asfaltati.
+- Verificare split orizzontali e verticali, angoli, T-junction e incroci: il
+  divisore deve essere continuo, senza rettangoli per-cell, fori, doppie linee o
+  ponti tra celle che si toccano soltanto in diagonale.
+- Muovere la camera lungo il confine e attraversare piu chunk con zoom
+  variabile: la maschera regionale non deve produrre seam, cambi di spessore o
+  segmenti che compaiono durante il rebuild.
+- Il void resta un colore uniforme, senza texture o griglia ripetuta. Faccia
+  cliff e lip sono disegnati sopra il canvas delle superfici e restano
+  l'indicazione principale della caduta.
+- Con `F9` attivo e disattivo, la sostituzione visuale non modifica collisioni,
+  fall zone, danno, spawn o pathfinding.
+- Ripetere i controlli a `1280x720` e `960x540`, includendo high contrast e
+  reduced motion.
+
 Visual QA consigliate:
 
 ```powershell
 ./tools/run_visual_qa.ps1 -SkipImport -Filter obstacle_asset
 ./tools/run_visual_qa.ps1 -SkipImport -Filter biome_art
+./tools/run_visual_qa.ps1 -SkipImport -Filter biome_rendering_review
 ./tools/run_visual_qa.ps1 -SkipImport -Filter cliff
 ./tools/run_visual_qa.ps1 -SkipImport -Filter top_down_final
 ```
@@ -107,4 +134,6 @@ Visual QA consigliate:
 Il pass e accettato quando import, GUT completo, check dei due generatori e
 Visual QA pertinenti sono verdi, la scena principale e giocabile con tastiera e
 joypad e nessuna documentazione operativa o asset attivo richiede una
-proiezione diversa da `orthogonal_top_down` con `controlled_perspective`.
+proiezione diversa da `orthogonal_top_down` con `controlled_perspective`. La
+maschera terrain deve inoltre mantenere il void uniforme, il divisore continuo
+tra classi diverse e cliff/lip sopra il canvas delle superfici.

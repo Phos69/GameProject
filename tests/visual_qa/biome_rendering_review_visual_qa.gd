@@ -64,7 +64,7 @@ const GENERATED_PATH_SURFACE_TILE_IDS: Array[StringName] = [
 	&"packed_snow_path",
 	&"wooden_walkway",
 ]
-const GENERATED_ROAD_BORDER_TILE_IDS: Array[StringName] = [
+const GENERATED_ROUTE_EDGE_TILE_IDS: Array[StringName] = [
 	&"road_edge",
 	&"road_curve_north",
 	&"road_curve_east",
@@ -272,6 +272,8 @@ func _assert_tile_layers_have_assets(biome_id: StringName, seed: int) -> void:
 	var generated_route_layers := 0
 	var generated_route_cells := 0
 	var route_material_failures := PackedStringArray()
+	var surface_mask_layers := 0
+	var surface_mask_failures := PackedStringArray()
 	for node in get_nodes_in_group("biome_tile_layers"):
 		var layer := node as BiomeTileLayer
 		if layer == null or not is_instance_valid(layer) or layer.is_queued_for_deletion():
@@ -291,6 +293,11 @@ func _assert_tile_layers_have_assets(biome_id: StringName, seed: int) -> void:
 		route_material_failures.append_array(
 			route_report.get("failures", PackedStringArray()) as PackedStringArray
 		)
+		if layer.biome_id == biome_id:
+			surface_mask_layers += 1
+			surface_mask_failures.append_array(
+				_terrain_surface_mask_failures(layer)
+			)
 	_expect(checked > 0, "%s seed %d exposes tile layers" % [String(biome_id), seed])
 	_expect(
 		missing_assets == 0,
@@ -313,6 +320,39 @@ func _assert_tile_layers_have_assets(biome_id: StringName, seed: int) -> void:
 		"%s seed %d generated route materials are assigned: %s"
 		% [String(biome_id), seed, "; ".join(route_material_failures)]
 	)
+	_expect(
+		surface_mask_layers > 0,
+		"%s seed %d exposes terrain surface mask layers"
+		% [String(biome_id), seed]
+	)
+	_expect(
+		surface_mask_failures.is_empty(),
+		"%s seed %d terrain surface masks are valid: %s"
+		% [String(biome_id), seed, "; ".join(surface_mask_failures)]
+	)
+
+func _terrain_surface_mask_failures(layer: BiomeTileLayer) -> PackedStringArray:
+	var failures := PackedStringArray()
+	var label := "%s/%s" % [String(layer.biome_id), String(layer.name)]
+	var boundary_report := layer.get_terrain_boundary_report()
+	if boundary_report.is_empty():
+		failures.append("%s has no terrain boundary report" % label)
+	else:
+		if int(boundary_report.get("boundary_segment_count", 0)) <= 0:
+			failures.append("%s has no terrain boundary segments" % label)
+		if int(boundary_report.get("divider_pixel_count", 0)) <= 0:
+			failures.append("%s has no terrain divider pixels" % label)
+	var surface_ids := layer.get_loaded_surface_texture_ids()
+	if not surface_ids.has(&"terrain_divider_dirt"):
+		failures.append("%s does not load terrain_divider_dirt" % label)
+	for material_id in layer.get_rendered_surface_material_ids():
+		if not surface_ids.has(material_id):
+			surface_ids.append(material_id)
+	for material_id in surface_ids:
+		var id_text := String(material_id)
+		if id_text.contains("__core_") or id_text.contains("__edge_"):
+			failures.append("%s renders obsolete material %s" % [label, id_text])
+	return failures
 
 func _generated_route_material_report(layer: BiomeTileLayer) -> Dictionary:
 	var failures := PackedStringArray()
@@ -323,9 +363,25 @@ func _generated_route_material_report(layer: BiomeTileLayer) -> Dictionary:
 		or not GENERATED_ART_CATALOG.has_generated_theme(layer.biome_id)
 	):
 		return {"route_cells": route_cells, "failures": failures}
-	var theme_fragment := "/%s/" % String(
-		GENERATED_ART_CATALOG.get_theme_id_for_biome(layer.biome_id)
+	var selected_road_path := GENERATED_ART_CATALOG.select_surface_asset_path(
+		layer.biome_id,
+		GENERATED_ART_CATALOG.ROLE_ROAD,
+		layer.layout.generation_seed,
+		Vector2i.ZERO
 	)
+	var selected_road_id := GENERATED_ART_CATALOG.material_id_from_path(
+		selected_road_path
+	)
+	if selected_road_path.is_empty() or not selected_road_path.contains("road_variation"):
+		failures.append(
+			"%s selected road role is not a road_variation: %s"
+			% [String(layer.biome_id), selected_road_path]
+		)
+	if not layer.get_loaded_surface_texture_ids().has(selected_road_id):
+		failures.append(
+			"%s does not load selected road material %s"
+			% [String(layer.biome_id), String(selected_road_id)]
+		)
 	for y in range(layer.layout.zone_size.y):
 		for x in range(layer.layout.zone_size.x):
 			var cell := Vector2i(x, y)
@@ -340,73 +396,90 @@ func _generated_route_material_report(layer: BiomeTileLayer) -> Dictionary:
 						cell
 					)
 				)
-				_assert_generated_route_path(
+				_assert_generated_route_material(
 					failures,
 					layer,
 					cell,
-					theme_fragment,
-					"path_variation" if lane_intersection else "road_border_defined",
-					not lane_intersection
+					(
+						GENERATED_ART_CATALOG.ROLE_PATH
+						if lane_intersection
+						else GENERATED_ART_CATALOG.ROLE_ROAD
+					)
 				)
 			elif GENERATED_PATH_SURFACE_TILE_IDS.has(tile_id):
 				route_cells += 1
-				_assert_generated_route_path(
+				_assert_generated_route_material(
 					failures,
 					layer,
 					cell,
-					theme_fragment,
-					"path_variation",
-					false
+					GENERATED_ART_CATALOG.ROLE_PATH
 				)
-			elif GENERATED_ROAD_BORDER_TILE_IDS.has(tile_id):
+			elif GENERATED_ROUTE_EDGE_TILE_IDS.has(tile_id):
 				route_cells += 1
-				var lane_border := (
+				var lane_edge := (
 					layer.resolver != null
 					and layer.resolver.route_cell_uses_lane_surface(
 						layer.layout,
 						cell
 					)
 				)
-				# Dalla Fase 2 dell'unificazione strade i bordi delle lane
-				# renderizzano il materiale path, non il bordo stradale.
-				_assert_generated_route_path(
+				_assert_generated_route_material(
 					failures,
 					layer,
 					cell,
-					theme_fragment,
-					"path_variation" if lane_border else "road_border_defined",
-					not lane_border
+					(
+						GENERATED_ART_CATALOG.ROLE_PATH
+						if lane_edge
+						else GENERATED_ART_CATALOG.ROLE_ROAD
+					)
 				)
 	return {"route_cells": route_cells, "failures": failures}
 
-func _assert_generated_route_path(
+func _assert_generated_route_material(
 	failures: PackedStringArray,
 	layer: BiomeTileLayer,
 	cell: Vector2i,
-	theme_fragment: String,
-	expected_fragment: String,
-	expect_oriented_id: bool
+	expected_role: StringName
 ) -> void:
+	var expected_path := GENERATED_ART_CATALOG.select_surface_asset_path(
+		layer.biome_id,
+		expected_role,
+		layer.layout.generation_seed,
+		cell
+	)
+	var expected_id := GENERATED_ART_CATALOG.material_id_from_path(expected_path)
+	var expected_descriptor := GENERATED_ART_CATALOG.get_asset_descriptor(
+		layer.biome_id,
+		expected_path
+	)
 	var material_path := layer.get_resolved_material_asset_path(cell)
 	var material_id := layer.get_resolved_material_asset_id(cell)
-	if (
-		material_path.contains(theme_fragment)
-		and material_path.contains(expected_fragment)
-		and (
-			not expect_oriented_id
-			or String(material_id).ends_with("__horizontal")
-			or String(material_id).ends_with("__vertical")
-			or String(material_id).ends_with("__core_horizontal")
-			or String(material_id).ends_with("__core_vertical")
+	var material_id_text := String(material_id)
+	var expected_id_text := String(expected_id)
+	var material_id_matches := material_id == expected_id
+	if expected_role == GENERATED_ART_CATALOG.ROLE_ROAD:
+		material_id_matches = (
+			material_id_matches
+			or material_id_text == expected_id_text + "__horizontal"
+			or material_id_text == expected_id_text + "__vertical"
 		)
+	if (
+		not expected_path.is_empty()
+		and material_path == expected_path
+		and StringName(expected_descriptor.get(&"role", &"")) == expected_role
+		and material_id_matches
+		and not material_id_text.contains("__core_")
+		and not material_id_text.contains("__edge_")
 	):
 		return
 	failures.append(
-		"%s %s cell %s -> id=%s path=%s"
+		"%s %s cell %s -> role=%s expected=%s id=%s path=%s"
 		% [
 			String(layer.biome_id),
 			String(layer.get_resolved_tile_id(cell)),
 			str(cell),
+			String(expected_role),
+			expected_path,
 			String(material_id),
 			material_path,
 		]

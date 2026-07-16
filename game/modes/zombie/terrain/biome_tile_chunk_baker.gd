@@ -20,7 +20,8 @@ static func bake_chunk(
 	depth_lines: PackedVector2Array,
 	grid_points: PackedVector2Array,
 	grid_color: Color,
-	suppressed_void_texture_count: int
+	suppressed_void_texture_count: int,
+	terrain_surface_render_data: Dictionary = {}
 ) -> BiomeTileChunk:
 	if parent == null:
 		return null
@@ -47,6 +48,7 @@ static func bake_chunk(
 		depth_lines,
 		grid_points,
 		grid_color,
-		suppressed_void_texture_count
+		suppressed_void_texture_count,
+		terrain_surface_render_data
 	)
 	return chunk

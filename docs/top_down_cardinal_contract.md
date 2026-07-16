@@ -26,6 +26,14 @@ gameplay.
 
 - Ground, strade, sentieri, passaggi e transizioni coprono quad rettangolari,
   senza pavimento incorporato nell'asset.
+- Il riempimento visivo e classificato in quattro superfici: ground/erba,
+  sentiero, asfalto e void. Gli ID semantici possono variare senza creare un
+  confine quando la superficie visuale resta la stessa.
+- Una sola maschera regionale RGBA guida tutti i chunk: RGB seleziona le tre
+  texture full-bleed, RGB zero conserva il colore uniforme del void e alpha
+  traccia il divisore in terra fra superfici cardinalmente adiacenti.
+- Il divisore e puramente presentazionale, non chiude i passaggi sul perimetro
+  e non determina collisioni, navigazione, danno o classificazione gameplay.
 - Le route principali e i connector seguono segmenti orizzontali o verticali.
 - Curve e incroci collegano lati cardinali; non seguono assi visivi inclinati.
 - Cliff, void, muri e transizioni dichiarano i lati tramite N/E/S/W e relativi
@@ -97,7 +105,8 @@ anchor non cambiano mai il punto logico della cella o la collisione.
 Le texture terrain sono full-bleed e seamless. I cutout di prop, attori e
 facciate hanno alpha reale. I fallback devono rispettare lo stesso contratto:
 un asset mancante non puo reintrodurre una base a rombo o una proiezione
-inclinata.
+inclinata. Il canvas della maschera resta sotto cliff lip/faces, ostacoli e
+attori; il void profondo resta un colore uniforme invece di una tile ripetuta.
 
 ## Attori e camera
 

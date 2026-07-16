@@ -32,13 +32,21 @@ func _run() -> void:
 	board.add_child(background)
 	_add_label(
 		board,
-		"GENERATED BIOME ART / GROUND / ROUTES / ROAD H-V / ROAD BORDER / VOID CLIFF",
+		"GENERATED BIOME ART / FULL-BLEED SURFACES / DIRT DIVIDER / VOID CLIFF",
 		Vector2(0.0, 18.0),
 		Vector2(1600.0, 42.0),
 		24
 	)
+	var manifest := EnvironmentAssetManifest.reload_shared()
+	_expect(manifest.load_error.is_empty(), "environment asset manifest loads")
+	var divider_contract := manifest.get_terrain_asset_contract(&"terrain_divider_dirt")
+	var divider_path := String(divider_contract.get("asset_path", ""))
+	_expect(
+		not divider_path.is_empty(),
+		"terrain_divider_dirt resolves from the manifest"
+	)
 	for index in range(BIOMES.size()):
-		_add_biome_panel(board, BIOMES[index], index)
+		_add_biome_panel(board, BIOMES[index], index, divider_path)
 	for _frame in range(4):
 		await process_frame
 	var image := root.get_texture().get_image()
@@ -53,7 +61,8 @@ func _run() -> void:
 func _add_biome_panel(
 	board: Control,
 	biome_id: StringName,
-	index: int
+	index: int,
+	divider_path: String
 ) -> void:
 	var origin := Vector2(18.0 + float(index) * 394.0, 76.0)
 	var panel := ColorRect.new()
@@ -88,12 +97,6 @@ func _add_biome_panel(
 		seed,
 		Vector2i.ZERO
 	)
-	var road_border_path := BiomeGeneratedArtCatalog.select_surface_asset_path(
-		biome_id,
-		BiomeGeneratedArtCatalog.ROLE_GROUND_TO_ROAD,
-		seed,
-		Vector2i.ZERO
-	)
 	var face_path := BiomeGeneratedArtCatalog.select_cliff_asset_path(
 		biome_id,
 		BiomeGeneratedArtCatalog.ROLE_CLIFF_FACE,
@@ -104,145 +107,54 @@ func _add_biome_panel(
 		BiomeGeneratedArtCatalog.ROLE_CLIFF_LIP_HORIZONTAL,
 		seed
 	)
-	_add_texture(board, ground_path, origin + Vector2(12.0, 78.0), Vector2(350.0, 220.0))
-	_add_label(board, "GROUND", origin + Vector2(12.0, 300.0), Vector2(350.0, 24.0), 13)
-	_add_texture(board, path_path, origin + Vector2(12.0, 330.0), Vector2(110.0, 118.0))
-	_add_road_surface_preview(
-		board,
-		biome_id,
-		road_path,
-		origin + Vector2(132.0, 330.0)
+	_expect(
+		road_path.get_file().contains("road_variation"),
+		"%s road role selects full-bleed road_variation: %s"
+		% [String(biome_id), road_path]
 	)
-	_add_label(board, "PATH", origin + Vector2(12.0, 450.0), Vector2(110.0, 22.0), 12)
-	_add_label(board, "ROAD V", origin + Vector2(132.0, 450.0), Vector2(110.0, 22.0), 12)
-	_add_label(board, "ROAD H", origin + Vector2(252.0, 450.0), Vector2(110.0, 22.0), 12)
-	_add_road_border_preview(
+	_add_texture(board, ground_path, origin + Vector2(12.0, 78.0), Vector2(350.0, 220.0))
+	_add_label(
 		board,
-		biome_id,
-		road_border_path,
-		origin + Vector2(12.0, 486.0)
+		"GROUND / FULL-BLEED",
+		origin + Vector2(12.0, 300.0),
+		Vector2(350.0, 24.0),
+		13
+	)
+	_add_texture(board, path_path, origin + Vector2(12.0, 330.0), Vector2(110.0, 118.0))
+	_add_texture(board, road_path, origin + Vector2(132.0, 330.0), Vector2(230.0, 118.0))
+	_add_label(
+		board,
+		"PATH / FULL-BLEED",
+		origin + Vector2(12.0, 450.0),
+		Vector2(110.0, 22.0),
+		11
+	)
+	_add_label(
+		board,
+		"ROAD / ASPHALT FULL-BLEED",
+		origin + Vector2(132.0, 450.0),
+		Vector2(230.0, 22.0),
+		11
+	)
+	_add_texture(board, divider_path, origin + Vector2(12.0, 486.0), Vector2(350.0, 116.0))
+	_add_label(
+		board,
+		"DIRT DIVIDER / MASK A",
+		origin + Vector2(12.0, 604.0),
+		Vector2(350.0, 22.0),
+		12
 	)
 	_add_texture(board, face_path, origin + Vector2(12.0, 660.0), Vector2(220.0, 218.0))
 	_add_texture(board, lip_path, origin + Vector2(242.0, 660.0), Vector2(120.0, 104.0))
 	_add_texture(board, ground_path, origin + Vector2(242.0, 772.0), Vector2(120.0, 106.0))
-	_add_label(board, "VOID FACE", origin + Vector2(12.0, 882.0), Vector2(220.0, 22.0), 12)
-	_add_label(board, "LIP / CROWN", origin + Vector2(238.0, 882.0), Vector2(128.0, 22.0), 12)
-
-func _add_road_surface_preview(
-	board: Control,
-	biome_id: StringName,
-	asset_path: String,
-	position: Vector2
-) -> void:
-	_expect(
-		asset_path.contains("road_border_defined"),
-		"%s road role selects road_border_defined: %s"
-		% [String(biome_id), asset_path]
-	)
-	var source_texture := load(asset_path) as Texture2D
-	_expect(source_texture != null, "road texture loads: %s" % asset_path)
-	if source_texture == null:
-		return
-	var vertical_texture := GeneratedBiomeTextureTools.normalize_surface_texture(
-		source_texture,
-		biome_id,
-		asset_path
-	)
-	var rotated_texture := (
-		GeneratedBiomeTextureTools.rotate_repeating_texture_clockwise(
-			vertical_texture,
-			"%s|visual_qa_road_surface_horizontal" % asset_path
-		)
-	)
-	var source_orientation := BiomeGeneratedArtCatalog.road_border_source_orientation(
-		asset_path
-	)
-	var horizontal_texture := (
-		vertical_texture
-		if source_orientation == BiomeGeneratedArtCatalog.ROAD_BORDER_ORIENTATION_HORIZONTAL
-		else rotated_texture
-	)
-	vertical_texture = (
-		vertical_texture
-		if source_orientation == BiomeGeneratedArtCatalog.ROAD_BORDER_ORIENTATION_VERTICAL
-		else rotated_texture
-	)
-	_expect(
-		vertical_texture != null and horizontal_texture != null,
-		"%s builds both oriented road-surface runtime textures"
-		% String(biome_id)
-	)
-	_add_texture_instance(
+	_add_label(board, "VOID CLIFF FACE", origin + Vector2(12.0, 882.0), Vector2(220.0, 22.0), 12)
+	_add_label(
 		board,
-		vertical_texture,
-		position,
-		Vector2(110.0, 118.0)
+		"CLIFF LIP / GROUND",
+		origin + Vector2(238.0, 882.0),
+		Vector2(128.0, 22.0),
+		11
 	)
-	_add_texture_instance(
-		board,
-		horizontal_texture,
-		position + Vector2(120.0, 0.0),
-		Vector2(110.0, 118.0)
-	)
-
-func _add_road_border_preview(
-	board: Control,
-	biome_id: StringName,
-	asset_path: String,
-	position: Vector2
-) -> void:
-	_expect(
-		asset_path.contains("road_border_defined"),
-		"%s ground_to_road selects road_border_defined: %s"
-		% [String(biome_id), asset_path]
-	)
-	var source_texture := load(asset_path) as Texture2D
-	_expect(source_texture != null, "road border texture loads: %s" % asset_path)
-	if source_texture == null:
-		return
-	var vertical_texture := GeneratedBiomeTextureTools.normalize_surface_texture(
-		source_texture,
-		biome_id,
-		asset_path
-	)
-	var rotated_texture := (
-		GeneratedBiomeTextureTools.rotate_repeating_texture_clockwise(
-			vertical_texture,
-			"%s|visual_qa_road_border_horizontal" % asset_path
-		)
-	)
-	var source_orientation := BiomeGeneratedArtCatalog.road_border_source_orientation(
-		asset_path
-	)
-	var horizontal_texture := (
-		vertical_texture
-		if source_orientation == BiomeGeneratedArtCatalog.ROAD_BORDER_ORIENTATION_HORIZONTAL
-		else rotated_texture
-	)
-	vertical_texture = (
-		vertical_texture
-		if source_orientation == BiomeGeneratedArtCatalog.ROAD_BORDER_ORIENTATION_VERTICAL
-		else rotated_texture
-	)
-	_expect(
-		vertical_texture != null and horizontal_texture != null,
-		"%s builds both oriented road-border runtime textures"
-		% String(biome_id)
-	)
-	_add_texture_instance(
-		board,
-		vertical_texture,
-		position,
-		Vector2(170.0, 116.0)
-	)
-	_add_texture_instance(
-		board,
-		horizontal_texture,
-		position + Vector2(180.0, 0.0),
-		Vector2(170.0, 116.0)
-	)
-	_add_label(board, "BORDER V", position + Vector2(0.0, 118.0), Vector2(170.0, 22.0), 12)
-	_add_label(board, "BORDER H", position + Vector2(180.0, 118.0), Vector2(170.0, 22.0), 12)
 
 func _add_texture(
 	board: Control,

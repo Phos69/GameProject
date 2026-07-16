@@ -1,6 +1,10 @@
 extends Node2D
 class_name BiomeTileChunk
 
+const TERRAIN_SURFACE_CANVAS_SCRIPT = preload(
+	"res://game/modes/zombie/terrain/terrain_surface_canvas.gd"
+)
+
 var chunk_rect: Rect2i
 var ground_underlay_mesh: ArrayMesh
 var ground_mesh: ArrayMesh
@@ -14,6 +18,7 @@ var depth_lines := PackedVector2Array()
 var grid_points := PackedVector2Array()
 var grid_color := Color(1.0, 1.0, 1.0, 0.12)
 var suppressed_void_texture_count: int = 0
+var terrain_surface_canvas: TerrainSurfaceCanvas
 
 func configure(
 	next_rect: Rect2i,
@@ -28,7 +33,8 @@ func configure(
 	next_depth_lines: PackedVector2Array,
 	next_grid_points: PackedVector2Array,
 	next_grid_color: Color,
-	next_suppressed_void_texture_count: int
+	next_suppressed_void_texture_count: int,
+	next_terrain_surface_render_data: Dictionary = {}
 ) -> void:
 	chunk_rect = next_rect
 	ground_underlay_mesh = next_ground_underlay_mesh
@@ -45,10 +51,11 @@ func configure(
 	suppressed_void_texture_count = next_suppressed_void_texture_count
 	z_index = -9
 	texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
-	# Mipmap filtering: le texture generate (in particolare le strip cliff sui
-	# bordi dei chasm) vengono minificate molto e senza mipmap scintillano.
+	# Le superfici terrain ripetute vengono minificate molto durante lo zoom;
+	# senza mipmap il dettaglio di erba, sentieri e divisore scintilla.
 	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	add_to_group("biome_tile_chunks")
+	_rebuild_terrain_surface_canvas(next_terrain_surface_render_data)
 	queue_redraw()
 
 func get_visual_tile_count() -> int:
@@ -64,6 +71,18 @@ func get_texture_detail_line_count() -> int:
 
 func get_suppressed_void_texture_count() -> int:
 	return suppressed_void_texture_count
+
+func get_rendered_surface_material_ids() -> Array[StringName]:
+	var rendered_ids: Array[StringName] = []
+	for material_id in surface_texture_ids:
+		if not rendered_ids.has(material_id):
+			rendered_ids.append(material_id)
+	if terrain_surface_canvas != null and is_instance_valid(terrain_surface_canvas):
+		for material_id in terrain_surface_canvas.get_surface_material_ids():
+			if not rendered_ids.has(material_id):
+				rendered_ids.append(material_id)
+	rendered_ids.sort()
+	return rendered_ids
 
 func _draw() -> void:
 	if ground_underlay_mesh != null:
@@ -101,3 +120,15 @@ func _draw() -> void:
 		)
 	if grid_points.size() >= 2:
 		draw_multiline(grid_points, grid_color)
+
+func _rebuild_terrain_surface_canvas(render_data: Dictionary) -> void:
+	if render_data.is_empty():
+		if terrain_surface_canvas != null:
+			terrain_surface_canvas.queue_free()
+			terrain_surface_canvas = null
+		return
+	if terrain_surface_canvas == null:
+		terrain_surface_canvas = TERRAIN_SURFACE_CANVAS_SCRIPT.new() as TerrainSurfaceCanvas
+		terrain_surface_canvas.name = "TerrainSurfaceCanvas"
+		add_child(terrain_surface_canvas)
+	terrain_surface_canvas.configure(render_data)

@@ -201,7 +201,22 @@ definito in `docs/top_down_cardinal_contract.md`.
   contribuisce a `visible_missing_chunks` e rende `is_area_ready()` falso,
   evitando readiness positive sopra un backdrop non ancora costruito.
 - `BiomeTileChunkBaker` e `BiomeTileChunk`: commit main-thread dei dati visuali
-  e nodo CanvasItem proprietario delle mesh, texture e linee di un chunk.
+  e nodo CanvasItem proprietario delle mesh, texture e linee di un chunk. Ogni
+  chunk possiede un `TerrainSurfaceCanvas` che campiona il proprio sottorettangolo
+  della maschera regionale, mantenendo separata la geometria di cliff, lip e
+  ostacoli.
+- `TerrainSurfaceClassifier`: converte il tile semantico risolto in una delle
+  sole classi visuali `void`, `grass`, `path` o `asphalt`; non modifica
+  collisioni, spawn, danno o pathfinding.
+- `TerrainBoundaryMaskBuilder`: genera una maschera RGBA8 regionale a 8 pixel
+  per tile. RGB seleziona rispettivamente grass, path e asphalt; RGB nullo
+  rappresenta il void e alpha contiene il divisore di terra sui confini tra
+  superfici diverse.
+- `TerrainSurfaceCanvas` e `terrain_surface_blend.gdshader`: stendono texture
+  full-bleed in coordinate world-space, compongono sopra il divisore
+  `terrain_divider_dirt` e usano un colore uniforme quando RGB e nullo. Lo
+  streamer passa l'offset della regione alla fase UV, quindi texture uguali
+  restano continue anche sui seam tra regioni.
 - `GeneratedBiomeTextureTools`: normalizzazione condivisa dei PNG generati usati
   in repeat runtime; applica crop dei bordi chiari, fix dei pixel alpha e la
   stessa policy a ground, cliff/void e raised cliff perimetrali. Per
@@ -599,6 +614,9 @@ ID negli smoke catalogo/pickup/projectile o melee e nella QA screenshot.
 - `HealthSystem` conserva la sorgente dell'ultimo danno valido per assegnare XP al killer.
 - Collision layer `1`: player e corpi generici; gli ostacoli ambientali che
   bloccano il movimento restano su questo layer per fermare player e zombie.
+- Il player usa un collider a terra rettangolare `28x16`, centrato a `(0, 18)`
+  come la sua ombra. Il contatto nord/sud dell'ombra coincide cosi con il
+  limite fisico dei blocker cardinali senza alterarne il footprint.
 - Collision layer `2`: bersagli damageable.
 - Collision layer `4`: proiettili player; la mask colpisce il layer `2` e il
   layer `32` per fermarsi sui muri solidi.
@@ -858,24 +876,14 @@ multi-bioma.
   cosi entry, exit e connector restano coerenti con il `passage_type`; le altre
   route generate usano segmenti H/V e curve tra lati cardinali; i rettangoli
   dei passaggi restano la fonte geometrica delle aperture.
-- Nei biomi con `generated_theme_id`, il resolver applica materiali PNG generated
-  a ground, route piene e transizioni strada. `road_border_defined` fornisce
-  core `__core_vertical`/`__core_horizontal` per la superficie base delle celle
-  road-like (`main_road`, `road`, `road_intersection`, `road_edge`,
-  `road_curve_*` e passage). Le texture `transition_ground_to_road_*` del tema
-  attivo forniscono overlay mono-lato `__edge_west/east/north/south` per le
-  celle route che toccano terreno non-route. Le varianti complete
-  `__vertical`/`__horizontal` restano registrate, ma non vengono piu usate come
-  materiale di una cella intera. `service_lane`, `ash_lane`,
-  `packed_snow_path` e `wooden_walkway` usano il ruolo `path`. I passage
-  road-like tra biomi (`bridge`, `snow_pass`, `broken_gate`, `burned_road` e
-  relative entry/exit) mantengono `tile_id` e sezione `passage_tiles` per
-  collisioni/semantica, ma renderizzano la superficie con lo stesso materiale
-  strada generated del bioma. Tutti i temi attivi hanno sorgente nativa
-  verticale dopo la normalizzazione di `urban_ruins`; il contratto conserva
-  comunque `native_border_orientation` per temi futuri. `road_variation` resta
-  catalogato come detail/storico e non e' la superficie runtime delle strade
-  nei temi generated.
+- Nei biomi con `generated_theme_id`, il resolver conserva tile ID, sezione e
+  ruolo semantico, mentre `TerrainSurfaceClassifier` riduce la resa del terreno
+  alle classi visuali comuni. `service_lane`, `ash_lane`, `packed_snow_path` e
+  `wooden_walkway` diventano `path`; route principali e passage road-like
+  (`bridge`, `snow_pass`, `broken_gate`, `burned_road` e relative entry/exit)
+  diventano `asphalt`. Il catalogo espone al runtime solo i raster full-bleed
+  `ground`, `path` e `road`; transition e detail restano disponibili per
+  catalogazione e tooling, ma non partecipano alla composizione della maschera.
 - `BiomeTileCatalog` possiede solo ID statici, sezioni manifest e liste di
   route/tile richiesti. `BiomeTileResolver` mantiene alias pubblici per i
   consumer esistenti e resta l'unico responsabile della scelta per-cella.
@@ -910,64 +918,39 @@ multi-bioma.
   un secondo job dopo 2 ms; un singolo bake atomico puo superare tale budget ed
   e quindi esposto dalle metriche. Il controller legge e riprioritizza prima la
   camera, poi esegue il commit: visible, regione corrente e direzione di
-  movimento precedono il prefetch rimasto in coda. Le superfici generated
-  vengono classificate in una
-  sola scansione per chunk e solo dopo convertite nelle mesh dei materiali
-  effettivamente presenti. `get_streaming_stats()` espone
+  movimento precedono il prefetch rimasto in coda. La classificazione visuale
+  dell'intera regione alimenta una sola maschera RGBA8; ogni chunk ne campiona
+  il sottorettangolo pertinente nel proprio `TerrainSurfaceCanvas`, senza mesh
+  separate per ciascun materiale. `get_streaming_stats()` espone
   `visible_missing_chunks` e tempi last/max/average dei commit. Infinite Arena
   riusa lo stesso tipo di chunk, ma prepara l'intera regione all'avvio senza
   `WorldRuntime`.
-  Nel bioma forestale il baker pre-bake-a run rettangolari con UV world-space
-  per prato e route. I tile semantici `forest_path`, `forest_road`,
-  `grass_to_path`, `grass_to_road`, `path_to_road` e i passage `road`/entry/exit
-  mantengono ID e section originali per debug, ma le mesh runtime usano
-  `forest_road_border_defined__core_horizontal`/`__core_vertical` come base e
-  `grass_to_road_generated__edge_west/east/north/south` solo sui margini che
-  toccano terreno non-route. Questo mantiene un taglio netto con
-  transizione definita verso il terreno su entrambi gli assi ed evita la
-  sovrapposizione tra `forest_path`, `forest_road` e bordo strada. La texture
-  base `forest_road_border` resta caricata come sorgente, ma non viene
-  renderizzata come materiale unico non orientato.
-  `ForestGroundMeshBuilder` possiede la costruzione delle mesh; le
-  classi senza raster finale mantengono le proprie mesh colorate. Il
-  layer pre-bake-a anche linee di dettaglio per grass, tall grass,
-  path, road, transizioni e cliff; le celle pure `void_depth`/`forest_void`
-  e le transizioni `void_*` restano senza surface terrain, lasciando un fondale
-  uniforme con lo stesso colore condiviso dal `VoidBackdrop` fuori-mappa sotto
-  face e lip.
-  I biomi avanzati riusano lo stesso percorso geometrico tramite
-  `BiomeGeneratedArtCatalog`: `toxic_wastes -> urban_ruins`,
-  `burning_fields -> volcanic`, `frozen_outskirts -> frozen_tundra` e
-  `drowned_marsh -> swamp`. Il resolver conserva `tile_id`, `section` e
-  `role`, aggiunge `material_asset_id`/`material_asset_path` e il layer
-  raggruppa le mesh per tale materiale. `urban_ruins` seleziona un materiale
-  stabile per ruolo sull'intera regione; `main_road`, `road`, incroci e
-  passage road-like tra biomi usano il core dei PNG `road_border_defined`
-  invece di `road_variation` o degli SVG `passage_tiles/*`; quando toccano
-  terreno non-route il layer aggiunge una strip overlay `__edge_*`, derivata da
-  `transition_ground_to_road_*`, sul lato reale della strada. Le lane tematiche
-  usano `path_variation`. Il resolver
-  assegna alla base un suffisso runtime `__core_horizontal`/`__core_vertical`;
-  `BiomeTileLayer` carica la variante verticale nativa, una variante ruotata e
-  gli overlay mono-lato di transizione con alpha feather per i bordi
-  nord/sud/est/ovest, cosi il taglio
-  terreno/strada segue il lato reale della strada in Tossico, Infuocato, Neve e
-  Palude. Gli asset `road_variation` restano catalogati come detail/storico,
-  mentre `transition_ground_to_road` non viene piu renderizzato come cella piena:
-  e' solo il sorgente degli overlay strada/prato.
-  `frozen_tundra` applica lo stesso contratto di selezione regionale e bordo
-  strada. Il ground usa una
-  quilt runtime `2x2` a periodo world-space `1024`: quattro offset periodici
-  dello stesso raster neve vengono raccordati sulle cuciture interne ed
-  esterne, mantenendo densita nativa senza checker, pannelli tonali o simmetria
-  specchiata. Path e road mantengono periodo `512`. `swamp` applica selezione
-  regionale e bordi strada definiti; il ground usa la stessa quilt a offset con
-  periodo `1024`, mentre path e road restano a `512`. `volcanic` usa lo stesso
-  contratto regionale e di bordo strada, limita il ground pieno alla base
-  variation 02 e mantiene 01, 03 e 04 come detail; il repeat world-space e
-  `512`. Il cambio di significato delle mappe `material_asset_*` invalida la
-  `TileBakeCache` tramite la format version corrente (`26` dopo il follow-up
-  overlay mono-lato strada).
+  Nel bioma forestale le texture runtime `forest_grass`, `forest_path` e
+  `forest_road` sono superfici full-bleed associate ai canali R, G e B. I tile
+  semantici `grass_to_path`, `grass_to_road`, `path_to_road` e i passage
+  `road`/entry/exit mantengono ID e section per debug, ma non richiedono piu
+  core, edge o corner raster: la maschera seleziona le superfici sui due lati e
+  il canale alpha applica `terrain_divider_dirt` sul confine. Tall grass e altre
+  letture visuali restano separate dal contratto delle superfici principali.
+  Le celle pure `void_depth`/`forest_void` e le transizioni `void_*` hanno RGB
+  nullo e mostrano il colore uniforme condiviso dal `VoidBackdrop` fuori-mappa.
+  Le mesh di cliff e lip restano un pass separato sopra il canvas terreno e
+  definiscono il limite calpestabile senza usare il divisore di terra come
+  sostituto della parete di caduta.
+  I biomi avanzati riusano lo stesso shader tramite `BiomeGeneratedArtCatalog`:
+  `toxic_wastes -> urban_ruins`, `burning_fields -> volcanic`,
+  `frozen_outskirts -> frozen_tundra` e `drowned_marsh -> swamp`. Ogni regione
+  sceglie un raster full-bleed stabile per i ruoli `ground`, `path` e `road`;
+  `ROAD_STYLE_SURFACE` rende il ruolo road direttamente come asphalt, mentre
+  le vecchie texture di transition/border/detail restano catalogate ma non
+  vengono caricate nel set runtime della superficie. Il divisore di terra e la
+  semantica dei canali della maschera sono comuni a tutti i temi.
+  `frozen_tundra` conserva per il ground la quilt runtime `2x2` a periodo
+  world-space `1024`, mentre path e road restano a `512`; `swamp` usa lo stesso
+  periodo `1024` per il ground e `512` per path/road. `volcanic` mantiene il
+  ground pieno sulla base variation 02, le altre variation come detail e repeat
+  world-space `512`. Il nuovo significato dei dati superficie invalida la
+  `TileBakeCache` tramite la format version corrente.
   `desert` e il set sostitutivo `forest` sono validati dal catalogo ma non
   hanno un consumer runtime.
   Le `mesa_rects` vengono raggruppate per `mesa_profile_ids`: `forest`,

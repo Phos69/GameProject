@@ -81,37 +81,28 @@ func _make_layout() -> BiomeEnvironmentLayout:
 
 func _expect_route_surfaces_are_crisp(layer: BiomeTileLayer) -> void:
 	var rendered_ids := layer.get_rendered_surface_material_ids()
-	# Contratto post follow-up edge/core: la base delle route e' sempre il core
-	# ritagliato; il confine strada/prato e' un overlay a striscia ritagliato
-	# dallo stesso PNG madre road_border_defined, un lato per direzione.
 	var required_ids: Array[StringName] = [
-		&"forest_road_border_defined__core_horizontal",
-		&"forest_road_border_defined__core_vertical",
-		&"forest_road_border_defined__edge_north",
-		&"forest_road_border_defined__edge_south",
-		&"forest_road_border_defined__edge_west",
-		&"forest_road_border_defined__edge_east",
+		&"forest_grass",
+		&"forest_path",
+		&"forest_road",
+		&"terrain_divider_dirt",
+		&"terrain_void_color",
 	]
 	for required_id in required_ids:
 		_expect(
 			rendered_ids.has(required_id),
-			"route cells render %s" % String(required_id)
+			"terrain mask renders %s" % String(required_id)
 		)
-	var legacy_ids: Array[StringName] = [
-		&"forest_road_border_defined__horizontal",
-		&"forest_road_border_defined__vertical",
-		&"forest_path",
-		&"forest_road",
-		&"grass_to_path",
-		&"grass_to_road",
-		&"path_to_road",
-		&"forest_road_border",
-	]
-	for legacy_id in legacy_ids:
-		_expect(
-			not rendered_ids.has(legacy_id),
-			"%s is not rendered as a route base surface" % String(legacy_id)
-		)
+	var boundary_report := layer.get_terrain_boundary_report()
+	_expect(not boundary_report.is_empty(), "terrain boundary report is available")
+	_expect(
+		int(boundary_report.get("boundary_segment_count", 0)) > 0,
+		"terrain boundary mask contains boundary segments"
+	)
+	_expect(
+		int(boundary_report.get("divider_pixel_count", 0)) > 0,
+		"terrain boundary mask contains divider pixels"
+	)
 
 func _add_tree_cluster(
 	scene_root: Node2D,
@@ -174,7 +165,7 @@ func _add_labels(scene_root: Node2D) -> void:
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	scene_root.add_child(title)
 	var subtitle := _make_label(
-		"Route corridors use defined road-border edges plus derived road cores; legacy dirt/asphalt surfaces are not rendered.",
+		"Grass, path, asphalt and void share one regional mask; compacted earth traces every terrain boundary.",
 		Vector2(0.0, 55.0),
 		Vector2(1280.0, 26.0),
 		15,

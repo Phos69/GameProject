@@ -1,7 +1,7 @@
 # Forest Top-down Texture System
 
-Stato: primo pass completo per il bioma base `infected_plains`, usato come
-foresta di partenza della survival.
+Stato: contratto runtime a maschera attivo per il bioma base
+`infected_plains`, usato come foresta di partenza della survival.
 
 ## Contratto runtime
 
@@ -15,7 +15,6 @@ Tile principali:
 - `forest_tall_grass`
 - `forest_path`
 - `forest_road`
-- `forest_road_border`
 - `forest_void`
 - `forest_cliff_edge`
 - `forest_mountain_wall`
@@ -29,10 +28,11 @@ Transizioni:
 - `ground_to_void_cliff`
 - `ground_to_mountain_wall`
 
-I contratti vivono in `assets/environment/top_down/manifest.json`. Gli SVG
-sono in `assets/environment/top_down/tiles/forest/` e in
-`assets/environment/top_down/edges/{cliffs,void,walls}/`. Tutte le superfici
-seguono `coordinate_system: orthogonal_top_down`; le facciate cliff applicano
+I contratti semantici vivono in `assets/environment/top_down/manifest.json`.
+I raster full-bleed sono in `assets/environment/top_down/tiles/forest/textures/`;
+gli asset cardinali restano in `tiles/forest/` e in
+`edges/{cliffs,void,walls}/`. Tutte le superfici seguono
+`coordinate_system: orthogonal_top_down`; le facciate cliff applicano
 `volume_style: controlled_perspective` senza alterare il footprint.
 
 Le facce di caduta usano inoltre i materiali PNG finali
@@ -71,19 +71,17 @@ prospettico controllato invece di una striscia piatta. Ogni fallback usa top
 rettangolari e lati N/E/S/W. Path, road, wall, void e collisioni restano
 separati.
 
-Sentiero, strada e bordo strada hanno ancora contratti asset separati
-(`forest_dirt_path_generated.png`, `forest_asphalt_generated.png` e
-`forest_road_border_defined.png`), ma dal pass `ART-VIS-FIX` del 2026-07-09 le
-route visibili della Pianura Infetta usano solo il bordo strada definito. I
-tile logici `forest_path`, `forest_road`, `grass_to_path`, `grass_to_road`,
-`path_to_road`, `road` e relativi entry/exit restano nel resolver come semantica
-di route/passaggio, ma `BiomeTileLayer` usa
-`forest_road_border__vertical`/`__horizontal` sui margini e un core strada
-derivato dallo stesso PNG negli interni, ruotando il sorgente quando la strada
-corre orizzontalmente. Cosi il contatto con il terreno resta un taglio netto con
-bordo definito su entrambi gli assi e non si sovrappongono piu texture
-terra/asfalto legacy.
-Tutti i raster sono seamless, mipmapped e limitati a 512 px in import.
+Il terreno forestale usa tre raster full-bleed:
+`forest_grass_generated.png`, `forest_dirt_path_generated.png` e
+`forest_asphalt_generated.png`. `TerrainSurfaceClassifier` converte ogni tile
+risolto in `grass`, `path`, `asphalt` o `void`; `TerrainBoundaryMaskBuilder`
+genera poi una maschera RGBA8 dell'intera regione a 8 pixel per tile. R, G e B
+selezionano le tre superfici, RGB nullo lascia il colore uniforme del void e A
+contiene il divisore `terrain_divider_dirt_generated.png` lungo i confini fra
+classi diverse. `TerrainSurfaceCanvas` campiona il sottorettangolo regionale di
+ogni chunk con UV world-space e lo shader compone il divisore sopra le texture.
+Non servono piu core, edge, rotazioni o corner raster per unire path, road ed
+erba; i relativi asset storici restano solo per confronto e QA.
 
 ## Regole di risoluzione
 
@@ -93,22 +91,24 @@ Tutti i raster sono seamless, mipmapped e limitati a 512 px in import.
 - Il floor walkable usa grass e varianti deterministiche in base a seed/cella.
 - I blocchi `forest` del layout diventano `forest_tall_grass` tramite
   `ObstacleLayoutGenerator`, ma restano `TERRAIN_WALKABLE`.
-- Le strade principali (`main_road`) diventano `forest_road` a livello logico.
+- Le strade principali (`main_road`) diventano `forest_road` a livello logico e
+  alimentano il canale B/asphalt della maschera.
 - Gli spoke secondari (`broken_street`) diventano `forest_path` a livello
-  logico.
+  logico e alimentano il canale G/path.
 - Il contatto tra strada principale e sentiero resta marcato come
-  `path_to_road`, ma viene renderizzato con il core strada derivato dal bordo
-  definito, non con una patch di bordo verso erba.
+  `path_to_road`; le superfici restano sui rispettivi canali e il confine viene
+  coperto dal divisore del canale alpha.
 - Il contatto con floor non-route produce `grass_to_path` o `grass_to_road`;
-  nel rendering diventano varianti orientate di `forest_road_border`.
+  questi ID restano semantici, mentre il renderer usa R sul lato grass e G/B
+  sul lato route senza asset di bordo orientati.
 - I passage `road` e relativi entry/exit mantengono sezione `passage_tiles`,
-  ma nel rendering usano le stesse varianti orientate di `forest_road_border`
-  sui margini e il core strada derivato all'interno.
+  ma nel rendering alimentano la stessa classe B/asphalt delle strade
+  principali.
 - Il contatto tra erba bassa e tall grass produce `grass_to_tall_grass`.
 - Il contatto con void/fall zone produce `ground_to_void_cliff`.
 - Il contatto con border o wall segment produce `ground_to_mountain_wall`.
 - Le celle fall/void del bioma usano `forest_cliff_edge` vicino al terreno e
-  `forest_void` come profondita.
+  RGB nullo con colore uniforme come profondita.
 - Le celle `fall_zone` sul confine vengono ulteriormente risolte in tile
   neighbor-aware: quattro bordi, quattro angoli interni, quattro angoli esterni
   e raccordi d'angolo cardinali condivisi tra i biomi. Il tile layer ne pre-bake-a
@@ -116,48 +116,44 @@ Tutti i raster sono seamless, mipmapped e limitati a 512 px in import.
 - Le pareti perimetrali usano `forest_mountain_wall`, mantenendo collisioni e
   varchi fisici esistenti.
 
-`BiomeTileLayer` mantiene il rendering chunked, aggiunge un underlay forestale
-pre-baked colorato per tipo tile e disattiva il reticolo sul bioma base. In
-questo modo tutta la superficie rettangolare resta coperta: erba/cliff usano
-verdi scuri, path/road marroni scuri. Le linee di dettaglio pre-baked
-restano sopra erba, tall grass, path, road, transizioni e cliff; il
-`forest_void` puro e le celle `void_*` di transizione usano solo fondale void
-sotto la geometria cliff, senza reticoli ripetuti, usando lo stesso
-colore del `VoidBackdrop` fuori-mappa. I border perimetrali si fermano sia nei
-corner fall sia lungo ogni tratto in cui un `full_void` raggiunge il limite
-esterno, lasciando solo il fondale void. Non crea nodi per tile.
+`BiomeTileLayer` mantiene il rendering chunked ma genera una sola maschera per
+la regione `75x75`. Ogni `BiomeTileChunk` crea un `TerrainSurfaceCanvas` e
+campiona solo il proprio UV rect della maschera; le tre texture restano
+full-bleed e ripetibili in coordinate world-space. Il `forest_void` puro e le
+celle `void_*` di transizione hanno RGB nullo e usano lo stesso colore uniforme
+del `VoidBackdrop`, senza reticoli. Facce cliff e lip vengono disegnati in pass
+separati sopra il canvas superficie: il divisore di terra non sostituisce il
+bordo di caduta. Il sistema non crea nodi per tile.
 
 ## Estendere ad altri biomi
 
-1. Aggiungere i nuovi SVG sotto una cartella dedicata in
-   `assets/environment/top_down/tiles/<biome>/` e, se necessario, in
-   `edges/`.
-2. Registrare ogni ID in `terrain_tiles`, `edge_tiles` o `void_tiles`, con
-   `asset_path`, `biome_ids`, `fallback_path`, `source`, `license` e
-   `attribution_key`.
-3. Inserire gli ID nel relativo `biome_asset_sets`.
-4. Aggiungere i draw mode in `EnvironmentAssetManifest` e i fallback in
-   `BiomeTerrainPatch` solo se il tile layer asset-driven viene disattivato.
-5. Estendere `BiomeTileResolver` con una funzione specifica del bioma,
-   mantenendo priorita a passage tile e connector.
-6. Aggiornare o aggiungere uno smoke che verifichi manifest, asset presenti,
-   transizioni emesse dal layout generato e nessun asset mancante nel
-   `BiomeTileLayer`.
-7. Aggiornare `assets/ATTRIBUTION.md` solo se entrano asset esterni; gli SVG
-   generati internamente restano sotto la riga "Asset ambiente SVG generati".
+1. Registrare tre raster full-bleed ripetibili per i ruoli `ground`, `path` e
+   `road`; riusare `terrain_divider_dirt` salvo un override artistico esplicito.
+2. Inserire asset, metadati e ruoli nel manifest o nel
+   `BiomeGeneratedArtCatalog`, mantenendo transition e detail fuori dal set
+   runtime della superficie.
+3. Mappare i tile semantici sulle quattro classi condivise del
+   `TerrainSurfaceClassifier`, evitando branch per-bioma quando la semantica e
+   gia esprimibile come grass, path, asphalt o void.
+4. Conservare cliff, lip, wall e collisioni nei sistemi dedicati sopra il
+   `TerrainSurfaceCanvas`.
+5. Aggiungere uno smoke che verifichi classificazione, canali RGBA, dimensione
+   della maschera, determinismo del seed e assenza di asset runtime mancanti.
+6. Aggiornare `assets/ATTRIBUTION.md` solo se entrano asset esterni.
 
 ## Checklist manuale
 
 - Avviare survival con seed `772031` e confermare che la regione base mostri
-  erba forestale, tall grass e route con bordo strada definito, non floor
-  generico.
-- Verificare che solo `forest_road_border__vertical` e
-  `forest_road_border__horizontal` piu i core derivati siano renderizzati sulle
-  route forestali, senza patch `forest_path`/`forest_road` sovrapposte.
+  erba, sentieri e asfalto forestali full-bleed, non floor generico.
+- Verificare che il divisore di terra sia continuo sui contatti grass/path,
+  grass/asphalt e path/asphalt, inclusi curve, incroci e confini di chunk.
+- Verificare che core, edge e corner del vecchio bordo strada non compaiano e
+  che ai lati del divisore non ci siano buchi o texture sovrapposte.
 - Attraversare un varco fisico: il passaggio deve restare aperto, senza portali
   o gate visibili, e le pareti laterali devono leggere come montagna/roccia.
 - Camminare vicino a void e fall zone: il bordo deve mostrare cliff/depth e
-  non deve sembrare pavimento attraversabile.
+  non deve sembrare pavimento attraversabile; sotto cliff e lip il void deve
+  restare un colore uniforme.
 - Controllare un bordo orizzontale, uno verticale e i quattro angoli: nessuna
   giunzione deve mostrare doppie linee, quadrati, creste interrotte o raccordi
   ambigui.
@@ -170,6 +166,7 @@ esterno, lasciando solo il fondale void. Non crea nodi per tile.
 
 ```text
 ./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/assets
+./tools/run_gut.ps1 -SkipImport -GutDir res://tests/suites/environment
 ./tools/run_visual_qa.ps1 -SkipImport -Filter forest_surface_generated
 godot --headless --path . --script res://tools/generate_top_down_environment_assets.gd -- --check
 ```

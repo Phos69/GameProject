@@ -15,9 +15,6 @@ const CLIFF_BORDER_MESH_BUILDER_SCRIPT = preload(
 const RECTILINEAR_CLIFF_FACE_MESH_BUILDER_SCRIPT = preload(
 	"res://game/modes/zombie/cliffs/rectilinear_cliff_face_mesh_builder.gd"
 )
-const FOREST_GROUND_MESH_BUILDER_SCRIPT = preload(
-	"res://game/modes/zombie/ground/forest_ground_mesh_builder.gd"
-)
 const RECTILINEAR_ROCK_AREA_MESH_BUILDER_SCRIPT = preload(
 	"res://game/modes/zombie/rocks/rectilinear_rock_area_mesh_builder.gd"
 )
@@ -33,6 +30,12 @@ const GENERATED_ART_CATALOG = preload(
 const GENERATED_TEXTURE_TOOLS = preload(
 	"res://game/modes/zombie/generated_biome_texture_tools.gd"
 )
+const TERRAIN_SURFACE_CLASSIFIER = preload(
+	"res://game/modes/zombie/terrain/terrain_surface_classifier.gd"
+)
+const TERRAIN_BOUNDARY_MASK_BUILDER = preload(
+	"res://game/modes/zombie/terrain/terrain_boundary_mask_builder.gd"
+)
 const BIOME_TILE_CHUNK_BAKER_SCRIPT = preload(
 	"res://game/modes/zombie/terrain/biome_tile_chunk_baker.gd"
 )
@@ -43,88 +46,31 @@ const ROCK_CLIFF_FACE_TEXTURE_ID := &"rock_cliff_face_texture"
 const LARGE_ROCK_OBJECT_ID := &"large_rock"
 const FOREST_MESA_PROFILE_ID := &"forest"
 const FOREST_GRASS_TEXTURE_ID := &"forest_grass"
-const FOREST_ROAD_BORDER_TEXTURE_ID := &"forest_road_border"
+const FOREST_PATH_TEXTURE_ID := &"forest_path"
+const FOREST_ROAD_TEXTURE_ID := &"forest_road"
+const TERRAIN_DIVIDER_TEXTURE_ID := &"terrain_divider_dirt"
 const FOREST_SURFACE_TEXTURE_WORLD_SIZE := 256.0
-const SEMANTIC_SURFACE_TEXTURE_WORLD_SIZE := 256.0
+const TERRAIN_DIVIDER_TEXTURE_WORLD_SIZE := 256.0
 const TOXIC_SURFACE_TEXTURE_WORLD_SIZE := 1024.0
 const FROZEN_SURFACE_TEXTURE_WORLD_SIZE := 512.0
 const FROZEN_GROUND_TEXTURE_WORLD_SIZE := 1024.0
 const MARSH_SURFACE_TEXTURE_WORLD_SIZE := 512.0
 const MARSH_GROUND_TEXTURE_WORLD_SIZE := 1024.0
 const BURNING_SURFACE_TEXTURE_WORLD_SIZE := 512.0
-const GENERATED_SURFACE_RUN_OVERDRAW_PIXELS := 1.5
-# Mezza larghezza della strip di confine: 0.5 tile per lato = 1 tile totale,
-# proporzione della banda di bordo nell'asset madre (32% su ~3 tile di strada).
-const ROAD_BORDER_OVERLAY_HALF_WIDTH_TILES := 0.5
 const FOREST_SURFACE_TEXTURE_IDS: Array[StringName] = [
 	&"forest_grass",
 	&"forest_path",
 	&"forest_road",
-	&"forest_road_border",
-	&"grass_to_path",
-	&"grass_to_road",
-	&"path_to_road"
-]
-const FOREST_GRASS_SURFACE_TILE_IDS: Array[StringName] = [
-	&"forest_grass",
-	&"forest_grass_variant_01",
-	&"forest_grass_variant_02",
-	&"forest_tall_grass",
-	&"grass_to_tall_grass"
-]
-const FOREST_TRANSITION_TEXTURE_IDS: Array[StringName] = [
-	&"grass_to_path",
-	&"grass_to_road",
-	&"path_to_road",
-	&"forest_road_border",
-	# Materiali border derivati da forest_road_border_defined.png (naming
-	# catalogo, registrati in _register_forest_road_border_orientation_textures).
-	&"forest_road_border_defined__horizontal",
-	&"forest_road_border_defined__vertical"
-]
-const GENERATED_THEME_TERRAIN_SURFACE_TILE_IDS: Array[StringName] = [
-	&"main_road",
-	&"road",
-	&"broken_street",
-	&"service_lane",
-	&"ash_lane",
-	&"packed_snow_path",
-	&"wooden_walkway",
-	&"bridge",
-	&"snow_pass",
-	&"broken_gate",
-	&"burned_road",
-	&"road_intersection",
-	&"road_edge",
-	&"road_curve_north",
-	&"road_curve_east",
-	&"road_curve_south",
-	&"road_curve_west"
-]
-const GENERATED_THEME_PASSAGE_SURFACE_TILE_IDS: Array[StringName] = [
-	&"road",
-	&"bridge",
-	&"snow_pass",
-	&"broken_gate",
-	&"burned_road",
-	&"road_entry",
-	&"road_exit",
-	&"bridge_entry",
-	&"bridge_exit",
-	&"snow_pass_entry",
-	&"snow_pass_exit",
-	&"broken_gate_entry",
-	&"broken_gate_exit",
-	&"burned_road_entry",
-	&"burned_road_exit",
-	&"bridge_broken",
-	&"cliff_ramp"
 ]
 var layout: BiomeEnvironmentLayout
 var palette: BiomePalette
 var biome_id: StringName = &""
 var quality_preset: StringName = &"balanced"
 var chunk_size: int = DEFAULT_CHUNK_SIZE
+## Posizione del centro regione nel sistema condiviso usato per il repeat delle
+## texture. Lo streamer passa l'offset della regione, cosi la fase non riparte
+## sui seam; i layer standalone mantengono Vector2.ZERO.
+var terrain_texture_world_origin := Vector2.ZERO
 var manifest: EnvironmentAssetManifest
 var resolver: BiomeTileResolver
 
@@ -156,6 +102,10 @@ var _rock_cliff_face_texture: Texture2D
 var _forest_surface_textures: Dictionary = {}
 var _forest_surface_art_asset_paths: Dictionary = {}
 var _surface_texture_ids: Array[StringName] = []
+var _terrain_surface_mask_data: Dictionary = {}
+var _terrain_surface_mask_texture: ImageTexture
+var _terrain_surface_texture_ids: Dictionary = {}
+var _fallback_surface_textures: Dictionary = {}
 var _cliff_art_asset_paths: Dictionary = {}
 var _cliff_variant_textures: Dictionary = {}
 var _rock_art_asset_paths: Dictionary = {}
@@ -207,12 +157,14 @@ func configure(
 	next_resolver: BiomeTileResolver = null,
 	next_manifest: EnvironmentAssetManifest = null,
 	async_build: bool = false,
-	build_all_chunks: bool = true
+	build_all_chunks: bool = true,
+	next_terrain_texture_world_origin: Vector2 = Vector2.ZERO
 ) -> void:
 	layout = next_layout
 	palette = next_palette
 	biome_id = next_biome_id
 	quality_preset = next_quality_preset
+	terrain_texture_world_origin = next_terrain_texture_world_origin
 	manifest = next_manifest if next_manifest != null else EnvironmentAssetManifest.get_shared()
 	resolver = next_resolver if next_resolver != null else BiomeTileResolver.new(manifest)
 	_load_cliff_art_textures()
@@ -574,16 +526,18 @@ func get_forest_ground_art_asset_path() -> String:
 	return String(_forest_surface_art_asset_paths.get(FOREST_GRASS_TEXTURE_ID, ""))
 
 func has_forest_surface_art_textures() -> bool:
-	if _uses_generated_theme():
-		return (
-			not _surface_texture_ids.is_empty()
-			and _surface_texture_ids.size()
-			>= GENERATED_ART_CATALOG.get_all_surface_asset_paths(biome_id).size()
-		)
-	for texture_id in FOREST_SURFACE_TEXTURE_IDS:
-		if not (_forest_surface_textures.get(texture_id) is Texture2D):
+	if not _uses_themed_ground():
+		return false
+	_refresh_terrain_surface_texture_ids()
+	for surface_kind in [
+		TERRAIN_SURFACE_CLASSIFIER.SURFACE_GRASS,
+		TERRAIN_SURFACE_CLASSIFIER.SURFACE_PATH,
+		TERRAIN_SURFACE_CLASSIFIER.SURFACE_ASPHALT,
+	]:
+		var texture_id := StringName(_terrain_surface_texture_ids.get(surface_kind, &""))
+		if texture_id.is_empty() or not (_forest_surface_textures.get(texture_id) is Texture2D):
 			return false
-	return true
+	return _forest_surface_textures.get(TERRAIN_DIVIDER_TEXTURE_ID) is Texture2D
 
 func get_forest_surface_art_asset_paths() -> Dictionary:
 	return _forest_surface_art_asset_paths.duplicate(true)
@@ -664,7 +618,7 @@ func get_rendered_surface_material_ids() -> Array[StringName]:
 			var chunk := chunk_value as BiomeTileChunk
 			if chunk == null or not is_instance_valid(chunk):
 				continue
-			for material_id in chunk.surface_texture_ids:
+			for material_id in chunk.get_rendered_surface_material_ids():
 				resident_material_ids[material_id] = true
 		var chunk_result: Array[StringName] = []
 		for material_id in resident_material_ids.keys():
@@ -677,6 +631,34 @@ func get_rendered_surface_material_ids() -> Array[StringName]:
 		if surface_mesh != null and surface_mesh.get_surface_count() > 0:
 			result.append(material_id)
 	return result
+
+func get_terrain_surface_kind(cell: Vector2i) -> int:
+	if layout == null:
+		return TERRAIN_SURFACE_CLASSIFIER.SURFACE_VOID
+	if not _terrain_surface_mask_data.is_empty():
+		return TERRAIN_BOUNDARY_MASK_BUILDER.surface_kind_at_cell(
+			_terrain_surface_mask_data,
+			layout.zone_size,
+			cell
+		)
+	return TERRAIN_SURFACE_CLASSIFIER.classify_cell(layout, resolver, cell)
+
+func get_terrain_boundary_report() -> Dictionary:
+	if _terrain_surface_mask_data.is_empty():
+		return {}
+	return {
+		"image_size": _terrain_surface_mask_data.get("image_size", Vector2i.ZERO),
+		"pixels_per_tile": int(_terrain_surface_mask_data.get("pixels_per_tile", 0)),
+		"divider_pixel_count": int(
+			_terrain_surface_mask_data.get("divider_pixel_count", 0)
+		),
+		"boundary_segment_count": int(
+			_terrain_surface_mask_data.get("boundary_segment_count", 0)
+		),
+		"divider_asset_path": String(
+			_forest_surface_art_asset_paths.get(TERRAIN_DIVIDER_TEXTURE_ID, "")
+		),
+	}
 
 func get_loaded_cliff_variant_count() -> int:
 	return _cliff_variant_textures.size()
@@ -1003,25 +985,24 @@ func _load_forest_surface_art_textures() -> void:
 	_forest_surface_textures.clear()
 	_forest_surface_art_asset_paths.clear()
 	_surface_texture_ids.clear()
+	_terrain_surface_texture_ids.clear()
+	_fallback_surface_textures.clear()
 	if manifest == null or not _uses_themed_ground():
 		return
 	if _uses_generated_theme():
-		for asset_path in GENERATED_ART_CATALOG.get_all_surface_asset_paths(biome_id):
+		for asset_path in GENERATED_ART_CATALOG.get_runtime_surface_asset_paths(biome_id):
 			var material_id := GENERATED_ART_CATALOG.material_id_from_path(asset_path)
 			var texture := _load_generated_surface_texture(asset_path)
 			if texture == null:
 				continue
 			_register_surface_texture(material_id, asset_path, texture)
-			if GENERATED_ART_CATALOG.is_orientable_road_surface_asset_path(asset_path):
-				_register_road_surface_orientation_textures(asset_path, texture)
-			if GENERATED_ART_CATALOG.is_road_border_asset_path(asset_path):
-				_register_road_border_orientation_textures(asset_path, texture)
 		if (
 			biome_id == &"frozen_outskirts"
 			or biome_id == &"drowned_marsh"
 		):
 			_apply_offset_ground_macro_texture()
-		_load_generated_theme_manifest_surface_textures()
+		_load_terrain_divider_texture()
+		_refresh_terrain_surface_texture_ids()
 		return
 	for texture_id in FOREST_SURFACE_TEXTURE_IDS:
 		var contract := manifest.get_terrain_asset_contract(_themed_surface_asset_id(texture_id))
@@ -1037,55 +1018,28 @@ func _load_forest_surface_art_textures() -> void:
 		)
 		if texture != null:
 			_register_surface_texture(texture_id, asset_path, texture)
-			if texture_id == FOREST_ROAD_BORDER_TEXTURE_ID:
-				_register_forest_road_border_orientation_textures(
-					asset_path,
-					texture
-				)
+	_load_terrain_divider_texture()
+	_refresh_terrain_surface_texture_ids()
 
-func _load_generated_theme_manifest_surface_textures() -> void:
-	for tile_id in _biome_manifest_surface_tile_ids(
-		&"terrain_tiles",
-		GENERATED_THEME_TERRAIN_SURFACE_TILE_IDS
-	):
-		_load_manifest_surface_texture(BiomeTileResolver.TILE_SECTION_TERRAIN, tile_id)
-	for tile_id in _biome_manifest_surface_tile_ids(
-		&"passage_tiles",
-		GENERATED_THEME_PASSAGE_SURFACE_TILE_IDS
-	):
-		_load_manifest_surface_texture(BiomeTileResolver.TILE_SECTION_PASSAGE, tile_id)
-
-func _biome_manifest_surface_tile_ids(
-	contract_key: StringName,
-	fallback_ids: Array[StringName]
-) -> Array[StringName]:
-	var result: Array[StringName] = []
-	if manifest != null:
-		var biome_contract := manifest.get_biome_asset_set_contract(biome_id)
-		var raw_ids := biome_contract.get(String(contract_key), biome_contract.get(contract_key, [])) as Array
-		for raw_id in raw_ids:
-			result.append(StringName(str(raw_id)))
-	if result.is_empty():
-		return fallback_ids.duplicate()
-	return result
-
-func _load_manifest_surface_texture(section: StringName, tile_id: StringName) -> void:
-	var texture_id := _manifest_surface_texture_id(section, tile_id)
-	if texture_id.is_empty() or manifest == null:
+func _load_terrain_divider_texture() -> void:
+	if manifest == null:
 		return
-	var contract := manifest.get_asset_contract(section, tile_id)
+	var contract := manifest.get_terrain_asset_contract(TERRAIN_DIVIDER_TEXTURE_ID)
 	var asset_path := String(contract.get("asset_path", ""))
-	_forest_surface_art_asset_paths[texture_id] = asset_path
 	if asset_path.is_empty():
 		return
-	var texture := SVG_TEXTURE_LOADER.load_texture(
-		asset_path,
-		palette.floor_color if palette != null else Color(0.26, 0.40, 0.18, 1.0),
-		palette.alternate_floor_color if palette != null else Color(0.18, 0.30, 0.14, 1.0),
-		Vector2i(512, 512)
+	var source_texture := _load_generated_texture(asset_path)
+	if source_texture == null:
+		return
+	var texture := GENERATED_TEXTURE_TOOLS.normalize_repeating_texture(
+		source_texture,
+		2,
+		true,
+		GENERATED_TEXTURE_TOOLS.BURNING_FIELDS_EDGE_BLEND_PIXELS,
+		"%s|terrain_divider" % asset_path
 	)
 	if texture != null:
-		_register_surface_texture(texture_id, asset_path, texture)
+		_register_surface_texture(TERRAIN_DIVIDER_TEXTURE_ID, asset_path, texture)
 
 func _register_surface_texture(
 	texture_id: StringName,
@@ -1099,202 +1053,57 @@ func _register_surface_texture(
 	if not _surface_texture_ids.has(texture_id):
 		_surface_texture_ids.append(texture_id)
 
-func _register_road_border_orientation_textures(
-	asset_path: String,
-	source_texture: Texture2D
-) -> void:
-	var source_orientation := GENERATED_ART_CATALOG.road_border_source_orientation(
-		asset_path
-	)
-	var source_id := GENERATED_ART_CATALOG.oriented_road_border_material_id(
-		asset_path,
-		source_orientation
-	)
-	_register_surface_texture(source_id, asset_path, source_texture)
-	var rotated_orientation := GENERATED_ART_CATALOG.opposite_road_border_orientation(
-		source_orientation
-	)
-	var rotated_id := GENERATED_ART_CATALOG.oriented_road_border_material_id(
-		asset_path,
-		rotated_orientation
-	)
-	var rotated_texture := (
-		GENERATED_TEXTURE_TOOLS.rotate_repeating_texture_clockwise(
-			source_texture,
-			"%s|road_border_%s" % [asset_path, String(rotated_orientation)]
+func _refresh_terrain_surface_texture_ids() -> void:
+	_terrain_surface_texture_ids.clear()
+	if _uses_generated_theme():
+		var generation_seed := layout.generation_seed if layout != null else 0
+		_terrain_surface_texture_ids[
+			TERRAIN_SURFACE_CLASSIFIER.SURFACE_GRASS
+		] = _generated_surface_texture_id_for_role(
+			GENERATED_ART_CATALOG.ROLE_GROUND,
+			generation_seed
 		)
-	)
-	_register_surface_texture(rotated_id, asset_path, rotated_texture)
-	var vertical_texture := source_texture
-	var horizontal_texture := rotated_texture
-	if source_orientation == GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_HORIZONTAL:
-		vertical_texture = rotated_texture
-		horizontal_texture = source_texture
-	var core_source := GENERATED_TEXTURE_TOOLS.build_road_core_surface_texture(
-		_load_generated_texture(asset_path),
+		_terrain_surface_texture_ids[
+			TERRAIN_SURFACE_CLASSIFIER.SURFACE_PATH
+		] = _generated_surface_texture_id_for_role(
+			GENERATED_ART_CATALOG.ROLE_PATH,
+			generation_seed
+		)
+		_terrain_surface_texture_ids[
+			TERRAIN_SURFACE_CLASSIFIER.SURFACE_ASPHALT
+		] = _generated_surface_texture_id_for_role(
+			GENERATED_ART_CATALOG.ROLE_ROAD,
+			generation_seed
+		)
+	else:
+		_terrain_surface_texture_ids[
+			TERRAIN_SURFACE_CLASSIFIER.SURFACE_GRASS
+		] = FOREST_GRASS_TEXTURE_ID
+		_terrain_surface_texture_ids[
+			TERRAIN_SURFACE_CLASSIFIER.SURFACE_PATH
+		] = FOREST_PATH_TEXTURE_ID
+		_terrain_surface_texture_ids[
+			TERRAIN_SURFACE_CLASSIFIER.SURFACE_ASPHALT
+		] = FOREST_ROAD_TEXTURE_ID
+
+func _generated_surface_texture_id_for_role(
+	role: StringName,
+	generation_seed: int
+) -> StringName:
+	var asset_path := GENERATED_ART_CATALOG.select_surface_asset_path(
 		biome_id,
-		asset_path,
-		source_orientation
+		role,
+		generation_seed,
+		Vector2i.ZERO
 	)
-	if core_source == null:
-		return
-	_register_surface_texture(
-		GENERATED_ART_CATALOG.road_core_material_id(asset_path, source_orientation),
-		asset_path,
-		core_source
-	)
-	var core_rotated := (
-		GENERATED_TEXTURE_TOOLS.rotate_repeating_texture_clockwise(
-			core_source,
-			"%s|road_core_%s" % [asset_path, String(rotated_orientation)]
-		)
-	)
-	_register_surface_texture(
-		GENERATED_ART_CATALOG.road_core_material_id(asset_path, rotated_orientation),
-		asset_path,
-		core_rotated
-	)
-	for side in GENERATED_ART_CATALOG.ROAD_BORDER_SIDES:
-		var side_texture := (
-			GENERATED_TEXTURE_TOOLS.build_road_border_side_surface_texture(
-				_load_generated_texture(asset_path),
-				biome_id,
-				asset_path,
-				source_orientation,
-				side
-			)
-		)
-		if side_texture == null:
-			continue
-		side_texture = GENERATED_TEXTURE_TOOLS.fade_road_transition_overlay_texture(
-			side_texture,
-			side,
-			"%s|road_border_side_fade_%s" % [asset_path, String(side)]
-		)
-		if side_texture == null:
-			continue
-		_register_surface_texture(
-			GENERATED_ART_CATALOG.road_border_side_material_id(asset_path, side),
-			asset_path,
-			side_texture
-		)
-
-func _register_road_surface_orientation_textures(
-	asset_path: String,
-	vertical_texture: Texture2D
-) -> void:
-	var vertical_id := GENERATED_ART_CATALOG.oriented_road_surface_material_id(
-		asset_path,
-		GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_VERTICAL
-	)
-	_register_surface_texture(vertical_id, asset_path, vertical_texture)
-	var horizontal_id := GENERATED_ART_CATALOG.oriented_road_surface_material_id(
-		asset_path,
-		GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_HORIZONTAL
-	)
-	var horizontal_texture := (
-		GENERATED_TEXTURE_TOOLS.rotate_repeating_texture_clockwise(
-			vertical_texture,
-			"%s|road_surface_horizontal" % asset_path
-		)
-	)
-	_register_surface_texture(horizontal_id, asset_path, horizontal_texture)
-
-func _register_forest_road_border_orientation_textures(
-	asset_path: String,
-	vertical_texture: Texture2D
-) -> void:
-	_register_surface_texture(
-		GENERATED_ART_CATALOG.oriented_road_border_material_id(
-			asset_path,
-			GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_VERTICAL
-		),
-		asset_path,
-		vertical_texture
-	)
-	var horizontal_texture := (
-		GENERATED_TEXTURE_TOOLS.rotate_repeating_texture_clockwise(
-			vertical_texture,
-			"%s|forest_road_border_horizontal" % asset_path
-		)
-	)
-	_register_surface_texture(
-		GENERATED_ART_CATALOG.oriented_road_border_material_id(
-			asset_path,
-			GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_HORIZONTAL
-		),
-		asset_path,
-		horizontal_texture
-	)
-	var vertical_core_texture := GENERATED_TEXTURE_TOOLS.crop_road_core_texture(
-		vertical_texture,
-		GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_VERTICAL,
-		"%s|forest_road_core" % asset_path
-	)
-	_register_surface_texture(
-		GENERATED_ART_CATALOG.road_core_material_id(
-			asset_path,
-			GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_VERTICAL
-		),
-		asset_path,
-		vertical_core_texture
-	)
-	var horizontal_core_texture := (
-		GENERATED_TEXTURE_TOOLS.rotate_repeating_texture_clockwise(
-			vertical_core_texture,
-			"%s|forest_road_core_horizontal" % asset_path
-		)
-	)
-	_register_surface_texture(
-		GENERATED_ART_CATALOG.road_core_material_id(
-			asset_path,
-			GENERATED_ART_CATALOG.ROAD_BORDER_ORIENTATION_HORIZONTAL
-		),
-		asset_path,
-		horizontal_core_texture
-	)
-	_register_road_border_side_textures(asset_path, vertical_texture, horizontal_texture)
-
-func _register_road_border_side_textures(
-	asset_path: String,
-	vertical_texture: Texture2D,
-	horizontal_texture: Texture2D
-) -> void:
-	_register_road_transition_side_textures(asset_path, vertical_texture, horizontal_texture)
-
-func _register_road_transition_side_textures(
-	asset_path: String,
-	vertical_texture: Texture2D,
-	horizontal_texture: Texture2D
-) -> void:
-	var side_textures := {
-		GENERATED_ART_CATALOG.ROAD_BORDER_SIDE_WEST: vertical_texture,
-		GENERATED_ART_CATALOG.ROAD_BORDER_SIDE_EAST: vertical_texture,
-		GENERATED_ART_CATALOG.ROAD_BORDER_SIDE_NORTH: horizontal_texture,
-		GENERATED_ART_CATALOG.ROAD_BORDER_SIDE_SOUTH: horizontal_texture,
-	}
-	for side_value in side_textures.keys():
-		var side := StringName(side_value)
-		var source_texture := side_textures[side] as Texture2D
-		var side_texture := GENERATED_TEXTURE_TOOLS.crop_road_border_side_texture(
-			source_texture,
-			side,
-			"%s|road_transition_side_%s" % [asset_path, String(side)]
-		)
-		if side_texture == null:
-			continue
-		side_texture = GENERATED_TEXTURE_TOOLS.fade_road_transition_overlay_texture(
-			side_texture,
-			side,
-			"%s|road_transition_side_fade_%s" % [asset_path, String(side)]
-		)
-		if side_texture == null:
-			continue
-		_register_surface_texture(
-			GENERATED_ART_CATALOG.road_border_side_material_id(asset_path, side),
-			asset_path,
-			side_texture
-		)
+	var texture_id := GENERATED_ART_CATALOG.material_id_from_path(asset_path)
+	if _forest_surface_textures.get(texture_id) is Texture2D:
+		return texture_id
+	for fallback_path in GENERATED_ART_CATALOG.get_asset_paths_for_role(biome_id, role):
+		var fallback_id := GENERATED_ART_CATALOG.material_id_from_path(fallback_path)
+		if _forest_surface_textures.get(fallback_id) is Texture2D:
+			return fallback_id
+	return &""
 
 func _apply_offset_ground_macro_texture() -> void:
 	var ground_id := &""
@@ -1320,6 +1129,8 @@ func _rebuild_ground_geometry() -> void:
 	_ground_mesh = null
 	_ground_underlay_mesh = null
 	_forest_surface_meshes.clear()
+	_terrain_surface_mask_data.clear()
+	_terrain_surface_mask_texture = null
 	_grid_points = PackedVector2Array()
 	_texture_dark_lines = PackedVector2Array()
 	_texture_light_lines = PackedVector2Array()
@@ -1349,6 +1160,7 @@ func _rebuild_ground_geometry() -> void:
 	if layout == null or palette == null:
 		return
 	var scale := layout.logical_tile_scale
+	_rebuild_terrain_surface_mask()
 	if _build_all_chunks_on_finalize:
 		for chunk_rect in _chunks:
 			_build_visual_chunk(chunk_rect, scale)
@@ -1384,6 +1196,118 @@ func _rebuild_ground_geometry() -> void:
 	_texture_light_lines = PackedVector2Array()
 	_transition_lines = PackedVector2Array()
 	_depth_lines = PackedVector2Array()
+
+func _rebuild_terrain_surface_mask() -> void:
+	_terrain_surface_mask_data.clear()
+	_terrain_surface_mask_texture = null
+	if not _uses_themed_ground() or layout == null or resolver == null:
+		return
+	_refresh_terrain_surface_texture_ids()
+	_terrain_surface_mask_data = TERRAIN_BOUNDARY_MASK_BUILDER.build(
+		layout,
+		resolver
+	)
+	var mask_image := _terrain_surface_mask_data.get("image") as Image
+	if mask_image != null and not mask_image.is_empty():
+		_terrain_surface_mask_texture = ImageTexture.create_from_image(mask_image)
+
+func _terrain_surface_render_data_for_chunk(
+	chunk_rect: Rect2i,
+	scale: float
+) -> Dictionary:
+	if (
+		_terrain_surface_mask_texture == null
+		or layout == null
+		or layout.zone_size.x <= 0
+		or layout.zone_size.y <= 0
+	):
+		return {}
+	var grass_id := StringName(_terrain_surface_texture_ids.get(
+		TERRAIN_SURFACE_CLASSIFIER.SURFACE_GRASS,
+		&""
+	))
+	var path_id := StringName(_terrain_surface_texture_ids.get(
+		TERRAIN_SURFACE_CLASSIFIER.SURFACE_PATH,
+		&""
+	))
+	var asphalt_id := StringName(_terrain_surface_texture_ids.get(
+		TERRAIN_SURFACE_CLASSIFIER.SURFACE_ASPHALT,
+		&""
+	))
+	var surface_material_ids: Array[StringName] = []
+	for material_id in [
+		grass_id,
+		path_id,
+		asphalt_id,
+		TERRAIN_DIVIDER_TEXTURE_ID,
+		&"terrain_void_color",
+	]:
+		if not material_id.is_empty() and not surface_material_ids.has(material_id):
+			surface_material_ids.append(material_id)
+	var zone_offset := Vector2(layout.zone_size) * 0.5
+	var chunk_world_rect := Rect2(
+		(Vector2(chunk_rect.position) - zone_offset) * scale,
+		Vector2(chunk_rect.size) * scale
+	)
+	var mask_uv_rect := Rect2(
+		Vector2(chunk_rect.position) / Vector2(layout.zone_size),
+		Vector2(chunk_rect.size) / Vector2(layout.zone_size)
+	)
+	return {
+		"chunk_world_rect": chunk_world_rect,
+		"texture_world_origin": (
+			terrain_texture_world_origin + chunk_world_rect.position
+		),
+		"mask_uv_rect": mask_uv_rect,
+		"mask_texture": _terrain_surface_mask_texture,
+		"grass_texture": _terrain_surface_texture(
+			TERRAIN_SURFACE_CLASSIFIER.SURFACE_GRASS,
+			Color(0.24, 0.39, 0.16, 1.0)
+		),
+		"path_texture": _terrain_surface_texture(
+			TERRAIN_SURFACE_CLASSIFIER.SURFACE_PATH,
+			Color(0.40, 0.30, 0.17, 1.0)
+		),
+		"asphalt_texture": _terrain_surface_texture(
+			TERRAIN_SURFACE_CLASSIFIER.SURFACE_ASPHALT,
+			Color(0.17, 0.18, 0.17, 1.0)
+		),
+		"divider_texture": _surface_texture_or_fallback(
+			TERRAIN_DIVIDER_TEXTURE_ID,
+			&"divider",
+			Color(0.34, 0.23, 0.13, 1.0)
+		),
+		"grass_repeat_world": _forest_surface_texture_world_size(grass_id),
+		"path_repeat_world": _forest_surface_texture_world_size(path_id),
+		"asphalt_repeat_world": _forest_surface_texture_world_size(asphalt_id),
+		"divider_repeat_world": TERRAIN_DIVIDER_TEXTURE_WORLD_SIZE,
+		"void_color": get_void_background_color(),
+		"surface_material_ids": surface_material_ids,
+	}
+
+func _terrain_surface_texture(surface_kind: int, fallback_color: Color) -> Texture2D:
+	var texture_id := StringName(_terrain_surface_texture_ids.get(surface_kind, &""))
+	return _surface_texture_or_fallback(
+		texture_id,
+		TERRAIN_SURFACE_CLASSIFIER.kind_name(surface_kind),
+		fallback_color
+	)
+
+func _surface_texture_or_fallback(
+	texture_id: StringName,
+	fallback_id: StringName,
+	fallback_color: Color
+) -> Texture2D:
+	var texture := _forest_surface_textures.get(texture_id) as Texture2D
+	if texture != null:
+		return texture
+	if _fallback_surface_textures.get(fallback_id) is Texture2D:
+		return _fallback_surface_textures[fallback_id] as Texture2D
+	var fallback_image := Image.create(1, 1, false, Image.FORMAT_RGBA8)
+	fallback_image.set_pixel(0, 0, fallback_color)
+	var fallback_texture := ImageTexture.create_from_image(fallback_image)
+	_fallback_surface_textures[fallback_id] = fallback_texture
+	return fallback_texture
 
 func _rebuild_mesa_geometry(scale: float) -> void:
 	var rect_groups := _mesa_rect_groups()
@@ -1474,18 +1398,11 @@ func _build_visual_chunk(chunk_rect: Rect2i, scale: float) -> void:
 	var collect_cliff_transitions := (
 		not _cliff_transition_built_chunks.has(coord)
 	)
-	if _uses_themed_ground():
-		_ground_underlay_mesh = _build_forest_underlay_mesh(scale, chunk_rect)
-		_forest_surface_meshes = _build_forest_surface_meshes(
-			scale,
-			chunk_rect
-		)
-		var road_border_overlay_meshes := _build_road_border_overlay_meshes(
-			scale,
-			chunk_rect
-		)
-		for texture_id in road_border_overlay_meshes:
-			_forest_surface_meshes[texture_id] = road_border_overlay_meshes[texture_id]
+	var terrain_surface_render_data := (
+		_terrain_surface_render_data_for_chunk(chunk_rect, scale)
+		if _uses_themed_ground()
+		else {}
+	)
 	for y in range(
 		chunk_rect.position.y,
 		chunk_rect.position.y + chunk_rect.size.y
@@ -1514,7 +1431,7 @@ func _build_visual_chunk(chunk_rect: Rect2i, scale: float) -> void:
 						scale
 					)
 				continue
-			if _uses_generated_forest_surface(cell, tile_id):
+			if _uses_themed_ground():
 				if collect_cliff_transitions:
 					_append_cliff_transition_mesh(
 						cell,
@@ -1586,7 +1503,8 @@ func _build_visual_chunk(chunk_rect: Rect2i, scale: float) -> void:
 		_depth_lines,
 		_grid_points,
 		Color(palette.grid_color, 0.12) if _should_draw_grid() else Color.TRANSPARENT,
-		_suppressed_void_texture_count
+		_suppressed_void_texture_count,
+		terrain_surface_render_data
 	) as BiomeTileChunk
 	if chunk == null:
 		return
@@ -1641,84 +1559,6 @@ func _get_fall_zone_sides() -> Array[StringName]:
 		sides.append(side)
 	return sides
 
-func _uses_generated_forest_surface(
-	cell: Vector2i,
-	tile_id: StringName
-) -> bool:
-	var texture_id := _surface_texture_id_for_cell(cell, tile_id)
-	return (
-		not texture_id.is_empty()
-		and _forest_surface_textures.get(texture_id) is Texture2D
-	)
-
-func _surface_texture_id_for_cell(
-	cell: Vector2i,
-	tile_id: StringName
-) -> StringName:
-	var material_id := get_resolved_material_asset_id(cell)
-	if _uses_generated_theme():
-		if not material_id.is_empty():
-			return material_id
-		return _manifest_surface_texture_id_for_cell(cell, tile_id)
-	# Forest: il resolver assegna i materiali border/core alle route con la
-	# stessa convenzione dei temi generated; il resto usa gli slot forestali.
-	if (
-		not material_id.is_empty()
-		and _forest_surface_textures.get(material_id) is Texture2D
-	):
-		return material_id
-	return _forest_surface_texture_id(tile_id)
-
-func _manifest_surface_texture_id_for_cell(
-	cell: Vector2i,
-	tile_id: StringName
-) -> StringName:
-	var section := get_resolved_tile_section(cell)
-	if section.is_empty():
-		section = _manifest_surface_section_for_tile_id(tile_id)
-	if section.is_empty():
-		return &""
-	var texture_id := _manifest_surface_texture_id(section, tile_id)
-	if _forest_surface_textures.get(texture_id) is Texture2D:
-		return texture_id
-	return &""
-
-func _manifest_surface_texture_id(section: StringName, tile_id: StringName) -> StringName:
-	if section.is_empty() or tile_id.is_empty():
-		return &""
-	return StringName("%s/%s" % [String(section), String(tile_id)])
-
-func _manifest_surface_section_for_tile_id(tile_id: StringName) -> StringName:
-	if GENERATED_THEME_PASSAGE_SURFACE_TILE_IDS.has(tile_id):
-		return BiomeTileResolver.TILE_SECTION_PASSAGE
-	if GENERATED_THEME_TERRAIN_SURFACE_TILE_IDS.has(tile_id):
-		return BiomeTileResolver.TILE_SECTION_TERRAIN
-	return &""
-
-func _is_manifest_surface_texture_id(texture_id: StringName) -> bool:
-	var texture_key := String(texture_id)
-	return (
-		texture_key.begins_with("%s/" % String(BiomeTileResolver.TILE_SECTION_TERRAIN))
-		or texture_key.begins_with("%s/" % String(BiomeTileResolver.TILE_SECTION_PASSAGE))
-	)
-
-func _forest_surface_texture_id(tile_id: StringName) -> StringName:
-	if resolver != null and resolver.is_void_transition_tile_id(tile_id):
-		return &""
-	if FOREST_GRASS_SURFACE_TILE_IDS.has(tile_id):
-		return FOREST_GRASS_TEXTURE_ID
-	if BiomeTileResolver.FOREST_ROUTE_SURFACE_TILE_IDS.has(tile_id):
-		return FOREST_ROAD_BORDER_TEXTURE_ID
-	match tile_id:
-		BiomeTileResolver.TILE_FOREST_CLIFF_EDGE, BiomeTileResolver.TILE_GROUND_TO_VOID_CLIFF:
-			# Crest cells are surfaced as grass so the base ground reaches the void
-			# rect edge; the rock crest and descending wall come from the dedicated
-			# border/face meshes. Otherwise these cells drew a duplicate ground quad
-			# outside the rock border, reading as a green seam tracing the cliff.
-			return FOREST_GRASS_TEXTURE_ID
-		_:
-			return &""
-
 func _get_southern_tile_ids(
 	cell: Vector2i,
 	lookahead: int
@@ -1759,201 +1599,7 @@ func _append_cliff_transition_mesh(
 		scale
 	)
 
-func _build_forest_underlay_mesh(
-	scale: float,
-	chunk_rect: Rect2i
-) -> ArrayMesh:
-	var vertices := PackedVector2Array()
-	var colors := PackedColorArray()
-	var indices := PackedInt32Array()
-	var start_x := chunk_rect.position.x
-	var end_x := chunk_rect.position.x + chunk_rect.size.x
-	for y in range(
-		chunk_rect.position.y,
-		chunk_rect.position.y + chunk_rect.size.y
-	):
-		var run_start := start_x
-		var run_key := _forest_underlay_key(
-			get_resolved_tile_id(Vector2i(start_x, y))
-		)
-		for x in range(start_x + 1, end_x + 1):
-			var next_key := &""
-			if x < end_x:
-				next_key = _forest_underlay_key(get_resolved_tile_id(Vector2i(x, y)))
-			if x < end_x and next_key == run_key:
-				continue
-			_append_underlay_run(vertices, colors, indices, run_start, x, y, scale, _forest_underlay_color(run_key))
-			run_start = x
-			run_key = next_key
-	if vertices.is_empty():
-		return null
-	var arrays := []
-	arrays.resize(Mesh.ARRAY_MAX)
-	arrays[Mesh.ARRAY_VERTEX] = vertices
-	arrays[Mesh.ARRAY_COLOR] = colors
-	arrays[Mesh.ARRAY_INDEX] = indices
-	var mesh := ArrayMesh.new()
-	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-	return mesh
-
-func _build_forest_surface_meshes(
-	scale: float,
-	chunk_rect: Rect2i
-) -> Dictionary:
-	var runs_by_texture := {}
-	var start_x := chunk_rect.position.x
-	var end_x := chunk_rect.position.x + chunk_rect.size.x
-	for y in range(
-		chunk_rect.position.y,
-		chunk_rect.position.y + chunk_rect.size.y
-	):
-		var run_start := start_x
-		var run_texture_id := _surface_texture_id_for_cell(
-			Vector2i(start_x, y),
-			get_resolved_tile_id(Vector2i(start_x, y))
-		)
-		for x in range(start_x + 1, end_x + 1):
-			var next_texture_id := &""
-			if x < end_x:
-				next_texture_id = _surface_texture_id_for_cell(
-					Vector2i(x, y),
-					get_resolved_tile_id(Vector2i(x, y))
-				)
-			if x < end_x and next_texture_id == run_texture_id:
-				continue
-			if (
-				not run_texture_id.is_empty()
-				and _forest_surface_textures.get(run_texture_id) is Texture2D
-			):
-				if not runs_by_texture.has(run_texture_id):
-					runs_by_texture[run_texture_id] = []
-				(runs_by_texture[run_texture_id] as Array).append(
-					Rect2i(run_start, y, x - run_start, 1)
-				)
-			run_start = x
-			run_texture_id = next_texture_id
-	var result := {}
-	for texture_id_value in runs_by_texture.keys():
-		var texture_id := StringName(texture_id_value)
-		var typed_runs: Array[Rect2i] = []
-		for run_value in runs_by_texture[texture_id] as Array:
-			typed_runs.append(run_value as Rect2i)
-		var surface_mesh := FOREST_GROUND_MESH_BUILDER_SCRIPT.build_mesh(
-			typed_runs,
-			layout.zone_size,
-			scale,
-			_forest_surface_texture_world_size(texture_id),
-			_surface_mesh_overdraw_pixels()
-		)
-		if surface_mesh != null and surface_mesh.get_surface_count() > 0:
-			result[texture_id] = surface_mesh
-	return result
-
-func _build_road_border_overlay_meshes(
-	scale: float,
-	chunk_rect: Rect2i
-) -> Dictionary:
-	if resolver == null or layout == null:
-		return {}
-	var strips_by_texture := {}
-	for y in range(
-		chunk_rect.position.y,
-		chunk_rect.position.y + chunk_rect.size.y
-	):
-		for x in range(
-			chunk_rect.position.x,
-			chunk_rect.position.x + chunk_rect.size.x
-		):
-			var cell := Vector2i(x, y)
-			var sides := resolver.route_cell_road_border_sides(layout, cell)
-			if sides.is_empty():
-				continue
-			var asset_path := _road_border_overlay_asset_path(cell)
-			if asset_path.is_empty():
-				continue
-			for side in sides:
-				var texture_id := GENERATED_ART_CATALOG.road_border_side_material_id(
-					asset_path,
-					side
-				)
-				if not (_forest_surface_textures.get(texture_id) is Texture2D):
-					continue
-				if not strips_by_texture.has(texture_id):
-					strips_by_texture[texture_id] = []
-				(strips_by_texture[texture_id] as Array).append({
-					"rect": _road_border_overlay_rect(cell, side, scale),
-					"side": side,
-				})
-	var result := {}
-	for texture_id_value in strips_by_texture.keys():
-		var texture_id := StringName(texture_id_value)
-		var typed_strips: Array[Dictionary] = []
-		for strip_value in strips_by_texture[texture_id] as Array:
-			typed_strips.append(strip_value as Dictionary)
-		var surface_mesh := FOREST_GROUND_MESH_BUILDER_SCRIPT.build_edge_strip_mesh(
-			typed_strips,
-			_forest_surface_texture_world_size(texture_id)
-		)
-		if surface_mesh != null and surface_mesh.get_surface_count() > 0:
-			result[texture_id] = surface_mesh
-	return result
-
-## Sorgente dell'overlay di confine strada/prato: sempre il PNG madre
-## road_border_defined della strada dritta, da cui vengono ritagliate le
-## strisce laterali __edge_*. Le transition_ground_to_road sfumate non sono
-## piu' una sorgente runtime.
-func _road_border_overlay_asset_path(cell: Vector2i) -> String:
-	if _uses_generated_theme():
-		var generation_seed := layout.generation_seed if layout != null else 0
-		var border_path := GENERATED_ART_CATALOG.select_surface_asset_path(
-			biome_id,
-			GENERATED_ART_CATALOG.ROLE_ROAD,
-			generation_seed,
-			Vector2i.ZERO
-		)
-		if GENERATED_ART_CATALOG.is_road_border_asset_path(border_path):
-			return border_path
-	var forest_border_path := String(
-		_forest_surface_art_asset_paths.get(FOREST_ROAD_BORDER_TEXTURE_ID, "")
-	)
-	if not forest_border_path.is_empty():
-		return forest_border_path
-	var fallback_path := get_resolved_material_asset_path(cell)
-	if GENERATED_ART_CATALOG.is_road_border_asset_path(fallback_path):
-		return fallback_path
-	return ""
-
-func _road_border_overlay_rect(
-	cell: Vector2i,
-	side: StringName,
-	scale: float
-) -> Rect2:
-	var zone_offset := Vector2(float(layout.zone_size.x), float(layout.zone_size.y)) * 0.5
-	var left := (float(cell.x) - zone_offset.x) * scale
-	var right := (float(cell.x + 1) - zone_offset.x) * scale
-	var top := (float(cell.y) - zone_offset.y) * scale
-	var bottom := (float(cell.y + 1) - zone_offset.y) * scale
-	var half_width := scale * ROAD_BORDER_OVERLAY_HALF_WIDTH_TILES
-	var strip_width := half_width * 2.0
-	if side == GENERATED_ART_CATALOG.ROAD_BORDER_SIDE_WEST:
-		return Rect2(Vector2(left - half_width, top), Vector2(strip_width, bottom - top))
-	if side == GENERATED_ART_CATALOG.ROAD_BORDER_SIDE_EAST:
-		return Rect2(
-			Vector2(right - half_width, top),
-			Vector2(strip_width, bottom - top)
-		)
-	if side == GENERATED_ART_CATALOG.ROAD_BORDER_SIDE_NORTH:
-		return Rect2(Vector2(left, top - half_width), Vector2(right - left, strip_width))
-	if side == GENERATED_ART_CATALOG.ROAD_BORDER_SIDE_SOUTH:
-		return Rect2(
-			Vector2(left, bottom - half_width),
-			Vector2(right - left, strip_width)
-		)
-	return Rect2(Vector2(left - half_width, top), Vector2(strip_width, bottom - top))
-
 func _forest_surface_texture_world_size(texture_id: StringName) -> float:
-	if _is_manifest_surface_texture_id(texture_id):
-		return SEMANTIC_SURFACE_TEXTURE_WORLD_SIZE
 	if _uses_generated_theme():
 		var texture_name := String(texture_id)
 		if biome_id == &"toxic_wastes":
@@ -1968,86 +1614,7 @@ func _forest_surface_texture_world_size(texture_id: StringName) -> float:
 			return MARSH_SURFACE_TEXTURE_WORLD_SIZE
 		if biome_id == &"burning_fields":
 			return BURNING_SURFACE_TEXTURE_WORLD_SIZE
-		if texture_name.contains("transition_"):
-			return 128.0
-	var transition_asset_path := String(_forest_surface_art_asset_paths.get(texture_id, ""))
-	if transition_asset_path.get_file().contains("grass_to_road"):
-		return 128.0
-	if FOREST_TRANSITION_TEXTURE_IDS.has(texture_id):
-		# Transition cells are one logical cell wide. A shorter repeat period makes
-		# both source materials survive mipmapped downscale without creating a
-		# checkerboard along long junction runs.
-		return 128.0
 	return FOREST_SURFACE_TEXTURE_WORLD_SIZE
-
-func _surface_mesh_overdraw_pixels() -> float:
-	if _uses_generated_theme():
-		return GENERATED_SURFACE_RUN_OVERDRAW_PIXELS
-	return 0.0
-
-func _append_underlay_run(
-	vertices: PackedVector2Array,
-	colors: PackedColorArray,
-	indices: PackedInt32Array,
-	start_x: int,
-	end_x: int,
-	y: int,
-	scale: float,
-	color: Color
-) -> void:
-	if end_x <= start_x:
-		return
-	var zone_offset := Vector2(float(layout.zone_size.x), float(layout.zone_size.y)) * 0.5
-	var left := (float(start_x) - zone_offset.x) * scale
-	var right := (float(end_x) - zone_offset.x) * scale
-	var top := (float(y) - zone_offset.y) * scale
-	var bottom := (float(y + 1) - zone_offset.y) * scale
-	var base := vertices.size()
-	vertices.append(Vector2(left, top))
-	vertices.append(Vector2(right, top))
-	vertices.append(Vector2(right, bottom))
-	vertices.append(Vector2(left, bottom))
-	for _index in range(4):
-		colors.append(color)
-	indices.append(base)
-	indices.append(base + 1)
-	indices.append(base + 2)
-	indices.append(base)
-	indices.append(base + 2)
-	indices.append(base + 3)
-
-func _forest_underlay_key(tile_id: StringName) -> StringName:
-	if resolver != null and resolver.is_void_transition_tile_id(tile_id):
-		return &"void"
-	if BiomeTileResolver.FOREST_ROUTE_SURFACE_TILE_IDS.has(tile_id):
-		return &"road"
-	match tile_id:
-		BiomeTileResolver.TILE_FOREST_VOID:
-			return &"void"
-		BiomeTileResolver.TILE_FOREST_MOUNTAIN_WALL, BiomeTileResolver.TILE_GROUND_TO_MOUNTAIN_WALL:
-			return &"wall"
-		_:
-			return &"grass"
-
-func _forest_underlay_color(key: StringName) -> Color:
-	match key:
-		&"path":
-			return Color(0.31, 0.20, 0.10, 1.0)
-		&"road":
-			return Color(0.36, 0.25, 0.12, 1.0)
-		&"cliff":
-			var cliff_value := clampf(
-				palette.prop_color.get_luminance() * 0.82,
-				0.20,
-				0.34
-			)
-			return Color(cliff_value, cliff_value, cliff_value, 1.0)
-		&"void":
-			return get_void_background_color()
-		&"wall":
-			return Color(0.18, 0.22, 0.14, 1.0)
-		_:
-			return Color(0.13, 0.24, 0.12, 1.0)
 
 func _uses_forest_ground() -> bool:
 	return biome_id == BiomeTileResolver.FOREST_BIOME_ID
@@ -2055,14 +1622,12 @@ func _uses_forest_ground() -> bool:
 func _uses_generated_theme() -> bool:
 	return GENERATED_ART_CATALOG.has_generated_theme(biome_id)
 
-# True when the biome renders a textured ground surface: forest art for the forest
-# biome, or a per-biome surface theme. Gates surface-texture loading and the
-# underlay/surface meshes. Mesa art is selected independently from its profile id.
+# True when the biome renders the RGBA terrain mask with forest or generated
+# full-bleed surface textures. Mesa art remains selected by its own profile.
 func _uses_themed_ground() -> bool:
 	return _uses_forest_ground() or _uses_generated_theme()
 
-# Manifest terrain-tiles id supplying a surface slot's texture for the current biome,
-# defaulting to the slot id itself (forest identity).
+# Manifest terrain tile supplying a forest surface slot.
 func _themed_surface_asset_id(slot: StringName) -> StringName:
 	return slot
 
