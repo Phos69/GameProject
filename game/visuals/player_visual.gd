@@ -3,6 +3,9 @@ class_name PlayerVisual
 
 const WEAPON_VISUAL_RENDERER := preload("res://game/weapons/weapon_visual_renderer.gd")
 const CHARACTER_TEXTURE_RECT := Rect2(-36.0, -49.0, 72.0, 72.0)
+const GROUND_SHADOW_CENTER := Vector2(0.0, 18.0)
+const GROUND_SHADOW_RADIUS := Vector2(23.0, 8.0)
+const GROUND_COLLIDER_SIZE := Vector2(28.0, 16.0)
 
 @export var accent_color: Color = Color(0.18, 0.74, 0.95, 1.0)
 
@@ -249,7 +252,7 @@ func _draw() -> void:
 
 	draw_set_transform(Vector2(0.0, -bob), 0.0, Vector2.ONE * beast_scale)
 	draw_colored_polygon(
-		_ellipse_points(Vector2(0.0, 17.0 + bob), Vector2(22.0, 8.0), 18),
+		_ellipse_points(GROUND_SHADOW_CENTER + Vector2(0.0, bob), GROUND_SHADOW_RADIUS, 18),
 		Color(0.01, 0.015, 0.02, 0.48)
 	)
 	_draw_leg(Vector2(-7.0, 8.0), walk_phase * 5.0, outline_color)
@@ -309,7 +312,7 @@ func _draw_raster_survivor(
 	rpg_component: RpgPlayerComponent
 ) -> void:
 	draw_colored_polygon(
-		_ellipse_points(Vector2(0.0, 18.0), Vector2(23.0, 8.0), 18),
+		_ellipse_points(GROUND_SHADOW_CENTER, GROUND_SHADOW_RADIUS, 18),
 		Color(0.01, 0.015, 0.02, 0.52)
 	)
 	var facing_scale := 1.0 if facing_direction.x >= -0.05 else -1.0

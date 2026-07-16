@@ -10,8 +10,8 @@
 [ext_resource type="Script" path="res://game/ui/player_world_hud_visual.gd" id="8_world_hud"]
 [ext_resource type="Script" path="res://game/core/entity_void_fall_component.gd" id="9_void_fall"]
 
-[sub_resource type="CircleShape2D" id="CircleShape2D_player"]
-radius = 14.0
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_player_ground"]
+size = Vector2(28, 16)
 
 [node name="Player" type="CharacterBody2D"]
 script = ExtResource("1_player_controller")
@@ -35,7 +35,8 @@ script = ExtResource("5_revive_indicator")
 script = ExtResource("8_world_hud")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-shape = SubResource("CircleShape2D_player")
+position = Vector2(0, 18)
+shape = SubResource("RectangleShape2D_player_ground")
 
 [node name="WeaponSystem" type="Node2D" parent="."]
 script = ExtResource("2_weapon_system")

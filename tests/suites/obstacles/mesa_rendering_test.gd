@@ -235,6 +235,84 @@ func test_large_rock_collision_and_local_visual_share_the_layout_center() -> voi
 	system.queue_free()
 	await wait_physics_frames(1)
 
+func test_player_shadow_touches_mesa_north_and_south_edges() -> void:
+	var system := ObstacleSystem.new()
+	add_child(system)
+	var layout := _mesa_layout(&"forest")
+	var blocker := system.create_obstacle_instance(
+		&"large_rock",
+		layout.obstacle_sizes[0],
+		layout.obstacle_shape_ids[0],
+		0.0,
+		Color(0.3, 0.3, 0.3),
+		Color(0.6, 0.6, 0.6)
+	) as EnvironmentObject
+	assert_not_null(blocker, "the contact test creates a mesa blocker")
+	var sort_anchor: Node2D = null
+	if blocker != null:
+		sort_anchor = ObstacleSystem.attach_obstacle_at_layout_center(
+			system,
+			blocker,
+			layout.obstacle_positions[0]
+		)
+	var player_scene := load("res://game/player/player.tscn") as PackedScene
+	var player := player_scene.instantiate() as PlayerController
+	add_child(player)
+	await wait_physics_frames(1)
+	var player_collision := player.get_node_or_null("CollisionShape2D") as CollisionShape2D
+	var player_rectangle := (
+		player_collision.shape as RectangleShape2D
+		if player_collision != null
+		else null
+	)
+	assert_not_null(player_rectangle, "player uses a ground-contact rectangle")
+	assert_true(
+		player_collision != null
+		and player_collision.position.is_equal_approx(PlayerVisual.GROUND_SHADOW_CENTER),
+		"player collider is centered on the visible ground shadow"
+	)
+	assert_true(
+		player_rectangle != null
+		and player_rectangle.size.is_equal_approx(PlayerVisual.GROUND_COLLIDER_SIZE),
+		"player collider keeps the existing lateral clearance and the shadow vertical span"
+	)
+	if blocker != null and player_rectangle != null:
+		var mesa_center := layout.obstacle_positions[0]
+		var mesa_half_height := layout.obstacle_sizes[0].y * 0.5
+		var shadow_top := (
+			PlayerVisual.GROUND_SHADOW_CENTER.y
+			- PlayerVisual.GROUND_SHADOW_RADIUS.y
+		)
+		var shadow_bottom := (
+			PlayerVisual.GROUND_SHADOW_CENTER.y
+			+ PlayerVisual.GROUND_SHADOW_RADIUS.y
+		)
+		player.global_position = mesa_center + Vector2(0.0, mesa_half_height + 96.0)
+		await wait_physics_frames(1)
+		var south_collision := player.move_and_collide(Vector2(0.0, -192.0))
+		assert_not_null(south_collision, "player reaches the mesa from the south")
+		assert_almost_eq(
+			player.global_position.y + shadow_top,
+			mesa_center.y + mesa_half_height,
+			0.3,
+			"shadow north edge touches the mesa south base without a gap"
+		)
+		player.global_position = mesa_center - Vector2(0.0, mesa_half_height + 96.0)
+		await wait_physics_frames(1)
+		var north_collision := player.move_and_collide(Vector2(0.0, 192.0))
+		assert_not_null(north_collision, "player reaches the mesa from the north")
+		assert_almost_eq(
+			player.global_position.y + shadow_bottom,
+			mesa_center.y - mesa_half_height,
+			0.3,
+			"shadow south edge touches the mesa north base without penetrating it"
+		)
+	player.queue_free()
+	if sort_anchor != null:
+		sort_anchor.queue_free()
+	system.queue_free()
+	await wait_physics_frames(1)
+
 func test_y_sorted_mesa_draw_callback_is_runtime_safe() -> void:
 	var layout := _mesa_layout(&"urban_ruins")
 	var palette := _load_palette(&"toxic_wastes")
