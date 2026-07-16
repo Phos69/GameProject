@@ -23,6 +23,9 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
   Nei vertici checkerboard, dove due void si toccano solo in diagonale, la flat
   rock resta rettilinea e solo il dirt usa due raccordi compatti da `0,42` tile;
   una patch void centrale comunica che il passaggio senza dodge causa caduta.
+  Nei vertici con tre quadranti void la fascia dirt orizzontale termina ora al
+  punto di tangenza con quella verticale e un solo quarto di cerchio raccorda
+  il quadrante erboso, eliminando la precedente biforcazione a T.
   Collisione e regola di caduta restano invariate.
 - Nella Pianura Infetta il tratto roccioso piatto prima del void riusa ora
   `rock_plateau_top_generated.png`, la stessa superficie top delle mesa, con UV

@@ -495,11 +495,15 @@ func _append_horizontal(
 	var transition_left := (
 		left + start_diagonal_radius
 		if start_corner == FALL_ZONE_BOUNDARY_RUNS.CORNER_DIAGONAL
+		else left + corner_depth
+		if start_corner == FALL_ZONE_BOUNDARY_RUNS.CORNER_CONCAVE
 		else rim_left
 	)
 	var transition_right := (
 		right - end_diagonal_radius
 		if end_corner == FALL_ZONE_BOUNDARY_RUNS.CORNER_DIAGONAL
+		else right - corner_depth
+		if end_corner == FALL_ZONE_BOUNDARY_RUNS.CORNER_CONCAVE
 		else rim_right
 	)
 	if flip_vertical:
@@ -526,6 +530,17 @@ func _append_horizontal(
 			transition_core_width,
 			transition_width
 		)
+		_append_concave_dirt_corners(
+			transition_buffers,
+			Vector2(left, bottom),
+			Vector2(right, bottom),
+			start_corner,
+			end_corner,
+			false,
+			corner_depth,
+			transition_core_width,
+			transition_width
+		)
 	else:
 		_append_profiled_transition_quad(
 			transition_buffers,
@@ -547,6 +562,17 @@ func _append_horizontal(
 			start_corner,
 			end_corner,
 			true,
+			transition_core_width,
+			transition_width
+		)
+		_append_concave_dirt_corners(
+			transition_buffers,
+			Vector2(left, top),
+			Vector2(right, top),
+			start_corner,
+			end_corner,
+			true,
+			corner_depth,
 			transition_core_width,
 			transition_width
 		)
@@ -969,6 +995,39 @@ func _append_convex_dirt_corners(
 			end_center,
 			PI * 1.5 if top_side else 0.0,
 			TAU if top_side else PI * 0.5,
+			core_radius,
+			outer_radius
+		)
+
+func _append_concave_dirt_corners(
+	buffers: Dictionary,
+	start_vertex: Vector2,
+	end_vertex: Vector2,
+	start_corner: StringName,
+	end_corner: StringName,
+	top_side: bool,
+	rock_corner_depth: float,
+	core_radius: float,
+	outer_radius: float
+) -> void:
+	# With three void quadrants the horizontal rock strip owns the overlap.
+	# Dirt must stop at that square's outer vertex; continuing to the grid
+	# vertex creates a T-shaped fork instead of one rounded terrain corner.
+	if start_corner == FALL_ZONE_BOUNDARY_RUNS.CORNER_CONCAVE:
+		_append_profiled_dirt_corner(
+			buffers,
+			start_vertex + Vector2(rock_corner_depth, 0.0),
+			PI * 1.5 if top_side else 0.0,
+			TAU if top_side else PI * 0.5,
+			core_radius,
+			outer_radius
+		)
+	if end_corner == FALL_ZONE_BOUNDARY_RUNS.CORNER_CONCAVE:
+		_append_profiled_dirt_corner(
+			buffers,
+			end_vertex - Vector2(rock_corner_depth, 0.0),
+			PI if top_side else PI * 0.5,
+			PI * 1.5 if top_side else PI,
 			core_radius,
 			outer_radius
 		)

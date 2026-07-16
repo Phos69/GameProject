@@ -1915,6 +1915,73 @@ func test_diagonal_fall_corners_receive_rounded_dirt_joins() -> void:
 		"short checkerboard runs clamp their corner radius to finite geometry"
 	)
 
+func test_three_void_quadrants_build_one_unforked_dirt_corner() -> void:
+	var rects: Array[Rect2i] = [
+		Rect2i(Vector2i(6, 2), Vector2i(4, 4)),
+		Rect2i(Vector2i(2, 6), Vector2i(4, 4)),
+		Rect2i(Vector2i(6, 6), Vector2i(4, 4)),
+	]
+	var sides: Array[StringName] = [&"internal", &"internal", &"internal"]
+	var runs: Array[Dictionary] = FALL_ZONE_BOUNDARY_RUNS_SCRIPT.build(
+		rects,
+		sides,
+		Vector2i(16, 16)
+	)
+	var concave_endpoints := 0
+	for run in runs:
+		if (
+			StringName(run.get("start_corner", &""))
+			== FALL_ZONE_BOUNDARY_RUNS_SCRIPT.CORNER_CONCAVE
+		):
+			concave_endpoints += 1
+		if (
+			StringName(run.get("end_corner", &""))
+			== FALL_ZONE_BOUNDARY_RUNS_SCRIPT.CORNER_CONCAVE
+		):
+			concave_endpoints += 1
+	assert_eq(
+		concave_endpoints,
+		2,
+		"three void quadrants expose one shared horizontal/vertical concave join"
+	)
+
+	var builder := TopDownCliffBorderMeshBuilder.new()
+	var logical_scale := 48.0
+	builder.build(rects, sides, Vector2i(16, 16), logical_scale)
+	assert_eq(
+		builder.terrain_transition_corner_count,
+		6,
+		"five outer dirt corners plus one terrain-side quarter form the L outline"
+	)
+	var rim_width := logical_scale * TopDownCliffBorderMeshBuilder.RIM_WIDTH_TILES
+	var rock_depth := builder._horizontal_rock_depth(rim_width)
+	var grid_vertex := (
+		Vector2(6, 6) - Vector2(16, 16) * 0.5
+	) * logical_scale
+	var dirt_corner_center := grid_vertex - Vector2(rock_depth, rock_depth)
+	var transition_arrays := builder.terrain_transition_mesh.surface_get_arrays(0)
+	var transition_vertices := (
+		transition_arrays[Mesh.ARRAY_VERTEX] as PackedVector2Array
+	)
+	var fork_vertices := 0
+	for vertex in transition_vertices:
+		if (
+			vertex.x > dirt_corner_center.x + 0.5
+			and vertex.x <= grid_vertex.x + 0.5
+			and vertex.y < dirt_corner_center.y - 0.5
+			and vertex.y >= (
+				dirt_corner_center.y
+				- builder._transition_width(logical_scale)
+				- 0.5
+			)
+		):
+			fork_vertices += 1
+	assert_eq(
+		fork_vertices,
+		0,
+		"horizontal dirt stops at the tangent instead of forking toward the void vertex"
+	)
+
 func test_projected_corner_seams_cover_l_t_cross_and_mirrors() -> void:
 	var cases: Array[Dictionary] = [
 		{

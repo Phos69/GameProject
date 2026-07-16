@@ -996,6 +996,10 @@ multi-bioma.
   dirt terminano prima del punto condiviso e due piccoli settori anulari
   (`0,42` tile) le raccordano. Una patch centrale `terrain_void_color` mantiene
   visibile la continuita della fall zone invece di suggerire terra calpestabile.
+  Quando tre quadranti sono void e ne resta uno solo walkable, anche il dirt
+  segue l'ownership del lip: la run orizzontale termina al vertice esterno della
+  rock, la run verticale termina alla stessa profondita e un unico ventaglio a
+  quarto di cerchio le unisce nel quadrante terreno, senza diramazioni a T.
   I fall perimetrali emettono solo il
   lato rivolto al terreno in base a `hazard_sides`. Le celle walkable
   `ground_to_void_cliff` mantengono il prato fino alla cresta; le celle

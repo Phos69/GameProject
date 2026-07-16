@@ -866,7 +866,9 @@ Regole hazard:
   fall zone raccordano i cambi cardinali con angoli dirt rotondi, mantenendo
   invariati footprint e collisioni; quando due fall zone si toccano solo sul
   vertice, la roccia resta rettilinea, il solo dirt usa un raccordo compatto e
-  il punto centrale resta visivamente void, coerente con la caduta. La
+  il punto centrale resta visivamente void, coerente con la caduta. Dove tre
+  quadranti sono void, il solo quadrante d'erba deve mostrare un unico angolo
+  dirt continuo, mai una biforcazione o una croce. La
   cresta rocciosa occupa solo il lato realmente calpestabile: sui lati verticali
   e inferiore nessuna striscia interna al void deve suggerire una falsa mensola.
   Nei raccordi la texture delle due facce condivide la stessa fase UV al vertice
