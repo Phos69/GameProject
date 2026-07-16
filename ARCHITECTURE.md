@@ -1091,8 +1091,10 @@ multi-bioma.
   corona sollevata si estende oltre il footprint solo come overhang
   presentazionale per l'occlusione.
   Le rocce bloccano movimento e proiettili sull'intero rettangolo. `forest_tree`
-  usa invece un cerchio di raggio `24 px` a offset `(0, 24)` dentro il placement
-  `96x96`; `dead_tree` usa raggio `12 px` allo stesso offset dentro `48x96`.
+  mantiene il placement `96x96`, applica `visual_scale = 2.0` al raster e usa
+  un cerchio di raggio `48 px` a offset `(0, 24)`: due istanze adiacenti del
+  bordo strada si toccano senza lasciare un varco attraversabile. `dead_tree`
+  usa raggio `12 px` allo stesso offset dentro `48x96`.
   Il sort anchor coincide col centro delle radici e nessuna base quadrata viene
   disegnata sotto gli asset.
 - `BiomeEnvironmentLayout.get_obstacle_record()` espone tipo, categoria,

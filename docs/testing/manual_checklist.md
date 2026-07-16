@@ -45,6 +45,10 @@ Per iterazioni mirate sulla mappa:
 - Player, zombie, boss e prop non incorporano un piano sotto lo sprite.
 - Alberi e soggetti alti possono superare il bordo nord e restano ordinati via
   Y-sort sul loro `floor_center`/`bottom_center`.
+- Nella Pianura Infetta, percorrere entrambi i lati di un tratto di strada
+  alberato: due `forest_tree` adiacenti devono toccarsi col collider `F9`, il
+  player non deve attraversare il filare e il visuale deve risultare doppio
+  rispetto al precedente asset runtime senza cambiare il footprint `2x2`.
 
 ## Asset ambiente
 

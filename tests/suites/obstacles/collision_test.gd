@@ -66,12 +66,23 @@ func test_obstacle_runtime_contract() -> void:
 
 func test_tree_colliders_are_root_centered_circles() -> void:
 	var forest_tree := _build_obstacle(&"forest_tree", Vector2(96.0, 96.0))
-	_assert_root_circle_contract(forest_tree, Vector2(48.0, 48.0), Vector2(0.0, 24.0), 24.0, "forest_tree")
+	_assert_root_circle_contract(forest_tree, Vector2(96.0, 96.0), Vector2(0.0, 24.0), 48.0, "forest_tree")
 	await _free_node(forest_tree)
 
 	var dead_tree := _build_obstacle(&"dead_tree", Vector2(48.0, 96.0))
 	_assert_root_circle_contract(dead_tree, Vector2(24.0, 24.0), Vector2(0.0, 24.0), 12.0, "dead_tree")
 	await _free_node(dead_tree)
+
+func test_adjacent_road_lining_trees_leave_no_walkable_gap() -> void:
+	var first := _build_obstacle(&"forest_tree", Vector2(96.0, 96.0))
+	var second := _build_obstacle(&"forest_tree", Vector2(96.0, 96.0))
+	first.global_position = Vector2.ZERO
+	second.global_position = Vector2(96.0, 0.0)
+	var contact_point := Vector2(48.0, 24.0)
+	assert_true(first.contains_global_position(contact_point), "first road-border tree reaches the midpoint")
+	assert_true(second.contains_global_position(contact_point), "second road-border tree meets the first without a passable gap")
+	await _free_node(first)
+	await _free_node(second)
 
 func test_obstacle_rotation_is_locked_to_cardinal_axes() -> void:
 	var obstacle := BiomeObstacle.new()

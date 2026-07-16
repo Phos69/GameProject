@@ -342,16 +342,22 @@ func get_visual_height_tiles(object_id: StringName) -> int:
 		return int((objects[object_id] as Dictionary).get("visual_height_tiles", 0))
 	return 0
 
+func get_visual_scale(object_id: StringName) -> float:
+	if objects.has(object_id):
+		return float((objects[object_id] as Dictionary).get("visual_scale", 1.0))
+	return 1.0
+
 func get_native_visual_size(
 	object_id: StringName,
 	logical_tile_scale: float = WorldGridConfig.LEGACY_TILE_SCALE
 ) -> Vector2:
 	var footprint := get_footprint_tiles(object_id)
 	var visual_height := get_visual_height_tiles(object_id)
-	return Vector2(
+	var native_size := Vector2(
 		maxf(float(footprint.x) * logical_tile_scale * 1.55, 56.0),
 		maxf(float(footprint.y + visual_height) * logical_tile_scale, 56.0)
 	)
+	return native_size * get_visual_scale(object_id)
 
 func blocks_movement(object_id: StringName) -> bool:
 	if objects.has(object_id):
@@ -882,6 +888,7 @@ func _normalize_object(entry: Dictionary) -> Dictionary:
 		"footprint_tiles": footprint,
 		"footprint_slots": footprint_slots,
 		"visual_height_tiles": maxi(int(entry.get("visual_height_tiles", 0)), 0),
+		"visual_scale": maxf(float(entry.get("visual_scale", 1.0)), 0.01),
 		"blocks_movement": bool(entry.get("blocks_movement", true)),
 		"blocks_projectiles": bool(entry.get("blocks_projectiles", true)),
 		"is_jumpable_gap_anchor": bool(entry.get("is_jumpable_gap_anchor", false)),

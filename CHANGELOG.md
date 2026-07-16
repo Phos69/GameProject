@@ -8,6 +8,11 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Changed
 
+- Raddoppiata la resa runtime di `forest_tree` tramite `visual_scale = 2.0` e
+  portato il collider circolare delle radici da 48 a 96 px di diametro. Il
+  footprint di generazione resta `2x2` tile logiche, mentre gli alberi adiacenti
+  che delimitano una strada ora si toccano fisicamente e non lasciano varchi
+  attraversabili; aggiunta regressione GUT dedicata e checklist manuale `F9`.
 - Completata `TERRAIN-MASK-001`: il rendering non deriva piu' strip, core e
   corner separati per ogni strada. `TerrainSurfaceClassifier` distingue le
   quattro superfici `grass`, `path`, `asphalt` e `void`; una maschera RGBA

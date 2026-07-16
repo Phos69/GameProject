@@ -280,8 +280,9 @@ func test_forest_tree_variation_is_visual_only() -> void:
 	await wait_physics_frames(2)
 
 	assert_eq(first.obstacle_size, second.obstacle_size, "forest_tree visual variation keeps placement size")
-	assert_eq(first.get_collision_size(), Vector2(48.0, 48.0), "first tree keeps its compact root collider")
-	assert_eq(second.get_collision_size(), Vector2(48.0, 48.0), "second tree keeps its compact root collider")
+	assert_eq(_manifest.get_visual_scale(&"forest_tree"), 2.0, "forest_tree doubles its manifest-driven visual size")
+	assert_eq(first.get_collision_size(), Vector2(96.0, 96.0), "first tree uses the doubled root collider")
+	assert_eq(second.get_collision_size(), Vector2(96.0, 96.0), "second tree uses the doubled root collider")
 	assert_true(first.contains_global_position(first.to_global(first.get_collision_offset())), "first tree still blocks its roots")
 	assert_true(second.contains_global_position(second.to_global(second.get_collision_offset())), "second tree still blocks its roots")
 	assert_true(first_object.asset_sprite != null and second_object.asset_sprite != null, "forest_tree sprites are available")
