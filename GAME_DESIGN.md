@@ -28,6 +28,11 @@ Un action sandbox locale dove 1-4 giocatori affrontano arene, dungeon e difese a
   bloccano movimento e proiettili secondo il manifest e partecipano allo Y-sort.
 - Void/fall zone comunica una caduta tramite lip e faccia cliff; non deve essere
   confuso con una parete o con terreno normale.
+- La profondita grafica della parete di un chasm resta uniforme anche quando il
+  vuoto e piu lungo; unioni a L/T/croce devono chiudere anche i raccordi concavi,
+  senza quadranti neri o interruzioni del lip. Il raccordo deriva dal contorno
+  unificato e dalla proiezione condivisa delle pareti incidenti, non da decal o
+  patch asset-specifiche sovrapposte al vertice.
 
 ## Giocatori
 
@@ -846,12 +851,18 @@ Regole hazard:
 - tutti gli orientamenti cliff condividono una faccia rocciosa e un lip
   pietra/terra/erba raster: il prato arriva fino a una cresta continua con
   bordi orizzontali e verticali rettilinei; negli angoli il bordo orizzontale
-  possiede la giunzione e quello verticale termina prima del raccordo, senza
-  aloni grigi, tile quadrati, zig-zag o edge che proseguono a croce. La faccia e
+  possiede la giunzione concava e quello verticale termina prima del raccordo,
+  senza aloni grigi, tile quadrati, zig-zag o edge che proseguono a croce. La
+  cresta rocciosa occupa solo il lato realmente calpestabile: sui lati verticali
+  e inferiore nessuna striscia interna al void deve suggerire una falsa mensola.
+  Nei raccordi la texture delle due facce condivide la stessa fase UV al vertice
+  alto e profondo, quindi l'ombra baked non deve produrre uno stacco chiaro/scuro
+  lungo il seam. La faccia e
   costruita con pannelli continui orizzontali e verticali, non con i lati
-  inclinati dei rombi per-cell; sui bordi perimetrali la cresta coincide con la
-  prima cella di caduta e la faccia scende nel void invece di occupare terreno
-  che sembra solido. Viene ripetuta con UV world-space e dissolta verso il
+  inclinati dei rombi per-cell; sui bordi perimetrali il margine interno della
+  cresta coincide con il confine della prima cella di caduta e la faccia scende
+  nel void invece di occupare terreno che sembra solido. Viene ripetuta con UV
+  world-space e dissolta verso il
   colore uniforme del void; la grafica non modifica danno o attraversabilita;
 - il void profondo non mostra texture o reticoli ripetuti: resta uniforme e
   usa lo stesso colore del fuori-mappa e viene definito visivamente dal cliff

@@ -115,6 +115,23 @@ func has_asset_sprite() -> bool:
 func has_asset_visual() -> bool:
 	return has_asset_sprite() or has_mesa_visual()
 
+func get_asset_visual_bounds() -> Rect2:
+	if not has_asset_sprite():
+		return Rect2()
+	var texture_size := asset_sprite.texture.get_size()
+	var metrics := _get_content_metrics(asset_sprite.texture)
+	var content_rect := metrics.get(
+		"bounds",
+		Rect2(Vector2.ZERO, texture_size)
+	) as Rect2
+	var scaled_position := (
+		content_rect.position - texture_size * 0.5
+	) * asset_sprite.scale.abs()
+	return Rect2(
+		asset_sprite.position + scaled_position,
+		content_rect.size * asset_sprite.scale.abs()
+	)
+
 func get_render_mode() -> StringName:
 	return render_mode
 
@@ -366,8 +383,15 @@ func _position_asset_sprite() -> void:
 	var content_rect := metrics.get("bounds", Rect2(Vector2.ZERO, texture_size)) as Rect2
 	var canvas_center := texture_size * 0.5
 	var content_center_x := content_rect.position.x + content_rect.size.x * 0.5
+	var content_center_y := content_rect.position.y + content_rect.size.y * 0.5
 	var content_bottom := content_rect.position.y + content_rect.size.y
-	var anchor_x := -(content_center_x - canvas_center.x) * asset_sprite.scale.x
+	var anchor_x := (
+		collision_offset.x
+		- (content_center_x - canvas_center.x) * asset_sprite.scale.x
+	)
+	var content_center_y_local := (
+		content_center_y - canvas_center.y
+	) * asset_sprite.scale.y
 	var content_bottom_local := (content_bottom - canvas_center.y) * asset_sprite.scale.y
 	var content_height_local := content_rect.size.y * asset_sprite.scale.y
 	var floor_y := clampf(sort_offset, 0.0, obstacle_size.y * 0.5 + 12.0)
@@ -387,7 +411,15 @@ func _position_asset_sprite() -> void:
 		# either the visible trunk or its physical hitbox.
 		base_y = collision_offset.y + minf(collision_size.x, collision_size.y) * 0.5
 	match anchor_id:
-		&"bottom_center", &"floor_center":
+		&"floor_center":
+			# A floor-centered asset represents the same footprint as its physical
+			# body. Align opaque content with the collider center; seating it on the
+			# south edge shifts buildings by roughly half their height.
+			asset_sprite.position = Vector2(
+				anchor_x,
+				collision_offset.y - content_center_y_local
+			)
+		&"bottom_center":
 			asset_sprite.position = Vector2(anchor_x, base_y - content_bottom_local)
 		&"edge_aligned":
 			asset_sprite.position = Vector2(

@@ -157,6 +157,43 @@ func test_runtime_object() -> void:
 	system.queue_free()
 	await wait_physics_frames(1)
 
+func test_floor_center_visual_is_centered_on_its_collision() -> void:
+	var system := ObstacleSystem.new()
+	add_child(system)
+	await wait_physics_frames(1)
+	var obstacle_id := &"ruined_house"
+	var footprint := WorldGridConfig.legacy_size_to_new_tiles(
+		_manifest.get_footprint_tiles(obstacle_id)
+	)
+	var world_size := Vector2(footprint) * LOGICAL_TILE_SCALE
+	var obstacle := system.create_obstacle_instance(
+		obstacle_id,
+		world_size,
+		&"rectangle",
+		0.0,
+		Color(0.38, 0.32, 0.22, 1.0),
+		Color(0.78, 0.64, 0.28, 1.0)
+	) as EnvironmentObject
+	assert_not_null(obstacle, "floor-centered house is created")
+	if obstacle != null:
+		add_child(obstacle)
+		await wait_physics_frames(1)
+		var visual_bounds := obstacle.get_asset_visual_bounds()
+		var collision_center := obstacle.get_collision_offset()
+		assert_lte(
+			absf(visual_bounds.get_center().y - collision_center.y),
+			1.0,
+			"floor-centered house art stays centered on its physical footprint"
+		)
+		assert_lte(
+			absf(visual_bounds.get_center().x - collision_center.x),
+			1.0,
+			"floor-centered house art keeps the collider horizontal center"
+		)
+		obstacle.queue_free()
+	system.queue_free()
+	await wait_physics_frames(1)
+
 func test_generated_layout_records() -> void:
 	var generator := BiomeTerrainGenerator.new()
 	add_child(generator)

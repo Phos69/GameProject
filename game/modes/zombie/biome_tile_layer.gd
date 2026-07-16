@@ -423,8 +423,14 @@ func get_forest_cliff_border_counts() -> Dictionary:
 		"horizontal": _cliff_border_mesh_builder.horizontal_segment_count,
 		"vertical": _cliff_border_mesh_builder.vertical_segment_count,
 		"corners": _cliff_border_mesh_builder.corner_count,
+		"concave_corners": _cliff_border_mesh_builder.concave_corner_count,
 		"faces": (
 			_rectilinear_cliff_face_mesh_builder.face_count
+			if _rectilinear_cliff_face_mesh_builder != null
+			else 0
+		),
+		"concave_joins": (
+			_rectilinear_cliff_face_mesh_builder.concave_join_count
 			if _rectilinear_cliff_face_mesh_builder != null
 			else 0
 		),
@@ -674,8 +680,21 @@ func _draw() -> void:
 	# Mesa volumes are rendered by their individual `large_rock` obstacle nodes.
 	# Keeping them out of this z=-9 terrain layer lets the environment Y-sort put
 	# one actor behind a mesa while another remains in front of it.
+	var uses_rectilinear_cliff_art := has_forest_cliff_border_art()
+	# The vertical edge raster is an underlay: the projected side face owns the
+	# visible wall and must cover the texture band. Only the horizontal crest is
+	# composited above the face.
 	if (
-		has_forest_cliff_border_art()
+		uses_rectilinear_cliff_art
+		and _cliff_border_mesh_builder != null
+		and _cliff_border_mesh_builder.vertical_mesh != null
+	):
+		draw_mesh(
+			_cliff_border_mesh_builder.vertical_mesh,
+			_cliff_lip_vertical_texture
+		)
+	if (
+		uses_rectilinear_cliff_art
 		and _rectilinear_cliff_face_mesh_builder != null
 		and _rectilinear_cliff_face_mesh_builder.face_mesh != null
 	):
@@ -685,14 +704,9 @@ func _draw() -> void:
 		)
 	elif _cliff_mesh_builder != null and _cliff_mesh_builder.face_mesh != null:
 		draw_mesh(_cliff_mesh_builder.face_mesh, _cliff_face_texture)
-	if has_forest_cliff_border_art() and _cliff_border_mesh_builder != null:
+	if uses_rectilinear_cliff_art and _cliff_border_mesh_builder != null:
 		if _cliff_border_mesh_builder.horizontal_mesh != null:
 			draw_mesh(_cliff_border_mesh_builder.horizontal_mesh, _cliff_lip_texture)
-		if _cliff_border_mesh_builder.vertical_mesh != null:
-			draw_mesh(
-				_cliff_border_mesh_builder.vertical_mesh,
-				_cliff_lip_vertical_texture
-			)
 	elif (
 		_cliff_mesh_builder != null
 		and _cliff_mesh_builder.lip_mesh != null
@@ -700,7 +714,7 @@ func _draw() -> void:
 	):
 		draw_mesh(_cliff_mesh_builder.lip_mesh, _cliff_lip_texture)
 	if (
-		not has_forest_cliff_border_art()
+		not uses_rectilinear_cliff_art
 		and _cliff_mesh_builder != null
 		and _cliff_mesh_builder.fissure_lines.size() >= 2
 	):
@@ -712,7 +726,7 @@ func _draw() -> void:
 			fissure_width
 		)
 	if (
-		not has_forest_cliff_border_art()
+		not uses_rectilinear_cliff_art
 		and _cliff_mesh_builder != null
 		and _cliff_mesh_builder.lip_lines.size() >= 2
 	):

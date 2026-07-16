@@ -10,6 +10,11 @@ const BOTTOM := &"bottom"
 const LEFT := &"left"
 const RIGHT := &"right"
 const INTERNAL := &"internal"
+const CORNER_CONCAVE := &"concave"
+const CORNER_CONVEX := &"convex"
+const CORNER_STRAIGHT := &"straight"
+const CORNER_DIAGONAL := &"diagonal"
+const CORNER_OPEN := &"open"
 
 static func build(
 	fall_zone_rects: Array[Rect2i],
@@ -107,6 +112,16 @@ static func _append_horizontal_runs(
 					boundary_y,
 					orientation
 				),
+				"start_corner": _corner_kind(
+					occupied,
+					zone_size,
+					Vector2i(run_start, boundary_y)
+				),
+				"end_corner": _corner_kind(
+					occupied,
+					zone_size,
+					Vector2i(run_end, boundary_y)
+				),
 				"perimeter_side": _perimeter_side_for_run(
 					orientation,
 					boundary_y,
@@ -150,6 +165,16 @@ static func _append_vertical_runs(
 					run_end,
 					boundary_x,
 					orientation
+				),
+				"start_corner": _corner_kind(
+					occupied,
+					zone_size,
+					Vector2i(boundary_x, run_start)
+				),
+				"end_corner": _corner_kind(
+					occupied,
+					zone_size,
+					Vector2i(boundary_x, run_end)
 				),
 				"perimeter_side": _perimeter_side_for_run(
 					orientation,
@@ -251,3 +276,48 @@ static func _is_occupied(
 	if x < 0 or y < 0 or x >= zone_size.x or y >= zone_size.y:
 		return false
 	return occupied[y * zone_size.x + x] != 0
+
+static func _corner_kind(
+	occupied: PackedByteArray,
+	zone_size: Vector2i,
+	vertex: Vector2i
+) -> StringName:
+	var north_west := _is_occupied(
+		occupied,
+		zone_size,
+		vertex.x - 1,
+		vertex.y - 1
+	)
+	var north_east := _is_occupied(
+		occupied,
+		zone_size,
+		vertex.x,
+		vertex.y - 1
+	)
+	var south_west := _is_occupied(
+		occupied,
+		zone_size,
+		vertex.x - 1,
+		vertex.y
+	)
+	var south_east := _is_occupied(
+		occupied,
+		zone_size,
+		vertex.x,
+		vertex.y
+	)
+	var occupied_count := (
+		int(north_west)
+		+ int(north_east)
+		+ int(south_west)
+		+ int(south_east)
+	)
+	if occupied_count == 3:
+		return CORNER_CONCAVE
+	if occupied_count == 1:
+		return CORNER_CONVEX
+	if occupied_count == 2:
+		if (north_west and south_east) or (north_east and south_west):
+			return CORNER_DIAGONAL
+		return CORNER_STRAIGHT
+	return CORNER_OPEN

@@ -68,6 +68,11 @@ sotto quelli davanti. Ostacoli, hazard e fall zone sono bloccati a rotazione `0`
 movimento e mira degli attori restano analogici, ma gli asset rimangono dritti
 sugli assi H/V.
 
+Per `floor_center`, il centro del contenuto opaco viene allineato al centro del
+collider fisico; non viene appoggiato sul bordo sud del footprint. Gli asset
+`bottom_center` conservano invece il contatto sul bordo sud, mentre gli alberi
+usano il centro/raggio esplicito del collider alle radici.
+
 `forest_tree` resta il riferimento per l'ostacolo singolo `3x3`: occupa nove
 slot di design e riserva un footprint runtime `96x96`, ma usa un collider
 circolare di raggio `24 px` centrato sulle radici a offset `(0, 24)`. Anche
@@ -95,7 +100,12 @@ coprire un attore a nord mentre resta dietro a un attore a sud. Movimento e
 proiettili restano bloccati sull'intera area dichiarata.
 
 Void/fall zone usano contratti `void_tiles`/cliff separati e non sono ostacoli
-solidi. Pareti, case, vegetazione e rocce usano invece `object_scenes` e dichiarano
+solidi. Il lip roccioso dei chasm viene sovrapposto sul lato walkable del
+confine; la parete parte dal confine e si proietta soltanto nel void, evitando
+fasce laterali o inferiori che sembrino calpestabili ma attivino gia la caduta.
+Le facce ortogonali incidenti condividono posizione, colore e fase UV sui corner,
+cosi l'illuminazione baked del raster non crea tagli chiaro/scuro nel raccordo.
+Pareti, case, vegetazione e rocce usano invece `object_scenes` e dichiarano
 esplicitamente `blocks_movement` e `blocks_projectiles`.
 
 ## Aggiungere un ostacolo

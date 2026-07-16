@@ -3,7 +3,9 @@ class_name TopDownCliffBorderMeshBuilder
 
 ## Builds a continuous orthogonal rim around rectangular fall zones. The
 ## rectilinear face builder owns the descending rock faces; this builder
-## owns the clearly readable grass-to-rock crest and its geometric joins.
+## owns the clearly readable grass-to-rock crest and its geometric joins. The
+## crest always lies on the walkable side of the terrain/fall boundary; the
+## face builder alone is allowed to project geometry into the void.
 
 const HORIZONTAL_GRASS_RATIO := 0.65
 const VERTICAL_GRASS_RATIO := 0.56
@@ -25,6 +27,7 @@ var vertical_mesh: ArrayMesh
 var horizontal_segment_count: int = 0
 var vertical_segment_count: int = 0
 var corner_count: int = 0
+var concave_corner_count: int = 0
 var sample_full_texture: bool = false
 
 func reset() -> void:
@@ -33,6 +36,7 @@ func reset() -> void:
 	horizontal_segment_count = 0
 	vertical_segment_count = 0
 	corner_count = 0
+	concave_corner_count = 0
 
 func build(
 	fall_zone_rects: Array[Rect2i],
@@ -60,7 +64,6 @@ func build(
 			vertical,
 			run,
 			zone_offset,
-			zone_size,
 			logical_scale,
 			border_width
 		)
@@ -75,7 +78,6 @@ func _append_boundary_run(
 	vertical: Dictionary,
 	run: Dictionary,
 	zone_offset: Vector2,
-	zone_size: Vector2i,
 	logical_scale: float,
 	border_width: float
 ) -> void:
@@ -86,10 +88,16 @@ func _append_boundary_run(
 	var joint_depth := border_width * (1.0 - HORIZONTAL_GRASS_RATIO)
 	match orientation:
 		FALL_ZONE_BOUNDARY_RUNS.TOP:
+			var top_left := (start - zone_offset.x) * logical_scale
+			var top_right := (end - zone_offset.x) * logical_scale
+			if StringName(run.get("start_corner", &"")) == FALL_ZONE_BOUNDARY_RUNS.CORNER_CONCAVE:
+				concave_corner_count += 1
+			if StringName(run.get("end_corner", &"")) == FALL_ZONE_BOUNDARY_RUNS.CORNER_CONCAVE:
+				concave_corner_count += 1
 			_append_horizontal(
 				horizontal,
-				(start - zone_offset.x) * logical_scale,
-				(end - zone_offset.x) * logical_scale,
+				top_left,
+				top_right,
 				(boundary - zone_offset.y) * logical_scale,
 				border_width,
 				false
@@ -97,10 +105,16 @@ func _append_boundary_run(
 			horizontal_segment_count += 1
 			corner_count += 2
 		FALL_ZONE_BOUNDARY_RUNS.BOTTOM:
+			var bottom_left := (start - zone_offset.x) * logical_scale
+			var bottom_right := (end - zone_offset.x) * logical_scale
+			if StringName(run.get("start_corner", &"")) == FALL_ZONE_BOUNDARY_RUNS.CORNER_CONCAVE:
+				concave_corner_count += 1
+			if StringName(run.get("end_corner", &"")) == FALL_ZONE_BOUNDARY_RUNS.CORNER_CONCAVE:
+				concave_corner_count += 1
 			_append_horizontal(
 				horizontal,
-				(start - zone_offset.x) * logical_scale,
-				(end - zone_offset.x) * logical_scale,
+				bottom_left,
+				bottom_right,
 				(boundary - zone_offset.y) * logical_scale,
 				border_width,
 				true
@@ -110,11 +124,19 @@ func _append_boundary_run(
 		FALL_ZONE_BOUNDARY_RUNS.LEFT, FALL_ZONE_BOUNDARY_RUNS.RIGHT:
 			var top := (start - zone_offset.y) * logical_scale
 			var bottom := (end - zone_offset.y) * logical_scale
-			# Horizontal strips own geometric joins. Do not trim an endpoint that
-			# reaches the map boundary, because there is no rendered outer rim there.
-			if int(start) > 0:
+			# Once the crest is kept on walkable terrain, horizontal and vertical
+			# strips overlap only at concave corners (the single walkable quadrant).
+			# The horizontal strip owns that join. Convex corners occupy different
+			# walkable quadrants and must retain the complete vertical endpoint.
+			if (
+				StringName(run.get("start_corner", &""))
+				== FALL_ZONE_BOUNDARY_RUNS.CORNER_CONCAVE
+			):
 				top += joint_depth
-			if int(end) < zone_size.y:
+			if (
+				StringName(run.get("end_corner", &""))
+				== FALL_ZONE_BOUNDARY_RUNS.CORNER_CONCAVE
+			):
 				bottom -= joint_depth
 			_append_vertical(
 				vertical,
@@ -136,22 +158,23 @@ func _append_horizontal(
 	width: float,
 	flip_vertical: bool
 ) -> void:
-	# As with vertical edges, grass is already rendered by the base ground. Map
-	# only the rock interval inside the fall rectangle so the strip cannot leave
-	# a rectangular grass cap at either endpoint.
+	# Grass is already rendered by the base ground. Overlay only the rock interval
+	# on the walkable side of the boundary: every visible crest pixel is therefore
+	# safe to stand on, while the face builder starts exactly at boundary_y and
+	# descends in the opposite direction into the void.
 	var rock_depth := width * (1.0 - HORIZONTAL_GRASS_RATIO)
 	var top: float
 	var bottom: float
 	var top_v: float
 	var bottom_v: float
 	if flip_vertical:
-		top = boundary_y - rock_depth
-		bottom = boundary_y
+		top = boundary_y
+		bottom = boundary_y + rock_depth
 		top_v = 1.0
 		bottom_v = 0.0 if sample_full_texture else HORIZONTAL_ROCK_UV_START
 	else:
-		top = boundary_y
-		bottom = boundary_y + rock_depth
+		top = boundary_y - rock_depth
+		bottom = boundary_y
 		top_v = 0.0 if sample_full_texture else HORIZONTAL_ROCK_UV_START
 		bottom_v = 1.0
 	var u_left := left / TEXTURE_REPEAT_WORLD_SIZE
@@ -175,22 +198,21 @@ func _append_vertical(
 	width: float,
 	flip_horizontal: bool
 ) -> void:
-	# The base grass mesh already owns the walkable side. Drawing the grass half
-	# of this directional texture created a dark square cap at both endpoints, so
-	# only the rock interval is mapped inside the fall rectangle.
+	# Keep the directional rock interval on the walkable side. This prevents the
+	# vertical rim from reading as a narrow ledge inside the fall collision.
 	var rock_width := width * (1.0 - VERTICAL_GRASS_RATIO)
 	var left: float
 	var right: float
 	var left_u: float
 	var right_u: float
 	if flip_horizontal:
-		left = boundary_x - rock_width
-		right = boundary_x
+		left = boundary_x
+		right = boundary_x + rock_width
 		left_u = 1.0
 		right_u = 0.0 if sample_full_texture else VERTICAL_ROCK_UV_START
 	else:
-		left = boundary_x
-		right = boundary_x + rock_width
+		left = boundary_x - rock_width
+		right = boundary_x
 		left_u = 0.0 if sample_full_texture else VERTICAL_ROCK_UV_START
 		right_u = 1.0
 	var v_top := top / TEXTURE_REPEAT_WORLD_SIZE

@@ -963,9 +963,13 @@ multi-bioma.
   fallback non forestale. Nel forestale `FallZoneBoundaryRuns` calcola il
   contorno esposto dell'unione di tutti i `fall_zone_rects`: lati condivisi fra
   rettangoli adiacenti o sovrapposti non vengono consegnati ai builder e quindi
-  non possono produrre seam dentro un unico void. Su tale contorno,
+  non possono produrre seam dentro un unico void. Ogni estremo di run espone
+  inoltre la topologia locale `convex`, `concave`, `straight` o `diagonal`,
+  derivata dalle quattro celle attorno al vertice. Su tale contorno,
   `RectilinearCliffFaceMeshBuilder` sostituisce le facce per-cell con pannelli
-  continui: la parete lontana (nord) e quella vicina (sud) scendono dritte mentre
+  continui: la parete lontana (nord) usa una profondita visuale canonica di
+  `1,75` tile, limitata solo dallo spazio void realmente disponibile, e non
+  cresce con la lunghezza del chasm. La parete vicina (sud) scende dritta mentre
   le pareti laterali (est/ovest) sono sghembate verso l'interno del void
   (`LATERAL_VOID_SLOPE`) per rendere il burrone in finta prospettiva, come le
   precedenti facce EDGE E/W. Tutte campionano `cliff_face_texture` e la
@@ -977,14 +981,37 @@ multi-bioma.
   base a `hazard_sides` e usano un rim sub-tile. Le celle walkable
   `ground_to_void_cliff` mantengono il prato fino alla cresta; le celle
   `void_*` di transizione restano invece fondale void, cosi le texture terrain
-  non continuano sotto la faccia cliff. Non esiste una mesh corner sovrapposta:
-  il bordo orizzontale possiede la giunzione e il verticale termina alla sua
-  profondita rocciosa. Entrambe le mesh edge escludono la porzione erba dei
-  propri raster e campionano solo roccia dentro la fall zone; il ground resta
-  unico owner del prato, evitando cap scuri, croci, quadrati e doppio
-  campionamento. Le linee e le facce inclinate legacy non vengono sovrapposte
-  nel forestale. Collisioni e regole di caduta restano esclusivamente in
-  `BiomeFallZone`/`HazardSystem`.
+  non continuano sotto la faccia cliff. La geometria rocciosa del lip viene
+  sovrapposta esclusivamente sul lato walkable del confine: il primo pixel
+  interno alla fall zone appartiene alla parete o al fondale void, mai a una
+  cresta che sembri calpestabile. Il bordo orizzontale possiede le giunzioni
+  concave del lip e quello verticale termina alla sua profondita rocciosa; nei
+  corner convessi i due bordi restano completi perche occupano quadranti
+  walkable distinti. Le facce usano invece un contratto unico di proiezione del
+  contorno: prima della
+  triangolazione ogni vertice ortogonale combina la componente di drop della
+  run orizzontale con quella della run verticale. I due quad incidenti usano lo
+  stesso vertice profondo e condividono quindi l'intera diagonale di giunzione.
+  Anche la proiezione UV e unica: ogni vertice usa direttamente le proprie
+  coordinate planari world-space `x, y`, indipendentemente dall'orientazione
+  della run. Le due facce campionano quindi gli stessi texel lungo tutto il seam,
+  non solo nei suoi estremi; il gradiente verso il void resta nei vertex color.
+  In questo modo l'illuminazione baked della texture non cambia bruscamente al
+  raccordo.
+  Lo stesso algoritmo copre corner convessi e concavi, sagome L/T/croce e
+  orientamenti specchiati; non esistono primitive corner aggiuntive, rettangoli
+  sovrapposti o triangoli usati come patch. Nei corner convessi la parete
+  orizzontale possiede l'intera profondita: le facce verticali vengono clippate
+  fra il bordo profondo nord e quello sud, invece di attraversare e coprire le
+  facce orizzontali. Nei concavi i versi sono opposti e resta il seam condiviso.
+  Il lip verticale viene inoltre composto come underlay prima delle facce,
+  mentre solo il lip orizzontale resta sopra la parete.
+  Entrambe le mesh edge escludono la porzione erba dei propri raster e
+  campionano solo roccia sopra il ground walkable; il ground resta unico owner
+  del prato e la faccia resta unico owner della proiezione dentro il void,
+  evitando cap scuri, croci, quadrati e doppio campionamento. Le linee e le
+  facce inclinate legacy non vengono sovrapposte nel forestale. Collisioni e
+  regole di caduta restano esclusivamente in `BiomeFallZone`/`HazardSystem`.
   Per i temi generati i pool cliff associano `01/02` alle facce, `03/04` ai
   lip orizzontale/verticale, `05-08` agli outer corner, `09/10` agli inner
   corner specchiabili e `11` al cap. Le facce e i lip selezionati alimentano

@@ -526,6 +526,34 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Fixed
 
+- Uniformata la fase UV delle facce cliff ai corner: pareti orizzontali e
+  verticali ora usano la stessa proiezione planare world-space `x, y` per ogni
+  vertice finale. L'intero seam campiona quindi gli stessi texel su entrambi i
+  lati, eliminando lo stacco chiaro/scuro causato dall'illuminazione baked; il
+  fade verso il void resta separato nei vertex color. Aggiunti guardrail GUT su
+  proiezione e raccordi, piu verifica sulle quattro concavita della Visual QA.
+- Spostato il lip roccioso dei chasm sul lato walkable del confine logico: le
+  strisce verticali e inferiori non occupano piu celle gia classificate come
+  void/fall zone e non suggeriscono false mensole calpestabili. Le pareti
+  continuano a partire dal confine e a dissolversi nel void; gli angoli concavi
+  conservano la giunzione orizzontale, quelli convessi mantengono entrambi i
+  bordi completi. Collisione, danno e recovery dalla caduta restano invariati;
+  aggiunti guardrail GUT sui bounds e verifica Visual QA dedicata.
+- Uniformata la profondita visuale della parete nord dei chasm interni a `1,75`
+  tile: non dipende piu' dal numero di celle void dietro il bordo. Il contorno
+  unificato classifica ora i vertici ortogonali e combina in anticipo i drop
+  delle due run incidenti: entrambi i quad condividono lo stesso seam profondo,
+  senza triangoli corner, mensole, sovrapposizioni o quadranti neri. Il contratto
+  e' verificato su L, T, croce e quattro orientamenti specchiati; la board Visual
+  QA mostra contemporaneamente i quattro raccordi concavi. Nei corner convessi
+  le facce laterali vengono ora clippate fra i bordi profondi delle pareti
+  orizzontali, eliminando la fascia verticale che le attraversava; il lip
+  verticale resta un underlay e solo quello orizzontale viene composto sopra.
+- Allineati gli sprite `floor_center` degli ostacoli asset-backed al centro del
+  rispettivo collider fisico. Case e prop non vengono piu' appoggiati per errore
+  sul bordo sud del footprint, eliminando il forte offset verticale visibile con
+  l'overlay `F9`; aggiunte una regressione GUT su `ruined_house` e una board
+  Visual QA comparativa per gli anchor `floor_center`/`bottom_center`.
 - Unificato il contorno visuale dei `fall_zone_rects` adiacenti o
   sovrapposti: `FallZoneBoundaryRuns` rasterizza l'unione logica dei void e
   fornisce ai builder solo i segmenti esposti verso terreno. Lip e facce cliff

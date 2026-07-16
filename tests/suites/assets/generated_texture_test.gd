@@ -1453,9 +1453,35 @@ func test_rectangular_border_meshes() -> void:
 	assert_true(_mesh_has_uvs(builder.vertical_mesh), "vertical cliff border exposes UVs")
 	var h := _mesh_bounds(builder.horizontal_mesh)
 	var v := _mesh_bounds(builder.vertical_mesh)
-	assert_true(is_equal_approx(h.position.x, -32.0) and is_equal_approx(h.end.x, 16.0) and is_equal_approx(h.position.y, -24.0) and is_equal_approx(h.end.y, 8.0)
-		and is_equal_approx(v.position.x, -32.0) and is_equal_approx(v.end.x, 16.0) and v.position.y > -24.0 and v.end.y < 8.0,
-		"both rock edges stay inside the fall rectangle with horizontal corner ownership")
+	var expected_horizontal_depth := 12.0 * (1.0 - TopDownCliffBorderMeshBuilder.HORIZONTAL_GRASS_RATIO)
+	var expected_vertical_depth := 12.0 * (1.0 - TopDownCliffBorderMeshBuilder.VERTICAL_GRASS_RATIO)
+	assert_true(
+		is_equal_approx(h.position.x, -32.0)
+		and is_equal_approx(h.end.x, 16.0)
+		and is_equal_approx(h.position.y, -24.0 - expected_horizontal_depth)
+		and is_equal_approx(h.end.y, 8.0 + expected_horizontal_depth)
+		and is_equal_approx(v.position.x, -32.0 - expected_vertical_depth)
+		and is_equal_approx(v.end.x, 16.0 + expected_vertical_depth)
+		and is_equal_approx(v.position.y, -24.0)
+		and is_equal_approx(v.end.y, 8.0),
+		"every rock crest stays on walkable terrain outside the fall rectangle"
+	)
+	var horizontal_arrays := builder.horizontal_mesh.surface_get_arrays(0)
+	var horizontal_vertices := (
+		horizontal_arrays[Mesh.ARRAY_VERTEX] as PackedVector2Array
+	)
+	for vertex in horizontal_vertices:
+		assert_false(
+			vertex.y > -24.0 + 0.001 and vertex.y < 8.0 - 0.001,
+			"horizontal crest vertex never enters the fall rectangle"
+		)
+	var vertical_arrays := builder.vertical_mesh.surface_get_arrays(0)
+	var vertical_vertices := vertical_arrays[Mesh.ARRAY_VERTEX] as PackedVector2Array
+	for vertex in vertical_vertices:
+		assert_false(
+			vertex.x > -32.0 + 0.001 and vertex.x < 16.0 - 0.001,
+			"vertical crest vertex never enters the fall rectangle"
+		)
 	builder.build([Rect2i(Vector2i(0, 0), Vector2i(16, 3))], [&"north"], Vector2i(16, 16), 8.0)
 	assert_true(builder.horizontal_segment_count == 1 and builder.vertical_segment_count == 0 and builder.corner_count == 2,
 		"perimeter fall zone draws only the edge facing walkable terrain")
@@ -1463,18 +1489,45 @@ func test_rectangular_border_meshes() -> void:
 	var perimeter_h := _mesh_bounds(builder.horizontal_mesh)
 	var fall_boundary_y := (1.0 - 8.0) * 48.0
 	assert_true(
-		is_equal_approx(perimeter_h.end.y, fall_boundary_y)
+		is_equal_approx(perimeter_h.position.y, fall_boundary_y)
 		and perimeter_h.size.y <= 18.0,
-		"perimeter cliff rim stays narrow and ends at the fall boundary"
+		"perimeter cliff rim stays narrow and begins on the walkable side of the fall boundary"
 	)
 
 func test_rectilinear_face_meshes() -> void:
 	var builder := RectilinearCliffFaceMeshBuilder.new()
+	var shallow_depth := builder._far_face_depth(
+		Rect2(Vector2.ZERO, Vector2(192.0, 192.0)),
+		&"internal",
+		48.0
+	)
+	var deep_depth := builder._far_face_depth(
+		Rect2(Vector2.ZERO, Vector2(192.0, 576.0)),
+		&"internal",
+		48.0
+	)
+	assert_eq(
+		shallow_depth,
+		deep_depth,
+		"internal cliff drop height is independent from fall-zone length"
+	)
+	assert_eq(
+		shallow_depth,
+		48.0 * RectilinearCliffFaceMeshBuilder.INTERNAL_FAR_FACE_DEPTH_TILES,
+		"internal cliff drop uses the canonical visual depth"
+	)
 	builder.build([Rect2i(Vector2i(4, 5), Vector2i(6, 4))], [&"internal"], Vector2i(16, 16), 8.0)
 	assert_eq(builder.face_count, 4, "internal fall rectangle builds four cliff faces")
 	assert_true(_mesh_has_uvs(builder.face_mesh), "rectilinear cliff faces expose UVs")
-	assert_true(_mesh_is_axis_aligned_quads(builder.face_mesh), "internal cliff faces avoid diagonal lower-corner wedges")
-	assert_eq(_mesh_sheared_quad_count(builder.face_mesh), 0, "internal side walls stay rectilinear")
+	assert_true(
+		_mesh_uses_planar_world_uv(builder.face_mesh),
+		"rectilinear cliff faces share one planar world-space texture projection"
+	)
+	assert_eq(
+		_mesh_sheared_quad_count(builder.face_mesh),
+		0,
+		"a simple rectangle gives convex corners to horizontal faces without sheared side bands"
+	)
 	var bounds := _mesh_bounds(builder.face_mesh)
 	assert_true(bounds.position.is_equal_approx(Vector2(-32.0, -24.0)) and bounds.end.is_equal_approx(Vector2(16.0, 8.0)), "rectilinear cliff faces stay inside the fall rectangle")
 	builder.build([Rect2i(Vector2i(0, 0), Vector2i(16, 1))], [&"north"], Vector2i(16, 16), 48.0)
@@ -1509,8 +1562,13 @@ func test_touching_fall_rectangles_share_one_void_outline() -> void:
 	)
 	assert_eq(runs.size(), 6, "touching rectangles expose only the six runs of their union outline")
 	var shared_seam_found := false
+	var concave_run_endpoints := 0
 	for run in runs:
 		var orientation := StringName(run.get("orientation", &""))
+		if StringName(run.get("start_corner", &"")) == FALL_ZONE_BOUNDARY_RUNS_SCRIPT.CORNER_CONCAVE:
+			concave_run_endpoints += 1
+		if StringName(run.get("end_corner", &"")) == FALL_ZONE_BOUNDARY_RUNS_SCRIPT.CORNER_CONCAVE:
+			concave_run_endpoints += 1
 		if (
 			int(run.get("boundary", -1)) == 6
 			and int(run.get("start", -1)) < 8
@@ -1522,15 +1580,205 @@ func test_touching_fall_rectangles_share_one_void_outline() -> void:
 		):
 			shared_seam_found = true
 	assert_false(shared_seam_found, "the joined void has no cliff run across its shared horizontal edge")
+	assert_eq(
+		concave_run_endpoints,
+		2,
+		"the union outline marks both runs that meet at its concave vertex"
+	)
 
 	var border_builder := TopDownCliffBorderMeshBuilder.new()
 	border_builder.build(rects, sides, Vector2i(16, 16), 8.0)
 	assert_eq(border_builder.horizontal_segment_count, 3, "the joined void renders three exposed horizontal lip runs")
 	assert_eq(border_builder.vertical_segment_count, 3, "the joined void renders three exposed vertical lip runs")
+	assert_eq(
+		border_builder.concave_corner_count,
+		1,
+		"the joined void terminates its lip at the concave corner once"
+	)
 
 	var face_builder := RectilinearCliffFaceMeshBuilder.new()
 	face_builder.build(rects, sides, Vector2i(16, 16), 8.0)
 	assert_eq(face_builder.face_count, 6, "cliff faces follow the union outline instead of both source rectangles")
+	assert_eq(
+		face_builder.concave_join_count,
+		1,
+		"the concave vertex is owned by one shared projected seam"
+	)
+	var concave_vertex := Vector2i(8, 6)
+	assert_true(
+		face_builder.corner_drop_by_vertex.has(concave_vertex),
+		"the concave vertex exposes its combined horizontal and vertical drop"
+	)
+	var concave_drop := face_builder.corner_drop_by_vertex.get(
+		concave_vertex,
+		Vector2.ZERO
+	) as Vector2
+	assert_true(
+		not is_zero_approx(concave_drop.x) and not is_zero_approx(concave_drop.y),
+		"the shared concave drop contains both projection components"
+	)
+	var concave_crest := (
+		Vector2(concave_vertex) - Vector2(16, 16) * 0.5
+	) * 8.0
+	var shared_deep_vertex := concave_crest + concave_drop
+	var face_arrays := face_builder.face_mesh.surface_get_arrays(0)
+	var face_vertices := face_arrays[Mesh.ARRAY_VERTEX] as PackedVector2Array
+	var face_indices := face_arrays[Mesh.ARRAY_INDEX] as PackedInt32Array
+	assert_eq(
+		face_vertices.size(),
+		face_builder.face_count * 4,
+		"every outline run remains one quad with no patch triangles"
+	)
+	assert_eq(
+		face_indices.size(),
+		face_builder.face_count * 6,
+		"every outline run keeps exactly two triangles"
+	)
+	var shared_vertex_occurrences := 0
+	for vertex in face_vertices:
+		if vertex.is_equal_approx(shared_deep_vertex):
+			shared_vertex_occurrences += 1
+	assert_eq(
+		shared_vertex_occurrences,
+		2,
+		"both incident faces terminate on the exact same deep corner vertex"
+	)
+	assert_true(
+		_mesh_uvs_match_at_vertex(face_builder.face_mesh, concave_crest),
+		"both incident faces share one UV phase at the concave crest"
+	)
+	assert_true(
+		_mesh_uvs_match_at_vertex(face_builder.face_mesh, shared_deep_vertex),
+		"both incident faces share one UV phase at the concave deep vertex"
+	)
+
+func test_projected_corner_seams_cover_l_t_cross_and_mirrors() -> void:
+	var cases: Array[Dictionary] = [
+		{
+			"label": "L south-east",
+			"rects": [
+				Rect2i(Vector2i(4, 2), Vector2i(4, 4)),
+				Rect2i(Vector2i(4, 6), Vector2i(8, 4)),
+			],
+			"concave_count": 1,
+		},
+		{
+			"label": "L south-west",
+			"rects": [
+				Rect2i(Vector2i(4, 2), Vector2i(4, 4)),
+				Rect2i(Vector2i(0, 6), Vector2i(8, 4)),
+			],
+			"concave_count": 1,
+		},
+		{
+			"label": "L north-east",
+			"rects": [
+				Rect2i(Vector2i(4, 6), Vector2i(4, 4)),
+				Rect2i(Vector2i(4, 2), Vector2i(8, 4)),
+			],
+			"concave_count": 1,
+		},
+		{
+			"label": "L north-west",
+			"rects": [
+				Rect2i(Vector2i(4, 6), Vector2i(4, 4)),
+				Rect2i(Vector2i(0, 2), Vector2i(8, 4)),
+			],
+			"concave_count": 1,
+		},
+		{
+			"label": "T",
+			"rects": [
+				Rect2i(Vector2i(7, 2), Vector2i(3, 10)),
+				Rect2i(Vector2i(2, 5), Vector2i(5, 4)),
+			],
+			"concave_count": 2,
+		},
+		{
+			"label": "cross",
+			"rects": [
+				Rect2i(Vector2i(7, 2), Vector2i(3, 10)),
+				Rect2i(Vector2i(2, 5), Vector2i(11, 4)),
+			],
+			"concave_count": 4,
+		},
+	]
+	var zone_size := Vector2i(16, 16)
+	var logical_scale := 32.0
+	for case_data in cases:
+		var label := String(case_data.get("label", "shape"))
+		var rects: Array[Rect2i] = []
+		for value in case_data.get("rects", []) as Array:
+			rects.append(value as Rect2i)
+		var sides: Array[StringName] = []
+		for _rect in rects:
+			sides.append(&"internal")
+		var concave_vertices := _concave_boundary_vertices(rects, sides, zone_size)
+		var expected_count := int(case_data.get("concave_count", 0))
+		assert_eq(
+			concave_vertices.size(),
+			expected_count,
+			"%s exposes every expected concave outline vertex" % label
+		)
+		var builder := RectilinearCliffFaceMeshBuilder.new()
+		builder.build(rects, sides, zone_size, logical_scale)
+		assert_eq(
+			builder.concave_join_count,
+			expected_count,
+			"%s resolves every concave vertex through the shared-drop model" % label
+		)
+		var arrays := builder.face_mesh.surface_get_arrays(0)
+		var vertices := arrays[Mesh.ARRAY_VERTEX] as PackedVector2Array
+		var indices := arrays[Mesh.ARRAY_INDEX] as PackedInt32Array
+		assert_eq(
+			vertices.size(),
+			builder.face_count * 4,
+			"%s emits only projected run quads" % label
+		)
+		assert_eq(
+			indices.size(),
+			builder.face_count * 6,
+			"%s emits no independent corner primitives" % label
+		)
+		for concave_vertex in concave_vertices:
+			assert_true(
+				builder.corner_drop_by_vertex.has(concave_vertex),
+				"%s maps concave vertex %s" % [label, str(concave_vertex)]
+			)
+			var drop := builder.corner_drop_by_vertex.get(
+				concave_vertex,
+				Vector2.ZERO
+			) as Vector2
+			assert_true(
+				not is_zero_approx(drop.x) and not is_zero_approx(drop.y),
+				"%s combines both drop axes at %s" % [label, str(concave_vertex)]
+			)
+			var crest := (
+				Vector2(concave_vertex) - Vector2(zone_size) * 0.5
+			) * logical_scale
+			var deep_vertex := crest + drop
+			assert_eq(
+				_mesh_vertex_occurrences(builder.face_mesh, deep_vertex),
+				2,
+				"%s incident faces share one deep vertex at %s" % [
+					label,
+					str(concave_vertex),
+				]
+			)
+			assert_true(
+				_mesh_uvs_match_at_vertex(builder.face_mesh, crest),
+				"%s incident faces share crest UV phase at %s" % [
+					label,
+					str(concave_vertex),
+				]
+			)
+			assert_true(
+				_mesh_uvs_match_at_vertex(builder.face_mesh, deep_vertex),
+				"%s incident faces share deep UV phase at %s" % [
+					label,
+					str(concave_vertex),
+				]
+			)
 
 func test_tile_layer_consumes_cliff_textures() -> void:
 	var palette := load("res://game/modes/zombie/biomes/infected_plains_palette.tres") as BiomePalette
@@ -1961,6 +2209,89 @@ func _mesh_has_uvs(mesh: ArrayMesh) -> bool:
 	var vertices := arrays[Mesh.ARRAY_VERTEX] as PackedVector2Array
 	var uvs := arrays[Mesh.ARRAY_TEX_UV] as PackedVector2Array
 	return not vertices.is_empty() and uvs.size() == vertices.size()
+
+func _concave_boundary_vertices(
+	rects: Array[Rect2i],
+	sides: Array[StringName],
+	zone_size: Vector2i
+) -> Array[Vector2i]:
+	var unique := {}
+	var runs: Array[Dictionary] = FALL_ZONE_BOUNDARY_RUNS_SCRIPT.build(
+		rects,
+		sides,
+		zone_size
+	)
+	for run in runs:
+		var orientation := StringName(run.get("orientation", &""))
+		var boundary := int(run.get("boundary", 0))
+		var start := int(run.get("start", 0))
+		var end := int(run.get("end", 0))
+		var start_vertex := (
+			Vector2i(start, boundary)
+			if orientation == FALL_ZONE_BOUNDARY_RUNS_SCRIPT.TOP
+			or orientation == FALL_ZONE_BOUNDARY_RUNS_SCRIPT.BOTTOM
+			else Vector2i(boundary, start)
+		)
+		var end_vertex := (
+			Vector2i(end, boundary)
+			if orientation == FALL_ZONE_BOUNDARY_RUNS_SCRIPT.TOP
+			or orientation == FALL_ZONE_BOUNDARY_RUNS_SCRIPT.BOTTOM
+			else Vector2i(boundary, end)
+		)
+		if StringName(run.get("start_corner", &"")) == FALL_ZONE_BOUNDARY_RUNS_SCRIPT.CORNER_CONCAVE:
+			unique[start_vertex] = true
+		if StringName(run.get("end_corner", &"")) == FALL_ZONE_BOUNDARY_RUNS_SCRIPT.CORNER_CONCAVE:
+			unique[end_vertex] = true
+	var result: Array[Vector2i] = []
+	for vertex in unique:
+		result.append(vertex as Vector2i)
+	return result
+
+func _mesh_vertex_occurrences(mesh: ArrayMesh, expected: Vector2) -> int:
+	if mesh == null or mesh.get_surface_count() <= 0:
+		return 0
+	var arrays := mesh.surface_get_arrays(0)
+	var vertices := arrays[Mesh.ARRAY_VERTEX] as PackedVector2Array
+	var count := 0
+	for vertex in vertices:
+		if vertex.is_equal_approx(expected):
+			count += 1
+	return count
+
+func _mesh_uvs_match_at_vertex(mesh: ArrayMesh, expected: Vector2) -> bool:
+	if mesh == null or mesh.get_surface_count() <= 0:
+		return false
+	var arrays := mesh.surface_get_arrays(0)
+	var vertices := arrays[Mesh.ARRAY_VERTEX] as PackedVector2Array
+	var uvs := arrays[Mesh.ARRAY_TEX_UV] as PackedVector2Array
+	var first_uv := Vector2.ZERO
+	var matches := 0
+	for index in range(vertices.size()):
+		if not vertices[index].is_equal_approx(expected):
+			continue
+		if matches == 0:
+			first_uv = uvs[index]
+		elif not uvs[index].is_equal_approx(first_uv):
+			return false
+		matches += 1
+	return matches >= 2
+
+func _mesh_uses_planar_world_uv(mesh: ArrayMesh) -> bool:
+	if mesh == null or mesh.get_surface_count() <= 0:
+		return false
+	var arrays := mesh.surface_get_arrays(0)
+	var vertices := arrays[Mesh.ARRAY_VERTEX] as PackedVector2Array
+	var uvs := arrays[Mesh.ARRAY_TEX_UV] as PackedVector2Array
+	if vertices.is_empty() or vertices.size() != uvs.size():
+		return false
+	for index in range(vertices.size()):
+		var expected := (
+			vertices[index]
+			/ RectilinearCliffFaceMeshBuilder.TEXTURE_REPEAT_WORLD_SIZE
+		)
+		if not uvs[index].is_equal_approx(expected):
+			return false
+	return true
 
 func _mesh_bounds(mesh: ArrayMesh) -> Rect2:
 	if mesh == null or mesh.get_surface_count() <= 0:
