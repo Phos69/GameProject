@@ -8,6 +8,20 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Changed
 
+- Completato il primo pass `BIOME-RASTER-001` sulla Pianura Infetta: otto prop
+  ambientali e le due varianti di cassa comune/medica usano ora dieci PNG
+  originali con alpha, generati in proiezione top-down cardinale. ID, pool,
+  footprint, collisioni, anchor e sort restano invariati. Il nuovo resolver
+  `variant_asset_paths` seleziona il tronco raster solo per
+  `infected_plains`, conservando lo SVG condiviso per neve e palude finche non
+  riceveranno il relativo pass; la crate seleziona invece il raster per tipo.
+  Il manifest ambiente sale a v13 e valida anche l'esistenza delle varianti.
+- Validazione `BIOME-RASTER-001`: import Godot e generatore ambiente `132/132`
+  PASS; GUT `assets` 78/78 (`10.904` assert), `environment` 47/47 (`9.369`
+  assert), `obstacles` 27/27 (`1.193` assert) e `world_gen` 59/59 (`2.311`
+  assert) PASS. Visual QA `obstacle_asset`, `biome_art_infected_plains`,
+  `obstacle_hitbox_alignment` e `top_down_final` PASS; il boot reale della
+  scena principale e incluso nelle ultime due verifiche.
 - Corretto il rendering finale grass/cliff delle fall zone: il lip conserva ora
   le proporzioni world-space della porzione rocciosa invece di apparire come una
   fascia compressa, le run orizzontali generano i quattro corner convessi reali

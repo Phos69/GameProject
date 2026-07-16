@@ -21,6 +21,24 @@ Regole per nuove voci:
 
 ## Backlog Aperto Prioritizzato
 
+### BIOME-RASTER-002 - Raster ambientali dei quattro biomi avanzati
+
+- Obiettivo: sostituire gli SVG ambientali ancora attivi in Tossico,
+  Infuocato, Neve e Palude con raster originali trasparenti coerenti con il
+  pass completato per la Pianura Infetta, senza modificare gameplay o layout.
+- Milestone collegata: polish asset post-`TOPDOWN-001`, successiva a
+  `BIOME-RASTER-001`.
+- File/sistemi coinvolti: `assets/environment/top_down/objects/`, manifest v13,
+  `EnvironmentAssetManifest`, `EnvironmentObject`, Visual QA bioma e suite
+  `assets`/`environment`/`obstacles`/`world_gen`.
+- Criterio di accettazione: ogni prop visibile nei quattro biomi usa un PNG con
+  alpha e silhouette cardinale leggibile; varianti condivise sono risolte per
+  bioma; ID, footprint, collider, sort, probabilita e seed layout restano
+  invariati; attribuzione e prompt sono registrati.
+- Test richiesto: import Godot, check generatore ambiente, suite GUT mirate,
+  boot della scena principale e Visual QA dedicata a ciascun bioma a
+  `1280x720` e `960x540`, con controllo manuale `F9` di collider e Y-sort.
+
 ### BAL-001 - Bilanciamento, performance e playtest end-to-end
 
 - Stato 2026-07-08: la parte automatizzabile e' chiusa (suite soak/stress 8/8,

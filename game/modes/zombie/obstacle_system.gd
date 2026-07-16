@@ -394,7 +394,8 @@ func _create_obstacle(
 		rotation_radians,
 		base_color,
 		detail_color,
-		_sort_offset_for(obstacle_id)
+		_sort_offset_for(obstacle_id),
+		active_biome.biome_id if active_biome != null else &""
 	) as BiomeObstacle
 	if obstacle != null:
 		return obstacle

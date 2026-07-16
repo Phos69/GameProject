@@ -25,6 +25,7 @@ const REQUIRED_DIRS: Array[String] = [
 	"res://assets/environment/top_down/objects/bridges",
 	"res://assets/environment/top_down/objects/crates",
 	"res://assets/environment/top_down/objects/generated_props",
+	"res://assets/environment/top_down/objects/generated_raster/infected_plains",
 	"res://assets/environment/top_down/concepts",
 	"res://assets/environment/top_down/edges/cliffs",
 	"res://assets/environment/top_down/edges/walls",
@@ -38,12 +39,15 @@ const CONTRACT_SECTIONS: Array[StringName] = [
 ]
 const GENERATED_BY := "generate_top_down_environment_assets"
 const GENERATED_PROP_ASSET_IDS: Array[StringName] = [
-	&"ruined_house", &"abandoned_car", &"broken_fence", &"wood_barrier",
 	&"lab_block", &"lab_ruin", &"pipe_stack", &"toxic_barrel",
 	&"chemical_barrel", &"industrial_fence", &"corroded_barrier",
 	&"burned_house", &"burned_car", &"charred_wall", &"scorched_barricade",
 	&"snow_cabin", &"ice_rock", &"ice_block", &"snow_wall",
 	&"sunken_house", &"sunken_wreck", &"dead_tree", &"marsh_log"
+]
+const INFECTED_PLAINS_RASTER_IDS: Array[StringName] = [
+	&"small_rock", &"broken_fence", &"wood_barrier", &"ruined_house",
+	&"abandoned_house", &"abandoned_car", &"dense_vegetation"
 ]
 
 var _manifest: EnvironmentAssetManifest
@@ -51,9 +55,9 @@ var _manifest: EnvironmentAssetManifest
 func before_all() -> void:
 	_manifest = EnvironmentAssetManifest.reload_shared()
 
-func test_manifest_v12_top_down_contract() -> void:
+func test_manifest_v13_top_down_contract() -> void:
 	assert_true(_manifest.load_error.is_empty(), "asset pipeline manifest loads")
-	assert_gte(_manifest.version, 12, "asset pipeline uses the split-collision manifest v12")
+	assert_gte(_manifest.version, 13, "asset pipeline supports contextual raster variants")
 	assert_eq(
 		_manifest.coordinate_system,
 		"orthogonal_top_down",
@@ -89,7 +93,7 @@ func test_sample_svg_metadata() -> void:
 	var samples := [
 		_manifest.get_asset_contract(&"tile_sets", &"infected_plains"),
 		_manifest.get_asset_contract(&"terrain_tiles", &"main_road"),
-		_manifest.get_asset_contract(&"object_scenes", &"small_rock"),
+		_manifest.get_asset_contract(&"object_scenes", &"ice_rock"),
 		_manifest.get_asset_contract(&"edge_tiles", &"boundary_fence"),
 		_manifest.get_asset_contract(&"void_tiles", &"fall_zone"),
 		_manifest.get_asset_contract(&"passage_tiles", &"bridge"),
@@ -162,13 +166,27 @@ func test_generated_prop_svg_resources() -> void:
 		"every generated prop has a dedicated cardinal SVG"
 	)
 
+func test_infected_plains_raster_resources() -> void:
+	for asset_id in INFECTED_PLAINS_RASTER_IDS:
+		var contract := _manifest.get_object_asset_contract(asset_id)
+		var asset_path := String(contract.get("asset_path", ""))
+		assert_true(asset_path.ends_with(".png"), "%s uses a PNG raster" % String(asset_id))
+		assert_eq(String(contract.get("status", "")), "final", "%s raster is final" % String(asset_id))
+		assert_eq(String(contract.get("source", "")), "openai_image_generation", "%s records raster provenance" % String(asset_id))
+		assert_eq(String(contract.get("attribution_key", "")), "environment_top_down_openai", "%s records raster attribution" % String(asset_id))
+		assert_true(ResourceLoader.exists(asset_path), "%s raster imports" % String(asset_id))
+	assert_true(
+		FileAccess.file_exists("res://assets/environment/top_down/objects/generated_raster/infected_plains/generation_manifest.json"),
+		"infected plains prompt and processing manifest exists"
+	)
+
 func test_docs_and_tooling() -> void:
 	assert_true(FileAccess.file_exists("res://tools/generate_top_down_environment_assets.gd"), "asset generator tool exists")
 	var readme := _read_text("res://assets/README.md")
 	var attribution := _read_text("res://assets/ATTRIBUTION.md")
 	assert_true(readme.contains("generate_top_down_environment_assets.gd"), "asset README documents the generator")
 	assert_true(readme.contains("--dry-run"), "asset README documents dry-run")
-	assert_true(attribution.contains("Contratto asset ambiente top-down"), "attribution tracks the v12 top-down contract")
+	assert_true(attribution.contains("Contratto asset ambiente top-down"), "attribution tracks the v13 top-down contract")
 	assert_true(attribution.contains("Asset ambiente SVG generati"), "attribution tracks generated SVG assets")
 	var tool_source := _read_text("res://tools/generate_top_down_environment_assets.gd")
 	assert_true(tool_source.contains("status == \"final\""), "generator contains final asset overwrite guard")

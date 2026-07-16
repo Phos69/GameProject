@@ -324,8 +324,9 @@ Completato:
 - tile layer asset-driven per ground, strade cardinali, road connector e
   passaggi: entry/exit, ponti, snow pass, broken gate e burned road sono
   risolti come asset tile nel `75x75`, non come patch o frecce del gate;
-- oggetti e ostacoli asset-backed tramite SVG trasparenti e PNG: i 23 prop dei
-  pool tematici puntano ciascuno a uno SVG cardinale individuale in
+- oggetti e ostacoli asset-backed tramite SVG trasparenti e PNG: la Pianura
+  Infetta usa raster dedicati, incluse le varianti contestuali per tronco e
+  casse, mentre gli altri biomi mantengono gli SVG cardinali individuali in
   `objects/generated_props/`; oggetti, hazard e fall zone restano a rotazione
   zero, gli alberi
   separano il footprint della chioma dal collider circolare alle radici e le

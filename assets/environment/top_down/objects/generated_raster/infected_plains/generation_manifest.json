@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "generated_on": "2026-07-16",
+  "mode": "new image generation with chroma-key alpha extraction",
+  "generator": "OpenAI image generation",
+  "shared_prompt": "Orthogonal cardinal top-down game prop for a stylized survival game, controlled perspective only where volume requires it, readable at gameplay scale, muted infected-plains palette, isolated on perfectly flat #ff00ff chroma background, no text, no frame, no cast shadow, no ground patch.",
+  "processing": {
+    "tool": "remove_chroma_key.py",
+    "settings": "border auto-key, soft matte, threshold 12/220, despill, forced RGBA",
+    "validation": "transparent border and non-empty alpha bounds"
+  },
+  "assets": {
+    "small_rock": { "file": "small_rock_1x1.png", "prompt_focus": "single low weathered fieldstone, moss and lichen, compact 1x1 silhouette" },
+    "broken_fence": { "file": "broken_fence_2x1.png", "prompt_focus": "collapsed rural fence segment, broken posts and rails, horizontal 2x1 silhouette" },
+    "wood_barrier": { "file": "wood_barrier_3x1.png", "prompt_focus": "improvised plank barricade, nailed cross-braces, horizontal 3x1 silhouette" },
+    "fallen_log": { "file": "fallen_log_3x1.png", "prompt_focus": "rotting fallen trunk, broken branches and fungal growth, horizontal 3x1 silhouette" },
+    "ruined_house": { "file": "ruined_house_4x4.png", "prompt_focus": "roof-dominant ruined farmhouse footprint, collapsed section, cardinal 4x4 silhouette" },
+    "abandoned_house": { "file": "abandoned_house_5x3.png", "prompt_focus": "roof-dominant abandoned rural house, damaged shingles and overgrowth, horizontal 5x3 silhouette" },
+    "abandoned_car": { "file": "abandoned_car_3x2.png", "prompt_focus": "rusted abandoned compact car seen from above, vertical 3x2 footprint" },
+    "dense_vegetation": { "file": "dense_vegetation_3x3.png", "prompt_focus": "dense infected bramble and shrub mass, irregular 3x3 silhouette" },
+    "crate_common": { "file": "crate_common.png", "prompt_focus": "closed common supply crate, weathered wood and metal straps, no markings" },
+    "crate_medical": { "file": "crate_medical.png", "prompt_focus": "closed medical supply crate, pale panels and red medical cross, distinct from common crate" }
+  },
+  "license": "Project original"
+}

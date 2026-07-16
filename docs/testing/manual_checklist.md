@@ -57,8 +57,11 @@ Per iterazioni mirate sulla mappa:
 
 - Visitare tutti e cinque i biomi e controllare ground, route, passaggi,
   transizioni, void, cliff, mesa, hazard e bordi.
-- I 23 prop in `objects/generated_props/` sono SVG individuali; nessuno usa un
-  ritaglio da tavola concept o una base inclinata.
+- Nella Pianura Infetta, roccia piccola, recinzione, barriera, tronco, due case,
+  auto e vegetazione densa usano PNG trasparenti senza alone magenta; casse
+  comuni e mediche hanno silhouette immediatamente distinguibili.
+- Negli altri quattro biomi gli SVG individuali restano validi fino al pass
+  `BIOME-RASTER-002`; nessun prop usa un ritaglio da tavola concept.
 - Auto, relitti, barriere e muri hanno asse principale H/V; gli edifici hanno
   tetto rettangolare e, al massimo, facciata sud controllata.
 - Ogni ostacolo, hazard e fall zone resta a rotazione zero. Attraversando a
@@ -66,6 +69,9 @@ Per iterazioni mirate sulla mappa:
   salti di layer.
 - Verificare trasparenza, scala, contatto col terreno e assenza di aloni chiari
   a `1280x720` e `960x540`.
+- Con `F9` nella Pianura Infetta, confrontare ogni nuovo raster col collider:
+  il cutover non deve cambiare area bloccata, anchor, Y-sort o probabilita di
+  generazione; passare davanti e dietro entrambe le case e la vegetazione.
 - Un asset mancante attiva un fallback top-down con lo stesso footprint.
 
 ## Maschera confini terrain

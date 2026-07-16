@@ -64,7 +64,7 @@ func configure_crate_type(next_crate_type: StringName) -> void:
 		_:
 			body_color = Color(0.18, 0.58, 0.68, 1.0)
 			accent_color = Color(0.95, 0.66, 0.15, 1.0)
-	_update_asset_modulate()
+	_load_asset_sprite()
 	queue_redraw()
 
 func get_asset_path() -> String:
@@ -134,10 +134,10 @@ func _load_asset_sprite() -> void:
 		add_child(asset_sprite)
 	asset_sprite.centered = true
 	asset_sprite.visible = false
+	asset_sprite.texture = null
 	procedural_fallback_active = true
 	var manifest := EnvironmentAssetManifest.get_shared()
-	var contract := manifest.get_object_asset_contract(SUPPLY_CRATE_ASSET_ID)
-	asset_path = String(contract.get("asset_path", ""))
+	asset_path = manifest.get_object_asset_path(SUPPLY_CRATE_ASSET_ID, crate_type)
 	if asset_path.is_empty():
 		return
 	var texture := SVG_TEXTURE_LOADER.load_texture(
@@ -165,7 +165,8 @@ func _position_asset_sprite() -> void:
 		target_width / texture_size.x,
 		target_height / texture_size.y
 	)
-	asset_sprite.scale = Vector2.ONE * clampf(scale_factor, 0.25, 1.25)
+	var min_scale := 0.25 if asset_path.ends_with(".svg") else 0.04
+	asset_sprite.scale = Vector2.ONE * clampf(scale_factor, min_scale, 1.25)
 	var visual_size := Vector2(
 		texture_size.x * asset_sprite.scale.x,
 		texture_size.y * asset_sprite.scale.y

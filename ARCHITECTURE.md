@@ -247,11 +247,12 @@ definito in `docs/top_down_cardinal_contract.md`.
   ostacoli, casse, hazard, summary deterministico e report di validazione.
 - `EnvironmentAssetManifest`: legge `assets/environment/top_down/manifest.json`
   come inventario di ostacoli, draw mode oggetto, border tematici, fall zone
-  procedurali, tag terrain generati e contratto asset v12 (`tile_sets`,
+  procedurali, tag terrain generati e contratto asset v13 (`tile_sets`,
   `tile_variants`, `terrain_tiles`, `edge_tiles`, `void_tiles`, `object_scenes`,
   `passage_tiles`, `biome_asset_sets`, `fallback_policy`). Il loader normalizza
-  path, status, footprint, anchor, collision shape/size/offset, blocchi e attribution senza
-  rendere obbligatori asset esterni.
+  path, varianti contestuali, status, footprint, anchor, collision
+  shape/size/offset, blocchi e attribution senza rendere obbligatori asset
+  esterni.
 - `ObstacleLayoutGenerator`: orchestra una sola pipeline void-first per i cinque
   biomi. Scava passaggi, strade principali da 7 tile logici e sentieri medi da
   4, delega le feature interne ai pass dedicati, risolve almeno un chasm
@@ -322,17 +323,19 @@ definito in `docs/top_down_cardinal_contract.md`.
   `BiomeTerrainPatch` procedurali sono stati rimossi.
 - `ObstacleSystem`: genera e registra ostacoli fisici usati anche come spawn
   blocker; nel percorso asset-driven delega a `EnvironmentObjectFactory`.
-- `EnvironmentObjectFactory`: legge il contratto `object_scenes` dal
-  manifest e istanzia `EnvironmentObject` quando esiste un asset,
-  lasciando `BiomeObstacle` come fallback tecnico esplicito.
+- `EnvironmentObjectFactory`: legge il contratto `object_scenes` dal manifest,
+  risolve l'eventuale `variant_asset_paths` con il bioma attivo e istanzia
+  `EnvironmentObject` quando esiste un asset, lasciando `BiomeObstacle` come
+  fallback tecnico esplicito.
 - `EnvironmentObject`: scena base `StaticBody2D` per oggetti
   slot-based con `Sprite2D`, ombra, collider debug opzionale,
   collisione/layer/sort dal manifest e hook futuri per overlay danneggiato.
-  Ventitre prop puntano a 23 SVG cardinali individuali in
-  `objects/generated_props/`; il manifest li registra come
-  `project_svg_generator` / `environment_top_down_internal`, senza cambiare
-  footprint o collisioni. Le precedenti risorse `AtlasTexture` dei prop non
-  fanno piu parte del runtime. `reed_wall` usa il raster SVG nativo stretto e
+  La Pianura Infetta usa raster originali trasparenti per i propri prop; il
+  tronco condiviso seleziona il PNG tramite variante `infected_plains`, mentre
+  gli altri biomi continuano a usare gli SVG dedicati in
+  `objects/generated_props/` fino al loro pass. Footprint e collisioni non
+  cambiano. Le precedenti risorse `AtlasTexture` dei prop non fanno piu parte
+  del runtime. `reed_wall` usa il raster SVG nativo stretto e
   verticale `56x136`, evitando che il loader canonico `160x120` lo riduca
   dentro la canvas; `dead_tree` conserva analogamente la canvas nativa verticale.
   La scelta resta presentazionale e non altera il footprint di placement.
@@ -1109,7 +1112,8 @@ multi-bioma.
   rocciose; se uno dei raster manca torna al muro procedurale. Il nodo ostacolo
   resta proprietario di collision layer, shape, footprint, Y-sort, metadata e
   gruppi runtime: il cliff arena non usa `BiomeFallZone` e non applica caduta.
-- Il manifest v12 vieta fallback impliciti: ogni ID generato da ostacoli,
+- Il manifest v13 vieta fallback impliciti e valida anche ogni path dichiarato
+  in `variant_asset_paths`: ogni ID generato da ostacoli,
   terrain, passaggi, bordi o fall zone deve avere un contratto asset-driven con
   `asset_path`, `status`, `biome_ids`, `anchor`, footprint/collisione, sorgente,
   licenza, attribution e `fallback_path` quando l'asset e ancora assente.
@@ -1128,7 +1132,7 @@ multi-bioma.
   `is_jumpable_gap_anchor` espone `is_jumpable_obstacle()`. Le query spaziali
   indicizzano la vera shape e il suo offset; spawn e casse conservano la
   clearance definita dal blocker.
-- Il contratto v12 conserva gli slot legacy convertiti in tile logici:
+- Il contratto v13 conserva gli slot legacy convertiti in tile logici:
   `footprint_slots` resta l'inventario di design, `footprint_tiles` del manifest
   conserva la misura legacy e `BiomeEnvironmentLayout.obstacle_rects` conserva
   le celle logiche realmente occupate. `ObstacleLayoutGenerator` normalizza ogni
@@ -1162,9 +1166,9 @@ multi-bioma.
 - `ObstacleSystem.make_obstacle_key(biome_id, index, obstacle_id)` assegna a ogni
   `BiomeObstacle` una chiave stabile rigenerabile dal seed, pronta come chiave di
   persistenza per il ledger `destroyed_obstacles` (trigger gameplay in Milestone 8).
-- `SupplyCrateVisual` usa lo stesso loader SVG-runtime sul contratto
-  `object_scenes/supply_crate`; la collisione e l'apertura della crate restano
-  nel nodo `SupplyCrate`.
+- `SupplyCrateVisual` usa il contratto `object_scenes/supply_crate` e seleziona
+  il raster `common` o `medical` tramite `variant_asset_paths`; collisione e
+  apertura restano nel nodo `SupplyCrate`.
 - I lati con regione adiacente ma senza edge e i segmenti chiusi dei lati
   collegati usano border ID tematici per bioma; il lato senza regione resta
   fall zone e non ostacolo. Le pareti dei lati non-fall vengono accorciate di
@@ -1176,9 +1180,9 @@ multi-bioma.
   legacy in `object_visuals`, i contratti asset per tile, terrain, edge, void,
   object scenes, passage tiles e asset set di bioma, inclusi i 14 tile cliff
   orientati, i materiali PNG `cliff_face_texture`/`cliff_lip_texture`,
-  `void_depth`, 23 SVG prop individuali, tile forestali, road connector e
-  entry/exit passaggio, `abandoned_car`, `dense_vegetation`, `forest_tree` e
-  `large_rock`; i preset
+  `void_depth`, prop SVG/raster con varianti contestuali, tile forestali, road
+  connector e entry/exit passaggio, `abandoned_car`, `dense_vegetation`,
+  `forest_tree` e `large_rock`; i preset
   `performance`/`balanced`/`quality` restano disponibili per fallback ground e
   qualita del tile layer.
 - `WorldRegionConnection` serializza apertura locale, connector locale,

@@ -15,11 +15,11 @@ fianchi sono `controlled_perspective`: possono superare la base solo sul piano
 visivo e non spostano celle, anchor o collisioni. Il contratto generale e in
 `docs/top_down_cardinal_contract.md`.
 
-Il manifest v12 usa slot da `4x4` celle legacy (`8 px` world-space per cella):
+Il manifest v13 usa slot da `4x4` celle legacy (`8 px` world-space per cella):
 
 ```text
 obstacle_id -> footprint_slots -> footprint_tiles -> occupied_cells
-            -> collision shape/size/offset -> asset_path + visual_height_tiles
+            -> collision shape/size/offset -> asset_path/variant + visual_height_tiles
 ```
 
 `BiomeEnvironmentLayout.get_obstacle_record()` espone il record completo usato dal
@@ -41,21 +41,23 @@ Gli SVG dichiarano anche il metadata `data-footprint-slots`; i PNG finali
 mantengono sorgente, licenza e attribuzione nel manifest.
 Esempi:
 
-- `objects/rocks/rock_1x1.svg`;
-- `objects/generated_props/broken_fence_2x1_generated.svg`;
-- `objects/trees/log_3x1.svg`;
-- `objects/trees/dense_forest_3x3.svg`;
+- `objects/generated_raster/infected_plains/small_rock_1x1.png`;
+- `objects/generated_raster/infected_plains/broken_fence_2x1.png`;
+- `objects/generated_raster/infected_plains/fallen_log_3x1.png`;
+- `objects/generated_raster/infected_plains/dense_vegetation_3x3.png`;
 - `objects/trees/forest_tree_3x3.png`;
 - `edges/cliffs/textures/rock_plateau_top_generated.png` (top massa rocciosa scalabile);
 - `edges/cliffs/textures/rock_cliff_face_upward_generated.png` (faccia cliff rialzata);
-- `objects/generated_props/ruined_house_4x4_generated.svg`;
+- `objects/generated_raster/infected_plains/ruined_house_4x4.png`;
 - `objects/generated_props/lab_block_6x6_generated.svg`.
 
-I 23 prop che in precedenza condividevano cinque tavole raster sono ora SVG
-individuali. Il generatore assegna a ciascuno una pianta ortogonale, un
-footprint esplicito e, dove serve, una sola facciata sud prospettica. Le vecchie
-risorse `AtlasTexture` non sono piu caricate. `reed_wall` resta uno SVG
-verticale `1x3` dedicato.
+I prop che in precedenza condividevano cinque tavole raster hanno sorgenti SVG
+individuali. La Pianura Infetta e ora migrata a PNG trasparenti; il tronco usa
+una variante per bioma e le casse una variante per tipo. Gli altri biomi
+continuano a usare gli SVG finche non ricevono lo stesso pass. Il generatore
+mantiene footprint esplicito e facciata sud controllata. Le vecchie risorse
+`AtlasTexture` non sono piu caricate. `reed_wall` resta uno SVG verticale `1x3`
+dedicato.
 
 `EnvironmentObject` non disegna piu una base rettangolare permanente sotto gli
 asset e ancora lo sprite a `floor_center`/`bottom_center`. La dimensione

@@ -297,6 +297,16 @@ func get_asset_contract_ids(section: StringName) -> Array[StringName]:
 func get_object_asset_contract(object_id: StringName) -> Dictionary:
 	return get_asset_contract(&"object_scenes", object_id)
 
+func get_object_asset_path(
+	object_id: StringName,
+	variant_id: StringName = &""
+) -> String:
+	var contract := get_object_asset_contract(object_id)
+	var variants := contract.get("variant_asset_paths", {}) as Dictionary
+	if not variant_id.is_empty() and variants.has(variant_id):
+		return String(variants[variant_id])
+	return String(contract.get("asset_path", ""))
+
 func get_terrain_asset_contract(terrain_tag: StringName) -> Dictionary:
 	return get_asset_contract(&"terrain_tiles", terrain_tag)
 
@@ -553,6 +563,9 @@ func _normalize_asset_contract(section: StringName, entry: Dictionary) -> Dictio
 		"id": asset_id,
 		"section": section,
 		"asset_path": String(entry.get("asset_path", "")),
+		"variant_asset_paths": _normalize_path_dictionary(
+			entry.get("variant_asset_paths", {})
+		),
 		"render_mode": StringName(str(entry.get("render_mode", "sprite"))),
 		"status": String(entry.get("status", asset_contract_defaults.get("status", "needs_asset"))),
 		"biome_ids": _normalize_string_name_array(
@@ -610,6 +623,14 @@ func _normalize_string_name_array(value: Variant) -> Array[StringName]:
 			result.append(StringName(str(item)))
 	elif value != null:
 		result.append(StringName(str(value)))
+	return result
+
+func _normalize_path_dictionary(value: Variant) -> Dictionary:
+	var result := {}
+	if not value is Dictionary:
+		return result
+	for key in (value as Dictionary).keys():
+		result[StringName(str(key))] = String((value as Dictionary).get(key, ""))
 	return result
 
 func _normalize_vector2(value: Variant, default_value: Vector2) -> Vector2:
@@ -760,6 +781,13 @@ func _validate_asset_contract(
 		failures.append("%s/%s: missing assets require explicit fallback_path" % [String(section), contract_id])
 	if not MISSING_ASSET_STATUSES.has(status) and not _asset_path_exists(asset_path):
 		failures.append("%s/%s: asset_path does not exist for status '%s'" % [String(section), contract_id, status])
+	var variant_asset_paths := contract.get("variant_asset_paths", {}) as Dictionary
+	for variant_id in variant_asset_paths.keys():
+		var variant_path := String(variant_asset_paths[variant_id])
+		if String(variant_id).is_empty() or variant_path.is_empty():
+			failures.append("%s/%s: variant asset id/path must not be empty" % [String(section), contract_id])
+		elif not _asset_path_exists(variant_path):
+			failures.append("%s/%s: variant asset path does not exist for '%s'" % [String(section), contract_id, String(variant_id)])
 
 func _validate_asset_coverage(failures: PackedStringArray) -> void:
 	for object_id in objects.keys():

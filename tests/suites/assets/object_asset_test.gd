@@ -23,6 +23,10 @@ const GENERATED_PROP_ASSET_IDS: Array[StringName] = [
 	&"snow_cabin", &"ice_rock", &"ice_block", &"snow_wall",
 	&"sunken_house", &"sunken_wreck", &"dead_tree", &"marsh_log"
 ]
+const INFECTED_PLAINS_RASTER_IDS: Array[StringName] = [
+	&"small_rock", &"broken_fence", &"wood_barrier", &"ruined_house",
+	&"abandoned_house", &"abandoned_car", &"dense_vegetation"
+]
 const REQUIRED_CRATE_ASSET_ID := &"supply_crate"
 const ENVIRONMENT_OBJECT_SCRIPT = preload("res://game/modes/zombie/environment_object.gd")
 const ENVIRONMENT_OBJECT_FACTORY_SCRIPT = preload("res://game/modes/zombie/environment_object_factory.gd")
@@ -50,6 +54,14 @@ func test_asset_contract_coverage() -> void:
 	var crate_contract := _manifest.get_object_asset_contract(REQUIRED_CRATE_ASSET_ID)
 	assert_false(crate_contract.is_empty(), "supply_crate has object_scenes contract")
 	assert_true(_asset_exists(String(crate_contract.get("asset_path", ""))), "supply_crate asset path exists")
+	for crate_type in [&"common", &"medical"]:
+		var crate_path := _manifest.get_object_asset_path(REQUIRED_CRATE_ASSET_ID, crate_type)
+		assert_true(_asset_exists(crate_path), "supply_crate %s variant exists" % String(crate_type))
+		assert_true(crate_path.ends_with(".png"), "supply_crate %s uses raster art" % String(crate_type))
+	var plains_log_path := _manifest.get_object_asset_path(&"fallen_log", &"infected_plains")
+	assert_true(_asset_exists(plains_log_path), "infected_plains fallen_log variant exists")
+	assert_true(plains_log_path.ends_with(".png"), "infected_plains fallen_log uses raster art")
+	assert_true(_manifest.get_object_asset_path(&"fallen_log").ends_with(".svg"), "other biomes keep fallen_log default until their art pass")
 
 func test_runtime_texture_shapes() -> void:
 	SVG_TEXTURE_LOADER.clear_cache()
@@ -105,8 +117,13 @@ func test_runtime_texture_shapes() -> void:
 	)
 	assert_gt(
 		_first_opaque_row_ratio(crate_texture),
-		0.25,
-		"supply_crate remains a low compact prop"
+		0.10,
+		"supply_crate keeps transparent breathing room above its raster"
+	)
+	assert_gt(
+		_opaque_height_ratio(crate_texture),
+		0.45,
+		"supply_crate keeps a substantial readable top-down silhouette"
 	)
 
 func test_loader_fallback_shapes() -> void:
@@ -174,6 +191,16 @@ func test_factory_obstacle_coverage() -> void:
 					native_object.asset_sprite.scale,
 					Vector2.ONE,
 					"%s keeps the manifest visual size at runtime" % String(obstacle_id)
+				)
+			elif INFECTED_PLAINS_RASTER_IDS.has(obstacle_id):
+				var raster_object := obstacle as EnvironmentObject
+				assert_true(
+					raster_object.get_asset_path().ends_with(".png"),
+					"%s uses final infected-plains raster art" % String(obstacle_id)
+				)
+				assert_false(
+					raster_object.asset_sprite.texture is AtlasTexture,
+					"%s uses a direct raster instead of an atlas crop" % String(obstacle_id)
 				)
 			elif GENERATED_PROP_ASSET_IDS.has(obstacle_id):
 				var generated_object := obstacle as EnvironmentObject
@@ -313,12 +340,44 @@ func test_supply_crate_asset_visual() -> void:
 		assert_true(visual.has_method("has_asset_sprite") and bool(visual.call("has_asset_sprite")), "supply crate visual uses asset sprite")
 		assert_true(visual.has_method("uses_procedural_fallback") and not bool(visual.call("uses_procedural_fallback")), "supply crate visual avoids procedural fallback")
 		assert_eq(String(visual.call("get_asset_path")), String(_manifest.get_object_asset_contract(REQUIRED_CRATE_ASSET_ID).get("asset_path", "")), "supply crate visual path comes from manifest")
+		visual.call("configure_crate_type", &"medical")
+		assert_eq(
+			String(visual.call("get_asset_path")),
+			_manifest.get_object_asset_path(REQUIRED_CRATE_ASSET_ID, &"medical"),
+			"medical crate selects its raster variant"
+		)
+		assert_true(bool(visual.call("has_asset_sprite")), "medical crate variant remains asset-backed")
 	assert_eq(crate.collision_layer, 8, "supply crate collision layer unchanged")
 	assert_eq(crate.collision_mask, 1, "supply crate collision mask unchanged")
 	var shape := crate.get_node_or_null("CollisionShape2D") as CollisionShape2D
 	assert_true(shape != null and shape.shape is RectangleShape2D, "supply crate keeps rectangle collision")
 	crate.queue_free()
 	await wait_physics_frames(1)
+
+func test_infected_plains_fallen_log_variant() -> void:
+	var factory := ENVIRONMENT_OBJECT_FACTORY_SCRIPT.new(_manifest)
+	var obstacle := factory.create_obstacle(
+		&"fallen_log",
+		Vector2(96.0, 32.0),
+		&"rectangle",
+		0.0,
+		Color(0.38, 0.30, 0.16, 1.0),
+		Color(0.74, 0.58, 0.16, 0.78),
+		_manifest.get_sort_offset(&"fallen_log"),
+		&"infected_plains"
+	)
+	assert_not_null(obstacle, "infected plains fallen log builds")
+	if obstacle != null:
+		add_child(obstacle)
+		await wait_physics_frames(1)
+		assert_eq(
+			String(obstacle.call("get_asset_path")),
+			_manifest.get_object_asset_path(&"fallen_log", &"infected_plains"),
+			"fallen log resolves the biome-specific raster"
+		)
+		assert_true(bool(obstacle.call("has_asset_visual")), "fallen log raster loads")
+		obstacle.queue_free()
+		await wait_physics_frames(1)
 
 # --- helper (porting dei test legacy) ---------------------------------------
 

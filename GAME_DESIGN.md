@@ -1065,7 +1065,7 @@ Gli status temporanei ora usano cinque ID canonici: `poison`, `burn`, `bleed`, `
 
 | Bioma | Ostacoli leggibili | Hazard/status | Nemici tematici |
 | --- | --- | --- | --- |
-| Pianura Infetta | case diroccate, alberi 3x3, masse rocciose 3-5 tile logici, muretti, auto, casse, corridoi larghi | pericolo basso | roster base onboarding |
+| Pianura Infetta | case diroccate, alberi 3x3, masse rocciose 3-5 tile logici, muretti, auto e prop raster trasparenti; casse comuni/mediche visualmente distinte; corridoi larghi | pericolo basso | roster base onboarding |
 | Tossico | cisterne, tubi, pozze, barili chimici | `poison` da pozze/gas | Toxic Zombie, Toxic Exploder |
 | Infuocato | lava, fiamme, auto bruciate, crateri | `burn` da fuoco/lava | Burned Zombie, Fire Runner, Fire Exploder |
 | Neve | ghiaccio, neve alta, rocce ghiacciate | `freeze`/slow | Frozen Zombie, Ice Armored Zombie, Heavy Slow Zombie |

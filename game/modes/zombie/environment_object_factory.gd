@@ -27,11 +27,14 @@ func create_obstacle(
 	rotation_radians: float,
 	base_color: Color,
 	detail_color: Color,
-	sort_offset: float = 0.0
+	sort_offset: float = 0.0,
+	asset_variant_id: StringName = &""
 ) -> BiomeObstacle:
-	var obstacle := _instantiate_object(obstacle_id)
+	var obstacle := _instantiate_object(obstacle_id, asset_variant_id)
 	if obstacle == null:
 		return null
+	if obstacle is EnvironmentObject:
+		(obstacle as EnvironmentObject).asset_variant_id = asset_variant_id
 	obstacle.configure(
 		obstacle_id,
 		size,
@@ -43,19 +46,25 @@ func create_obstacle(
 	)
 	return obstacle
 
-func should_use_asset_scene(obstacle_id: StringName) -> bool:
+func should_use_asset_scene(
+	obstacle_id: StringName,
+	asset_variant_id: StringName = &""
+) -> bool:
 	if manifest == null:
 		return false
 	var contract := manifest.get_object_asset_contract(obstacle_id)
 	if contract.is_empty():
 		return false
-	var asset_path := String(contract.get("asset_path", ""))
+	var asset_path := manifest.get_object_asset_path(obstacle_id, asset_variant_id)
 	if not asset_path.is_empty() and _asset_path_exists(asset_path):
 		return true
 	return not _contract_requires_fallback(contract)
 
-func _instantiate_object(obstacle_id: StringName) -> BiomeObstacle:
-	if should_use_asset_scene(obstacle_id):
+func _instantiate_object(
+	obstacle_id: StringName,
+	asset_variant_id: StringName = &""
+) -> BiomeObstacle:
+	if should_use_asset_scene(obstacle_id, asset_variant_id):
 		var scene_object := (
 			ENVIRONMENT_OBJECT_SCENE.instantiate()
 			as BiomeObstacle

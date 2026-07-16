@@ -36,6 +36,7 @@ const CONTENT_ALPHA_THRESHOLD := 0.08
 const LEGACY_TILE_SCALE := WorldGridConfig.LEGACY_TILE_SCALE
 
 var asset_path: String = ""
+var asset_variant_id: StringName = &""
 var anchor_id: StringName = &"floor_center"
 var asset_status: String = ""
 var asset_sprite: Sprite2D
@@ -248,7 +249,7 @@ func _draw() -> void:
 func _apply_asset_contract() -> void:
 	var manifest := EnvironmentAssetManifest.get_shared()
 	var contract := manifest.get_object_asset_contract(obstacle_id)
-	asset_path = String(contract.get("asset_path", ""))
+	asset_path = manifest.get_object_asset_path(obstacle_id, asset_variant_id)
 	render_mode = StringName(str(contract.get("render_mode", "sprite")))
 	anchor_id = StringName(str(contract.get("anchor", "floor_center")))
 	asset_status = String(contract.get("status", ""))
