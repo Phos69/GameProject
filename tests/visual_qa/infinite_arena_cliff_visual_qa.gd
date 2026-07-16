@@ -138,7 +138,11 @@ func _capture_focus(
 	camera: Camera2D,
 	output_absolute: String
 ) -> void:
-	if player != null:
+	# The corner focus lies on the solid raised perimeter footprint. Moving the
+	# player there makes HazardSystem restore its last safe position, so the
+	# camera itself is the stable scenario marker for corner-only art captures.
+	var require_player_marker := not label.ends_with("_corner")
+	if player != null and require_player_marker:
 		player.global_position = focus
 		player.velocity = Vector2.ZERO
 	if camera != null:
@@ -149,10 +153,15 @@ func _capture_focus(
 			self,
 			func() -> bool:
 				return (
-					player != null
-					and camera != null
-					and player.global_position.is_equal_approx(focus)
+					camera != null
 					and camera.global_position.is_equal_approx(focus)
+					and (
+						not require_player_marker
+						or (
+							player != null
+							and player.global_position.is_equal_approx(focus)
+						)
+					)
 				),
 			false
 		)

@@ -91,6 +91,7 @@ var _ground_underlay_mesh: ArrayMesh
 var _forest_surface_meshes: Dictionary = {}
 var _cliff_mesh_builder: TopDownCliffMeshBuilder
 var _cliff_border_mesh_builder: TopDownCliffBorderMeshBuilder
+var _mesa_dirt_border_mesh_builder: TopDownCliffBorderMeshBuilder
 var _rectilinear_cliff_face_mesh_builder: RectilinearCliffFaceMeshBuilder
 var _rock_area_mesh_builder: RectilinearRockAreaMeshBuilder
 var _mesa_area_mesh_builders: Dictionary = {}
@@ -172,6 +173,9 @@ func configure(
 	_load_rock_art_texture()
 	_cliff_mesh_builder = CLIFF_MESH_BUILDER_SCRIPT.new() as TopDownCliffMeshBuilder
 	_cliff_border_mesh_builder = (
+		CLIFF_BORDER_MESH_BUILDER_SCRIPT.new() as TopDownCliffBorderMeshBuilder
+	)
+	_mesa_dirt_border_mesh_builder = (
 		CLIFF_BORDER_MESH_BUILDER_SCRIPT.new() as TopDownCliffBorderMeshBuilder
 	)
 	_rectilinear_cliff_face_mesh_builder = (
@@ -416,12 +420,21 @@ func has_forest_cliff_border_art() -> bool:
 		and _cliff_lip_vertical_texture != null
 	)
 
+func uses_mesa_top_for_fall_zone_rim() -> bool:
+	return _uses_forest_ground() and _rock_top_texture != null
+
 func get_forest_cliff_border_counts() -> Dictionary:
 	if _cliff_border_mesh_builder == null:
 		return {}
 	return {
 		"horizontal": _cliff_border_mesh_builder.horizontal_segment_count,
 		"vertical": _cliff_border_mesh_builder.vertical_segment_count,
+		"terrain_transitions": (
+			_cliff_border_mesh_builder.terrain_transition_segment_count
+		),
+		"terrain_transition_corners": (
+			_cliff_border_mesh_builder.terrain_transition_corner_count
+		),
 		"corners": _cliff_border_mesh_builder.corner_count,
 		"concave_corners": _cliff_border_mesh_builder.concave_corner_count,
 		"faces": (
@@ -483,6 +496,16 @@ func get_mesa_area_counts() -> Dictionary:
 	return {
 		"areas": area_count,
 		"faces": face_count,
+		"dirt_transitions": (
+			_mesa_dirt_border_mesh_builder.terrain_transition_segment_count
+			if _mesa_dirt_border_mesh_builder != null
+			else 0
+		),
+		"dirt_corners": (
+			_mesa_dirt_border_mesh_builder.terrain_transition_corner_count
+			if _mesa_dirt_border_mesh_builder != null
+			else 0
+		),
 		"profiles": rendered_profiles,
 		"profile_mismatches": _mesa_profile_mismatch_count,
 		"raise_height_cells": RectilinearRockAreaMeshBuilder.RAISE_HEIGHT_CELLS,
@@ -681,6 +704,23 @@ func _draw() -> void:
 	# Keeping them out of this z=-9 terrain layer lets the environment Y-sort put
 	# one actor behind a mesa while another remains in front of it.
 	var uses_rectilinear_cliff_art := has_forest_cliff_border_art()
+	var flat_rim_texture := (
+		_rock_top_texture
+		if uses_mesa_top_for_fall_zone_rim()
+		else null
+	) as Texture2D
+	var terrain_divider_texture := _forest_surface_textures.get(
+		TERRAIN_DIVIDER_TEXTURE_ID
+	) as Texture2D
+	if (
+		terrain_divider_texture != null
+		and _mesa_dirt_border_mesh_builder != null
+		and _mesa_dirt_border_mesh_builder.terrain_transition_mesh != null
+	):
+		draw_mesh(
+			_mesa_dirt_border_mesh_builder.terrain_transition_mesh,
+			terrain_divider_texture
+		)
 	# The vertical edge raster is an underlay: the projected side face owns the
 	# visible wall and must cover the texture band. Only the horizontal crest is
 	# composited above the face.
@@ -691,7 +731,9 @@ func _draw() -> void:
 	):
 		draw_mesh(
 			_cliff_border_mesh_builder.vertical_mesh,
-			_cliff_lip_vertical_texture
+			flat_rim_texture
+			if flat_rim_texture != null
+			else _cliff_lip_vertical_texture
 		)
 	if (
 		uses_rectilinear_cliff_art
@@ -706,13 +748,30 @@ func _draw() -> void:
 		draw_mesh(_cliff_mesh_builder.face_mesh, _cliff_face_texture)
 	if uses_rectilinear_cliff_art and _cliff_border_mesh_builder != null:
 		if _cliff_border_mesh_builder.horizontal_mesh != null:
-			draw_mesh(_cliff_border_mesh_builder.horizontal_mesh, _cliff_lip_texture)
+			draw_mesh(
+				_cliff_border_mesh_builder.horizontal_mesh,
+				flat_rim_texture
+				if flat_rim_texture != null
+				else _cliff_lip_texture
+			)
 	elif (
 		_cliff_mesh_builder != null
 		and _cliff_mesh_builder.lip_mesh != null
 		and _cliff_lip_texture != null
 	):
 		draw_mesh(_cliff_mesh_builder.lip_mesh, _cliff_lip_texture)
+	# The dirt core stays on terrain, while its short inner feather is composited
+	# above the flat rim to soften the rock-side join as well.
+	if (
+		uses_rectilinear_cliff_art
+		and terrain_divider_texture != null
+		and _cliff_border_mesh_builder != null
+		and _cliff_border_mesh_builder.terrain_transition_mesh != null
+	):
+		draw_mesh(
+			_cliff_border_mesh_builder.terrain_transition_mesh,
+			terrain_divider_texture
+		)
 	if (
 		not uses_rectilinear_cliff_art
 		and _cliff_mesh_builder != null
@@ -980,6 +1039,15 @@ func _mesa_profile_ids_for_render() -> Array[StringName]:
 		# Advanced-biome `rock_rects` used to mean generic building masses and must
 		# never be promoted silently to mesa geometry.
 		result.append(FOREST_MESA_PROFILE_ID)
+	# The forest fall-zone rim is also a consumer of the mesa top material. Load
+	# the profile even in synthetic/runtime layouts that contain a chasm but no
+	# raised mesa instance.
+	if (
+		_uses_forest_ground()
+		and not layout.fall_zone_rects.is_empty()
+		and not result.has(FOREST_MESA_PROFILE_ID)
+	):
+		result.append(FOREST_MESA_PROFILE_ID)
 	return result
 
 func _default_mesa_profile_id() -> StringName:
@@ -1162,6 +1230,8 @@ func _rebuild_ground_geometry() -> void:
 		_cliff_mesh_builder.reset()
 	if _cliff_border_mesh_builder != null:
 		_cliff_border_mesh_builder.reset()
+	if _mesa_dirt_border_mesh_builder != null:
+		_mesa_dirt_border_mesh_builder.reset()
 	if _rectilinear_cliff_face_mesh_builder != null:
 		_rectilinear_cliff_face_mesh_builder.reset()
 	for builder_value in _mesa_area_mesh_builders.values():
@@ -1325,6 +1395,12 @@ func _surface_texture_or_fallback(
 
 func _rebuild_mesa_geometry(scale: float) -> void:
 	var rect_groups := _mesa_rect_groups()
+	if _mesa_dirt_border_mesh_builder != null:
+		_mesa_dirt_border_mesh_builder.build_dirt_outline(
+			_mesa_rects_for_dirt_outline(),
+			layout.zone_size,
+			scale
+		)
 	for profile_id_value in rect_groups:
 		var profile_id := StringName(profile_id_value)
 		var rects: Array[Rect2i] = []
@@ -1356,6 +1432,15 @@ func _rebuild_mesa_geometry(scale: float) -> void:
 		_mesa_area_mesh_builders[profile_id] = builder
 		if profile_id == _default_mesa_profile_id():
 			_rock_area_mesh_builder = builder
+
+func _mesa_rects_for_dirt_outline() -> Array[Rect2i]:
+	if layout == null:
+		return []
+	if not layout.mesa_rects.is_empty():
+		return layout.mesa_rects.duplicate()
+	if _uses_forest_ground() and not layout.rock_rects.is_empty():
+		return layout.rock_rects.duplicate()
+	return []
 
 func _mesa_rect_groups() -> Dictionary:
 	var groups := {}

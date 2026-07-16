@@ -383,6 +383,13 @@ func test_ranged_enemy() -> void:
 		scene = null
 		return
 	player.global_position = Vector2(180.0, 0.0)
+	var player_collision := player.get_node_or_null(
+		"CollisionShape2D"
+	) as CollisionShape2D
+	assert_not_null(
+		player_collision,
+		"shooter targets the player's real ground collision hitzone"
+	)
 	var player_health := player.health_component
 
 	var shooter: Node = enemy_system.spawn_enemy(&"survival_shooter", Vector2.ZERO)
@@ -401,6 +408,16 @@ func test_ranged_enemy() -> void:
 	shooter.windup_duration = 1.0
 	assert_true(shooter.start_windup(), "shooter starts a readable windup")
 	var locked_direction: Vector2 = shooter.get("locked_shot_direction")
+	if player_collision != null:
+		assert_gt(
+			locked_direction.dot(
+				shooter.global_position.direction_to(
+					player_collision.global_position
+				)
+			),
+			0.999,
+			"shooter locks onto the ground hitzone barycenter"
+		)
 	assert_true(shooter.shot_telegraph.is_warning_active(), "windup activates the world-space lane warning")
 	assert_true(_shooter_projectiles.is_empty(), "no projectile exists when the warning begins")
 	player.global_position = Vector2(-180.0, 120.0)
@@ -420,7 +437,11 @@ func test_ranged_enemy() -> void:
 	player.global_position = Vector2(130.0, 0.0)
 	player_health.reset_health()
 	var health_before := player_health.current_health
-	shooter.locked_shot_direction = Vector2.RIGHT
+	shooter.locked_shot_direction = (
+		shooter.global_position.direction_to(player_collision.global_position)
+		if player_collision != null
+		else Vector2.RIGHT
+	)
 	shooter._fire_locked_shot()
 	for _frame in range(90):
 		if player_health.current_health < health_before:

@@ -853,6 +853,19 @@ Regole hazard:
   bordi orizzontali e verticali rettilinei; negli angoli il bordo orizzontale
   possiede la giunzione concava e quello verticale termina prima del raccordo,
   senza aloni grigi, tile quadrati, zig-zag o edge che proseguono a croce. La
+  roccia mantiene proporzioni world-space coerenti col raster, occupa circa due
+  quinti del rim forestale e non viene compressa in una fascia; i quattro
+  corner convessi hanno geometria reale.
+  Nella Pianura Infetta la parte flat riusa il top roccioso delle mesa con UV
+  planari continui; la faccia verticale resta un materiale cliff distinto.
+  Sul lato terreno una fascia dirt sfumata, condivisa con il divisore delle
+  strade, usa lo stesso spessore nominale: conserva un nucleo dirt opaco ben
+  definito; un feather corto lo fonde sul margine della flat rock e uno esterno
+  lo dissolve verso l'erba, continuando attorno agli angoli. Lo stesso contorno
+  dirt circonda a terra il footprint di ogni mesa tematizzata. Strade, mesa e
+  fall zone raccordano i cambi cardinali con angoli dirt rotondi, mantenendo
+  invariati footprint e collisioni; anche due fall zone a contatto solo sul
+  vertice raccordano i due quadranti erbosi senza formare una croce. La
   cresta rocciosa occupa solo il lato realmente calpestabile: sui lati verticali
   e inferiore nessuna striscia interna al void deve suggerire una falsa mensola.
   Nei raccordi la texture delle due facce condivide la stessa fase UV al vertice
@@ -876,8 +889,10 @@ Regole hazard:
   spawn, fall recovery o pathfinding;
 - quando void e bordo esterno si incontrano non viene disegnato alcun raccordo,
   muro o cliff aggiuntivo: l'intero tratto di contatto resta puro vuoto;
-- calpestando una cella `void` o `fall_zone` il player entra in `falling`; il
-  semplice superamento geometrico di un border non infligge danno;
+- quando il baricentro della hitbox a terra del player, la stessa usata per
+  collidere con gli ostacoli, entra in una cella `void` o `fall_zone`, il player
+  entra in `falling`; il contatto del solo bordo della hitbox e il semplice
+  superamento geometrico di un border non infliggono danno;
 - a fine animazione di caduta il player perde una sola volta 20 HP, anche se ha
   un'altra invulnerabilita attiva;
 - il player torna all'ultima posizione sicura registrata e la velocita viene azzerata;

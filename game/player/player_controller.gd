@@ -167,8 +167,8 @@ func try_start_void_fall() -> bool:
 		_resolve_runtime_dependencies()
 	if (
 		hazard_system == null
-		or not hazard_system.has_method("is_void_at_world_position")
-		or not bool(hazard_system.is_void_at_world_position(global_position))
+		or not hazard_system.has_method("is_body_in_fall_zone")
+		or not bool(hazard_system.is_body_in_fall_zone(self))
 	):
 		return false
 	velocity = Vector2.ZERO

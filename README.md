@@ -73,7 +73,8 @@ Controlli debug:
 - Tastiera: `Shift`/`Ctrl` esegue dodge/roll, `M` apre o chiude la mappa dei territori esplorati.
 - Tastiera debug multiplayer: `F2`, `F3`, `F4` attivano/disattivano gli slot player 2, 3 e 4.
 - Modalita debug: `F1` avvia Infinite Arena, `F7` avvia Zombie Survival, `F5` avvia una run dungeon e `F6` avvia tower defense.
-- Debug ambiente: `F8` mostra il riepilogo biomi e `F9` evidenzia footprint e celle bloccate degli ostacoli.
+- Debug ambiente: `F8` mostra il riepilogo biomi e `F9` evidenzia le hitbox
+  fisiche degli ostacoli e le zone di caduta.
 - Joypad: stick sinistro per movimento, stick destro per mira, `RB` per l'arma
   base, `LB` per l'arma equipaggiata, pulsante `X` per ricaricare e pulsante `Y`
   per la super RPG.

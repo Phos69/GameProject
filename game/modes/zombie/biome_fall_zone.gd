@@ -159,6 +159,9 @@ func set_debug_visual_visible(enabled: bool) -> void:
 		cliff_renderer.call("set_debug_visual_visible", enabled)
 	queue_redraw()
 
+func has_debug_visual() -> bool:
+	return show_debug_visual
+
 func _rebuild_collision() -> void:
 	var collision_shape := get_node_or_null("CollisionShape2D") as CollisionShape2D
 	if collision_shape == null:
@@ -170,6 +173,8 @@ func _rebuild_collision() -> void:
 	collision_shape.shape = rectangle
 
 func _draw() -> void:
+	if show_debug_visual:
+		_draw_debug_fall_zone()
 	# No void "image": the void colour is painted by the tile layer (void cells)
 	# and the off-map backdrop. The fall zone only draws the world-end boundary so
 	# the edge of the map reads clearly, like a wall/ledge where the world stops.
@@ -178,6 +183,13 @@ func _draw() -> void:
 	if is_world_edge_visual_suppressed():
 		return
 	_draw_world_edges()
+
+func _draw_debug_fall_zone() -> void:
+	var rect := Rect2(-zone_size * 0.5, zone_size)
+	var fill := Color(0.92, 0.18, 0.42, 0.18)
+	var outline := Color(1.0, 0.30, 0.52, 0.96)
+	draw_rect(rect, fill, true)
+	draw_rect(rect, outline, false, 3.0)
 
 func is_world_edge_visual_suppressed() -> bool:
 	return (

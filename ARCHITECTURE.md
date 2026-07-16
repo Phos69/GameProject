@@ -211,7 +211,9 @@ definito in `docs/top_down_cardinal_contract.md`.
 - `TerrainBoundaryMaskBuilder`: genera una maschera RGBA8 regionale a 8 pixel
   per tile. RGB seleziona rispettivamente grass, path e asphalt; RGB nullo
   rappresenta il void e alpha contiene il divisore di terra sui confini tra
-  superfici diverse.
+  superfici diverse. I segmenti cardinali sono indicizzati per cella e alpha
+  deriva dalla distanza euclidea al segmento piu vicino: estremita, svolte e
+  incroci producono capsule e raccordi rotondi invece di quadrati sovrapposti.
 - `TerrainSurfaceCanvas` e `terrain_surface_blend.gdshader`: stendono texture
   full-bleed in coordinate world-space, compongono sopra il divisore
   `terrain_divider_dirt` e usano un colore uniforme quando RGB e nullo. Lo
@@ -977,8 +979,23 @@ multi-bioma.
   estendersi oltre la fall strip, ma il bordo alto resta ancorato al confine
   terreno/caduta. `TopDownCliffBorderMeshBuilder` costruisce il lip con
   bordi raster distinti: due orizzontali, due verticali e quattro join
-  geometrici; i fall perimetrali emettono solo il lato rivolto al terreno in
-  base a `hazard_sides` e usano un rim sub-tile. Le celle walkable
+  geometrici. Le run orizzontali possiedono il quadrante diagonale dei corner
+  convessi, mentre i raccordi concavi accorciano la run verticale: nessun
+  corner e solo un contatore privo di mesh. La profondita world-space del lip
+  usa circa due quinti del rim disponibile nel tema forestale e adegua lo span
+  UV alla profondita world-space. Nella Pianura Infetta le mesh orizzontale e verticale campionano con
+  un'unica proiezione planare il top mesa `large_rock`
+  (`rock_plateau_top_generated.png`); solo la parete nel void usa la texture
+  cliff direzionale. Una `terrain_transition_mesh` separata ripete
+  `terrain_divider_dirt` e deriva lo spessore dagli stessi parametri della
+  maschera stradale: `0,32` tile sul lato terreno, con `0,12` tile di nucleo dirt
+  e `0,20` di feather esterno. Un feather interno corto sopra il margine della
+  flat rock ammorbidisce anche lo stacco lato pietra; i corner convessi usano
+  ventagli a quarto di cerchio con core pieno e feather radiale. Nei vertici
+  `diagonal` a checkerboard i due ventagli vengono orientati nei quadranti
+  walkable opposti, cosi le quattro run non terminano in una croce dirt.
+  I fall perimetrali emettono solo il
+  lato rivolto al terreno in base a `hazard_sides`. Le celle walkable
   `ground_to_void_cliff` mantengono il prato fino alla cresta; le celle
   `void_*` di transizione restano invece fondale void, cosi le texture terrain
   non continuano sotto la faccia cliff. La geometria rocciosa del lip viene
@@ -1048,8 +1065,11 @@ multi-bioma.
   `rock_plateau_top_generated.png`, le pareti `rock_cliff_face_upward_generated.png`
   con shading per lato e gradiente verso la base; nessuna fissure/lip disegnata a
   mano, quindi la superficie resta priva di linee procedurali. Corona e facce
-  vengono disegnate una sola volta dal nodo oggetto Y-sorted; il tile layer non
-  aggiunge un cap duplicato a `z_index` fisso.
+  vengono disegnate una sola volta dal nodo oggetto Y-sorted; il tile layer
+  genera sotto il footprint di ogni mesa un contorno `terrain_divider_dirt` con
+  lo stesso spessore nominale dei bordi stradali, ma non duplica il volume e non
+  aggiunge un cap a `z_index` fisso. Anche qui i corner convessi sono archi a
+  quarto di cerchio, condivisi con il profilo dirt delle fall zone.
 - `EnvironmentObject.is_world_position_behind_cliff()` classifica una
   posizione come dietro quando ricade nella larghezza della roccia e ha Y
   minore della linea centrale; Y maggiore/uguale significa davanti. Posizioni
@@ -1179,9 +1199,14 @@ multi-bioma.
 - `HazardSystem.get_terrain_at_world_position()` converte la posizione reale
   dell'entita nella cella della regione e legge la classificazione completa;
   `is_void_at_world_position()` considera void sia `void` sia `fall_zone`.
-- `HazardSystem` registra posizioni sicure solo su terreno non-void e avvia la
-  caduta di player e zombie dalla cella sotto i piedi, non dall'attraversamento
-  del bounding box di un border.
+- `HazardSystem` registra posizioni sicure solo su terreno non-void. Per il
+  player usa il baricentro del `CollisionShape2D` a terra impiegato anche contro
+  gli ostacoli, conservandone l'offset ai piedi; il solo contatto di un bordo
+  della hitbox con il void non basta. Gli zombie conservano la query puntuale.
+  Il semplice attraversamento del bounding box di un border non causa caduta.
+- L'overlay ambiente `F9` propaga lo stesso stato da `ObstacleSystem` a
+  `HazardSystem`: mostra in azzurro le hitbox degli ostacoli e in rosa i
+  rettangoli fisici delle fall zone, comprese quelle aggiunte dallo streaming.
 - `HazardSystem.is_position_hazardous()` resta la query aggregata per spawn e
   sicurezza; `is_position_fall_zone()` identifica il vuoto/caduta, mentre
   `is_position_environment_hazard()` identifica lava, gas, acqua profonda e

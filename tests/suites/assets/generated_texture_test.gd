@@ -11,6 +11,9 @@ const FALL_ZONE_BOUNDARY_RUNS_SCRIPT = preload(
 const TERRAIN_SURFACE_CLASSIFIER = preload(
 	"res://game/modes/zombie/terrain/terrain_surface_classifier.gd"
 )
+const TERRAIN_BOUNDARY_MASK_BUILDER = preload(
+	"res://game/modes/zombie/terrain/terrain_boundary_mask_builder.gd"
+)
 ##   tests/forest_top_down_texture_transition_smoke_test.gd
 ##
 ## Verifica i contratti delle texture generate (esistenza/provenienza/tileability
@@ -1446,25 +1449,138 @@ func test_flush_pending_surface_matches_single_shot_build() -> void:
 
 func test_rectangular_border_meshes() -> void:
 	var builder := TopDownCliffBorderMeshBuilder.new()
+	var runtime_rim_width := 48.0 * TopDownCliffBorderMeshBuilder.RIM_WIDTH_TILES
+	assert_almost_eq(
+		builder._horizontal_rock_depth(runtime_rim_width),
+		runtime_rim_width * TopDownCliffBorderMeshBuilder.ROCK_DEPTH_RATIO,
+		0.01,
+		"horizontal cliff lip leaves comparable room for the terrain transition"
+	)
+	assert_almost_eq(
+		builder._vertical_rock_depth(runtime_rim_width),
+		runtime_rim_width * TopDownCliffBorderMeshBuilder.ROCK_DEPTH_RATIO,
+		0.01,
+		"vertical cliff lip leaves comparable room for the terrain transition"
+	)
+	assert_almost_eq(
+		builder._transition_width(48.0),
+		48.0 * (
+			TERRAIN_BOUNDARY_MASK_BUILDER.DIVIDER_HALF_WIDTH_TILES
+			+ TERRAIN_BOUNDARY_MASK_BUILDER.DIVIDER_FEATHER_TILES
+		),
+		0.01,
+		"fall-zone dirt uses the same nominal one-side thickness as a road divider"
+	)
+	assert_almost_eq(
+		builder._transition_inner_color().a,
+		1.0,
+		0.001,
+		"dirt starts opaque at the adjacent rock edge instead of reading as an overlay"
+	)
+	assert_almost_eq(
+		builder._transition_core_width(48.0),
+		48.0 * TopDownCliffBorderMeshBuilder.TRANSITION_CORE_WIDTH_TILES,
+		0.01,
+		"cliff dirt retains a road-like opaque core before its outer feather"
+	)
+	assert_lt(
+		builder._transition_core_width(48.0),
+		builder._transition_width(48.0),
+		"only the outside of the dirt strip fades into grass"
+	)
+	assert_almost_eq(
+		builder._transition_inner_feather_width(48.0),
+		48.0 * TopDownCliffBorderMeshBuilder.TRANSITION_INNER_FEATHER_WIDTH_TILES,
+		0.01,
+		"cliff dirt adds a short inner feather over the flat-rock edge"
+	)
+	assert_almost_eq(
+		builder._horizontal_rock_uv_end(
+			builder._horizontal_rock_depth(runtime_rim_width)
+		) - TopDownCliffBorderMeshBuilder.HORIZONTAL_ROCK_UV_START,
+		builder._horizontal_rock_depth(runtime_rim_width)
+			/ TopDownCliffBorderMeshBuilder.TEXTURE_REPEAT_WORLD_SIZE,
+		0.001,
+		"narrower forest rock keeps 1:1 UV density instead of recompressing the band"
+	)
 	builder.build([Rect2i(Vector2i(4, 5), Vector2i(6, 4))], [&"internal"], Vector2i(16, 16), 8.0)
 	assert_true(builder.horizontal_segment_count == 2 and builder.vertical_segment_count == 2 and builder.corner_count == 4,
 		"one fall rectangle builds two horizontal edges, two vertical edges and four corners")
 	assert_true(_mesh_has_uvs(builder.horizontal_mesh), "horizontal cliff border exposes UVs")
 	assert_true(_mesh_has_uvs(builder.vertical_mesh), "vertical cliff border exposes UVs")
+	assert_true(_mesh_has_uvs(builder.terrain_transition_mesh), "cliff border exposes a world-space terrain transition mesh")
+	assert_true(
+		_mesh_uses_flat_rock_planar_uv(builder.horizontal_mesh)
+		and _mesh_uses_flat_rock_planar_uv(builder.vertical_mesh),
+		"forest flat rim uses one planar mesa-top UV projection across edges and corners"
+	)
+	assert_eq(builder.terrain_transition_segment_count, 4, "every exposed cliff run receives one terrain transition")
+	assert_eq(
+		builder.terrain_transition_corner_count,
+		4,
+		"fall-zone dirt replaces square extensions with four rounded convex corners"
+	)
+	var mesa_outline_builder := TopDownCliffBorderMeshBuilder.new()
+	mesa_outline_builder.build_dirt_outline(
+		[Rect2i(Vector2i(4, 5), Vector2i(6, 4))],
+		Vector2i(16, 16),
+		8.0
+	)
+	assert_eq(
+		mesa_outline_builder.terrain_transition_segment_count,
+		4,
+		"one mesa footprint receives the shared dirt outline on all four sides"
+	)
+	assert_eq(
+		mesa_outline_builder.terrain_transition_corner_count,
+		4,
+		"one mesa footprint receives four rounded dirt corners"
+	)
+	assert_true(
+		_mesh_has_uvs(mesa_outline_builder.terrain_transition_mesh),
+		"mesa dirt outline exposes the same world-space divider UVs"
+	)
 	var h := _mesh_bounds(builder.horizontal_mesh)
 	var v := _mesh_bounds(builder.vertical_mesh)
-	var expected_horizontal_depth := 12.0 * (1.0 - TopDownCliffBorderMeshBuilder.HORIZONTAL_GRASS_RATIO)
-	var expected_vertical_depth := 12.0 * (1.0 - TopDownCliffBorderMeshBuilder.VERTICAL_GRASS_RATIO)
+	var transition_bounds := _mesh_bounds(builder.terrain_transition_mesh)
+	var expected_horizontal_depth := builder._horizontal_rock_depth(12.0)
+	var expected_vertical_depth := builder._vertical_rock_depth(12.0)
+	var expected_transition_width := builder._transition_width(8.0)
 	assert_true(
-		is_equal_approx(h.position.x, -32.0)
-		and is_equal_approx(h.end.x, 16.0)
+		is_equal_approx(h.position.x, -32.0 - expected_vertical_depth)
+		and is_equal_approx(h.end.x, 16.0 + expected_vertical_depth)
 		and is_equal_approx(h.position.y, -24.0 - expected_horizontal_depth)
 		and is_equal_approx(h.end.y, 8.0 + expected_horizontal_depth)
 		and is_equal_approx(v.position.x, -32.0 - expected_vertical_depth)
 		and is_equal_approx(v.end.x, 16.0 + expected_vertical_depth)
 		and is_equal_approx(v.position.y, -24.0)
 		and is_equal_approx(v.end.y, 8.0),
-		"every rock crest stays on walkable terrain outside the fall rectangle"
+		"rock crest preserves texture aspect and fills all four convex corner quadrants"
+	)
+	assert_true(
+		is_equal_approx(
+			transition_bounds.position.x,
+			-32.0 - expected_vertical_depth - expected_transition_width
+		)
+		and is_equal_approx(
+			transition_bounds.end.x,
+			16.0 + expected_vertical_depth + expected_transition_width
+		)
+		and is_equal_approx(
+			transition_bounds.position.y,
+			-24.0 - expected_horizontal_depth - expected_transition_width
+		)
+		and is_equal_approx(
+			transition_bounds.end.y,
+			8.0 + expected_horizontal_depth + expected_transition_width
+		),
+		"terrain transition wraps edges and convex corners outside the rock crest"
+	)
+	var transition_arrays := builder.terrain_transition_mesh.surface_get_arrays(0)
+	var transition_colors := transition_arrays[Mesh.ARRAY_COLOR] as PackedColorArray
+	assert_true(
+		_transition_colors_fade_outward(transition_colors),
+		"terrain transition fades from opaque dirt beside rock to transparent terrain"
 	)
 	var horizontal_arrays := builder.horizontal_mesh.surface_get_arrays(0)
 	var horizontal_vertices := (
@@ -1490,8 +1606,11 @@ func test_rectangular_border_meshes() -> void:
 	var fall_boundary_y := (1.0 - 8.0) * 48.0
 	assert_true(
 		is_equal_approx(perimeter_h.position.y, fall_boundary_y)
-		and perimeter_h.size.y <= 18.0,
-		"perimeter cliff rim stays narrow and begins on the walkable side of the fall boundary"
+		and is_equal_approx(
+			perimeter_h.size.y,
+			builder._horizontal_rock_depth(48.0 * TopDownCliffBorderMeshBuilder.RIM_WIDTH_TILES)
+		),
+		"perimeter cliff rim preserves material aspect and begins at the fall boundary"
 	)
 
 func test_rectilinear_face_meshes() -> void:
@@ -1652,6 +1771,95 @@ func test_touching_fall_rectangles_share_one_void_outline() -> void:
 		"both incident faces share one UV phase at the concave deep vertex"
 	)
 
+func test_diagonal_fall_corners_receive_rounded_dirt_joins() -> void:
+	var rects: Array[Rect2i] = [
+		Rect2i(Vector2i(2, 2), Vector2i(4, 4)),
+		Rect2i(Vector2i(6, 6), Vector2i(4, 4)),
+	]
+	var sides: Array[StringName] = [&"internal", &"internal"]
+	var runs: Array[Dictionary] = FALL_ZONE_BOUNDARY_RUNS_SCRIPT.build(
+		rects,
+		sides,
+		Vector2i(16, 16)
+	)
+	var diagonal_endpoints := 0
+	for run in runs:
+		if (
+			StringName(run.get("start_corner", &""))
+			== FALL_ZONE_BOUNDARY_RUNS_SCRIPT.CORNER_DIAGONAL
+		):
+			diagonal_endpoints += 1
+		if (
+			StringName(run.get("end_corner", &""))
+			== FALL_ZONE_BOUNDARY_RUNS_SCRIPT.CORNER_DIAGONAL
+		):
+			diagonal_endpoints += 1
+	assert_eq(
+		diagonal_endpoints,
+		4,
+		"checkerboard void topology exposes four run endpoints at one diagonal vertex"
+	)
+
+	var builder := TopDownCliffBorderMeshBuilder.new()
+	builder.build(rects, sides, Vector2i(16, 16), 48.0)
+	assert_eq(
+		builder.terrain_transition_corner_count,
+		8,
+		"six outer corners plus two opposite diagonal quarters round the shared junction"
+	)
+	var transition_arrays := builder.terrain_transition_mesh.surface_get_arrays(0)
+	var transition_vertices := (
+		transition_arrays[Mesh.ARRAY_VERTEX] as PackedVector2Array
+	)
+	var diagonal_center := (
+		Vector2(6, 6) - Vector2(16, 16) * 0.5
+	) * 48.0
+	var diagonal_radius := (
+		TopDownCliffBorderMeshBuilder.TRANSITION_WIDTH_TILES * 48.0
+	)
+	var rounded_quadrants := {
+		"north_west": 0,
+		"north_east": 0,
+		"south_west": 0,
+		"south_east": 0,
+	}
+	for vertex in transition_vertices:
+		var delta := vertex - diagonal_center
+		if (
+			absf(delta.x) <= 0.5
+			or absf(delta.y) <= 0.5
+			or delta.length() > diagonal_radius + 0.5
+		):
+			continue
+		if delta.x < 0.0 and delta.y < 0.0:
+			rounded_quadrants["north_west"] += 1
+		elif delta.x > 0.0 and delta.y < 0.0:
+			rounded_quadrants["north_east"] += 1
+		elif delta.x < 0.0 and delta.y > 0.0:
+			rounded_quadrants["south_west"] += 1
+		else:
+			rounded_quadrants["south_east"] += 1
+	assert_gt(
+		int(rounded_quadrants["north_east"]),
+		0,
+		"the north-east terrain quadrant receives a radial dirt join"
+	)
+	assert_gt(
+		int(rounded_quadrants["south_west"]),
+		0,
+		"the south-west terrain quadrant receives a radial dirt join"
+	)
+	assert_eq(
+		int(rounded_quadrants["north_west"]),
+		0,
+		"the north-west void quadrant receives no diagonal dirt fan"
+	)
+	assert_eq(
+		int(rounded_quadrants["south_east"]),
+		0,
+		"the south-east void quadrant receives no diagonal dirt fan"
+	)
+
 func test_projected_corner_seams_cover_l_t_cross_and_mirrors() -> void:
 	var cases: Array[Dictionary] = [
 		{
@@ -1787,6 +1995,8 @@ func test_tile_layer_consumes_cliff_textures() -> void:
 	layout.generation_seed = 515151
 	layout.add_floor_rect(Rect2i(Vector2i.ZERO, layout.zone_size), &"forest_grass")
 	layout.add_fall_zone_rect(Rect2i(Vector2i(6, 6), Vector2i(4, 4)), &"internal")
+	layout.mesa_rects.append(Rect2i(Vector2i(1, 1), Vector2i(3, 3)))
+	layout.mesa_profile_ids.append(&"forest")
 	layout.rebuild_terrain_classification()
 	var layer := BiomeTileLayer.new()
 	add_child(layer)
@@ -1794,6 +2004,10 @@ func test_tile_layer_consumes_cliff_textures() -> void:
 	await wait_physics_frames(1)
 	assert_true(layer.has_cliff_art_textures(), "tile layer loads face and lip textures")
 	assert_true(layer.has_forest_cliff_border_art(), "forest tile layer loads horizontal and vertical cliff border art")
+	assert_true(
+		layer.uses_mesa_top_for_fall_zone_rim(),
+		"forest fall-zone rim reuses the flat top texture from mesas"
+	)
 	var paths := layer.get_cliff_art_asset_paths()
 	for asset_id in CLIFF_TEXTURE_IDS:
 		assert_false(String(paths.get(asset_id, "")).is_empty(), "tile layer exposes %s asset path" % String(asset_id))
@@ -1801,7 +2015,22 @@ func test_tile_layer_consumes_cliff_textures() -> void:
 	var border_counts := layer.get_forest_cliff_border_counts()
 	assert_true(int(border_counts.get("horizontal", 0)) == 2 and int(border_counts.get("vertical", 0)) == 2 and int(border_counts.get("corners", 0)) == 4,
 		"synthetic fall rectangle applies every dedicated border mesh")
+	assert_eq(
+		int(border_counts.get("terrain_transitions", 0)),
+		4,
+		"synthetic fall rectangle applies dirt transition to all four border runs"
+	)
 	assert_eq(int(border_counts.get("faces", 0)), 4, "synthetic fall rectangle replaces angled per-cell faces with four linear faces")
+	assert_eq(
+		int(layer.get_mesa_area_counts().get("dirt_transitions", 0)),
+		4,
+		"synthetic mesa receives dirt around its complete ground footprint"
+	)
+	assert_eq(
+		int(layer.get_mesa_area_counts().get("dirt_corners", 0)),
+		4,
+		"synthetic mesa dirt outline rounds all four footprint corners"
+	)
 	var transition_tile := layer.get_resolved_tile_id(Vector2i(6, 6))
 	assert_true(
 		layer._uses_rectilinear_void_transition_art(transition_tile),
@@ -2210,6 +2439,16 @@ func _mesh_has_uvs(mesh: ArrayMesh) -> bool:
 	var uvs := arrays[Mesh.ARRAY_TEX_UV] as PackedVector2Array
 	return not vertices.is_empty() and uvs.size() == vertices.size()
 
+func _transition_colors_fade_outward(colors: PackedColorArray) -> bool:
+	if colors.is_empty():
+		return false
+	var minimum_alpha := 1.0
+	var maximum_alpha := 0.0
+	for color in colors:
+		minimum_alpha = minf(minimum_alpha, color.a)
+		maximum_alpha = maxf(maximum_alpha, color.a)
+	return minimum_alpha <= 0.001 and maximum_alpha >= 0.80
+
 func _concave_boundary_vertices(
 	rects: Array[Rect2i],
 	sides: Array[StringName],
@@ -2288,6 +2527,23 @@ func _mesh_uses_planar_world_uv(mesh: ArrayMesh) -> bool:
 		var expected := (
 			vertices[index]
 			/ RectilinearCliffFaceMeshBuilder.TEXTURE_REPEAT_WORLD_SIZE
+		)
+		if not uvs[index].is_equal_approx(expected):
+			return false
+	return true
+
+func _mesh_uses_flat_rock_planar_uv(mesh: ArrayMesh) -> bool:
+	if mesh == null or mesh.get_surface_count() <= 0:
+		return false
+	var arrays := mesh.surface_get_arrays(0)
+	var vertices := arrays[Mesh.ARRAY_VERTEX] as PackedVector2Array
+	var uvs := arrays[Mesh.ARRAY_TEX_UV] as PackedVector2Array
+	if vertices.is_empty() or vertices.size() != uvs.size():
+		return false
+	for index in range(vertices.size()):
+		var expected := (
+			vertices[index]
+			/ TopDownCliffBorderMeshBuilder.FLAT_ROCK_TEXTURE_REPEAT_WORLD_SIZE
 		)
 		if not uvs[index].is_equal_approx(expected):
 			return false

@@ -96,6 +96,12 @@ func set_debug_footprints_visible(visible: bool) -> void:
 	debug_footprints_visible = visible
 	for obstacle in get_active_obstacles():
 		_apply_debug_visibility(obstacle)
+	for hazard_system in get_tree().get_nodes_in_group("hazard_system"):
+		if hazard_system.has_method("set_debug_fall_zones_visible"):
+			hazard_system.call(
+				"set_debug_fall_zones_visible",
+				debug_footprints_visible
+			)
 	obstacle_debug_overlay_changed.emit(debug_footprints_visible)
 
 func are_debug_footprints_visible() -> bool:

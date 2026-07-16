@@ -59,7 +59,9 @@ func start_windup() -> bool:
 		or not _is_valid_target(target)
 	):
 		return false
-	locked_shot_direction = global_position.direction_to(target.global_position)
+	locked_shot_direction = global_position.direction_to(
+		_target_aim_position(target)
+	)
 	if locked_shot_direction.is_zero_approx():
 		return false
 	windup_timer = maxf(windup_duration, 0.05)
@@ -125,6 +127,16 @@ func _update_ranged_movement(delta: float, distance_to_target: float) -> void:
 		desired_velocity = direction.orthogonal() * move_speed * 0.28
 		_set_state(State.ATTACK)
 	velocity = velocity.move_toward(desired_velocity, acceleration * delta)
+
+func _target_aim_position(target_node: Node2D) -> Vector2:
+	if target_node == null or not is_instance_valid(target_node):
+		return global_position
+	var collision := target_node.get_node_or_null(
+		"CollisionShape2D"
+	) as CollisionShape2D
+	if collision != null and not collision.disabled and collision.shape != null:
+		return collision.global_position
+	return target_node.global_position
 
 func _on_died() -> void:
 	cancel_windup()

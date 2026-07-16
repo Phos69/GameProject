@@ -96,6 +96,63 @@ func test_odd_sized_fall_zone_centers_map_to_perimeter_cells() -> void:
 		"west fall strip center remains a fall zone terrain cell"
 	)
 
+func test_player_fall_uses_ground_hitzone_barycenter_and_f9_overlay() -> void:
+	var obstacle_system := ObstacleSystem.new()
+	add_child(obstacle_system)
+	var hazard_system := HazardSystem.new()
+	add_child(hazard_system)
+	var fall_zone := BiomeFallZone.new()
+	add_child(fall_zone)
+	fall_zone.configure(
+		&"fall_zone",
+		Vector2(100.0, 100.0),
+		0.0,
+		Color(0.82, 0.58, 0.16, 0.92)
+	)
+	var player_scene := load("res://game/player/player.tscn") as PackedScene
+	var player := player_scene.instantiate() as PlayerController
+	add_child(player)
+	await wait_physics_frames(1)
+
+	# The ground collider overlaps with its left edge, but its barycenter remains
+	# outside: edge contact alone must not trigger a fall.
+	player.global_position = Vector2(63.0, -18.0)
+	assert_false(
+		hazard_system.is_position_fall_zone(player.global_position),
+		"legacy player-origin probe remains outside the fall zone"
+	)
+	assert_false(
+		hazard_system.is_body_in_fall_zone(player),
+		"ground hitzone edge overlap does not trigger a fall"
+	)
+
+	# The node origin is still outside, while the collider barycenter is inside
+	# because the ground hitzone keeps its visual-foot offset of (0, 18).
+	player.global_position = Vector2(0.0, -63.0)
+	assert_false(
+		hazard_system.is_position_fall_zone(player.global_position),
+		"player node origin can remain outside the fall zone"
+	)
+	assert_true(
+		hazard_system.is_body_in_fall_zone(player),
+		"fall starts when the ground hitzone barycenter crosses the void"
+	)
+
+	obstacle_system.set_debug_footprints_visible(true)
+	assert_true(
+		hazard_system.are_debug_fall_zones_visible(),
+		"F9 debug state reaches the hazard system"
+	)
+	assert_true(
+		fall_zone.has_debug_visual(),
+		"F9 shows the fall-zone collision rectangle"
+	)
+
+	player.free()
+	fall_zone.free()
+	hazard_system.free()
+	obstacle_system.free()
+
 # --- schivata sui varchi (player_dodge_gap) -------------------------------
 
 func test_dodge_gap_validation() -> void:

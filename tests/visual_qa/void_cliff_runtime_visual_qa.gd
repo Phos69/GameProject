@@ -79,6 +79,10 @@ func _run() -> void:
 			layer.has_forest_cliff_border_art(),
 			"runtime tile layer applies dedicated horizontal and vertical cliff art"
 		)
+		_expect(
+			layer.uses_mesa_top_for_fall_zone_rim(),
+			"runtime forest fall-zone rim uses the flat mesa-top rock texture"
+		)
 		_expect(layer.has_forest_ground_art_texture(), "runtime tile layer has generated grass art")
 		_expect(layer.has_forest_surface_art_textures(), "runtime tile layer has every forest surface")
 		var border_counts := layer.get_forest_cliff_border_counts()
@@ -89,6 +93,33 @@ func _run() -> void:
 		_expect(
 			int(border_counts.get("faces", 0)) > 0,
 			"runtime forest cliffs replace angled per-cell faces with rectilinear faces"
+		)
+		_expect(
+			int(border_counts.get("corners", 0)) > 0,
+			"runtime fall-zone lips include geometric corner coverage"
+		)
+		_expect(
+			int(border_counts.get("terrain_transitions", 0))
+			== int(border_counts.get("horizontal", 0))
+			+ int(border_counts.get("vertical", 0)),
+			"every runtime cliff run includes a terrain-divider transition"
+		)
+		_expect(
+			int(border_counts.get("terrain_transition_corners", 0)) > 0,
+			"runtime fall-zone dirt uses rounded convex corner geometry"
+		)
+		var mesa_counts := layer.get_mesa_area_counts()
+		_expect(
+			int(mesa_counts.get("areas", 0)) > 0,
+			"runtime region contains raised mesa geometry"
+		)
+		_expect(
+			int(mesa_counts.get("dirt_transitions", 0)) > 0,
+			"runtime mesas receive a terrain-divider dirt outline"
+		)
+		_expect(
+			int(mesa_counts.get("dirt_corners", 0)) > 0,
+			"runtime mesa dirt outlines include rounded corners"
 		)
 
 	var cells := biome_manager.get_generated_biome_map()

@@ -49,6 +49,7 @@ var safe_update_timer: float = 0.0
 var fall_cooldowns: Dictionary = {}
 var invulnerability_timers: Dictionary = {}
 var status_runtime: BiomeStatusRuntime
+var debug_fall_zones_visible: bool = false
 var _biome_manager_ref: BiomeManager
 var _seam_system_ref: Node
 var _void_scan_cursor: int = 0
@@ -106,6 +107,14 @@ func stop_run() -> void:
 func get_active_hazards() -> Array[Node2D]:
 	_prune_hazards()
 	return active_hazards.duplicate()
+
+func set_debug_fall_zones_visible(visible: bool) -> void:
+	debug_fall_zones_visible = visible
+	for hazard in get_tree().get_nodes_in_group("fall_zones"):
+		_apply_fall_zone_debug_visibility(hazard)
+
+func are_debug_fall_zones_visible() -> bool:
+	return debug_fall_zones_visible
 
 func get_last_safe_position(player: Node) -> Vector2:
 	if player == null:
@@ -196,6 +205,17 @@ func is_position_hazardous(position: Vector2) -> bool:
 
 func is_position_fall_zone(position: Vector2) -> bool:
 	return is_void_at_world_position(position)
+
+## Uses the barycenter of the body's real ground-contact CollisionShape2D. This
+## preserves the same feet/ground offset used against environment obstacles but
+## waits until the hitzone center, rather than one of its edges, crosses void.
+func is_body_in_fall_zone(body: Node2D) -> bool:
+	if body == null or not is_instance_valid(body):
+		return false
+	var collision := body.get_node_or_null("CollisionShape2D") as CollisionShape2D
+	if collision == null or collision.disabled or collision.shape == null:
+		return is_void_at_world_position(body.global_position)
+	return is_void_at_world_position(collision.global_position)
 
 func _get_biome_manager() -> BiomeManager:
 	if _biome_manager_ref == null or not is_instance_valid(_biome_manager_ref):
@@ -334,6 +354,7 @@ func create_hazard_instance(
 		fall_zone.body_entered.connect(
 			_on_hazard_body_entered.bind(fall_zone)
 		)
+		_apply_fall_zone_debug_visibility(fall_zone)
 		return fall_zone
 	var hazard_zone := HAZARD_ZONE_SCRIPT.new() as BiomeHazardZone
 	if hazard_zone == null:
@@ -355,6 +376,7 @@ func register_streamed_hazard(
 		return
 	if not active_hazards.has(hazard):
 		active_hazards.append(hazard)
+	_apply_fall_zone_debug_visibility(hazard)
 	hazard_spawned.emit(hazard, hazard_id)
 
 func unregister_streamed_hazard(hazard: Node2D) -> void:
@@ -378,7 +400,7 @@ func trigger_fall(player: Node, _hazard: BiomeFallZone = null) -> bool:
 	var player_id := player.get_instance_id()
 	if float(fall_cooldowns.get(player_id, 0.0)) > 0.0:
 		return false
-	if not is_void_at_world_position((player as Node2D).global_position):
+	if not is_body_in_fall_zone(player as Node2D):
 		return false
 	var dodge_component := player.get_node_or_null(
 		"PlayerDodgeComponent"
@@ -475,6 +497,7 @@ func _generate_hazards() -> void:
 			fall_zone.body_entered.connect(
 				_on_hazard_body_entered.bind(fall_zone)
 			)
+			_apply_fall_zone_debug_visibility(fall_zone)
 			hazard = fall_zone
 		else:
 			var hazard_zone := HAZARD_ZONE_SCRIPT.new() as BiomeHazardZone
@@ -543,7 +566,7 @@ func _update_safe_positions() -> void:
 		if health_component == null or health_component.is_incapacitated():
 			continue
 		var position := (player as Node2D).global_position
-		if not is_position_safe(position):
+		if is_body_in_fall_zone(player as Node2D) or not is_position_safe(position):
 			continue
 		var player_id := player.get_instance_id()
 		if (
@@ -657,7 +680,7 @@ func _check_void_entities() -> void:
 	for player in get_tree().get_nodes_in_group("players"):
 		if (
 			player is Node2D
-			and is_void_at_world_position((player as Node2D).global_position)
+			and is_body_in_fall_zone(player as Node2D)
 		):
 			trigger_fall(player)
 	var enemies := get_tree().get_nodes_in_group("enemies")
@@ -697,6 +720,14 @@ func _is_position_inside_group(position: Vector2, group_name: StringName) -> boo
 		if _node_contains_position(node, position):
 			return true
 	return false
+
+func _apply_fall_zone_debug_visibility(hazard: Node) -> void:
+	if (
+		hazard != null
+		and (hazard is BiomeFallZone or hazard.is_in_group("fall_zones"))
+		and hazard.has_method("set_debug_visual_visible")
+	):
+		hazard.call("set_debug_visual_visible", debug_fall_zones_visible)
 
 func _get_environment_container() -> Node:
 	var container := get_node_or_null(environment_container_path)

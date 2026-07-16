@@ -8,6 +8,32 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Changed
 
+- Corretto il rendering finale grass/cliff delle fall zone: il lip conserva ora
+  le proporzioni world-space della porzione rocciosa invece di apparire come una
+  fascia compressa, le run orizzontali generano i quattro corner convessi reali
+  e una mesh sfumata con `terrain_divider_dirt` crea lo stesso stacco organico
+  usato ai bordi delle strade. Nel tema forestale la cresta flat rock e stata
+  ridotta a circa due quinti del rim; la fascia dirt ora deriva direttamente i
+  propri `0,32` tile nominali dalla maschera stradale (`0,12` di nucleo pieno e
+  `0,20` di feather esterno), mentre un feather di `0,10` tile ammorbidisce lo
+  stacco lato pietra. Lo stesso profilo dirt viene generato sotto il footprint
+  di tutte le mesa tematizzate. I corner dirt sono ora rotondi ovunque: la
+  maschera delle strade usa distanza euclidea da segmenti indicizzati per cella,
+  mentre mesa e fall zone generano raccordi radiali a quarto di cerchio.
+  I vertici checkerboard, dove due void si toccano solo in diagonale, ricevono
+  due quarti opposti invece di lasciare quattro fasce dirt a forma di croce.
+  Collisione e regola di caduta restano invariate.
+- Nella Pianura Infetta il tratto roccioso piatto prima del void riusa ora
+  `rock_plateau_top_generated.png`, la stessa superficie top delle mesa, con UV
+  planari world-space continui fra lati e corner; la parete discendente conserva
+  invece `cliff_face_texture`.
+- Il rilevamento caduta del player usa ora il baricentro del rettangolo
+  `CollisionShape2D` a terra condiviso con le collisioni degli ostacoli: il solo
+  contatto del bordo non causa una caduta. L'overlay `F9` include anche tutte le
+  fall zone attive/streammate, evidenziate in rosa, con regressione GUT dedicata.
+- La mira dello zombie shooter risolve ora lo stesso baricentro della hitzone a
+  terra del player, evitando che i proiettili passino sopra il collider dopo il
+  suo allineamento ai piedi.
 - Raddoppiata la resa runtime di `forest_tree` tramite `visual_scale = 2.0` e
   portato il collider circolare delle radici da 48 a 96 px di diametro. Il
   footprint di generazione resta `2x2` tile logiche, mentre gli alberi adiacenti

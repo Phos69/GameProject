@@ -116,6 +116,26 @@ func test_grass_asphalt_split_builds_segments_and_alpha() -> void:
 	)
 
 
+func test_divider_uses_rounded_outer_corner_distance() -> void:
+	var layout := _new_floor_layout(Vector2i(3, 3), 41021)
+	layout.road_rects.append(Rect2i(Vector2i(1, 1), Vector2i(2, 2)))
+	layout.road_rect_tags.append(&"main_road")
+	layout.rebuild_terrain_classification()
+
+	var mask_data := BOUNDARY_MASK_BUILDER.build(layout, _resolver)
+	var image := mask_data.get("image") as Image
+	assert_gt(
+		image.get_pixel(6, 6).a,
+		0.0,
+		"diagonal texel inside the corner radius receives the dirt divider"
+	)
+	assert_eq(
+		image.get_pixel(5, 5).a,
+		0.0,
+		"diagonal texel outside the corner radius is clipped to a round corner"
+	)
+
+
 func test_diagonal_route_cells_do_not_create_a_surface_bridge() -> void:
 	var layout := _new_floor_layout(Vector2i(3, 3), 41003)
 	layout.add_road_cell(Vector2i(0, 0), &"main_road")
