@@ -38,6 +38,9 @@ Per iterazioni mirate sulla mappa:
   facciata sud, ma non spostano il footprint logico.
 - Con `F9`, i collider reali coincidono con il blocco fisico: cerchi centrati
   sulle radici per gli alberi e rettangoli allineati H/V per gli altri blocker.
+- Con `F9`, attraversare fall zone larghe due tile sia orizzontali sia verticali:
+  il rettangolo rosa deve coincidere con i confini del void senza offset di
+  mezzo tile; la caduta deve continuare a scattare sul baricentro del player.
 - Avvicinare il player ai quattro lati di una mesa: l'ombra deve raggiungere il
   bordo fisico; in particolare non deve restare un gap a sud ne oltrepassare il
   limite a nord.

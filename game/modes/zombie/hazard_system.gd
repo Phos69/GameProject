@@ -479,7 +479,13 @@ func _generate_hazards() -> void:
 			if index < layout.hazard_rotations.size()
 			else 0.0
 		)
-		var hazard_side := _hazard_side_for(layout, index, layout.hazard_positions[index], size)
+		var hazard_position := layout.get_hazard_position(index)
+		var hazard_side := _hazard_side_for(
+			layout,
+			index,
+			hazard_position,
+			size
+		)
 		var hazard: Node2D
 		if hazard_id == &"fall_zone":
 			var fall_zone := FALL_ZONE_SCRIPT.new() as BiomeFallZone
@@ -516,7 +522,7 @@ func _generate_hazards() -> void:
 			index + 1
 		]
 		container.add_child(hazard)
-		hazard.global_position = layout.hazard_positions[index]
+		hazard.global_position = hazard_position
 		active_hazards.append(hazard)
 		hazard_spawned.emit(hazard, hazard_id)
 

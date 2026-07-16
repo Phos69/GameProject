@@ -1213,6 +1213,10 @@ multi-bioma.
 - L'overlay ambiente `F9` propaga lo stesso stato da `ObstacleSystem` a
   `HazardSystem`: mostra in azzurro le hitbox degli ostacoli e in rosa i
   rettangoli fisici delle fall zone, comprese quelle aggiunte dallo streaming.
+  L'anchor delle fall zone deriva dal centro geometrico di `hazard_rects`, non
+  dal centro intero di una cella: una dimensione pari resta quindi allineata ai
+  confini del void anche nelle regioni da 75 tile. La risoluzione avviene anche
+  al consumo, cosi gli snapshot cache precedenti non conservano l'offset F9.
 - `HazardSystem.is_position_hazardous()` resta la query aggregata per spawn e
   sicurezza; `is_position_fall_zone()` identifica il vuoto/caduta, mentre
   `is_position_environment_hazard()` identifica lava, gas, acqua profonda e

@@ -574,6 +574,7 @@ func _commit_hazard(
 		if index < layout.hazard_rotations.size()
 		else 0.0
 	)
+	var hazard_position := layout.get_hazard_position(index)
 	var hazard := hazard_system.create_hazard_instance(
 		hazard_id,
 		size,
@@ -581,7 +582,7 @@ func _commit_hazard(
 		biome,
 		layout,
 		index,
-		layout.hazard_positions[index]
+		hazard_position
 	)
 	if hazard == null:
 		return false
@@ -590,7 +591,7 @@ func _commit_hazard(
 		index + 1
 	]
 	parent.add_child(hazard)
-	hazard.position = layout.hazard_positions[index]
+	hazard.position = hazard_position
 	hazard.set_meta("region_id", region_id)
 	hazard_system.register_streamed_hazard(hazard, hazard_id)
 	return true
@@ -740,7 +741,9 @@ func _queue_region_content(
 				&"hazard",
 				index,
 				1,
-				reference.distance_squared_to(offset + layout.hazard_positions[index])
+				reference.distance_squared_to(
+					offset + layout.get_hazard_position(index)
+				)
 			))
 	if resource_crate_system != null:
 		for index in range(

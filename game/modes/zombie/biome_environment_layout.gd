@@ -214,6 +214,22 @@ func obstacle_rect_center_to_world(rect: Rect2i, obstacle_id: StringName) -> Vec
 func rect_size_to_world(rect: Rect2i) -> Vector2:
 	return Vector2(rect.size) * logical_tile_scale
 
+func get_hazard_position(index: int) -> Vector2:
+	if index < 0 or index >= hazard_positions.size():
+		return Vector2.ZERO
+	# Fall-zone rendering is built from cell boundaries. On odd-sized regions,
+	# centering an even-width rect on an integer cell shifts its Area2D/F9 overlay
+	# by half a tile, while gameplay still queries the terrain classification.
+	# Resolve the geometric center at consumption time as well, so cached layouts
+	# created before this correction cannot retain the stale debug/collision anchor.
+	if (
+		index < hazard_ids.size()
+		and hazard_ids[index] == &"fall_zone"
+		and index < hazard_rects.size()
+	):
+		return rect_geometric_center_to_world(hazard_rects[index])
+	return hazard_positions[index]
+
 func get_obstacle_record(
 	index: int,
 	manifest: EnvironmentAssetManifest = null
@@ -483,7 +499,7 @@ func add_fall_zone_rect(rect: Rect2i, side: StringName = &"") -> void:
 	fall_zone_rects.append(clipped)
 	hazard_rects.append(clipped)
 	hazard_ids.append(&"fall_zone")
-	hazard_positions.append(rect_center_to_world(clipped))
+	hazard_positions.append(rect_geometric_center_to_world(clipped))
 	hazard_sizes.append(rect_size_to_world(clipped))
 	hazard_rotations.append(0.0)
 	hazard_sides.append(side)

@@ -96,6 +96,55 @@ func test_odd_sized_fall_zone_centers_map_to_perimeter_cells() -> void:
 		"west fall strip center remains a fall zone terrain cell"
 	)
 
+func test_even_width_fall_zone_f9_overlay_uses_geometric_center() -> void:
+	var layout := BiomeEnvironmentLayout.new()
+	layout.zone_size = Vector2i(75, 75)
+	layout.logical_tile_scale = 48.0
+	var fall_rect := Rect2i(Vector2i(10, 18), Vector2i(2, 5))
+	layout.add_fall_zone_rect(fall_rect, &"internal")
+	layout.rebuild_terrain_classification()
+	var expected_position := layout.rect_geometric_center_to_world(fall_rect)
+	assert_true(
+		layout.hazard_positions[0].is_equal_approx(expected_position),
+		"even-width fall-zone records use the cell-boundary geometric center"
+	)
+	assert_true(
+		layout.get_hazard_position(0).is_equal_approx(expected_position),
+		"runtime also corrects stale cached fall-zone anchors geometrically"
+	)
+
+	var fall_zone := BiomeFallZone.new()
+	add_child(fall_zone)
+	fall_zone.configure(
+		&"fall_zone",
+		layout.hazard_sizes[0],
+		0.0,
+		Color(0.82, 0.58, 0.16, 0.92)
+	)
+	fall_zone.global_position = layout.get_hazard_position(0)
+	fall_zone.set_debug_visual_visible(true)
+	var expected_bounds := Rect2(
+		(
+			Vector2(fall_rect.position)
+			- Vector2(layout.zone_size) * 0.5
+		) * layout.logical_tile_scale,
+		layout.rect_size_to_world(fall_rect)
+	)
+	var overlay_bounds := Rect2(
+		fall_zone.global_position - fall_zone.zone_size * 0.5,
+		fall_zone.zone_size
+	)
+	assert_true(
+		overlay_bounds.is_equal_approx(expected_bounds),
+		"F9 fall-zone rectangle matches the rendered void cell boundaries"
+	)
+	assert_eq(
+		layout.get_terrain_class_at_cell(fall_rect.position),
+		BiomeEnvironmentLayout.TERRAIN_FALL_ZONE,
+		"terrain-driven fall gameplay remains unchanged"
+	)
+	fall_zone.free()
+
 func test_player_fall_uses_ground_hitzone_barycenter_and_f9_overlay() -> void:
 	var obstacle_system := ObstacleSystem.new()
 	add_child(obstacle_system)

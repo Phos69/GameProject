@@ -35,6 +35,9 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
   `CollisionShape2D` a terra condiviso con le collisioni degli ostacoli: il solo
   contatto del bordo non causa una caduta. L'overlay `F9` include anche tutte le
   fall zone attive/streammate, evidenziate in rosa, con regressione GUT dedicata.
+  Corretto inoltre l'anchor delle fall zone con dimensione pari nelle regioni
+  dispari: il rettangolo rosa usa ora il centro geometrico dei confini tile e
+  non presenta piu mezzo tile di offset sull'asse orizzontale o verticale.
 - La mira dello zombie shooter risolve ora lo stesso baricentro della hitzone a
   terra del player, evitando che i proiettili passino sopra il collider dopo il
   suo allineamento ai piedi.
