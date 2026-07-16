@@ -864,8 +864,9 @@ Regole hazard:
   lo dissolve verso l'erba, continuando attorno agli angoli. Lo stesso contorno
   dirt circonda a terra il footprint di ogni mesa tematizzata. Strade, mesa e
   fall zone raccordano i cambi cardinali con angoli dirt rotondi, mantenendo
-  invariati footprint e collisioni; anche due fall zone a contatto solo sul
-  vertice mantengono due corner curvi distinti, senza formare una croce. La
+  invariati footprint e collisioni; quando due fall zone si toccano solo sul
+  vertice, la roccia resta rettilinea, il solo dirt usa un raccordo compatto e
+  il punto centrale resta visivamente void, coerente con la caduta. La
   cresta rocciosa occupa solo il lato realmente calpestabile: sui lati verticali
   e inferiore nessuna striscia interna al void deve suggerire una falsa mensola.
   Nei raccordi la texture delle due facce condivide la stessa fase UV al vertice

@@ -1815,7 +1815,10 @@ func test_diagonal_fall_corners_receive_rounded_dirt_joins() -> void:
 		Vector2(6, 6) - Vector2(16, 16) * 0.5
 	) * 48.0
 	var diagonal_radius := (
-		TopDownCliffBorderMeshBuilder.TRANSITION_WIDTH_TILES * 48.0
+		(
+			TopDownCliffBorderMeshBuilder.DIAGONAL_CORNER_RADIUS_TILES
+			+ TopDownCliffBorderMeshBuilder.TRANSITION_WIDTH_TILES
+		) * 48.0
 	)
 	var rounded_quadrants := {
 		"north_west": 0,
@@ -1849,15 +1852,35 @@ func test_diagonal_fall_corners_receive_rounded_dirt_joins() -> void:
 		0,
 		"the south-east void corner receives a recessed radial dirt join"
 	)
-	assert_eq(
-		int(rounded_quadrants["north_east"]),
-		0,
-		"the north-east terrain corner receives no redundant dirt fan"
+	assert_lt(
+		TopDownCliffBorderMeshBuilder.DIAGONAL_CORNER_RADIUS_TILES,
+		0.5,
+		"checkerboard curvature stays compact and affects only the dirt join"
 	)
 	assert_eq(
-		int(rounded_quadrants["south_west"]),
+		builder.diagonal_void_patch_count,
+		1,
+		"the shared checkerboard vertex receives one visible void patch"
+	)
+	assert_not_null(
+		builder.diagonal_void_mesh,
+		"the checkerboard void patch has renderable geometry"
+	)
+	var rock_arrays := builder.horizontal_mesh.surface_get_arrays(0)
+	var rock_vertices := rock_arrays[Mesh.ARRAY_VERTEX] as PackedVector2Array
+	var curved_rock_vertices := 0
+	for vertex in rock_vertices:
+		var delta := vertex - diagonal_center
+		if (
+			delta.length() < diagonal_radius + 0.5
+			and absf(delta.x) > 0.5
+			and absf(delta.y) > 0.5
+		):
+			curved_rock_vertices += 1
+	assert_eq(
+		curved_rock_vertices,
 		0,
-		"the south-west terrain corner receives no redundant dirt fan"
+		"checkerboard curvature affects dirt only, never the flat-rock mesh"
 	)
 
 	var compact_builder := TopDownCliffBorderMeshBuilder.new()
@@ -1874,6 +1897,11 @@ func test_diagonal_fall_corners_receive_rounded_dirt_joins() -> void:
 		compact_builder.terrain_transition_corner_count,
 		8,
 		"one-tile diagonal voids retain both bounded checkerboard joins"
+	)
+	assert_eq(
+		compact_builder.diagonal_void_patch_count,
+		1,
+		"compact diagonal voids still share one central void marker"
 	)
 	var compact_arrays := compact_builder.terrain_transition_mesh.surface_get_arrays(0)
 	var compact_vertices := compact_arrays[Mesh.ARRAY_VERTEX] as PackedVector2Array

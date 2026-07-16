@@ -992,9 +992,10 @@ multi-bioma.
   e `0,20` di feather esterno. Un feather interno corto sopra il margine della
   flat rock ammorbidisce anche lo stacco lato pietra; i corner convessi usano
   ventagli a quarto di cerchio con core pieno e feather radiale. Nei vertici
-  `diagonal` a checkerboard le quattro run terminano prima del punto condiviso;
-  due settori anulari incassati nei corner void le raccordano a coppie, evitando
-  che flat rock e dirt si sovrappongano in una croce.
+  `diagonal` a checkerboard la flat rock resta rettilinea; solo le quattro fasce
+  dirt terminano prima del punto condiviso e due piccoli settori anulari
+  (`0,42` tile) le raccordano. Una patch centrale `terrain_void_color` mantiene
+  visibile la continuita della fall zone invece di suggerire terra calpestabile.
   I fall perimetrali emettono solo il
   lato rivolto al terreno in base a `hazard_sides`. Le celle walkable
   `ground_to_void_cliff` mantengono il prato fino alla cresta; le celle

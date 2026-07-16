@@ -38,29 +38,36 @@ const TRANSITION_INNER_FEATHER_WIDTH_TILES: float = (
 const TRANSITION_INNER_FEATHER_MIN_WIDTH := 1.0
 const TRANSITION_TEXTURE_REPEAT_WORLD_SIZE := 256.0
 const ROUND_CORNER_SEGMENTS := 6
-const DIAGONAL_CORNER_RADIUS_TILES := 1.25
+const DIAGONAL_CORNER_RADIUS_TILES := 0.42
+const DIAGONAL_VOID_RADIUS_TILES := 0.18
 
 var horizontal_mesh: ArrayMesh
 var vertical_mesh: ArrayMesh
 var terrain_transition_mesh: ArrayMesh
+var diagonal_void_mesh: ArrayMesh
 var horizontal_segment_count: int = 0
 var vertical_segment_count: int = 0
 var terrain_transition_segment_count: int = 0
 var terrain_transition_corner_count: int = 0
+var diagonal_void_patch_count: int = 0
 var corner_count: int = 0
 var concave_corner_count: int = 0
 var sample_full_texture: bool = false
+var _diagonal_void_centers: Dictionary = {}
 
 func reset() -> void:
 	horizontal_mesh = null
 	vertical_mesh = null
 	terrain_transition_mesh = null
+	diagonal_void_mesh = null
 	horizontal_segment_count = 0
 	vertical_segment_count = 0
 	terrain_transition_segment_count = 0
 	terrain_transition_corner_count = 0
+	diagonal_void_patch_count = 0
 	corner_count = 0
 	concave_corner_count = 0
+	_diagonal_void_centers.clear()
 
 func build(
 	fall_zone_rects: Array[Rect2i],
@@ -76,6 +83,7 @@ func build(
 	var horizontal := _mesh_buffers()
 	var vertical := _mesh_buffers()
 	var terrain_transition := _mesh_buffers()
+	var diagonal_void := _mesh_buffers()
 	var zone_offset := Vector2(zone_size) * 0.5
 	var border_width := maxf(logical_scale * RIM_WIDTH_TILES, 12.0)
 	var boundary_runs: Array[Dictionary] = FALL_ZONE_BOUNDARY_RUNS.build(
@@ -89,6 +97,7 @@ func build(
 			horizontal,
 			vertical,
 			terrain_transition,
+			diagonal_void,
 			run,
 			zone_offset,
 			logical_scale,
@@ -97,6 +106,7 @@ func build(
 	horizontal_mesh = _build_mesh(horizontal)
 	vertical_mesh = _build_mesh(vertical)
 	terrain_transition_mesh = _build_mesh(terrain_transition)
+	diagonal_void_mesh = _build_mesh(diagonal_void)
 
 func build_dirt_outline(
 	outline_rects: Array[Rect2i],
@@ -234,6 +244,7 @@ func _append_boundary_run(
 	horizontal: Dictionary,
 	vertical: Dictionary,
 	terrain_transition: Dictionary,
+	diagonal_void: Dictionary,
 	run: Dictionary,
 	zone_offset: Vector2,
 	logical_scale: float,
@@ -248,12 +259,8 @@ func _append_boundary_run(
 	var end_corner := StringName(run.get("end_corner", &""))
 	match orientation:
 		FALL_ZONE_BOUNDARY_RUNS.TOP:
-			var original_top_left := (start - zone_offset.x) * logical_scale
-			var original_top_right := (end - zone_offset.x) * logical_scale
-			var top_left := original_top_left
-			var top_right := original_top_right
-			var horizontal_start_corner := start_corner
-			var horizontal_end_corner := end_corner
+			var top_left := (start - zone_offset.x) * logical_scale
+			var top_right := (end - zone_offset.x) * logical_scale
 			var start_diagonal_radius := _run_diagonal_corner_radius(
 				run,
 				&"start",
@@ -264,12 +271,6 @@ func _append_boundary_run(
 				&"end",
 				logical_scale
 			)
-			if start_corner == FALL_ZONE_BOUNDARY_RUNS.CORNER_DIAGONAL:
-				top_left += start_diagonal_radius
-				horizontal_start_corner = FALL_ZONE_BOUNDARY_RUNS.CORNER_STRAIGHT
-			if end_corner == FALL_ZONE_BOUNDARY_RUNS.CORNER_DIAGONAL:
-				top_right -= end_diagonal_radius
-				horizontal_end_corner = FALL_ZONE_BOUNDARY_RUNS.CORNER_STRAIGHT
 			if StringName(run.get("start_corner", &"")) == FALL_ZONE_BOUNDARY_RUNS.CORNER_CONCAVE:
 				concave_corner_count += 1
 			if StringName(run.get("end_corner", &"")) == FALL_ZONE_BOUNDARY_RUNS.CORNER_CONCAVE:
@@ -282,42 +283,46 @@ func _append_boundary_run(
 				(boundary - zone_offset.y) * logical_scale,
 				border_width,
 				false,
-				horizontal_start_corner,
-				horizontal_end_corner,
-				logical_scale
+				start_corner,
+				end_corner,
+				logical_scale,
+				start_diagonal_radius,
+				end_diagonal_radius
 			)
 			var boundary_y := (boundary - zone_offset.y) * logical_scale
 			if start_corner == FALL_ZONE_BOUNDARY_RUNS.CORNER_DIAGONAL:
-				_append_diagonal_cliff_corner(
-					horizontal,
+				_append_diagonal_dirt_corner(
 					terrain_transition,
-					Vector2(original_top_left, boundary_y),
+					Vector2(top_left, boundary_y),
 					FALL_ZONE_BOUNDARY_RUNS.TOP,
 					true,
 					start_diagonal_radius,
-					border_width,
+					logical_scale
+				)
+				_append_diagonal_void_patch(
+					diagonal_void,
+					Vector2(top_left, boundary_y),
 					logical_scale
 				)
 			if end_corner == FALL_ZONE_BOUNDARY_RUNS.CORNER_DIAGONAL:
-				_append_diagonal_cliff_corner(
-					horizontal,
+				_append_diagonal_dirt_corner(
 					terrain_transition,
-					Vector2(original_top_right, boundary_y),
+					Vector2(top_right, boundary_y),
 					FALL_ZONE_BOUNDARY_RUNS.TOP,
 					false,
 					end_diagonal_radius,
-					border_width,
+					logical_scale
+				)
+				_append_diagonal_void_patch(
+					diagonal_void,
+					Vector2(top_right, boundary_y),
 					logical_scale
 				)
 			horizontal_segment_count += 1
 			corner_count += 2
 		FALL_ZONE_BOUNDARY_RUNS.BOTTOM:
-			var original_bottom_left := (start - zone_offset.x) * logical_scale
-			var original_bottom_right := (end - zone_offset.x) * logical_scale
-			var bottom_left := original_bottom_left
-			var bottom_right := original_bottom_right
-			var horizontal_start_corner := start_corner
-			var horizontal_end_corner := end_corner
+			var bottom_left := (start - zone_offset.x) * logical_scale
+			var bottom_right := (end - zone_offset.x) * logical_scale
 			var start_diagonal_radius := _run_diagonal_corner_radius(
 				run,
 				&"start",
@@ -328,12 +333,6 @@ func _append_boundary_run(
 				&"end",
 				logical_scale
 			)
-			if start_corner == FALL_ZONE_BOUNDARY_RUNS.CORNER_DIAGONAL:
-				bottom_left += start_diagonal_radius
-				horizontal_start_corner = FALL_ZONE_BOUNDARY_RUNS.CORNER_STRAIGHT
-			if end_corner == FALL_ZONE_BOUNDARY_RUNS.CORNER_DIAGONAL:
-				bottom_right -= end_diagonal_radius
-				horizontal_end_corner = FALL_ZONE_BOUNDARY_RUNS.CORNER_STRAIGHT
 			if StringName(run.get("start_corner", &"")) == FALL_ZONE_BOUNDARY_RUNS.CORNER_CONCAVE:
 				concave_corner_count += 1
 			if StringName(run.get("end_corner", &"")) == FALL_ZONE_BOUNDARY_RUNS.CORNER_CONCAVE:
@@ -346,31 +345,39 @@ func _append_boundary_run(
 				(boundary - zone_offset.y) * logical_scale,
 				border_width,
 				true,
-				horizontal_start_corner,
-				horizontal_end_corner,
-				logical_scale
+				start_corner,
+				end_corner,
+				logical_scale,
+				start_diagonal_radius,
+				end_diagonal_radius
 			)
 			var boundary_y := (boundary - zone_offset.y) * logical_scale
 			if start_corner == FALL_ZONE_BOUNDARY_RUNS.CORNER_DIAGONAL:
-				_append_diagonal_cliff_corner(
-					horizontal,
+				_append_diagonal_dirt_corner(
 					terrain_transition,
-					Vector2(original_bottom_left, boundary_y),
+					Vector2(bottom_left, boundary_y),
 					FALL_ZONE_BOUNDARY_RUNS.BOTTOM,
 					true,
 					start_diagonal_radius,
-					border_width,
+					logical_scale
+				)
+				_append_diagonal_void_patch(
+					diagonal_void,
+					Vector2(bottom_left, boundary_y),
 					logical_scale
 				)
 			if end_corner == FALL_ZONE_BOUNDARY_RUNS.CORNER_DIAGONAL:
-				_append_diagonal_cliff_corner(
-					horizontal,
+				_append_diagonal_dirt_corner(
 					terrain_transition,
-					Vector2(original_bottom_right, boundary_y),
+					Vector2(bottom_right, boundary_y),
 					FALL_ZONE_BOUNDARY_RUNS.BOTTOM,
 					false,
 					end_diagonal_radius,
-					border_width,
+					logical_scale
+				)
+				_append_diagonal_void_patch(
+					diagonal_void,
+					Vector2(bottom_right, boundary_y),
 					logical_scale
 				)
 			horizontal_segment_count += 1
@@ -378,8 +385,6 @@ func _append_boundary_run(
 		FALL_ZONE_BOUNDARY_RUNS.LEFT, FALL_ZONE_BOUNDARY_RUNS.RIGHT:
 			var top := (start - zone_offset.y) * logical_scale
 			var bottom := (end - zone_offset.y) * logical_scale
-			var vertical_start_corner := start_corner
-			var vertical_end_corner := end_corner
 			var start_diagonal_radius := _run_diagonal_corner_radius(
 				run,
 				&"start",
@@ -390,12 +395,6 @@ func _append_boundary_run(
 				&"end",
 				logical_scale
 			)
-			if start_corner == FALL_ZONE_BOUNDARY_RUNS.CORNER_DIAGONAL:
-				top += start_diagonal_radius
-				vertical_start_corner = FALL_ZONE_BOUNDARY_RUNS.CORNER_STRAIGHT
-			if end_corner == FALL_ZONE_BOUNDARY_RUNS.CORNER_DIAGONAL:
-				bottom -= end_diagonal_radius
-				vertical_end_corner = FALL_ZONE_BOUNDARY_RUNS.CORNER_STRAIGHT
 			# Once the crest is kept on walkable terrain, horizontal and vertical
 			# strips overlap only at concave corners (the single walkable quadrant).
 			# The horizontal strip owns that join. Convex corners occupy different
@@ -418,9 +417,11 @@ func _append_boundary_run(
 				(boundary - zone_offset.x) * logical_scale,
 				border_width,
 				orientation == FALL_ZONE_BOUNDARY_RUNS.RIGHT,
-				vertical_start_corner,
-				vertical_end_corner,
-				logical_scale
+				start_corner,
+				end_corner,
+				logical_scale,
+				start_diagonal_radius,
+				end_diagonal_radius
 			)
 			vertical_segment_count += 1
 			if StringName(run.get("perimeter_side", &"internal")) != &"internal":
@@ -436,7 +437,9 @@ func _append_horizontal(
 	flip_vertical: bool,
 	start_corner: StringName,
 	end_corner: StringName,
-	logical_scale: float
+	logical_scale: float,
+	start_diagonal_radius: float,
+	end_diagonal_radius: float
 ) -> void:
 	# The old strip compressed the complete rock band into ~0.25 tile and stopped
 	# exactly at run endpoints. Preserve the source aspect ratio and let the
@@ -489,8 +492,16 @@ func _append_horizontal(
 	)
 	# Dirt transition uses the same repeating material as road boundaries. It is
 	# opaque beside the rock and fades into the existing terrain at the outer edge.
-	var transition_left := rim_left
-	var transition_right := rim_right
+	var transition_left := (
+		left + start_diagonal_radius
+		if start_corner == FALL_ZONE_BOUNDARY_RUNS.CORNER_DIAGONAL
+		else rim_left
+	)
+	var transition_right := (
+		right - end_diagonal_radius
+		if end_corner == FALL_ZONE_BOUNDARY_RUNS.CORNER_DIAGONAL
+		else rim_right
+	)
 	if flip_vertical:
 		_append_profiled_transition_quad(
 			transition_buffers,
@@ -551,7 +562,9 @@ func _append_vertical(
 	flip_horizontal: bool,
 	start_corner: StringName,
 	end_corner: StringName,
-	logical_scale: float
+	logical_scale: float,
+	start_diagonal_radius: float,
+	end_diagonal_radius: float
 ) -> void:
 	# Keep the directional rock interval on the walkable side. This prevents the
 	# vertical rim from reading as a narrow ledge inside the fall collision.
@@ -566,11 +579,15 @@ func _append_vertical(
 	var transition_top := (
 		top - horizontal_corner_depth
 		if start_corner == FALL_ZONE_BOUNDARY_RUNS.CORNER_CONVEX
+		else top + start_diagonal_radius
+		if start_corner == FALL_ZONE_BOUNDARY_RUNS.CORNER_DIAGONAL
 		else top
 	)
 	var transition_bottom := (
 		bottom + horizontal_corner_depth
 		if end_corner == FALL_ZONE_BOUNDARY_RUNS.CORNER_CONVEX
+		else bottom - end_diagonal_radius
+		if end_corner == FALL_ZONE_BOUNDARY_RUNS.CORNER_DIAGONAL
 		else bottom
 	)
 	var left: float
@@ -768,14 +785,12 @@ func _transition_inner_color() -> Color:
 func _transition_outer_color() -> Color:
 	return Color(1.0, 1.0, 1.0, 0.0)
 
-func _append_diagonal_cliff_corner(
-	rock_buffers: Dictionary,
+func _append_diagonal_dirt_corner(
 	transition_buffers: Dictionary,
 	vertex: Vector2,
 	orientation: StringName,
 	is_start: bool,
 	corner_radius: float,
-	border_width: float,
 	logical_scale: float
 ) -> void:
 	var center := vertex
@@ -802,78 +817,58 @@ func _append_diagonal_cliff_corner(
 				end_angle = PI * 0.5
 		_:
 			return
-	var rock_depth := _horizontal_rock_depth(border_width)
-	var rock_outer_radius := corner_radius + rock_depth
-	_append_textured_ring_sector(
-		rock_buffers,
-		center,
-		start_angle,
-		end_angle,
-		corner_radius,
-		rock_outer_radius
-	)
 	_append_profiled_transition_sector(
 		transition_buffers,
 		center,
 		start_angle,
 		end_angle,
-		rock_outer_radius,
+		corner_radius,
 		_transition_core_width(logical_scale),
 		_transition_width(logical_scale),
 		minf(
 			_transition_inner_feather_width(logical_scale),
-			rock_depth * 0.5
+			_transition_width(logical_scale) * 0.35
 		)
 	)
 	terrain_transition_corner_count += 1
 
-func _append_textured_ring_sector(
+func _append_diagonal_void_patch(
 	buffers: Dictionary,
 	center: Vector2,
-	start_angle: float,
-	end_angle: float,
-	inner_radius: float,
-	outer_radius: float
+	logical_scale: float
 ) -> void:
-	var repeat_size := (
-		FLAT_ROCK_TEXTURE_REPEAT_WORLD_SIZE
-		if not sample_full_texture
-		else TEXTURE_REPEAT_WORLD_SIZE
+	if _diagonal_void_centers.has(center):
+		return
+	_diagonal_void_centers[center] = true
+	var radius := maxf(logical_scale * DIAGONAL_VOID_RADIUS_TILES, 2.0)
+	var top := center + Vector2(0.0, -radius)
+	var right := center + Vector2(radius, 0.0)
+	var bottom := center + Vector2(0.0, radius)
+	var left := center + Vector2(-radius, 0.0)
+	_append_colored_polygon_quad(
+		buffers,
+		PackedVector2Array([top, right, bottom, left]),
+		PackedVector2Array([
+			Vector2.ZERO,
+			Vector2.ZERO,
+			Vector2.ZERO,
+			Vector2.ZERO,
+		]),
+		PackedColorArray([
+			Color.WHITE,
+			Color.WHITE,
+			Color.WHITE,
+			Color.WHITE,
+		])
 	)
-	for segment_index in range(ROUND_CORNER_SEGMENTS):
-		var start_weight := float(segment_index) / float(ROUND_CORNER_SEGMENTS)
-		var end_weight := float(segment_index + 1) / float(ROUND_CORNER_SEGMENTS)
-		var angle_a := lerpf(start_angle, end_angle, start_weight)
-		var angle_b := lerpf(start_angle, end_angle, end_weight)
-		var direction_a := Vector2(cos(angle_a), sin(angle_a))
-		var direction_b := Vector2(cos(angle_b), sin(angle_b))
-		var inner_a := center + direction_a * inner_radius
-		var outer_a := center + direction_a * outer_radius
-		var outer_b := center + direction_b * outer_radius
-		var inner_b := center + direction_b * inner_radius
-		_append_colored_polygon_quad(
-			buffers,
-			PackedVector2Array([inner_a, outer_a, outer_b, inner_b]),
-			PackedVector2Array([
-				inner_a / repeat_size,
-				outer_a / repeat_size,
-				outer_b / repeat_size,
-				inner_b / repeat_size,
-			]),
-			PackedColorArray([
-				Color.WHITE,
-				Color.WHITE,
-				Color.WHITE,
-				Color.WHITE,
-			])
-		)
+	diagonal_void_patch_count += 1
 
 func _append_profiled_transition_sector(
 	buffers: Dictionary,
 	center: Vector2,
 	start_angle: float,
 	end_angle: float,
-	rock_outer_radius: float,
+	inner_edge_radius: float,
 	core_width: float,
 	transition_width: float,
 	inner_feather_width: float
@@ -883,8 +878,8 @@ func _append_profiled_transition_sector(
 		center,
 		start_angle,
 		end_angle,
-		maxf(rock_outer_radius - inner_feather_width, 0.0),
-		rock_outer_radius,
+		maxf(inner_edge_radius - inner_feather_width, 0.0),
+		inner_edge_radius,
 		_transition_outer_color(),
 		_transition_inner_color()
 	)
@@ -893,8 +888,8 @@ func _append_profiled_transition_sector(
 		center,
 		start_angle,
 		end_angle,
-		rock_outer_radius,
-		rock_outer_radius + core_width,
+		inner_edge_radius,
+		inner_edge_radius + core_width,
 		_transition_inner_color(),
 		_transition_inner_color()
 	)
@@ -903,8 +898,8 @@ func _append_profiled_transition_sector(
 		center,
 		start_angle,
 		end_angle,
-		rock_outer_radius + core_width,
-		rock_outer_radius + transition_width,
+		inner_edge_radius + core_width,
+		inner_edge_radius + transition_width,
 		_transition_inner_color(),
 		_transition_outer_color()
 	)

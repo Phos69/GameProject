@@ -435,6 +435,9 @@ func get_forest_cliff_border_counts() -> Dictionary:
 		"terrain_transition_corners": (
 			_cliff_border_mesh_builder.terrain_transition_corner_count
 		),
+		"diagonal_void_patches": (
+			_cliff_border_mesh_builder.diagonal_void_patch_count
+		),
 		"corners": _cliff_border_mesh_builder.corner_count,
 		"concave_corners": _cliff_border_mesh_builder.concave_corner_count,
 		"faces": (
@@ -771,6 +774,17 @@ func _draw() -> void:
 		draw_mesh(
 			_cliff_border_mesh_builder.terrain_transition_mesh,
 			terrain_divider_texture
+		)
+	if (
+		uses_rectilinear_cliff_art
+		and _cliff_border_mesh_builder != null
+		and _cliff_border_mesh_builder.diagonal_void_mesh != null
+	):
+		draw_mesh(
+			_cliff_border_mesh_builder.diagonal_void_mesh,
+			null,
+			Transform2D.IDENTITY,
+			get_void_background_color()
 		)
 	if (
 		not uses_rectilinear_cliff_art
