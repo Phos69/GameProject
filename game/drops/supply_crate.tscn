@@ -4,7 +4,7 @@
 [ext_resource type="Script" path="res://game/visuals/supply_crate_visual.gd" id="2_crate_visual"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_supply_crate"]
-size = Vector2(42, 34)
+size = Vector2(84, 68)
 
 [node name="SupplyCrate" type="Area2D"]
 collision_layer = 8

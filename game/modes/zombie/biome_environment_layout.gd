@@ -232,7 +232,8 @@ func get_hazard_position(index: int) -> Vector2:
 
 func get_obstacle_record(
 	index: int,
-	manifest: EnvironmentAssetManifest = null
+	manifest: EnvironmentAssetManifest = null,
+	asset_variant_id: StringName = &""
 ) -> Dictionary:
 	if index < 0 or index >= obstacle_ids.size() or index >= obstacle_rects.size():
 		return {}
@@ -241,10 +242,10 @@ func get_obstacle_record(
 		source_manifest = EnvironmentAssetManifest.get_shared()
 	var obstacle_id := obstacle_ids[index]
 	var occupied_cells := obstacle_rects[index]
-	var asset_contract := source_manifest.get_object_asset_contract(obstacle_id)
 	var placement_size := rect_size_to_world(occupied_cells)
 	var collision_size := placement_size * source_manifest.get_collision_size_ratio(
-		obstacle_id
+		obstacle_id,
+		asset_variant_id
 	)
 	collision_size = Vector2(
 		maxf(collision_size.x, 4.0),
@@ -259,14 +260,14 @@ func get_obstacle_record(
 		"occupied_cells": occupied_cells,
 		"logical_tile_scale": logical_tile_scale,
 		"placement_size": placement_size,
-		"asset_path": String(asset_contract.get("asset_path", "")),
-		"asset_variant": obstacle_id,
+		"asset_path": source_manifest.get_object_asset_path(obstacle_id, asset_variant_id),
+		"asset_variant": asset_variant_id if not asset_variant_id.is_empty() else obstacle_id,
 		"visual_height_tiles": source_manifest.get_visual_height_tiles(obstacle_id),
 		"collision_shape": source_manifest.get_collision_shape(obstacle_id),
 		"collision_size": collision_size,
 		"collision_offset": (
 			placement_size
-			* source_manifest.get_collision_offset_ratio(obstacle_id)
+			* source_manifest.get_collision_offset_ratio(obstacle_id, asset_variant_id)
 		),
 		"rotation_radians": (
 			obstacle_rotations[index]

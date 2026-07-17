@@ -107,6 +107,16 @@ func _run() -> void:
 			),
 			obstacle.asset_sprite.scale
 		)
+		_expect_expected_raster_collider_alignment(
+			obstacle_id,
+			obstacle.get_asset_visual_bounds(),
+			obstacle.get_collision_size(),
+			world_size
+		)
+		_expect(
+			not obstacle.has_ground_shadow(),
+			"%s has no runtime floor shadow" % String(obstacle_id)
+		)
 
 	var crate_scene := load("res://game/drops/supply_crate.tscn") as PackedScene
 	_expect(crate_scene != null, "supply crate scene is available")
@@ -125,6 +135,14 @@ func _run() -> void:
 			await process_frame
 			var shape_node := crate.get_node("CollisionShape2D") as CollisionShape2D
 			var rectangle := shape_node.shape as RectangleShape2D
+			_expect(
+				rectangle.size.is_equal_approx(Vector2(84.0, 68.0)),
+				"crate_%s hitbox is doubled" % String(crate_type)
+			)
+			_expect(
+				not crate_visual.has_floor_decoration(),
+				"crate_%s has no floor circle or shadow" % String(crate_type)
+			)
 			_expect_visual_covers_hitbox(
 				"crate_%s" % String(crate_type),
 				crate_visual.get_asset_visual_bounds(),
@@ -173,6 +191,41 @@ func _expect_visual_covers_hitbox(
 		is_equal_approx(sprite_scale.x, sprite_scale.y),
 		"%s keeps uniform scale" % label
 	)
+
+func _expect_expected_raster_collider_alignment(
+	obstacle_id: StringName,
+	visual_bounds: Rect2,
+	collision_size: Vector2,
+	world_size: Vector2
+) -> void:
+	const EDGE_TOLERANCE := 1.25
+	match obstacle_id:
+		&"broken_fence", &"wood_barrier", &"fallen_log":
+			_expect(
+				collision_size.x > world_size.x,
+				"%s hitbox expands horizontally to the raster silhouette" % String(obstacle_id)
+			)
+			_expect(
+				absf(visual_bounds.size.x - collision_size.x) <= EDGE_TOLERANCE,
+				"%s horizontal hitbox tracks the raster width" % String(obstacle_id)
+			)
+			_expect(
+				is_equal_approx(collision_size.y, world_size.y),
+				"%s keeps its original vertical hitbox" % String(obstacle_id)
+			)
+		&"abandoned_car":
+			_expect(
+				collision_size.y > world_size.y,
+				"abandoned_car hitbox expands vertically to the raster silhouette"
+			)
+			_expect(
+				absf(visual_bounds.size.y - collision_size.y) <= EDGE_TOLERANCE,
+				"abandoned_car vertical hitbox tracks the raster height"
+			)
+			_expect(
+				is_equal_approx(collision_size.x, world_size.x),
+				"abandoned_car keeps its original horizontal hitbox"
+			)
 
 func _find_environment_object(parent: Node, object_name: String) -> EnvironmentObject:
 	for child in parent.get_children():

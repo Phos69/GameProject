@@ -350,7 +350,14 @@ func _generate_obstacles() -> void:
 			layout.obstacle_positions[index]
 		)
 		if index < layout.obstacle_rects.size():
-			obstacle.set_meta("obstacle_record", layout.get_obstacle_record(index, manifest))
+			obstacle.set_meta(
+				"obstacle_record",
+				layout.get_obstacle_record(
+					index,
+					manifest,
+					active_biome.biome_id if active_biome != null else &""
+				)
+			)
 		if manifest != null and not manifest.blocks_movement(obstacle_id):
 			obstacle.remove_from_group("spawn_blockers")
 			obstacle.remove_from_group("environment_obstacles")

@@ -176,7 +176,7 @@ func test_factory_obstacle_coverage() -> void:
 				assert_true(bool(obstacle.call("has_asset_visual")), "%s has loaded asset-backed visual" % String(obstacle_id))
 				assert_false(bool(obstacle.call("uses_procedural_fallback")), "%s does not use procedural fallback" % String(obstacle_id))
 				assert_eq(String(obstacle.call("get_asset_path")), String(_manifest.get_object_asset_contract(obstacle_id).get("asset_path", "")), "%s sprite path comes from manifest" % String(obstacle_id))
-			assert_true(obstacle.has_ground_shadow(), "%s keeps ground shadow contract" % String(obstacle_id))
+			assert_false(obstacle.has_ground_shadow(), "%s does not project a runtime floor shadow" % String(obstacle_id))
 			assert_eq(obstacle.get_obstacle_category(), _manifest.get_category(obstacle_id), "%s category comes from manifest" % String(obstacle_id))
 			assert_false(obstacle.uses_generic_fallback(), "%s avoids generic visual fallback" % String(obstacle_id))
 			if obstacle_id in [&"reed_wall", &"dead_tree"]:
@@ -343,6 +343,7 @@ func test_supply_crate_asset_visual() -> void:
 	if visual != null:
 		assert_true(visual.has_method("has_asset_sprite") and bool(visual.call("has_asset_sprite")), "supply crate visual uses asset sprite")
 		assert_true(visual.has_method("uses_procedural_fallback") and not bool(visual.call("uses_procedural_fallback")), "supply crate visual avoids procedural fallback")
+		assert_true(visual.has_method("has_floor_decoration") and not bool(visual.call("has_floor_decoration")), "supply crate visual has no floor circle or shadow")
 		assert_eq(String(visual.call("get_asset_path")), String(_manifest.get_object_asset_contract(REQUIRED_CRATE_ASSET_ID).get("asset_path", "")), "supply crate visual path comes from manifest")
 		visual.call("configure_crate_type", &"medical")
 		assert_eq(
@@ -358,6 +359,14 @@ func test_supply_crate_asset_visual() -> void:
 	if visual is SupplyCrateVisual and shape != null and shape.shape is RectangleShape2D:
 		var crate_visual := visual as SupplyCrateVisual
 		var collision_size := (shape.shape as RectangleShape2D).size
+		assert_true(
+			is_equal_approx(_manifest.get_visual_scale(REQUIRED_CRATE_ASSET_ID), 2.30),
+			"supply crate manifest scale doubles the runtime art"
+		)
+		assert_true(
+			collision_size.is_equal_approx(Vector2(84.0, 68.0)),
+			"supply crate collision is doubled"
+		)
 		for crate_type in [&"common", &"medical"]:
 			crate_visual.configure_crate_type(crate_type)
 			var visual_bounds := crate_visual.get_asset_visual_bounds()
@@ -454,6 +463,12 @@ func test_infected_plains_raster_art_covers_hitboxes_without_stretch() -> void:
 			visual_bounds,
 			collision_bounds
 		)
+		_assert_expected_raster_collider_alignment(
+			obstacle_id,
+			visual_bounds,
+			collision_size,
+			world_size
+		)
 		obstacle.queue_free()
 		await wait_physics_frames(1)
 
@@ -461,7 +476,7 @@ func test_infected_plains_fallen_log_variant() -> void:
 	var factory := ENVIRONMENT_OBJECT_FACTORY_SCRIPT.new(_manifest)
 	var obstacle := factory.create_obstacle(
 		&"fallen_log",
-		Vector2(96.0, 32.0),
+		Vector2(96.0, 48.0),
 		&"rectangle",
 		0.0,
 		Color(0.38, 0.30, 0.16, 1.0),
@@ -479,7 +494,31 @@ func test_infected_plains_fallen_log_variant() -> void:
 			"fallen log resolves the biome-specific raster"
 		)
 		assert_true(bool(obstacle.call("has_asset_visual")), "fallen log raster loads")
+		assert_true(
+			obstacle.get_collision_size().is_equal_approx(Vector2(201.6, 48.0)),
+			"infected plains fallen log widens only its raster hitbox"
+		)
 		obstacle.queue_free()
+		await wait_physics_frames(1)
+	var default_obstacle := factory.create_obstacle(
+		&"fallen_log",
+		Vector2(96.0, 48.0),
+		&"rectangle",
+		0.0,
+		Color(0.38, 0.30, 0.16, 1.0),
+		Color(0.74, 0.58, 0.16, 0.78),
+		_manifest.get_sort_offset(&"fallen_log"),
+		&"frozen_outskirts"
+	)
+	assert_not_null(default_obstacle, "non-plains fallen log builds")
+	if default_obstacle != null:
+		add_child(default_obstacle)
+		await wait_physics_frames(1)
+		assert_true(
+			default_obstacle.get_collision_size().is_equal_approx(Vector2(96.0, 48.0)),
+			"non-plains fallen log keeps the shared SVG hitbox"
+		)
+		default_obstacle.queue_free()
 		await wait_physics_frames(1)
 
 func _assert_visual_contains_hitbox(
@@ -508,6 +547,45 @@ func _assert_visual_contains_hitbox(
 		collision_bounds.end.y - EDGE_TOLERANCE,
 		"%s art reaches the hitbox bottom edge" % label
 	)
+
+func _assert_expected_raster_collider_alignment(
+	obstacle_id: StringName,
+	visual_bounds: Rect2,
+	collision_size: Vector2,
+	world_size: Vector2
+) -> void:
+	const EDGE_TOLERANCE := 1.25
+	match obstacle_id:
+		&"broken_fence", &"wood_barrier", &"fallen_log":
+			assert_gt(
+				collision_size.x,
+				world_size.x,
+				"%s hitbox expands horizontally to the raster silhouette" % String(obstacle_id)
+			)
+			assert_lte(
+				absf(visual_bounds.size.x - collision_size.x),
+				EDGE_TOLERANCE,
+				"%s horizontal hitbox tracks the raster width" % String(obstacle_id)
+			)
+			assert_true(
+				is_equal_approx(collision_size.y, world_size.y),
+				"%s keeps its original vertical hitbox" % String(obstacle_id)
+			)
+		&"abandoned_car":
+			assert_gt(
+				collision_size.y,
+				world_size.y,
+				"abandoned_car hitbox expands vertically to the raster silhouette"
+			)
+			assert_lte(
+				absf(visual_bounds.size.y - collision_size.y),
+				EDGE_TOLERANCE,
+				"abandoned_car vertical hitbox tracks the raster height"
+			)
+			assert_true(
+				is_equal_approx(collision_size.x, world_size.x),
+				"abandoned_car keeps its original horizontal hitbox"
+			)
 
 # --- helper (porting dei test legacy) ---------------------------------------
 

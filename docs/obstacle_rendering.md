@@ -15,7 +15,7 @@ fianchi sono `controlled_perspective`: possono superare la base solo sul piano
 visivo e non spostano celle, anchor o collisioni. Il contratto generale e in
 `docs/top_down_cardinal_contract.md`.
 
-Il manifest v13 usa slot da `4x4` celle legacy (`8 px` world-space per cella):
+Il manifest v14 usa slot da `4x4` celle legacy (`8 px` world-space per cella):
 
 ```text
 obstacle_id -> footprint_slots -> footprint_tiles -> occupied_cells
@@ -59,8 +59,8 @@ mantiene footprint esplicito e facciata sud controllata. Le vecchie risorse
 `AtlasTexture` non sono piu caricate. `reed_wall` resta uno SVG verticale `1x3`
 dedicato.
 
-`EnvironmentObject` non disegna piu una base rettangolare permanente sotto gli
-asset e ancora lo sprite a `floor_center`/`bottom_center`. La dimensione
+`EnvironmentObject` non disegna piu basi, ombre o aloni runtime sotto gli asset
+e ancora lo sprite a `floor_center`/`bottom_center`. La dimensione
 dello sprite e deterministica: footprint e `visual_height_tiles` del manifest
 producono la dimensione nativa, senza scale casuali del generatore. I container
 world-space restano in Y-sort con `z_index = 0`. Un nodo anchor separato viene
@@ -73,10 +73,11 @@ sugli assi H/V.
 `visual_scale` corregge la copertura per singolo ID senza modificare la texture;
 `variant_visual_scales` applica lo stesso contratto solo alla variante indicata,
 per esempio al tronco raster della Pianura Infetta senza ingrandire lo SVG
-condiviso dagli altri biomi. Il fattore e sempre uniforme su X/Y. La silhouette opaca deve coprire entrambe
-le dimensioni del collider; per un asset molto largo o molto alto e quindi
-previsto che l'altro asse oltrepassi il rettangolo fisico. Questo overflow
-presentazionale non cambia placement, pathfinding o area bloccata.
+condiviso dagli altri biomi. Il fattore e sempre uniforme su X/Y. Se la
+silhouette raster reale supera il footprint su un asse, il manifest deve
+dichiarare `collision_size_ratio` oppure `variant_collision_size_ratios` per
+allineare la hitbox fisica al contenuto visibile; il footprint di placement e
+pathfinding resta separato.
 
 Per `floor_center`, il centro del contenuto opaco viene allineato al centro del
 collider fisico; non viene appoggiato sul bordo sud del footprint. Gli asset
@@ -137,8 +138,9 @@ esplicitamente `blocks_movement` e `blocks_projectiles`.
 Per un PNG o un'`AtlasTexture`, il canvas sorgente puo essere piu grande della dimensione nativa:
 `EnvironmentObject` applica il downscale deterministico derivato da
 footprint, `visual_height_tiles` e gli eventuali
-`visual_scale`/`variant_visual_scales`; corner trasparenti e copertura minima
-restano obbligatori.
+`visual_scale`/`variant_visual_scales`; corner trasparenti, copertura minima e
+coerenza con `collision_size_ratio`/`variant_collision_size_ratios` restano
+obbligatori.
 
 ## Debug e verifica
 

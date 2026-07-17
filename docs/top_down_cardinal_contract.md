@@ -51,7 +51,7 @@ Sono consentiti:
 
 - superfici superiori viste dall'alto e allineate agli assi;
 - facciata sud e sottili facce laterali per comunicare altezza;
-- ombre morbide sotto l'ingombro, senza cambiare il footprint;
+- profondita incorporata nel volume dell'asset, senza decal runtime di ombra sul floor;
 - silhouette che superano il bordo nord della cella;
 - prospettiva locale coerente, usata solo sul volume dell'oggetto.
 
@@ -62,6 +62,7 @@ Non sono consentiti nei contratti operativi o negli asset nuovi:
 - assi della mappa inclinati;
 - route diagonali usate per simulare una proiezione;
 - basi prospettiche incorporate sotto prop e personaggi;
+- ombre, aloni o cerchi separati proiettati sul floor dagli asset runtime;
 - facce laterali che spostano collisione o punto di ancoraggio.
 
 Il divieto riguarda deformazioni prospettiche implicite. Un oggetto puo invece

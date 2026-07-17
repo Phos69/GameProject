@@ -8,8 +8,8 @@ const WorldGridConfig = preload("res://game/core/world_grid_config.gd")
 ## The manifest is the single source of truth for how environment objects are
 ## converted to the orthogonal top-down pipeline: collision shape, footprint,
 ## blocking flags, procedural draw mode, asset contract and ground sort offset.
-## Manifest v12 separates placement footprint from physical collision, keeps
-## object orientation cardinal, and retains the v11 asset/fallback contract.
+## Manifest v14 separates placement footprint from physical collision, supports
+## contextual asset/collision variants, and keeps object orientation cardinal.
 ## Missing art is allowed only when the entry explicitly declares a fallback or
 ## a needs_asset/procedural_fallback status.
 
@@ -395,14 +395,30 @@ func get_collision_shape(object_id: StringName) -> StringName:
 		return StringName((objects[object_id] as Dictionary).get("collision_shape", &"rectangle"))
 	return &"rectangle"
 
-func get_collision_size_ratio(object_id: StringName) -> Vector2:
+func get_collision_size_ratio(
+	object_id: StringName,
+	variant_id: StringName = &""
+) -> Vector2:
+	if not variant_id.is_empty():
+		var contract := get_object_asset_contract(object_id)
+		var variants := contract.get("variant_collision_size_ratios", {}) as Dictionary
+		if variants.has(variant_id):
+			return variants[variant_id] as Vector2
 	if objects.has(object_id):
 		return (objects[object_id] as Dictionary).get(
 			"collision_size_ratio", Vector2.ONE
 		) as Vector2
 	return Vector2.ONE
 
-func get_collision_offset_ratio(object_id: StringName) -> Vector2:
+func get_collision_offset_ratio(
+	object_id: StringName,
+	variant_id: StringName = &""
+) -> Vector2:
+	if not variant_id.is_empty():
+		var contract := get_object_asset_contract(object_id)
+		var variants := contract.get("variant_collision_offset_ratios", {}) as Dictionary
+		if variants.has(variant_id):
+			return variants[variant_id] as Vector2
 	if objects.has(object_id):
 		return (objects[object_id] as Dictionary).get(
 			"collision_offset_ratio", Vector2.ZERO
@@ -461,11 +477,11 @@ func validate() -> Dictionary:
 		if (
 			collision_size_ratio.x <= 0.0
 			or collision_size_ratio.y <= 0.0
-			or collision_size_ratio.x > 2.0
-			or collision_size_ratio.y > 2.0
+			or collision_size_ratio.x > 3.0
+			or collision_size_ratio.y > 3.0
 		):
 			failures.append(
-				"%s: collision_size_ratio must stay within (0, 2]" % object_id
+				"%s: collision_size_ratio must stay within (0, 3]" % object_id
 			)
 		var collision_offset_ratio := entry.get(
 			"collision_offset_ratio", Vector2.ZERO
@@ -580,6 +596,14 @@ func _normalize_asset_contract(section: StringName, entry: Dictionary) -> Dictio
 		"variant_visual_scales": _normalize_scale_dictionary(
 			entry.get("variant_visual_scales", {})
 		),
+		"variant_collision_size_ratios": _normalize_vector2_dictionary(
+			entry.get("variant_collision_size_ratios", {}),
+			Vector2.ONE
+		),
+		"variant_collision_offset_ratios": _normalize_vector2_dictionary(
+			entry.get("variant_collision_offset_ratios", {}),
+			Vector2.ZERO
+		),
 		"render_mode": StringName(str(entry.get("render_mode", "sprite"))),
 		"status": String(entry.get("status", asset_contract_defaults.get("status", "needs_asset"))),
 		"biome_ids": _normalize_string_name_array(
@@ -653,6 +677,17 @@ func _normalize_scale_dictionary(value: Variant) -> Dictionary:
 		return result
 	for key in (value as Dictionary).keys():
 		result[StringName(str(key))] = float((value as Dictionary).get(key, 1.0))
+	return result
+
+func _normalize_vector2_dictionary(value: Variant, default_value: Vector2) -> Dictionary:
+	var result := {}
+	if not value is Dictionary:
+		return result
+	for key in (value as Dictionary).keys():
+		result[StringName(str(key))] = _normalize_vector2(
+			(value as Dictionary).get(key, default_value),
+			default_value
+		)
 	return result
 
 func _normalize_vector2(value: Variant, default_value: Vector2) -> Vector2:
@@ -805,6 +840,8 @@ func _validate_asset_contract(
 		failures.append("%s/%s: asset_path does not exist for status '%s'" % [String(section), contract_id, status])
 	var variant_asset_paths := contract.get("variant_asset_paths", {}) as Dictionary
 	var variant_visual_scales := contract.get("variant_visual_scales", {}) as Dictionary
+	var variant_collision_size_ratios := contract.get("variant_collision_size_ratios", {}) as Dictionary
+	var variant_collision_offset_ratios := contract.get("variant_collision_offset_ratios", {}) as Dictionary
 	for variant_id in variant_asset_paths.keys():
 		var variant_path := String(variant_asset_paths[variant_id])
 		if String(variant_id).is_empty() or variant_path.is_empty():
@@ -816,6 +853,18 @@ func _validate_asset_contract(
 	for variant_id in variant_visual_scales.keys():
 		if not variant_asset_paths.has(variant_id):
 			failures.append("%s/%s: visual scale has no asset variant for '%s'" % [String(section), contract_id, String(variant_id)])
+	for variant_id in variant_collision_size_ratios.keys():
+		if not variant_asset_paths.has(variant_id):
+			failures.append("%s/%s: collision size ratio has no asset variant for '%s'" % [String(section), contract_id, String(variant_id)])
+		var ratio := variant_collision_size_ratios[variant_id] as Vector2
+		if ratio.x <= 0.0 or ratio.y <= 0.0 or ratio.x > 3.0 or ratio.y > 3.0:
+			failures.append("%s/%s: variant collision_size_ratio must stay within (0, 3] for '%s'" % [String(section), contract_id, String(variant_id)])
+	for variant_id in variant_collision_offset_ratios.keys():
+		if not variant_asset_paths.has(variant_id):
+			failures.append("%s/%s: collision offset ratio has no asset variant for '%s'" % [String(section), contract_id, String(variant_id)])
+		var offset := variant_collision_offset_ratios[variant_id] as Vector2
+		if absf(offset.x) > 1.0 or absf(offset.y) > 1.0:
+			failures.append("%s/%s: variant collision_offset_ratio must stay within [-1, 1] for '%s'" % [String(section), contract_id, String(variant_id)])
 
 func _validate_asset_coverage(failures: PackedStringArray) -> void:
 	for object_id in objects.keys():

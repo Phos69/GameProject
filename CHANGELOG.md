@@ -56,6 +56,21 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
     layout (stesso esito booleano), e la palette cresta dirupo e' la
     statica condivisa `TopDownCliffRenderer.edge_color_for_style`.
 
+- Raddoppiate le dimensioni delle `SupplyCrate`: il manifest porta
+  `supply_crate.visual_scale` a `2.30`, la collisione fisica della scena passa
+  a `84x68` e il fallback procedurale del visual segue la stessa scala senza
+  reintrodurre ombre o cerchi sul floor.
+- Rimossa la proiezione di ombre runtime dagli asset ambiente: `EnvironmentObject`
+  e il fallback `BiomeObstacle` non disegnano piu ellissi scure sul floor, e
+  `SupplyCrateVisual` non aggiunge piu ombra o cerchio/glow intorno alle casse.
+  I test asset aggiornano il contratto per impedire il ritorno di queste
+  decorazioni.
+- Allineate le hitbox ai raster ambientali che superavano il collider: `broken_fence`,
+  `wood_barrier` e la variante `infected_plains` di `fallen_log` espandono la
+  collisione sull'asse X, mentre `abandoned_car` la espande sull'asse Y. Il
+  manifest sale a v14 con `variant_collision_size_ratios`, così il tronco SVG
+  usato negli altri biomi conserva il collider precedente. Test asset e Visual
+  QA hitbox verificano ora che l'asse corretto segua la silhouette raster.
 - Corretta la copertura hitbox dei dieci raster della Pianura Infetta senza
   stretch: `small_rock`, `broken_fence`, `wood_barrier`, `fallen_log` e
   `abandoned_car` ricevono scale uniformi puntuali; quella del tronco resta

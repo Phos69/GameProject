@@ -242,7 +242,6 @@ func _draw() -> void:
 	if is_perimeter_wall() or procedural_fallback_active:
 		super._draw()
 		return
-	_draw_ground_shadow()
 	if show_debug_footprint:
 		_draw_rect_debug_footprint()
 
@@ -265,6 +264,7 @@ func _apply_asset_contract() -> void:
 		blocks_movement = bool(contract.get("blocks_movement", blocks_movement))
 	if contract.has("blocks_projectiles"):
 		projectile_blocking = bool(contract.get("blocks_projectiles", projectile_blocking))
+	_apply_collision_contract(manifest)
 	# Perimeter walls are tiled across the whole side, so a single centred
 	# sprite cannot represent them; render the procedural top-down wall volume
 	# (orientation-aware, tileable) for every border segment instead.
@@ -277,6 +277,25 @@ func _apply_asset_contract() -> void:
 	_position_asset_sprite()
 	_ensure_default_mesa_visual()
 	_update_damage_overlay()
+
+func _apply_collision_contract(manifest: EnvironmentAssetManifest) -> void:
+	collision_size = obstacle_size * manifest.get_collision_size_ratio(
+		obstacle_id,
+		asset_variant_id
+	)
+	collision_size = Vector2(
+		maxf(collision_size.x, 4.0),
+		maxf(collision_size.y, 4.0)
+	)
+	collision_offset = obstacle_size * manifest.get_collision_offset_ratio(
+		obstacle_id,
+		asset_variant_id
+	)
+	sort_anchor_y = get_sort_anchor_offset().y
+	set_meta("collision_size", collision_size)
+	set_meta("collision_offset", collision_offset)
+	set_meta("sort_anchor_y", sort_anchor_y)
+	set_meta("zone_radius", get_clearance_radius())
 
 func _ensure_visual_nodes() -> void:
 	asset_sprite = get_node_or_null(ASSET_SPRITE_NAME) as Sprite2D

@@ -238,7 +238,7 @@ func test_generated_obstacle_visual_coherence() -> void:
 		assert_eq(obstacle.get_draw_mode(), _manifest.get_object_draw_mode(obstacle_id), "%s draw mode comes from manifest" % String(obstacle_id))
 		assert_true(obstacle.has_dedicated_draw(), "%s uses dedicated procedural draw" % String(obstacle_id))
 		assert_false(obstacle.uses_generic_fallback(), "%s avoids implicit generic fallback" % String(obstacle_id))
-		assert_true(obstacle.has_ground_shadow(), "%s keeps a coherent ground shadow/base contract" % String(obstacle_id))
+		assert_false(obstacle.has_ground_shadow(), "%s no longer draws a runtime floor shadow" % String(obstacle_id))
 		_free_test_node(obstacle)
 	await wait_physics_frames(1)
 

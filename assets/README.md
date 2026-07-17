@@ -66,7 +66,7 @@ non diventano requisiti di bootstrap.
 ## Ambiente top-down cardinale (manifest)
 
 `environment/top_down/manifest.json` e la fonte di verita per gli oggetti
-ambientali del bioma (ostacoli, bordi, casse, cliff, passaggi). Il manifest v13
+ambientali del bioma (ostacoli, bordi, casse, cliff, passaggi). Il manifest v14
 contiene anche il contratto asset-driven per `tile_sets`, `tile_variants`,
 `terrain_tiles`, `edge_tiles`, `void_tiles`, `object_scenes`, `passage_tiles`,
 `biome_asset_sets` e `fallback_policy`.
@@ -79,7 +79,8 @@ possono avere size/offset espliciti per aderire al contatto a terra. Il contratt
 `docs/top_down_cardinal_contract.md`.
 
 Per ogni contratto il loader normalizza `asset_path`, `variant_asset_paths`,
-`variant_visual_scales`, `status`, `biome_ids`,
+`variant_visual_scales`, `variant_collision_size_ratios`,
+`variant_collision_offset_ratios`, `status`, `biome_ids`,
 `footprint_tiles`, `anchor`, `sort_offset`, `collision_shape`,
 `collision_size_ratio`, `collision_offset_ratio`, flag
 `blocks_*`, `source`, `license`, `attribution_key` e `fallback_path`.
@@ -181,14 +182,14 @@ solo il matte esterno dei cutout cliff; neve e ghiaccio interni restano opachi.
   dalla Milestone 10.5, passa gli `object_scenes` a
   `EnvironmentObjectFactory`.
 - `visual_scene` che punta a uno script `.gd` resta il fallback tecnico legacy.
-  Nel contratto v13 il fallback normale e dichiarato da `fallback_path` e
+  Nel contratto v14 il fallback normale e dichiarato da `fallback_path` e
   `fallback_policy`; nessun file esterno e obbligatorio per il bootstrap.
 - La suite asset verifica che ogni
   `obstacle_id` dei biomi sia descritto, che nessun oggetto richieda asset
   esterni e che collisione/footprint/Y-sort restino coerenti.
 - `tests/suites/assets/asset_fallback_test.gd` e
   `manifest_contract_test.gd` verificano che gli ID generati da ostacoli,
-  terrain, passaggi e fall zone abbiano un contratto v13 esplicito e che un
+  terrain, passaggi e fall zone abbiano un contratto v14 esplicito e che un
   asset pianificato ma assente resti sicuro tramite `needs_asset` e
   `fallback_path`.
 - Per convertire un oggetto in arte esterna: aggiungere la risorsa al nodo
@@ -198,7 +199,7 @@ solo il matte esterno dei cutout cliff; neve e ghiaccio interni restano opachi.
 ## Ambiente top-down cardinale (asset generati)
 
 `tools/generate_top_down_environment_assets.gd` genera SVG testuali interni
-dai contratti v13. Il tool lavora in modo conservativo:
+dai contratti v14. Il tool lavora in modo conservativo:
 
 ```text
 godot --headless --path . --script res://tools/generate_top_down_environment_assets.gd -- --dry-run
@@ -262,7 +263,7 @@ corner orientati.
 `game/modes/zombie/biome_tile_layer.gd` e il ground primario asset-driven per
 `TerrainGenerator`: cache-a tutte le 5.625 celle della regione `75x75`, genera
 una maschera a 8 pixel per tile e la espone ai chunk come sottorettangoli UV. Il
-manifest v13 resta il contratto degli asset. I vecchi `BiomeRegionGround` e
+manifest v14 resta il contratto degli asset. I vecchi `BiomeRegionGround` e
 `BiomeTerrainPatch` sono stati rimossi: il tile layer e l'unico produttore del
 ground.
 
@@ -282,7 +283,9 @@ ostacoli/crate e tile forestali.
 
 Gli ostacoli generati dal layout usano `EnvironmentObject` come scena
 base slot-based: uno `StaticBody2D` con collisione dal manifest, `Sprite2D`,
-ombra a terra, anchor al pavimento e collider debug opzionale. Un wrapper
+anchor al pavimento e collider debug opzionale. Gli asset non aggiungono ombre
+o cerchi runtime sul floor; eventuale profondita deve vivere nel PNG/SVG stesso.
+Un wrapper
 Y-sorted usa il punto di contatto a terra, mentre il body conserva il centro del
 placement; la rotazione runtime e sempre zero.
 `BiomeObstacle` resta il fallback tecnico quando il manifest dichiara un
@@ -317,10 +320,13 @@ gli SVG cardinali dedicati in `objects/generated_props/`, con source
 `EnvironmentTextureLoader` rasterizza gli SVG trasparenti quando manca la
 cache import, mentre carica i PNG tramite `ResourceLoader`. I PNG mantengono
 scala X/Y uniforme; i `visual_scale`/`variant_visual_scales` puntuali del
-manifest fanno coprire alla silhouette opaca l'intero collider senza alterare
-footprint o collisione.
+manifest regolano la dimensione senza deformare l'asset, mentre
+`collision_size_ratio` e `variant_collision_size_ratios` allineano `F9` alla
+silhouette quando il raster reale supera il footprint.
 La supply crate usa lo stesso percorso tramite `object_scenes/supply_crate` e
-risolve la variante dal tipo di cassa;
+risolve la variante dal tipo di cassa; il manifest applica `visual_scale = 2.30`
+e la scena usa una collisione `84x68` per mantenerla coerente con la dimensione
+raddoppiata;
 `reed_wall` richiede la propria dimensione nativa al loader per conservare
 l'altezza visuale prevista dal manifest.
 
@@ -330,7 +336,7 @@ l'altezza visuale prevista dal manifest.
 cinque tavole raster precedenti sono state rimosse e non sono sorgenti runtime.
 Anche le 23 risorse `AtlasTexture` `.tres` ritagliate da quelle tavole sono
 state eliminate. Gli SVG individuali in `objects/generated_props/` restano le
-sorgenti cardinali per i biomi non ancora migrati; il manifest v13 sostituisce
+sorgenti cardinali per i biomi non ancora migrati; il manifest v14 sostituisce
 quelli della Pianura Infetta con raster e supporta varianti contestuali. Il
 cutover ha conservato i contratti fisici; il follow-up rende espliciti l'anchor e il collider alle
 radici di `dead_tree`. Il `reed_wall` resta uno SVG verticale `1x3` indipendente;

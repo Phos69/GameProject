@@ -189,7 +189,7 @@ func uses_generic_fallback() -> bool:
 	return draw_mode == &"generic_barrier" and not dedicated_draw
 
 func has_ground_shadow() -> bool:
-	return true
+	return false
 
 func is_projectile_blocker() -> bool:
 	return projectile_blocking
@@ -292,7 +292,6 @@ func _draw() -> void:
 	if is_perimeter_wall():
 		_draw_perimeter_wall()
 		return
-	_draw_ground_shadow()
 	match draw_mode:
 		&"rock":
 			_draw_rock()
@@ -358,22 +357,6 @@ func _draw() -> void:
 			_draw_deep_water_boundary()
 		_:
 			_draw_barrier()
-
-func _draw_ground_shadow() -> void:
-	var shadow_y := clampf(sort_offset, 0.0, obstacle_size.y * 0.5 + 8.0)
-	var shadow_width := obstacle_size.x
-	if obstacle_category == &"tree":
-		shadow_y = collision_offset.y
-		shadow_width = collision_size.x
-	var radius := Vector2(
-		maxf(shadow_width * 0.52, 10.0),
-		maxf(shadow_width * 0.16, 5.0)
-	)
-	draw_colored_polygon(
-		GeometryUtils.ellipse_points(Vector2(0.0, shadow_y), radius, 18),
-		Color(0.02, 0.03, 0.04, 0.34)
-	)
-
 
 func _draw_perimeter_wall() -> void:
 	if has_raised_cliff_art():

@@ -7,11 +7,10 @@ const SVG_TEXTURE_LOADER = preload(
 	"res://game/modes/zombie/environment_texture_loader.gd"
 )
 const CONTENT_ALPHA_THRESHOLD := 0.08
+const FALLBACK_DRAW_SCALE := 2.0
+const ASSET_BOTTOM_Y := 36.0
 
-var animation_time: float = 0.0
-var glow_intensity: float = 1.0
 var high_contrast: bool = false
-var reduced_motion: bool = false
 var crate_type: StringName = &"common"
 var body_color: Color = Color(0.18, 0.58, 0.68, 1.0)
 var accent_color: Color = Color(0.95, 0.66, 0.15, 1.0)
@@ -24,21 +23,9 @@ func _ready() -> void:
 	_load_asset_sprite()
 	VisualSettingsManager.sync_consumer(self)
 
-func _process(delta: float) -> void:
-	if not reduced_motion:
-		animation_time += delta
-	queue_redraw()
-
 func apply_visual_settings(settings: Dictionary) -> void:
-	glow_intensity = clampf(
-		float(settings.get("glow_intensity", 1.0)),
-		0.0,
-		1.0
-	)
 	high_contrast = bool(settings.get("high_contrast", false))
-	reduced_motion = bool(settings.get("reduced_motion", false))
-	if reduced_motion:
-		animation_time = 0.0
+	_update_asset_modulate()
 	queue_redraw()
 
 func configure_crate_type(next_crate_type: StringName) -> void:
@@ -82,6 +69,9 @@ func has_asset_sprite() -> bool:
 func uses_procedural_fallback() -> bool:
 	return procedural_fallback_active
 
+func has_floor_decoration() -> bool:
+	return false
+
 func get_asset_visual_bounds() -> Rect2:
 	if not has_asset_sprite():
 		return Rect2()
@@ -94,49 +84,45 @@ func get_asset_visual_bounds() -> Rect2:
 	)
 
 func _draw() -> void:
-	var glow_alpha := (
-		0.16 + (sin(animation_time * 3.0) + 1.0) * 0.05
-	) * glow_intensity
-	draw_colored_polygon(
-		GeometryUtils.ellipse_points(Vector2(0.0, 20.0), Vector2(29.0, 8.0), 18),
-		Color(0.01, 0.015, 0.02, 0.52)
-	)
-	draw_circle(Vector2.ZERO, 31.0, Color(accent_color, glow_alpha))
 	if has_asset_sprite():
 		return
 	draw_colored_polygon(
 		PackedVector2Array([
-			Vector2(-27.0, -14.0),
-			Vector2(21.0, -14.0),
-			Vector2(27.0, -7.0),
-			Vector2(27.0, 16.0),
-			Vector2(-27.0, 16.0)
+			_scaled_point(-27.0, -14.0),
+			_scaled_point(21.0, -14.0),
+			_scaled_point(27.0, -7.0),
+			_scaled_point(27.0, 16.0),
+			_scaled_point(-27.0, 16.0)
 		]),
 		Color(0.055, 0.10, 0.13, 1.0)
 	)
-	draw_rect(Rect2(-24.0, -11.0, 48.0, 23.0), body_color, true)
+	draw_rect(_scaled_rect(-24.0, -11.0, 48.0, 23.0), body_color, true)
 	draw_rect(
-		Rect2(-24.0, -11.0, 48.0, 23.0),
+		_scaled_rect(-24.0, -11.0, 48.0, 23.0),
 		Color.WHITE if high_contrast else Color(0.55, 0.92, 1.0, 0.9),
 		false,
-		3.0 if high_contrast else 2.0
+		(3.0 if high_contrast else 2.0) * FALLBACK_DRAW_SCALE
 	)
-	draw_rect(Rect2(-5.0, -11.0, 10.0, 23.0), accent_color, true)
-	draw_rect(Rect2(-9.0, -2.0, 18.0, 8.0), Color(0.05, 0.08, 0.09, 1.0), true)
+	draw_rect(_scaled_rect(-5.0, -11.0, 10.0, 23.0), accent_color, true)
+	draw_rect(_scaled_rect(-9.0, -2.0, 18.0, 8.0), Color(0.05, 0.08, 0.09, 1.0), true)
 	if crate_type == &"medical":
-		draw_rect(Rect2(-2.0, -7.0, 4.0, 18.0), accent_color, true)
-		draw_rect(Rect2(-8.0, -2.0, 16.0, 6.0), accent_color, true)
+		draw_rect(_scaled_rect(-2.0, -7.0, 4.0, 18.0), accent_color, true)
+		draw_rect(_scaled_rect(-8.0, -2.0, 16.0, 6.0), accent_color, true)
 	else:
 		draw_colored_polygon(
 			PackedVector2Array([
-				Vector2(-7.0, 5.0),
-				Vector2(0.0, -6.0),
-				Vector2(7.0, 5.0)
+				_scaled_point(-7.0, 5.0),
+				_scaled_point(0.0, -6.0),
+				_scaled_point(7.0, 5.0)
 			]),
 			accent_color.lightened(0.18)
 		)
 	for x in [-20.0, 20.0]:
-		draw_circle(Vector2(x, 9.0), 2.5, Color(0.04, 0.07, 0.08, 1.0))
+		draw_circle(
+			_scaled_point(x, 9.0),
+			2.5 * FALLBACK_DRAW_SCALE,
+			Color(0.04, 0.07, 0.08, 1.0)
+		)
 
 func _load_asset_sprite() -> void:
 	asset_sprite = get_node_or_null(ASSET_SPRITE_NAME) as Sprite2D
@@ -188,7 +174,16 @@ func _position_asset_sprite() -> void:
 	var content_bottom := content_rect.end.y
 	asset_sprite.position = Vector2(
 		-(content_center_x - canvas_center.x) * asset_sprite.scale.x,
-		18.0 - (content_bottom - canvas_center.y) * asset_sprite.scale.y
+		ASSET_BOTTOM_Y - (content_bottom - canvas_center.y) * asset_sprite.scale.y
+	)
+
+func _scaled_point(x: float, y: float) -> Vector2:
+	return Vector2(x, y) * FALLBACK_DRAW_SCALE
+
+func _scaled_rect(x: float, y: float, width: float, height: float) -> Rect2:
+	return Rect2(
+		Vector2(x, y) * FALLBACK_DRAW_SCALE,
+		Vector2(width, height) * FALLBACK_DRAW_SCALE
 	)
 
 func _get_content_bounds(texture: Texture2D) -> Rect2:
@@ -228,4 +223,3 @@ func _update_asset_modulate() -> void:
 	if asset_sprite == null:
 		return
 	asset_sprite.modulate = Color.WHITE if not high_contrast else Color(1.08, 1.08, 1.08, 1.0)
-
