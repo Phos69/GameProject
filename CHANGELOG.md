@@ -6,6 +6,20 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ## Unreleased
 
+### Fixed
+
+- Tre criticità a rischio crash dal report `docs/repo_health_report_2026-07-17.md`:
+  - `WeaponEffectResolver`: le esplosioni ritardate normalizzano target e
+    attaccante liberati durante l'attesa prima di risolvere l'impatto
+    (l'`is` su istanza freed errorava a runtime);
+  - `ZombieModeController`: l'avvio async del mondo usa un token di
+    generazione — `stop_run`/`start_run` durante il caricamento abbandonano
+    la coroutine in volo invece di applicare il mondo a una run ferma (il
+    worker thread viene comunque sempre raccolto);
+  - `GameModeManager`: le hotkey debug F1/F5/F6/F7 di cambio modalità sono
+    ora attive solo nelle build di sviluppo (`OS.is_debug_build()`), non
+    più nell'eseguibile esportato.
+
 ### Changed
 
 - Corretta la copertura hitbox dei dieci raster della Pianura Infetta senza
