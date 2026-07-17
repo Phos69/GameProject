@@ -161,6 +161,13 @@ static func resolve_impact(tree: SceneTree, definition: WeaponData, target: Node
 
 static func _resolve_delayed(tree: SceneTree, definition: WeaponData, target: Node, position: Vector2, owner_ref: Node) -> void:
 	await tree.create_timer(definition.delayed_explosion).timeout
+	# Bersaglio o attaccante possono venire liberati durante il ritardo: senza
+	# normalizzazione, `target is CharacterBody2D` in _resolve_now errora
+	# sull'istanza liberata.
+	if not is_instance_valid(target):
+		target = null
+	if not is_instance_valid(owner_ref):
+		owner_ref = null
 	_resolve_now(tree, definition, target, position, owner_ref, definition.damage)
 
 static func _resolve_now(tree: SceneTree, definition: WeaponData, target: Node, position: Vector2, owner_ref: Node, _applied_damage: int) -> void:
