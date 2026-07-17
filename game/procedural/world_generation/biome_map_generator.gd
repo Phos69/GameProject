@@ -309,7 +309,7 @@ func _apply_outer_boundary_mode(
 	cells: Array[BiomeCell],
 	context: Dictionary
 ) -> void:
-	var boundary_mode := _get_context_string(context, "arena_boundary_mode", "")
+	var boundary_mode := ContextUtils.get_string(context, "arena_boundary_mode", "")
 	if (
 		boundary_mode != ARENA_BOUNDARY_WALLED
 		and boundary_mode != ARENA_BOUNDARY_BLOCKED
@@ -336,18 +336,6 @@ func _context_has_explicit_seed(context: Dictionary) -> bool:
 		or context.has("global_seed")
 		or context.has("seed")
 	)
-
-func _get_context_string(
-	context: Dictionary,
-	key: String,
-	default_value: String
-) -> String:
-	if context.has(key):
-		return str(context.get(key))
-	var string_name_key := StringName(key)
-	if context.has(string_name_key):
-		return str(context.get(string_name_key))
-	return default_value
 
 func _resolve_cell_size(context: Dictionary) -> Vector2i:
 	var raw_size: Variant = context.get("biome_cell_size", cell_size)

@@ -95,21 +95,21 @@ func start_run(context: Dictionary = {}) -> void:
 		_teardown_world()
 		_world_parked = false
 		last_applied_region_id = &""
-	world_runtime_enabled_for_run = not _get_context_bool(
+	world_runtime_enabled_for_run = not ContextUtils.get_bool(
 		resolved_context,
 		DISABLE_WORLD_RUNTIME_KEY,
 		false
 	)
 	region_streaming_enabled_for_run = (
 		enable_multi_region_render
-		and not _get_context_bool(
+		and not ContextUtils.get_bool(
 			resolved_context,
 			DISABLE_REGION_STREAMING_KEY,
 			false
 		)
 	)
 	_built_context_signature = signature
-	if _get_context_bool(resolved_context, ASYNC_WORLD_BUILD_KEY, false):
+	if ContextUtils.get_bool(resolved_context, ASYNC_WORLD_BUILD_KEY, false):
 		await _start_run_async(resolved_context)
 	else:
 		_start_run_sync(resolved_context)
@@ -312,28 +312,13 @@ func _hide_loading_screen() -> void:
 # caller-provided map dimensions.
 func _resolve_survival_world_context(context: Dictionary) -> Dictionary:
 	var resolved := context.duplicate(true)
-	if not _get_context_bool(resolved, SINGLE_BIOME_ARENA_KEY, false):
+	if not ContextUtils.get_bool(resolved, SINGLE_BIOME_ARENA_KEY, false):
 		return resolved
-	if not _has_context_key(resolved, "biome_map_width"):
+	if not ContextUtils.has_key(resolved, "biome_map_width"):
 		resolved["biome_map_width"] = 1
-	if not _has_context_key(resolved, "biome_map_height"):
+	if not ContextUtils.has_key(resolved, "biome_map_height"):
 		resolved["biome_map_height"] = 1
 	return resolved
-
-func _has_context_key(context: Dictionary, key: String) -> bool:
-	return context.has(key) or context.has(StringName(key))
-
-func _get_context_bool(
-	context: Dictionary,
-	key: String,
-	default_value: bool
-) -> bool:
-	if context.has(key):
-		return bool(context.get(key))
-	var string_name_key := StringName(key)
-	if context.has(string_name_key):
-		return bool(context.get(string_name_key))
-	return default_value
 
 # keep_world=true parks the built world for a same-seed retry: only the gameplay
 # layer is stopped here (waves/encounters), while terrain, tiles, obstacles,

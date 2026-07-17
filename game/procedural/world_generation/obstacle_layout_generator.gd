@@ -1326,8 +1326,8 @@ func _is_void_block_kind(block_kind: StringName) -> bool:
 
 func _is_walled_arena_context(context: Dictionary) -> bool:
 	return (
-		_get_context_string(context, "arena_boundary_mode", "") == "walled"
-		or _get_context_string(context, "arena_boundary_mode", "") == "blocked"
+		ContextUtils.get_string(context, "arena_boundary_mode", "") == "walled"
+		or ContextUtils.get_string(context, "arena_boundary_mode", "") == "blocked"
 	)
 
 # Internal void/chasms are a shared terrain feature, decoupled from the boundary
@@ -1335,31 +1335,7 @@ func _is_walled_arena_context(context: Dictionary) -> bool:
 # alike) and only suppressed by an explicit opt-out flag. The walled boundary now
 # governs the perimeter only (walls vs fall edge), never the interior.
 func _internal_void_enabled(context: Dictionary) -> bool:
-	return not _get_context_bool(context, "disable_internal_void", false)
-
-func _get_context_bool(
-	context: Dictionary,
-	key: String,
-	default_value: bool
-) -> bool:
-	if context.has(key):
-		return bool(context.get(key))
-	var string_name_key := StringName(key)
-	if context.has(string_name_key):
-		return bool(context.get(string_name_key))
-	return default_value
-
-func _get_context_string(
-	context: Dictionary,
-	key: String,
-	default_value: String
-) -> String:
-	if context.has(key):
-		return str(context.get(key))
-	var string_name_key := StringName(key)
-	if context.has(string_name_key):
-		return str(context.get(string_name_key))
-	return default_value
+	return not ContextUtils.get_bool(context, "disable_internal_void", false)
 
 func _ensure_internal_void_block(
 	layout: BiomeEnvironmentLayout,
