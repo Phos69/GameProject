@@ -125,7 +125,16 @@ func save_game() -> bool:
 		save_failed.emit(save_path, "cannot open temporary save file")
 		return false
 	file.store_string(JSON.stringify(data, "\t"))
+	# Senza questo check un errore di scrittura (es. disco pieno) promuoverebbe
+	# un .tmp troncato a save valido, cancellando anche il backup a fine flusso.
+	var write_error := file.get_error()
 	file.close()
+	if write_error != OK:
+		DirAccess.remove_absolute(
+			ProjectSettings.globalize_path(temporary_path)
+		)
+		save_failed.emit(save_path, error_string(write_error))
+		return false
 
 	var backup_path := save_path + ".bak"
 	var absolute_save_path := ProjectSettings.globalize_path(save_path)
