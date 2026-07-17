@@ -80,10 +80,10 @@ func build(
 	sample_full_texture = next_sample_full_texture
 	if fall_zone_rects.is_empty() or logical_scale <= 0.0:
 		return
-	var horizontal := _mesh_buffers()
-	var vertical := _mesh_buffers()
-	var terrain_transition := _mesh_buffers()
-	var diagonal_void := _mesh_buffers()
+	var horizontal := QuadMeshBuffers.create()
+	var vertical := QuadMeshBuffers.create()
+	var terrain_transition := QuadMeshBuffers.create()
+	var diagonal_void := QuadMeshBuffers.create()
 	var zone_offset := Vector2(zone_size) * 0.5
 	var border_width := maxf(logical_scale * RIM_WIDTH_TILES, 12.0)
 	var boundary_runs: Array[Dictionary] = FALL_ZONE_BOUNDARY_RUNS.build(
@@ -103,10 +103,10 @@ func build(
 			logical_scale,
 			border_width
 		)
-	horizontal_mesh = _build_mesh(horizontal)
-	vertical_mesh = _build_mesh(vertical)
-	terrain_transition_mesh = _build_mesh(terrain_transition)
-	diagonal_void_mesh = _build_mesh(diagonal_void)
+	horizontal_mesh = QuadMeshBuffers.build_mesh(horizontal)
+	vertical_mesh = QuadMeshBuffers.build_mesh(vertical)
+	terrain_transition_mesh = QuadMeshBuffers.build_mesh(terrain_transition)
+	diagonal_void_mesh = QuadMeshBuffers.build_mesh(diagonal_void)
 
 func build_dirt_outline(
 	outline_rects: Array[Rect2i],
@@ -116,7 +116,7 @@ func build_dirt_outline(
 	reset()
 	if outline_rects.is_empty() or logical_scale <= 0.0:
 		return
-	var terrain_transition := _mesh_buffers()
+	var terrain_transition := QuadMeshBuffers.create()
 	var sides: Array[StringName] = []
 	sides.resize(outline_rects.size())
 	sides.fill(&"internal")
@@ -133,7 +133,7 @@ func build_dirt_outline(
 			zone_offset,
 			logical_scale
 		)
-	terrain_transition_mesh = _build_mesh(terrain_transition)
+	terrain_transition_mesh = QuadMeshBuffers.build_mesh(terrain_transition)
 
 func get_total_segment_count() -> int:
 	return horizontal_segment_count + vertical_segment_count + corner_count
@@ -871,7 +871,7 @@ func _append_diagonal_void_patch(
 	var right := center + Vector2(radius, 0.0)
 	var bottom := center + Vector2(0.0, radius)
 	var left := center + Vector2(-radius, 0.0)
-	_append_colored_polygon_quad(
+	QuadMeshBuffers.append_quad(
 		buffers,
 		PackedVector2Array([top, right, bottom, left]),
 		PackedVector2Array([
@@ -953,7 +953,7 @@ func _append_colored_ring_sector(
 		var outer_a := center + direction_a * outer_radius
 		var outer_b := center + direction_b * outer_radius
 		var inner_b := center + direction_b * inner_radius
-		_append_colored_polygon_quad(
+		QuadMeshBuffers.append_quad(
 			buffers,
 			PackedVector2Array([inner_a, outer_a, outer_b, inner_b]),
 			PackedVector2Array([
@@ -1283,14 +1283,6 @@ func _append_transition_quad(
 		quad_colors
 	)
 
-func _mesh_buffers() -> Dictionary:
-	return {
-		"vertices": PackedVector2Array(),
-		"colors": PackedColorArray(),
-		"uvs": PackedVector2Array(),
-		"indices": PackedInt32Array()
-	}
-
 func _append_quad(
 	buffers: Dictionary,
 	rect: Rect2,
@@ -1309,7 +1301,7 @@ func _append_colored_quad(
 	quad_uvs: PackedVector2Array,
 	quad_colors: PackedColorArray
 ) -> void:
-	_append_colored_polygon_quad(
+	QuadMeshBuffers.append_quad(
 		buffers,
 		PackedVector2Array([
 			rect.position,
@@ -1321,49 +1313,3 @@ func _append_colored_quad(
 		quad_colors
 	)
 
-func _append_colored_polygon_quad(
-	buffers: Dictionary,
-	quad_vertices: PackedVector2Array,
-	quad_uvs: PackedVector2Array,
-	quad_colors: PackedColorArray
-) -> void:
-	if (
-		quad_vertices.size() != 4
-		or quad_uvs.size() != 4
-		or quad_colors.size() != 4
-	):
-		return
-	var vertices := buffers["vertices"] as PackedVector2Array
-	var colors := buffers["colors"] as PackedColorArray
-	var uvs := buffers["uvs"] as PackedVector2Array
-	var indices := buffers["indices"] as PackedInt32Array
-	var base := vertices.size()
-	for index in range(4):
-		vertices.append(quad_vertices[index])
-		colors.append(quad_colors[index])
-		uvs.append(quad_uvs[index])
-	indices.append(base)
-	indices.append(base + 1)
-	indices.append(base + 2)
-	indices.append(base)
-	indices.append(base + 2)
-	indices.append(base + 3)
-	buffers["vertices"] = vertices
-	buffers["colors"] = colors
-	buffers["uvs"] = uvs
-	buffers["indices"] = indices
-
-func _build_mesh(buffers: Dictionary) -> ArrayMesh:
-	var vertices := buffers["vertices"] as PackedVector2Array
-	var indices := buffers["indices"] as PackedInt32Array
-	if vertices.is_empty() or indices.is_empty():
-		return null
-	var arrays := []
-	arrays.resize(Mesh.ARRAY_MAX)
-	arrays[Mesh.ARRAY_VERTEX] = vertices
-	arrays[Mesh.ARRAY_COLOR] = buffers["colors"]
-	arrays[Mesh.ARRAY_TEX_UV] = buffers["uvs"]
-	arrays[Mesh.ARRAY_INDEX] = indices
-	var mesh := ArrayMesh.new()
-	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-	return mesh

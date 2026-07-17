@@ -73,8 +73,8 @@ func build(
 	reset()
 	if mesa_rects.is_empty() or logical_scale <= 0.0:
 		return
-	var top := _new_buffers()
-	var face := _new_buffers()
+	var top := QuadMeshBuffers.create()
+	var face := QuadMeshBuffers.create()
 	var zone_bounds := Rect2i(Vector2i.ZERO, zone_size)
 	var zone_offset := Vector2(zone_size) * 0.5
 	var raise := RAISE_HEIGHT_CELLS * logical_scale
@@ -93,8 +93,8 @@ func build(
 			raise,
 			Vector2.ZERO
 		)
-	top_mesh = _build_mesh(top)
-	face_mesh = _build_mesh(face)
+	top_mesh = QuadMeshBuffers.build_mesh(top)
+	face_mesh = QuadMeshBuffers.build_mesh(face)
 
 func build_local_size(
 	world_size: Vector2,
@@ -104,8 +104,8 @@ func build_local_size(
 	reset()
 	if world_size.x <= 0.0 or world_size.y <= 0.0 or logical_scale <= 0.0:
 		return
-	var top := _new_buffers()
-	var face := _new_buffers()
+	var top := QuadMeshBuffers.create()
+	var face := QuadMeshBuffers.create()
 	_append_area(
 		top,
 		face,
@@ -113,8 +113,8 @@ func build_local_size(
 		RAISE_HEIGHT_CELLS * logical_scale,
 		world_uv_origin
 	)
-	top_mesh = _build_mesh(top)
-	face_mesh = _build_mesh(face)
+	top_mesh = QuadMeshBuffers.build_mesh(top)
+	face_mesh = QuadMeshBuffers.build_mesh(face)
 
 func has_geometry() -> bool:
 	return area_count > 0 and top_mesh != null and face_mesh != null
@@ -179,7 +179,7 @@ func _append_wall(
 		1.0
 	)
 	var crest_color := Color(brightness, brightness, brightness, 1.0)
-	_append_quad(
+	QuadMeshBuffers.append_quad(
 		buffers,
 		PackedVector2Array([ground_a, ground_b, top_b, top_a]),
 		PackedVector2Array([
@@ -201,7 +201,7 @@ func _append_top(
 	world_uv_origin: Vector2
 ) -> void:
 	var crown := Color(TOP_BRIGHTNESS, TOP_BRIGHTNESS, TOP_BRIGHTNESS, 1.0)
-	_append_quad(
+	QuadMeshBuffers.append_quad(
 		buffers,
 		PackedVector2Array([nw, ne, se, sw]),
 		PackedVector2Array([
@@ -213,51 +213,3 @@ func _append_top(
 		PackedColorArray([crown, crown, crown, crown])
 	)
 
-func _new_buffers() -> Dictionary:
-	return {
-		"vertices": PackedVector2Array(),
-		"colors": PackedColorArray(),
-		"uvs": PackedVector2Array(),
-		"indices": PackedInt32Array()
-	}
-
-func _append_quad(
-	buffers: Dictionary,
-	quad_vertices: PackedVector2Array,
-	quad_uvs: PackedVector2Array,
-	quad_colors: PackedColorArray
-) -> void:
-	var vertices := buffers["vertices"] as PackedVector2Array
-	var colors := buffers["colors"] as PackedColorArray
-	var uvs := buffers["uvs"] as PackedVector2Array
-	var indices := buffers["indices"] as PackedInt32Array
-	var base := vertices.size()
-	for index in range(4):
-		vertices.append(quad_vertices[index])
-		colors.append(quad_colors[index])
-		uvs.append(quad_uvs[index])
-	indices.append(base)
-	indices.append(base + 1)
-	indices.append(base + 2)
-	indices.append(base)
-	indices.append(base + 2)
-	indices.append(base + 3)
-	buffers["vertices"] = vertices
-	buffers["colors"] = colors
-	buffers["uvs"] = uvs
-	buffers["indices"] = indices
-
-func _build_mesh(buffers: Dictionary) -> ArrayMesh:
-	var vertices := buffers["vertices"] as PackedVector2Array
-	var indices := buffers["indices"] as PackedInt32Array
-	if vertices.is_empty() or indices.is_empty():
-		return null
-	var arrays := []
-	arrays.resize(Mesh.ARRAY_MAX)
-	arrays[Mesh.ARRAY_VERTEX] = vertices
-	arrays[Mesh.ARRAY_COLOR] = buffers["colors"]
-	arrays[Mesh.ARRAY_TEX_UV] = buffers["uvs"]
-	arrays[Mesh.ARRAY_INDEX] = indices
-	var mesh := ArrayMesh.new()
-	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-	return mesh
