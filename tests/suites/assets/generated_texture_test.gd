@@ -90,6 +90,29 @@ func test_forest_runtime_consumption() -> void:
 	assert_true(layer.has_forest_surface_art_textures(), "forest tile layer loads every surface texture")
 	assert_true(layer.get_forest_ground_art_asset_path().ends_with("forest_grass_generated.png"), "forest tile layer exposes generated grass path")
 	var paths := layer.get_forest_surface_art_asset_paths()
+	assert_eq(
+		paths.get(BiomeTileLayer.TERRAIN_DIVIDER_TEXTURE_ID),
+		paths.get(BiomeTileLayer.FOREST_PATH_TEXTURE_ID),
+		"forest dirt dividers reuse the exact path asset"
+	)
+	assert_true(
+		layer._forest_surface_textures.get(
+			BiomeTileLayer.TERRAIN_DIVIDER_TEXTURE_ID
+		) == layer._forest_surface_textures.get(
+			BiomeTileLayer.FOREST_PATH_TEXTURE_ID
+		),
+		"forest dirt dividers reuse the normalized path texture instance"
+	)
+	assert_eq(
+		layer._cliff_border_mesh_builder.transition_texture_repeat_world_size,
+		BiomeTileLayer.FOREST_MACRO_SURFACE_TEXTURE_WORLD_SIZE,
+		"forest cliff dirt uses the same world-space repeat as paths"
+	)
+	assert_eq(
+		layer._mesa_dirt_border_mesh_builder.transition_texture_repeat_world_size,
+		BiomeTileLayer.FOREST_MACRO_SURFACE_TEXTURE_WORLD_SIZE,
+		"forest mesa dirt uses the same world-space repeat as paths"
+	)
 	for asset_id in REQUIRED_FOREST_TERRAIN_ASSET_IDS:
 		var asset_path := String(paths.get(asset_id, ""))
 		assert_true(
@@ -156,6 +179,15 @@ func test_forest_runtime_consumption() -> void:
 			),
 			terrain_texture_world_origin + surface_canvas.chunk_world_rect.position,
 			"the shader phase combines streamed-region and local chunk origins"
+		)
+		assert_eq(
+			surface_canvas.surface_material.get_shader_parameter(
+				&"divider_repeat_world"
+			),
+			surface_canvas.surface_material.get_shader_parameter(
+				&"path_repeat_world"
+			),
+			"forest divider and path share the same world-space scale"
 		)
 	_assert_terrain_surface_runtime_contract(layer, layout, "forest")
 	layer.queue_free()
@@ -2506,9 +2538,14 @@ func _assert_terrain_surface_runtime_contract(
 		0,
 		"%s reports rasterized divider pixels" % label
 	)
+	var expected_divider_asset := (
+		"forest_dirt_path_generated"
+		if layer.biome_id == BiomeTileResolver.FOREST_BIOME_ID
+		else "terrain_divider_dirt"
+	)
 	assert_true(
 		String(report.get("divider_asset_path", "")).contains(
-			"terrain_divider_dirt"
+			expected_divider_asset
 		),
 		"%s report exposes the dirt divider asset" % label
 	)

@@ -218,8 +218,11 @@ definito in `docs/top_down_cardinal_contract.md`.
   incroci producono capsule e raccordi rotondi invece di quadrati sovrapposti.
 - `TerrainSurfaceCanvas` e `terrain_surface_blend.gdshader`: stendono texture
   full-bleed in coordinate world-space, compongono sopra il divisore
-  `terrain_divider_dirt` e usano un colore uniforme quando RGB e nullo. Lo
-  streamer passa l'offset della regione alla fase UV, quindi texture uguali
+  logico `terrain_divider_dirt` e usano un colore uniforme quando RGB e nullo.
+  In `infected_plains` quel materiale logico aliasa l'istanza runtime di
+  `forest_path`, con lo stesso periodo world-space; i generated biome usano il
+  raster condiviso `terrain_divider_dirt_generated.png`. Lo streamer passa
+  l'offset della regione alla fase UV, quindi texture uguali
   restano continue anche sui seam tra regioni.
 - `GeneratedBiomeTextureTools`: normalizzazione condivisa dei PNG generati usati
   in repeat runtime; applica crop dei bordi chiari, fix dei pixel alpha e la
@@ -957,8 +960,9 @@ multi-bioma.
   semantici `grass_to_path`, `grass_to_road`, `path_to_road` e i passage
   `road`/entry/exit mantengono ID e section per debug, ma non richiedono piu
   core, edge o corner raster: la maschera seleziona le superfici sui due lati e
-  il canale alpha applica `terrain_divider_dirt` sul confine. Tall grass e altre
-  letture visuali restano separate dal contratto delle superfici principali.
+  il canale alpha applica il materiale logico `terrain_divider_dirt` sul
+  confine; nel forestale esso riusa texture e scala di `forest_path`. Tall grass
+  e altre letture visuali restano separate dal contratto delle superfici principali.
   Le celle pure `void_depth`/`forest_void` e le transizioni `void_*` hanno RGB
   nullo e mostrano il colore uniforme condiviso dal `VoidBackdrop` fuori-mappa.
   Le mesh di cliff e lip restano un pass separato sopra il canvas terreno e
@@ -1012,8 +1016,8 @@ multi-bioma.
   un'unica proiezione planare il top mesa `large_rock`
   (`rock_plateau_top_generated.png`); solo la parete nel void usa la texture
   cliff direzionale. Una `terrain_transition_mesh` separata ripete
-  `terrain_divider_dirt` e deriva lo spessore dagli stessi parametri della
-  maschera stradale: `0,32` tile sul lato terreno, con `0,12` tile di nucleo dirt
+  il divider dirt risolto dal bioma e deriva lo spessore dagli stessi parametri
+  della maschera stradale: `0,32` tile sul lato terreno, con `0,12` tile di nucleo dirt
   e `0,20` di feather esterno. Un feather interno corto sopra il margine della
   flat rock ammorbidisce anche lo stacco lato pietra; i corner convessi usano
   ventagli a quarto di cerchio con core pieno e feather radiale. Nei vertici
@@ -1098,8 +1102,9 @@ multi-bioma.
   con shading per lato e gradiente verso la base; nessuna fissure/lip disegnata a
   mano, quindi la superficie resta priva di linee procedurali. Corona e facce
   vengono disegnate una sola volta dal nodo oggetto Y-sorted; il tile layer
-  genera sotto il footprint di ogni mesa un contorno `terrain_divider_dirt` con
-  lo stesso spessore nominale dei bordi stradali, ma non duplica il volume e non
+  genera sotto il footprint di ogni mesa un contorno dirt, risolto con lo stesso
+  materiale e periodo world-space del divider del canvas, con lo stesso
+  spessore nominale dei bordi stradali, ma non duplica il volume e non
   aggiunge un cap a `z_index` fisso. Anche qui i corner convessi sono archi a
   quarto di cerchio, condivisi con il profilo dirt delle fall zone.
 - `EnvironmentObject.is_world_position_behind_cliff()` classifica una

@@ -77,9 +77,13 @@ Il terreno forestale usa tre raster full-bleed:
 risolto in `grass`, `path`, `asphalt` o `void`; `TerrainBoundaryMaskBuilder`
 genera poi una maschera RGBA8 dell'intera regione a 8 pixel per tile. R, G e B
 selezionano le tre superfici, RGB nullo lascia il colore uniforme del void e A
-contiene il divisore `terrain_divider_dirt_generated.png` lungo i confini fra
-classi diverse. `TerrainSurfaceCanvas` campiona il sottorettangolo regionale di
-ogni chunk con UV world-space e lo shader compone il divisore sopra le texture.
+contiene il divisore lungo i confini fra classi diverse. Nella Pianura Infetta
+il renderer associa quel canale alla stessa istanza runtime normalizzata di
+`forest_dirt_path_generated.png` usata dai sentieri, con identico periodo
+world-space; lo stesso alias alimenta le mesh dirt di cliff e mesa. Gli altri
+biomi continuano a usare `terrain_divider_dirt_generated.png` come materiale
+condiviso. `TerrainSurfaceCanvas` campiona il sottorettangolo regionale di ogni
+chunk con UV world-space e lo shader compone il divisore sopra le texture.
 Non servono piu core, edge, rotazioni o corner raster per unire path, road ed
 erba; i relativi asset storici restano solo per confronto e QA.
 
@@ -147,6 +151,8 @@ bordo di caduta. Il sistema non crea nodi per tile.
   erba, sentieri e asfalto forestali full-bleed, non floor generico.
 - Verificare che il divisore di terra sia continuo sui contatti grass/path,
   grass/asphalt e path/asphalt, inclusi curve, incroci e confini di chunk.
+- Confrontare sentiero e divisore della Pianura Infetta: terra, pietre, scala e
+  densita dei dettagli devono coincidere anche attorno a cliff e mesa.
 - Verificare che core, edge e corner del vecchio bordo strada non compaiano e
   che ai lati del divisore non ci siano buchi o texture sovrapposte.
 - Attraversare un varco fisico: il passaggio deve restare aperto, senza portali

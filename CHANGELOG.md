@@ -62,6 +62,11 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Changed
 
+- Nella Pianura Infetta tutti i divider dirt del renderer reale riusano ora la
+  stessa istanza e scala world-space di `forest_dirt_path_generated.png` dei
+  sentieri, inclusi confini del canvas terrain, cliff e contorni mesa; maschere,
+  spessori, collisioni e materiali degli altri biomi restano invariati.
+
 - Le town usano edifici con footprint/visuale/collider raddoppiati e 1-3
   veicoli; le mesa sono una montagna unica con angoli convessi arrotondati
   (`0,75` tile, 6 segmenti). Firma layout `v4`, revisione generatore/cache `5`,

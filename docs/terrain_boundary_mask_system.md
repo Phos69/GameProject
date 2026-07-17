@@ -95,7 +95,7 @@ restano invariati.
 2. campiona erba, sentiero e asfalto con UV world-space;
 3. miscela le tre texture con i pesi RGB;
 4. usa il colore void uniforme quando la somma RGB e zero;
-5. applica la texture `terrain_divider_dirt` usando il canale alpha.
+5. applica il materiale logico `terrain_divider_dirt` usando il canale alpha.
 
 Le UV world-space usano la posizione del chunk sommata all'offset della regione
 streammata. La fase delle texture quindi continua tra regioni adiacenti e non
@@ -111,7 +111,10 @@ Le texture di superficie restano scelte dal manifest e dal catalogo del bioma:
 - la Pianura Infetta usa `forest_grass`, `forest_path` e `forest_road`;
 - i quattro biomi generated usano i rispettivi ruoli `ground`, `path` e
   `road`;
-- il divisore usa il contratto comune `terrain_divider_dirt`.
+- nella Pianura Infetta il divisore logico `terrain_divider_dirt` aliasa la
+  stessa istanza normalizzata e lo stesso periodo world-space di `forest_path`;
+- i quattro biomi generated usano il raster comune
+  `terrain_divider_dirt_generated.png`.
 
 Il contratto non dipende da core ritagliati, strip mono-lato o raster dedicati
 agli angoli. Gli asset semantici di transizione possono restare censiti per

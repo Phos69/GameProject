@@ -179,6 +179,9 @@ func configure(
 	_mesa_dirt_border_mesh_builder = (
 		CLIFF_BORDER_MESH_BUILDER_SCRIPT.new() as TopDownCliffBorderMeshBuilder
 	)
+	var divider_repeat_world := _terrain_divider_texture_world_size()
+	_cliff_border_mesh_builder.transition_texture_repeat_world_size = divider_repeat_world
+	_mesa_dirt_border_mesh_builder.transition_texture_repeat_world_size = divider_repeat_world
 	_rectilinear_cliff_face_mesh_builder = (
 		RECTILINEAR_CLIFF_FACE_MESH_BUILDER_SCRIPT.new() as RectilinearCliffFaceMeshBuilder
 	)
@@ -1123,6 +1126,23 @@ func _load_forest_surface_art_textures() -> void:
 func _load_terrain_divider_texture() -> void:
 	if manifest == null:
 		return
+	# Infected Plains uses one compacted-earth material for paths and every dirt
+	# transition. Reusing the normalized runtime instance also keeps its atlas
+	# phase and filtering identical across both consumers.
+	if _uses_forest_ground():
+		var path_texture := (
+			_forest_surface_textures.get(FOREST_PATH_TEXTURE_ID) as Texture2D
+		)
+		var path_asset_path := String(
+			_forest_surface_art_asset_paths.get(FOREST_PATH_TEXTURE_ID, "")
+		)
+		if path_texture != null and not path_asset_path.is_empty():
+			_register_surface_texture(
+				TERRAIN_DIVIDER_TEXTURE_ID,
+				path_asset_path,
+				path_texture
+			)
+			return
 	var contract := manifest.get_terrain_asset_contract(TERRAIN_DIVIDER_TEXTURE_ID)
 	var asset_path := String(contract.get("asset_path", ""))
 	if asset_path.is_empty():
@@ -1381,7 +1401,7 @@ func _terrain_surface_render_data_for_chunk(
 		"grass_repeat_world": _forest_surface_texture_world_size(grass_id),
 		"path_repeat_world": _forest_surface_texture_world_size(path_id),
 		"asphalt_repeat_world": _forest_surface_texture_world_size(asphalt_id),
-		"divider_repeat_world": TERRAIN_DIVIDER_TEXTURE_WORLD_SIZE,
+		"divider_repeat_world": _terrain_divider_texture_world_size(),
 		"void_color": get_void_background_color(),
 		"surface_material_ids": surface_material_ids,
 	}
@@ -1735,6 +1755,23 @@ func _forest_surface_texture_world_size(texture_id: StringName) -> float:
 		if biome_id == &"burning_fields":
 			return BURNING_SURFACE_TEXTURE_WORLD_SIZE
 	return FOREST_SURFACE_TEXTURE_WORLD_SIZE
+
+func _terrain_divider_texture_world_size() -> float:
+	# The forest divider aliases the macro path atlas; the other biomes retain
+	# the shared standalone divider and its historical 256-unit period.
+	var divider_asset_path := String(
+		_forest_surface_art_asset_paths.get(TERRAIN_DIVIDER_TEXTURE_ID, "")
+	)
+	var path_asset_path := String(
+		_forest_surface_art_asset_paths.get(FOREST_PATH_TEXTURE_ID, "")
+	)
+	if (
+		_uses_forest_ground()
+		and not path_asset_path.is_empty()
+		and divider_asset_path == path_asset_path
+	):
+		return _forest_surface_texture_world_size(FOREST_PATH_TEXTURE_ID)
+	return TERRAIN_DIVIDER_TEXTURE_WORLD_SIZE
 
 func _uses_forest_ground() -> bool:
 	return biome_id == BiomeTileResolver.FOREST_BIOME_ID

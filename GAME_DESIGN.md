@@ -865,7 +865,9 @@ Regole hazard:
   Nella Pianura Infetta la parte flat riusa il top roccioso delle mesa con UV
   planari continui; la faccia verticale resta un materiale cliff distinto.
   Sul lato terreno una fascia dirt sfumata, condivisa con il divisore delle
-  strade, usa lo stesso spessore nominale: conserva un nucleo dirt opaco ben
+  strade, usa lo stesso spessore nominale: nella Pianura Infetta campiona la
+  stessa texture world-space dei sentieri, mentre gli altri biomi mantengono il
+  divider dirt condiviso. Conserva un nucleo dirt opaco ben
   definito; un feather corto lo fonde sul margine della flat rock e uno esterno
   lo dissolve verso l'erba, continuando attorno agli angoli. Lo stesso contorno
   dirt circonda a terra il footprint di ogni mesa tematizzata. Sulle mesa la

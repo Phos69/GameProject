@@ -48,6 +48,8 @@ var horizontal_mesh: ArrayMesh
 var vertical_mesh: ArrayMesh
 var terrain_transition_mesh: ArrayMesh
 var diagonal_void_mesh: ArrayMesh
+# BiomeTileLayer can align the transition UV period with a themed path material.
+var transition_texture_repeat_world_size := TRANSITION_TEXTURE_REPEAT_WORLD_SIZE
 var horizontal_segment_count: int = 0
 var vertical_segment_count: int = 0
 var terrain_transition_segment_count: int = 0
@@ -982,10 +984,10 @@ func _append_colored_ring_sector(
 			buffers,
 			PackedVector2Array([inner_a, outer_a, outer_b, inner_b]),
 			PackedVector2Array([
-				inner_a / TRANSITION_TEXTURE_REPEAT_WORLD_SIZE,
-				outer_a / TRANSITION_TEXTURE_REPEAT_WORLD_SIZE,
-				outer_b / TRANSITION_TEXTURE_REPEAT_WORLD_SIZE,
-				inner_b / TRANSITION_TEXTURE_REPEAT_WORLD_SIZE,
+				inner_a / transition_texture_repeat_world_size,
+				outer_a / transition_texture_repeat_world_size,
+				outer_b / transition_texture_repeat_world_size,
+				inner_b / transition_texture_repeat_world_size,
 			]),
 			PackedColorArray([
 				inner_color,
@@ -1206,9 +1208,9 @@ func _append_transition_triangle(
 	vertices.append(point_a)
 	vertices.append(point_b)
 	vertices.append(point_c)
-	uvs.append(point_a / TRANSITION_TEXTURE_REPEAT_WORLD_SIZE)
-	uvs.append(point_b / TRANSITION_TEXTURE_REPEAT_WORLD_SIZE)
-	uvs.append(point_c / TRANSITION_TEXTURE_REPEAT_WORLD_SIZE)
+	uvs.append(point_a / transition_texture_repeat_world_size)
+	uvs.append(point_b / transition_texture_repeat_world_size)
+	uvs.append(point_c / transition_texture_repeat_world_size)
 	colors.append(color_a)
 	colors.append(color_b)
 	colors.append(color_c)
@@ -1376,10 +1378,10 @@ func _append_transition_quad(
 		buffers,
 		rect,
 		PackedVector2Array([
-			top_left / TRANSITION_TEXTURE_REPEAT_WORLD_SIZE,
-			top_right / TRANSITION_TEXTURE_REPEAT_WORLD_SIZE,
-			bottom_right / TRANSITION_TEXTURE_REPEAT_WORLD_SIZE,
-			bottom_left / TRANSITION_TEXTURE_REPEAT_WORLD_SIZE,
+			top_left / transition_texture_repeat_world_size,
+			top_right / transition_texture_repeat_world_size,
+			bottom_right / transition_texture_repeat_world_size,
+			bottom_left / transition_texture_repeat_world_size,
 		]),
 		quad_colors
 	)
