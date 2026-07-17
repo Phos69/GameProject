@@ -748,7 +748,10 @@ func test_biome_world_generation() -> void:
 	assert_not_null(base_layout, "starting biome has a generated layout")
 	if base_layout != null:
 		assert_eq(base_layout.zone_size, BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE, "starting biome uses the shared cardinal grid size")
-		assert_true(not base_layout.rock_rects.is_empty() and not base_layout.forest_rects.is_empty(), "base biome (void-first) contains rocks and forests")
+		assert_eq(base_layout.parcel_types.count(BiomeEnvironmentLayout.PARCEL_MESA), 1,
+			"base biome contains its guaranteed mesa parcel")
+		assert_eq(base_layout.parcel_types.count(BiomeEnvironmentLayout.PARCEL_TOWN), 1,
+			"base biome contains its guaranteed town parcel")
 		assert_true((not base_layout.road_rects.is_empty() or not base_layout.get_road_cells().is_empty()) and not base_layout.crate_cells.is_empty(),
 			"base biome has roads, corridors and resource crates")
 

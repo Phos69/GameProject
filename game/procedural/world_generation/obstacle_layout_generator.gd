@@ -11,6 +11,15 @@ const STATIC_HAZARD_PLACEMENT_PASS = preload(
 const RANDOM_PROP_PLACEMENT_PASS = preload(
 	"res://game/procedural/world_generation/passes/random_prop_placement_pass.gd"
 )
+const TERRAIN_PARCEL_PARTITION_PASS = preload(
+	"res://game/procedural/world_generation/passes/terrain_parcel_partition_pass.gd"
+)
+const TERRAIN_PARCEL_CONTENT_PASS = preload(
+	"res://game/procedural/world_generation/passes/terrain_parcel_content_pass.gd"
+)
+const TERRAIN_ROUTE_PASS = preload(
+	"res://game/procedural/world_generation/passes/terrain_route_pass.gd"
+)
 
 const ROAD_WIDTH := WorldGridConfig.ROAD_WIDTH_TILES
 const SECONDARY_ROAD_WIDTH := WorldGridConfig.SECONDARY_ROAD_WIDTH_TILES
@@ -101,6 +110,8 @@ const RNG_STREAM_SALTS: Dictionary = {
 	&"void": 0x2468ACE,
 	&"hazards": 0x31415927,
 	&"props": 0x5A17C9E3,
+	&"parcels": 0x6B8B4567,
+	&"parcel_content": 0x327B23C6,
 }
 
 const GENERATED_OBSTACLE_CATEGORIES: Dictionary = {
@@ -196,34 +207,32 @@ func populate_layout_voidfirst(
 	biome: BiomeDefinition,
 	context: Dictionary = {}
 ) -> void:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = maxi(cell.seed, 1)
-	var mesa_rng := _make_rng_stream(cell.seed, &"mesa")
-	var void_rng := _make_rng_stream(cell.seed, &"void")
+	var parcel_rng := _make_rng_stream(cell.seed, &"parcels")
+	var content_rng := _make_rng_stream(cell.seed, &"parcel_content")
 	var hazard_rng := _make_rng_stream(cell.seed, &"hazards")
-	var prop_rng := _make_rng_stream(cell.seed, &"props")
-	var allow_internal_void := _internal_void_enabled(context)
 	var palette := _voidfirst_palette(biome.biome_id)
-	_carve_passages(layout, cell)
-	_place_mesas(layout, biome, mesa_rng)
-	_place_biome_masses(layout, biome, rng)
-	_place_forests(layout, biome, rng)
-	_add_voidfirst_roads(layout, rng, cell, context, palette)
-	_choose_voidfirst_spawn(layout)
-	_add_voidfirst_paths(layout, rng, palette["spoke_tag"])
-	_clear_trees_on_routes(layout, palette["cluster_id"])
-	_add_connected_border_walls(layout, cell, biome, context)
-	_line_roads_with_trees(layout, palette)
-	_resolve_void_lottery(
+	# TERRAIN-PARCELS-001: routes are authoritative and are carved before any
+	# obstacle or hazard. Secondary trails then partition the untouched floor.
+	var route_report: Dictionary = TERRAIN_ROUTE_PASS.new().generate(
 		layout,
-		void_rng,
-		allow_internal_void,
-		_voidfirst_internal_chasm_min_count(biome)
+		cell,
+		context,
+		palette["road_tag"] as StringName,
+		palette["spoke_tag"] as StringName
 	)
+	var parcel_report: Dictionary = TERRAIN_PARCEL_PARTITION_PASS.new().generate(
+		layout, biome, parcel_rng, palette["spoke_tag"] as StringName
+	)
+	var parcel_content: Dictionary = TERRAIN_PARCEL_CONTENT_PASS.new().populate(
+		layout, biome, content_rng, palette["spoke_tag"] as StringName
+	)
+	_add_connected_border_walls(layout, cell, biome, context)
 	_place_voidfirst_theme_hazards(layout, biome, hazard_rng)
 	_add_voidfirst_crates(layout, biome)
-	_place_voidfirst_random_props(layout, biome, prop_rng)
 	_update_generation_summary(layout, biome)
+	layout.generation_summary["parcel_report"] = parcel_report
+	layout.generation_summary["parcel_content"] = parcel_content
+	layout.generation_summary["route_report"] = route_report
 
 func _make_rng_stream(seed: int, stream_id: StringName) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
@@ -995,7 +1004,13 @@ func refresh_generation_summary(
 	layout: BiomeEnvironmentLayout,
 	biome: BiomeDefinition
 ) -> void:
+	var parcel_report: Dictionary = layout.generation_summary.get("parcel_report", {}) as Dictionary
+	var parcel_content: Dictionary = layout.generation_summary.get("parcel_content", {}) as Dictionary
 	_update_generation_summary(layout, biome)
+	if not parcel_report.is_empty():
+		layout.generation_summary["parcel_report"] = parcel_report
+	if not parcel_content.is_empty():
+		layout.generation_summary["parcel_content"] = parcel_content
 
 func _add_roads(layout: BiomeEnvironmentLayout, cell: BiomeCell) -> void:
 	var zone_size := layout.zone_size
@@ -2817,6 +2832,7 @@ func _update_generation_summary(
 		"obstacle_counts": obstacle_counts,
 		"block_counts": block_counts
 	}
+	layout.generation_summary["terrain_parcels"] = layout.get_parcel_report()
 
 func _count_obstacle_ids(
 	obstacle_counts: Dictionary,

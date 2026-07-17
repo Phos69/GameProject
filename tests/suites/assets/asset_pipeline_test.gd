@@ -55,9 +55,9 @@ var _manifest: EnvironmentAssetManifest
 func before_all() -> void:
 	_manifest = EnvironmentAssetManifest.reload_shared()
 
-func test_manifest_v14_top_down_contract() -> void:
+func test_manifest_v15_top_down_contract() -> void:
 	assert_true(_manifest.load_error.is_empty(), "asset pipeline manifest loads")
-	assert_gte(_manifest.version, 14, "asset pipeline supports contextual raster and collision variants")
+	assert_gte(_manifest.version, 15, "asset pipeline supports terrain parcel town and forest contracts")
 	assert_eq(
 		_manifest.coordinate_system,
 		"orthogonal_top_down",

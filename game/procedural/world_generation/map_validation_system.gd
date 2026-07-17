@@ -4,6 +4,9 @@ class_name MapValidationSystem
 const WorldGridConfig = preload("res://game/core/world_grid_config.gd")
 
 const SIDES: Array[StringName] = [&"north", &"south", &"east", &"west"]
+const CARDINAL_DIRECTIONS: Array[Vector2i] = [
+	Vector2i.RIGHT, Vector2i.LEFT, Vector2i.DOWN, Vector2i.UP,
+]
 
 func validate_layout(
 	cell: BiomeCell,
@@ -29,6 +32,7 @@ func validate_layout(
 	var water_crossing_failures := _find_unbridged_water_crossings(layout)
 	var route_obstacle_failures := _find_route_obstacle_overlaps(layout)
 	var rotation_failures := _find_non_cardinal_environment_rotations(layout)
+	var parcel_report := validate_terrain_parcels(layout)
 	var classification_report := layout.get_classification_report()
 	var is_valid := (
 		not visited.is_empty()
@@ -41,6 +45,7 @@ func validate_layout(
 		and water_crossing_failures.is_empty()
 		and route_obstacle_failures.is_empty()
 		and rotation_failures.is_empty()
+		and bool(parcel_report.get("is_valid", false))
 		and bool(classification_report.get("is_complete", false))
 	)
 	return {
@@ -55,8 +60,124 @@ func validate_layout(
 		"water_crossing_errors": water_crossing_failures,
 		"route_obstacle_errors": route_obstacle_failures,
 		"environment_rotation_errors": rotation_failures,
+		"terrain_parcels": parcel_report,
 		"terrain_classification": classification_report
 	}
+
+func validate_terrain_parcels(layout: BiomeEnvironmentLayout) -> Dictionary:
+	if layout == null:
+		return {
+			"is_valid": false,
+			"legacy_layout": false,
+			"errors": PackedStringArray(["missing_layout"]),
+		}
+	if layout.parcel_types.is_empty():
+		return {"is_valid": true, "legacy_layout": true, "errors": PackedStringArray()}
+	var failures := PackedStringArray()
+	var parcel_count := layout.parcel_types.size()
+	if parcel_count < 7 or parcel_count > 10:
+		failures.append("parcel_count:%d" % parcel_count)
+	if layout.parcel_bounds.size() != parcel_count:
+		failures.append("parcel_bounds_parallel")
+	if layout.parcel_areas.size() != parcel_count:
+		failures.append("parcel_areas_parallel")
+	if layout.parcel_cell_indices.size() != layout.zone_size.x * layout.zone_size.y:
+		failures.append("parcel_cell_map_size")
+	var type_counts: Dictionary = {}
+	var measured_areas: Array[int] = []
+	measured_areas.resize(parcel_count)
+	measured_areas.fill(0)
+	for parcel_type in layout.parcel_types:
+		type_counts[parcel_type] = int(type_counts.get(parcel_type, 0)) + 1
+	if int(type_counts.get(BiomeEnvironmentLayout.PARCEL_MESA, 0)) != 1:
+		failures.append("mesa_quota")
+	if int(type_counts.get(BiomeEnvironmentLayout.PARCEL_TOWN, 0)) != 1:
+		failures.append("town_quota")
+	var lo := WorldGridConfig.BORDER_THICKNESS_TILES
+	for y in range(lo, layout.zone_size.y - lo):
+		for x in range(lo, layout.zone_size.x - lo):
+			var cell := Vector2i(x, y)
+			var parcel_index := layout.get_parcel_index_at_cell(cell)
+			var route_tags := layout.get_road_tags_at_cell(cell)
+			var is_post_partition_driveway := route_tags.has(&"parcel_driveway")
+			if layout.rect_intersects_route(Rect2i(cell, Vector2i.ONE)):
+				if parcel_index < 0:
+					continue
+				if not is_post_partition_driveway:
+					failures.append("route_in_parcel:%d:%d" % [x, y])
+					continue
+			if parcel_index < 0 or parcel_index >= parcel_count:
+				failures.append("unassigned_cell:%d:%d" % [x, y])
+				continue
+			measured_areas[parcel_index] += 1
+	for parcel_index in range(mini(parcel_count, layout.parcel_areas.size())):
+		if measured_areas[parcel_index] != layout.parcel_areas[parcel_index]:
+			failures.append("parcel_area:%d" % parcel_index)
+	for rect in layout.fall_zone_rects:
+		for y in range(rect.position.y, rect.end.y):
+			for x in range(rect.position.x, rect.end.x):
+				var cell := Vector2i(x, y)
+				var parcel_index := layout.get_parcel_index_at_cell(cell)
+				if parcel_index < 0 or layout.parcel_types[parcel_index] != BiomeEnvironmentLayout.PARCEL_FALL_ZONE:
+					continue
+				for direction: Vector2i in CARDINAL_DIRECTIONS:
+					if layout.get_parcel_index_at_cell(cell + direction) != parcel_index:
+						failures.append("fall_zone_rim:%d:%d" % [x, y])
+						break
+	_validate_forest_corridors(layout, type_counts, failures)
+	_validate_town_entrances(layout, failures)
+	return {
+		"is_valid": failures.is_empty(),
+		"errors": failures,
+		"count": parcel_count,
+		"type_counts": type_counts,
+	}
+
+func _validate_forest_corridors(
+	layout: BiomeEnvironmentLayout,
+	type_counts: Dictionary,
+	failures: PackedStringArray
+) -> void:
+	var forest_count := int(type_counts.get(BiomeEnvironmentLayout.PARCEL_FOREST, 0))
+	if layout.forest_corridor_rects.size() < forest_count:
+		failures.append("forest_corridor_quota")
+	if layout.forest_corridor_parcel_indices.size() != layout.forest_corridor_rects.size():
+		failures.append("forest_corridor_parallel")
+	for corridor_index in range(layout.forest_corridor_rects.size()):
+		var corridor := layout.forest_corridor_rects[corridor_index]
+		var parcel_index := (
+			layout.forest_corridor_parcel_indices[corridor_index]
+			if corridor_index < layout.forest_corridor_parcel_indices.size()
+			else -1
+		)
+		if (
+			corridor.size.x != TerrainParcelContentPass.FOREST_CORRIDOR_WIDTH
+			and corridor.size.y != TerrainParcelContentPass.FOREST_CORRIDOR_WIDTH
+		):
+			failures.append("forest_corridor_width")
+		for obstacle_index in range(layout.obstacle_ids.size()):
+			if layout.obstacle_ids[obstacle_index] != &"forest_tree":
+				continue
+			var obstacle_center := layout.obstacle_rects[obstacle_index].get_center()
+			if layout.get_parcel_index_at_cell(obstacle_center) != parcel_index:
+				continue
+			if corridor.intersects(layout.obstacle_rects[obstacle_index]):
+				failures.append("forest_corridor_blocked")
+				break
+
+func _validate_town_entrances(
+	layout: BiomeEnvironmentLayout,
+	failures: PackedStringArray
+) -> void:
+	var content := layout.generation_summary.get("parcel_content", {}) as Dictionary
+	var building_count := int(content.get("town_building_count", 0))
+	if building_count < TerrainParcelContentPass.TOWN_MIN_BUILDINGS or building_count > TerrainParcelContentPass.TOWN_MAX_BUILDINGS:
+		failures.append("town_building_quota")
+	if layout.town_entrance_cells.size() != building_count:
+		failures.append("town_entrance_parallel")
+	for entrance in layout.town_entrance_cells:
+		if not layout.get_road_tags_at_cell(entrance).has(&"parcel_driveway"):
+			failures.append("town_entrance_unreachable:%d:%d" % [entrance.x, entrance.y])
 
 func _find_non_cardinal_environment_rotations(
 	layout: BiomeEnvironmentLayout

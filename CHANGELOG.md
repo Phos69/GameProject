@@ -8,6 +8,15 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Added
 
+- `TERRAIN-PARCELS-001`: nuova pipeline terrain deterministica per regioni
+  `75x75`, con route principali, sentieri interni e 7-10 lotti esclusivi
+  `mesa/clearing/forest/fall_zone/town`; una mesa e una town sono garantite.
+  Aggiunti pass separati di route/partizionamento/contenuto, API lotti nel layout,
+  validazione di copertura/rim, town tematizzate con ingressi e vialetti,
+  foreste dense, radure alberate e migrazione dei save layout-dependent.
+  Validazione: fuzz 20x5 con 3024 assert, suite environment/assets/obstacles,
+  smoke main e Visual QA dei cinque biomi.
+
 - MCP server `0.2.0`: aggiunti `read_symbol_context` per leggere finestre
   sorgente attorno alle dichiarazioni GDScript e `changed_context` per mappare
   working tree, sistemi impattati, safe check e documentazione da riesaminare.
@@ -42,6 +51,13 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
   (C4 del report `docs/repo_health_report_2026-07-17.md`).
 
 ### Changed
+
+- Le town usano edifici con footprint/visuale/collider raddoppiati e 1-3
+  veicoli; le mesa sono una montagna unica con angoli convessi arrotondati
+  (`0,75` tile, 6 segmenti). Firma layout `v4`, revisione generatore/cache `5`,
+  snapshot `v7` e manifest ambiente `v15` invalidano i dati precedenti.
+- Rimossi dalla pipeline attiva scatter globale, macchie forestali, lottery del
+  void e gruppi di mesa; gli hazard statici sono ora ammessi solo nelle radure.
 
 - L'indice file MCP e condiviso in memoria con TTL breve; area e validazione
   vengono applicate prima della paginazione, le aree sconosciute sono errori

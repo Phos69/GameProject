@@ -13,9 +13,10 @@ incrementale di regioni e chunk camera-centrici, il roster RPG e le armi hanno
 pass data-driven, UI/audio/settings sono
 funzionali e la suite rapida GUT e pulita. Il lavoro attivo ora riguarda polish,
 scelte di espansione, QA piu profonda, bilanciamento e release readiness. Il
-goal esplicito `WORLD-UNIFY-001` del 2026-07-13 e completato: il contratto
-void-first condiviso include ora profili tipizzati, mesa, props casuali e hazard
-statici data-driven in tutti i biomi, senza introdurre un secondo generatore.
+goal esplicito `TERRAIN-PARCELS-001` del 2026-07-17 e completato: il contratto
+condiviso divide ogni regione in 7-10 lotti logici dopo le route, assegna una
+mesa e una town garantite e genera contenuti per lotto senza legarli ai chunk
+visuali `10x10`.
 
 ## Baseline Archiviata
 
@@ -27,7 +28,7 @@ senza un nuovo goal esplicito e una voce in `TODO.md`.
 | Fondazione runtime | Milestone 0-4: repo, progetto Godot, input, co-op locale, camera, player, combat, health, nemici, drop e pickup. | `README.md`, `ARCHITECTURE.md`, suite GUT core/combat/progression |
 | Modalita base | Milestone 5-9: survival a ondate, boss `Wave Warden`, dungeon lineare, tower defense base, save/load, menu, export preset e packaging iniziale. | `ARCHITECTURE.md`, `GAME_DESIGN.md`, `docs/latest_commit_validation_report.md` |
 | Visual gameplay e UX base | Milestone 10-21: readability survival, telegraph boss, varianti zombie, visual armi/torri, polish boss, shooter ranged, downed/revive, risultati run, audio mix, secondo boss, arena data-driven, accessibilita e profiling. | `CHANGELOG.md`, `docs/testing/manual_checklist.md` |
-| Zombie survival e mondo top-down | Revamp zombie Z1-Z12, megamappa persistente, regioni `75x75` tile logici (`450x450` equivalenti legacy), survival standard `3x3`, terrain classification, hazard, streaming incrementale senza caricamento ai seam, chase cross-bioma, Infinite Arena con raised cliff `walled`; `WORLD-UNIFY-001` aggiunge profili per cinque biomi, chasm interni garantiti, mesa tematiche, props pesati e hazard statici avanzati. | `ARCHITECTURE.md`, `GAME_DESIGN.md`, `map_generation_report.md`, suite `world_gen`, `environment`, `modes`, `soak` |
+| Zombie survival e mondo top-down | Revamp zombie Z1-Z12, megamappa persistente, regioni `75x75`, streaming `10x10`, seam e chase cross-bioma; `TERRAIN-PARCELS-001` genera route e 7-10 lotti con mesa/town garantite, foreste, radure e fall zone, mantenendo gli hazard tematici nelle radure. | `ARCHITECTURE.md`, `GAME_DESIGN.md`, `map_generation_report.md`, suite `world_gen`, `environment`, `modes`, `soak` |
 | Asset top-down e ostacoli | `TOPDOWN-001`, rewrite biomi R1-R3, manifest ambiente, tile/terrain/passaggi/cliff asset-driven, footprint slot-based, alberi/rocce 3x3, plateau rocciosi scalabili e cliff PNG seamless. `BIOME-RASTER-001` completa il raster pass della Pianura Infetta; gli SVG degli altri quattro biomi restano sorgenti runtime fino a `BIOME-RASTER-002`. Il terreno usa assi H/V; il volume prospettico e separato dal footprint. | `docs/top_down_cardinal_contract.md`, `docs/obstacle_rendering.md`, `docs/forest_top_down_texture_system.md` |
 | RPG, armi e mercato | RPG Mode M1-M13, classi avanzate, inventario armi, 30 armi catalogo, mercato zombie ricorrente e WVIS W0-W8. | `docs/zombie_market.md`, `docs/weapon_visual_identity_validation_report.md`, `docs/rpg_character_visual_checklist.md` |
 | QA, tooling e documentazione | Cutover GUT, cleanup warning headless, server MCP locale read-only e cleanup documentale 2026-07-01. | `tools/mcp-server/README.md`, `docs/documentation_inventory.md`, `CHANGELOG.md` |
@@ -36,6 +37,15 @@ senza un nuovo goal esplicito e una voce in `TODO.md`.
 
 La fonte operativa resta `TODO.md` per gli item aperti; questa sezione registra
 anche le milestone completate per evitare sovrapposizioni.
+
+### Generazione mondo
+
+- `TERRAIN-PARCELS-001`: **completata 2026-07-17**. Route hub-and-spokes da
+  7 tile e sentieri interni da 4 precedono il partizionamento; 7-10 lotti
+  coprono tutte le celle non-route con una mesa e una town. Contenuti, manifest,
+  validator, cache e migrazione save sono allineati a layout v4/generator 5/
+  snapshot v7. Fuzz 20x5, suite mirate e Visual QA biomi 6/6 sono verdi; resta
+  in `BAL-001` soltanto il playtest manuale lungo.
 
 ### Presentazione e UX
 

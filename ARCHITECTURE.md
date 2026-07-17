@@ -247,7 +247,7 @@ definito in `docs/top_down_cardinal_contract.md`.
   ostacoli, casse, hazard, summary deterministico e report di validazione.
 - `EnvironmentAssetManifest`: legge `assets/environment/top_down/manifest.json`
   come inventario di ostacoli, draw mode oggetto, border tematici, fall zone
-  procedurali, tag terrain generati e contratto asset v14 (`tile_sets`,
+  procedurali, tag terrain generati e contratto asset v15 (`tile_sets`,
   `tile_variants`, `terrain_tiles`, `edge_tiles`, `void_tiles`, `object_scenes`,
   `passage_tiles`, `biome_asset_sets`, `fallback_policy`). Il loader normalizza
   path, varianti contestuali, status, footprint, anchor, collision shape, size
@@ -255,24 +255,20 @@ definito in `docs/top_down_cardinal_contract.md`.
   asset esterni. La validazione dei path riusa
   `BiomeTileResolverUtils.asset_path_exists`, unica query condivisa tra
   manifest e resolver.
-- `ObstacleLayoutGenerator`: orchestra una sola pipeline void-first per i cinque
-  biomi. Scava passaggi, strade principali da 7 tile logici e sentieri medi da
-  4, delega le feature interne ai pass dedicati, risolve almeno un chasm
-  interno salvo `disable_internal_void`; ogni chasm mantiene una tile logica di
-  distanza da strade e passaggi, riservata al lip visivo del cliff, e aggiorna
-  il riepilogo finale. Gli stream RNG
-  `mesa`, `void`, `hazards` e `props` sono derivati separatamente dal seed; il
-  placement esclude spawn, route, passaggi, void, mesa, crate e altri blocker.
-  Nel bioma starter restano inoltre casa, vegetazione densa, auto e il possibile
-  fiume `deep_water` segmentato con bridge sui crossing.
-- `MesaPlacementPass`: genera le mesa profilate e il relativo blocker tecnico
-  `large_rock`, con rejection sampling e scansione deterministica di fallback.
-- `StaticHazardPlacementPass`: piazza la coppia di hazard dei biomi avanzati
-  sul floor finale, con clearance e fallback esaustivo per footprint.
-- `RandomPropPlacementPass`: risolve pool e pesi, registra 10-16 prop con almeno
-  due categorie e, se il sampling casuale non raggiunge il target, scandisce
-  deterministicamente ogni ID/origine valida; resta sotto il minimo solo se
-  nessun footprint del pool puo fisicamente entrare nel layout.
+- `ObstacleLayoutGenerator`: orchestra la pipeline terrain-parcels per i cinque
+  biomi: passaggi e route hub-and-spokes da 7 tile, partizionamento con sentieri
+  interni da 4, contenuti dei lotti, bordi, hazard e casse. Scatter globale,
+  lottery void, vecchie macchie forestali e gruppi di mesa restano fuori dal
+  percorso attivo.
+- `TerrainRoutePass`: registra i passaggi ufficiali, costruisce hub e spokes da
+  7 tile e sceglie uno spawn sicuro prima di qualunque lotto o contenuto.
+- `TerrainParcelPartitionPass`: campiona 7-10 lotti, accetta solo tagli con area
+  minima 180 e span minimo 8, usa fallback deterministico e assegna una town
+  route-adjacent e una mesa; il resto segue pesi clearing/forest/fall-zone.
+- `TerrainParcelContentPass`: costruisce montagna unica, foreste con corridoi,
+  radure e filari, fall zone con rim e town tematizzate con vialetti verificati.
+- `StaticHazardPlacementPass`: piazza gli hazard tematici esclusivamente nei
+  lotti `clearing`, con clearance e fallback esaustivo per footprint.
 - `FallBoundaryGenerator`: trasforma i lati senza vicino in `fall_zone` data-driven con il contratto di danno ambientale esistente.
 - `MapValidationSystem`: valida con flood-fill spawn, corridoi, passaggi, casse
   raggiungibili, grafo connesso, passaggi non ostruiti, void non attraversabile
@@ -290,8 +286,8 @@ definito in `docs/top_down_cardinal_contract.md`.
 - `BiomeDefinition`: risorsa dati con terreno, ostacoli, casse, zombie ammessi,
   pesi, palette e moltiplicatori; riferisce un `BiomeGenerationProfile`
   tipizzato per il tuning del contenuto interno.
-- `BiomeGenerationProfile`: `Resource` per ID/quantita delle mesa, pool e pesi
-  dei prop, minimo chasm e ID/dimensioni degli hazard statici. Il manifest resta
+- `BiomeGenerationProfile`: `Resource` per quantita/pesi dei lotti, probabilita
+  filari, corridoi foresta, pool town e ID/dimensioni degli hazard statici. Il manifest resta
   l'autorita separata su asset, footprint, anchor e collisione.
 - `RegionSeamSystem`: tracker world-space della regione survival corrente.
   Converte la posizione del party in tile globali, verifica che il bordo
@@ -305,9 +301,9 @@ definito in `docs/top_down_cardinal_contract.md`.
 - `BiomeEnvironmentLayout`: placement deterministico di floor scavati,
   `road_cell_tags`, rettangoli di apertura, `mesa_rects` con profilo visuale,
   `mass_rects`, prop casuali con ID, bridge, water/deep-water rects, ostacoli
-  fisici, casse e hazard per un bioma, con classificazione completa del `75x75`
-  e `generation_summary` per debug. `get_generation_signature()` produce la
-  firma canonica `layout-v3` di tutti i campi serializzabili; `rock_rects` resta
+  fisici, casse e hazard per un bioma; `parcel_types/bounds/areas` e la mappa
+  cella->lotto descrivono i lotti indipendenti dallo streaming. La firma
+  canonica e `layout-v4`; `rock_rects` resta
   solo mirror legacy delle mesa della Pianura Infetta.
 - `WaveDirector`: composizione wave e scaling basati sul bioma corrente.
 - `ZombieSpawner`: spawn dai bordi della camera con distanza minima dai player,
@@ -750,9 +746,11 @@ multi-bioma.
 - Cambi audio e visuali attivano lo stesso autosave differito.
 - Cambi della regione corrente o dello stato esplorazione possono attivare autosave quando l'auto-persistenza e abilitata.
 - `PersistentWorldState` serializza seed, firma mondo, regione corrente, posizione party e snapshot esplorazione senza salvare il layout completo rigenerabile.
-- `WorldSnapshotCodec` formato v6 salva anche la firma `layout-v3`; snapshot di
+- `WorldSnapshotCodec` formato v7 salva anche la firma `layout-v4`; snapshot di
   formato precedente o con layout alterato vengono rifiutati invece di
-  contaminare cache e stato esplorazione.
+  contaminare cache e stato esplorazione. La terrain revision 5 conserva seed,
+  progressione ed esplorazione dei save precedenti, azzera i ledger dipendenti
+  dal layout e ricolloca il party sulla route sicura della regione corrente.
 - File assente, root non valida o versione non supportata non modificano lo stato runtime.
 - L'auto-persistenza e disabilitata nei test headless, ma save/load espliciti restano disponibili.
 
@@ -1130,7 +1128,7 @@ multi-bioma.
   rocciose; se uno dei raster manca torna al muro procedurale. Il nodo ostacolo
   resta proprietario di collision layer, shape, footprint, Y-sort, metadata e
   gruppi runtime: il cliff arena non usa `BiomeFallZone` e non applica caduta.
-- Il manifest v14 vieta fallback impliciti e valida anche ogni path dichiarato
+- Il manifest v15 vieta fallback impliciti e valida anche ogni path dichiarato
   in `variant_asset_paths`: ogni ID generato da ostacoli,
   terrain, passaggi, bordi o fall zone deve avere un contratto asset-driven con
   `asset_path`, `status`, `biome_ids`, `anchor`, footprint/collisione, sorgente,

@@ -145,7 +145,7 @@ func test_runtime_object() -> void:
 		await wait_physics_frames(1)
 		assert_true(obstacle.get_visual_base_size().is_equal_approx(world_size), "visual base equals collision footprint")
 		assert_true(obstacle.is_footprint_contract_aligned(), "runtime footprint matches manifest")
-		assert_eq(obstacle.get_footprint_slots(), Vector2i(4, 4), "large house exposes its 4x4 footprint")
+		assert_eq(obstacle.get_footprint_slots(), Vector2i(8, 8), "town house exposes its doubled 8x8 footprint")
 		assert_eq(obstacle.z_index, 0, "runtime object participates in Y-sort")
 		assert_true(is_equal_approx(obstacle.get_sort_anchor_y(), _manifest.get_sort_offset(obstacle_id)), "sprite floor anchor uses the manifest sort offset")
 		assert_true(bool(obstacle.call("has_asset_sprite")), "runtime house uses its top-down asset")
@@ -361,8 +361,8 @@ func test_scalable_obstacle() -> void:
 		var large_counts := large.call("get_mesa_geometry_counts") as Dictionary
 		assert_eq(int(small_counts.get("areas", 0)), 1, "small rock owns one mesa area")
 		assert_eq(int(large_counts.get("areas", 0)), 1, "large rock owns one mesa area")
-		assert_eq(int(small_counts.get("faces", 0)), 3, "small rock owns its front and side faces")
-		assert_eq(int(large_counts.get("faces", 0)), 3, "large rock owns its front and side faces")
+		assert_eq(int(small_counts.get("faces", 0)), 17, "small rock rounds visible walls with six-segment corners")
+		assert_eq(int(large_counts.get("faces", 0)), 17, "large rock rounds visible walls with six-segment corners")
 		assert_false(bool(small.call("has_asset_sprite")), "small rock does not stretch a sprite")
 		assert_false(bool(large.call("has_asset_sprite")), "large rock does not stretch a sprite")
 		assert_true(bool(small.call("is_world_position_behind_cliff", Vector2(0.0, -100.0))), "position north of the sort line is behind the cliff")
@@ -407,7 +407,7 @@ func test_rock_area_mesh_builder() -> void:
 	var counts := builder.get_counts()
 	assert_true(builder.has_geometry(), "rock-area builder creates a raised plateau")
 	assert_eq(int(counts.get("areas", 0)), 2, "builder covers both generated rock rects")
-	assert_eq(int(counts.get("faces", 0)), 6, "each plateau emits a front wall and two oblique side walls")
+	assert_eq(int(counts.get("faces", 0)), 34, "each plateau emits rounded east/south/west wall segments")
 	assert_not_null(builder.get_face_mesh(), "ascending wall mesh exists")
 	assert_not_null(builder.top_mesh, "raised crown mesh exists")
 	var single_rect: Array[Rect2i] = [
@@ -429,8 +429,10 @@ func test_rock_area_mesh_builder() -> void:
 	var face_bounds := builder.get_face_mesh().get_aabb() if builder.get_face_mesh() != null else AABB()
 	assert_lt(absf(face_bounds.size.x - float(SMALL_CELLS.x) * LOGICAL_TILE_SCALE), 0.01,
 		"walls reach the full footprint width at the ground")
-	assert_lt(absf(face_bounds.size.y - (float(SMALL_CELLS.y) * LOGICAL_TILE_SCALE + raise)), 0.01,
-		"walls ascend the full lift height above the footprint")
+	assert_gt(face_bounds.size.y, float(SMALL_CELLS.y) * LOGICAL_TILE_SCALE,
+		"rounded walls still rise above the footprint depth")
+	assert_lte(face_bounds.size.y, float(SMALL_CELLS.y) * LOGICAL_TILE_SCALE + raise,
+		"rounded walls remain inside the lifted footprint envelope")
 
 # --- main.tscn: obstacle system + Y-sort (ultimo: boota la scena) -----------
 

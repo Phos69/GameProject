@@ -5,6 +5,20 @@ class_name BiomeGenerationProfile
 ## Asset paths, anchors and collision remain owned by the environment manifest.
 
 @export var biome_id: StringName = &"infected_plains"
+@export_group("Terrain parcels")
+@export_range(7, 10, 1) var parcel_min_count: int = 7
+@export_range(7, 10, 1) var parcel_max_count: int = 10
+@export_range(0.0, 1.0, 0.01) var clearing_weight: float = 0.45
+@export_range(0.0, 1.0, 0.01) var forest_weight: float = 0.35
+@export_range(0.0, 1.0, 0.01) var fall_zone_weight: float = 0.20
+@export_range(0.0, 1.0, 0.05) var clearing_tree_line_chance: float = 0.50
+@export_range(1, 2, 1) var forest_corridor_min_count: int = 1
+@export_range(1, 2, 1) var forest_corridor_max_count: int = 2
+@export var forest_tree_id: StringName = &"forest_tree"
+@export var town_building_ids: Array[StringName] = []
+@export var town_vehicle_ids: Array[StringName] = []
+
+@export_group("Legacy compatibility")
 @export var mesa_profile_id: StringName = &"forest"
 @export_range(1, 24, 1) var mesa_min_count: int = 2
 @export_range(1, 24, 1) var mesa_max_count: int = 4
@@ -53,6 +67,14 @@ func get_validation_errors() -> PackedStringArray:
 	var errors := PackedStringArray()
 	if biome_id.is_empty():
 		errors.append("biome_id is empty")
+	if parcel_min_count > parcel_max_count:
+		errors.append("parcel_min_count exceeds parcel_max_count")
+	if not is_equal_approx(clearing_weight + forest_weight + fall_zone_weight, 1.0):
+		errors.append("parcel weights must sum to 1")
+	if forest_corridor_min_count > forest_corridor_max_count:
+		errors.append("forest corridor minimum exceeds maximum")
+	if forest_tree_id.is_empty():
+		errors.append("forest_tree_id is empty")
 	if mesa_profile_id.is_empty():
 		errors.append("mesa_profile_id is empty")
 	if mesa_min_count > mesa_max_count:

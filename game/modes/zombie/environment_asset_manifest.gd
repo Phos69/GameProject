@@ -11,7 +11,7 @@ const RESOLVER_UTILS := preload(
 ## The manifest is the single source of truth for how environment objects are
 ## converted to the orthogonal top-down pipeline: collision shape, footprint,
 ## blocking flags, procedural draw mode, asset contract and ground sort offset.
-## Manifest v14 separates placement footprint from physical collision, supports
+## Manifest v15 separates placement footprint from physical collision, supports
 ## contextual asset/collision variants, and keeps object orientation cardinal.
 ## Missing art is allowed only when the entry explicitly declares a fallback or
 ## a needs_asset/procedural_fallback status.
@@ -364,6 +364,21 @@ func get_visual_height_tiles(object_id: StringName) -> int:
 	if objects.has(object_id):
 		return int((objects[object_id] as Dictionary).get("visual_height_tiles", 0))
 	return 0
+
+func get_entrance_side(object_id: StringName) -> StringName:
+	if objects.has(object_id):
+		return (objects[object_id] as Dictionary).get(
+			"entrance_side", &"south"
+		) as StringName
+	return &"south"
+
+func get_entrance_offset_tiles(object_id: StringName) -> Vector2i:
+	if objects.has(object_id):
+		var value := (objects[object_id] as Dictionary).get(
+			"entrance_offset_tiles", Vector2.ZERO
+		) as Vector2
+		return Vector2i(roundi(value.x), roundi(value.y))
+	return Vector2i.ZERO
 
 func get_visual_scale(object_id: StringName) -> float:
 	if objects.has(object_id):
@@ -989,6 +1004,11 @@ func _normalize_object(entry: Dictionary) -> Dictionary:
 		"footprint_tiles": footprint,
 		"footprint_slots": footprint_slots,
 		"visual_height_tiles": maxi(int(entry.get("visual_height_tiles", 0)), 0),
+		"entrance_side": StringName(str(entry.get("entrance_side", "south"))),
+		"entrance_offset_tiles": _normalize_vector2(
+			entry.get("entrance_offset_tiles", Vector2.ZERO),
+			Vector2.ZERO
+		),
 		"visual_scale": maxf(float(entry.get("visual_scale", 1.0)), 0.01),
 		"blocks_movement": bool(entry.get("blocks_movement", true)),
 		"blocks_projectiles": bool(entry.get("blocks_projectiles", true)),

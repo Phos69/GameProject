@@ -5,6 +5,8 @@
 [resource]
 script = ExtResource("1_profile")
 biome_id = &"toxic_wastes"
+town_building_ids = Array[StringName]([&"lab_ruin", &"lab_block"])
+town_vehicle_ids = Array[StringName]([&"abandoned_car"])
 mesa_profile_id = &"urban_ruins"
 random_prop_ids = Array[StringName]([&"lab_ruin", &"chemical_barrel", &"toxic_barrel", &"pipe_stack", &"industrial_fence", &"lab_wall", &"corroded_barrier"])
 random_prop_weights = Array[float]([0.6, 1.4, 1.2, 1.0, 1.1, 1.0, 1.1])

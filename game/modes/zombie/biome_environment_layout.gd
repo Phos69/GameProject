@@ -7,7 +7,14 @@ const DEFAULT_ZONE_SIZE := WorldGridConfig.BIOME_SIZE
 const PERIMETER_VISUAL_WALL: StringName = &"procedural_wall"
 const PERIMETER_VISUAL_RAISED_CLIFF: StringName = &"raised_cliff"
 const RAISED_CLIFF_HEIGHT_CELLS := WorldGridConfig.RAISED_CLIFF_HEIGHT_TILES
-const GENERATION_SIGNATURE_VERSION: int = 3
+const GENERATION_SIGNATURE_VERSION: int = 4
+
+const PARCEL_NONE: StringName = &""
+const PARCEL_MESA: StringName = &"mesa"
+const PARCEL_CLEARING: StringName = &"clearing"
+const PARCEL_FOREST: StringName = &"forest"
+const PARCEL_FALL_ZONE: StringName = &"fall_zone"
+const PARCEL_TOWN: StringName = &"town"
 
 # Runtime caches and diagnostic summaries are derived from the layout and may be
 # rebuilt without changing the generated world. Every other script property is
@@ -82,6 +89,16 @@ var rock_rects: Array[Rect2i] = []
 # the road router but keep their natural manifest footprint and object identity.
 var mass_rects: Array[Rect2i] = []
 var forest_rects: Array[Rect2i] = []
+var forest_corridor_rects: Array[Rect2i] = []
+var forest_corridor_parcel_indices: Array[int] = []
+var town_entrance_cells: Array[Vector2i] = []
+# Logical terrain parcels are intentionally independent from the 10x10 visual
+# streaming chunks. `parcel_cell_indices` stores parcel_index + 1 for every
+# region cell; zero is reserved for roads, trails and the perimeter.
+var parcel_types: Array[StringName] = []
+var parcel_bounds: Array[Rect2i] = []
+var parcel_areas: Array[int] = []
+var parcel_cell_indices: PackedInt32Array = PackedInt32Array()
 # Random-prop membership is explicit instead of being inferred from all obstacle
 # records. Entries are parallel and also exist in the obstacle arrays for runtime.
 var random_prop_rects: Array[Rect2i] = []
@@ -539,6 +556,8 @@ func rect_overlaps_road_cells(rect: Rect2i) -> bool:
 func rect_intersects_route(rect: Rect2i) -> bool:
 	if GeometryUtils.intersects_any(rect, road_rects):
 		return true
+	if GeometryUtils.intersects_any(rect, passage_rects):
+		return true
 	if GeometryUtils.intersects_any(rect, passage_connector_rects):
 		return true
 	return rect_overlaps_road_cells(rect)
@@ -576,6 +595,79 @@ func get_road_cells() -> Array[Vector2i]:
 		var key := int(key_value)
 		cells.append(Vector2i(key % zone_size.x, floori(float(key) / float(zone_size.x))))
 	return cells
+
+func initialize_parcel_map() -> void:
+	parcel_types.clear()
+	parcel_bounds.clear()
+	parcel_areas.clear()
+	parcel_cell_indices = PackedInt32Array()
+	parcel_cell_indices.resize(zone_size.x * zone_size.y)
+	parcel_cell_indices.fill(0)
+
+func register_parcel(
+	parcel_type: StringName,
+	cells: Array[Vector2i],
+	bounds: Rect2i
+) -> int:
+	if parcel_cell_indices.size() != zone_size.x * zone_size.y:
+		initialize_parcel_map()
+	var parcel_index := parcel_types.size()
+	parcel_types.append(parcel_type)
+	parcel_bounds.append(bounds)
+	parcel_areas.append(cells.size())
+	for cell in cells:
+		if cell.x < 0 or cell.y < 0 or cell.x >= zone_size.x or cell.y >= zone_size.y:
+			continue
+		parcel_cell_indices[_cell_key(cell)] = parcel_index + 1
+	return parcel_index
+
+func set_parcel_type(parcel_index: int, parcel_type: StringName) -> void:
+	if parcel_index < 0 or parcel_index >= parcel_types.size():
+		return
+	parcel_types[parcel_index] = parcel_type
+
+func get_parcel_index_at_cell(cell: Vector2i) -> int:
+	if (
+		cell.x < 0
+		or cell.y < 0
+		or cell.x >= zone_size.x
+		or cell.y >= zone_size.y
+		or parcel_cell_indices.size() != zone_size.x * zone_size.y
+	):
+		return -1
+	return parcel_cell_indices[_cell_key(cell)] - 1
+
+func get_parcel_type_at_cell(cell: Vector2i) -> StringName:
+	var parcel_index := get_parcel_index_at_cell(cell)
+	if parcel_index < 0 or parcel_index >= parcel_types.size():
+		return PARCEL_NONE
+	return parcel_types[parcel_index]
+
+func get_parcel_cells(parcel_index: int) -> Array[Vector2i]:
+	var result: Array[Vector2i] = []
+	if parcel_index < 0 or parcel_index >= parcel_types.size():
+		return result
+	for key in range(parcel_cell_indices.size()):
+		if parcel_cell_indices[key] != parcel_index + 1:
+			continue
+		result.append(Vector2i(key % zone_size.x, key / zone_size.x))
+	return result
+
+func get_parcel_report() -> Dictionary:
+	var type_counts: Dictionary = {}
+	for parcel_type in parcel_types:
+		type_counts[parcel_type] = int(type_counts.get(parcel_type, 0)) + 1
+	var assigned_cells := 0
+	for encoded_index in parcel_cell_indices:
+		if encoded_index > 0:
+			assigned_cells += 1
+	return {
+		"count": parcel_types.size(),
+		"type_counts": type_counts,
+		"assigned_cells": assigned_cells,
+		"bounds_count": parcel_bounds.size(),
+		"areas_count": parcel_areas.size(),
+	}
 
 func rebuild_terrain_classification(cell: BiomeCell = null) -> void:
 	terrain_classification_counts = {

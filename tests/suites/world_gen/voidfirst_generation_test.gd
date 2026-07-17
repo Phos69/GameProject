@@ -51,30 +51,14 @@ func test_biome_divider_uses_upward_cliff_contract() -> void:
 # --- rocce (M1) -----------------------------------------------------------
 
 func test_rocks_placement() -> void:
-	assert_gte(_layout.rock_rects.size(), 10, "almeno 10 rocce piazzate")
-	var all_square := true
-	var all_in_range := true
-	for rect in _layout.rock_rects:
-		if rect.size.x != rect.size.y:
-			all_square = false
-		if (
-			rect.size.x < WorldGridConfig.VOIDFIRST_ROCK_MIN_SIZE_TILES
-			or rect.size.x > WorldGridConfig.VOIDFIRST_ROCK_MAX_SIZE_TILES
-		):
-			all_in_range = false
-	assert_true(all_square, "ogni roccia e quadrata")
-	assert_true(all_in_range, "ogni lato roccia entro 3..5 tile nuovi")
-	var overlaps := false
-	for i in range(_layout.rock_rects.size()):
-		for j in range(i + 1, _layout.rock_rects.size()):
-			if _layout.rock_rects[i].intersects(_layout.rock_rects[j]):
-				overlaps = true
-	assert_false(overlaps, "nessuna coppia di rocce si sovrappone")
+	assert_eq(_layout.mesa_rects.size(), 1, "una sola montagna mesa piazzata")
+	assert_eq(_layout.parcel_types.count(BiomeEnvironmentLayout.PARCEL_MESA), 1,
+		"la montagna appartiene all'unico lotto mesa")
 	var rock_obstacles := 0
 	for obstacle_id in _layout.obstacle_ids:
 		if obstacle_id == &"large_rock":
 			rock_obstacles += 1
-	assert_eq(rock_obstacles, _layout.rock_rects.size(), "ogni roccia e registrata come large_rock")
+	assert_eq(rock_obstacles, 1, "la montagna e registrata come large_rock")
 
 func test_rocks_classification_and_records() -> void:
 	var all_obstacle := true
@@ -88,19 +72,9 @@ func test_rocks_classification_and_records() -> void:
 # --- foreste (M2) ---------------------------------------------------------
 
 func test_forests_placement() -> void:
-	assert_gte(_layout.forest_rects.size(), 4, "almeno 4 foreste piazzate")
-	var all_square := true
-	var all_in_range := true
-	for rect in _layout.forest_rects:
-		if rect.size.x != rect.size.y:
-			all_square = false
-		if (
-			rect.size.x < WorldGridConfig.VOIDFIRST_FOREST_MIN_SIZE_TILES
-			or rect.size.x > WorldGridConfig.VOIDFIRST_FOREST_MAX_SIZE_TILES
-		):
-			all_in_range = false
-	assert_true(all_square, "ogni foresta e quadrata")
-	assert_true(all_in_range, "ogni lato foresta entro 2..10 tile nuovi")
+	var forest_parcels := _layout.parcel_types.count(BiomeEnvironmentLayout.PARCEL_FOREST)
+	assert_eq(_layout.forest_rects.size(), forest_parcels,
+		"ogni lotto forest ha un bounds visuale")
 	var forest_floor := 0
 	for tag in _layout.floor_rect_tags:
 		if tag == &"forest_tall_grass":
@@ -214,7 +188,7 @@ func test_roads_cross_forests_and_clear_trees() -> void:
 		if _band_has_road(_layout, forest_rect):
 			crosses = true
 			break
-	assert_true(crosses, "almeno una strada/sentiero attraversa una foresta")
+	assert_false(crosses, "strade e sentieri delimitano le foreste senza attraversarle")
 	var tree_on_road := false
 	for index in range(_layout.obstacle_ids.size()):
 		if _layout.obstacle_ids[index] != &"forest_tree":
@@ -420,7 +394,7 @@ func test_live_terrain_generator_integration() -> void:
 	assert_lte(trees, 500, "numero alberi nel budget")
 	assert_lte(layout.fall_zone_rects.size(), 220, "numero fall-zone nel budget")
 	assert_lte(layout.obstacle_ids.size(), 900, "numero ostacoli nel budget")
-	assert_gte(rocks, 10, "almeno 10 rocce nel layout live")
+	assert_eq(rocks, 1, "una sola montagna nel layout live")
 
 	generator.free()
 

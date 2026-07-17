@@ -2282,7 +2282,11 @@ func test_generated_forest_resolver() -> void:
 				saw_oriented_cliff = true
 				if oriented_cliff_cell == Vector2i(-1, -1):
 					oriented_cliff_cell = probe
-			if layout.get_floor_tag_at_cell(probe) == &"forest_tall_grass" and [&"forest_tall_grass", &"grass_to_tall_grass"].has(tile_id):
+			if (
+				layout.get_floor_tag_at_cell(probe) == &"forest_tall_grass"
+				and [&"forest_tall_grass", &"grass_to_tall_grass"].has(tile_id)
+				and layout.get_terrain_class_at_cell(probe, cell) == BiomeEnvironmentLayout.TERRAIN_WALKABLE
+			):
 				tall_grass_cell = probe
 			checked += 1
 	assert_eq(checked, layout.zone_size.x * layout.zone_size.y, "forest resolver covers the full chunk")

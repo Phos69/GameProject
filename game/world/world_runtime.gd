@@ -50,6 +50,8 @@ func start_run(world_data: Dictionary, manager: BiomeManager = null) -> void:
 		and graph.get_region(persistent_state.current_region_id) != null
 	):
 		start_region_id = persistent_state.current_region_id
+	var current_cell := _find_cell(world_data, start_region_id)
+	persistent_state.migrate_terrain_if_needed(current_cell, start_cell)
 	set_current_region(start_region_id)
 	is_active = true
 
@@ -163,6 +165,13 @@ func _apply_pending_save_if_compatible() -> void:
 		return
 	persistent_state.restore_save_data(pending_save_data)
 	pending_save_data.clear()
+
+func _find_cell(world_data: Dictionary, region_id: StringName) -> BiomeCell:
+	for value in world_data.get("cells", []) as Array:
+		var cell := value as BiomeCell
+		if cell != null and cell.id == region_id:
+			return cell
+	return null
 
 func _refresh_active_regions(center_region_id: StringName) -> void:
 	active_regions.clear()

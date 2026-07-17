@@ -69,9 +69,17 @@ func test_sample_cells_layout_invariants() -> void:
 			"%s spawn player walkable" % String(cell.id))
 		assert_false(layout.floor_rects.is_empty(),
 			"%s ha blocchi di pavimento walkable carved" % String(cell.id))
-		# Every biome shares explicit mesas, vegetation clusters and guaranteed
-		# internal chasms. Thematic masses are separate from mesa geometry.
-		assert_false(layout.mesa_rects.is_empty(), "%s ha mesa void-first" % String(cell.id))
+		var parcel_report := layout.get_parcel_report()
+		var parcel_counts := parcel_report.get("type_counts", {}) as Dictionary
+		assert_between(layout.parcel_types.size(), 7, 10,
+			"%s ha 7..10 lotti logici: %s" % [
+				String(cell.id), str(layout.generation_summary.get("parcel_report", {}))
+			])
+		assert_eq(int(parcel_counts.get(BiomeEnvironmentLayout.PARCEL_MESA, 0)), 1,
+			"%s ha esattamente una mesa" % String(cell.id))
+		assert_eq(int(parcel_counts.get(BiomeEnvironmentLayout.PARCEL_TOWN, 0)), 1,
+			"%s ha esattamente una town" % String(cell.id))
+		assert_eq(layout.mesa_rects.size(), 1, "%s costruisce una montagna" % String(cell.id))
 		assert_eq(layout.mesa_profile_ids.size(), layout.mesa_rects.size(),
 			"%s ha un profilo per ogni mesa" % String(cell.id))
 		for profile_id in layout.mesa_profile_ids:
@@ -79,43 +87,28 @@ func test_sample_cells_layout_invariants() -> void:
 				"%s usa il profilo mesa del bioma" % String(cell.id))
 		assert_eq(layout.obstacle_ids.count(&"large_rock"), layout.mesa_rects.size(),
 			"%s ha un blocker tecnico per ogni mesa" % String(cell.id))
-		if cell.biome_id == &"infected_plains":
-			assert_eq(layout.rock_rects, layout.mesa_rects,
-				"%s conserva il mirror rock legacy" % String(cell.id))
-		else:
-			assert_true(layout.rock_rects.is_empty(),
-				"%s non sovraccarica rock_rects con edifici" % String(cell.id))
-			assert_false(layout.mass_rects.is_empty(),
-				"%s ha masse tematiche separate" % String(cell.id))
-		assert_false(layout.forest_rects.is_empty(), "%s ha cluster di vegetazione void-first" % String(cell.id))
-		assert_true(_has_internal_chasm(layout), "%s ha un chasm interno" % String(cell.id))
-		assert_between(layout.random_prop_rects.size(),
-			ObstacleLayoutGenerator.VOIDFIRST_PROP_MIN_COUNT,
-			ObstacleLayoutGenerator.VOIDFIRST_PROP_MAX_COUNT,
-			"%s rispetta il budget random prop" % String(cell.id))
-		assert_eq(layout.random_prop_ids.size(), layout.random_prop_rects.size(),
-			"%s ha id/rect random prop paralleli" % String(cell.id))
+		assert_true(layout.random_prop_rects.is_empty(),
+			"%s disattiva lo scatter globale" % String(cell.id))
+		var content := layout.generation_summary.get("parcel_content", {}) as Dictionary
+		assert_between(int(content.get("town_building_count", 0)), 2, 4,
+			"%s town con 2..4 edifici" % String(cell.id))
+		assert_between(int(content.get("town_vehicle_count", 0)), 1, 3,
+			"%s town con 1..3 veicoli" % String(cell.id))
 		assert_false(layout.obstacle_rects.is_empty(), "%s ha oggetti top-down bloccanti" % String(cell.id))
 		assert_true(bool(layout.validation_report.get("is_valid", false)),
-			"%s passa la validazione connettivita/placement" % String(cell.id))
+			"%s passa la validazione: %s" % [String(cell.id), str(layout.validation_report)])
 
-func test_random_props_use_thematic_categories_and_clear_floor() -> void:
-	var categories := ObstacleLayoutGenerator.get_generated_obstacle_categories()
+func test_town_content_uses_thematic_pools() -> void:
 	for cell in _sample_cells:
 		var layout := cell.generated_layout
 		if layout == null:
 			continue
-		var seen_categories: Dictionary = {}
-		for index in range(layout.random_prop_rects.size()):
-			var prop_id := layout.random_prop_ids[index]
-			var prop_rect := layout.random_prop_rects[index]
-			assert_has(_expected_random_prop_ids(cell.biome_id), prop_id,
-				"%s prop %s appartiene al pool tematico" % [String(cell.id), String(prop_id)])
-			seen_categories[categories.get(prop_id, &"")] = true
-			assert_true(_prop_is_clear(layout, index),
-				"%s prop %s e su floor senza overlap" % [String(cell.id), String(prop_id)])
-		assert_gte(seen_categories.size(), 2,
-			"%s usa almeno due categorie di prop" % String(cell.id))
+		var expected_ids: Array[StringName] = _expected_town_ids(cell.biome_id)
+		var found := 0
+		for obstacle_id in layout.obstacle_ids:
+			if expected_ids.has(obstacle_id):
+				found += 1
+		assert_gte(found, 3, "%s usa edifici e veicoli town tematizzati" % String(cell.id))
 
 func test_sample_cells_roads() -> void:
 	for cell in _sample_cells:
@@ -248,6 +241,44 @@ func test_world_graph_persistence() -> void:
 		"lo stato runtime di regione persiste")
 	assert_true(restored.party_position.is_equal_approx(Vector2(128.0, -32.0)),
 		"la posizione della party persiste")
+	assert_eq(restored.terrain_generation_revision,
+		PersistentWorldState.TERRAIN_GENERATION_REVISION,
+		"il save registra la revisione terrain")
+
+func test_legacy_terrain_save_preserves_progress_and_resets_layout_ledgers() -> void:
+	var graph := _manager.get_world_graph()
+	var current_cell := _cells[4]
+	var anchor_cell := _cells[0]
+	var state := PersistentWorldState.new()
+	state.configure(MAP_SEED, graph)
+	state.set_current_region(current_cell.id, graph)
+	state.mark_region_cleared(anchor_cell.id)
+	state.mark_region_item_consumed(
+		current_cell.id, PersistentWorldState.CATEGORY_OPENED_CRATES, &"legacy_crate"
+	)
+	var legacy_save := state.to_save_data()
+	legacy_save.erase("terrain_generation_revision")
+	var restored := PersistentWorldState.new()
+	restored.restore_save_data(legacy_save)
+	assert_true(restored.migrate_terrain_if_needed(current_cell, anchor_cell),
+		"un save senza revisione esegue la migrazione terrain")
+	assert_eq(restored.seed_value, MAP_SEED, "la migrazione conserva il seed")
+	assert_eq(restored.current_region_id, current_cell.id,
+		"la migrazione conserva la regione corrente")
+	assert_eq(restored.exploration_state.get_state(anchor_cell.id),
+		WorldExplorationState.STATE_CLEARED,
+		"la migrazione conserva esplorazione e progressione")
+	assert_true(restored.get_region_runtime_state(current_cell.id).is_empty(),
+		"la migrazione azzera i ledger dipendenti dal vecchio layout")
+	var expected_offset := Vector2(current_cell.world_origin - anchor_cell.world_origin) \
+		* current_cell.generated_layout.logical_tile_scale
+	var expected_position := expected_offset + current_cell.generated_layout.logical_to_world(
+		current_cell.generated_layout.player_spawn_cell
+	)
+	assert_true(restored.party_position.is_equal_approx(expected_position),
+		"la migrazione sposta la party sullo spawn route-safe rigenerato")
+	assert_false(restored.migrate_terrain_if_needed(current_cell, anchor_cell),
+		"la migrazione terrain e one-shot")
 
 # --- roster tematico dei nemici per biome ---------------------------------
 
@@ -384,6 +415,19 @@ func _expected_random_prop_ids(biome_id: StringName) -> Array[StringName]:
 			return [&"sunken_house", &"sunken_wreck", &"dead_tree", &"marsh_log", &"reed_wall", &"broken_walkway"]
 		_:
 			return [&"ruined_house", &"abandoned_house", &"abandoned_car", &"broken_fence", &"wood_barrier", &"small_rock", &"fallen_log"]
+
+func _expected_town_ids(biome_id: StringName) -> Array[StringName]:
+	match biome_id:
+		&"toxic_wastes":
+			return [&"lab_ruin", &"lab_block", &"abandoned_car"]
+		&"burning_fields":
+			return [&"burned_house", &"burned_car", &"metal_wreck"]
+		&"frozen_outskirts":
+			return [&"snow_cabin", &"abandoned_car"]
+		&"drowned_marsh":
+			return [&"sunken_house", &"sunken_wreck"]
+		_:
+			return [&"ruined_house", &"abandoned_house", &"abandoned_car"]
 
 func _expected_mesa_profile(biome_id: StringName) -> StringName:
 	match biome_id:

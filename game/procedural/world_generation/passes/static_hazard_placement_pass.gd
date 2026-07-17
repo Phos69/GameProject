@@ -103,6 +103,17 @@ func _scan_rect(layout: BiomeEnvironmentLayout, size: Vector2i) -> Rect2i:
 
 
 func _can_place(layout: BiomeEnvironmentLayout, rect: Rect2i) -> bool:
+	# Parcel layouts keep biome hazards inside clearings so mesa, forest, town and
+	# fall-zone identities remain pure. Legacy/manual layouts have no parcel map
+	# and retain their previous behavior.
+	if not layout.parcel_types.is_empty():
+		for y in range(rect.position.y, rect.end.y):
+			for x in range(rect.position.x, rect.end.x):
+				if (
+					layout.get_parcel_type_at_cell(Vector2i(x, y))
+					!= BiomeEnvironmentLayout.PARCEL_CLEARING
+				):
+					return false
 	var padded := GeometryUtils.inflate_rect(rect, ROUTE_CLEARANCE)
 	if layout.rect_intersects_route(padded):
 		return false
@@ -150,5 +161,4 @@ func _cell_inside_any_rect(cell: Vector2i, rects: Array[Rect2i]) -> bool:
 		if rect.has_point(cell):
 			return true
 	return false
-
 

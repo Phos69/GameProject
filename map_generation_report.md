@@ -1,10 +1,22 @@
 # Report - Generazione mondo e piano di unificazione dei biomi
 
-Data analisi: 2026-07-13. Implementazione core: 2026-07-13.
+Data analisi: 2026-07-13. Ultima revisione terrain: 2026-07-17.
 
-**Stato: `WORLD-UNIFY-001` completata per il contratto runtime core.** Il
-documento conserva l'audit storico che ha motivato il lavoro, ma distingue
-esplicitamente le lacune iniziali dall'esito implementato.
+**Stato: `TERRAIN-PARCELS-001` completata.** Le sezioni storiche su
+`WORLD-UNIFY-001` restano come audit, ma le regole seguenti le sostituiscono:
+
+- route principali prima dei sentieri; 7-10 lotti logici per regione;
+- una mesa e una town garantite; altri lotti pesati clearing/forest/fall-zone;
+- una montagna connessa, foreste dense con corridoi, radure/filari, fall-zone
+  con rim e town da 2-4 edifici/1-3 veicoli con ingressi raggiungibili;
+- layout v4, generatore/cache 5, snapshot v7, manifest v15 e migrazione save;
+- fuzz 20 seed x 5 biomi, validazione copertura/non-overlap e checklist manuale
+  F8/F9 per seam, collider, Y-sort e chunk mancanti.
+
+Validazione finale del 2026-07-17: fuzz terrain 100 layout/3024 assert,
+`world_gen` mirata 42 test, suite `environment` 48/48, `assets` 79/79,
+`obstacles` 27/27, boot headless pulito e Visual QA biomi 6/6 con
+`visible_missing_chunks == 0`.
 
 Dal 2026-07-15 la presentazione segue
 `docs/top_down_cardinal_contract.md`: la generazione logica resta cartesiana,
@@ -45,30 +57,22 @@ L'audit iniziale aveva identificato quattro lacune nel contratto condiviso:
 
 ## Esito implementazione
 
-Il core e ora attivo nello stesso `populate_layout_voidfirst()`:
+Il core e attivo nello stesso `populate_layout_voidfirst()`, ora ridotto a
+orchestratore dei pass in `world_generation/passes/`:
 
-- cinque `BiomeGenerationProfile` tipizzati configurano mesa, props, chasm e
-  hazard senza spostare la responsabilita asset fuori dal manifest;
-- ogni bioma genera almeno un chasm interno salvo `disable_internal_void`,
-  mesa tematiche (10-16 nella Pianura, 2-4 negli altri) e 10-16 props pesati
-  appartenenti ad almeno due categorie;
-- Tossico, Infuocato, Neve e Palude generano due hazard statici tematici su
-  terreno sicuro; la Pianura mantiene solo le fall zone;
-- gli stream RNG `mesa`, `void`, `hazards` e `props` sono derivati
-  separatamente dal seed;
-- il rendering usa la stessa geometria mesa con profili `forest`,
-  `urban_ruins`, `volcanic`, `frozen_tundra` e `swamp`;
-- firma canonica `layout-v3`, revisione generatore/cache 3 e snapshot v6
+- `TerrainRoutePass` costruisce prima strade da 7 tile, hub e passaggi;
+- `TerrainParcelPartitionPass` aggiunge sentieri interni da 4 tile e assegna
+  ogni cella interna non-route a uno dei 7-10 lotti;
+- `TerrainParcelContentPass` garantisce una mesa e una town, poi assegna gli
+  archetipi restanti con pesi 45/35/20;
+- hazard tematici e casse vengono aggiunti dopo i contenuti: gli hazard sono
+  ammessi soltanto nelle radure, le casse restano su hub/route;
+- la vecchia void lottery, le macchie forestali, i gruppi di mesa e lo scatter
+  globale non partecipano piu alla pipeline attiva;
+- firma canonica `layout-v4`, revisione generatore/cache 5 e snapshot v7
   rifiutano layout obsoleti o alterati;
-- i guardrail coprono cinque biomi, 20 seed per bioma, placement, pool,
-  determinismo, snapshot e mesh/collisione delle mesa; il fallback prop viene
-  inoltre provato senza rejection sampling.
-
-I 23 ID prop promossi usano ora altrettanti SVG cardinali individuali, non
-regioni di atlas. Il manifest li registra come `project_svg_generator` /
-`environment_top_down_internal`; le 23 risorse `.tres` e le cinque tavole
-concept raster precedenti sono state rimosse. Restano fuori dalla milestone
-core la valutazione qualitativa manuale e i playtest lunghi di `BAL-001`.
+- il manifest v15 registra ingressi degli edifici, footprint raddoppiati,
+  `forest_tree` e il fallback `abandoned_car` in tutti i cinque asset set.
 
 ## Ambito
 
@@ -78,13 +82,13 @@ separati e non vanno assorbiti automaticamente.
 
 ## Stato implementato per bioma
 
-| Bioma | Cliff nel void | Mesa reale | Oggetti variabili | Hazard statici tematici |
+| Bioma | Mesa | Town buildings | Forest | Hazard nelle radure |
 | --- | --- | --- | --- | --- |
-| Pianura Infetta | >=1 salvo opt-out | 10-16, profilo `forest` | 10-16 pesati, >=2 categorie | no, oltre alle fall zone |
-| Tossico | >=1 salvo opt-out | 2-4, profilo `urban_ruins` | 10-16 pesati, >=2 categorie | 2: pozza tossica e gas |
-| Infuocato | >=1 salvo opt-out | 2-4, profilo `volcanic` | 10-16 pesati, >=2 categorie | 2: fuoco e lava |
-| Neve | >=1 salvo opt-out | 2-4, profilo `frozen_tundra` | 10-16 pesati, >=2 categorie | 2: ghiaccio e neve alta |
-| Palude | >=1 salvo opt-out | 2-4, profilo `swamp` | 10-16 pesati, >=2 categorie | 2: acqua profonda e fango |
+| Pianura Infetta | 1 | case abbandonate | `forest_tree` | nessuno specifico |
+| Tossico | 1 | laboratori | `forest_tree` | pozza tossica, gas |
+| Infuocato | 1 | case bruciate | `forest_tree` | fuoco, lava |
+| Neve | 1 | cabine | `forest_tree` | ghiaccio, neve alta |
+| Palude | 1 | case sommerse | `forest_tree` | acqua profonda, fango |
 
 ## Pipeline attiva
 
@@ -92,30 +96,26 @@ separati e non vanno assorbiti automaticamente.
 `BiomeEnvironmentLayout` e chiama sempre:
 
 ```text
-_carve_passages
-_place_mesas
-_place_biome_masses
-_place_forests
-_add_voidfirst_roads
-_choose_voidfirst_spawn
-_add_voidfirst_paths
-_clear_trees_on_routes
-_add_connected_border_walls
-_line_roads_with_trees
-_resolve_void_lottery
-_place_voidfirst_theme_hazards
-_add_voidfirst_crates
-_place_voidfirst_random_props
-_update_generation_summary
+TerrainRoutePass
+TerrainParcelPartitionPass
+TerrainParcelContentPass
+ConnectedBorderWallPass
+StaticHazardPlacementPass
+crate placement
+layout summary/signature
 ```
 
 La topologia, i passaggi e la classificazione completa vengono poi validati e
 materializzati da `WorldRegionStreamer`, `BiomeTileLayer`, `ObstacleSystem`,
 `HazardSystem` e `ResourceCrateSystem`.
 
-Il vecchio `populate_layout()` e ancora nello stesso file come riferimento, ma
-non e il percorso runtime. Le responsabilita richieste sono migrate nella
-pipeline void-first; la sua rimozione e cleanup fuori dalla milestone core.
+I lotti sono logici e indipendenti dai chunk visuali `10x10` dello streaming.
+
+## Audit storico WORLD-UNIFY-001
+
+Le sezioni successive documentano la milestone precedente e le ragioni dei
+contratti conservati. Quantita e nomi dei vecchi pass non descrivono la
+pipeline terrain attiva dopo `TERRAIN-PARCELS-001`.
 
 ## Cliff nel void
 

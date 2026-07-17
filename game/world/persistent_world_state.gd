@@ -7,17 +7,20 @@ class_name PersistentWorldState
 const CATEGORY_OPENED_CRATES: StringName = &"opened_crates"
 const CATEGORY_DESTROYED_OBSTACLES: StringName = &"destroyed_obstacles"
 const CATEGORY_COMPLETED_ENCOUNTERS: StringName = &"completed_encounters"
+const TERRAIN_GENERATION_REVISION: int = 5
 
 var seed_value: int = 0
 var graph_signature: String = ""
 var current_region_id: StringName = &""
 var party_position: Vector2 = Vector2.ZERO
+var terrain_generation_revision: int = TERRAIN_GENERATION_REVISION
 var region_runtime_state: Dictionary = {}
 var exploration_state := WorldExplorationState.new()
 
 func configure(seed: int, graph: WorldGraph) -> void:
 	seed_value = seed
 	graph_signature = graph.get_signature() if graph != null else ""
+	terrain_generation_revision = TERRAIN_GENERATION_REVISION
 	if graph != null:
 		exploration_state.initialize_from_graph(graph)
 		current_region_id = graph.start_region_id
@@ -35,6 +38,27 @@ func mark_region_cleared(region_id: StringName) -> void:
 
 func set_party_position(position: Vector2) -> void:
 	party_position = position
+
+func migrate_terrain_if_needed(
+	current_cell: BiomeCell,
+	anchor_cell: BiomeCell
+) -> bool:
+	if terrain_generation_revision == TERRAIN_GENERATION_REVISION:
+		return false
+	# Layout-indexed object/crate keys cannot be carried across a terrain rewrite.
+	# Exploration and graph state remain valid because region IDs/topology did not
+	# change. Place the party on the regenerated route-safe spawn.
+	region_runtime_state.clear()
+	if current_cell != null and current_cell.generated_layout != null:
+		var anchor_origin := anchor_cell.world_origin if anchor_cell != null else Vector2i.ZERO
+		var region_offset := Vector2(current_cell.world_origin - anchor_origin) * current_cell.generated_layout.logical_tile_scale
+		party_position = region_offset + current_cell.generated_layout.logical_to_world(
+			current_cell.generated_layout.player_spawn_cell
+		)
+	else:
+		party_position = Vector2.ZERO
+	terrain_generation_revision = TERRAIN_GENERATION_REVISION
+	return true
 
 func set_region_runtime_value(
 	region_id: StringName,
@@ -111,6 +135,7 @@ func to_save_data() -> Dictionary:
 		"graph_signature": graph_signature,
 		"current_region_id": String(current_region_id),
 		"party_position": [party_position.x, party_position.y],
+		"terrain_generation_revision": terrain_generation_revision,
 		"region_runtime_state": runtime,
 		"exploration": exploration_state.to_save_data()
 	}
@@ -121,6 +146,7 @@ func restore_save_data(data: Dictionary) -> void:
 	current_region_id = StringName(data.get("current_region_id", ""))
 	var position_values := data.get("party_position", [0.0, 0.0]) as Array
 	party_position = Vector2(float(position_values[0]), float(position_values[1]))
+	terrain_generation_revision = int(data.get("terrain_generation_revision", 0))
 	region_runtime_state.clear()
 	var runtime := data.get("region_runtime_state", {}) as Dictionary
 	for key in runtime.keys():
@@ -135,6 +161,7 @@ static func create_empty_save_data() -> Dictionary:
 		"graph_signature": "",
 		"current_region_id": "",
 		"party_position": [0.0, 0.0],
+		"terrain_generation_revision": TERRAIN_GENERATION_REVISION,
 		"region_runtime_state": {},
 		"exploration": {
 			"current_region_id": "",

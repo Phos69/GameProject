@@ -84,7 +84,7 @@ func test_all_biomes_render_one_themed_y_sorted_mesa_volume() -> void:
 		)
 		var counts := layer.get_mesa_area_counts()
 		assert_eq(int(counts.get("areas", 0)), 1, "%s reports one crown" % String(biome_id))
-		assert_eq(int(counts.get("faces", 0)), 3, "%s reports three visible faces" % String(biome_id))
+		assert_eq(int(counts.get("faces", 0)), 17, "%s reports rounded visible wall segments" % String(biome_id))
 		assert_eq(int(counts.get("profiles", 0)), 1, "%s reports one theme" % String(biome_id))
 		assert_eq(int(counts.get("profile_mismatches", -1)), 0, "%s keeps profile arrays aligned" % String(biome_id))
 		var report := layer.get_mesa_profile_render_report()
@@ -134,7 +134,7 @@ func test_all_biomes_render_one_themed_y_sorted_mesa_volume() -> void:
 			assert_eq(blocker.get_mesa_profile_id(), profile_id, "%s resolves the requested profile" % String(biome_id))
 			var blocker_counts := blocker.get_mesa_geometry_counts()
 			assert_eq(int(blocker_counts.get("areas", 0)), 1, "%s blocker owns one crown" % String(biome_id))
-			assert_eq(int(blocker_counts.get("faces", 0)), 3, "%s blocker owns three faces" % String(biome_id))
+			assert_eq(int(blocker_counts.get("faces", 0)), 17, "%s blocker owns rounded wall segments" % String(biome_id))
 			assert_eq(
 				float(blocker_counts.get("top_texture_repeat_world_size", 0.0)),
 				float(PROFILE_TOP_REPEAT[profile_id]),

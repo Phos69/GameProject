@@ -30,6 +30,8 @@ const EAST_BRIGHTNESS := 0.84
 const WEST_BRIGHTNESS := 0.62
 const FACE_GROUND_SHADE := 0.70
 const TOP_BRIGHTNESS := 1.06
+const CONVEX_CORNER_RADIUS_TILES := 0.75
+const CONVEX_CORNER_SEGMENTS := 6
 
 var palette: BiomePalette
 var generation_seed: int = 0
@@ -143,22 +145,81 @@ func _append_area(
 	var north := ground_rect.position.y
 	var south := ground_rect.end.y
 	var lean := minf(raise * LATERAL_LEAN_RATIO, ground_rect.size.x * 0.3)
-	# Ground footprint corners (rock meets grass).
-	var b_nw := Vector2(left, north)
-	var b_ne := Vector2(right, north)
-	var b_se := Vector2(right, south)
-	var b_sw := Vector2(left, south)
-	# Raised, inset crown corners.
-	var t_nw := Vector2(left + lean, north - raise)
-	var t_ne := Vector2(right - lean, north - raise)
-	var t_se := Vector2(right - lean, south - raise)
-	var t_sw := Vector2(left + lean, south - raise)
-	# Side walls first, then the front wall on top of them at the corners.
-	_append_wall(face, b_nw, b_sw, t_sw, t_nw, WEST_BRIGHTNESS)
-	_append_wall(face, b_se, b_ne, t_ne, t_se, EAST_BRIGHTNESS)
-	_append_wall(face, b_sw, b_se, t_se, t_sw, FRONT_BRIGHTNESS)
-	_append_top(top, t_nw, t_ne, t_se, t_sw, world_uv_origin)
+	var corner_radius := minf(
+		CONVEX_CORNER_RADIUS_TILES * WorldGridConfig.LOGICAL_TILE_SCALE,
+		minf(ground_rect.size.x, ground_rect.size.y) * 0.24
+	)
+	var base_outline := _rounded_rect_outline(ground_rect, corner_radius)
+	var crown_rect := Rect2(
+		Vector2(left + lean, north - raise),
+		Vector2(right - left - lean * 2.0, south - north)
+	)
+	var crown_outline := _rounded_rect_outline(
+		crown_rect,
+		minf(corner_radius, crown_rect.size.x * 0.24)
+	)
+	for index in range(base_outline.size()):
+		var next := (index + 1) % base_outline.size()
+		var delta := base_outline[next] - base_outline[index]
+		var outward := Vector2(delta.y, -delta.x).normalized()
+		# The north face points away from the cardinal camera and remains hidden.
+		if outward.y < -0.35:
+			continue
+		var brightness := FRONT_BRIGHTNESS
+		if outward.x < -0.35:
+			brightness = WEST_BRIGHTNESS
+		elif outward.x > 0.35:
+			brightness = EAST_BRIGHTNESS
+		_append_wall(
+			face,
+			base_outline[index],
+			base_outline[next],
+			crown_outline[next],
+			crown_outline[index],
+			brightness
+		)
+	_append_rounded_top(top, crown_outline, world_uv_origin)
 	area_count += 1
+
+func _rounded_rect_outline(rect: Rect2, radius: float) -> PackedVector2Array:
+	var points := PackedVector2Array()
+	var centers: Array[Vector2] = [
+		Vector2(rect.position.x + radius, rect.position.y + radius),
+		Vector2(rect.end.x - radius, rect.position.y + radius),
+		Vector2(rect.end.x - radius, rect.end.y - radius),
+		Vector2(rect.position.x + radius, rect.end.y - radius),
+	]
+	var start_angles: Array[float] = [PI, -PI * 0.5, 0.0, PI * 0.5]
+	for corner in range(centers.size()):
+		for segment in range(CONVEX_CORNER_SEGMENTS + 1):
+			var angle := start_angles[corner] + PI * 0.5 * float(segment) / float(CONVEX_CORNER_SEGMENTS)
+			points.append(centers[corner] + Vector2(cos(angle), sin(angle)) * radius)
+	return points
+
+func _append_rounded_top(
+	buffers: Dictionary,
+	outline: PackedVector2Array,
+	world_uv_origin: Vector2
+) -> void:
+	if outline.size() < 3:
+		return
+	var center := Vector2.ZERO
+	for point in outline:
+		center += point
+	center /= float(outline.size())
+	var crown := Color(TOP_BRIGHTNESS, TOP_BRIGHTNESS, TOP_BRIGHTNESS, 1.0)
+	for index in range(outline.size()):
+		var next := (index + 1) % outline.size()
+		QuadMeshBuffers.append_triangle(
+			buffers,
+			PackedVector2Array([center, outline[index], outline[next]]),
+			PackedVector2Array([
+				(center + world_uv_origin) / top_texture_repeat_world_size,
+				(outline[index] + world_uv_origin) / top_texture_repeat_world_size,
+				(outline[next] + world_uv_origin) / top_texture_repeat_world_size,
+			]),
+			PackedColorArray([crown, crown, crown])
+		)
 
 func _append_wall(
 	buffers: Dictionary,
@@ -212,4 +273,3 @@ func _append_top(
 		]),
 		PackedColorArray([crown, crown, crown, crown])
 	)
-

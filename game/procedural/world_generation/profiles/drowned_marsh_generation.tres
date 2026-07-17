@@ -5,6 +5,8 @@
 [resource]
 script = ExtResource("1_profile")
 biome_id = &"drowned_marsh"
+town_building_ids = Array[StringName]([&"sunken_house"])
+town_vehicle_ids = Array[StringName]([&"sunken_wreck"])
 mesa_profile_id = &"swamp"
 random_prop_ids = Array[StringName]([&"sunken_house", &"sunken_wreck", &"dead_tree", &"marsh_log", &"reed_wall", &"broken_walkway"])
 random_prop_weights = Array[float]([0.6, 1.1, 1.4, 1.2, 1.2, 0.9])

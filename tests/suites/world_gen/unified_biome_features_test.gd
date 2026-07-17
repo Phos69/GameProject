@@ -19,8 +19,7 @@ const SENTINEL_SEEDS: Array[int] = [
 	128886, 136805, 144724, 152643, 160562,
 ]
 
-func test_unified_features_hold_and_vary_across_sentinel_seeds() -> void:
-	var categories := ObstacleLayoutGenerator.get_generated_obstacle_categories()
+func test_terrain_parcels_hold_and_vary_across_sentinel_seeds() -> void:
 	var manifest := EnvironmentAssetManifest.get_shared()
 	for biome_id in BIOME_IDS:
 		var biome := WorldGen.load_biome(biome_id)
@@ -38,22 +37,58 @@ func test_unified_features_hold_and_vary_across_sentinel_seeds() -> void:
 		var biome_asset_objects := _string_name_array(
 			manifest.get_biome_asset_set_contract(biome.biome_id).get("object_scenes", [])
 		)
-		for prop_id in biome.generation_profile.random_prop_ids:
-			assert_true(biome.obstacle_ids.has(prop_id),
-				"%s dichiara %s negli obstacle_ids" % [biome_id, prop_id])
-			assert_true(manifest.has_object(prop_id),
-				"%s trova %s nel manifest" % [biome_id, prop_id])
-			assert_true(biome_asset_objects.has(prop_id),
-				"%s include %s nel proprio asset set" % [biome_id, prop_id])
+		for required_id in [biome.generation_profile.forest_tree_id, &"abandoned_car"]:
+			assert_true(manifest.has_object(required_id),
+				"%s trova %s nel manifest" % [biome_id, required_id])
+			assert_true(biome_asset_objects.has(required_id),
+				"%s include %s nel proprio asset set" % [biome_id, required_id])
 		for hazard_id in biome.generation_profile.static_hazard_ids:
 			assert_true(biome.hazard_ids.has(hazard_id),
 				"%s dichiara %s negli hazard_ids" % [biome_id, hazard_id])
-		var mesa_variants: Dictionary = {}
-		var chasm_variants: Dictionary = {}
-		var prop_variants: Dictionary = {}
+		var parcel_variants: Dictionary = {}
 		var hazard_variants: Dictionary = {}
 		for seed_value in SENTINEL_SEEDS:
 			var layout := WorldGen.voidfirst_layout(biome, seed_value)
+			var replay := WorldGen.voidfirst_layout(biome, seed_value)
+			var validation_cell := BiomeCell.new()
+			validation_cell.configure(
+				&"terrain_parcel_fuzz_cell",
+				biome.biome_id,
+				Vector2i.ZERO,
+				layout.zone_size,
+				seed_value
+			)
+			for side in BiomeCell.SIDES:
+				validation_cell.set_border(side, BiomeCell.BorderType.BLOCKED)
+			layout.rebuild_terrain_classification(validation_cell)
+			var report := layout.get_parcel_report()
+			var type_counts := report.get("type_counts", {}) as Dictionary
+			assert_between(layout.parcel_types.size(), 7, 10,
+				"%s/%d genera 7..10 lotti" % [biome_id, seed_value])
+			assert_eq(layout.parcel_bounds.size(), layout.parcel_types.size(),
+				"%s/%d mantiene bounds paralleli" % [biome_id, seed_value])
+			assert_eq(layout.parcel_areas.size(), layout.parcel_types.size(),
+				"%s/%d mantiene aree parallele" % [biome_id, seed_value])
+			assert_eq(int(type_counts.get(BiomeEnvironmentLayout.PARCEL_MESA, 0)), 1,
+				"%s/%d garantisce una mesa" % [biome_id, seed_value])
+			assert_eq(int(type_counts.get(BiomeEnvironmentLayout.PARCEL_TOWN, 0)), 1,
+				"%s/%d garantisce una town" % [biome_id, seed_value])
+			assert_eq(layout.parcel_types, replay.parcel_types,
+				"%s/%d assegna archetipi deterministicamente" % [biome_id, seed_value])
+			assert_eq(layout.parcel_cell_indices, replay.parcel_cell_indices,
+				"%s/%d partiziona deterministicamente" % [biome_id, seed_value])
+			assert_eq(layout.get_generation_signature(), replay.get_generation_signature(),
+				"%s/%d mantiene la firma deterministica" % [biome_id, seed_value])
+			assert_true(_all_non_route_cells_belong_to_one_parcel(layout),
+				"%s/%d copre ogni cella interna non-route" % [biome_id, seed_value])
+			assert_true(_all_trails_stay_inside_region(layout),
+				"%s/%d mantiene i sentieri sui bordi interni" % [biome_id, seed_value])
+			var validation := MapValidationSystem.new().validate_terrain_parcels(layout)
+			assert_true(bool(validation.get("is_valid", false)),
+				"%s/%d valida rim, corridoi forest e ingressi town" % [biome_id, seed_value])
+			var full_validation := MapValidationSystem.new().validate_layout(validation_cell, layout)
+			assert_true(bool(full_validation.get("is_valid", false)),
+				"%s/%d mantiene route, accessi e contenuti raggiungibili" % [biome_id, seed_value])
 			assert_eq(
 				layout.obstacle_rotations.size(),
 				layout.obstacle_ids.size(),
@@ -74,27 +109,22 @@ func test_unified_features_hold_and_vary_across_sentinel_seeds() -> void:
 				"%s/%d blocca tutti gli hazard sugli assi cardinali"
 				% [biome_id, seed_value]
 			)
-			assert_gte(layout.mesa_rects.size(), biome.generation_profile.mesa_min_count,
-				"%s/%d rispetta la quota minima mesa" % [biome_id, seed_value])
+			assert_eq(layout.mesa_rects.size(), 1,
+				"%s/%d costruisce una sola montagna" % [biome_id, seed_value])
 			assert_eq(layout.mesa_profile_ids.size(), layout.mesa_rects.size(),
 				"%s/%d mantiene paralleli i profili mesa" % [biome_id, seed_value])
 			assert_eq(layout.obstacle_ids.count(&"large_rock"), layout.mesa_rects.size(),
 				"%s/%d ha un blocker per mesa" % [biome_id, seed_value])
-			assert_true(_has_internal_chasm(layout),
-				"%s/%d garantisce un chasm interno" % [biome_id, seed_value])
-			assert_between(
-				layout.random_prop_rects.size(),
-				biome.generation_profile.random_prop_min_count,
-				biome.generation_profile.random_prop_max_count,
-				"%s/%d rispetta il budget prop" % [biome_id, seed_value]
-			)
-			assert_eq(layout.random_prop_ids.size(), layout.random_prop_rects.size(),
-				"%s/%d mantiene paralleli i random prop" % [biome_id, seed_value])
-			var prop_categories: Dictionary = {}
-			for prop_id in layout.random_prop_ids:
-				prop_categories[categories.get(prop_id, &"")] = true
-			assert_gte(prop_categories.size(), 2,
-				"%s/%d usa almeno due categorie" % [biome_id, seed_value])
+			assert_true(layout.random_prop_rects.is_empty(),
+				"%s/%d non usa scatter globali" % [biome_id, seed_value])
+			var content := layout.generation_summary.get("parcel_content", {}) as Dictionary
+			assert_between(int(content.get("town_building_count", 0)), 2, 4,
+				"%s/%d town con 2..4 edifici" % [biome_id, seed_value])
+			assert_between(int(content.get("town_vehicle_count", 0)), 1, 3,
+				"%s/%d town con 1..3 veicoli" % [biome_id, seed_value])
+			assert_eq(int(content.get("town_driveway_count", 0)),
+				int(content.get("town_building_count", 0)),
+				"%s/%d collega ogni ingresso town" % [biome_id, seed_value])
 			var static_hazards := _static_hazard_records(layout)
 			var expected_hazard_count := (
 				biome.generation_profile.get_static_hazard_ids().size()
@@ -111,15 +141,38 @@ func test_unified_features_hold_and_vary_across_sentinel_seeds() -> void:
 					"%s/%d usa hazard dal profilo" % [biome_id, seed_value])
 				assert_true(_hazard_has_safe_placement(layout, hazard_rect),
 					"%s/%d piazza %s su terreno sicuro" % [biome_id, seed_value, hazard_id])
-			mesa_variants[str(layout.mesa_rects)] = true
-			chasm_variants[str(layout.fall_zone_rects)] = true
-			prop_variants[str([layout.random_prop_ids, layout.random_prop_rects])] = true
+				assert_true(_rect_belongs_to_clearing(layout, hazard_rect),
+					"%s/%d limita %s alle radure" % [biome_id, seed_value, hazard_id])
+			parcel_variants[str(layout.parcel_cell_indices)] = true
 			hazard_variants[str(static_hazards)] = true
-		assert_gt(mesa_variants.size(), 1, "%s varia le mesa tra seed" % biome_id)
-		assert_gt(chasm_variants.size(), 1, "%s varia i chasm tra seed" % biome_id)
-		assert_gt(prop_variants.size(), 1, "%s varia i prop tra seed" % biome_id)
+		assert_gt(parcel_variants.size(), 1, "%s varia i lotti tra seed" % biome_id)
 		if biome_id != "infected_plains":
 			assert_gt(hazard_variants.size(), 1, "%s varia gli hazard tra seed" % biome_id)
+
+func _all_non_route_cells_belong_to_one_parcel(layout: BiomeEnvironmentLayout) -> bool:
+	for y in range(1, layout.zone_size.y - 1):
+		for x in range(1, layout.zone_size.x - 1):
+			var cell := Vector2i(x, y)
+			if layout.has_road_cell(cell):
+				continue
+			if layout.get_parcel_index_at_cell(cell) < 0:
+				return false
+	return true
+
+func _all_trails_stay_inside_region(layout: BiomeEnvironmentLayout) -> bool:
+	for cell in layout.get_road_cells():
+		if not layout.get_road_tags_at_cell(cell).has(&"parcel_trail"):
+			continue
+		if cell.x <= 0 or cell.y <= 0 or cell.x >= layout.zone_size.x - 1 or cell.y >= layout.zone_size.y - 1:
+			return false
+	return true
+
+func _rect_belongs_to_clearing(layout: BiomeEnvironmentLayout, rect: Rect2i) -> bool:
+	for y in range(rect.position.y, rect.end.y):
+		for x in range(rect.position.x, rect.end.x):
+			if layout.get_parcel_type_at_cell(Vector2i(x, y)) != BiomeEnvironmentLayout.PARCEL_CLEARING:
+				return false
+	return true
 
 func test_random_prop_scan_fallback_reaches_the_profile_minimum() -> void:
 	var biome := WorldGen.load_biome("infected_plains")

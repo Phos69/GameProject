@@ -257,11 +257,13 @@ func test_hazard_system_runtime() -> void:
 			continue
 		fall_zone_count += 1
 		assert_true(fall_zone.uses_procedural_fallback(), "runtime fall zone uses the clean procedural void")
-		var is_large_void := minf(fall_zone.zone_size.x, fall_zone.zone_size.y) >= 110.0
-		if is_large_void:
+		var expected_side := _expected_side_for_position(
+			biome.environment_layout, fall_zone.global_position
+		)
+		if expected_side == &"internal":
 			assert_true(SIDES.has(fall_zone.get_fall_side()), "runtime internal void pit keeps a valid side-agnostic orientation")
 		else:
-			assert_eq(fall_zone.get_fall_side(), _expected_side_for_position(biome.environment_layout, fall_zone.global_position), "runtime perimeter fall zone side comes from layout metadata")
+			assert_eq(fall_zone.get_fall_side(), expected_side, "runtime perimeter fall zone side comes from layout metadata")
 		assert_true(fall_zone.get_void_asset_ids().has(fall_zone.get_cliff_lip_asset_id()), "runtime fall zone has oriented cliff lip asset")
 		assert_true(hazard_system.is_position_fall_zone(fall_zone.global_position), "runtime fall-zone query still detects fall zone")
 		assert_false(hazard_system.is_position_environment_hazard(fall_zone.global_position), "runtime fall zone is not generic environment hazard")

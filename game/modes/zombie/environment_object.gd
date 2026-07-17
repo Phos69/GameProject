@@ -12,6 +12,7 @@ const TILE_LAYER_MESA_RENDER_MODE := &"tile_layer_rock_area"
 # shared multi-biome contract.
 const TILE_LAYER_ROCK_RENDER_MODE := TILE_LAYER_MESA_RENDER_MODE
 const ROCK_AREA_OCCLUDER_NAME := "RockAreaOccluder"
+const MESA_COLLISION_POLYGON_NAME := "MesaCollisionPolygon"
 const OCCLUSION_HORIZONTAL_MARGIN := 8.0
 const CLIFF_RELATION_OUTSIDE := &"outside"
 const CLIFF_RELATION_BEHIND := &"behind"
@@ -501,7 +502,39 @@ func configure_mesa_visual(
 		logical_tile_scale,
 		world_uv_origin
 	)
+	_configure_mesa_collision_polygon(logical_tile_scale)
 	queue_redraw()
+
+func _configure_mesa_collision_polygon(logical_tile_scale: float) -> void:
+	var rectangle := get_node_or_null("CollisionShape2D") as CollisionShape2D
+	if rectangle != null:
+		rectangle.disabled = true
+	var polygon := get_node_or_null(MESA_COLLISION_POLYGON_NAME) as CollisionPolygon2D
+	if polygon == null:
+		polygon = CollisionPolygon2D.new()
+		polygon.name = MESA_COLLISION_POLYGON_NAME
+		add_child(polygon)
+	var radius := minf(
+		RectilinearRockAreaMeshBuilder.CONVEX_CORNER_RADIUS_TILES * logical_tile_scale,
+		minf(obstacle_size.x, obstacle_size.y) * 0.24
+	)
+	var rect := Rect2(-obstacle_size * 0.5, obstacle_size)
+	var centers: Array[Vector2] = [
+		Vector2(rect.position.x + radius, rect.position.y + radius),
+		Vector2(rect.end.x - radius, rect.position.y + radius),
+		Vector2(rect.end.x - radius, rect.end.y - radius),
+		Vector2(rect.position.x + radius, rect.end.y - radius),
+	]
+	var start_angles: Array[float] = [PI, -PI * 0.5, 0.0, PI * 0.5]
+	var points := PackedVector2Array()
+	for corner in range(centers.size()):
+		for segment in range(RectilinearRockAreaMeshBuilder.CONVEX_CORNER_SEGMENTS + 1):
+			var angle := start_angles[corner] + PI * 0.5 * float(segment) / float(
+				RectilinearRockAreaMeshBuilder.CONVEX_CORNER_SEGMENTS
+			)
+			points.append(centers[corner] + Vector2(cos(angle), sin(angle)) * radius)
+	polygon.polygon = points
+	polygon.build_mode = CollisionPolygon2D.BUILD_SOLIDS
 
 func _ensure_default_mesa_visual() -> void:
 	if not uses_mesa_visual() or _mesa_mesh_builder != null:

@@ -6,7 +6,7 @@ sono consolidate in `ROADMAP.md`, `CHANGELOG.md`, nei report specifici sotto
 `docs/` e in `docs/documentation_inventory.md`.
 
 Le milestone `UIUX-001`, `BOSS-001`, `BOSS-002`, `TD-001`, `REL-001`,
-`WORLD-UNIFY-001` e `TOPDOWN-001` sono completate e archiviate in `ROADMAP.md` e
+`WORLD-UNIFY-001`, `TERRAIN-PARCELS-001` e `TOPDOWN-001` sono completate e archiviate in `ROADMAP.md` e
 `CHANGELOG.md` (dettagli in `map_generation_report.md`,
 `docs/latest_commit_validation_report.md` e
 `docs/visual_qa_report_2026-07-01.md`).
@@ -68,7 +68,7 @@ Regole per nuove voci:
 - Test richiesto: playtest `Infinite Arena` 20 minuti, playtest survival
   multi-bioma 20 minuti con 1-4 player, attraversamento dei biomi con generated
   art attiva e zoom variabile, verifica manuale di collisione, Y-sort e densita
-  di chasm/mesa/prop/hazard, dungeon con tre seed, tower defense 5 wave,
+  di lotti/mesa/town/foreste/fall zone/hazard, dungeon con tre seed, tower defense 5 wave,
   leggibilita delle quattro elite zombie tra 20-28 mob, profiling renderizzato
   dello streaming chunk e regressione smoke principale.
 

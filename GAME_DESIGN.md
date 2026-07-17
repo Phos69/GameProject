@@ -778,17 +778,14 @@ Identita dei biomi:
   strade principali orizzontali/verticali larghe 7 tile logici, sentieri
   tematici medi larghi 4 tile logici, passaggi fisici larghi 7 tile logici e
   blocchi interni;
-- ogni regione contiene almeno un chasm interno con cliff leggibile verso il
-  void, salvo l'opt-out esplicito usato dai test tecnici; il tipo di perimetro
-  non modifica questa regola;
-- ogni regione contiene mesa solide tematizzate: 10-16 nella Pianura Infetta e
-  2-4 nei quattro biomi avanzati. Le skin sono rispettivamente `forest`,
+- strade/passaggi precedono i sentieri interni; insieme dividono ogni regione in
+  7-10 lotti esclusivi, indipendenti dai chunk visuali `10x10`;
+- ogni regione contiene esattamente una mesa e una town. Le skin mesa sono rispettivamente `forest`,
   `urban_ruins`, `volcanic`, `frozen_tundra` e `swamp`; il top usa il terreno
   del bioma e le pareti il relativo cliff, senza trasformarle in fall zone;
-- ogni regione aggiunge 10-16 oggetti casuali dal proprio pool pesato e deve
-  rappresentare almeno due categorie/ID tematici. Gli oggetti non possono
-  sovrapporsi a spawn, route, passaggi, void, mesa, hazard, crate o altri
-  blocker;
+- gli altri lotti usano pesi 45% radura, 35% foresta e 20% fall zone. Le case
+  non sono piu scatter globali: una town contiene 2-4 edifici tematizzati,
+  1-3 veicoli e un vialetto largo 4 tile per ogni ingresso;
 - ogni layout generato contiene strade, corridoi e ostacoli grandi che
   influenzano movimento e combattimento invece di restare solo decorazione;
 - case, cabine, laboratori, barriere, barili, relitti, tronchi, ponti,
@@ -797,9 +794,10 @@ Identita dei biomi:
   generico unico. Ventitre ID dei pool tematici leggono altrettanti SVG
   cardinali individuali; la sostituzione visuale non modifica footprint,
   collisione o peso di generazione dell'ID;
-- `forest_tree` occupa nove slot (`3x3`) e un footprint runtime `2x2` tile
-  logici; le `large_rock` sono i blocker tecnici delle mesa e occupano quadrati
-  da `3x3` a `5x5` tile logici in tutti i biomi. Le mesa bloccano tutto il
+- `forest_tree` e condiviso nei cinque biomi; le foreste riempiono gli slot
+  validi salvo 1-2 corridoi larghi 2 tile, mentre le radure hanno 2-8 alberi e
+  filari seed-based al 50%. Le `large_rock` sono i blocker tecnici della
+  montagna unica. Le mesa bloccano tutto il
   relativo footprint per movimento e proiettili; gli alberi della Pianura
   Infetta hanno visuale raddoppiata e bloccano un cerchio alle radici largo
   quanto il footprint, cosi i filari di confine delle strade non lasciano
@@ -838,15 +836,14 @@ Zombie tematici:
 
 Regole hazard:
 
-- ogni regione contiene almeno un chasm/fall zone interno visibile fuori da
-  spawn, corsie principali, passaggi e mesa; il bordo del chasm mantiene almeno
-  una tile logica libera da strade e passaggi, cosi il lip erboso/roccioso non
-  invade il materiale della route;
+- un lotto `fall_zone`, quando sorteggiato, converte l'interno e conserva una
+  corona tecnica di una tile per cliff/lip; se l'inset e troppo piccolo il lotto
+  diventa una radura;
 - la `Pianura Infetta` non aggiunge hazard statici oltre a fall zone e chasm;
   Tossico, Infuocato, Neve e Palude ne piazzano due per regione, scelti dal
   profilo (`toxic_puddle`/`gas_cloud`, `fire_zone`/`lava_crack`,
   `slippery_ice`/`deep_snow_slow`, `deep_water`/`mud_slow`);
-- gli hazard statici restano su floor valido e non si sovrappongono a spawn,
+- gli hazard statici restano nelle radure e non si sovrappongono a spawn,
   route, passaggi, ostacoli, mesa, fall zone, crate o altri hazard;
 - le fall zone rappresentano vuoto/caduta, restano distinte dagli hazard
   ambientali e sono gli unici gap attraversabili dal roll entro distanza
