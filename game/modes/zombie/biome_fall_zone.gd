@@ -1,4 +1,4 @@
-extends Area2D
+extends BiomeZoneArea
 class_name BiomeFallZone
 
 const CLIFF_RENDERER_SCRIPT = preload(
@@ -10,11 +10,14 @@ var hazard_id: StringName = &"fall_zone"
 var fall_style: StringName = &"cliff"
 var fall_side: StringName = &"north"
 var visual_seed: int = 0
-var zone_size: Vector2 = Vector2(150.0, 72.0)
 var edge_color: Color = Color(0.82, 0.58, 0.16, 0.92)
 var depth_color: Color = Color(0.025, 0.028, 0.022, 1.0)
 var show_debug_visual: bool = false
 var cliff_renderer: Node2D
+
+func _init() -> void:
+	# Default storico della fall zone, piu' largo di quello base condiviso.
+	zone_size = Vector2(150.0, 72.0)
 
 func configure(
 	next_hazard_id: StringName,
@@ -56,23 +59,6 @@ func _ready() -> void:
 		_rebuild_collision()
 	_ensure_cliff_renderer()
 	_configure_cliff_renderer()
-
-func contains_global_position(world_position: Vector2) -> bool:
-	var local_position := to_local(world_position)
-	var half_size := zone_size * 0.5
-	return (
-		absf(local_position.x) <= half_size.x
-		and absf(local_position.y) <= half_size.y
-	)
-
-func distance_to_zone(world_position: Vector2) -> float:
-	var local_position := to_local(world_position)
-	var half_size := zone_size * 0.5
-	var outside := Vector2(
-		maxf(absf(local_position.x) - half_size.x, 0.0),
-		maxf(absf(local_position.y) - half_size.y, 0.0)
-	)
-	return outside.length()
 
 func get_fall_style() -> StringName:
 	return fall_style
@@ -161,16 +147,6 @@ func set_debug_visual_visible(enabled: bool) -> void:
 
 func has_debug_visual() -> bool:
 	return show_debug_visual
-
-func _rebuild_collision() -> void:
-	var collision_shape := get_node_or_null("CollisionShape2D") as CollisionShape2D
-	if collision_shape == null:
-		collision_shape = CollisionShape2D.new()
-		collision_shape.name = "CollisionShape2D"
-		add_child(collision_shape)
-	var rectangle := RectangleShape2D.new()
-	rectangle.size = zone_size
-	collision_shape.shape = rectangle
 
 func _draw() -> void:
 	if show_debug_visual:
