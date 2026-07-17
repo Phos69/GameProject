@@ -266,7 +266,11 @@ func _on_died() -> void:
 		health_bar_background.hide()
 	var grants_rewards := should_grant_death_rewards()
 	if grants_rewards:
-		_grant_kill_experience()
+		CombatRewardUtils.grant_kill_experience(
+			get_tree(),
+			self,
+			kill_experience
+		)
 	else:
 		_clear_last_damage_source()
 
@@ -373,25 +377,6 @@ func _update_visual() -> void:
 	if target != null:
 		visual.set_facing(global_position.direction_to(target.global_position))
 		_update_last_seen_player_region()
-
-func _grant_kill_experience() -> void:
-	if kill_experience <= 0:
-		return
-	var health_system := get_tree().get_first_node_in_group(
-		"health_system"
-	) as HealthSystem
-	if health_system == null:
-		return
-	var killer := health_system.get_last_damage_source(self)
-	health_system.clear_last_damage_source(self)
-	if killer == null:
-		return
-	var rpg_component := killer.get_node_or_null(
-		"RpgPlayerComponent"
-	) as RpgPlayerComponent
-	if rpg_component != null:
-		rpg_component.add_experience(kill_experience)
-		rpg_component.notify_kill_confirmed()
 
 func _apply_enemy_profile(profile: BiomeEnemyProfile) -> void:
 	ai_level = profile.ai_level

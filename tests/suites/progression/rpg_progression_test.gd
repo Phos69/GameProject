@@ -95,11 +95,20 @@ func test_xp_from_kills_and_waves() -> void:
 	await wait_physics_frames(1)
 	assert_eq(rpg_component.experience, 5, "killer receives zombie kill XP")
 	assert_eq(_count_xp_pickups(scene), 0, "zombie death does not create XP pickups")
+	var boss_scene := load("res://game/bosses/basic_boss.tscn") as PackedScene
+	var boss := boss_scene.instantiate() as BasicBoss
+	boss.kill_experience = 7
+	boss.global_position = Vector2(260.0, 0.0)
+	scene.main.add_child(boss)
+	boss.set_physics_process(false)
+	health_system.apply_damage(boss, 9999, player, &"test_boss_kill")
+	await wait_physics_frames(1)
+	assert_eq(rpg_component.experience, 12, "killer receives boss XP through the shared combat reward")
 
 	wave_manager.current_wave = 2
 	var reward := wave_manager._grant_wave_reward()
 	assert_eq(int(reward.get("experience", 0)), 20, "wave reward exposes wave XP")
-	assert_eq(rpg_component.experience, 25, "wave XP is granted to the player")
+	assert_eq(rpg_component.experience, 32, "wave XP is granted to the player")
 
 	scene.stop_survival()
 	scene.teardown()

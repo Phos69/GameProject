@@ -146,14 +146,7 @@ func _reach_base() -> void:
 	if is_dead:
 		return
 	is_dead = true
-	velocity = Vector2.ZERO
-	collision_layer = 0
-	collision_mask = 0
-	var tower_defense_manager := get_tree().get_first_node_in_group("tower_defense_manager")
-	if tower_defense_manager != null:
-		tower_defense_manager.damage_base(base_damage)
-	base_reached.emit(self, base_damage)
-	queue_free()
+	TowerDefenseTargetUtils.reach_base(self, base_damage, base_reached)
 
 func perform_aimed_volley(
 	direction_override: Vector2 = Vector2.ZERO
@@ -407,7 +400,11 @@ func _on_died() -> void:
 	velocity = Vector2.ZERO
 	collision_layer = 0
 	collision_mask = 0
-	_grant_kill_experience()
+	CombatRewardUtils.grant_kill_experience(
+		get_tree(),
+		self,
+		kill_experience
+	)
 	var drop_system = get_tree().get_first_node_in_group("drop_system")
 	if drop_system != null:
 		drop_system.spawn_drops_deferred(self, loot_table, global_position)
@@ -429,22 +426,3 @@ func _apply_scaling() -> void:
 
 func _get_projectile_system() -> ProjectileSystem:
 	return get_tree().get_first_node_in_group("projectile_system") as ProjectileSystem
-
-func _grant_kill_experience() -> void:
-	if kill_experience <= 0:
-		return
-	var health_system := get_tree().get_first_node_in_group(
-		"health_system"
-	) as HealthSystem
-	if health_system == null:
-		return
-	var killer := health_system.get_last_damage_source(self)
-	health_system.clear_last_damage_source(self)
-	if killer == null:
-		return
-	var rpg_component := killer.get_node_or_null(
-		"RpgPlayerComponent"
-	) as RpgPlayerComponent
-	if rpg_component != null:
-		rpg_component.add_experience(kill_experience)
-		rpg_component.notify_kill_confirmed()

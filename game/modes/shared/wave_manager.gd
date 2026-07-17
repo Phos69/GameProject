@@ -67,18 +67,10 @@ func _ready() -> void:
 	add_to_group("wave_manager")
 
 func _process(delta: float) -> void:
-	if not run_active:
-		return
-
-	match state:
-		State.INTERMISSION:
-			state_timer = maxf(state_timer - delta, 0.0)
-			if state_timer <= 0.0:
-				_start_next_wave()
-		State.SPAWNING:
-			_process_spawning(delta)
-		State.COMBAT:
-			_check_wave_completion()
+	state_timer = WaveCycle.process_state(
+		run_active, state, state_timer, delta,
+		_start_next_wave, _process_spawning, _check_wave_completion
+	)
 
 func start_run() -> void:
 	if run_active:

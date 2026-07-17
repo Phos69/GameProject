@@ -2,6 +2,9 @@ extends RefCounted
 class_name EnvironmentAssetManifest
 
 const WorldGridConfig = preload("res://game/core/world_grid_config.gd")
+const RESOLVER_UTILS := preload(
+	"res://game/modes/zombie/biome_tile_resolver_utils.gd"
+)
 
 ## Loader and validator for the top-down environment asset manifest.
 ##
@@ -836,7 +839,7 @@ func _validate_asset_contract(
 	var fallback_path := String(contract.get("fallback_path", ""))
 	if MISSING_ASSET_STATUSES.has(status) and fallback_path.is_empty():
 		failures.append("%s/%s: missing assets require explicit fallback_path" % [String(section), contract_id])
-	if not MISSING_ASSET_STATUSES.has(status) and not _asset_path_exists(asset_path):
+	if not MISSING_ASSET_STATUSES.has(status) and not RESOLVER_UTILS.asset_path_exists(asset_path):
 		failures.append("%s/%s: asset_path does not exist for status '%s'" % [String(section), contract_id, status])
 	var variant_asset_paths := contract.get("variant_asset_paths", {}) as Dictionary
 	var variant_visual_scales := contract.get("variant_visual_scales", {}) as Dictionary
@@ -846,7 +849,7 @@ func _validate_asset_contract(
 		var variant_path := String(variant_asset_paths[variant_id])
 		if String(variant_id).is_empty() or variant_path.is_empty():
 			failures.append("%s/%s: variant asset id/path must not be empty" % [String(section), contract_id])
-		elif not _asset_path_exists(variant_path):
+		elif not RESOLVER_UTILS.asset_path_exists(variant_path):
 			failures.append("%s/%s: variant asset path does not exist for '%s'" % [String(section), contract_id, String(variant_id)])
 		if variant_visual_scales.has(variant_id) and float(variant_visual_scales[variant_id]) <= 0.0:
 			failures.append("%s/%s: variant visual scale must be positive for '%s'" % [String(section), contract_id, String(variant_id)])
@@ -908,13 +911,6 @@ func _validate_asset_coverage(failures: PackedStringArray) -> void:
 	]:
 		if not has_asset_contract(&"void_tiles", void_id):
 			failures.append("%s: missing void_tiles asset contract" % String(void_id))
-
-func _asset_path_exists(asset_path: String) -> bool:
-	if asset_path.is_empty():
-		return false
-	if ResourceLoader.exists(asset_path):
-		return true
-	return FileAccess.file_exists(asset_path)
 
 func _load_object_visual_data(value: Variant) -> void:
 	if not value is Dictionary:

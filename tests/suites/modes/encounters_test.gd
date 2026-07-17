@@ -28,6 +28,30 @@ func test_wave_cycle_helpers() -> void:
 	assert_eq(WaveCycle.get_regular_enemy_count(4, 3, 2), 9, "wave prima del boss segue la curva minion")
 	assert_eq(WaveCycle.get_regular_enemy_count(5, 3, 2), 11, "boss wave mantiene la curva minion")
 	assert_eq(WaveCycle.get_regular_enemy_count(6, 3, 2), 13, "wave dopo il boss prosegue la curva minion")
+	assert_eq(WaveManager.State.INTERMISSION, WaveCycle.STATE_INTERMISSION, "survival condivide lo stato intermission")
+	assert_eq(TowerDefenseWaveController.State.SPAWNING, WaveCycle.STATE_SPAWNING, "tower defense condivide lo stato spawning")
+	assert_eq(WaveManager.State.COMBAT, WaveCycle.STATE_COMBAT, "survival condivide lo stato combat")
+
+	var cycle_calls: Array[StringName] = []
+	var start_next_wave := func() -> void: cycle_calls.append(&"start")
+	var process_spawning := func(_delta: float) -> void: cycle_calls.append(&"spawn")
+	var check_completion := func() -> void: cycle_calls.append(&"combat")
+	var timer := WaveCycle.process_state(
+		true,
+		WaveCycle.STATE_INTERMISSION,
+		0.01,
+		0.02,
+		start_next_wave,
+		process_spawning,
+		check_completion
+	)
+	assert_eq(timer, 0.0, "intermission timer reaches zero")
+	assert_eq(cycle_calls, [&"start"], "expired intermission starts the next wave")
+	WaveCycle.process_state(true, WaveCycle.STATE_SPAWNING, timer, 0.25, start_next_wave, process_spawning, check_completion)
+	WaveCycle.process_state(true, WaveCycle.STATE_COMBAT, timer, 0.25, start_next_wave, process_spawning, check_completion)
+	assert_eq(cycle_calls, [&"start", &"spawn", &"combat"], "shared wave dispatch invokes the controller hooks")
+	WaveCycle.process_state(false, WaveCycle.STATE_COMBAT, timer, 0.25, start_next_wave, process_spawning, check_completion)
+	assert_eq(cycle_calls.size(), 3, "inactive runs do not advance the shared wave cycle")
 
 	var alive_node := Node.new()
 	add_child(alive_node)

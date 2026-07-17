@@ -560,7 +560,7 @@ func _resolve_rect_route_tile_data(
 		if has_main and has_path:
 			return (
 				_tile_data(TILE_GRASS_TO_ROAD, TILE_SECTION_TERRAIN, &"grass_to_road")
-				if _route_cell_touches_non_route_surface(layout, cell)
+				if _route_cell_touches_non_route(layout, cell)
 				else _tile_data(TILE_PATH_TO_ROAD, TILE_SECTION_TERRAIN, &"path_to_road")
 			)
 	var selected_index := matching_indices[matching_indices.size() - 1]
@@ -692,7 +692,7 @@ func _resolve_cell_route_tile_data(
 		if _array_has_forest_main_and_path(route_tags):
 			return (
 				_tile_data(TILE_GRASS_TO_ROAD, TILE_SECTION_TERRAIN, &"grass_to_road")
-				if _route_cell_touches_non_route_surface(layout, cell)
+				if _route_cell_touches_non_route(layout, cell)
 				else _tile_data(TILE_PATH_TO_ROAD, TILE_SECTION_TERRAIN, &"path_to_road")
 			)
 		if _array_has_forest_main(route_tags):
@@ -744,12 +744,12 @@ func _resolve_terrain_route_tile_id(
 	if match_count > 1:
 		return (
 			TILE_ROAD_EDGE
-			if _route_cell_touches_non_route_surface(layout, cell)
+			if _route_cell_touches_non_route(layout, cell)
 			else TILE_ROAD_INTERSECTION
 		)
 	if road_index < 0 or road_index >= layout.road_rects.size():
 		return tag
-	var touches_non_route := _route_cell_touches_non_route_surface(layout, cell)
+	var touches_non_route := _route_cell_touches_non_route(layout, cell)
 	if not touches_non_route:
 		return tag
 	var rect := layout.road_rects[road_index]
@@ -860,7 +860,7 @@ func _route_rect_edge_touches_non_route(
 ) -> bool:
 	if road_index < 0 or road_index >= layout.road_rects.size():
 		return _route_cell_touches_non_route(layout, cell)
-	return _route_cell_touches_non_route_surface(layout, cell)
+	return _route_cell_touches_non_route(layout, cell)
 
 func _cell_touches_void_or_fall(
 	layout: BiomeEnvironmentLayout,
@@ -1169,18 +1169,6 @@ func _forest_route_asset_path(asset_id: StringName) -> String:
 		)
 	_forest_route_asset_paths[asset_id] = asset_path
 	return asset_path
-
-# Come _route_cell_touches_non_route, ma considera route anche passage e
-# connector: decide border-vs-core, non il tile semantico.
-func _route_cell_touches_non_route_surface(
-	layout: BiomeEnvironmentLayout,
-	cell: Vector2i
-) -> bool:
-	for offset in CARDINAL_OFFSETS:
-		if not _cell_is_route_surface(layout, cell + offset):
-			return true
-	return false
-
 
 ## True se la cella route appartiene solo a lane tematiche (nessuna strada
 ## principale la attraversa): la maschera la classifica come path. I passage

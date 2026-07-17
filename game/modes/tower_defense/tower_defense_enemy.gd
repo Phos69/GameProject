@@ -69,14 +69,7 @@ func _reach_base() -> void:
 	if is_dead:
 		return
 	is_dead = true
-	velocity = Vector2.ZERO
-	collision_layer = 0
-	collision_mask = 0
-	var tower_defense_manager := get_tree().get_first_node_in_group("tower_defense_manager")
-	if tower_defense_manager != null:
-		tower_defense_manager.damage_base(base_damage)
-	base_reached.emit(self, base_damage)
-	queue_free()
+	TowerDefenseTargetUtils.reach_base(self, base_damage, base_reached)
 
 func _on_health_changed(_amount: int, _current_health: int, _max_health: int) -> void:
 	_update_health_bar()

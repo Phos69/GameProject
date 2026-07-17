@@ -43,6 +43,13 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 - L'indice file MCP e condiviso in memoria con TTL breve; area e validazione
   vengono applicate prima della paginazione, le aree sconosciute sono errori
   espliciti e ricerca/simboli riusano metadata senza un secondo `stat`.
+- Chiuso il gruppo gameplay 4.6 del repo health report senza cambi di
+  bilanciamento: `CombatRewardUtils` assegna XP e kill confirm a nemici/boss,
+  `TowerDefenseTargetUtils` risolve l'arrivo al core di raider/Wave Warden,
+  `WaveCycle.process_state` guida il dispatch comune delle due macchine wave,
+  il resolver tile usa una sola query dei bordi route e
+  `EnvironmentAssetManifest` riusa `BiomeTileResolverUtils.asset_path_exists`.
+  Import Godot e suite completa GUT verdi: 307/307 test, 30.666 assert.
 
 - Deduplicazione dei gruppi P1 del report `docs/repo_health_report_2026-07-17.md`
   (solo refactor, nessun cambio di comportamento; suite completa 307/307):

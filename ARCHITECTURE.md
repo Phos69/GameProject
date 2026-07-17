@@ -252,7 +252,9 @@ definito in `docs/top_down_cardinal_contract.md`.
   `passage_tiles`, `biome_asset_sets`, `fallback_policy`). Il loader normalizza
   path, varianti contestuali, status, footprint, anchor, collision shape, size
   e offset anche per variante, blocchi e attribution senza rendere obbligatori
-  asset esterni.
+  asset esterni. La validazione dei path riusa
+  `BiomeTileResolverUtils.asset_path_exists`, unica query condivisa tra
+  manifest e resolver.
 - `ObstacleLayoutGenerator`: orchestra una sola pipeline void-first per i cinque
   biomi. Scava passaggi, strade principali da 7 tile logici e sentieri medi da
   4, delega le feature interne ai pass dedicati, risolve almeno un chasm
@@ -628,6 +630,10 @@ ID negli smoke catalogo/pickup/projectile o melee e nella QA screenshot.
 - `HealthSystem` cerca un figlio `HealthComponent` sul target; player, nemici, boss e bersagli debug possono condividere lo stesso contratto.
 - `HealthSystem.apply_damage()` accetta una sorgente opzionale per applicare attacco/difesa RPG senza cambiare collisioni o AI.
 - `HealthSystem` conserva la sorgente dell'ultimo danno valido per assegnare XP al killer.
+- `CombatRewardUtils.grant_kill_experience()` consuma tale sorgente e applica
+  XP RPG e conferma kill con lo stesso contratto per `BasicEnemy` e
+  `BasicBoss`; i due attori restano responsabili del proprio lifecycle di
+  morte, loot ed effetti.
 - Collision layer `1`: player e corpi generici; gli ostacoli ambientali che
   bloccano il movimento restano su questo layer per fermare player e zombie.
 - Il player usa un collider a terra rettangolare `28x16`, centrato a `(0, 18)`
@@ -1250,6 +1256,10 @@ multi-bioma.
 - L'arresto di survival rimuove i nemici e il boss della wave prima di attivare un'altra modalita.
 - `WaveManager` e autoritativo per indice ondata, stato, spawn pendenti e nemici della wave.
 - Gli stati runtime sono `idle`, `intermission`, `spawning`, `combat` e `reward`.
+- `WaveCycle.process_state()` contiene il solo dispatch per-frame condiviso
+  degli stati `intermission`, `spawning` e `combat`; `WaveManager` e
+  `TowerDefenseWaveController` mantengono callback, spawn, reward e stati
+  terminali specifici.
 - Gli zombie vengono creati esclusivamente tramite `EnemySystem.spawn_enemy()`.
 - `WaveManager.get_enemy_id_for_spawn()` delega a `WaveDirector` quando presente, con fallback deterministico legacy.
 - Le posizioni spawn reali vengono richieste a `ZombieSpawner`; lo spawner prova
@@ -1362,6 +1372,9 @@ multi-bioma.
 - Il percorso e un `PackedVector2Array` convertito in coordinate globali dall'arena.
 - `EnemySystem.register_enemy_scene()` associa l'ID `tower_defense_raider` alla scena dedicata.
 - `TowerDefenseEnemy` segue i waypoint senza selezionare player; alla fine chiama `TowerDefenseManager.damage_base()`.
+- `TowerDefenseTargetUtils.reach_base()` disabilita movimento/collisioni,
+  applica il danno al core ed emette `base_reached` sia per
+  `TowerDefenseEnemy` sia per il `BasicBoss` configurato con un percorso.
 - Vita, morte, drop e collisione proiettile continuano a usare `HealthComponent`, `DropSystem` e `ProjectileSystem`.
 - I crediti sono valuta di run separata dal denaro party e vengono azzerati all'avvio della modalita.
 - `TowerBuildSlot` rileva player sovrapposti e richiede la costruzione con l'azione `interact`.

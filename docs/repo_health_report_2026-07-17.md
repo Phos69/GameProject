@@ -24,8 +24,15 @@ Nessuna modifica al codice è stata applicata; ogni finding cita file e riga.
 > UI, `BossSystem.connect_boss_feedback`, `sync_consumer` al posto delle
 > copie `_sync_visual_settings`, basi `SettingsAwareVisual`/
 > `PatternBossVisual`, più `_apply_visual_profile` del main menu rimosso
-> in quanto codice morto; suite completa 307/307). Resta aperto il solo
-> gruppo 4.6 (gameplay).
+> in quanto codice morto; suite completa 307/307).
+>
+> **Aggiornamento dedup gameplay:** anche il gruppo 4.6 è chiuso.
+> `CombatRewardUtils` unifica XP/kill confirm, `TowerDefenseTargetUtils`
+> l'arrivo al core, `WaveCycle.process_state` il dispatch per-frame delle wave;
+> il resolver usa una sola query route e il manifest riusa
+> `BiomeTileResolverUtils.asset_path_exists`. Import Godot e suite completa
+> verdi: 307/307 test, 30.666 assert. Le sezioni sotto restano la fotografia
+> pre-refactor usata per il confronto.
 
 ## 1. Sintesi
 

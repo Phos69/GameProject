@@ -6,6 +6,35 @@ class_name WaveCycle
 ## controller restano separati per stati, spawn, reward e dipendenze:
 ## qui vivono solo le poche utility che erano copiate uguali.
 
+const STATE_INTERMISSION := 1
+const STATE_SPAWNING := 2
+const STATE_COMBAT := 3
+
+## Avanza il tratto comune delle macchine a stati wave. I controller mantengono
+## stati terminali, spawn e reward distinti; le callback conservano tali
+## responsabilita senza duplicare il dispatch eseguito ogni frame.
+static func process_state(
+	run_active: bool,
+	state: int,
+	state_timer: float,
+	delta: float,
+	start_next_wave: Callable,
+	process_spawning: Callable,
+	check_wave_completion: Callable
+) -> float:
+	if not run_active:
+		return state_timer
+	match state:
+		STATE_INTERMISSION:
+			state_timer = maxf(state_timer - delta, 0.0)
+			if state_timer <= 0.0:
+				start_next_wave.call()
+		STATE_SPAWNING:
+			process_spawning.call(delta)
+		STATE_COMBAT:
+			check_wave_completion.call()
+	return state_timer
+
 ## True se la wave e una boss wave per l'intervallo dato.
 static func should_spawn_boss(wave_index: int, boss_wave_interval: int) -> bool:
 	return (
