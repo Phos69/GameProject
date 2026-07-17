@@ -61,7 +61,7 @@ func _draw() -> void:
 	var bob := sin(animation_time * 4.0) * 2.5
 	var pulse := 1.0 + sin(animation_time * 5.0) * 0.04
 	draw_colored_polygon(
-		_ellipse_points(Vector2(0.0, 13.0), Vector2(15.0, 5.0), 16),
+		GeometryUtils.ellipse_points(Vector2(0.0, 13.0), Vector2(15.0, 5.0), 16),
 		Color(0.01, 0.015, 0.02, 0.45)
 	)
 	draw_set_transform(Vector2(0.0, bob), 0.0, Vector2(pulse, pulse))
@@ -196,12 +196,6 @@ func _color_for_type(value: StringName) -> Color:
 		_:
 			return Color(0.72, 0.76, 0.80, 1.0)
 
-func _ellipse_points(center: Vector2, radius: Vector2, segments: int) -> PackedVector2Array:
-	var points := PackedVector2Array()
-	for index in range(segments):
-		var angle := TAU * float(index) / float(segments)
-		points.append(center + Vector2(cos(angle) * radius.x, sin(angle) * radius.y))
-	return points
 
 func _closed_polygon(points: PackedVector2Array) -> PackedVector2Array:
 	var closed := PackedVector2Array(points)

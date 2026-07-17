@@ -137,7 +137,7 @@ func _draw() -> void:
 
 func _draw_shadow() -> void:
 	draw_colored_polygon(
-		_ellipse_points(Vector2(0.0, 35.0), shadow_size, 28),
+		GeometryUtils.ellipse_points(Vector2(0.0, 35.0), shadow_size, 28),
 		Color(0.01, 0.015, 0.012, 0.54)
 	)
 
@@ -259,15 +259,3 @@ func _draw_carrion_shepherd(body: Color, armor: Color) -> void:
 	for index in range(3):
 		draw_circle(Vector2(-30.0 + index * 14.0, -54.0), 11.0, accent_color)
 
-func _ellipse_points(
-	center: Vector2,
-	radius: Vector2,
-	segments: int
-) -> PackedVector2Array:
-	var points := PackedVector2Array()
-	for index in range(segments):
-		var angle := TAU * float(index) / float(segments)
-		points.append(
-			center + Vector2(cos(angle) * radius.x, sin(angle) * radius.y)
-		)
-	return points

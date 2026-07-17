@@ -95,6 +95,21 @@ func get_connector_rect(zone_size: Vector2i) -> Rect2i:
 func _span_before_center(span: int) -> int:
 	return maxi(floori(float(span) * 0.5), 0)
 
+# Cella interna adiacente all'imbocco del passaggio, alla profondita' standard
+# del bordo. Prima duplicata come _passage_probe_cell (MapValidationSystem) e
+# _passage_inner_anchor (ObstacleLayoutGenerator).
+func edge_anchor_cell(zone_size: Vector2i) -> Vector2i:
+	var edge_depth := WorldGridConfig.PASSAGE_EDGE_DEPTH_TILES
+	match side:
+		&"north":
+			return Vector2i(position, edge_depth)
+		&"south":
+			return Vector2i(position, zone_size.y - edge_depth - 1)
+		&"west":
+			return Vector2i(edge_depth, position)
+		_:
+			return Vector2i(zone_size.x - edge_depth - 1, position)
+
 func get_global_local_rect(zone_size: Vector2i) -> Rect2i:
 	var local_rect := get_local_rect(zone_size)
 	return Rect2i(from_world_origin + local_rect.position, local_rect.size)

@@ -404,7 +404,7 @@ static func get_pickup_body_polygon_for_shape(
 				Vector2(-5.0, -3.0)
 			])
 		&"toxic_spores":
-			return _ellipse_points(Vector2(0.0, 0.0), Vector2(14.0, 9.0), 10)
+			return GeometryUtils.ellipse_points(Vector2(0.0, 0.0), Vector2(14.0, 9.0), 10)
 		&"seismic_crystal":
 			return PackedVector2Array([
 				Vector2(0.0, -13.0),
@@ -865,15 +865,3 @@ static func get_projectile_polygon_for_shape(
 				Vector2(8.0, 0.0),
 				Vector2(-6.0, 3.0)
 			])
-
-
-static func _ellipse_points(
-	center: Vector2,
-	radius: Vector2,
-	segments: int
-) -> PackedVector2Array:
-	var points := PackedVector2Array()
-	for index in range(segments):
-		var angle := TAU * float(index) / float(segments)
-		points.append(center + Vector2(cos(angle) * radius.x, sin(angle) * radius.y))
-	return points

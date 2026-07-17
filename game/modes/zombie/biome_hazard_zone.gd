@@ -91,9 +91,9 @@ func _draw() -> void:
 	var half_size := zone_size * 0.5
 	var pulse := 0.86 + sin(Time.get_ticks_msec() * 0.004) * 0.08
 	var fill_color := Color(hazard_color, hazard_color.a * 0.24 * pulse)
-	draw_colored_polygon(_ellipse_points(half_size, 28), fill_color)
+	draw_colored_polygon(GeometryUtils.ellipse_points(Vector2.ZERO, half_size, 28), fill_color)
 	draw_polyline(
-		_closed(_ellipse_points(half_size, 28)),
+		_closed(GeometryUtils.ellipse_points(Vector2.ZERO, half_size, 28)),
 		Color(hazard_color, 0.78),
 		3.0,
 		true
@@ -106,19 +106,6 @@ func _draw() -> void:
 			3.0 + float(index % 2) * 2.0,
 			Color(hazard_color.lightened(0.22), 0.62)
 		)
-
-func _ellipse_points(
-	half_size: Vector2,
-	segments: int
-) -> PackedVector2Array:
-	var points := PackedVector2Array()
-	for index in range(segments):
-		var angle := TAU * float(index) / float(segments)
-		points.append(Vector2(
-			cos(angle) * half_size.x,
-			sin(angle) * half_size.y
-		))
-	return points
 
 func _closed(points: PackedVector2Array) -> PackedVector2Array:
 	var result := points.duplicate()

@@ -86,7 +86,7 @@ func _draw_asset_preview(
 		target_size
 	)
 	draw_colored_polygon(
-		_ellipse_points(origin + Vector2(0.0, 33.0), Vector2(48.0, 12.0) * scale, 24),
+		GeometryUtils.ellipse_points(origin + Vector2(0.0, 33.0), Vector2(48.0, 12.0) * scale, 24),
 		Color(0.0, 0.0, 0.0, 0.42)
 	)
 	draw_arc(
@@ -189,7 +189,7 @@ func _draw_player_preview(
 	var bob := sin(animation_time * 2.4) * 2.0
 	var pulse := 1.0 + sin(animation_time * 3.0) * 0.025
 	draw_set_transform(origin + Vector2(0.0, bob), 0.0, Vector2.ONE * scale * pulse)
-	draw_colored_polygon(_ellipse_points(Vector2(0.0, 27.0), Vector2(34.0, 10.0), 22), Color(0.0, 0.0, 0.0, 0.44))
+	draw_colored_polygon(GeometryUtils.ellipse_points(Vector2(0.0, 27.0), Vector2(34.0, 10.0), 22), Color(0.0, 0.0, 0.0, 0.44))
 	var outline := Color(0.016, 0.020, 0.025, 1.0)
 	var torso := PackedVector2Array([
 		Vector2(-19.0, -14.0),
@@ -359,12 +359,6 @@ func _draw_weapon_action_preview(
 				true
 			)
 
-func _ellipse_points(center: Vector2, radius: Vector2, segments: int) -> PackedVector2Array:
-	var points := PackedVector2Array()
-	for index in range(segments):
-		var angle := TAU * float(index) / float(segments)
-		points.append(center + Vector2(cos(angle) * radius.x, sin(angle) * radius.y))
-	return points
 
 func _load_gameplay_texture(path: String) -> Texture2D:
 	if path.is_empty() or not FileAccess.file_exists(path):

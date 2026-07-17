@@ -151,7 +151,7 @@ func _find_unreachable_passages(
 ) -> Array[StringName]:
 	var failures: Array[StringName] = []
 	for passage in cell.passages:
-		var target := _passage_probe_cell(passage, layout.zone_size)
+		var target := passage.edge_anchor_cell(layout.zone_size)
 		if not visited.has(target):
 			failures.append(passage.side)
 	return failures
@@ -174,8 +174,8 @@ func _find_obstructed_passages(
 	for passage in cell.passages:
 		var passage_rect := passage.get_local_rect(layout.zone_size)
 		if (
-			_rect_intersects_any(passage_rect, layout.obstacle_rects)
-			or _rect_intersects_any(passage_rect, layout.fall_zone_rects)
+			GeometryUtils.intersects_any(passage_rect, layout.obstacle_rects)
+			or GeometryUtils.intersects_any(passage_rect, layout.fall_zone_rects)
 			or _rect_intersects_blocking_hazard(passage_rect, layout)
 		):
 			failures.append(passage.side)
@@ -224,7 +224,7 @@ func _find_invalid_placements(
 			failures.append(
 				"obstacle_outside_zone:%s" % obstacle_label
 			)
-		if _rect_intersects_any(obstacle_rect, layout.fall_zone_rects):
+		if GeometryUtils.intersects_any(obstacle_rect, layout.fall_zone_rects):
 			failures.append(
 				"obstacle_inside_fall_zone:%s" % obstacle_label
 			)
@@ -389,27 +389,12 @@ func _find_route_obstacle_overlaps(
 			and not layout.get_wall_segment_side(obstacle_rect).is_empty()
 		):
 			continue
-		if _rect_intersects_any(obstacle_rect, layout.road_rects):
+		if GeometryUtils.intersects_any(obstacle_rect, layout.road_rects):
 			failures.append("obstacle_on_route:%d" % obstacle_index)
 			continue
 		if _rect_overlaps_road_cells(layout, obstacle_rect):
 			failures.append("obstacle_on_route_cell:%d" % obstacle_index)
 	return failures
-
-func _passage_probe_cell(
-	passage: BiomePassage,
-	zone_size: Vector2i
-) -> Vector2i:
-	var edge_depth := WorldGridConfig.PASSAGE_EDGE_DEPTH_TILES
-	match passage.side:
-		&"north":
-			return Vector2i(passage.position, edge_depth)
-		&"south":
-			return Vector2i(passage.position, zone_size.y - edge_depth - 1)
-		&"west":
-			return Vector2i(edge_depth, passage.position)
-		_:
-			return Vector2i(zone_size.x - edge_depth - 1, passage.position)
 
 func _rect_touches_side(
 	rect: Rect2i,
@@ -437,13 +422,6 @@ func _rect_touches_side(
 				rect.position.x + rect.size.x >= zone_size.x
 				and rect.size.x <= WorldGridConfig.SIDE_EDGE_MAX_THICKNESS_TILES
 			)
-
-func _clip_rect(rect: Rect2i, zone_size: Vector2i) -> Rect2i:
-	var x := clampi(rect.position.x, 0, zone_size.x)
-	var y := clampi(rect.position.y, 0, zone_size.y)
-	var end_x := clampi(rect.position.x + rect.size.x, 0, zone_size.x)
-	var end_y := clampi(rect.position.y + rect.size.y, 0, zone_size.y)
-	return Rect2i(Vector2i(x, y), Vector2i(maxi(end_x - x, 0), maxi(end_y - y, 0)))
 
 func _cell_inside_any_rect(cell: Vector2i, rects: Array[Rect2i]) -> bool:
 	for rect in rects:
@@ -484,17 +462,11 @@ func _cell_inside_non_bridge_hazard(
 		return true
 	return false
 
-func _rect_intersects_any(rect: Rect2i, rects: Array[Rect2i]) -> bool:
-	for other in rects:
-		if rect.intersects(other):
-			return true
-	return false
-
 func _rect_overlaps_road_cells(
 	layout: BiomeEnvironmentLayout,
 	rect: Rect2i
 ) -> bool:
-	var clipped := _clip_rect(rect, layout.zone_size)
+	var clipped := GeometryUtils.clip_rect(rect, layout.zone_size)
 	for key_value in layout.road_cell_tags.keys():
 		var key := int(key_value)
 		var cell := Vector2i(key % layout.zone_size.x, int(key / layout.zone_size.x))

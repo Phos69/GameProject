@@ -98,7 +98,7 @@ func _draw() -> void:
 		0.16 + (sin(animation_time * 3.0) + 1.0) * 0.05
 	) * glow_intensity
 	draw_colored_polygon(
-		_ellipse_points(Vector2(0.0, 20.0), Vector2(29.0, 8.0), 18),
+		GeometryUtils.ellipse_points(Vector2(0.0, 20.0), Vector2(29.0, 8.0), 18),
 		Color(0.01, 0.015, 0.02, 0.52)
 	)
 	draw_circle(Vector2.ZERO, 31.0, Color(accent_color, glow_alpha))
@@ -229,9 +229,3 @@ func _update_asset_modulate() -> void:
 		return
 	asset_sprite.modulate = Color.WHITE if not high_contrast else Color(1.08, 1.08, 1.08, 1.0)
 
-func _ellipse_points(center: Vector2, radius: Vector2, segments: int) -> PackedVector2Array:
-	var points := PackedVector2Array()
-	for index in range(segments):
-		var angle := TAU * float(index) / float(segments)
-		points.append(center + Vector2(cos(angle) * radius.x, sin(angle) * radius.y))
-	return points

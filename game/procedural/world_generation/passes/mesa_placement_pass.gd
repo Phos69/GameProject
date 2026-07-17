@@ -117,14 +117,14 @@ func _can_place_mesa(
 	rect: Rect2i,
 	gap: int
 ) -> bool:
-	var padded := _inflate_rect(rect, gap)
+	var padded := GeometryUtils.inflate_rect(rect, gap)
 	if padded.intersects(_center_reserved_rect(layout)):
 		return false
-	if _rect_overlaps_passage_corridor(layout, padded):
+	if layout.rect_overlaps_passage_corridor(padded):
 		return false
-	if _intersects_any(padded, layout.mesa_rects):
+	if GeometryUtils.intersects_any(padded, layout.mesa_rects):
 		return false
-	if _intersects_any(padded, layout.mass_rects):
+	if GeometryUtils.intersects_any(padded, layout.mass_rects):
 		return false
 	return true
 
@@ -178,25 +178,3 @@ func _center_reserved_rect(layout: BiomeEnvironmentLayout) -> Rect2i:
 	return Rect2i(center - Vector2i(half, half), Vector2i(half * 2, half * 2))
 
 
-func _rect_overlaps_passage_corridor(
-	layout: BiomeEnvironmentLayout,
-	rect: Rect2i
-) -> bool:
-	return (
-		_intersects_any(rect, layout.passage_connector_rects)
-		or _intersects_any(rect, layout.passage_rects)
-	)
-
-
-func _intersects_any(rect: Rect2i, others: Array[Rect2i]) -> bool:
-	for other in others:
-		if rect.intersects(other):
-			return true
-	return false
-
-
-func _inflate_rect(rect: Rect2i, amount: int) -> Rect2i:
-	return Rect2i(
-		rect.position - Vector2i(amount, amount),
-		rect.size + Vector2i(amount * 2, amount * 2)
-	)

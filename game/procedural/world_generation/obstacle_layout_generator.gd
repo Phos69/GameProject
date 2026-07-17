@@ -359,14 +359,14 @@ func _scatter_biome_masses(
 			Vector2i(rng.randi_range(lo, hi_x), rng.randi_range(lo, hi_y)),
 			footprint
 		)
-		var padded := _inflate_rect(rect, VOIDFIRST_ROCK_GAP)
+		var padded := GeometryUtils.inflate_rect(rect, VOIDFIRST_ROCK_GAP)
 		if padded.intersects(_voidfirst_center_reserved(layout)):
 			continue
-		if _rect_overlaps_passage_corridor(layout, padded):
+		if layout.rect_overlaps_passage_corridor(padded):
 			continue
-		if _intersects_any(padded, layout.mesa_rects):
+		if GeometryUtils.intersects_any(padded, layout.mesa_rects):
 			continue
-		if _intersects_any(padded, layout.mass_rects):
+		if GeometryUtils.intersects_any(padded, layout.mass_rects):
 			continue
 		layout.mass_rects.append(rect)
 		_add_obstacle(layout, obstacle_id, rect, &"rectangle", 0.0)
@@ -443,9 +443,9 @@ func _fill_forests_with_trees(
 func _can_place_tree(layout: BiomeEnvironmentLayout, rect: Rect2i) -> bool:
 	if rect.intersects(_voidfirst_center_reserved(layout)):
 		return false
-	if _intersects_any(rect, layout.obstacle_rects):
+	if GeometryUtils.intersects_any(rect, layout.obstacle_rects):
 		return false
-	if _rect_overlaps_passage_corridor(layout, rect):
+	if layout.rect_overlaps_passage_corridor(rect):
 		return false
 	return true
 
@@ -511,7 +511,7 @@ func _collect_road_spokes(
 	var covered_sides: Dictionary = {}
 	for passage in cell.passages:
 		spokes.append({
-			"anchor": _passage_inner_anchor(passage, layout.zone_size),
+			"anchor": passage.edge_anchor_cell(layout.zone_size),
 			"tag": palette["spoke_tag"] as StringName,
 			"is_passage": true
 		})
@@ -577,7 +577,7 @@ func _build_road_astar(layout: BiomeEnvironmentLayout) -> AStarGrid2D:
 	astar.default_compute_heuristic = AStarGrid2D.HEURISTIC_MANHATTAN
 	astar.update()
 	for solid_rect in _voidfirst_solid_rects(layout):
-		var inflated := _inflate_rect(solid_rect, VOIDFIRST_ROAD_ROCK_CLEARANCE)
+		var inflated := GeometryUtils.inflate_rect(solid_rect, VOIDFIRST_ROAD_ROCK_CLEARANCE)
 		var c0 := _to_coarse_cell(inflated.position, step, w, h)
 		var c1 := _to_coarse_cell(inflated.end - Vector2i.ONE, step, w, h)
 		for cy in range(c0.y, c1.y + 1):
@@ -669,7 +669,7 @@ func _carve_trail(
 	for _step in range(max_len):
 		var next := pos + direction
 		var band := _trail_band_rect(next, direction, width)
-		if _intersects_any(band, _voidfirst_solid_rects(layout)):
+		if GeometryUtils.intersects_any(band, _voidfirst_solid_rects(layout)):
 			break
 		if (
 			band.position.x < 0
@@ -697,7 +697,7 @@ func _clear_trees_on_routes(layout: BiomeEnvironmentLayout, cluster_id: StringNa
 	for index in range(layout.obstacle_ids.size() - 1, -1, -1):
 		if layout.obstacle_ids[index] != cluster_id:
 			continue
-		if not _rect_overlaps_road_cells(layout, layout.obstacle_rects[index]):
+		if not layout.rect_overlaps_road_cells(layout.obstacle_rects[index]):
 			continue
 		layout.obstacle_rects.remove_at(index)
 		layout.obstacle_ids.remove_at(index)
@@ -740,16 +740,16 @@ func _should_line_with_tree(layout: BiomeEnvironmentLayout, rect: Rect2i) -> boo
 	# Free of obstacles and passage corridors, and not on the road itself.
 	if not _can_place_tree(layout, rect):
 		return false
-	if _rect_overlaps_road_cells(layout, rect):
+	if layout.rect_overlaps_road_cells(rect):
 		return false
 	# Must sit beside a road to count as a lining.
-	if not _rect_overlaps_road_cells(layout, _inflate_rect(rect, VOIDFIRST_ROAD_LINE_NEAR)):
+	if not layout.rect_overlaps_road_cells(GeometryUtils.inflate_rect(rect, VOIDFIRST_ROAD_LINE_NEAR)):
 		return false
 	# Skip if the road is already bounded here by a rock or forest.
-	var confine := _inflate_rect(rect, VOIDFIRST_ROAD_LINE_CONFINE)
-	if _intersects_any(confine, _voidfirst_solid_rects(layout)):
+	var confine := GeometryUtils.inflate_rect(rect, VOIDFIRST_ROAD_LINE_CONFINE)
+	if GeometryUtils.intersects_any(confine, _voidfirst_solid_rects(layout)):
 		return false
-	if _intersects_any(confine, layout.forest_rects):
+	if GeometryUtils.intersects_any(confine, layout.forest_rects):
 		return false
 	return true
 
@@ -850,14 +850,14 @@ func _chasm_has_route_clearance(
 	layout: BiomeEnvironmentLayout,
 	rect: Rect2i
 ) -> bool:
-	var padded := _inflate_rect(rect, VOIDFIRST_CHASM_ROUTE_CLEARANCE)
-	if _intersects_any(padded, layout.road_rects):
+	var padded := GeometryUtils.inflate_rect(rect, VOIDFIRST_CHASM_ROUTE_CLEARANCE)
+	if GeometryUtils.intersects_any(padded, layout.road_rects):
 		return false
-	if _intersects_any(padded, layout.passage_rects):
+	if GeometryUtils.intersects_any(padded, layout.passage_rects):
 		return false
-	if _intersects_any(padded, layout.passage_connector_rects):
+	if GeometryUtils.intersects_any(padded, layout.passage_connector_rects):
 		return false
-	return not _rect_overlaps_road_cells(layout, padded)
+	return not layout.rect_overlaps_road_cells(padded)
 
 func _compute_occupancy(layout: BiomeEnvironmentLayout) -> PackedByteArray:
 	var total := layout.zone_size.x * layout.zone_size.y
@@ -892,7 +892,7 @@ func _occ_mark_rects(
 	zone_size: Vector2i
 ) -> void:
 	for rect in rects:
-		var clipped := _clip_rect(rect, zone_size)
+		var clipped := GeometryUtils.clip_rect(rect, zone_size)
 		for y in range(clipped.position.y, clipped.end.y):
 			var row := y * zone_size.x
 			for x in range(clipped.position.x, clipped.end.x):
@@ -951,7 +951,7 @@ func repair_layout(layout: BiomeEnvironmentLayout) -> void:
 			and not layout.get_wall_segment_side(obstacle_rect).is_empty()
 		):
 			continue
-		if _intersects_route(layout, obstacle_rect):
+		if layout.rect_intersects_route(obstacle_rect):
 			var obstacle_id := (
 				layout.obstacle_ids[index]
 				if index < layout.obstacle_ids.size()
@@ -1311,7 +1311,7 @@ func _add_internal_blocks(
 			# passages remain reachable.
 			if not allow_internal_void and _is_void_block_kind(block_kind):
 				block_kind = &"open"
-			if _is_void_block_kind(block_kind) and _rect_overlaps_passage_corridor(layout, block_rect):
+			if _is_void_block_kind(block_kind) and layout.rect_overlaps_passage_corridor(block_rect):
 				block_kind = &"open"
 			layout.add_block_rect(block_rect, block_kind)
 			_apply_block_surface(layout, block_rect, block_kind, biome.biome_id)
@@ -1360,7 +1360,7 @@ func _ensure_internal_void_block(
 			and (block_kind == &"building" or block_kind == &"dense_vegetation")
 		):
 			continue
-		if _rect_overlaps_passage_corridor(layout, block_rect):
+		if layout.rect_overlaps_passage_corridor(block_rect):
 			continue
 		var area := block_rect.size.x * block_rect.size.y
 		if area <= selected_area:
@@ -1426,15 +1426,6 @@ func _largest_non_void_block_index(
 		selected_area = area
 		selected_index = index
 	return selected_index
-
-func _rect_overlaps_passage_corridor(
-	layout: BiomeEnvironmentLayout,
-	rect: Rect2i
-) -> bool:
-	return (
-		_intersects_any(rect, layout.passage_connector_rects)
-		or _intersects_any(rect, layout.passage_rects)
-	)
 
 func _apply_block_surface(
 	layout: BiomeEnvironmentLayout,
@@ -1560,7 +1551,7 @@ func _add_road_rect(
 	rect: Rect2i,
 	tag: StringName
 ) -> void:
-	rect = _clip_rect(rect, layout.zone_size)
+	rect = GeometryUtils.clip_rect(rect, layout.zone_size)
 	if rect.size.x <= 0 or rect.size.y <= 0:
 		return
 	layout.road_rects.append(rect)
@@ -2094,14 +2085,14 @@ func _add_prop_if_clear(
 	rng: RandomNumberGenerator
 ) -> bool:
 	var canonical_rect := _canonical_obstacle_rect(prop_id, rect)
-	var padded := _inflate_rect(canonical_rect, MIN_RECT_GAP)
-	if _intersects_route(layout, padded):
+	var padded := GeometryUtils.inflate_rect(canonical_rect, MIN_RECT_GAP)
+	if layout.rect_intersects_route(padded):
 		return false
-	if _intersects_any(padded, layout.obstacle_rects):
+	if GeometryUtils.intersects_any(padded, layout.obstacle_rects):
 		return false
-	if _intersects_any(canonical_rect, layout.fall_zone_rects):
+	if GeometryUtils.intersects_any(canonical_rect, layout.fall_zone_rects):
 		return false
-	if _intersects_any(canonical_rect, layout.hazard_rects):
+	if GeometryUtils.intersects_any(canonical_rect, layout.hazard_rects):
 		return false
 	if _contains_any_crate(canonical_rect, layout.crate_cells):
 		return false
@@ -2429,13 +2420,13 @@ func _add_obstacle_if_clear(
 	rotation_radians: float
 ) -> bool:
 	var canonical_rect := _canonical_obstacle_rect(obstacle_id, rect)
-	if _intersects_route(layout, _inflate_rect(canonical_rect, MIN_RECT_GAP)):
+	if layout.rect_intersects_route(GeometryUtils.inflate_rect(canonical_rect, MIN_RECT_GAP)):
 		return false
-	if _intersects_any(_inflate_rect(canonical_rect, MIN_RECT_GAP), layout.obstacle_rects):
+	if GeometryUtils.intersects_any(GeometryUtils.inflate_rect(canonical_rect, MIN_RECT_GAP), layout.obstacle_rects):
 		return false
-	if _intersects_any(canonical_rect, layout.fall_zone_rects):
+	if GeometryUtils.intersects_any(canonical_rect, layout.fall_zone_rects):
 		return false
-	if _intersects_any(canonical_rect, layout.hazard_rects):
+	if GeometryUtils.intersects_any(canonical_rect, layout.hazard_rects):
 		return false
 	if _contains_any_crate(canonical_rect, layout.crate_cells):
 		return false
@@ -2844,12 +2835,6 @@ func _is_passage_route_tag(tag: StringName) -> bool:
 		or tag == &"burned_road"
 	)
 
-func _intersects_any(rect: Rect2i, others: Array[Rect2i]) -> bool:
-	for other in others:
-		if rect.intersects(other):
-			return true
-	return false
-
 func _voidfirst_solid_rects(layout: BiomeEnvironmentLayout) -> Array[Rect2i]:
 	var result: Array[Rect2i] = []
 	result.append_array(layout.mesa_rects)
@@ -2865,12 +2850,6 @@ func _cell_inside_any_rect(cell: Vector2i, rects: Array[Rect2i]) -> bool:
 		if rect.has_point(cell):
 			return true
 	return false
-
-func _inflate_rect(rect: Rect2i, amount: int) -> Rect2i:
-	return Rect2i(
-		rect.position - Vector2i(amount, amount),
-		rect.size + Vector2i(amount * 2, amount * 2)
-	)
 
 func _inset_rect(rect: Rect2i, amount: int) -> Rect2i:
 	var inset := mini(amount, _span_before_center(mini(rect.size.x, rect.size.y)))
@@ -2906,46 +2885,6 @@ func _fit_rect_inside(
 		),
 		size
 	)
-
-func _passage_inner_anchor(
-	passage: BiomePassage,
-	zone_size: Vector2i
-) -> Vector2i:
-	var edge_depth := WorldGridConfig.PASSAGE_EDGE_DEPTH_TILES
-	match passage.side:
-		&"north":
-			return Vector2i(passage.position, edge_depth)
-		&"south":
-			return Vector2i(passage.position, zone_size.y - edge_depth - 1)
-		&"west":
-			return Vector2i(edge_depth, passage.position)
-		_:
-			return Vector2i(zone_size.x - edge_depth - 1, passage.position)
-
-func _intersects_route(layout: BiomeEnvironmentLayout, rect: Rect2i) -> bool:
-	if _intersects_any(rect, layout.road_rects):
-		return true
-	if _intersects_any(rect, layout.passage_connector_rects):
-		return true
-	return _rect_overlaps_road_cells(layout, rect)
-
-func _rect_overlaps_road_cells(
-	layout: BiomeEnvironmentLayout,
-	rect: Rect2i
-) -> bool:
-	var clipped := _clip_rect(rect, layout.zone_size)
-	for y in range(clipped.position.y, clipped.position.y + clipped.size.y):
-		for x in range(clipped.position.x, clipped.position.x + clipped.size.x):
-			if layout.has_road_cell(Vector2i(x, y)):
-				return true
-	return false
-
-func _clip_rect(rect: Rect2i, zone_size: Vector2i) -> Rect2i:
-	var x := clampi(rect.position.x, 0, zone_size.x)
-	var y := clampi(rect.position.y, 0, zone_size.y)
-	var end_x := clampi(rect.position.x + rect.size.x, 0, zone_size.x)
-	var end_y := clampi(rect.position.y + rect.size.y, 0, zone_size.y)
-	return Rect2i(Vector2i(x, y), Vector2i(maxi(end_x - x, 0), maxi(end_y - y, 0)))
 
 func _route_cell_key(layout: BiomeEnvironmentLayout, cell: Vector2i) -> int:
 	return cell.y * layout.zone_size.x + cell.x

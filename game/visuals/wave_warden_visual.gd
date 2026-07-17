@@ -96,7 +96,7 @@ func _draw() -> void:
 	draw_set_transform(Vector2(0.0, hover), 0.0, Vector2.ONE)
 
 	draw_colored_polygon(
-		_ellipse_points(Vector2(0.0, 44.0), Vector2(48.0, 14.0), 24),
+		GeometryUtils.ellipse_points(Vector2(0.0, 44.0), Vector2(48.0, 14.0), 24),
 		Color(0.01, 0.015, 0.025, 0.52)
 	)
 
@@ -258,18 +258,3 @@ func _regular_polygon(
 		points.append(Vector2.RIGHT.rotated(angle) * radius)
 	return points
 
-func _ellipse_points(
-	center: Vector2,
-	radius: Vector2,
-	segments: int
-) -> PackedVector2Array:
-	var points := PackedVector2Array()
-	for index in range(segments):
-		var angle := TAU * float(index) / float(segments)
-		points.append(
-			center + Vector2(
-				cos(angle) * radius.x,
-				sin(angle) * radius.y
-			)
-		)
-	return points

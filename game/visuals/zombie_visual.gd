@@ -202,7 +202,7 @@ func _draw_basic() -> void:
 		)
 
 	draw_colored_polygon(
-		_ellipse_points(Vector2(0.0, 18.0), Vector2(23.0, 8.0), 18),
+		GeometryUtils.ellipse_points(Vector2(0.0, 18.0), Vector2(23.0, 8.0), 18),
 		Color(0.01, 0.015, 0.015, 0.5)
 	)
 	draw_line(Vector2(-7.0, 9.0), Vector2(-9.0 + walk_phase * 4.0, 22.0), Color(0.11, 0.14, 0.13, 1.0), 7.0, true)
@@ -269,7 +269,7 @@ func _draw_runner() -> void:
 		)
 
 	draw_colored_polygon(
-		_ellipse_points(Vector2(0.0, 17.0), Vector2(17.0, 6.0), 18),
+		GeometryUtils.ellipse_points(Vector2(0.0, 17.0), Vector2(17.0, 6.0), 18),
 		Color(0.01, 0.015, 0.015, 0.48)
 	)
 	draw_line(
@@ -350,7 +350,7 @@ func _draw_tank() -> void:
 		)
 
 	draw_colored_polygon(
-		_ellipse_points(Vector2(0.0, 22.0), Vector2(34.0, 10.0), 20),
+		GeometryUtils.ellipse_points(Vector2(0.0, 22.0), Vector2(34.0, 10.0), 20),
 		Color(0.01, 0.015, 0.015, 0.58)
 	)
 	draw_line(
@@ -443,7 +443,7 @@ func _draw_shooter() -> void:
 		)
 
 	draw_colored_polygon(
-		_ellipse_points(Vector2(0.0, 21.0), Vector2(21.0, 7.0), 18),
+		GeometryUtils.ellipse_points(Vector2(0.0, 21.0), Vector2(21.0, 7.0), 18),
 		Color(0.01, 0.02, 0.02, 0.52)
 	)
 	draw_line(
@@ -512,9 +512,3 @@ func _draw_shooter() -> void:
 	)
 	draw_circle(weapon_origin + arm_direction * 27.0, 5.0, Color(toxin_color, 0.9))
 
-func _ellipse_points(center: Vector2, radius: Vector2, segments: int) -> PackedVector2Array:
-	var points := PackedVector2Array()
-	for index in range(segments):
-		var angle := TAU * float(index) / float(segments)
-		points.append(center + Vector2(cos(angle) * radius.x, sin(angle) * radius.y))
-	return points

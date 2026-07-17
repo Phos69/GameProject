@@ -252,7 +252,7 @@ func _draw() -> void:
 
 	draw_set_transform(Vector2(0.0, -bob), 0.0, Vector2.ONE * beast_scale)
 	draw_colored_polygon(
-		_ellipse_points(GROUND_SHADOW_CENTER + Vector2(0.0, bob), GROUND_SHADOW_RADIUS, 18),
+		GeometryUtils.ellipse_points(GROUND_SHADOW_CENTER + Vector2(0.0, bob), GROUND_SHADOW_RADIUS, 18),
 		Color(0.01, 0.015, 0.02, 0.48)
 	)
 	_draw_leg(Vector2(-7.0, 8.0), walk_phase * 5.0, outline_color)
@@ -312,7 +312,7 @@ func _draw_raster_survivor(
 	rpg_component: RpgPlayerComponent
 ) -> void:
 	draw_colored_polygon(
-		_ellipse_points(GROUND_SHADOW_CENTER, GROUND_SHADOW_RADIUS, 18),
+		GeometryUtils.ellipse_points(GROUND_SHADOW_CENTER, GROUND_SHADOW_RADIUS, 18),
 		Color(0.01, 0.015, 0.02, 0.52)
 	)
 	var facing_scale := 1.0 if facing_direction.x >= -0.05 else -1.0
@@ -365,7 +365,7 @@ func _draw_raster_survivor(
 
 func _draw_raster_dead_survivor(downed: bool) -> void:
 	draw_colored_polygon(
-		_ellipse_points(Vector2(0.0, 9.0), Vector2(27.0, 10.0), 18),
+		GeometryUtils.ellipse_points(Vector2(0.0, 9.0), Vector2(27.0, 10.0), 18),
 		Color(0.01, 0.015, 0.02, 0.56)
 	)
 	var side := 1.0 if facing_direction.x >= 0.0 else -1.0
@@ -625,19 +625,13 @@ func _draw_leg(origin: Vector2, stride: float, color: Color) -> void:
 
 func _draw_dead_survivor(display_color: Color) -> void:
 	draw_colored_polygon(
-		_ellipse_points(Vector2(0.0, 8.0), Vector2(25.0, 9.0), 18),
+		GeometryUtils.ellipse_points(Vector2(0.0, 8.0), Vector2(25.0, 9.0), 18),
 		Color(0.01, 0.015, 0.02, 0.52)
 	)
 	draw_line(Vector2(-15.0, 2.0), Vector2(13.0, 8.0), display_color.darkened(0.58), 13.0, true)
 	draw_circle(Vector2(16.0, 9.0), 7.0, Color(0.32, 0.29, 0.27, 1.0))
 	draw_line(Vector2(-5.0, 5.0), Vector2(-20.0, 15.0), Color(0.12, 0.14, 0.16, 1.0), 5.0, true)
 
-func _ellipse_points(center: Vector2, radius: Vector2, segments: int) -> PackedVector2Array:
-	var points := PackedVector2Array()
-	for index in range(segments):
-		var angle := TAU * float(index) / float(segments)
-		points.append(center + Vector2(cos(angle) * radius.x, sin(angle) * radius.y))
-	return points
 
 func _closed_polygon(points: PackedVector2Array) -> PackedVector2Array:
 	var closed := PackedVector2Array(points)

@@ -525,6 +525,29 @@ func add_hazard_rect(
 func has_road_cell(cell: Vector2i) -> bool:
 	return road_cell_tags.has(_cell_key(cell))
 
+# Query di piazzamento condivise: prima duplicate in ObstacleLayoutGenerator e
+# nei pass di placement (route = strade + connettori + celle strada).
+func rect_overlaps_road_cells(rect: Rect2i) -> bool:
+	var clipped := _clip_rect(rect)
+	for y in range(clipped.position.y, clipped.end.y):
+		for x in range(clipped.position.x, clipped.end.x):
+			if has_road_cell(Vector2i(x, y)):
+				return true
+	return false
+
+func rect_intersects_route(rect: Rect2i) -> bool:
+	if GeometryUtils.intersects_any(rect, road_rects):
+		return true
+	if GeometryUtils.intersects_any(rect, passage_connector_rects):
+		return true
+	return rect_overlaps_road_cells(rect)
+
+func rect_overlaps_passage_corridor(rect: Rect2i) -> bool:
+	return (
+		GeometryUtils.intersects_any(rect, passage_connector_rects)
+		or GeometryUtils.intersects_any(rect, passage_rects)
+	)
+
 func is_bridge_cell(cell: Vector2i) -> bool:
 	if _cell_inside_any_rect(cell, bridge_rects):
 		return true
@@ -761,11 +784,7 @@ func _terrain_class_from_code(code: int) -> StringName:
 			return TERRAIN_VOID
 
 func _clip_rect(rect: Rect2i) -> Rect2i:
-	var x := clampi(rect.position.x, 0, zone_size.x)
-	var y := clampi(rect.position.y, 0, zone_size.y)
-	var end_x := clampi(rect.position.x + rect.size.x, 0, zone_size.x)
-	var end_y := clampi(rect.position.y + rect.size.y, 0, zone_size.y)
-	return Rect2i(Vector2i(x, y), Vector2i(maxi(end_x - x, 0), maxi(end_y - y, 0)))
+	return GeometryUtils.clip_rect(rect, zone_size)
 
 func _cell_key(cell: Vector2i) -> int:
 	return cell.y * zone_size.x + cell.x

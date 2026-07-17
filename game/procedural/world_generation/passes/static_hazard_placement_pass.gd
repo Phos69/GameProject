@@ -103,20 +103,20 @@ func _scan_rect(layout: BiomeEnvironmentLayout, size: Vector2i) -> Rect2i:
 
 
 func _can_place(layout: BiomeEnvironmentLayout, rect: Rect2i) -> bool:
-	var padded := _inflate_rect(rect, ROUTE_CLEARANCE)
-	if _intersects_route(layout, padded):
+	var padded := GeometryUtils.inflate_rect(rect, ROUTE_CLEARANCE)
+	if layout.rect_intersects_route(padded):
 		return false
-	if _rect_overlaps_passage_corridor(layout, padded):
+	if layout.rect_overlaps_passage_corridor(padded):
 		return false
-	if _intersects_any(padded, layout.obstacle_rects):
+	if GeometryUtils.intersects_any(padded, layout.obstacle_rects):
 		return false
-	if _intersects_any(padded, layout.mesa_rects):
+	if GeometryUtils.intersects_any(padded, layout.mesa_rects):
 		return false
-	if _intersects_any(padded, layout.mass_rects):
+	if GeometryUtils.intersects_any(padded, layout.mass_rects):
 		return false
-	if _intersects_any(padded, layout.fall_zone_rects):
+	if GeometryUtils.intersects_any(padded, layout.fall_zone_rects):
 		return false
-	if _intersects_any(padded, layout.hazard_rects):
+	if GeometryUtils.intersects_any(padded, layout.hazard_rects):
 		return false
 	var spawn_clearance := Rect2i(
 		layout.player_spawn_cell - Vector2i.ONE * SPAWN_CLEARANCE,
@@ -125,36 +125,6 @@ func _can_place(layout: BiomeEnvironmentLayout, rect: Rect2i) -> bool:
 	if rect.intersects(spawn_clearance):
 		return false
 	return _rect_is_final_floor(layout, rect)
-
-
-func _intersects_route(layout: BiomeEnvironmentLayout, rect: Rect2i) -> bool:
-	if _intersects_any(rect, layout.road_rects):
-		return true
-	if _intersects_any(rect, layout.passage_connector_rects):
-		return true
-	return _rect_overlaps_road_cells(layout, rect)
-
-
-func _rect_overlaps_passage_corridor(
-	layout: BiomeEnvironmentLayout,
-	rect: Rect2i
-) -> bool:
-	return (
-		_intersects_any(rect, layout.passage_connector_rects)
-		or _intersects_any(rect, layout.passage_rects)
-	)
-
-
-func _rect_overlaps_road_cells(
-	layout: BiomeEnvironmentLayout,
-	rect: Rect2i
-) -> bool:
-	var clipped := _clip_rect(rect, layout.zone_size)
-	for y in range(clipped.position.y, clipped.end.y):
-		for x in range(clipped.position.x, clipped.end.x):
-			if layout.has_road_cell(Vector2i(x, y)):
-				return true
-	return false
 
 
 func _rect_is_final_floor(
@@ -175,13 +145,6 @@ func _rect_is_final_floor(
 	return true
 
 
-func _intersects_any(rect: Rect2i, others: Array[Rect2i]) -> bool:
-	for other in others:
-		if rect.intersects(other):
-			return true
-	return false
-
-
 func _cell_inside_any_rect(cell: Vector2i, rects: Array[Rect2i]) -> bool:
 	for rect in rects:
 		if rect.has_point(cell):
@@ -189,19 +152,3 @@ func _cell_inside_any_rect(cell: Vector2i, rects: Array[Rect2i]) -> bool:
 	return false
 
 
-func _inflate_rect(rect: Rect2i, amount: int) -> Rect2i:
-	return Rect2i(
-		rect.position - Vector2i(amount, amount),
-		rect.size + Vector2i(amount * 2, amount * 2)
-	)
-
-
-func _clip_rect(rect: Rect2i, zone_size: Vector2i) -> Rect2i:
-	var x := clampi(rect.position.x, 0, zone_size.x)
-	var y := clampi(rect.position.y, 0, zone_size.y)
-	var end_x := clampi(rect.end.x, 0, zone_size.x)
-	var end_y := clampi(rect.end.y, 0, zone_size.y)
-	return Rect2i(
-		Vector2i(x, y),
-		Vector2i(maxi(end_x - x, 0), maxi(end_y - y, 0))
-	)

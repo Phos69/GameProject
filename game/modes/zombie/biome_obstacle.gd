@@ -370,16 +370,10 @@ func _draw_ground_shadow() -> void:
 		maxf(shadow_width * 0.16, 5.0)
 	)
 	draw_colored_polygon(
-		_ellipse_points(Vector2(0.0, shadow_y), radius, 18),
+		GeometryUtils.ellipse_points(Vector2(0.0, shadow_y), radius, 18),
 		Color(0.02, 0.03, 0.04, 0.34)
 	)
 
-func _ellipse_points(center: Vector2, radius: Vector2, segments: int) -> PackedVector2Array:
-	var points := PackedVector2Array()
-	for index in range(segments):
-		var angle := TAU * float(index) / float(segments)
-		points.append(center + Vector2(cos(angle) * radius.x, sin(angle) * radius.y))
-	return points
 
 func _draw_perimeter_wall() -> void:
 	if has_raised_cliff_art():
@@ -542,7 +536,7 @@ func _draw_ash_barrier() -> void:
 		var center_x := -half_size.x + segment_width * (float(index) + 0.5)
 		var radius := Vector2(segment_width * 0.48, half_size.y * 0.62)
 		draw_colored_polygon(
-			_ellipse_points(Vector2(center_x, 0.0), radius, 14),
+			GeometryUtils.ellipse_points(Vector2(center_x, 0.0), radius, 14),
 			primary_color.darkened(0.18 + float(index % 2) * 0.08)
 		)
 	draw_line(
@@ -856,7 +850,7 @@ func _draw_dense_vegetation() -> void:
 			maxf(obstacle_size.y * clump.z * 0.72, 8.0)
 		)
 		var color := primary_color.darkened(0.08 + float(index % 2) * 0.10)
-		draw_colored_polygon(_ellipse_points(center, radius, 16), color)
+		draw_colored_polygon(GeometryUtils.ellipse_points(center, radius, 16), color)
 	for index in range(5):
 		var ratio := float(index) / 4.0
 		var x_position := lerpf(-half_size.x * 0.74, half_size.x * 0.74, ratio)
@@ -892,11 +886,11 @@ func _draw_pipe_stack() -> void:
 			true
 		)
 		draw_colored_polygon(
-			_ellipse_points(Vector2(-half_size.x + cap_radius.x, y_position), cap_radius, 16),
+			GeometryUtils.ellipse_points(Vector2(-half_size.x + cap_radius.x, y_position), cap_radius, 16),
 			primary_color.darkened(0.28 + shade)
 		)
 		draw_colored_polygon(
-			_ellipse_points(Vector2(half_size.x - cap_radius.x, y_position), cap_radius, 16),
+			GeometryUtils.ellipse_points(Vector2(half_size.x - cap_radius.x, y_position), cap_radius, 16),
 			primary_color.lightened(0.05 - shade * 0.3)
 		)
 	draw_line(
@@ -967,7 +961,7 @@ func _draw_dead_tree() -> void:
 func _draw_log() -> void:
 	var half_size := obstacle_size * 0.5
 	var radius := Vector2(maxf(half_size.x, 10.0), maxf(half_size.y * 0.65, 5.0))
-	draw_colored_polygon(_ellipse_points(Vector2.ZERO, radius, 18), primary_color.darkened(0.12))
+	draw_colored_polygon(GeometryUtils.ellipse_points(Vector2.ZERO, radius, 18), primary_color.darkened(0.12))
 	for x_position in [-half_size.x * 0.58, 0.0, half_size.x * 0.58]:
 		draw_line(
 			Vector2(x_position, -half_size.y * 0.48),
