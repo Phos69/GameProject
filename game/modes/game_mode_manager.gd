@@ -21,7 +21,12 @@ func _ready() -> void:
 	game_mode_changed.emit(active_mode_id)
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not debug_mode_hotkeys or not event is InputEventKey:
+	# Le hotkey F1/F5/F6/F7 sono uno strumento di sviluppo: nelle build release
+	# salterebbero Character Select e permetterebbero un cambio modalita' a
+	# meta' caricamento.
+	if not debug_mode_hotkeys or not OS.is_debug_build():
+		return
+	if not event is InputEventKey:
 		return
 	var key_event := event as InputEventKey
 	if not key_event.pressed or key_event.echo:
