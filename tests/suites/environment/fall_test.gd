@@ -240,6 +240,58 @@ func test_dodge_runtime() -> void:
 	assert_gt(runtime_dodge.get_cooldown_ratio(), 0.0, "la schivata runtime avvia il cooldown")
 	player.free()
 
+func test_dodge_completes_full_distance_before_falling_on_void() -> void:
+	var hazard_system := HazardSystem.new()
+	add_child(hazard_system)
+	var fall_zone := BiomeFallZone.new()
+	fall_zone.configure(
+		&"fall_zone",
+		Vector2(100.0, 100.0),
+		0.0,
+		Color(0.82, 0.58, 0.16, 0.92)
+	)
+	add_child(fall_zone)
+	fall_zone.global_position = Vector2(132.0, 0.0)
+
+	var player_scene := load("res://game/player/player.tscn") as PackedScene
+	var player := player_scene.instantiate() as PlayerController
+	add_child(player)
+	player.configure_runtime_dependencies(null, null, hazard_system)
+	player.global_position = Vector2.ZERO
+
+	var runtime_dodge := player.dodge_component
+	assert_true(
+		runtime_dodge.try_start(Vector2.RIGHT),
+		"la schivata puo iniziare quando il punto finale e nel void"
+	)
+	assert_true(
+		runtime_dodge.target_position.is_equal_approx(
+			Vector2(runtime_dodge.dodge_distance, 0.0)
+		),
+		"il landing nel void conserva la distanza completa invece del fallback corto"
+	)
+	assert_true(
+		runtime_dodge.current_crosses_gap,
+		"il tracciato continua a classificare la fall zone come gap"
+	)
+
+	for _frame in range(20):
+		runtime_dodge.physics_process_dodge(0.02)
+
+	assert_true(
+		player.global_position.is_equal_approx(Vector2(runtime_dodge.dodge_distance, 0.0)),
+		"il player raggiunge il punto finale completo della schivata"
+	)
+	assert_eq(
+		player.get_entity_state_name(),
+		&"falling",
+		"la caduta inizia solo dopo la conclusione della schivata sul void"
+	)
+
+	player.free()
+	fall_zone.free()
+	hazard_system.free()
+
 # --- helper (porting da fall_boundary_visual_logic) -----------------------
 
 func _has_fall_rect_for_side(layout: BiomeEnvironmentLayout, side: StringName) -> bool:

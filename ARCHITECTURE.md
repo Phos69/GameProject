@@ -1246,7 +1246,10 @@ multi-bioma.
   `is_position_environment_hazard()` identifica lava, gas, acqua profonda e
   altri hazard ambientali.
 - Il dodge usa la query fall zone per attraversare piccoli gap e rifiuta gli
-  hazard ambientali come ostacoli di traiettoria/landing.
+  hazard ambientali come ostacoli di traiettoria/landing. Un punto finale nel
+  void resta valido per completare l'intera distanza del roll; subito dopo il
+  `PlayerController` rivaluta la hitzone a terra e transiziona direttamente da
+  `dodging` a `falling`.
 - `EnemySystem` registra i profili tematici sullo stesso `basic_enemy.tscn`.
 - `BasicEnemy` applica status al contatto, resistenza, emersione o hazard alla morte solo se definiti dal profilo.
 - `BasicEnemy.death_reason` distingue `combat` da `void`: le morti void

@@ -156,7 +156,7 @@ func set_gameplay_input_enabled(enabled: bool) -> void:
 
 func try_start_void_fall() -> bool:
 	if (
-		current_entity_state == EntityState.DODGING
+		(dodge_component != null and dodge_component.is_dodging)
 		or current_entity_state == EntityState.FALLING
 		or health_component == null
 		or health_component.is_incapacitated()

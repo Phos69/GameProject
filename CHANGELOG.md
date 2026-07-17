@@ -17,6 +17,9 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Fixed
 
+- La schivata diretta dentro una fall zone completa ora sempre la distanza del
+  roll invece di fermarsi o usare il fallback corto; al termine il player
+  rivaluta il void e avvia normalmente la caduta.
 - I safe check MCP `build/test/smoke` su Windows non tentano piu di avviare
   direttamente `npm.cmd` con `shell: false`: usano il runtime Node corrente e
   la CLI npm locale, con fallback allowlisted. Lo smoke `stdio` esegue ora

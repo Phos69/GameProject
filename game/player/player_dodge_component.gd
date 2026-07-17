@@ -215,10 +215,26 @@ func _is_landing_valid(position: Vector2) -> bool:
 	var hazard_system := get_tree().get_first_node_in_group("hazard_system")
 	if (
 		hazard_system != null
+		and hazard_system.has_method("is_position_environment_hazard")
+		and hazard_system.is_position_environment_hazard(position)
+	):
+		return false
+	# A fall zone is a valid dodge endpoint: the roll must cover its complete
+	# distance, then PlayerController rechecks the final position and starts the
+	# fall. Keep compatibility with hazard providers that only expose the older
+	# aggregate query without turning void back into a blocked landing.
+	if (
+		hazard_system != null
+		and not hazard_system.has_method("is_position_environment_hazard")
 		and hazard_system.has_method("is_position_hazardous")
 		and hazard_system.is_position_hazardous(position)
 	):
-		return false
+		var is_fall_zone: bool = (
+			hazard_system.has_method("is_position_fall_zone")
+			and hazard_system.is_position_fall_zone(position)
+		)
+		if not is_fall_zone:
+			return false
 	return true
 
 func _update_invulnerability(elapsed_ratio: float) -> void:
