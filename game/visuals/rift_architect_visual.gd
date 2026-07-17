@@ -1,77 +1,12 @@
-extends Node2D
+extends PatternBossVisual
 class_name RiftArchitectVisual
 
 @export var armor_color: Color = Color(0.08, 0.42, 0.48, 1.0)
 @export var phase_two_color: Color = Color(0.12, 0.72, 0.62, 1.0)
 @export var core_color: Color = Color(1.0, 0.58, 0.18, 1.0)
 
-var phase_index: int = 1
-var aim_direction: Vector2 = Vector2.DOWN
-var active_pattern: StringName = &""
-var animation_time: float = 0.0
-var hurt_timer: float = 0.0
-var spawn_timer: float = 0.0
-var flash_intensity: float = 1.0
-var glow_intensity: float = 1.0
-var reduced_motion: bool = false
-
-func _ready() -> void:
-	add_to_group("visual_settings_consumers")
-	VisualSettingsManager.sync_consumer(self)
-	queue_redraw()
-
-func _process(delta: float) -> void:
-	if not reduced_motion:
-		animation_time += delta
-	hurt_timer = maxf(hurt_timer - delta, 0.0)
-	spawn_timer = maxf(spawn_timer - delta, 0.0)
-	queue_redraw()
-
-func apply_visual_settings(settings: Dictionary) -> void:
-	flash_intensity = clampf(
-		float(settings.get("flash_intensity", 1.0)),
-		0.0,
-		1.0
-	)
-	glow_intensity = clampf(
-		float(settings.get("glow_intensity", 1.0)),
-		0.0,
-		1.0
-	)
-	reduced_motion = bool(settings.get("reduced_motion", false))
-	if reduced_motion:
-		animation_time = 0.0
-	queue_redraw()
-
-func set_facing(direction: Vector2) -> void:
-	if direction.length_squared() > 0.01:
-		aim_direction = direction.normalized()
-
-func set_phase(value: int) -> void:
-	phase_index = maxi(value, 1)
-	queue_redraw()
-
-func set_attack_charge(pattern_id: StringName) -> void:
-	active_pattern = pattern_id
-	queue_redraw()
-
-func clear_attack_charge() -> void:
-	active_pattern = &""
-	queue_redraw()
-
-func play_hurt() -> void:
-	hurt_timer = 0.14
-	queue_redraw()
-
-func play_spawn() -> void:
-	spawn_timer = 0.65
-	queue_redraw()
-
 func get_profile_id() -> StringName:
 	return &"rift_architect"
-
-func is_phase_two_visual() -> bool:
-	return phase_index >= 2
 
 func _draw() -> void:
 	var phase_two := is_phase_two_visual()

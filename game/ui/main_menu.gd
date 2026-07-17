@@ -1593,18 +1593,6 @@ func _on_visual_toggle_changed(
 	if visual_settings_manager != null:
 		visual_settings_manager.set_setting(setting_id, value)
 
-func _apply_visual_profile(profile_id: StringName) -> void:
-	_resolve_managers()
-	if (
-		visual_settings_manager != null
-		and visual_settings_manager.apply_profile(profile_id)
-	):
-		_refresh_visual_controls()
-
-func _refresh_visual_controls() -> void:
-	if settings_panel != null:
-		settings_panel.refresh_all_controls()
-
 func _on_settings_panel_closed() -> void:
 	if primary_panel == null:
 		return
@@ -1613,15 +1601,7 @@ func _on_settings_panel_closed() -> void:
 		continue_button.grab_focus()
 
 func _play_focus() -> void:
-	var audio_manager := get_tree().get_first_node_in_group(
-		"audio_manager"
-	) as AudioManager
-	if audio_manager != null:
-		audio_manager.play_ui_focus()
+	AudioManager.play_ui_focus_in(get_tree())
 
 func _play_confirm() -> void:
-	var audio_manager := get_tree().get_first_node_in_group(
-		"audio_manager"
-	) as AudioManager
-	if audio_manager != null:
-		audio_manager.play_ui_confirm()
+	AudioManager.play_ui_confirm_in(get_tree())

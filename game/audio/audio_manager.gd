@@ -100,6 +100,18 @@ func shutdown_audio() -> void:
 	gameplay_player = null
 	gameplay_stream = null
 
+# Comodita' per i menu: risolvono il manager dal gruppo e suonano il
+# feedback UI. Prima ogni menu duplicava lookup e null-check.
+static func play_ui_focus_in(tree: SceneTree) -> void:
+	var manager := tree.get_first_node_in_group("audio_manager") as AudioManager
+	if manager != null:
+		manager.play_ui_focus()
+
+static func play_ui_confirm_in(tree: SceneTree) -> void:
+	var manager := tree.get_first_node_in_group("audio_manager") as AudioManager
+	if manager != null:
+		manager.play_ui_confirm()
+
 func play_ui_focus() -> int:
 	var frames_written := play_cue(&"ui_focus")
 	ui_feedback_generated.emit(&"focus", frames_written)

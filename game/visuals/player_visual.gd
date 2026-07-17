@@ -42,7 +42,7 @@ func _ready() -> void:
 	add_to_group("visual_settings_consumers")
 	dodge_rest_scale = scale
 	dodge_rest_rotation = rotation
-	_sync_visual_settings()
+	VisualSettingsManager.sync_consumer(self)
 	queue_redraw()
 
 func _process(delta: float) -> void:
@@ -77,13 +77,6 @@ func apply_visual_settings(settings: Dictionary) -> void:
 	if reduced_motion:
 		animation_time = 0.0
 	queue_redraw()
-
-func _sync_visual_settings() -> void:
-	var manager := get_tree().get_first_node_in_group(
-		"visual_settings_manager"
-	)
-	if manager != null and manager.has_method("get_settings_data"):
-		apply_visual_settings(manager.get_settings_data())
 
 func set_player_slot(slot: int) -> void:
 	player_slot = clampi(slot, 1, 4)

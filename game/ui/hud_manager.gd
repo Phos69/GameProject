@@ -523,7 +523,7 @@ func _refresh_boss_hud() -> void:
 		boss_warning_timer = 0.0
 		return
 
-	_connect_boss_feedback(boss)
+	BossSystem.connect_boss_feedback(boss, self)
 	var health_component := boss.get_node_or_null("HealthComponent") as HealthComponent
 	if health_component == null:
 		boss_panel.hide()
@@ -562,29 +562,10 @@ func _connect_boss_system() -> void:
 	var defeated_callback := Callable(self, "_on_boss_defeated")
 	if not boss_system.boss_defeated.is_connected(defeated_callback):
 		boss_system.boss_defeated.connect(defeated_callback)
-	_connect_boss_feedback(boss_system.get_active_boss())
-
-func _connect_boss_feedback(boss: Node) -> void:
-	if boss == null:
-		return
-	var telegraph_callback := Callable(self, "_on_boss_telegraph_started")
-	if (
-		boss.has_signal("attack_telegraph_started")
-		and not boss.is_connected(
-			"attack_telegraph_started",
-			telegraph_callback
-		)
-	):
-		boss.connect("attack_telegraph_started", telegraph_callback)
-	var phase_callback := Callable(self, "_on_boss_phase_changed")
-	if (
-		boss.has_signal("phase_changed")
-		and not boss.is_connected("phase_changed", phase_callback)
-	):
-		boss.connect("phase_changed", phase_callback)
+	BossSystem.connect_boss_feedback(boss_system.get_active_boss(), self)
 
 func _on_boss_spawned(boss: Node) -> void:
-	_connect_boss_feedback(boss)
+	BossSystem.connect_boss_feedback(boss, self)
 	last_boss_display_name = str(boss.get("display_name"))
 	_refresh_boss_hud()
 	if combat_announcement != null:

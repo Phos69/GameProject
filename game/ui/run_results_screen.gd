@@ -230,15 +230,7 @@ func _mode_label(mode_id: StringName) -> String:
 			return "ARENA"
 
 func _play_focus() -> void:
-	var audio_manager := get_tree().get_first_node_in_group(
-		"audio_manager"
-	) as AudioManager
-	if audio_manager != null:
-		audio_manager.play_ui_focus()
+	AudioManager.play_ui_focus_in(get_tree())
 
 func _play_confirm() -> void:
-	var audio_manager := get_tree().get_first_node_in_group(
-		"audio_manager"
-	) as AudioManager
-	if audio_manager != null:
-		audio_manager.play_ui_confirm()
+	AudioManager.play_ui_confirm_in(get_tree())

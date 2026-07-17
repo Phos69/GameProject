@@ -1,4 +1,4 @@
-extends Node2D
+extends SettingsAwareVisual
 class_name DefenseTowerVisual
 
 @export var visual_data: WeaponVisualData = preload(
@@ -10,30 +10,6 @@ var tower_level: int = 1
 var tracking_target: bool = false
 var fire_flash_timer: float = 0.0
 var recoil_timer: float = 0.0
-var animation_time: float = 0.0
-var flash_intensity: float = 1.0
-var glow_intensity: float = 1.0
-var reduced_motion: bool = false
-
-func _ready() -> void:
-	add_to_group("visual_settings_consumers")
-	VisualSettingsManager.sync_consumer(self)
-
-func apply_visual_settings(settings: Dictionary) -> void:
-	flash_intensity = clampf(
-		float(settings.get("flash_intensity", 1.0)),
-		0.0,
-		1.0
-	)
-	glow_intensity = clampf(
-		float(settings.get("glow_intensity", 1.0)),
-		0.0,
-		1.0
-	)
-	reduced_motion = bool(settings.get("reduced_motion", false))
-	if reduced_motion:
-		animation_time = 0.0
-	queue_redraw()
 
 func _process(delta: float) -> void:
 	if not reduced_motion:

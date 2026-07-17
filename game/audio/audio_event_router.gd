@@ -44,7 +44,7 @@ func _connect_sources() -> void:
 		var callback := Callable(self, "_on_boss_spawned")
 		if not boss_system.boss_spawned.is_connected(callback):
 			boss_system.boss_spawned.connect(callback)
-		_connect_boss_feedback(boss_system.get_active_boss())
+		BossSystem.connect_boss_feedback(boss_system.get_active_boss(), self)
 	var enemy_system := get_tree().get_first_node_in_group(
 		"enemy_system"
 	) as EnemySystem
@@ -209,26 +209,7 @@ func _on_run_finished(_result: Dictionary) -> void:
 
 func _on_boss_spawned(boss: Node) -> void:
 	audio_manager.play_boss_feedback(&"boss_spawn")
-	_connect_boss_feedback(boss)
-
-func _connect_boss_feedback(boss: Node) -> void:
-	if boss == null:
-		return
-	var telegraph_callback := Callable(self, "_on_boss_telegraph_started")
-	if (
-		boss.has_signal("attack_telegraph_started")
-		and not boss.is_connected(
-			"attack_telegraph_started",
-			telegraph_callback
-		)
-	):
-		boss.connect("attack_telegraph_started", telegraph_callback)
-	var phase_callback := Callable(self, "_on_boss_phase_changed")
-	if (
-		boss.has_signal("phase_changed")
-		and not boss.is_connected("phase_changed", phase_callback)
-	):
-		boss.connect("phase_changed", phase_callback)
+	BossSystem.connect_boss_feedback(boss, self)
 
 func _on_boss_telegraph_started(
 	pattern_id: StringName,

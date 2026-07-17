@@ -9,7 +9,7 @@ var reduced_motion: bool = false
 func _ready() -> void:
 	add_to_group("gameplay_effects")
 	add_to_group("visual_settings_consumers")
-	_sync_visual_settings()
+	VisualSettingsManager.sync_consumer(self)
 	call_deferred("_connect_systems")
 
 func apply_visual_settings(settings: Dictionary) -> void:
@@ -24,13 +24,6 @@ func apply_visual_settings(settings: Dictionary) -> void:
 		1.0
 	)
 	reduced_motion = bool(settings.get("reduced_motion", false))
-
-func _sync_visual_settings() -> void:
-	var manager := get_tree().get_first_node_in_group(
-		"visual_settings_manager"
-	)
-	if manager != null and manager.has_method("get_settings_data"):
-		apply_visual_settings(manager.get_settings_data())
 
 func _connect_systems() -> void:
 	var projectile_system := get_tree().get_first_node_in_group(

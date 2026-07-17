@@ -184,6 +184,28 @@ func get_registered_boss_ids() -> Array[StringName]:
 func notify_boss_defeated(mode_id: StringName) -> void:
 	boss_defeated.emit(mode_id)
 
+# Collega telegraph e cambio fase del boss agli handler standard del listener
+# (_on_boss_telegraph_started / _on_boss_phase_changed). Prima duplicato
+# identico in AudioEventRouter e HUDManager.
+static func connect_boss_feedback(boss: Node, listener: Object) -> void:
+	if boss == null or listener == null:
+		return
+	var telegraph_callback := Callable(listener, "_on_boss_telegraph_started")
+	if (
+		boss.has_signal("attack_telegraph_started")
+		and not boss.is_connected(
+			"attack_telegraph_started",
+			telegraph_callback
+		)
+	):
+		boss.connect("attack_telegraph_started", telegraph_callback)
+	var phase_callback := Callable(listener, "_on_boss_phase_changed")
+	if (
+		boss.has_signal("phase_changed")
+		and not boss.is_connected("phase_changed", phase_callback)
+	):
+		boss.connect("phase_changed", phase_callback)
+
 func get_active_boss() -> Node:
 	if is_instance_valid(active_boss) and not active_boss.is_queued_for_deletion():
 		return active_boss

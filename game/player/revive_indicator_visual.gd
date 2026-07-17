@@ -12,7 +12,7 @@ var reduced_motion: bool = false
 
 func _ready() -> void:
 	add_to_group("visual_settings_consumers")
-	_sync_visual_settings()
+	VisualSettingsManager.sync_consumer(self)
 	hide()
 	queue_redraw()
 
@@ -20,13 +20,6 @@ func apply_visual_settings(settings: Dictionary) -> void:
 	high_contrast = bool(settings.get("high_contrast", false))
 	reduced_motion = bool(settings.get("reduced_motion", false))
 	queue_redraw()
-
-func _sync_visual_settings() -> void:
-	var manager := get_tree().get_first_node_in_group(
-		"visual_settings_manager"
-	)
-	if manager != null and manager.has_method("get_settings_data"):
-		apply_visual_settings(manager.get_settings_data())
 
 func set_slot_color(color: Color) -> void:
 	slot_color = color
