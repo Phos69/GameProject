@@ -38,7 +38,12 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
     `BiomeEnvironmentLayout` e l'ancora d'imbocco dei passaggi e'
     `BiomePassage.edge_anchor_cell`;
   - nuova base `BiomeZoneArea` condivisa da `BiomeFallZone` e
-    `BiomeHazardZone` (test punto/distanza e collisione rettangolare).
+    `BiomeHazardZone` (test punto/distanza e collisione rettangolare);
+  - chiusi anche i tre residui dopo verifica di equivalenza: la
+    `_intersects_route` locale del prop pass e la
+    `_rect_overlaps_road_cells` del map validation usano i metodi del
+    layout (stesso esito booleano), e la palette cresta dirupo e' la
+    statica condivisa `TopDownCliffRenderer.edge_color_for_style`.
 
 - Corretta la copertura hitbox dei dieci raster della Pianura Infetta senza
   stretch: `small_rock`, `broken_fence`, `wood_barrier`, `fallen_log` e

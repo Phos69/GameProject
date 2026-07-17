@@ -13,11 +13,12 @@ Nessuna modifica al codice è stata applicata; ogni finding cita file e riga.
 > **Aggiornamento dedup:** i gruppi P1 4.4, 4.1 e 4.3 sono stati unificati —
 > `ContextUtils` in `39bf724`, `GeometryUtils` + metodi layout/passage in
 > `7422efa`, `BiomeZoneArea` in `84701c9` (suite completa 307/307, 30.337
-> assert). Restano volutamente separate le varianti semanticamente diverse:
-> `_intersects_route` del prop pass (ignora i connettori),
-> `_rect_overlaps_road_cells` del map validation (itera i tag),
-> `_edge_color_for_style` (corpi quasi ma non identici). I gruppi 4.2,
-> 4.5 e 4.6 restano aperti.
+> assert). Anche i tre residui inizialmente lasciati separati sono stati
+> unificati in `68c352f` dopo verifica di equivalenza (esito identico:
+> route del prop pass, road-cells del map validation, palette
+> `edge_color_for_style` — quest'ultima era in realtà un duplicato esatto,
+> il "quasi identica" del report era un falso negativo dello scan).
+> I gruppi 4.2, 4.5 e 4.6 restano aperti.
 
 ## 1. Sintesi
 
