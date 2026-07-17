@@ -19,6 +19,10 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
   - `GameModeManager`: le hotkey debug F1/F5/F6/F7 di cambio modalità sono
     ora attive solo nelle build di sviluppo (`OS.is_debug_build()`), non
     più nell'eseguibile esportato.
+- `SaveManager.save_game` verifica l'esito della scrittura del file
+  temporaneo prima del rename atomico: un errore di I/O (es. disco pieno)
+  non può più promuovere un save troncato e cancellare il backup valido
+  (C4 del report `docs/repo_health_report_2026-07-17.md`).
 
 ### Changed
 

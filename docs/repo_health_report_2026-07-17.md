@@ -5,10 +5,10 @@ tree pulito). Copre: criticità con rischio crash, duplicazioni di codice,
 manutenibilità, known issue consolidati, test/CI e configurazione di build.
 Nessuna modifica al codice è stata applicata; ogni finding cita file e riga.
 
-> **Aggiornamento 2026-07-17 (stessa giornata):** le tre criticità P0 sono
-> state risolte — C1 in `f16178b`, C3 in `3a1a0da`, C2 in `ae7cbd8` (suite
-> combat 26/26, modes 17/17 e soak lifecycle verdi). Le sezioni sotto
-> restano come fotografia pre-fix.
+> **Aggiornamento 2026-07-17 (stessa giornata):** le tre criticità P0 e C4
+> sono state risolte — C1 in `f16178b`, C3 in `3a1a0da`, C2 in `ae7cbd8`,
+> C4 in `db3a7a0` (suite combat 26/26, modes 17/17, save_edge 2/2 e soak
+> lifecycle verdi). Le sezioni sotto restano come fotografia pre-fix.
 
 ## 1. Sintesi
 
