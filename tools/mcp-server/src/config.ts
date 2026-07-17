@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const SERVER_NAME = "gameproject-mcp";
-export const SERVER_VERSION = "0.1.0";
+export const SERVER_VERSION = "0.2.0";
 
 export const SERVER_INSTRUCTIONS =
   "Read-only project MCP for Local Action Sandbox. The world uses an orthogonal top-down grid with controlled perspective on object volume. Work only inside the repo root. Do not expose secrets. Use run_safe_check only for allowlisted checks; it never runs arbitrary shell commands. File reads and searches are size-limited and skip build/cache/vendor/sensitive paths by default.";
@@ -12,9 +12,12 @@ export const DEFAULT_MAX_FILE_BYTES = 200_000;
 export const MAX_FILE_BYTES_CAP = 1_000_000;
 export const DEFAULT_SEARCH_RESULTS = 50;
 export const MAX_SEARCH_RESULTS = 200;
-export const DEFAULT_LIST_RESULTS = 300;
-export const MAX_LIST_RESULTS = 2_000;
+export const DEFAULT_LIST_RESULTS = 100;
+export const MAX_LIST_RESULTS = 500;
 export const OUTPUT_LIMIT_BYTES = 16_000;
+export const DEFAULT_READ_TOTAL_BYTES = 100_000;
+export const MAX_READ_TOTAL_BYTES = 500_000;
+export const FILE_INDEX_TTL_MS = 2_000;
 
 export const DEFAULT_IGNORED_DIRS = new Set([
   ".git",

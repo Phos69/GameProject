@@ -1429,20 +1429,29 @@ Contratto operativo:
 - i tool sono read-only salvo `run_safe_check`, che esegue solo comandi
   allowlisted e non accetta shell arbitraria;
 - `read_project_context` valida path relativi, assoluti in-root e `res://`,
-  blocca traversal e non legge file sensibili;
+  blocca traversal e non legge file sensibili; supporta finestre per riga e un
+  budget aggregato di risposta;
 - `search_project` limita dimensione file, numero risultati e ignora cache,
   build output, vendor pesanti e lockfile non richiesti;
+- l'indice file read-only e condiviso in memoria con TTL breve e bypass
+  esplicito `refresh`; `list_project_files` filtra l'area prima della
+  paginazione e restituisce per default solo i path;
 - `git_context` espone solo status/log/diff read-only via sottocomandi git
   allowlisted, senza shell arbitraria, con path validato e output troncato;
 - `find_symbol` indicizza a runtime le dichiarazioni GDScript (`class_name`,
   `extends`, `func`, `signal`, `const`, `enum`, classi interne) per nome e
   tipo, senza mantenere una cache persistente su disco;
+- `read_symbol_context` combina lookup dichiarazioni e finestre sorgente
+  bounded; `changed_context` collega working tree, sistemi impattati, safe
+  check e documenti da riesaminare secondo i contratti del repository;
 - `repo_overview`, `game_system_summary`, `roadmap_context`,
   `asset_inventory` e `codex_task_brief` ricavano il contesto dai file reali
   della repo, non da supposizioni hardcoded;
 - i prompt MCP in `tools/mcp-server/src/prompts.ts` sono template operativi per
   audit top-down cardinale, zombie mode, milestone roadmap, refactor gameplay e asset
   quality pass.
+- le risposte espongono sia JSON testuale compatibile sia `structuredContent`;
+  lo smoke `stdio` chiama tool reali, verifica traversal e avvia `mcp:build`.
 
 La documentazione, gli script e l'esempio di configurazione Codex vivono in
 `tools/mcp-server/README.md` e `tools/mcp-server/codex.config.example.toml`.

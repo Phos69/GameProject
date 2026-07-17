@@ -23,7 +23,9 @@ describe("MCP tool handlers", () => {
       "asset_inventory",
       "codex_task_brief",
       "git_context",
-      "find_symbol"
+      "find_symbol",
+      "read_symbol_context",
+      "changed_context"
     ]));
   });
 
@@ -70,6 +72,17 @@ describe("MCP tool handlers", () => {
     const result = parseToolText(await callProjectTool(root, "read_project_context", { paths: ["README.md"], maxBytesPerFile: 2_000 }));
     expect(result.files[0].path).toBe("README.md");
     expect(result.files[0].content).toContain("Local Action Sandbox");
+  });
+
+  it("returns structured content alongside text JSON", async () => {
+    const response = await callProjectTool(root, "repo_overview");
+    expect(response.structuredContent?.name).toBe("Local Action Sandbox");
+  });
+
+  it("validates tool arguments at runtime", async () => {
+    const response = await callProjectTool(root, "list_project_files", { area: "unknown", surprise: true });
+    expect(response.isError).toBe(true);
+    expect(parseToolText(response).error).toMatch(/does not accept|must be one of/);
   });
 
   it("summarizes game systems with evidence paths", async () => {

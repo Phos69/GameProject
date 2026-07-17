@@ -5,7 +5,7 @@ import {
   MAX_FILE_BYTES_CAP,
   MAX_SEARCH_RESULTS
 } from "./config.js";
-import { walkProjectFiles } from "./file_index.js";
+import { getProjectFileIndex } from "./file_index.js";
 import { readTextFileLimited } from "./security.js";
 
 export type SymbolKind = "class_name" | "inner_class" | "extends" | "func" | "signal" | "const" | "enum";
@@ -61,6 +61,7 @@ export async function findSymbols(root: string, input: Record<string, unknown> =
   resultCount: number;
   truncated: boolean;
   searchedFiles: number;
+  cache: { hit: boolean; ageMs: number };
   results: SymbolMatch[];
 }> {
   const rawQuery = typeof input.query === "string" ? input.query.trim() : "";
@@ -73,12 +74,13 @@ export async function findSymbols(root: string, input: Record<string, unknown> =
   const maxFileBytes = clampFileBytes(input.maxFileBytes);
   const needle = rawQuery.toLowerCase();
 
-  const files = (await walkProjectFiles(root, { maxResults: 10_000 })).filter((file) => file.extension === ".gd");
+  const indexed = await getProjectFileIndex(root, { refresh: input.refresh === true });
+  const files = indexed.files.filter((file) => file.extension === ".gd");
   const results: SymbolMatch[] = [];
   let searchedFiles = 0;
 
   for (const file of files) {
-    if (results.length >= maxResults) {
+    if (results.length > maxResults) {
       break;
     }
     if (file.size > maxFileBytes) {
@@ -91,7 +93,7 @@ export async function findSymbols(root: string, input: Record<string, unknown> =
     const lines = text.split(/\r?\n/);
 
     for (let index = 0; index < lines.length; index++) {
-      if (results.length >= maxResults) {
+      if (results.length > maxResults) {
         break;
       }
       const trimmed = lines[index].trim();
@@ -120,9 +122,10 @@ export async function findSymbols(root: string, input: Record<string, unknown> =
   return {
     query: rawQuery,
     kinds: [...kinds],
-    resultCount: results.length,
-    truncated: results.length >= maxResults,
+    resultCount: Math.min(results.length, maxResults),
+    truncated: results.length > maxResults,
     searchedFiles,
-    results
+    cache: { hit: indexed.cacheHit, ageMs: indexed.ageMs },
+    results: results.slice(0, maxResults)
   };
 }

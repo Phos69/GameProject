@@ -2,11 +2,14 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import {
   AREA_PREFIXES,
+  DEFAULT_READ_TOTAL_BYTES,
+  FILE_INDEX_TTL_MS,
   DEFAULT_IGNORED_DIRS,
   DEFAULT_IGNORED_PREFIXES,
   DEFAULT_LIST_RESULTS,
   LOCKFILE_NAMES,
-  MAX_LIST_RESULTS
+  MAX_LIST_RESULTS,
+  MAX_READ_TOTAL_BYTES
 } from "./config.js";
 import { isSensitivePath, normalizeSlashes, resolveExistingProjectPath, toRepoPath } from "./security.js";
 
@@ -22,7 +25,15 @@ export type WalkOptions = {
   includeLockfiles?: boolean;
   includeSensitive?: boolean;
   maxResults?: number;
+  refresh?: boolean;
 };
+
+type FileIndexEntry = {
+  createdAt: number;
+  files: ProjectFile[];
+};
+
+const fileIndexCache = new Map<string, Promise<FileIndexEntry>>();
 
 export function clampListResults(value: unknown): number {
   if (typeof value !== "number" || !Number.isFinite(value)) {
@@ -52,7 +63,9 @@ export function isIgnoredRepoPath(repoPath: string, options: WalkOptions = {}): 
 }
 
 export async function walkProjectFiles(root: string, options: WalkOptions = {}): Promise<ProjectFile[]> {
-  const maxResults = clampListResults(options.maxResults);
+  const maxResults = typeof options.maxResults === "number" && Number.isFinite(options.maxResults)
+    ? Math.max(1, Math.trunc(options.maxResults))
+    : Number.MAX_SAFE_INTEGER;
   const results: ProjectFile[] = [];
 
   async function visit(current: string): Promise<void> {
@@ -92,10 +105,55 @@ export async function walkProjectFiles(root: string, options: WalkOptions = {}):
   return results;
 }
 
+function fileIndexKey(root: string, options: WalkOptions): string {
+  return JSON.stringify([
+    path.resolve(root),
+    options.includeIgnored === true,
+    options.includeLockfiles === true,
+    options.includeSensitive === true
+  ]);
+}
+
+export async function getProjectFileIndex(root: string, options: WalkOptions = {}): Promise<{
+  files: ProjectFile[];
+  cacheHit: boolean;
+  ageMs: number;
+}> {
+  const key = fileIndexKey(root, options);
+  const existing = fileIndexCache.get(key);
+  if (!options.refresh && existing) {
+    const entry = await existing;
+    const ageMs = Date.now() - entry.createdAt;
+    if (ageMs <= FILE_INDEX_TTL_MS) {
+      return { files: entry.files, cacheHit: true, ageMs };
+    }
+  }
+
+  const pending = (async () => ({
+    createdAt: Date.now(),
+    files: await walkProjectFiles(root, { ...options, maxResults: Number.MAX_SAFE_INTEGER })
+  }))();
+  fileIndexCache.set(key, pending);
+  try {
+    const entry = await pending;
+    return { files: entry.files, cacheHit: false, ageMs: 0 };
+  } catch (error) {
+    fileIndexCache.delete(key);
+    throw error;
+  }
+}
+
+export function clearProjectFileIndexCache(): void {
+  fileIndexCache.clear();
+}
+
 export function matchesArea(repoPath: string, area = "all"): boolean {
   const normalizedArea = area.trim().toLowerCase();
   const prefixes = AREA_PREFIXES[normalizedArea] ?? AREA_PREFIXES[normalizedArea.replace(/\s+/g, "_")];
-  if (!prefixes || normalizedArea === "all") {
+  if (!prefixes) {
+    throw new Error(`Unsupported project area '${area}'. Use one of: ${Object.keys(AREA_PREFIXES).join(", ")}.`);
+  }
+  if (normalizedArea === "all") {
     return true;
   }
   const normalizedPath = normalizeSlashes(repoPath);
@@ -104,23 +162,41 @@ export function matchesArea(repoPath: string, area = "all"): boolean {
 
 export async function listProjectFiles(root: string, input: Record<string, unknown> = {}): Promise<{
   area: string;
-  files: ProjectFile[];
+  files: Array<ProjectFile | { path: string }>;
+  totalResults: number;
+  pageSize: number;
+  nextCursor: string | null;
+  hasMore: boolean;
+  cache: { hit: boolean; ageMs: number };
   ignoredByDefault: string[];
 }> {
   const area = typeof input.area === "string" ? input.area : "all";
-  const maxResults = clampListResults(input.maxResults);
+  const pageSize = clampListResults(input.pageSize ?? input.maxResults);
+  const cursor = typeof input.cursor === "string" && /^\d+$/.test(input.cursor)
+    ? Number.parseInt(input.cursor, 10)
+    : 0;
+  const includeMetadata = input.includeMetadata === true;
   const options: WalkOptions = {
     includeIgnored: input.includeIgnored === true,
     includeLockfiles: input.includeLockfiles === true,
-    maxResults: MAX_LIST_RESULTS
+    refresh: input.refresh === true
   };
 
-  const files = (await walkProjectFiles(root, options))
-    .filter((file) => matchesArea(file.path, area))
-    .slice(0, maxResults);
+  // Validate before walking: unknown areas must not silently degrade to `all`.
+  matchesArea("", area);
+  const indexed = await getProjectFileIndex(root, options);
+  const filtered = indexed.files.filter((file) => matchesArea(file.path, area));
+  const page = filtered.slice(cursor, cursor + pageSize);
+  const nextOffset = cursor + page.length;
+  const hasMore = nextOffset < filtered.length;
   return {
     area,
-    files,
+    files: includeMetadata ? page : page.map((file) => ({ path: file.path })),
+    totalResults: filtered.length,
+    pageSize,
+    nextCursor: hasMore ? String(nextOffset) : null,
+    hasMore,
+    cache: { hit: indexed.cacheHit, ageMs: indexed.ageMs },
     ignoredByDefault: Array.from(DEFAULT_IGNORED_DIRS).concat(DEFAULT_IGNORED_PREFIXES)
   };
 }
@@ -132,19 +208,40 @@ export async function safeReadProjectFiles(root: string, input: Record<string, u
     bytesRead?: number;
     truncated?: boolean;
     content?: string;
+    startLine?: number;
+    endLine?: number;
+    totalLines?: number;
     skipped?: string;
   }>;
+  totalBytesRead: number;
+  omittedPaths: number;
 }> {
   const requested = Array.isArray(input.paths) ? input.paths : [];
   const maxBytes = typeof input.maxBytesPerFile === "number" ? Number(input.maxBytesPerFile) : undefined;
   const { clampFileBytes, isTextLikePath, readTextFileLimited } = await import("./security.js");
   const limit = clampFileBytes(maxBytes);
+  const requestedTotal = typeof input.maxTotalBytes === "number" && Number.isFinite(input.maxTotalBytes)
+    ? Math.trunc(input.maxTotalBytes)
+    : DEFAULT_READ_TOTAL_BYTES;
+  const totalLimit = Math.max(1_000, Math.min(requestedTotal, MAX_READ_TOTAL_BYTES));
+  const startLineInput = typeof input.startLine === "number" ? Math.max(1, Math.trunc(input.startLine)) : undefined;
+  const endLineInput = typeof input.endLine === "number" ? Math.max(1, Math.trunc(input.endLine)) : undefined;
+  const aroundLine = typeof input.aroundLine === "number" ? Math.max(1, Math.trunc(input.aroundLine)) : undefined;
+  const contextLines = typeof input.contextLines === "number"
+    ? Math.max(0, Math.min(200, Math.trunc(input.contextLines)))
+    : 20;
   const files = [];
+  let totalBytesRead = 0;
+  let processedPaths = 0;
 
   for (const rawPath of requested.slice(0, 20)) {
+    if (totalBytesRead >= totalLimit) {
+      break;
+    }
     if (typeof rawPath !== "string") {
       continue;
     }
+    processedPaths++;
 
     try {
       const absolute = await resolveExistingProjectPath(root, rawPath);
@@ -159,12 +256,28 @@ export async function safeReadProjectFiles(root: string, input: Record<string, u
         continue;
       }
       const read = await readTextFileLimited(absolute, limit);
+      const lines = read.text.split(/\r?\n/);
+      const startLine = aroundLine !== undefined
+        ? Math.max(1, aroundLine - contextLines)
+        : (startLineInput ?? 1);
+      const endLine = aroundLine !== undefined
+        ? Math.min(lines.length, aroundLine + contextLines)
+        : Math.min(lines.length, endLineInput ?? lines.length);
+      const selected = endLine >= startLine ? lines.slice(startLine - 1, endLine).join("\n") : "";
+      const remaining = totalLimit - totalBytesRead;
+      const selectedBuffer = Buffer.from(selected, "utf8");
+      const contentBuffer = selectedBuffer.subarray(0, remaining);
+      const content = contentBuffer.toString("utf8");
+      totalBytesRead += contentBuffer.length;
       files.push({
         path: repoPath,
         size: stat.size,
-        bytesRead: read.bytesRead,
-        truncated: read.truncated,
-        content: read.text
+        bytesRead: contentBuffer.length,
+        truncated: read.truncated || contentBuffer.length < selectedBuffer.length,
+        startLine,
+        endLine,
+        totalLines: lines.length,
+        content
       });
     } catch (error) {
       files.push({
@@ -175,7 +288,7 @@ export async function safeReadProjectFiles(root: string, input: Record<string, u
     }
   }
 
-  return { files };
+  return { files, totalBytesRead, omittedPaths: Math.max(0, requested.length - processedPaths) };
 }
 
 export async function resolveDirectoryFilters(root: string, directories: unknown): Promise<string[]> {

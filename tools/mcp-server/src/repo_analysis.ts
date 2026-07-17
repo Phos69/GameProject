@@ -6,7 +6,7 @@ import {
   OUTPUT_LIMIT_BYTES,
   TEXT_EXTENSIONS
 } from "./config.js";
-import { listProjectFiles, safeReadProjectFiles, walkProjectFiles } from "./file_index.js";
+import { getProjectFileIndex, listProjectFiles, safeReadProjectFiles } from "./file_index.js";
 import { readTextFileLimited, toRepoPath } from "./security.js";
 
 type Evidence = {
@@ -56,7 +56,7 @@ function firstExisting(files: string[], expected: string[]): string[] {
 }
 
 export async function repoOverview(root: string): Promise<Record<string, unknown>> {
-  const files = await walkProjectFiles(root, { maxResults: 10_000, includeLockfiles: true });
+  const { files } = await getProjectFileIndex(root, { includeLockfiles: true });
   const paths = files.map((file) => file.path);
   const projectText = await readIfExists(root, "project.godot");
   const rootPackage = await readIfExists(root, "package.json");
@@ -115,7 +115,7 @@ function systemEvidence(rootFiles: string[], candidates: Evidence[]): Evidence[]
 }
 
 export async function gameSystemSummary(root: string): Promise<Record<string, unknown>> {
-  const files = await walkProjectFiles(root, { maxResults: 10_000 });
+  const { files } = await getProjectFileIndex(root);
   const paths = files.map((file) => file.path);
   const systems = {
     zombieMode: {
@@ -230,7 +230,7 @@ function extractRoadmapStatuses(roadmap: string): string[] {
 }
 
 export async function roadmapContext(root: string): Promise<Record<string, unknown>> {
-  const files = await walkProjectFiles(root, { maxResults: 10_000 });
+  const { files } = await getProjectFileIndex(root);
   const docs = files
     .filter((file) => {
       const lower = file.path.toLowerCase();
@@ -297,7 +297,7 @@ function categorizeAsset(repoPath: string): string {
 }
 
 export async function assetInventory(root: string): Promise<Record<string, unknown>> {
-  const files = await walkProjectFiles(root, { maxResults: 10_000, includeLockfiles: false });
+  const { files } = await getProjectFileIndex(root, { includeLockfiles: false });
   const assetFiles = files.filter((file) => ASSET_EXTENSIONS.has(file.extension));
   const byCategory: Record<string, string[]> = {};
   const duplicates = new Map<string, string[]>();

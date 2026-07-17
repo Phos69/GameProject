@@ -6,7 +6,21 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ## Unreleased
 
+### Added
+
+- MCP server `0.2.0`: aggiunti `read_symbol_context` per leggere finestre
+  sorgente attorno alle dichiarazioni GDScript e `changed_context` per mappare
+  working tree, sistemi impattati, safe check e documentazione da riesaminare.
+- Aggiunti paginazione/cursore a `list_project_files`, letture per intervallo e
+  budget aggregato a `read_project_context`, `structuredContent` nelle risposte
+  e test dedicati per indice e workflow.
+
 ### Fixed
+
+- I safe check MCP `build/test/smoke` su Windows non tentano piu di avviare
+  direttamente `npm.cmd` con `shell: false`: usano il runtime Node corrente e
+  la CLI npm locale, con fallback allowlisted. Lo smoke `stdio` esegue ora
+  davvero `mcp:build` e verifica tool di contesto e blocco traversal.
 
 - Tre criticità a rischio crash dal report `docs/repo_health_report_2026-07-17.md`:
   - `WeaponEffectResolver`: le esplosioni ritardate normalizzano target e
@@ -25,6 +39,10 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
   (C4 del report `docs/repo_health_report_2026-07-17.md`).
 
 ### Changed
+
+- L'indice file MCP e condiviso in memoria con TTL breve; area e validazione
+  vengono applicate prima della paginazione, le aree sconosciute sono errori
+  espliciti e ricerca/simboli riusano metadata senza un secondo `stat`.
 
 - Deduplicazione dei gruppi P1 del report `docs/repo_health_report_2026-07-17.md`
   (solo refactor, nessun cambio di comportamento; suite completa 307/307):

@@ -1,7 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { buildSafeCheckCommand, listSafeChecks } from "../src/safe_checks.js";
+import { buildSafeCheckCommand, listSafeChecks, runSafeCheck } from "../src/safe_checks.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 
@@ -27,4 +27,9 @@ describe("safe check allowlist", () => {
     const prepared = buildSafeCheckCommand(root, { check: "asset:check" });
     expect(prepared.args.join(" ")).toContain("res://tools/generate_top_down_environment_assets.gd");
   });
+
+  it("runs the MCP build without spawning npm.cmd directly", async () => {
+    const result = await runSafeCheck(root, { check: "mcp:build", timeoutMs: 60_000 });
+    expect(result.exitCode, String(result.stderr ?? "")).toBe(0);
+  }, 70_000);
 });

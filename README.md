@@ -181,7 +181,9 @@ godot --headless --path . --script res://tools/generate_top_down_environment_ass
 Il tooling IA del progetto include un server MCP read-only in
 `tools/mcp-server/`. Espone contesto strutturato su architettura, roadmap,
 asset, ricerca e safe check allowlisted tramite transport `stdio`, senza
-modificare il runtime Godot. Script principali:
+modificare il runtime Godot. I 13 tool includono paginazione e cache breve
+dell'indice, letture per intervallo, contesto simboli e analisi del working tree
+con test/documentazione consigliati. Script principali:
 
 ```text
 npm run mcp:build

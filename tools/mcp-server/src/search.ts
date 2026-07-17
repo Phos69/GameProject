@@ -1,4 +1,3 @@
-import fs from "node:fs/promises";
 import path from "node:path";
 import {
   DEFAULT_MAX_FILE_BYTES,
@@ -6,7 +5,7 @@ import {
   MAX_FILE_BYTES_CAP,
   MAX_SEARCH_RESULTS
 } from "./config.js";
-import { resolveDirectoryFilters, walkProjectFiles } from "./file_index.js";
+import { getProjectFileIndex, resolveDirectoryFilters } from "./file_index.js";
 import { isTextLikePath, readTextFileLimited } from "./security.js";
 
 export type SearchResult = {
@@ -46,6 +45,7 @@ export async function searchProject(root: string, input: Record<string, unknown>
   truncated: boolean;
   searchedFiles: number;
   skippedLargeFiles: number;
+  cache: { hit: boolean; ageMs: number };
   results: SearchResult[];
 }> {
   const query = typeof input.query === "string" ? input.query : "";
@@ -64,14 +64,15 @@ export async function searchProject(root: string, input: Record<string, unknown>
     : undefined;
   const directoryPrefixes = await resolveDirectoryFilters(root, input.directories);
 
-  const files = await walkProjectFiles(root, { maxResults: 10_000 });
+  const indexed = await getProjectFileIndex(root, { refresh: input.refresh === true });
+  const files = indexed.files;
   const needle = caseSensitive ? query : query.toLowerCase();
   const results: SearchResult[] = [];
   let searchedFiles = 0;
   let skippedLargeFiles = 0;
 
   for (const file of files) {
-    if (results.length >= maxResults) {
+    if (results.length > maxResults) {
       break;
     }
     if (extensions && !extensions.has(file.extension)) {
@@ -85,8 +86,7 @@ export async function searchProject(root: string, input: Record<string, unknown>
     }
 
     const absolute = path.join(root, file.path);
-    const stat = await fs.stat(absolute);
-    if (stat.size > maxFileBytes) {
+    if (file.size > maxFileBytes) {
       skippedLargeFiles++;
       continue;
     }
@@ -96,17 +96,20 @@ export async function searchProject(root: string, input: Record<string, unknown>
     const lines = text.split(/\r?\n/);
     for (let index = 0; index < lines.length; index++) {
       const haystack = caseSensitive ? lines[index] : lines[index].toLowerCase();
-      const column = haystack.indexOf(needle);
-      if (column === -1) {
-        continue;
+      let column = haystack.indexOf(needle);
+      while (column !== -1) {
+        results.push({
+          path: file.path,
+          line: index + 1,
+          column: column + 1,
+          preview: linePreview(lines[index], column)
+        });
+        if (results.length > maxResults) {
+          break;
+        }
+        column = haystack.indexOf(needle, column + Math.max(needle.length, 1));
       }
-      results.push({
-        path: file.path,
-        line: index + 1,
-        column: column + 1,
-        preview: linePreview(lines[index], column)
-      });
-      if (results.length >= maxResults) {
+      if (results.length > maxResults) {
         break;
       }
     }
@@ -114,10 +117,11 @@ export async function searchProject(root: string, input: Record<string, unknown>
 
   return {
     query,
-    resultCount: results.length,
-    truncated: results.length >= maxResults,
+    resultCount: Math.min(results.length, maxResults),
+    truncated: results.length > maxResults,
     searchedFiles,
     skippedLargeFiles,
-    results
+    cache: { hit: indexed.cacheHit, ageMs: indexed.ageMs },
+    results: results.slice(0, maxResults)
   };
 }

@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import fs from "node:fs";
 import path from "node:path";
 import { OUTPUT_LIMIT_BYTES } from "./config.js";
 
@@ -23,8 +24,22 @@ const GUT_AREAS = new Set([
   "world_gen"
 ]);
 
-function npmCommand(): string {
-  return process.platform === "win32" ? "npm.cmd" : "npm";
+function npmInvocation(args: string[]): { command: string; args: string[] } {
+  const executableDir = path.dirname(process.execPath);
+  const candidates = [
+    path.join(executableDir, "node_modules", "npm", "bin", "npm-cli.js"),
+    path.resolve(executableDir, "../lib/node_modules/npm/bin/npm-cli.js")
+  ];
+  const npmCli = candidates.find((candidate) => fs.existsSync(candidate));
+  if (npmCli) {
+    return { command: process.execPath, args: [npmCli, ...args] };
+  }
+  if (process.platform === "win32") {
+    // `.cmd` files cannot be spawned directly with shell:false on all Node/Windows
+    // combinations. The command and every following argument remain allowlisted.
+    return { command: "cmd.exe", args: ["/d", "/s", "/c", "npm.cmd", ...args] };
+  }
+  return { command: "npm", args };
 }
 
 function powershellCommand(): string {
@@ -93,19 +108,19 @@ export const SAFE_CHECKS: Record<string, SafeCheckSpec> = {
     name: "mcp:build",
     description: "Compile the MCP server TypeScript package.",
     defaultTimeoutMs: 60_000,
-    buildCommand: () => ({ command: npmCommand(), args: ["--prefix", "tools/mcp-server", "run", "build"] })
+    buildCommand: () => npmInvocation(["--prefix", "tools/mcp-server", "run", "build"])
   },
   "mcp:test": {
     name: "mcp:test",
     description: "Run the MCP server Vitest suite.",
     defaultTimeoutMs: 60_000,
-    buildCommand: () => ({ command: npmCommand(), args: ["--prefix", "tools/mcp-server", "run", "test"] })
+    buildCommand: () => npmInvocation(["--prefix", "tools/mcp-server", "run", "test"])
   },
   "mcp:smoke": {
     name: "mcp:smoke",
     description: "Build the MCP server and verify tools/prompts can be listed over stdio.",
     defaultTimeoutMs: 60_000,
-    buildCommand: () => ({ command: npmCommand(), args: ["--prefix", "tools/mcp-server", "run", "smoke"] })
+    buildCommand: () => npmInvocation(["--prefix", "tools/mcp-server", "run", "smoke"])
   }
 };
 
@@ -144,14 +159,14 @@ export function buildSafeCheckCommand(root: string, input: Record<string, unknow
 }
 
 function appendLimited(current: string, chunk: Buffer): string {
-  if (current.length >= OUTPUT_LIMIT_BYTES) {
+  if (Buffer.byteLength(current, "utf8") >= OUTPUT_LIMIT_BYTES) {
     return current;
   }
   const next = current + chunk.toString("utf8");
-  if (next.length <= OUTPUT_LIMIT_BYTES) {
+  if (Buffer.byteLength(next, "utf8") <= OUTPUT_LIMIT_BYTES) {
     return next;
   }
-  return `${next.slice(0, OUTPUT_LIMIT_BYTES)}\n[output truncated]`;
+  return `${Buffer.from(next, "utf8").subarray(0, OUTPUT_LIMIT_BYTES).toString("utf8")}\n[output truncated]`;
 }
 
 export async function runSafeCheck(root: string, input: Record<string, unknown>): Promise<Record<string, unknown>> {
@@ -162,21 +177,37 @@ export async function runSafeCheck(root: string, input: Record<string, unknown>)
     let stdout = "";
     let stderr = "";
     let timedOut = false;
-    const child = spawn(prepared.command, prepared.args, {
-      cwd: root,
-      shell: false,
-      env: { ...process.env, ...(prepared.env ?? {}) }
-    });
+    let child: ReturnType<typeof spawn>;
+    try {
+      child = spawn(prepared.command, prepared.args, {
+        cwd: root,
+        shell: false,
+        windowsHide: true,
+        env: { ...process.env, ...(prepared.env ?? {}) }
+      });
+    } catch (error) {
+      resolve({
+        check: prepared.name,
+        command: prepared.command,
+        args: prepared.args,
+        exitCode: null,
+        timedOut: false,
+        durationMs: Date.now() - startedAt,
+        stdout,
+        stderr: error instanceof Error ? error.message : String(error)
+      });
+      return;
+    }
 
     const timeout = setTimeout(() => {
       timedOut = true;
       child.kill("SIGTERM");
     }, prepared.timeoutMs);
 
-    child.stdout.on("data", (chunk: Buffer) => {
+    child.stdout?.on("data", (chunk: Buffer) => {
       stdout = appendLimited(stdout, chunk);
     });
-    child.stderr.on("data", (chunk: Buffer) => {
+    child.stderr?.on("data", (chunk: Buffer) => {
       stderr = appendLimited(stderr, chunk);
     });
     child.on("error", (error) => {

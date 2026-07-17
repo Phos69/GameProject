@@ -50,7 +50,8 @@ npm run start
 npm run dev
 ```
 
-`mcp:smoke` compila il server, lo avvia via `stdio` con un client MCP e verifica che tool e prompt siano listabili.
+`mcp:smoke` compila il server, lo avvia via `stdio` con un client MCP, chiama
+tool reali, verifica il blocco traversal e avvia il safe check `mcp:build`.
 
 ## Configurazione Codex
 
@@ -97,11 +98,16 @@ Cosa non puo fare:
 
 Limiti principali:
 
-- lettura file: default `200000` byte per file, cap `1000000`;
+- lettura file: default `200000` byte per file, cap `1000000`, budget aggregato
+  default `100000` e cap `500000`;
 - ricerca: default `50` risultati, cap `200`;
-- lista file: default `300` file, cap `2000`;
-- output processi: troncato a `16000` caratteri;
+- lista file: pagine da `100` path per default, cap `500`, cursore esplicito;
+- output processi: troncato a `16000` byte;
 - processi safe check: timeout per comando, con cap lato server.
+
+L'indice dei file e condiviso in memoria con TTL breve; `refresh: true` forza
+una nuova scansione quando una chiamata deve osservare immediatamente file
+appena creati o rimossi.
 
 ## Tool
 
@@ -126,13 +132,17 @@ Input:
 ```json
 {
   "area": "zombie mode",
-  "maxResults": 100,
+  "pageSize": 100,
+  "cursor": "0",
+  "includeMetadata": false,
   "includeIgnored": false,
   "includeLockfiles": false
 }
 ```
 
 Aree supportate: `all`, `gameplay`, `rendering`, `biomi`, `zombie mode`, `gui`, `assets`, `tests`, `docs`, `config`.
+L'output include `totalResults`, `hasMore` e `nextCursor`; un'area sconosciuta
+produce errore invece di degradare a `all`.
 
 ### `read_project_context`
 
@@ -143,7 +153,10 @@ Input:
 ```json
 {
   "paths": ["README.md", "res://game/main/main.gd"],
-  "maxBytesPerFile": 20000
+  "maxBytesPerFile": 20000,
+  "aroundLine": 180,
+  "contextLines": 20,
+  "maxTotalBytes": 100000
 }
 ```
 
@@ -273,6 +286,36 @@ Input:
 
 Tipi (`kind`) supportati: `class_name`, `inner_class`, `extends`, `func`, `signal`, `const`, `enum`. Senza `query` elenca tutte le dichiarazioni del tipo richiesto (utile per navigare, es. tutte le `class_name` della repo). Output: nome, tipo, path, riga e riga sorgente (`signature`).
 
+### `read_symbol_context`
+
+Combina `find_symbol` e lettura bounded del sorgente attorno a ogni match.
+
+```json
+{
+  "query": "ZombieSpawner",
+  "kind": ["class_name", "func"],
+  "exact": false,
+  "maxResults": 5,
+  "contextLines": 20
+}
+```
+
+### `changed_context`
+
+Riassume branch e working tree, quindi collega i file cambiati a sistemi,
+safe check raccomandati e documenti da riesaminare. Il diff bounded e
+opzionale.
+
+```json
+{
+  "includeDiff": false,
+  "staged": false
+}
+```
+
+Tutti i tool restituiscono JSON testuale per compatibilita e lo stesso oggetto
+in `structuredContent` per i client MCP che lo supportano.
+
 ## Prompt MCP
 
 Il server espone questi template:
@@ -299,6 +342,9 @@ Coprono:
 - esclusione file sensibili;
 - ricerca con limiti;
 - allowlist safe check;
+- esecuzione reale di `mcp:build` tramite safe check;
+- paginazione, cache e letture per intervallo;
+- contesto simboli e analisi del working tree;
 - handler principali dei tool.
 
 Manual/smoke MCP:
@@ -307,4 +353,5 @@ Manual/smoke MCP:
 npm run mcp:smoke
 ```
 
-Output atteso: lista degli 11 tool e dei 5 prompt.
+Output atteso: lista dei 13 tool e dei 5 prompt, chiamate rappresentative
+riuscite, traversal bloccato e `safeBuildExitCode: 0`.
