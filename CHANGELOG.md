@@ -43,6 +43,13 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
     al posto delle otto copie del batching quad nei tre mesh builder di
     cliff e rocce (gruppo 4.2); il border builder conserva i wrapper
     rect-based che ora delegano al nucleo condiviso;
+  - gruppo 4.5 (UI/audio/visual settings): statics
+    `AudioManager.play_ui_focus_in`/`play_ui_confirm_in` per i wrapper dei
+    menu, `BossSystem.connect_boss_feedback` per router audio e HUD, le tre
+    copie di `_sync_visual_settings` sostituite dall'esistente
+    `VisualSettingsManager.sync_consumer`, nuove basi `SettingsAwareVisual`
+    e `PatternBossVisual` per tower/boss visual, rimosso
+    `_apply_visual_profile` morto dal main menu;
   - chiusi anche i tre residui dopo verifica di equivalenza: la
     `_intersects_route` locale del prop pass e la
     `_rect_overlaps_road_cells` del map validation usano i metodi del

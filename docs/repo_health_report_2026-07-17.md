@@ -20,7 +20,12 @@ Nessuna modifica al codice è stata applicata; ogni finding cita file e riga.
 > il "quasi identica" del report era un falso negativo dello scan).
 > Il gruppo 4.2 è stato chiuso in `953973f` (`QuadMeshBuffers` condiviso
 > dai tre mesh builder; suite obstacles/environment/assets/world_gen
-> verdi). Restano aperti i gruppi 4.5 e 4.6.
+> verdi). Il gruppo 4.5 è stato chiuso in `4a17e93` (statics AudioManager
+> UI, `BossSystem.connect_boss_feedback`, `sync_consumer` al posto delle
+> copie `_sync_visual_settings`, basi `SettingsAwareVisual`/
+> `PatternBossVisual`, più `_apply_visual_profile` del main menu rimosso
+> in quanto codice morto; suite completa 307/307). Resta aperto il solo
+> gruppo 4.6 (gameplay).
 
 ## 1. Sintesi
 
