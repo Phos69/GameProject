@@ -30,6 +30,7 @@ portrait_full_path = "res://assets/characters/domatrice/rendered/domatrice_portr
 portrait_hud_path = "res://assets/characters/domatrice/rendered/domatrice_portrait_hud.svg"
 gameplay_palette_id = "teal_copper"
 gameplay_sprite_path = "res://assets/characters/domatrice/sprites/domatrice_gameplay_pictogram.png"
+directional_roll_atlas_path = "res://assets/characters/domatrice/sprites/domatrice_directional_roll_atlas.png"
 sprite_sheet_path = "res://assets/characters/domatrice/sprites/domatrice_sprite_sheet.svg"
 weapon_sprite_path = "res://assets/characters/domatrice/weapons/domatrice_weapon.svg"
 passive_icon_path = "res://assets/characters/domatrice/ui/domatrice_passive_icon.svg"

@@ -27,6 +27,7 @@ class_name RpgCharacterData
 @export var portrait_hud_path: String = ""
 @export var gameplay_palette_id: String = ""
 @export var gameplay_sprite_path: String = ""
+@export var directional_roll_atlas_path: String = ""
 @export var sprite_sheet_path: String = ""
 @export var weapon_sprite_path: String = ""
 @export var passive_icon_path: String = ""
@@ -64,6 +65,7 @@ func to_profile() -> Dictionary:
 		"portrait_hud_path": portrait_hud_path,
 		"gameplay_palette_id": gameplay_palette_id,
 		"gameplay_sprite_path": gameplay_sprite_path,
+		"directional_roll_atlas_path": directional_roll_atlas_path,
 		"sprite_sheet_path": sprite_sheet_path,
 		"weapon_sprite_path": weapon_sprite_path,
 		"passive_icon_path": passive_icon_path,

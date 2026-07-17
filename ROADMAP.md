@@ -39,6 +39,13 @@ anche le milestone completate per evitare sovrapposizioni.
 
 ### Presentazione e UX
 
+- `CHAR-DIR-001`: **completata 2026-07-17 (7/7)**. Tutti i personaggi usano un
+  atlante alpha `4x4` con righe Sud/Est/Nord/Ovest e colonne
+  idle/anticipazione/tuck/recovery. `PlayerVisual` seleziona facing e fasi del
+  roll senza mirroring, nasconde l'arma durante la capriola e conserva il
+  fallback precedente se un asset non e disponibile; il gameplay del dodge
+  non cambia.
+
 - `BIOME-RASTER-001`: **completata 2026-07-16**. Dieci raster trasparenti
   coprono tutti i prop della Pianura Infetta, incluso il tronco contestuale e
   le casse comune/medica distinte. Il manifest v13 risolve le varianti per

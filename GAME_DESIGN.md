@@ -487,7 +487,7 @@ come risorse data-driven senza sostituire i quattro starter. Il `display_name`
 resta la classe per compatibilita, mentre `hero_name` alimenta Character Select
 e HUD nella forma `Mira Vento / Ranger · Arco`.
 
-I campi artistici opzionali dei profili (`portrait_full_path`, `portrait_hud_path`, `gameplay_palette_id`, `sprite_sheet_path`, `weapon_sprite_path`, `passive_icon_path`, `super_icon_path`, `animation_profile_id` e palette primaria/secondaria/accent) rendono data-driven la sostituzione degli asset definitivi. Mira, Bruna, Nina e Rocco usano portrait PNG nel Character Select; Dante, Kael ed Elio restano su placeholder SVG/procedurali finche non arriveranno i PNG definitivi. La checklist manuale e in `docs/rpg_character_visual_checklist.md`.
+I campi artistici opzionali dei profili (`portrait_full_path`, `portrait_hud_path`, `gameplay_palette_id`, `gameplay_sprite_path`, `directional_roll_atlas_path`, `sprite_sheet_path`, `weapon_sprite_path`, `passive_icon_path`, `super_icon_path`, `animation_profile_id` e palette primaria/secondaria/accent) rendono data-driven la sostituzione degli asset definitivi. Tutti i sette profili configurano un atlante direzionale con quattro righe Sud/Est/Nord/Ovest e quattro colonne idle/anticipazione/tuck/recovery; il contratto non cambia alcuna regola del dodge. Mira, Bruna, Nina e Rocco usano portrait PNG nel Character Select; Dante, Kael ed Elio restano su placeholder SVG/procedurali finche non arriveranno i PNG definitivi. La checklist manuale e in `docs/rpg_character_visual_checklist.md`.
 
 Nel pass corrente la Character Select e stata rifinita come schermata RPG
 completa: ogni profilo compare in una card con preview coerente, nome, classe,
@@ -497,12 +497,15 @@ per-player. La card usa `portrait_hud_path`/`portrait_full_path` se disponibili,
 e arma.
 Il dossier scrollabile della Character Select segue il focus della card roster
 e mostra descrizione di stile, range derivato da `WeaponData` e una preview
-gameplay top-down con arma/stance idle. Lo stesso `gameplay_sprite_path`
-alimenta ora il corpo world-space in partita: il layer arma continua a seguire
-l'equipaggiamento reale, mentre facing, hit flash e stati downed/dead restano
-feedback runtime. Se l'asset non e disponibile, `PlayerVisual` usa il fallback
-procedurale controllato da palette. `style_description` completa il profilo
-dati senza cambiare il contratto survival.
+gameplay top-down con arma/stance idle. `gameplay_sprite_path` alimenta il
+fallback del corpo world-space in partita; `directional_roll_atlas_path`
+alimenta su tutti i profili pose cardinali reali e frame di roll
+legati alla durata della schivata. Il layer arma continua a seguire
+l'equipaggiamento reale fuori dal roll, mentre facing, hit flash e stati
+downed/dead restano feedback runtime. Se gli asset non sono disponibili,
+`PlayerVisual` usa il fallback procedurale controllato da palette.
+`style_description` completa il profilo dati senza cambiare il contratto
+survival.
 
 Statistiche attive:
 

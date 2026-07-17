@@ -10,6 +10,8 @@ dist/
 exports/
 node_modules/
 coverage/
+tmp/*
+!tmp/.gdignore
 
 # OS/editor noise
 .DS_Store

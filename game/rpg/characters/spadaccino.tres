@@ -30,6 +30,7 @@ portrait_full_path = "res://assets/characters/spadaccino/rendered/spadaccino_por
 portrait_hud_path = "res://assets/characters/spadaccino/rendered/spadaccino_portrait_hud.svg"
 gameplay_palette_id = "blade_night"
 gameplay_sprite_path = "res://assets/characters/spadaccino/sprites/spadaccino_gameplay_pictogram.png"
+directional_roll_atlas_path = "res://assets/characters/spadaccino/sprites/spadaccino_directional_roll_atlas.png"
 sprite_sheet_path = "res://assets/characters/spadaccino/sprites/spadaccino_sprite_sheet.svg"
 weapon_sprite_path = "res://assets/characters/spadaccino/weapons/spadaccino_weapon.svg"
 passive_icon_path = "res://assets/characters/spadaccino/ui/spadaccino_passive_icon.svg"
@@ -38,4 +39,3 @@ animation_profile_id = "spadaccino_sprite_sheet_v1"
 palette_primary = Color(0.08, 0.13, 0.32, 1)
 palette_secondary = Color(0.84, 0.91, 0.96, 1)
 palette_accent = Color(0.42, 0.78, 1.0, 1)
-

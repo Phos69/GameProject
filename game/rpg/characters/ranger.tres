@@ -30,6 +30,7 @@ portrait_full_path = "res://assets/characters/ranger/rendered/ranger_portrait_fu
 portrait_hud_path = "res://assets/characters/ranger/rendered/ranger_portrait_hud.svg"
 gameplay_palette_id = "ranger_forest"
 gameplay_sprite_path = "res://assets/characters/ranger/sprites/ranger_gameplay_pictogram.png"
+directional_roll_atlas_path = "res://assets/characters/ranger/sprites/ranger_directional_roll_atlas.png"
 sprite_sheet_path = "res://assets/characters/ranger/sprites/ranger_sprite_sheet.svg"
 weapon_sprite_path = "res://assets/characters/ranger/weapons/ranger_weapon.svg"
 passive_icon_path = "res://assets/characters/ranger/ui/ranger_passive_icon.svg"
@@ -38,4 +39,3 @@ animation_profile_id = "ranger_sprite_sheet_v1"
 palette_primary = Color(0.12, 0.34, 0.20, 1)
 palette_secondary = Color(0.74, 0.65, 0.46, 1)
 palette_accent = Color(0.62, 0.92, 0.36, 1)
-

@@ -30,6 +30,7 @@ portrait_full_path = "res://assets/characters/mago/rendered/mago_portrait_full.s
 portrait_hud_path = "res://assets/characters/mago/rendered/mago_portrait_hud.svg"
 gameplay_palette_id = "arcane_violet"
 gameplay_sprite_path = "res://assets/characters/mago/sprites/mago_gameplay_pictogram.png"
+directional_roll_atlas_path = "res://assets/characters/mago/sprites/mago_directional_roll_atlas.png"
 sprite_sheet_path = "res://assets/characters/mago/sprites/mago_sprite_sheet.svg"
 weapon_sprite_path = "res://assets/characters/mago/weapons/mago_weapon.svg"
 passive_icon_path = "res://assets/characters/mago/ui/mago_passive_icon.svg"

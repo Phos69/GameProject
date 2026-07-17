@@ -71,6 +71,30 @@ func _validate_character(character_id: StringName) -> void:
 		assert_eq(pictogram.get_size(), Vector2i(512, 512), "%s: pictogram uses the canonical canvas" % label)
 		assert_lt(pictogram.get_pixel(0, 0).a, 0.01, "%s: pictogram background is transparent" % label)
 
+	var directional_atlas_path := str(profile.get("directional_roll_atlas_path", ""))
+	assert_false(
+		directional_atlas_path.is_empty(),
+		"%s: directional roll atlas is configured" % label
+	)
+	if not directional_atlas_path.is_empty():
+		assert_true(
+			directional_atlas_path.begins_with("res://assets/characters/"),
+			"%s: directional atlas stays in-repo" % label
+		)
+		assert_true(
+			FileAccess.file_exists(directional_atlas_path),
+			"%s: directional atlas exists" % label
+		)
+		var atlas := Image.load_from_file(
+			ProjectSettings.globalize_path(directional_atlas_path)
+		)
+		assert_false(atlas.is_empty(), "%s: directional atlas loads as Image" % label)
+		if not atlas.is_empty():
+			assert_eq(atlas.get_width() % 4, 0, "%s: atlas width divides into four frames" % label)
+			assert_eq(atlas.get_height() % 4, 0, "%s: atlas height divides into four directions" % label)
+			assert_lt(atlas.get_pixel(0, 0).a, 0.01, "%s: atlas background is transparent" % label)
+			_assert_directional_atlas_cells(atlas, label)
+
 	assert_false(str(profile.get("animation_profile_id", "")).is_empty(),
 		"%s: animation_profile_id is set for idle/run/attack/reload/hurt/death/super" % label)
 	assert_true(str(profile.get("portrait_hud_path", "")).ends_with("_portrait_hud.svg"),
@@ -81,3 +105,38 @@ func _validate_character(character_id: StringName) -> void:
 	assert_not_null(weapon_data, "%s: base weapon '%s' resolves" % [label, str(weapon_id)])
 	if weapon_data != null:
 		assert_not_null(weapon_data.visual_data, "%s: weapon exposes separate visual data (weapon layer)" % label)
+
+
+func _assert_directional_atlas_cells(atlas: Image, label: String) -> void:
+	var cell_size := atlas.get_size() / 4
+	for row in range(4):
+		for column in range(4):
+			var origin := Vector2i(column * cell_size.x, row * cell_size.y)
+			var opaque_pixels := 0
+			for y in range(origin.y, origin.y + cell_size.y):
+				for x in range(origin.x, origin.x + cell_size.x):
+					if atlas.get_pixel(x, y).a > 0.05:
+						opaque_pixels += 1
+			assert_gt(
+				opaque_pixels,
+				0,
+				"%s: atlas cell %d,%d contains a visible frame" % [label, column, row]
+			)
+			var edge_max_alpha := 0.0
+			for x in range(origin.x, origin.x + cell_size.x):
+				edge_max_alpha = maxf(edge_max_alpha, atlas.get_pixel(x, origin.y).a)
+				edge_max_alpha = maxf(
+					edge_max_alpha,
+					atlas.get_pixel(x, origin.y + cell_size.y - 1).a
+				)
+			for y in range(origin.y, origin.y + cell_size.y):
+				edge_max_alpha = maxf(edge_max_alpha, atlas.get_pixel(origin.x, y).a)
+				edge_max_alpha = maxf(
+					edge_max_alpha,
+					atlas.get_pixel(origin.x + cell_size.x - 1, y).a
+				)
+			assert_lt(
+				edge_max_alpha,
+				0.01,
+				"%s: cell %d,%d keeps transparent edge padding" % [label, column, row]
+			)

@@ -405,10 +405,14 @@ definito in `docs/top_down_cardinal_contract.md`.
   `compute_markers()` separata dal `_draw` per essere testabile in headless; non
   possiede ne modifica stato gameplay.
 - `PlayerVisual`: presentazione data-driven del player. Carica il pittogramma
-  raster indicato da `RpgCharacterData.gameplay_sprite_path`, applica facing,
-  bob, hit flash e stati downed/dead, quindi disegna sopra l'arma equipaggiata
-  tramite `WeaponVisualRenderer`; se l'asset manca usa la silhouette
-  procedurale e non possiede il mini HUD.
+  raster indicato da `RpgCharacterData.gameplay_sprite_path` come fallback. I
+  sette profili configurano `directional_roll_atlas_path` con contratto `4x4`:
+  righe Sud/Est/Nord/Ovest, colonne idle/anticipazione/tuck/recovery. Facing e
+  roll selezionano regioni senza specchiare il fronte; durante la capriola il
+  layer arma viene nascosto, poi `WeaponVisualRenderer` torna a disegnare
+  l'equipaggiamento reale. Bob, hit flash e stati downed/dead restano runtime;
+  se gli asset mancano usa la silhouette procedurale e non possiede il mini
+  HUD.
 - `PlayerWorldHudVisual`: pacchetto UI world-space child del player; legge
   `HealthComponent`, `WeaponSystem` e `RpgPlayerComponent` e disegna il livello
   con gauge EXP circolare, vita orizzontale su due righe a soglie

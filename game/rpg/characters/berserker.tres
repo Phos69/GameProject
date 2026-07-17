@@ -30,6 +30,7 @@ portrait_full_path = "res://assets/characters/berserker/rendered/berserker_portr
 portrait_hud_path = "res://assets/characters/berserker/rendered/berserker_portrait_hud.svg"
 gameplay_palette_id = "berserker_rust"
 gameplay_sprite_path = "res://assets/characters/berserker/sprites/berserker_gameplay_pictogram.png"
+directional_roll_atlas_path = "res://assets/characters/berserker/sprites/berserker_directional_roll_atlas.png"
 sprite_sheet_path = "res://assets/characters/berserker/sprites/berserker_sprite_sheet.svg"
 weapon_sprite_path = "res://assets/characters/berserker/weapons/berserker_weapon.svg"
 passive_icon_path = "res://assets/characters/berserker/ui/berserker_passive_icon.svg"
@@ -38,4 +39,3 @@ animation_profile_id = "berserker_sprite_sheet_v1"
 palette_primary = Color(0.56, 0.12, 0.08, 1)
 palette_secondary = Color(0.10, 0.11, 0.12, 1)
 palette_accent = Color(1.0, 0.12, 0.08, 1)
-

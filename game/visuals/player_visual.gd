@@ -3,6 +3,7 @@ class_name PlayerVisual
 
 const WEAPON_VISUAL_RENDERER := preload("res://game/weapons/weapon_visual_renderer.gd")
 const CHARACTER_TEXTURE_RECT := Rect2(-36.0, -49.0, 72.0, 72.0)
+const DIRECTIONAL_ATLAS_GRID_SIZE := Vector2i(4, 4)
 const GROUND_SHADOW_CENTER := Vector2(0.0, 18.0)
 const GROUND_SHADOW_RADIUS := Vector2(23.0, 8.0)
 const GROUND_COLLIDER_SIZE := Vector2(28.0, 16.0)
@@ -29,6 +30,8 @@ var status_feedback_timer: float = 0.0
 var character_profile: Dictionary = {}
 var character_texture: Texture2D
 var character_texture_path: String = ""
+var directional_atlas_texture: Texture2D
+var directional_atlas_texture_path: String = ""
 var weapon_attack_type: StringName = &"projectile"
 var weapon_trail_style: StringName = &""
 var is_dodging: bool = false
@@ -54,11 +57,12 @@ func _process(delta: float) -> void:
 	status_feedback_timer = maxf(status_feedback_timer - delta, 0.0)
 	if is_dodging:
 		dodge_elapsed = minf(dodge_elapsed + delta, dodge_duration)
-		var ratio := dodge_elapsed / maxf(dodge_duration, 0.001)
-		var pulse := sin(clampf(ratio, 0.0, 1.0) * PI)
-		var lean_sign := 1.0 if dodge_direction.x >= 0.0 else -1.0
-		rotation = dodge_rest_rotation + lean_sign * 0.20 * pulse
-		scale = dodge_rest_scale * Vector2(1.0 + 0.14 * pulse, 1.0 - 0.18 * pulse)
+		if directional_atlas_texture == null:
+			var ratio := dodge_elapsed / maxf(dodge_duration, 0.001)
+			var pulse := sin(clampf(ratio, 0.0, 1.0) * PI)
+			var lean_sign := 1.0 if dodge_direction.x >= 0.0 else -1.0
+			rotation = dodge_rest_rotation + lean_sign * 0.20 * pulse
+			scale = dodge_rest_scale * Vector2(1.0 + 0.14 * pulse, 1.0 - 0.18 * pulse)
 	queue_redraw()
 
 func apply_visual_settings(settings: Dictionary) -> void:
@@ -91,10 +95,15 @@ func set_character_profile(profile: Dictionary) -> void:
 	if not character_profile.is_empty():
 		accent_color = Color(character_profile.get("palette_primary", accent_color))
 	_configure_character_texture(str(character_profile.get("gameplay_sprite_path", "")))
+	_configure_directional_atlas(str(character_profile.get("directional_roll_atlas_path", "")))
 	queue_redraw()
 
 func has_character_texture() -> bool:
 	return character_texture != null
+
+
+func has_directional_atlas() -> bool:
+	return directional_atlas_texture != null
 
 func _configure_character_texture(texture_path: String) -> void:
 	character_texture_path = texture_path
@@ -102,6 +111,14 @@ func _configure_character_texture(texture_path: String) -> void:
 	if texture_path.is_empty() or not ResourceLoader.exists(texture_path):
 		return
 	character_texture = ResourceLoader.load(texture_path) as Texture2D
+
+
+func _configure_directional_atlas(texture_path: String) -> void:
+	directional_atlas_texture_path = texture_path
+	directional_atlas_texture = null
+	if texture_path.is_empty() or not ResourceLoader.exists(texture_path):
+		return
+	directional_atlas_texture = ResourceLoader.load(texture_path) as Texture2D
 
 func set_weapon_data(weapon_data: WeaponData) -> void:
 	weapon_visual_data = (
@@ -142,6 +159,7 @@ func set_motion(current_velocity: Vector2, max_speed: float) -> void:
 func set_facing(direction: Vector2) -> void:
 	if direction.length_squared() > 0.01:
 		facing_direction = direction.normalized()
+		queue_redraw()
 
 func play_fire() -> void:
 	fire_flash_timer = 0.09
@@ -159,6 +177,7 @@ func play_dodge(direction: Vector2, duration: float) -> void:
 		dodge_rest_rotation = rotation
 	is_dodging = true
 	dodge_direction = direction.normalized() if not direction.is_zero_approx() else Vector2.RIGHT
+	facing_direction = dodge_direction
 	dodge_duration = maxf(duration, 0.05)
 	dodge_elapsed = 0.0
 	queue_redraw()
@@ -170,6 +189,33 @@ func finish_dodge() -> void:
 	is_dodging = false
 	dodge_elapsed = 0.0
 	queue_redraw()
+
+
+func get_directional_atlas_row(direction: Vector2) -> int:
+	var resolved := direction.normalized() if not direction.is_zero_approx() else Vector2.DOWN
+	if absf(resolved.y) >= absf(resolved.x):
+		return 0 if resolved.y >= 0.0 else 2
+	return 1 if resolved.x >= 0.0 else 3
+
+
+func get_directional_atlas_column() -> int:
+	if not is_dodging:
+		return 0
+	var ratio := clampf(dodge_elapsed / maxf(dodge_duration, 0.001), 0.0, 1.0)
+	return mini(1 + floori(ratio * 3.0), 3)
+
+
+func get_directional_atlas_region() -> Rect2:
+	if directional_atlas_texture == null:
+		return Rect2()
+	var texture_size := directional_atlas_texture.get_size()
+	var frame_size := texture_size / Vector2(DIRECTIONAL_ATLAS_GRID_SIZE)
+	var direction := dodge_direction if is_dodging else facing_direction
+	var frame := Vector2i(
+		get_directional_atlas_column(),
+		get_directional_atlas_row(direction)
+	)
+	return Rect2(Vector2(frame) * frame_size, frame_size)
 
 func play_status_feedback(status_id: StringName) -> void:
 	status_feedback_id = BiomeStatusRuntime.canonical_status_id(status_id)
@@ -232,7 +278,7 @@ func _draw() -> void:
 	elif rpg_component != null and rpg_component.is_beast_recovering():
 		beast_scale = 1.08
 	var outline_color := Color(0.035, 0.045, 0.055, 1.0)
-	if character_texture != null:
+	if character_texture != null or directional_atlas_texture != null:
 		_draw_raster_survivor(
 			bob,
 			beast_scale,
@@ -308,7 +354,17 @@ func _draw_raster_survivor(
 		GeometryUtils.ellipse_points(GROUND_SHADOW_CENTER, GROUND_SHADOW_RADIUS, 18),
 		Color(0.01, 0.015, 0.02, 0.52)
 	)
-	var facing_scale := 1.0 if facing_direction.x >= -0.05 else -1.0
+	var uses_directional_atlas := directional_atlas_texture != null
+	var body_texture := (
+		directional_atlas_texture
+		if uses_directional_atlas
+		else character_texture
+	)
+	var facing_scale := (
+		1.0
+		if uses_directional_atlas
+		else (1.0 if facing_direction.x >= -0.05 else -1.0)
+	)
 	draw_set_transform(
 		Vector2(0.0, -bob),
 		0.0,
@@ -322,7 +378,14 @@ func _draw_raster_survivor(
 			Color(1.0, 0.55, 0.40, 1.0),
 			flash_intensity
 		)
-	if character_id == &"domatrice":
+	if uses_directional_atlas:
+		draw_texture_rect_region(
+			body_texture,
+			CHARACTER_TEXTURE_RECT,
+			get_directional_atlas_region(),
+			texture_modulate
+		)
+	elif character_id == &"domatrice":
 		var texture_size := character_texture.get_size()
 		var source_rect := Rect2(
 			texture_size.x * 0.07,
@@ -331,7 +394,7 @@ func _draw_raster_survivor(
 			texture_size.y
 		)
 		draw_texture_rect_region(
-			character_texture,
+			body_texture,
 			Rect2(-27.5, -49.0, 55.0, 72.0),
 			source_rect,
 			texture_modulate
@@ -344,6 +407,8 @@ func _draw_raster_survivor(
 			texture_modulate
 		)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	if is_dodging:
+		return
 
 	var weapon_direction := facing_direction.normalized()
 	if weapon_direction.is_zero_approx():

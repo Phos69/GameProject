@@ -30,6 +30,7 @@ portrait_full_path = "res://assets/characters/pistoliere/rendered/pistoliere_por
 portrait_hud_path = "res://assets/characters/pistoliere/rendered/pistoliere_portrait_hud.svg"
 gameplay_palette_id = "gunslinger_dust"
 gameplay_sprite_path = "res://assets/characters/pistoliere/sprites/pistoliere_gameplay_pictogram.png"
+directional_roll_atlas_path = "res://assets/characters/pistoliere/sprites/pistoliere_directional_roll_atlas.png"
 sprite_sheet_path = "res://assets/characters/pistoliere/sprites/pistoliere_sprite_sheet.svg"
 weapon_sprite_path = "res://assets/characters/pistoliere/weapons/pistoliere_weapon.svg"
 passive_icon_path = "res://assets/characters/pistoliere/ui/pistoliere_passive_icon.svg"
@@ -38,4 +39,3 @@ animation_profile_id = "pistoliere_sprite_sheet_v1"
 palette_primary = Color(0.76, 0.58, 0.24, 1)
 palette_secondary = Color(0.34, 0.22, 0.13, 1)
 palette_accent = Color(0.98, 0.48, 0.12, 1)
-

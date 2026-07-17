@@ -24,6 +24,7 @@
     "portrait_rendered": "rendered/mago_portrait_full.svg",
     "portrait_hud": "rendered/mago_portrait_hud.svg",
     "gameplay_sprite": "sprites/mago_gameplay_pictogram.png",
+    "directional_roll_atlas": "sprites/mago_directional_roll_atlas.png",
     "sprite_sheet": "sprites/mago_sprite_sheet.svg",
     "hud_icon": "rendered/mago_portrait_hud.svg",
     "weapon_icon": "weapons/mago_weapon.svg",
@@ -73,11 +74,19 @@
       }
     }
   },
+  "directional_roll_atlas": {
+    "frame_size": [314, 314],
+    "columns": 4,
+    "rows": 4,
+    "directions": {"south": 0, "east": 1, "north": 2, "west": 3},
+    "frames": {"idle": 0, "roll_anticipation": 1, "roll_tuck": 2, "roll_recovery": 3}
+  },
   "iteration_changelog": [
     "Creato primo set base completo per Mago/Elio Braciastella con portrait rendered, sprite gameplay della precedente iterazione, sprite sheet animabile, icone HUD e bastone arcano.",
     "La riga attack funge anche da cast per soddisfare il profilo magico senza duplicare frame identici.",
-    "Convertiti gli asset bitmap PNG in SVG testuali per rendere la pull request compatibile con ambienti che non accettano file binari."
+    "Convertiti gli asset bitmap PNG in SVG testuali per rendere la pull request compatibile con ambienti che non accettano file binari.",
+    "Aggiunto atlante PNG alpha 4x4 per facing cardinale e roll direzionale."
   ],
-  "source_format": "svg_text+pictogram",
+  "source_format": "svg_text+pictogram+directional_roll_atlas",
   "binary_free": false
 }

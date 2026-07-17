@@ -1,5 +1,5 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "style_target": "zombie survival top-down ortogonale con volume prospettico controllato, cartoon dark arcade, leggibile in gameplay",
   "runtime_source_of_truth": "game/rpg/characters/*.tres (RpgCharacterData), validato da tests/suites/assets/character_asset_test.gd",
   "status_definitions": {
@@ -17,6 +17,7 @@
         "portrait_rendered",
         "portrait_hud",
         "gameplay_sprite",
+        "directional_roll_atlas",
         "sprite_sheet",
         "hud_icon",
         "weapon_icon",
@@ -35,6 +36,7 @@
         "portrait_rendered",
         "portrait_hud",
         "gameplay_sprite",
+        "directional_roll_atlas",
         "sprite_sheet",
         "hud_icon",
         "weapon_icon",
@@ -53,6 +55,7 @@
         "portrait_rendered",
         "portrait_hud",
         "gameplay_sprite",
+        "directional_roll_atlas",
         "sprite_sheet",
         "hud_icon",
         "weapon_icon",
@@ -71,6 +74,7 @@
         "portrait_rendered",
         "portrait_hud",
         "gameplay_sprite",
+        "directional_roll_atlas",
         "sprite_sheet",
         "hud_icon",
         "weapon_icon",
@@ -89,6 +93,7 @@
         "portrait_rendered",
         "portrait_hud",
         "gameplay_sprite",
+        "directional_roll_atlas",
         "sprite_sheet",
         "hud_icon",
         "weapon_icon",
@@ -107,6 +112,7 @@
         "portrait_rendered",
         "portrait_hud",
         "gameplay_sprite",
+        "directional_roll_atlas",
         "sprite_sheet",
         "hud_icon",
         "weapon_icon",
@@ -125,6 +131,7 @@
         "portrait_rendered",
         "portrait_hud",
         "gameplay_sprite",
+        "directional_roll_atlas",
         "sprite_sheet",
         "hud_icon",
         "weapon_icon",
@@ -134,8 +141,8 @@
       ]
     }
   ],
-  "next_recommended_iteration": "ranger_final_quality_pass",
-  "asset_format": "svg_text+png_portrait+png_pictogram",
+  "next_recommended_iteration": "character_directional_roll_visual_qa",
+  "asset_format": "svg_text+png_portrait+png_pictogram+png_directional_roll_atlas",
   "binary_free": false,
-  "pipeline_notes": "Pipeline mista in-repo: sorgenti SVG testuali, portrait PNG opzionali e sette pittogrammi gameplay PNG con alpha. PlayerVisual consuma gameplay_sprite_path nel world-space e conserva il disegno procedurale come fallback; WeaponData.visual_data mantiene il layer arma separato. Provenienza e processing dei pittogrammi sono registrati in assets/characters/pictogram_manifest.json."
+  "pipeline_notes": "Pipeline mista in-repo: sorgenti SVG testuali, portrait PNG opzionali, sette pittogrammi gameplay PNG e sette atlanti direzionali 4x4 con alpha. PlayerVisual consuma directional_roll_atlas_path per facing cardinale e roll in tre fasi su tutti i profili, mantenendo gameplay_sprite_path come fallback. WeaponData.visual_data mantiene il layer arma separato. Provenienza e processing sono registrati nei manifest pictogram e directional_roll."
 }

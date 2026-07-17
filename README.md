@@ -114,6 +114,10 @@ I sette `gameplay_sprite_path` puntano ora a pittogrammi raster top-down PNG
 con alpha e `PlayerVisual` li usa anche sul personaggio world-space durante il
 gameplay. Facing, bob, hit flash, stato downed/dead e arma equipaggiata restano
 layer runtime; se un path manca, torna disponibile la silhouette procedurale.
+Il pass `CHAR-DIR-001` popola inoltre `directional_roll_atlas_path` per tutti i
+sette personaggi: ogni atlante `4x4` contiene pose Sud/Est/Nord/Ovest e le tre
+fasi anticipazione/tuck/recovery del roll. Il fallback precedente resta
+disponibile se un asset viene rimosso o non puo essere caricato.
 
 Il pass combat RPG distingue anche il runtime arma: arco, pistola, bastone e
 fionda restano `projectile`, mentre ascia, spada e artigli usano hitbox melee

@@ -56,6 +56,20 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
     layout (stesso esito booleano), e la palette cresta dirupo e' la
     statica condivisa `TopDownCliffRenderer.edge_color_for_style`.
 
+- Completato `CHAR-DIR-001` per tutti i sette personaggi: gli atlanti raster
+  alpha `4x4` usano righe Sud/Est/Nord/Ovest e colonne
+  idle/anticipazione/tuck/recovery. Ogni profilo espone
+  `directional_roll_atlas_path`; `PlayerVisual` seleziona la posa senza
+  mirroring, sincronizza i tre frame del roll con la durata dodge esistente e
+  nasconde il layer arma durante la capriola. Il fallback a pittogramma e
+  silhouette procedurale resta disponibile per asset mancanti. Aggiunti
+  manifest, validazione asset/GUT e tool Godot ripetibile per chroma key,
+  despill, alpha nativo e padding uniforme della griglia.
+- Validazione `CHAR-DIR-001`: import Godot e boot headless della scena
+  principale PASS; GUT `assets` 79/79 (`11.276` assert) e `progression` 13/13
+  (`327` assert) PASS. La checklist manuale copre i sette personaggi nelle
+  quattro direzioni con tastiera/joypad, high contrast, reduced motion e 1-4
+  player.
 - Raddoppiate le dimensioni delle `SupplyCrate`: il manifest porta
   `supply_crate.visual_scale` a `2.30`, la collisione fisica della scena passa
   a `84x68` e il fallback procedurale del visual segue la stessa scala senza

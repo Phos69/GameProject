@@ -125,6 +125,7 @@ func test_character_registry_data() -> void:
 		assert_eq(profile.get("super_id", &""), data.super_id, "%s profile comes from resource super id" % str(character_id))
 		assert_false(str(profile.get("style_description", "")).is_empty(), "%s profile exposes a style description" % str(character_id))
 		assert_false(str(profile.get("gameplay_sprite_path", "")).is_empty(), "%s profile exposes a gameplay sprite path" % str(character_id))
+		assert_false(str(profile.get("directional_roll_atlas_path", "")).is_empty(), "%s profile exposes a directional roll atlas" % str(character_id))
 		var weapon := RpgCharacterRegistry.load_base_weapon(StringName(profile.get("base_weapon_id", &"")))
 		assert_not_null(weapon, "%s base weapon loads" % str(character_id))
 		if weapon != null:
@@ -144,12 +145,38 @@ func test_character_gameplay_pictograms_reach_player_visual() -> void:
 	for character_id in RpgCharacterRegistry.get_character_ids():
 		var profile := RpgCharacterRegistry.get_character_profile(character_id)
 		var expected_path := str(profile.get("gameplay_sprite_path", ""))
+		var expected_atlas_path := str(profile.get("directional_roll_atlas_path", ""))
 		assert_true(player.apply_rpg_character(character_id), "%s can be applied to the player" % str(character_id))
 		assert_true(visual.has_character_texture(), "%s loads its gameplay pictogram in PlayerVisual" % str(character_id))
 		assert_eq(visual.character_texture_path, expected_path, "%s PlayerVisual uses the profile gameplay path" % str(character_id))
+		assert_eq(
+			visual.directional_atlas_texture_path,
+			expected_atlas_path,
+			"%s PlayerVisual uses the optional directional atlas path" % str(character_id)
+		)
+		assert_eq(
+			visual.has_directional_atlas(),
+			not expected_atlas_path.is_empty(),
+			"%s directional atlas presence follows its profile" % str(character_id)
+		)
+
+	assert_eq(visual.get_directional_atlas_row(Vector2.DOWN), 0, "south uses the front row")
+	assert_eq(visual.get_directional_atlas_row(Vector2.RIGHT), 1, "east uses the right row")
+	assert_eq(visual.get_directional_atlas_row(Vector2.UP), 2, "north uses the back row")
+	assert_eq(visual.get_directional_atlas_row(Vector2.LEFT), 3, "west uses the left row")
+	player.apply_rpg_character(&"ranger")
+	visual.play_dodge(Vector2.UP, 0.30)
+	assert_eq(visual.get_directional_atlas_column(), 1, "roll starts from anticipation")
+	visual.dodge_elapsed = 0.15
+	assert_eq(visual.get_directional_atlas_column(), 2, "roll midpoint uses the tuck frame")
+	visual.dodge_elapsed = 0.29
+	assert_eq(visual.get_directional_atlas_column(), 3, "roll end uses the recovery frame")
+	visual.finish_dodge()
+	assert_eq(visual.get_directional_atlas_column(), 0, "idle returns to the neutral frame")
 
 	visual.set_character_profile({})
 	assert_false(visual.has_character_texture(), "procedural fallback remains available without an asset path")
+	assert_false(visual.has_directional_atlas(), "directional atlas also falls back cleanly")
 	player.queue_free()
 	await wait_physics_frames(1)
 

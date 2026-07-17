@@ -116,6 +116,11 @@ Visual QA consigliate:
 - Frecce e stick destro aggiornano la mira indipendentemente dal movimento.
 - Camera, zoom, shake e follow di gruppo non inclinano la griglia.
 - `Shift`/`Ctrl` o joypad `B` eseguono dodge/roll.
+- Con ciascuno dei sette personaggi, fermarsi e mirare verso
+  Sud/Est/Nord/Ovest: il corpo deve usare quattro viste distinte e a Nord deve
+  mostrare la schiena. Ripetere il roll nelle quattro direzioni verificando
+  anticipazione, tuck e recovery, senza arma sovrapposta e senza cambiare
+  traiettoria o hitbox.
 - `R` o joypad `X` ricaricano; `Spazio`/`RB`, `F`/`LB` e `Q`/`Y` attivano le
   azioni previste.
 

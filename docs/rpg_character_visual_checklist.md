@@ -19,6 +19,9 @@ Usare questa checklist per verificare il pass 1 dei personaggi RPG a 1280x720, s
   top-down con alpha e anchor `bottom_center`, consumato sia dalle preview sia
   dal corpo world-space;
   gli SVG precedenti restano sorgenti/fallback in-repo.
+- `directional_roll_atlas_path` e configurato per tutti i sette profili. Ogni
+  atlante usa una griglia `4x4` con righe Sud/Est/Nord/Ovest e colonne
+  idle/anticipazione/tuck/recovery; il pittogramma resta il fallback sicuro.
 - QA visuale a 1280x720, 1024x768 e 960x540 in default/reduced motion/high
   contrast resta manuale (screenshot nel playtest end-to-end Milestone 11).
 
@@ -57,6 +60,11 @@ Usare questa checklist per verificare il pass 1 dei personaggi RPG a 1280x720, s
 - [ ] Domatrice riconoscibile da fionda, zaino tecnico e Briciola sempre vicino.
 - [ ] Licantropo riconoscibile da postura curva/artigli in forma umana e scala maggiore durante Notte Bestiale.
 - [ ] Le armi restano su layer/visual separato dal corpo e seguono la mira.
+- [ ] La posa Nord mostra realmente la schiena e non un fronte specchiato.
+- [ ] Il roll usa anticipazione, tuck e recovery della stessa riga direzionale;
+  l'arma separata non resta rigida sopra la capriola.
+- [ ] Finito il roll, il corpo torna alla posa idle della direzione usata senza
+  alterare distanza, cooldown, invulnerabilita o collisione.
 - [ ] Gli effetti di sparo/reload/super restano leggibili tra zombie, pickup e ostacoli.
 - [ ] Le super starter hanno silhouette VFX distinte: cono, burst, radiale e dash.
 - [ ] Le super avanzate hanno VFX distinti: Stella Cadente radiale viola,
@@ -80,6 +88,7 @@ I placeholder procedurali possono essere sostituiti popolando i path data-driven
 - `portrait_full_path` e `portrait_hud_path` per menu/HUD.
 - `style_description` e `gameplay_sprite_path` per dossier, preview e corpo
   world-space.
+- `directional_roll_atlas_path` per facing cardinale e roll `4x4`.
 - `sprite_sheet_path` e `animation_profile_id` per il corpo animato.
 - `weapon_sprite_path` per il visual arma separato.
 - `passive_icon_path` e `super_icon_path` per le icone UI.

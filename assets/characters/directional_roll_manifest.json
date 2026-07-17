@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "generated_on": "2026-07-17",
+  "generator": "user-provided image generation",
+  "use_case": "identity-preserve",
+  "license": "Project original",
+  "projection": "orthogonal_top_down",
+  "volume_style": "controlled_perspective",
+  "atlas_contract": {
+    "columns": [
+      "idle",
+      "roll_anticipation",
+      "roll_tuck",
+      "roll_recovery"
+    ],
+    "rows": [
+      "south",
+      "east",
+      "north",
+      "west"
+    ]
+  },
+  "processing": [
+    "six flat magenta chroma-key sources use a border-sampled soft matte, selective despill and one-pixel alpha contraction",
+    "the native-alpha Licantropo source preserves its supplied matte and exact 1024x1024 grid",
+    "1254x1254 chroma sources are repacked to 1256x1256 for exact 314x314 cells",
+    "all sources are archived under ignored tmp/imagegen and reproducible with tools/remove_sprite_chroma_key.gd"
+  ],
+  "prompt_summary": "Preserve each hero identity and costume in an exact 4x4 atlas: south/east/north/west rows and idle/anticipation/tuck/recovery columns, orthogonal top-down controlled perspective, no text or scene.",
+  "assets": [
+    {
+      "character_id": "ranger",
+      "path": "ranger/sprites/ranger_directional_roll_atlas.png",
+      "status": "integrated"
+    },
+    {
+      "character_id": "pistoliere",
+      "path": "pistoliere/sprites/pistoliere_directional_roll_atlas.png",
+      "status": "integrated"
+    },
+    {
+      "character_id": "berserker",
+      "path": "berserker/sprites/berserker_directional_roll_atlas.png",
+      "status": "integrated"
+    },
+    {
+      "character_id": "spadaccino",
+      "path": "spadaccino/sprites/spadaccino_directional_roll_atlas.png",
+      "status": "integrated"
+    },
+    {
+      "character_id": "mago",
+      "path": "mago/sprites/mago_directional_roll_atlas.png",
+      "status": "integrated"
+    },
+    {
+      "character_id": "domatrice",
+      "path": "domatrice/sprites/domatrice_directional_roll_atlas.png",
+      "status": "integrated"
+    },
+    {
+      "character_id": "licantropo",
+      "path": "licantropo/sprites/licantropo_directional_roll_atlas.png",
+      "status": "integrated"
+    }
+  ]
+}
