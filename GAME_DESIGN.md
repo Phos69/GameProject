@@ -20,6 +20,10 @@ Un action sandbox locale dove 1-4 giocatori affrontano arene, dungeon e difese a
 
 - Ogni area non attraversabile deve avere una base o un bordo visivo coincidente
   con le celle bloccate; collisioni invisibili non sono ammesse.
+- La silhouette opaca di un prop deve coprire larghezza e altezza del proprio
+  collider. Il visuale mantiene sempre le proporzioni originali: se la copertura
+  di un asse richiede un ingrandimento, anche l'altro asse cresce dello stesso
+  fattore e puo oltrepassare il collider.
 - Case, vegetazione densa, rocce, recinzioni e cliff devono restare distinguibili
   per silhouette, volume e rapporto con il terreno anche senza overlay debug.
 - Gli oggetti piccoli usano footprint discreti da `1x1` a `3x3`; tetti, chiome

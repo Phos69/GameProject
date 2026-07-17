@@ -27,6 +27,10 @@ const INFECTED_PLAINS_RASTER_IDS: Array[StringName] = [
 	&"small_rock", &"broken_fence", &"wood_barrier", &"ruined_house",
 	&"abandoned_house", &"abandoned_car", &"dense_vegetation"
 ]
+const INFECTED_PLAINS_RASTER_COLLIDER_IDS: Array[StringName] = [
+	&"small_rock", &"broken_fence", &"wood_barrier", &"fallen_log",
+	&"ruined_house", &"abandoned_house", &"abandoned_car", &"dense_vegetation"
+]
 const REQUIRED_CRATE_ASSET_ID := &"supply_crate"
 const ENVIRONMENT_OBJECT_SCRIPT = preload("res://game/modes/zombie/environment_object.gd")
 const ENVIRONMENT_OBJECT_FACTORY_SCRIPT = preload("res://game/modes/zombie/environment_object_factory.gd")
@@ -351,8 +355,107 @@ func test_supply_crate_asset_visual() -> void:
 	assert_eq(crate.collision_mask, 1, "supply crate collision mask unchanged")
 	var shape := crate.get_node_or_null("CollisionShape2D") as CollisionShape2D
 	assert_true(shape != null and shape.shape is RectangleShape2D, "supply crate keeps rectangle collision")
+	if visual is SupplyCrateVisual and shape != null and shape.shape is RectangleShape2D:
+		var crate_visual := visual as SupplyCrateVisual
+		var collision_size := (shape.shape as RectangleShape2D).size
+		for crate_type in [&"common", &"medical"]:
+			crate_visual.configure_crate_type(crate_type)
+			var visual_bounds := crate_visual.get_asset_visual_bounds()
+			var collision_bounds := Rect2(-collision_size * 0.5, collision_size)
+			assert_gte(
+				visual_bounds.size.x + 0.25,
+				collision_size.x,
+				"%s crate art covers the hitbox width" % String(crate_type)
+			)
+			assert_gte(
+				visual_bounds.size.y + 0.25,
+				collision_size.y,
+				"%s crate art covers the hitbox height" % String(crate_type)
+			)
+			assert_true(
+				is_equal_approx(
+					crate_visual.asset_sprite.scale.x,
+					crate_visual.asset_sprite.scale.y
+				),
+				"%s crate preserves its source proportions" % String(crate_type)
+			)
+			_assert_visual_contains_hitbox(
+				"%s crate" % String(crate_type),
+				visual_bounds,
+				collision_bounds
+			)
 	crate.queue_free()
 	await wait_physics_frames(1)
+
+func test_infected_plains_raster_art_covers_hitboxes_without_stretch() -> void:
+	assert_eq(
+		_manifest.get_visual_scale(&"fallen_log"),
+		1.0,
+		"shared fallen_log keeps its default SVG scale"
+	)
+	assert_eq(
+		_manifest.get_object_visual_scale(&"fallen_log", &"infected_plains"),
+		1.85,
+		"infected-plains fallen_log uses only its raster-specific scale"
+	)
+	assert_eq(
+		_manifest.get_object_visual_scale(&"fallen_log", &"frozen_outskirts"),
+		1.0,
+		"other biomes keep the shared fallen_log SVG scale"
+	)
+	var factory := ENVIRONMENT_OBJECT_FACTORY_SCRIPT.new(_manifest)
+	for obstacle_id in INFECTED_PLAINS_RASTER_COLLIDER_IDS:
+		var logical_footprint := WorldGridConfig.legacy_size_to_new_tiles(
+			_manifest.get_footprint_tiles(obstacle_id)
+		)
+		var world_size := (
+			Vector2(logical_footprint) * WorldGridConfig.LOGICAL_TILE_SCALE
+		)
+		var obstacle := factory.create_obstacle(
+			obstacle_id,
+			world_size,
+			_manifest.get_collision_shape(obstacle_id),
+			0.0,
+			Color.WHITE,
+			Color.WHITE,
+			_manifest.get_sort_offset(obstacle_id),
+			&"infected_plains"
+		) as EnvironmentObject
+		assert_not_null(obstacle, "%s raster obstacle builds" % String(obstacle_id))
+		if obstacle == null:
+			continue
+		add_child(obstacle)
+		await wait_physics_frames(1)
+		var visual_bounds := obstacle.get_asset_visual_bounds()
+		var collision_size := obstacle.get_collision_size()
+		var collision_bounds := Rect2(
+			obstacle.get_collision_offset() - collision_size * 0.5,
+			collision_size
+		)
+		assert_gte(
+			visual_bounds.size.x + 0.25,
+			collision_size.x,
+			"%s art covers the hitbox width" % String(obstacle_id)
+		)
+		assert_gte(
+			visual_bounds.size.y + 0.25,
+			collision_size.y,
+			"%s art covers the hitbox height" % String(obstacle_id)
+		)
+		assert_true(
+			is_equal_approx(
+				obstacle.asset_sprite.scale.x,
+				obstacle.asset_sprite.scale.y
+			),
+			"%s preserves its source proportions" % String(obstacle_id)
+		)
+		_assert_visual_contains_hitbox(
+			String(obstacle_id),
+			visual_bounds,
+			collision_bounds
+		)
+		obstacle.queue_free()
+		await wait_physics_frames(1)
 
 func test_infected_plains_fallen_log_variant() -> void:
 	var factory := ENVIRONMENT_OBJECT_FACTORY_SCRIPT.new(_manifest)
@@ -378,6 +481,33 @@ func test_infected_plains_fallen_log_variant() -> void:
 		assert_true(bool(obstacle.call("has_asset_visual")), "fallen log raster loads")
 		obstacle.queue_free()
 		await wait_physics_frames(1)
+
+func _assert_visual_contains_hitbox(
+	label: String,
+	visual_bounds: Rect2,
+	collision_bounds: Rect2
+) -> void:
+	const EDGE_TOLERANCE := 0.05
+	assert_lte(
+		visual_bounds.position.x,
+		collision_bounds.position.x + EDGE_TOLERANCE,
+		"%s art reaches the hitbox left edge" % label
+	)
+	assert_lte(
+		visual_bounds.position.y,
+		collision_bounds.position.y + EDGE_TOLERANCE,
+		"%s art reaches the hitbox top edge" % label
+	)
+	assert_gte(
+		visual_bounds.end.x,
+		collision_bounds.end.x - EDGE_TOLERANCE,
+		"%s art reaches the hitbox right edge" % label
+	)
+	assert_gte(
+		visual_bounds.end.y,
+		collision_bounds.end.y - EDGE_TOLERANCE,
+		"%s art reaches the hitbox bottom edge" % label
+	)
 
 # --- helper (porting dei test legacy) ---------------------------------------
 

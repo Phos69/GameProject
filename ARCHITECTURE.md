@@ -334,7 +334,11 @@ definito in `docs/top_down_cardinal_contract.md`.
   tronco condiviso seleziona il PNG tramite variante `infected_plains`, mentre
   gli altri biomi continuano a usare gli SVG dedicati in
   `objects/generated_props/` fino al loro pass. Footprint e collisioni non
-  cambiano. Le precedenti risorse `AtlasTexture` dei prop non fanno piu parte
+  cambiano. `visual_scale` applica un fattore uniforme per singolo ID, mentre
+  `variant_visual_scales` limita la correzione a una variante contestuale: la
+  silhouette opaca puo superare un lato del collider quando deve coprire
+  l'altro, ma non viene mai deformata con scale X/Y diverse. Le precedenti
+  risorse `AtlasTexture` dei prop non fanno piu parte
   del runtime. `reed_wall` usa il raster SVG nativo stretto e
   verticale `56x136`, evitando che il loader canonico `160x120` lo riduca
   dentro la canvas; `dead_tree` conserva analogamente la canvas nativa verticale.

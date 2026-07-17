@@ -8,6 +8,16 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Changed
 
+- Corretta la copertura hitbox dei dieci raster della Pianura Infetta senza
+  stretch: `small_rock`, `broken_fence`, `wood_barrier`, `fallen_log` e
+  `abandoned_car` ricevono scale uniformi puntuali; quella del tronco resta
+  limitata alla variante `infected_plains` e non ingrandisce lo SVG condiviso
+  dagli altri biomi. Le casse comune e
+  medica condividono un lieve aumento e vengono ancorate usando il bordo del
+  contenuto opaco anziche il padding trasparente. Case e vegetazione, gia
+  conformi, restano a scala `1.0`. La Visual QA hitbox ora mostra tutti i dieci
+  raster e la suite asset verifica copertura X/Y e uguaglianza della scala sui
+  due assi.
 - Completato il primo pass `BIOME-RASTER-001` sulla Pianura Infetta: otto prop
   ambientali e le due varianti di cassa comune/medica usano ora dieci PNG
   originali con alpha, generati in proiezione top-down cardinale. ID, pool,
@@ -17,7 +27,7 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
   riceveranno il relativo pass; la crate seleziona invece il raster per tipo.
   Il manifest ambiente sale a v13 e valida anche l'esistenza delle varianti.
 - Validazione `BIOME-RASTER-001`: import Godot e generatore ambiente `132/132`
-  PASS; GUT `assets` 78/78 (`10.904` assert), `environment` 47/47 (`9.369`
+  PASS; GUT `assets` 79/79 (`10.985` assert), `environment` 47/47 (`9.369`
   assert), `obstacles` 27/27 (`1.193` assert) e `world_gen` 59/59 (`2.311`
   assert) PASS. Visual QA `obstacle_asset`, `biome_art_infected_plains`,
   `obstacle_hitbox_alignment` e `top_down_final` PASS; il boot reale della

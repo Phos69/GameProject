@@ -328,7 +328,8 @@ Completato:
   Infetta usa raster dedicati, incluse le varianti contestuali per tronco e
   casse, mentre gli altri biomi mantengono gli SVG cardinali individuali in
   `objects/generated_props/`; oggetti, hazard e fall zone restano a rotazione
-  zero, gli alberi
+  zero; i raster usano scale uniformi per-ID che coprono interamente il collider
+  senza stretch, mentre gli alberi
   separano il footprint della chioma dal collider circolare alle radici e le
   mesa rendono corona/facce nel proprio nodo Y-sorted. Case, cabine,
   laboratori, recinti, muri, barili, relitti, tronchi, ponti e crate restano

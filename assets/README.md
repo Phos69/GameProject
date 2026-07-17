@@ -79,7 +79,7 @@ possono avere size/offset espliciti per aderire al contatto a terra. Il contratt
 `docs/top_down_cardinal_contract.md`.
 
 Per ogni contratto il loader normalizza `asset_path`, `variant_asset_paths`,
-`status`, `biome_ids`,
+`variant_visual_scales`, `status`, `biome_ids`,
 `footprint_tiles`, `anchor`, `sort_offset`, `collision_shape`,
 `collision_size_ratio`, `collision_offset_ratio`, flag
 `blocks_*`, `source`, `license`, `attribution_key` e `fallback_path`.
@@ -315,7 +315,10 @@ contestuale e le casse `common`/`medical`. Gli altri biomi conservano per ora
 gli SVG cardinali dedicati in `objects/generated_props/`, con source
 `project_svg_generator` e attribution `environment_top_down_internal`. In runtime headless
 `EnvironmentTextureLoader` rasterizza gli SVG trasparenti quando manca la
-cache import, mentre carica i PNG tramite `ResourceLoader`.
+cache import, mentre carica i PNG tramite `ResourceLoader`. I PNG mantengono
+scala X/Y uniforme; i `visual_scale`/`variant_visual_scales` puntuali del
+manifest fanno coprire alla silhouette opaca l'intero collider senza alterare
+footprint o collisione.
 La supply crate usa lo stesso percorso tramite `object_scenes/supply_crate` e
 risolve la variante dal tipo di cassa;
 `reed_wall` richiede la propria dimensione nativa al loader per conservare

@@ -307,6 +307,16 @@ func get_object_asset_path(
 		return String(variants[variant_id])
 	return String(contract.get("asset_path", ""))
 
+func get_object_visual_scale(
+	object_id: StringName,
+	variant_id: StringName = &""
+) -> float:
+	var contract := get_object_asset_contract(object_id)
+	var variants := contract.get("variant_visual_scales", {}) as Dictionary
+	if not variant_id.is_empty() and variants.has(variant_id):
+		return maxf(float(variants[variant_id]), 0.01)
+	return get_visual_scale(object_id)
+
 func get_terrain_asset_contract(terrain_tag: StringName) -> Dictionary:
 	return get_asset_contract(&"terrain_tiles", terrain_tag)
 
@@ -359,7 +369,8 @@ func get_visual_scale(object_id: StringName) -> float:
 
 func get_native_visual_size(
 	object_id: StringName,
-	logical_tile_scale: float = WorldGridConfig.LEGACY_TILE_SCALE
+	logical_tile_scale: float = WorldGridConfig.LEGACY_TILE_SCALE,
+	variant_id: StringName = &""
 ) -> Vector2:
 	var footprint := get_footprint_tiles(object_id)
 	var visual_height := get_visual_height_tiles(object_id)
@@ -367,7 +378,7 @@ func get_native_visual_size(
 		maxf(float(footprint.x) * logical_tile_scale * 1.55, 56.0),
 		maxf(float(footprint.y + visual_height) * logical_tile_scale, 56.0)
 	)
-	return native_size * get_visual_scale(object_id)
+	return native_size * get_object_visual_scale(object_id, variant_id)
 
 func blocks_movement(object_id: StringName) -> bool:
 	if objects.has(object_id):
@@ -566,6 +577,9 @@ func _normalize_asset_contract(section: StringName, entry: Dictionary) -> Dictio
 		"variant_asset_paths": _normalize_path_dictionary(
 			entry.get("variant_asset_paths", {})
 		),
+		"variant_visual_scales": _normalize_scale_dictionary(
+			entry.get("variant_visual_scales", {})
+		),
 		"render_mode": StringName(str(entry.get("render_mode", "sprite"))),
 		"status": String(entry.get("status", asset_contract_defaults.get("status", "needs_asset"))),
 		"biome_ids": _normalize_string_name_array(
@@ -631,6 +645,14 @@ func _normalize_path_dictionary(value: Variant) -> Dictionary:
 		return result
 	for key in (value as Dictionary).keys():
 		result[StringName(str(key))] = String((value as Dictionary).get(key, ""))
+	return result
+
+func _normalize_scale_dictionary(value: Variant) -> Dictionary:
+	var result := {}
+	if not value is Dictionary:
+		return result
+	for key in (value as Dictionary).keys():
+		result[StringName(str(key))] = float((value as Dictionary).get(key, 1.0))
 	return result
 
 func _normalize_vector2(value: Variant, default_value: Vector2) -> Vector2:
@@ -782,12 +804,18 @@ func _validate_asset_contract(
 	if not MISSING_ASSET_STATUSES.has(status) and not _asset_path_exists(asset_path):
 		failures.append("%s/%s: asset_path does not exist for status '%s'" % [String(section), contract_id, status])
 	var variant_asset_paths := contract.get("variant_asset_paths", {}) as Dictionary
+	var variant_visual_scales := contract.get("variant_visual_scales", {}) as Dictionary
 	for variant_id in variant_asset_paths.keys():
 		var variant_path := String(variant_asset_paths[variant_id])
 		if String(variant_id).is_empty() or variant_path.is_empty():
 			failures.append("%s/%s: variant asset id/path must not be empty" % [String(section), contract_id])
 		elif not _asset_path_exists(variant_path):
 			failures.append("%s/%s: variant asset path does not exist for '%s'" % [String(section), contract_id, String(variant_id)])
+		if variant_visual_scales.has(variant_id) and float(variant_visual_scales[variant_id]) <= 0.0:
+			failures.append("%s/%s: variant visual scale must be positive for '%s'" % [String(section), contract_id, String(variant_id)])
+	for variant_id in variant_visual_scales.keys():
+		if not variant_asset_paths.has(variant_id):
+			failures.append("%s/%s: visual scale has no asset variant for '%s'" % [String(section), contract_id, String(variant_id)])
 
 func _validate_asset_coverage(failures: PackedStringArray) -> void:
 	for object_id in objects.keys():

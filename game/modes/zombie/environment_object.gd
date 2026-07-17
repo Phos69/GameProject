@@ -353,7 +353,11 @@ func _position_asset_sprite() -> void:
 		asset_sprite.position = Vector2.ZERO
 		return
 	var manifest := EnvironmentAssetManifest.get_shared()
-	var target_size := manifest.get_native_visual_size(obstacle_id)
+	var target_size := manifest.get_native_visual_size(
+		obstacle_id,
+		LEGACY_TILE_SCALE,
+		asset_variant_id
+	)
 	# Scalable obstacles (e.g. rocks) are placed at a per-instance square footprint,
 	# so the art must follow the instance size instead of the fixed manifest visual
 	# size. Scale the native visual size by the instance/base footprint ratio.

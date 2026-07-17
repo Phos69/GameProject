@@ -71,7 +71,9 @@ Per iterazioni mirate sulla mappa:
   a `1280x720` e `960x540`.
 - Con `F9` nella Pianura Infetta, confrontare ogni nuovo raster col collider:
   il cutover non deve cambiare area bloccata, anchor, Y-sort o probabilita di
-  generazione; passare davanti e dietro entrambe le case e la vegetazione.
+  generazione; la silhouette deve coprire larghezza e altezza del collider senza
+  stretch, anche quando oltrepassa l'altro asse. Passare davanti e dietro
+  entrambe le case, l'auto e la vegetazione.
 - Un asset mancante attiva un fallback top-down con lo stesso footprint.
 
 ## Maschera confini terrain

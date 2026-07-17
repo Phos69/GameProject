@@ -42,7 +42,9 @@ anche le milestone completate per evitare sovrapposizioni.
 - `BIOME-RASTER-001`: **completata 2026-07-16**. Dieci raster trasparenti
   coprono tutti i prop della Pianura Infetta, incluso il tronco contestuale e
   le casse comune/medica distinte. Il manifest v13 risolve le varianti per
-  bioma/tipo; contratti fisici e generazione restano invariati. Il seguito sui
+  bioma/tipo; contratti fisici e generazione restano invariati. Il follow-up di
+  copertura hitbox assegna scale uniformi puntuali ai sei contratti che ne
+  avevano bisogno e valida tutti i dieci raster su entrambi gli assi. Il seguito sui
   quattro biomi avanzati e tracciato come `BIOME-RASTER-002` in `TODO.md`.
 
 - `TERRAIN-MASK-001`: **completata 2026-07-15**. Il renderer del terreno usa

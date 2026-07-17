@@ -70,6 +70,14 @@ sotto quelli davanti. Ostacoli, hazard e fall zone sono bloccati a rotazione `0`
 movimento e mira degli attori restano analogici, ma gli asset rimangono dritti
 sugli assi H/V.
 
+`visual_scale` corregge la copertura per singolo ID senza modificare la texture;
+`variant_visual_scales` applica lo stesso contratto solo alla variante indicata,
+per esempio al tronco raster della Pianura Infetta senza ingrandire lo SVG
+condiviso dagli altri biomi. Il fattore e sempre uniforme su X/Y. La silhouette opaca deve coprire entrambe
+le dimensioni del collider; per un asset molto largo o molto alto e quindi
+previsto che l'altro asse oltrepassi il rettangolo fisico. Questo overflow
+presentazionale non cambia placement, pathfinding o area bloccata.
+
 Per `floor_center`, il centro del contenuto opaco viene allineato al centro del
 collider fisico; non viene appoggiato sul bordo sud del footprint. Gli asset
 `bottom_center` conservano invece il contatto sul bordo sud, mentre gli alberi
@@ -128,8 +136,9 @@ esplicitamente `blocks_movement` e `blocks_projectiles`.
 
 Per un PNG o un'`AtlasTexture`, il canvas sorgente puo essere piu grande della dimensione nativa:
 `EnvironmentObject` applica il downscale deterministico derivato da
-footprint e `visual_height_tiles`; corner trasparenti e copertura minima restano
-obbligatori.
+footprint, `visual_height_tiles` e gli eventuali
+`visual_scale`/`variant_visual_scales`; corner trasparenti e copertura minima
+restano obbligatori.
 
 ## Debug e verifica
 

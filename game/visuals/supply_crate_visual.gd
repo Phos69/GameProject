@@ -6,6 +6,7 @@ const ASSET_SPRITE_NAME := "AssetSprite"
 const SVG_TEXTURE_LOADER = preload(
 	"res://game/modes/zombie/environment_texture_loader.gd"
 )
+const CONTENT_ALPHA_THRESHOLD := 0.08
 
 var animation_time: float = 0.0
 var glow_intensity: float = 1.0
@@ -80,6 +81,17 @@ func has_asset_sprite() -> bool:
 
 func uses_procedural_fallback() -> bool:
 	return procedural_fallback_active
+
+func get_asset_visual_bounds() -> Rect2:
+	if not has_asset_sprite():
+		return Rect2()
+	var texture_size := asset_sprite.texture.get_size()
+	var content_rect := _get_content_bounds(asset_sprite.texture)
+	return Rect2(
+		asset_sprite.position
+			+ (content_rect.position - texture_size * 0.5) * asset_sprite.scale.abs(),
+		content_rect.size * asset_sprite.scale.abs()
+	)
 
 func _draw() -> void:
 	var glow_alpha := (
@@ -161,17 +173,56 @@ func _position_asset_sprite() -> void:
 		return
 	var target_width := 64.0
 	var target_height := 52.0
+	var visual_scale := EnvironmentAssetManifest.get_shared().get_visual_scale(
+		SUPPLY_CRATE_ASSET_ID
+	)
 	var scale_factor := minf(
-		target_width / texture_size.x,
-		target_height / texture_size.y
+		target_width * visual_scale / texture_size.x,
+		target_height * visual_scale / texture_size.y
 	)
 	var min_scale := 0.25 if asset_path.ends_with(".svg") else 0.04
 	asset_sprite.scale = Vector2.ONE * clampf(scale_factor, min_scale, 1.25)
-	var visual_size := Vector2(
-		texture_size.x * asset_sprite.scale.x,
-		texture_size.y * asset_sprite.scale.y
+	var content_rect := _get_content_bounds(asset_sprite.texture)
+	var canvas_center := texture_size * 0.5
+	var content_center_x := content_rect.get_center().x
+	var content_bottom := content_rect.end.y
+	asset_sprite.position = Vector2(
+		-(content_center_x - canvas_center.x) * asset_sprite.scale.x,
+		18.0 - (content_bottom - canvas_center.y) * asset_sprite.scale.y
 	)
-	asset_sprite.position = Vector2(0.0, 18.0 - visual_size.y * 0.5)
+
+func _get_content_bounds(texture: Texture2D) -> Rect2:
+	var texture_size := texture.get_size()
+	var fallback := Rect2(Vector2.ZERO, texture_size)
+	var image := texture.get_image()
+	if image == null or image.is_empty():
+		return fallback
+	if image.is_compressed():
+		image = image.duplicate()
+		image.decompress()
+	var width := image.get_width()
+	var height := image.get_height()
+	var step := maxi(1, int(round(maxf(float(width), float(height)) / 256.0)))
+	var min_x := width
+	var min_y := height
+	var max_x := -1
+	var max_y := -1
+	for y in range(0, height, step):
+		for x in range(0, width, step):
+			if image.get_pixel(x, y).a <= CONTENT_ALPHA_THRESHOLD:
+				continue
+			min_x = mini(min_x, x)
+			min_y = mini(min_y, y)
+			max_x = maxi(max_x, x)
+			max_y = maxi(max_y, y)
+	if max_x < min_x or max_y < min_y:
+		return fallback
+	var bounds_min := Vector2i(maxi(min_x - step, 0), maxi(min_y - step, 0))
+	var bounds_max := Vector2i(
+		mini(max_x + step, width - 1),
+		mini(max_y + step, height - 1)
+	)
+	return Rect2(bounds_min, bounds_max - bounds_min + Vector2i.ONE)
 
 func _update_asset_modulate() -> void:
 	if asset_sprite == null:
