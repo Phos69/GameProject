@@ -252,14 +252,4 @@ func _normalize_fall_side(value: StringName) -> StringName:
 	return &"west"
 
 func _edge_color_for_style() -> Color:
-	match fall_style:
-		&"toxic_cliff":
-			return Color(edge_color.lightened(0.10), 0.92)
-		&"lava_cliff":
-			return Color(0.98, 0.30, 0.10, 0.92)
-		&"ice_cliff":
-			return Color(0.54, 0.82, 0.96, 0.92)
-		&"marsh_cliff":
-			return Color(0.22, 0.56, 0.50, 0.92)
-		_:
-			return edge_color
+	return TopDownCliffRenderer.edge_color_for_style(fall_style, edge_color)

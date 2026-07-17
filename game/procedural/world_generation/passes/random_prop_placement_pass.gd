@@ -199,7 +199,7 @@ func _scan_rect_for_footprint(
 
 func _can_place(layout: BiomeEnvironmentLayout, rect: Rect2i) -> bool:
 	var padded := GeometryUtils.inflate_rect(rect, GAP)
-	if _intersects_route(layout, padded):
+	if layout.rect_intersects_route(padded):
 		return false
 	if layout.rect_overlaps_passage_corridor(padded):
 		return false
@@ -222,17 +222,6 @@ func _can_place(layout: BiomeEnvironmentLayout, rect: Rect2i) -> bool:
 	if rect.intersects(spawn_clearance):
 		return false
 	return _rect_is_final_floor(layout, rect)
-
-
-func _intersects_route(layout: BiomeEnvironmentLayout, rect: Rect2i) -> bool:
-	if GeometryUtils.intersects_any(rect, layout.road_rects):
-		return true
-	var clipped := GeometryUtils.clip_rect(rect, layout.zone_size)
-	for y in range(clipped.position.y, clipped.end.y):
-		for x in range(clipped.position.x, clipped.end.x):
-			if layout.has_road_cell(Vector2i(x, y)):
-				return true
-	return false
 
 
 func _rect_is_final_floor(layout: BiomeEnvironmentLayout, rect: Rect2i) -> bool:

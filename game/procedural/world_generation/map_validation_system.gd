@@ -392,7 +392,7 @@ func _find_route_obstacle_overlaps(
 		if GeometryUtils.intersects_any(obstacle_rect, layout.road_rects):
 			failures.append("obstacle_on_route:%d" % obstacle_index)
 			continue
-		if _rect_overlaps_road_cells(layout, obstacle_rect):
+		if layout.rect_overlaps_road_cells(obstacle_rect):
 			failures.append("obstacle_on_route_cell:%d" % obstacle_index)
 	return failures
 
@@ -460,18 +460,6 @@ func _cell_inside_non_bridge_hazard(
 		if hazard_id == &"deep_water" and layout.is_bridge_cell(cell):
 			continue
 		return true
-	return false
-
-func _rect_overlaps_road_cells(
-	layout: BiomeEnvironmentLayout,
-	rect: Rect2i
-) -> bool:
-	var clipped := GeometryUtils.clip_rect(rect, layout.zone_size)
-	for key_value in layout.road_cell_tags.keys():
-		var key := int(key_value)
-		var cell := Vector2i(key % layout.zone_size.x, int(key / layout.zone_size.x))
-		if clipped.has_point(cell):
-			return true
 	return false
 
 func _rect_intersects_blocking_hazard(

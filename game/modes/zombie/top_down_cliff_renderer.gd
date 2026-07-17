@@ -405,10 +405,12 @@ func _depth_color_for_style() -> Color:
 		_:
 			return depth_color
 
-func _edge_color_for_style() -> Color:
-	match fall_style:
+# Palette unica della cresta per stile di dirupo: usata anche da BiomeFallZone,
+# che prima ne teneva una copia identica.
+static func edge_color_for_style(style: StringName, base_edge_color: Color) -> Color:
+	match style:
 		&"toxic_cliff":
-			return Color(edge_color.lightened(0.10), 0.92)
+			return Color(base_edge_color.lightened(0.10), 0.92)
 		&"lava_cliff":
 			return Color(0.98, 0.30, 0.10, 0.92)
 		&"ice_cliff":
@@ -416,7 +418,10 @@ func _edge_color_for_style() -> Color:
 		&"marsh_cliff":
 			return Color(0.22, 0.56, 0.50, 0.92)
 		_:
-			return edge_color
+			return base_edge_color
+
+func _edge_color_for_style() -> Color:
+	return edge_color_for_style(fall_style, edge_color)
 
 func _asset_path_exists(asset_path: String) -> bool:
 	if asset_path.is_empty():
