@@ -26,6 +26,20 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Changed
 
+- Deduplicazione dei gruppi P1 del report `docs/repo_health_report_2026-07-17.md`
+  (solo refactor, nessun cambio di comportamento; suite completa 307/307):
+  - nuovo `game/core/context_utils.gd` al posto delle copie private di
+    `_get_context_bool`/`_get_context_string`/`_has_context_key`;
+  - nuovo `game/core/geometry_utils.gd` (`clip_rect`, `inflate_rect`,
+    `intersects_any`, `ellipse_points`) al posto di 25 copie private in
+    generatori, pass di placement e visual; le query di piazzamento
+    condivise (`rect_intersects_route`, `rect_overlaps_passage_corridor`,
+    `rect_overlaps_road_cells`) sono ora metodi di
+    `BiomeEnvironmentLayout` e l'ancora d'imbocco dei passaggi e'
+    `BiomePassage.edge_anchor_cell`;
+  - nuova base `BiomeZoneArea` condivisa da `BiomeFallZone` e
+    `BiomeHazardZone` (test punto/distanza e collisione rettangolare).
+
 - Corretta la copertura hitbox dei dieci raster della Pianura Infetta senza
   stretch: `small_rock`, `broken_fence`, `wood_barrier`, `fallen_log` e
   `abandoned_car` ricevono scale uniformi puntuali; quella del tronco resta
