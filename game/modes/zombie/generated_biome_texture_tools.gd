@@ -3,6 +3,8 @@ class_name GeneratedBiomeTextureTools
 
 const GENERATED_SURFACE_TEXTURE_EDGE_TRIM_PIXELS := 2
 const GENERATED_CLIFF_TEXTURE_EDGE_TRIM_PIXELS := 12
+const INFECTED_PLAINS_SURFACE_EDGE_TRIM_PIXELS := 40
+const INFECTED_PLAINS_SURFACE_EDGE_BLEND_PIXELS := 8
 const BURNING_FIELDS_GENERATED_TEXTURE_EDGE_TRIM_PIXELS := 10
 const BURNING_FIELDS_EDGE_BLEND_PIXELS := 18
 const BURNING_SURFACE_EDGE_BLEND_PIXELS := 40
@@ -48,7 +50,7 @@ const SWAMP_CLIFF_TEXTURE_DOWNSCALE := 0.45
 # dominanza arancio, lasciando lava feature e path intatti.
 const VOLCANIC_EMBER_THRESHOLD := 0.18
 const VOLCANIC_EMBER_DAMPING := 0.34
-const SURFACE_NORMALIZATION_CACHE_REVISION := "surface-v4-offset-rotated-macro"
+const SURFACE_NORMALIZATION_CACHE_REVISION := "surface-v6-forest-shadow-crop"
 
 # Cache di sessione delle texture normalizzate, keyed su asset_path + parametri.
 # La normalizzazione gira pixel-per-pixel in GDScript: senza cache veniva rifatta
@@ -65,6 +67,11 @@ static func get_cached_normalized_texture_count() -> int:
 	return _normalized_texture_cache.size()
 
 static func surface_edge_trim_pixels(biome_id: StringName) -> int:
+	if biome_id == &"infected_plains":
+		# The three forest surface PNGs contain a broad baked shadow around their
+		# perimeter. Removing the full band prevents two dark edges from forming a
+		# visible line when the unchanged tile repeats vertically or horizontally.
+		return INFECTED_PLAINS_SURFACE_EDGE_TRIM_PIXELS
 	if biome_id == &"burning_fields":
 		return BURNING_FIELDS_GENERATED_TEXTURE_EDGE_TRIM_PIXELS
 	return GENERATED_SURFACE_TEXTURE_EDGE_TRIM_PIXELS
@@ -76,7 +83,8 @@ static func should_harmonize_surface_edges(biome_id: StringName) -> bool:
 	# I raster generati non sono perfettamente tileable: senza armonizzazione la
 	# differenza fra bordi opposti diventa una banda a ogni repeat world-UV.
 	return (
-		biome_id == &"burning_fields"
+		biome_id == &"infected_plains"
+		or biome_id == &"burning_fields"
 		or biome_id == &"drowned_marsh"
 		or biome_id == &"frozen_outskirts"
 		or biome_id == &"toxic_wastes"
@@ -92,6 +100,8 @@ static func cliff_texture_downscale(biome_id: StringName) -> float:
 
 static func surface_edge_blend_pixels(biome_id: StringName) -> int:
 	match biome_id:
+		&"infected_plains":
+			return INFECTED_PLAINS_SURFACE_EDGE_BLEND_PIXELS
 		&"burning_fields":
 			return BURNING_SURFACE_EDGE_BLEND_PIXELS
 		&"drowned_marsh":
@@ -125,9 +135,7 @@ static func normalize_surface_texture(
 		should_harmonize_surface_edges(biome_id),
 		surface_edge_blend_pixels(biome_id)
 	)
-	if _surface_uses_offset_macro_atlas(biome_id, asset_path):
-		normalized = build_offset_ground_macro_texture(normalized, "", true)
-	elif _surface_uses_mirrored_atlas(biome_id, asset_path):
+	if _surface_uses_mirrored_atlas(biome_id, asset_path):
 		normalized = _build_mirrored_repeat_atlas(normalized)
 	if biome_id == &"frozen_outskirts":
 		normalized = _harmonize_frozen_surface_texture(normalized, asset_path)
@@ -416,17 +424,13 @@ static func normalize_repeating_texture(
 
 static func build_offset_ground_macro_texture(
 	base_texture: Texture2D,
-	cache_key: String = "",
-	use_rotated_variants: bool = false
+	cache_key: String = ""
 ) -> Texture2D:
 	if base_texture == null:
 		return base_texture
 	var full_key := ""
 	if not cache_key.is_empty():
-		full_key = "offset_ground_macro|%s|rotated=%s" % [
-			cache_key,
-			str(use_rotated_variants),
-		]
+		full_key = "offset_ground_macro|%s" % cache_key
 		if _normalized_texture_cache.has(full_key):
 			return _normalized_texture_cache[full_key] as Texture2D
 	var base := _readable_texture_image(base_texture)
@@ -440,23 +444,16 @@ static func build_offset_ground_macro_texture(
 		false,
 		Image.FORMAT_RGBA8
 	)
-	var top_right_source := base
-	var bottom_left_source := base
-	var bottom_right_source := base
-	if use_rotated_variants and tile_size.x == tile_size.y:
-		top_right_source = _rotate_image_clockwise(base)
-		bottom_left_source = _rotate_image_clockwise(top_right_source)
-		bottom_right_source = _rotate_image_clockwise(bottom_left_source)
 	var base_top_right := _offset_periodic_image(
-		top_right_source,
+		base,
 		Vector2i(tile_size.x / 3, tile_size.y / 7)
 	)
 	var base_bottom_left := _offset_periodic_image(
-		bottom_left_source,
+		base,
 		Vector2i(tile_size.x * 2 / 3, tile_size.y * 3 / 5)
 	)
 	var base_bottom_right := _offset_periodic_image(
-		bottom_right_source,
+		base,
 		Vector2i(tile_size.x / 5, tile_size.y * 2 / 5)
 	)
 	var source_rect := Rect2i(Vector2i.ZERO, tile_size)
@@ -628,24 +625,6 @@ static func _offset_periodic_image(
 	)
 	return result
 
-static func _rotate_image_clockwise(source: Image) -> Image:
-	if source == null or source.is_empty():
-		return Image.new()
-	var result := Image.create(
-		source.get_height(),
-		source.get_width(),
-		false,
-		source.get_format()
-	)
-	for y in range(source.get_height()):
-		for x in range(source.get_width()):
-			result.set_pixel(
-				source.get_height() - y - 1,
-				x,
-				source.get_pixel(x, y)
-			)
-	return result
-
 static func _blit_positive_rect(
 	target: Image,
 	source: Image,
@@ -744,19 +723,6 @@ static func _surface_uses_mirrored_atlas(
 			or asset_path.contains("path_variation")
 			or asset_path.contains("road_variation")
 			or asset_path.contains("road_border_defined")
-		)
-	)
-
-static func _surface_uses_offset_macro_atlas(
-	biome_id: StringName,
-	asset_path: String
-) -> bool:
-	return (
-		biome_id == &"infected_plains"
-		and (
-			asset_path.contains("forest_grass_generated")
-			or asset_path.contains("forest_dirt_path_generated")
-			or asset_path.contains("forest_asphalt_generated")
 		)
 	)
 

@@ -227,8 +227,11 @@ definito in `docs/top_down_cardinal_contract.md`.
 - `GeneratedBiomeTextureTools`: normalizzazione condivisa dei PNG generati usati
   in repeat runtime; applica crop dei bordi chiari, fix dei pixel alpha e la
   stessa policy a ground, cliff/void e raised cliff perimetrali. Per
-  `infected_plains` compone un atlas `2x2` non simmetrico da copie traslate e
-  ruotate, con blend ampio; `toxic_wastes` usa invece un atlas specchiato a densita nativa,
+  `infected_plains` rimuove la vignettatura incorporata con crop perimetrale di
+  40 px e blend dei bordi opposti di 8 px, poi conserva erba, sentiero e asfalto
+  nel loro orientamento originale e li ripete direttamente, senza atlas,
+  specchi o rotazioni;
+  `toxic_wastes` usa invece un atlas specchiato a densita nativa,
   mentre `frozen_outskirts` e `drowned_marsh` compongono quilt `2x2` da offset
   dello stesso raster base. `burning_fields` armonizza i
   bordi opposti del raster originale prima di rigenerare le mipmap. La

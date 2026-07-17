@@ -50,7 +50,6 @@ const FOREST_PATH_TEXTURE_ID := &"forest_path"
 const FOREST_ROAD_TEXTURE_ID := &"forest_road"
 const TERRAIN_DIVIDER_TEXTURE_ID := &"terrain_divider_dirt"
 const FOREST_SURFACE_TEXTURE_WORLD_SIZE := 256.0
-const FOREST_MACRO_SURFACE_TEXTURE_WORLD_SIZE := 512.0
 const TERRAIN_DIVIDER_TEXTURE_WORLD_SIZE := 256.0
 const TOXIC_SURFACE_TEXTURE_WORLD_SIZE := 1024.0
 const FROZEN_SURFACE_TEXTURE_WORLD_SIZE := 512.0
@@ -1736,10 +1735,6 @@ func _append_cliff_transition_mesh(
 	)
 
 func _forest_surface_texture_world_size(texture_id: StringName) -> float:
-	if _uses_forest_ground():
-		# The translated 2x2 atlas doubles the raster period. Doubling its world
-		# period preserves the original grass/dirt/asphalt texel density.
-		return FOREST_MACRO_SURFACE_TEXTURE_WORLD_SIZE
 	if _uses_generated_theme():
 		var texture_name := String(texture_id)
 		if biome_id == &"toxic_wastes":
@@ -1757,8 +1752,8 @@ func _forest_surface_texture_world_size(texture_id: StringName) -> float:
 	return FOREST_SURFACE_TEXTURE_WORLD_SIZE
 
 func _terrain_divider_texture_world_size() -> float:
-	# The forest divider aliases the macro path atlas; the other biomes retain
-	# the shared standalone divider and its historical 256-unit period.
+	# The forest divider aliases the original path tile; the other biomes retain
+	# the shared standalone divider. Both use the historical 256-unit period.
 	var divider_asset_path := String(
 		_forest_surface_art_asset_paths.get(TERRAIN_DIVIDER_TEXTURE_ID, "")
 	)

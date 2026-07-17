@@ -105,13 +105,27 @@ func test_forest_runtime_consumption() -> void:
 	)
 	assert_eq(
 		layer._cliff_border_mesh_builder.transition_texture_repeat_world_size,
-		BiomeTileLayer.FOREST_MACRO_SURFACE_TEXTURE_WORLD_SIZE,
+		BiomeTileLayer.FOREST_SURFACE_TEXTURE_WORLD_SIZE,
 		"forest cliff dirt uses the same world-space repeat as paths"
 	)
 	assert_eq(
 		layer._mesa_dirt_border_mesh_builder.transition_texture_repeat_world_size,
-		BiomeTileLayer.FOREST_MACRO_SURFACE_TEXTURE_WORLD_SIZE,
+		BiomeTileLayer.FOREST_SURFACE_TEXTURE_WORLD_SIZE,
 		"forest mesa dirt uses the same world-space repeat as paths"
+	)
+	assert_eq(
+		GeneratedBiomeTextureTools.surface_edge_trim_pixels(
+			BiomeTileResolver.FOREST_BIOME_ID
+		),
+		GeneratedBiomeTextureTools.INFECTED_PLAINS_SURFACE_EDGE_TRIM_PIXELS,
+		"forest surfaces crop the baked perimeter shadow"
+	)
+	assert_eq(
+		GeneratedBiomeTextureTools.surface_edge_blend_pixels(
+			BiomeTileResolver.FOREST_BIOME_ID
+		),
+		GeneratedBiomeTextureTools.INFECTED_PLAINS_SURFACE_EDGE_BLEND_PIXELS,
+		"forest surfaces use the selected narrow edge blend"
 	)
 	for asset_id in REQUIRED_FOREST_TERRAIN_ASSET_IDS:
 		var asset_path := String(paths.get(asset_id, ""))
@@ -138,33 +152,41 @@ func test_forest_runtime_consumption() -> void:
 			"forest %s imported source exists" % String(texture_id)
 		)
 		if imported_texture != null:
+			var forest_trim := (
+				GeneratedBiomeTextureTools.INFECTED_PLAINS_SURFACE_EDGE_TRIM_PIXELS
+			)
+			var expected_texture := (
+				GeneratedBiomeTextureTools.normalize_repeating_texture(
+					imported_texture,
+					forest_trim,
+					true,
+					GeneratedBiomeTextureTools.INFECTED_PLAINS_SURFACE_EDGE_BLEND_PIXELS
+				)
+			)
 			assert_eq(
 				runtime_texture.get_width(),
-				(
-					imported_texture.get_width()
-					- GeneratedBiomeTextureTools.GENERATED_SURFACE_TEXTURE_EDGE_TRIM_PIXELS * 2
-				) * 2,
-				"forest %s builds a trimmed translated 2x atlas" % String(texture_id)
+				imported_texture.get_width() - forest_trim * 2,
+				"forest %s crops the full shadow band without an atlas" % String(texture_id)
 			)
-		assert_lte(
-			_edge_seam_score(runtime_texture.get_image()),
-			0.04,
-			"forest %s blends opposite repeat edges" % String(texture_id)
-		)
-		assert_lte(
-			_internal_half_seam_score(runtime_texture.get_image()),
-			0.04,
-			"forest %s blends the internal atlas join" % String(texture_id)
-		)
-		assert_gt(
-			_mirror_symmetry_difference_score(runtime_texture.get_image()),
-			0.015,
-			"forest %s macro atlas is not mirrored" % String(texture_id)
-		)
+			assert_lte(
+				_image_rgb_difference_score(
+					runtime_texture.get_image(),
+					expected_texture.get_image()
+				),
+				0.0001,
+				"forest %s repeats the normalized source without transforms"
+				% String(texture_id)
+			)
+			assert_lte(
+				absf(_vertical_texture_shadow_score(runtime_texture.get_image())),
+				0.015,
+				"forest %s has no visible top/bottom shadow band"
+				% String(texture_id)
+			)
 		assert_eq(
 			layer._forest_surface_texture_world_size(texture_id),
-			BiomeTileLayer.FOREST_MACRO_SURFACE_TEXTURE_WORLD_SIZE,
-			"forest %s preserves texel density with a doubled repeat" % String(texture_id)
+			BiomeTileLayer.FOREST_SURFACE_TEXTURE_WORLD_SIZE,
+			"forest %s repeats the original tile at the historical period" % String(texture_id)
 		)
 	assert_true(layer.has_cliff_art_textures(), "forest tile layer loads grass-cliff edge")
 	assert_gt(layer.get_cliff_transition_count(), 0, "forest void builds textured cliff transitions")
@@ -2901,29 +2923,46 @@ func _half_period_rgb_difference_score(image: Image) -> float:
 			samples += 2
 	return total / float(maxi(samples, 1))
 
-func _mirror_symmetry_difference_score(image: Image) -> float:
-	if image == null or image.is_empty():
-		return 0.0
-	var half_width := image.get_width() / 2
-	var half_height := image.get_height() / 2
-	if half_width <= 0 or half_height <= 0:
-		return 0.0
-	var step := maxi(mini(half_width, half_height) / 96, 1)
+func _image_rgb_difference_score(first: Image, second: Image) -> float:
+	if first == null or second == null or first.is_empty() or second.is_empty():
+		return 1.0
+	if first.get_size() != second.get_size():
+		return 1.0
+	var step := maxi(mini(first.get_width(), first.get_height()) / 128, 1)
 	var total := 0.0
 	var samples := 0
-	for y in range(0, image.get_height(), step):
-		for x in range(0, half_width, step):
-			total += _rgb_delta(
-				image.get_pixel(x, y),
-				image.get_pixel(image.get_width() - 1 - x, y)
-			)
+	for y in range(0, first.get_height(), step):
+		for x in range(0, first.get_width(), step):
+			total += _rgb_delta(first.get_pixel(x, y), second.get_pixel(x, y))
 			samples += 1
-	for y in range(0, half_height, step):
-		for x in range(0, image.get_width(), step):
-			total += _rgb_delta(
-				image.get_pixel(x, y),
-				image.get_pixel(x, image.get_height() - 1 - y)
-			)
+	return total / float(maxi(samples, 1))
+
+func _vertical_texture_shadow_score(image: Image) -> float:
+	if image == null or image.is_empty():
+		return 1.0
+	var width := image.get_width()
+	var height := image.get_height()
+	var band_height := mini(32, height / 4)
+	var center_luma := _image_rect_luminance(
+		image,
+		Rect2i(0, height / 4, width, height / 2)
+	)
+	var top_luma := _image_rect_luminance(
+		image,
+		Rect2i(0, 0, width, band_height)
+	)
+	var bottom_luma := _image_rect_luminance(
+		image,
+		Rect2i(0, height - band_height, width, band_height)
+	)
+	return center_luma - (top_luma + bottom_luma) * 0.5
+
+func _image_rect_luminance(image: Image, rect: Rect2i) -> float:
+	var total := 0.0
+	var samples := 0
+	for y in range(rect.position.y, rect.end.y):
+		for x in range(rect.position.x, rect.end.x):
+			total += image.get_pixel(x, y).get_luminance()
 			samples += 1
 	return total / float(maxi(samples, 1))
 

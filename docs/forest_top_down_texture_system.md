@@ -85,7 +85,11 @@ biomi continuano a usare `terrain_divider_dirt_generated.png` come materiale
 condiviso. `TerrainSurfaceCanvas` campiona il sottorettangolo regionale di ogni
 chunk con UV world-space e lo shader compone il divisore sopra le texture.
 Non servono piu core, edge, rotazioni o corner raster per unire path, road ed
-erba; i relativi asset storici restano solo per confronto e QA.
+erba. I tre raster di superficie vengono ripetuti nel loro orientamento
+originale, senza atlas, specchi o rotazioni. Prima delle mipmap il runtime
+ritaglia 40 px per lato per rimuovere la vignettatura scura incorporata nei PNG
+e armonizza gli 8 px esterni dei bordi opposti; i relativi asset storici
+restano solo per confronto e QA.
 
 ## Regole di risoluzione
 
@@ -151,6 +155,8 @@ bordo di caduta. Il sistema non crea nodi per tile.
   erba, sentieri e asfalto forestali full-bleed, non floor generico.
 - Verificare che il divisore di terra sia continuo sui contatti grass/path,
   grass/asphalt e path/asphalt, inclusi curve, incroci e confini di chunk.
+- Controllare tre repeat verticali consecutivi di erba e sentiero: il contatto
+  fra bordo inferiore e superiore non deve mostrare una fascia d'ombra.
 - Confrontare sentiero e divisore della Pianura Infetta: terra, pietre, scala e
   densita dei dettagli devono coincidere anche attorno a cliff e mesa.
 - Verificare che core, edge e corner del vecchio bordo strada non compaiano e

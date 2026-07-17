@@ -26,16 +26,17 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Fixed
 
+- Erba, sentiero e asfalto della Pianura Infetta tornano a ripetere direttamente
+  il raster normalizzato originale a periodo 256, senza atlas macro, specchi o
+  rotazioni introdotti dalla precedente riscrittura delle superfici. La
+  normalizzazione applica ora il crop perimetrale scelto di 40 px e un blend
+  stretto di 8 px, eliminando la fascia d'ombra incorporata ai bordi dei PNG.
+
 - La corona tecnica tra una route e una `fall_zone` usa ora la superficie dirt
   tematizzata invece del grass, senza cambiare collisioni o caduta.
 - I lotti mesa usano dirt come base su tutte le celle non-route; la corona resta
   opaca fino alla base rocciosa e copre i cut-out degli angoli convessi con la
   stessa segmentazione della mesh, eliminando fasce e raccordi d'erba.
-- Le texture ripetute di erba, sentiero e strada della Pianura Infetta passano
-  ora da un atlas `2x2` non simmetrico: quattro copie traslate e ruotate, blend
-  ampio delle giunzioni, mipmap e periodo world-space raddoppiato eliminano
-  cuciture ed effetto caleidoscopio mantenendo invariata la densita dei dettagli.
-
 - La schivata diretta dentro una fall zone completa ora sempre la distanza del
   roll invece di fermarsi o usare il fallback corto; al termine il player
   rivaluta il void e avvia normalmente la caduta.
