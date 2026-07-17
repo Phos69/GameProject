@@ -65,6 +65,11 @@ var _loading_screen: CanvasLayer
 # the gameplay layer (waves/enemies/players) resets, so retry is instant.
 var _world_parked: bool = false
 var _built_context_signature: String = ""
+# Incrementato a ogni start_run/stop_run: le coroutine dell'avvio async
+# confrontano il valore catturato dopo ogni await e si abbandonano se nel
+# frattempo la run e' stata fermata o riavviata (altrimenti applicherebbero
+# mondo e run_started a una modalita' gia' ferma).
+var _run_generation: int = 0
 
 static func get_void_background_color(palette: BiomePalette) -> Color:
 	if palette == null:
@@ -77,6 +82,7 @@ func _ready() -> void:
 	_connect_biome_manager()
 
 func start_run(context: Dictionary = {}) -> void:
+	_run_generation += 1
 	_resolve_components()
 	var resolved_context := _resolve_survival_world_context(context)
 	var signature := _context_signature(resolved_context)
@@ -178,6 +184,7 @@ func _start_run_sync(resolved_context: Dictionary) -> void:
 	_emit_run_started()
 
 func _start_run_async(resolved_context: Dictionary) -> void:
+	var generation := _run_generation
 	_show_loading_screen("Preparazione mondo")
 	_set_loading_phase("Preparazione mondo", 0.0, 0.1)
 	# Pre-warm shared, lazily-loaded resources on the main thread so the worker
@@ -193,16 +200,25 @@ func _start_run_async(resolved_context: Dictionary) -> void:
 		# thread generates the (CPU-heavy) world data.
 		while thread.is_alive():
 			await get_tree().process_frame
+		# Raccogliere sempre il thread, anche quando la run e' stata annullata.
 		var world_data: Dictionary = thread.wait_to_finish()
+		if generation != _run_generation:
+			return
 		biome_manager.apply_world_data(world_data)
+	if generation != _run_generation:
+		return
 	_set_loading_phase("Costruzione terreno", 0.6, 0.92)
 	if terrain_generator != null:
 		terrain_generator.async_tile_build = true
 	_finish_start_run(resolved_context)
 	if terrain_generator != null:
 		terrain_generator.async_tile_build = false
-	await _await_active_tile_build()
-	await _await_streaming_readiness()
+	await _await_active_tile_build(generation)
+	if generation != _run_generation:
+		return
+	await _await_streaming_readiness(generation)
+	if generation != _run_generation:
+		return
 	_complete_loading_screen()
 	_hide_loading_screen()
 	_emit_run_started()
@@ -212,21 +228,22 @@ func _threaded_generate_world(resolved_context: Dictionary) -> Dictionary:
 		return {}
 	return biome_manager.generate_world_data(resolved_context)
 
-func _await_active_tile_build() -> void:
+func _await_active_tile_build(generation: int) -> void:
 	if terrain_generator == null:
 		return
 	var tile_layer = terrain_generator.get_active_tile_layer()
 	# Poll (rather than awaiting the signal) to avoid a missed-signal race if the
 	# bake finishes between the check and the await.
 	while (
-		tile_layer != null
+		generation == _run_generation
+		and tile_layer != null
 		and is_instance_valid(tile_layer)
 		and tile_layer.has_method("is_building")
 		and bool(tile_layer.call("is_building"))
 	):
 		await get_tree().process_frame
 
-func _await_streaming_readiness() -> void:
+func _await_streaming_readiness(generation: int) -> void:
 	if (
 		not region_streaming_enabled_for_run
 		or world_region_streamer == null
@@ -236,7 +253,7 @@ func _await_streaming_readiness() -> void:
 	):
 		return
 	world_region_streamer.prepare_area()
-	while not world_region_streamer.is_area_ready():
+	while generation == _run_generation and not world_region_streamer.is_area_ready():
 		await get_tree().process_frame
 
 func _finish_start_run(resolved_context: Dictionary) -> void:
@@ -324,6 +341,9 @@ func _get_context_bool(
 # entities (enemies, players) are reset by the mode's own stop/start and by
 # ProgressionManager on game_mode_started, not by the world teardown.
 func stop_run(keep_world: bool = false) -> void:
+	# Invalida un eventuale avvio async in corso: la coroutine si abbandona al
+	# prossimo checkpoint invece di applicare il mondo a una run ferma.
+	_run_generation += 1
 	_hide_loading_screen()
 	if terrain_generator != null:
 		terrain_generator.async_tile_build = false
