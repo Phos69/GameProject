@@ -50,6 +50,7 @@ const FOREST_PATH_TEXTURE_ID := &"forest_path"
 const FOREST_ROAD_TEXTURE_ID := &"forest_road"
 const TERRAIN_DIVIDER_TEXTURE_ID := &"terrain_divider_dirt"
 const FOREST_SURFACE_TEXTURE_WORLD_SIZE := 256.0
+const FOREST_MACRO_SURFACE_TEXTURE_WORLD_SIZE := 512.0
 const TERRAIN_DIVIDER_TEXTURE_WORLD_SIZE := 256.0
 const TOXIC_SURFACE_TEXTURE_WORLD_SIZE := 1024.0
 const FROZEN_SURFACE_TEXTURE_WORLD_SIZE := 512.0
@@ -506,6 +507,11 @@ func get_mesa_area_counts() -> Dictionary:
 		),
 		"dirt_corners": (
 			_mesa_dirt_border_mesh_builder.terrain_transition_corner_count
+			if _mesa_dirt_border_mesh_builder != null
+			else 0
+		),
+		"dirt_inset_corners": (
+			_mesa_dirt_border_mesh_builder.mesa_inset_corner_patch_count
 			if _mesa_dirt_border_mesh_builder != null
 			else 0
 		),
@@ -1106,12 +1112,9 @@ func _load_forest_surface_art_textures() -> void:
 		_forest_surface_art_asset_paths[texture_id] = asset_path
 		if asset_path.is_empty():
 			continue
-		var texture := SVG_TEXTURE_LOADER.load_texture(
-			asset_path,
-			palette.floor_color if palette != null else Color(0.26, 0.40, 0.18, 1.0),
-			palette.alternate_floor_color if palette != null else Color(0.18, 0.30, 0.14, 1.0),
-			Vector2i(512, 512)
-		)
+		# Forest PNGs share the generated-surface repeat contract. Normalizing them
+		# here removes the luminance jump between opposite edges before mipmaps.
+		var texture := _load_generated_surface_texture(asset_path)
 		if texture != null:
 			_register_surface_texture(texture_id, asset_path, texture)
 	_load_terrain_divider_texture()
@@ -1713,6 +1716,10 @@ func _append_cliff_transition_mesh(
 	)
 
 func _forest_surface_texture_world_size(texture_id: StringName) -> float:
+	if _uses_forest_ground():
+		# The translated 2x2 atlas doubles the raster period. Doubling its world
+		# period preserves the original grass/dirt/asphalt texel density.
+		return FOREST_MACRO_SURFACE_TEXTURE_WORLD_SIZE
 	if _uses_generated_theme():
 		var texture_name := String(texture_id)
 		if biome_id == &"toxic_wastes":

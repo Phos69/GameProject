@@ -60,8 +60,12 @@ func _run() -> void:
 	var counts := layer.get_mesa_area_counts()
 	_expect(int(counts.get("areas", 0)) == 2, "both rock areas are reported")
 	_expect(
-		int(counts.get("faces", 0)) == 6,
-		"both plateau definitions report three visible faces"
+		int(counts.get("faces", 0)) == 34,
+		"both plateau definitions report rounded visible wall segments"
+	)
+	_expect(
+		int(counts.get("dirt_inset_corners", 0)) == 8,
+		"both plateau dirt crowns fill their four rounded base cut-outs"
 	)
 	await _add_mesas_and_occlusion_probes(scene_root, layout, biome)
 	_add_labels(scene_root)
@@ -143,7 +147,10 @@ func _add_mesas_and_occlusion_probes(
 		_expect(rock.has_mesa_visual(), "rock %d owns its raised local mesh" % index)
 		var geometry := rock.get_mesa_geometry_counts()
 		_expect(int(geometry.get("areas", 0)) == 1, "rock %d owns one crown" % index)
-		_expect(int(geometry.get("faces", 0)) == 3, "rock %d owns three faces" % index)
+		_expect(
+			int(geometry.get("faces", 0)) == 17,
+			"rock %d owns rounded visible wall segments" % index
+		)
 		_expect(
 			rock.global_position.is_equal_approx(layout_center),
 			"rock %d visual remains on the layout center" % index

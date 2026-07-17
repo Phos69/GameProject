@@ -275,6 +275,94 @@ func test_mask_resolution_and_rgb_weights_include_void() -> void:
 	)
 
 
+func test_fall_zone_technical_rim_uses_dirt_between_road_and_void() -> void:
+	var layout := _new_floor_layout(Vector2i(3, 1), 41008)
+	layout.initialize_parcel_map()
+	layout.register_parcel(
+		BiomeEnvironmentLayout.PARCEL_FALL_ZONE,
+		[Vector2i(1, 0), Vector2i(2, 0)],
+		Rect2i(Vector2i(1, 0), Vector2i(2, 1))
+	)
+	layout.add_road_cell(Vector2i(0, 0), &"main_road")
+	layout.add_fall_zone_rect(Rect2i(Vector2i(2, 0), Vector2i.ONE), &"internal")
+	layout.rebuild_terrain_classification()
+
+	var mask_data := BOUNDARY_MASK_BUILDER.build(layout, _resolver)
+	var image := mask_data.get("image") as Image
+	assert_eq(
+		BOUNDARY_MASK_BUILDER.surface_kind_at_cell(
+			mask_data,
+			layout.zone_size,
+			Vector2i(0, 0)
+		),
+		SURFACE_CLASSIFIER.SURFACE_ASPHALT,
+		"the road remains asphalt"
+	)
+	assert_eq(
+		BOUNDARY_MASK_BUILDER.surface_kind_at_cell(
+			mask_data,
+			layout.zone_size,
+			Vector2i(1, 0)
+		),
+		SURFACE_CLASSIFIER.SURFACE_PATH,
+		"the walkable fall-zone rim uses the dirt/path material"
+	)
+	assert_eq(
+		BOUNDARY_MASK_BUILDER.surface_kind_at_cell(
+			mask_data,
+			layout.zone_size,
+			Vector2i(2, 0)
+		),
+		SURFACE_CLASSIFIER.SURFACE_VOID,
+		"the fall-zone interior remains void"
+	)
+	_assert_cell_rgb(image, Vector2i(1, 0), Vector3i(0, 255, 0),
+		"the rim encodes the dirt/path texture in the green channel")
+
+
+func test_mesa_parcel_uses_dirt_without_overriding_routes() -> void:
+	var layout := _new_floor_layout(Vector2i(4, 1), 41009)
+	layout.initialize_parcel_map()
+	layout.register_parcel(
+		BiomeEnvironmentLayout.PARCEL_MESA,
+		[Vector2i(1, 0), Vector2i(2, 0)],
+		Rect2i(Vector2i(1, 0), Vector2i(2, 1))
+	)
+	layout.register_parcel(
+		BiomeEnvironmentLayout.PARCEL_CLEARING,
+		[Vector2i(3, 0)],
+		Rect2i(Vector2i(3, 0), Vector2i.ONE)
+	)
+	layout.add_road_cell(Vector2i(0, 0), &"main_road")
+	layout.add_road_cell(Vector2i(2, 0), &"main_road")
+	layout.rebuild_terrain_classification()
+
+	var mask_data := BOUNDARY_MASK_BUILDER.build(layout, _resolver)
+	var expected_kinds: Array[int] = [
+		SURFACE_CLASSIFIER.SURFACE_ASPHALT,
+		SURFACE_CLASSIFIER.SURFACE_PATH,
+		SURFACE_CLASSIFIER.SURFACE_ASPHALT,
+		SURFACE_CLASSIFIER.SURFACE_GRASS,
+	]
+	for x in range(expected_kinds.size()):
+		assert_eq(
+			BOUNDARY_MASK_BUILDER.surface_kind_at_cell(
+				mask_data,
+				layout.zone_size,
+				Vector2i(x, 0)
+			),
+			expected_kinds[x],
+			"mesa dirt applies only outside route cells at x=%d" % x
+		)
+	var image := mask_data.get("image") as Image
+	_assert_cell_rgb(
+		image,
+		Vector2i(1, 0),
+		Vector3i(0, 255, 0),
+		"the mesa parcel base encodes the dirt/path texture"
+	)
+
+
 func _new_floor_layout(size: Vector2i, seed: int) -> BiomeEnvironmentLayout:
 	var layout := BiomeEnvironmentLayout.new()
 	layout.zone_size = size

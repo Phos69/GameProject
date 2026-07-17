@@ -797,7 +797,8 @@ Identita dei biomi:
 - `forest_tree` e condiviso nei cinque biomi; le foreste riempiono gli slot
   validi salvo 1-2 corridoi larghi 2 tile, mentre le radure hanno 2-8 alberi e
   filari seed-based al 50%. Le `large_rock` sono i blocker tecnici della
-  montagna unica. Le mesa bloccano tutto il
+  montagna unica. Tutta la superficie non-route del lotto mesa usa dirt come
+  base, senza fasce d'erba fra sentieri e montagna. Le mesa bloccano tutto il
   relativo footprint per movimento e proiettili; gli alberi della Pianura
   Infetta hanno visuale raddoppiata e bloccano un cerchio alle radici largo
   quanto il footprint, cosi i filari di confine delle strade non lasciano
@@ -838,7 +839,8 @@ Regole hazard:
 
 - un lotto `fall_zone`, quando sorteggiato, converte l'interno e conserva una
   corona tecnica di una tile per cliff/lip; se l'inset e troppo piccolo il lotto
-  diventa una radura;
+  diventa una radura. La corona usa visivamente il dirt tematizzato del bioma,
+  non il grass, quando separa route e bordo di caduta;
 - la `Pianura Infetta` non aggiunge hazard statici oltre a fall zone e chasm;
   Tossico, Infuocato, Neve e Palude ne piazzano due per regione, scelti dal
   profilo (`toxic_puddle`/`gas_cloud`, `fire_zone`/`lava_crack`,
@@ -866,7 +868,9 @@ Regole hazard:
   strade, usa lo stesso spessore nominale: conserva un nucleo dirt opaco ben
   definito; un feather corto lo fonde sul margine della flat rock e uno esterno
   lo dissolve verso l'erba, continuando attorno agli angoli. Lo stesso contorno
-  dirt circonda a terra il footprint di ogni mesa tematizzata. Strade, mesa e
+  dirt circonda a terra il footprint di ogni mesa tematizzata. Sulle mesa la
+  corona parte dirt opaco contro la roccia e riempie anche il cut-out degli
+  angoli convessi, senza lasciare affiorare triangoli di grass. Strade, mesa e
   fall zone raccordano i cambi cardinali con angoli dirt rotondi, mantenendo
   invariati footprint e collisioni; quando due fall zone si toccano solo sul
   vertice, la roccia resta rettilinea, il solo dirt usa un raccordo compatto e

@@ -99,6 +99,50 @@ func test_forest_runtime_consumption() -> void:
 			and asset_path.ends_with(".png"),
 			"forest tile layer exposes %s generated path" % String(asset_id)
 		)
+	for texture_id in BiomeTileLayer.FOREST_SURFACE_TEXTURE_IDS:
+		var runtime_texture := (
+			layer._forest_surface_textures.get(texture_id) as Texture2D
+		)
+		assert_not_null(
+			runtime_texture,
+			"forest %s runtime surface exists" % String(texture_id)
+		)
+		if runtime_texture == null:
+			continue
+		var imported_texture := load(String(paths.get(texture_id, ""))) as Texture2D
+		assert_not_null(
+			imported_texture,
+			"forest %s imported source exists" % String(texture_id)
+		)
+		if imported_texture != null:
+			assert_eq(
+				runtime_texture.get_width(),
+				(
+					imported_texture.get_width()
+					- GeneratedBiomeTextureTools.GENERATED_SURFACE_TEXTURE_EDGE_TRIM_PIXELS * 2
+				) * 2,
+				"forest %s builds a trimmed translated 2x atlas" % String(texture_id)
+			)
+		assert_lte(
+			_edge_seam_score(runtime_texture.get_image()),
+			0.04,
+			"forest %s blends opposite repeat edges" % String(texture_id)
+		)
+		assert_lte(
+			_internal_half_seam_score(runtime_texture.get_image()),
+			0.04,
+			"forest %s blends the internal atlas join" % String(texture_id)
+		)
+		assert_gt(
+			_mirror_symmetry_difference_score(runtime_texture.get_image()),
+			0.015,
+			"forest %s macro atlas is not mirrored" % String(texture_id)
+		)
+		assert_eq(
+			layer._forest_surface_texture_world_size(texture_id),
+			BiomeTileLayer.FOREST_MACRO_SURFACE_TEXTURE_WORLD_SIZE,
+			"forest %s preserves texel density with a doubled repeat" % String(texture_id)
+		)
 	assert_true(layer.has_cliff_art_textures(), "forest tile layer loads grass-cliff edge")
 	assert_gt(layer.get_cliff_transition_count(), 0, "forest void builds textured cliff transitions")
 	var chunk := layer._chunk_nodes.get(Vector2i.ZERO) as BiomeTileChunk
@@ -1536,6 +1580,18 @@ func test_rectangular_border_meshes() -> void:
 		4,
 		"one mesa footprint receives four rounded dirt corners"
 	)
+	assert_eq(
+		mesa_outline_builder.mesa_inset_corner_patch_count,
+		4,
+		"dirt fills all four cut-outs left by the rounded mesa footprint"
+	)
+	assert_true(
+		_mesh_has_opaque_triangle_at(
+			mesa_outline_builder.terrain_transition_mesh,
+			Vector2(-31.4, -23.6)
+		),
+		"the rounded north-west mesa join cannot expose the grass underlay"
+	)
 	assert_true(
 		_mesh_has_uvs(mesa_outline_builder.terrain_transition_mesh),
 		"mesa dirt outline exposes the same world-space divider UVs"
@@ -2575,6 +2631,34 @@ func _transition_colors_fade_outward(colors: PackedColorArray) -> bool:
 		maximum_alpha = maxf(maximum_alpha, color.a)
 	return minimum_alpha <= 0.001 and maximum_alpha >= 0.80
 
+func _mesh_has_opaque_triangle_at(mesh: ArrayMesh, point: Vector2) -> bool:
+	if mesh == null or mesh.get_surface_count() <= 0:
+		return false
+	var arrays := mesh.surface_get_arrays(0)
+	var vertices := arrays[Mesh.ARRAY_VERTEX] as PackedVector2Array
+	var colors := arrays[Mesh.ARRAY_COLOR] as PackedColorArray
+	var indices := arrays[Mesh.ARRAY_INDEX] as PackedInt32Array
+	if colors.size() != vertices.size() or indices.size() % 3 != 0:
+		return false
+	for offset in range(0, indices.size(), 3):
+		var index_a := indices[offset]
+		var index_b := indices[offset + 1]
+		var index_c := indices[offset + 2]
+		if (
+			colors[index_a].a < 0.99
+			or colors[index_b].a < 0.99
+			or colors[index_c].a < 0.99
+		):
+			continue
+		var triangle := PackedVector2Array([
+			vertices[index_a],
+			vertices[index_b],
+			vertices[index_c],
+		])
+		if Geometry2D.is_point_in_polygon(point, triangle):
+			return true
+	return false
+
 func _concave_boundary_vertices(
 	rects: Array[Rect2i],
 	sides: Array[StringName],
@@ -2778,6 +2862,32 @@ func _half_period_rgb_difference_score(image: Image) -> float:
 				image.get_pixel(x, y + half_height)
 			)
 			samples += 2
+	return total / float(maxi(samples, 1))
+
+func _mirror_symmetry_difference_score(image: Image) -> float:
+	if image == null or image.is_empty():
+		return 0.0
+	var half_width := image.get_width() / 2
+	var half_height := image.get_height() / 2
+	if half_width <= 0 or half_height <= 0:
+		return 0.0
+	var step := maxi(mini(half_width, half_height) / 96, 1)
+	var total := 0.0
+	var samples := 0
+	for y in range(0, image.get_height(), step):
+		for x in range(0, half_width, step):
+			total += _rgb_delta(
+				image.get_pixel(x, y),
+				image.get_pixel(image.get_width() - 1 - x, y)
+			)
+			samples += 1
+	for y in range(0, half_height, step):
+		for x in range(0, image.get_width(), step):
+			total += _rgb_delta(
+				image.get_pixel(x, y),
+				image.get_pixel(x, image.get_height() - 1 - y)
+			)
+			samples += 1
 	return total / float(maxi(samples, 1))
 
 func _internal_half_seam_score(image: Image) -> float:

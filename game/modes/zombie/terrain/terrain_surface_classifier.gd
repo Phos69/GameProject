@@ -37,6 +37,15 @@ static func classify_cell(
 			if resolver.route_cell_uses_lane_surface(layout, cell)
 			else SURFACE_ASPHALT
 		)
+	# Mesa lots and the walkable fall-zone rim visually belong to their rock
+	# transition. Dirt under the whole mesa parcel prevents grass strips between
+	# a route and the rounded mountain footprint. Route cells keep precedence.
+	var parcel_type := layout.get_parcel_type_at_cell(cell)
+	if (
+		parcel_type == BiomeEnvironmentLayout.PARCEL_MESA
+		or parcel_type == BiomeEnvironmentLayout.PARCEL_FALL_ZONE
+	):
+		return SURFACE_PATH
 	return SURFACE_GRASS
 
 

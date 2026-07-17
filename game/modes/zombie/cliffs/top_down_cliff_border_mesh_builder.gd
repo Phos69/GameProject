@@ -22,6 +22,9 @@ const FALL_ZONE_BOUNDARY_RUNS = preload(
 const TERRAIN_BOUNDARY_MASK_BUILDER = preload(
 	"res://game/modes/zombie/terrain/terrain_boundary_mask_builder.gd"
 )
+const RECTILINEAR_ROCK_AREA_MESH_BUILDER = preload(
+	"res://game/modes/zombie/rocks/rectilinear_rock_area_mesh_builder.gd"
+)
 const TRANSITION_WIDTH_TILES: float = (
 	TERRAIN_BOUNDARY_MASK_BUILDER.DIVIDER_HALF_WIDTH_TILES
 	+ TERRAIN_BOUNDARY_MASK_BUILDER.DIVIDER_FEATHER_TILES
@@ -49,6 +52,7 @@ var horizontal_segment_count: int = 0
 var vertical_segment_count: int = 0
 var terrain_transition_segment_count: int = 0
 var terrain_transition_corner_count: int = 0
+var mesa_inset_corner_patch_count: int = 0
 var diagonal_void_patch_count: int = 0
 var corner_count: int = 0
 var concave_corner_count: int = 0
@@ -64,6 +68,7 @@ func reset() -> void:
 	vertical_segment_count = 0
 	terrain_transition_segment_count = 0
 	terrain_transition_corner_count = 0
+	mesa_inset_corner_patch_count = 0
 	diagonal_void_patch_count = 0
 	corner_count = 0
 	concave_corner_count = 0
@@ -150,7 +155,9 @@ func _append_dirt_outline_run(
 	var end := float(int(run.get("end", 0)))
 	var transition_width := _transition_width(logical_scale)
 	var transition_core_width := _transition_core_width(logical_scale)
-	var inner_feather_width := _transition_inner_feather_width(logical_scale)
+	# The mesa footprint already masks the inside edge. Starting with solid dirt
+	# at that edge prevents the base grass from bleeding through its rounded cap.
+	var inner_feather_width := 0.0
 	var start_corner := StringName(run.get("start_corner", &""))
 	var end_corner := StringName(run.get("end_corner", &""))
 	match orientation:
@@ -182,6 +189,15 @@ func _append_dirt_outline_run(
 					transition_core_width,
 					transition_width
 				)
+				_append_mesa_inset_dirt_corners(
+					transition_buffers,
+					Vector2(left, boundary_y),
+					Vector2(right, boundary_y),
+					start_corner,
+					end_corner,
+					true,
+					logical_scale
+				)
 			else:
 				_append_profiled_transition_quad(
 					transition_buffers,
@@ -205,6 +221,15 @@ func _append_dirt_outline_run(
 					false,
 					transition_core_width,
 					transition_width
+				)
+				_append_mesa_inset_dirt_corners(
+					transition_buffers,
+					Vector2(left, boundary_y),
+					Vector2(right, boundary_y),
+					start_corner,
+					end_corner,
+					false,
+					logical_scale
 				)
 		FALL_ZONE_BOUNDARY_RUNS.LEFT, FALL_ZONE_BOUNDARY_RUNS.RIGHT:
 			var top := (start - zone_offset.y) * logical_scale
@@ -999,6 +1024,82 @@ func _append_convex_dirt_corners(
 			outer_radius
 		)
 
+func _append_mesa_inset_dirt_corners(
+	buffers: Dictionary,
+	start_vertex: Vector2,
+	end_vertex: Vector2,
+	start_corner: StringName,
+	end_corner: StringName,
+	top_side: bool,
+	logical_scale: float
+) -> void:
+	# Mesa walls use a rounded base inset from the logical rectangle. The normal
+	# outline lives outside that rectangle, so the cut-out between its square
+	# vertex and the rounded base must be dirt too or the ground grass leaks out.
+	var radius := (
+		RECTILINEAR_ROCK_AREA_MESH_BUILDER.CONVEX_CORNER_RADIUS_TILES
+		* logical_scale
+	)
+	if start_corner == FALL_ZONE_BOUNDARY_RUNS.CORNER_CONVEX:
+		var start_center := start_vertex + (
+			Vector2(radius, radius)
+			if top_side
+			else Vector2(radius, -radius)
+		)
+		_append_mesa_inset_dirt_corner(
+			buffers,
+			start_vertex,
+			start_center,
+			PI * 1.5 if top_side else PI * 0.5,
+			PI,
+			radius
+		)
+	if end_corner == FALL_ZONE_BOUNDARY_RUNS.CORNER_CONVEX:
+		var end_center := end_vertex + (
+			Vector2(-radius, radius)
+			if top_side
+			else Vector2(-radius, -radius)
+		)
+		_append_mesa_inset_dirt_corner(
+			buffers,
+			end_vertex,
+			end_center,
+			-PI * 0.5 if top_side else 0.0,
+			0.0 if top_side else PI * 0.5,
+			radius
+		)
+
+func _append_mesa_inset_dirt_corner(
+	buffers: Dictionary,
+	vertex: Vector2,
+	center: Vector2,
+	start_angle: float,
+	end_angle: float,
+	radius: float
+) -> void:
+	if radius <= 0.001:
+		return
+	var segment_count: int = (
+		RECTILINEAR_ROCK_AREA_MESH_BUILDER.CONVEX_CORNER_SEGMENTS
+	)
+	for segment_index in range(segment_count):
+		var start_weight := float(segment_index) / float(segment_count)
+		var end_weight := float(segment_index + 1) / float(segment_count)
+		var angle_a := lerpf(start_angle, end_angle, start_weight)
+		var angle_b := lerpf(start_angle, end_angle, end_weight)
+		var arc_a := center + Vector2(cos(angle_a), sin(angle_a)) * radius
+		var arc_b := center + Vector2(cos(angle_b), sin(angle_b)) * radius
+		_append_transition_triangle(
+			buffers,
+			vertex,
+			arc_a,
+			arc_b,
+			_transition_inner_color(),
+			_transition_inner_color(),
+			_transition_inner_color()
+		)
+	mesa_inset_corner_patch_count += 1
+
 func _append_concave_dirt_corners(
 	buffers: Dictionary,
 	start_vertex: Vector2,
@@ -1312,4 +1413,3 @@ func _append_colored_quad(
 		quad_uvs,
 		quad_colors
 	)
-

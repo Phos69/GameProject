@@ -207,7 +207,9 @@ definito in `docs/top_down_cardinal_contract.md`.
   ostacoli.
 - `TerrainSurfaceClassifier`: converte il tile semantico risolto in una delle
   sole classi visuali `void`, `grass`, `path` o `asphalt`; non modifica
-  collisioni, spawn, danno o pathfinding.
+  collisioni, spawn, danno o pathfinding. I lotti `mesa` usano `path`/dirt come
+  base non-route; anche la corona calpestabile di un lotto `fall_zone` usa dirt,
+  evitando fasce erbose fra route e roccia/cliff.
 - `TerrainBoundaryMaskBuilder`: genera una maschera RGBA8 regionale a 8 pixel
   per tile. RGB seleziona rispettivamente grass, path e asphalt; RGB nullo
   rappresenta il void e alpha contiene il divisore di terra sui confini tra
@@ -222,10 +224,12 @@ definito in `docs/top_down_cardinal_contract.md`.
 - `GeneratedBiomeTextureTools`: normalizzazione condivisa dei PNG generati usati
   in repeat runtime; applica crop dei bordi chiari, fix dei pixel alpha e la
   stessa policy a ground, cliff/void e raised cliff perimetrali. Per
-  `toxic_wastes` compone inoltre un atlas specchiato 2x2 a densita nativa,
-  mentre `frozen_outskirts` e `drowned_marsh` compongono quilt `2x2` non
-  specchiate da offset dello stesso raster base. `burning_fields` armonizza i
-  bordi opposti del raster originale. La normalizzazione non cambia
+  `infected_plains` compone un atlas `2x2` non simmetrico da copie traslate e
+  ruotate, con blend ampio; `toxic_wastes` usa invece un atlas specchiato a densita nativa,
+  mentre `frozen_outskirts` e `drowned_marsh` compongono quilt `2x2` da offset
+  dello stesso raster base. `burning_fields` armonizza i
+  bordi opposti del raster originale prima di rigenerare le mipmap. La
+  normalizzazione non cambia
   classificazione, collisioni o pathfinding.
 - `WorldGenerationSeed`: seed globale di run e derivazione deterministica degli stream RNG per mappa, terreno, ostacoli, bordi, loot e spawn.
 - `BiomeWorldGenerator`: orchestratore della pipeline procedurale globale per mappa biomi, layout per cella e debug seed.
@@ -267,6 +271,9 @@ definito in `docs/top_down_cardinal_contract.md`.
   route-adjacent e una mesa; il resto segue pesi clearing/forest/fall-zone.
 - `TerrainParcelContentPass`: costruisce montagna unica, foreste con corridoi,
   radure e filari, fall zone con rim e town tematizzate con vialetti verificati.
+- `TopDownCliffBorderMeshBuilder`: costruisce anche la corona dirt delle mesa;
+  il bordo interno e opaco e i raccordi riempiono il cut-out tra footprint
+  logico e base convessa usando lo stesso raggio/segmenti della mesh rocciosa.
 - `StaticHazardPlacementPass`: piazza gli hazard tematici esclusivamente nei
   lotti `clearing`, con clearance e fallback esaustivo per footprint.
 - `FallBoundaryGenerator`: trasforma i lati senza vicino in `fall_zone` data-driven con il contratto di danno ambientale esistente.
