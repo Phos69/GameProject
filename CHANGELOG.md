@@ -39,6 +39,10 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
     `BiomePassage.edge_anchor_cell`;
   - nuova base `BiomeZoneArea` condivisa da `BiomeFallZone` e
     `BiomeHazardZone` (test punto/distanza e collisione rettangolare);
+  - nuovo `game/core/quad_mesh_buffers.gd` (create/append_quad/build_mesh)
+    al posto delle otto copie del batching quad nei tre mesh builder di
+    cliff e rocce (gruppo 4.2); il border builder conserva i wrapper
+    rect-based che ora delegano al nucleo condiviso;
   - chiusi anche i tre residui dopo verifica di equivalenza: la
     `_intersects_route` locale del prop pass e la
     `_rect_overlaps_road_cells` del map validation usano i metodi del

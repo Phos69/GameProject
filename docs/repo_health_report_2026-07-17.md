@@ -18,7 +18,9 @@ Nessuna modifica al codice è stata applicata; ogni finding cita file e riga.
 > route del prop pass, road-cells del map validation, palette
 > `edge_color_for_style` — quest'ultima era in realtà un duplicato esatto,
 > il "quasi identica" del report era un falso negativo dello scan).
-> I gruppi 4.2, 4.5 e 4.6 restano aperti.
+> Il gruppo 4.2 è stato chiuso in `953973f` (`QuadMeshBuffers` condiviso
+> dai tre mesh builder; suite obstacles/environment/assets/world_gen
+> verdi). Restano aperti i gruppi 4.5 e 4.6.
 
 ## 1. Sintesi
 
