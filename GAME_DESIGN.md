@@ -799,15 +799,17 @@ Identita dei biomi:
   collisione o peso di generazione dell'ID;
 - `forest_tree` e condiviso nei quattro biomi; nella Pianura ogni istanza
   sceglie in modo seed-based uno degli otto sprite in quattro coppie
-  adulto/giovane, senza cambiare footprint o collisione. Le foreste riempiono gli slot
+  adulto/giovane. Il footprint di generazione resta `96x96`, mentre il collider
+  circolare segue le radici: diametro 48 px per i giovani e 72/80/96 px per gli
+  adulti; il suo centro coincide con il centro visuale delle radici. Le foreste
+  riempiono gli slot
   validi salvo 1-2 corridoi larghi 2 tile, mentre le radure hanno 2-8 alberi e
   filari seed-based al 50%. Le `large_rock` sono i blocker tecnici della
   montagna unica. Tutta la superficie non-route del lotto mesa usa dirt come
   base, senza fasce d'erba fra sentieri e montagna. Le mesa bloccano tutto il
-  relativo footprint per movimento e proiettili; gli alberi della Pianura
-  Infetta hanno visuale raddoppiata e bloccano un cerchio alle radici largo
-  quanto il footprint, cosi i filari di confine delle strade non lasciano
-  passaggi tra due istanze adiacenti. Il
+  relativo footprint per movimento e proiettili; gli alberi della Pianura hanno
+  visuale raddoppiata ma bloccano soltanto l'area fisica delle radici dichiarata
+  dalla rispettiva variante. Il
   player a nord della linea centrale della mesa viene coperto dal cliff, quello a
   sud resta davanti; in co-op la relazione viene risolta per ogni player. Top
   a lastre e tile cliff 3D estruse verso l'alto rendono leggibile il volume;

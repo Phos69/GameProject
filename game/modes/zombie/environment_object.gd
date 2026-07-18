@@ -158,6 +158,20 @@ func get_asset_visual_bounds() -> Rect2:
 		content_rect.size * asset_sprite.scale.abs()
 	)
 
+func get_asset_root_center() -> Vector2:
+	if not has_asset_sprite():
+		return collision_offset
+	var texture_size := asset_sprite.texture.get_size()
+	var metrics := _get_content_metrics(asset_sprite.texture)
+	var root_center := metrics.get(
+		"root_center",
+		Vector2(texture_size.x * 0.5, texture_size.y)
+	) as Vector2
+	var root_delta := (root_center - texture_size * 0.5) * asset_sprite.scale
+	if asset_sprite.flip_h:
+		root_delta.x = -root_delta.x
+	return asset_sprite.position + root_delta
+
 func get_render_mode() -> StringName:
 	return render_mode
 
@@ -434,10 +448,21 @@ func _position_asset_sprite() -> void:
 	var content_center_x := content_rect.position.x + content_rect.size.x * 0.5
 	var content_center_y := content_rect.position.y + content_rect.size.y * 0.5
 	var content_bottom := content_rect.position.y + content_rect.size.y
-	var anchor_x := (
-		collision_offset.x
-		- (content_center_x - canvas_center.x) * asset_sprite.scale.x
+	var root_center := metrics.get(
+		"root_center",
+		Vector2(content_center_x, content_bottom)
+	) as Vector2
+	var horizontal_anchor_pixel := (
+		root_center.x
+		if obstacle_category == &"tree"
+		else content_center_x
 	)
+	var horizontal_anchor_delta := (
+		horizontal_anchor_pixel - canvas_center.x
+	) * asset_sprite.scale.x
+	if obstacle_category == &"tree" and asset_sprite.flip_h:
+		horizontal_anchor_delta = -horizontal_anchor_delta
+	var anchor_x := collision_offset.x - horizontal_anchor_delta
 	var content_center_y_local := (
 		content_center_y - canvas_center.y
 	) * asset_sprite.scale.y
@@ -454,11 +479,9 @@ func _position_asset_sprite() -> void:
 		obstacle_size.y * 0.5 + skirt_local,
 		floor_y + maxf(obstacle_size.y * 0.25, 6.0)
 	)
-	if obstacle_category == &"tree":
-		# The opaque roots rest on the south edge of the root collider. The
-		# placement footprint still reserves canopy spacing but no longer moves
-		# either the visible trunk or its physical hitbox.
-		base_y = collision_offset.y + minf(collision_size.x, collision_size.y) * 0.5
+	var root_center_y_local := (
+		root_center.y - canvas_center.y
+	) * asset_sprite.scale.y
 	match anchor_id:
 		&"floor_center":
 			# A floor-centered asset represents the same footprint as its physical
@@ -469,7 +492,15 @@ func _position_asset_sprite() -> void:
 				collision_offset.y - content_center_y_local
 			)
 		&"bottom_center":
-			asset_sprite.position = Vector2(anchor_x, base_y - content_bottom_local)
+			if obstacle_category == &"tree":
+				# The visual root center, physics circle center and Y-sort anchor
+				# share one point. The canopy footprint remains placement-only.
+				asset_sprite.position = Vector2(
+					anchor_x,
+					collision_offset.y - root_center_y_local
+				)
+			else:
+				asset_sprite.position = Vector2(anchor_x, base_y - content_bottom_local)
 		&"edge_aligned":
 			asset_sprite.position = Vector2(
 				anchor_x, base_y - content_bottom_local - content_height_local * 0.08
@@ -585,6 +616,7 @@ func _apply_asset_variation() -> void:
 	var crown_value := 0.94 + float(seed % 7) * 0.018
 	var trunk_value := 0.96 + float(int(seed / 11) % 5) * 0.012
 	asset_sprite.modulate = Color(crown_value, trunk_value, crown_value * 0.92, 1.0)
+	_position_asset_sprite()
 	if damage_overlay != null:
 		damage_overlay.flip_h = asset_sprite.flip_h
 
@@ -624,7 +656,8 @@ func _get_content_metrics(texture: Texture2D) -> Dictionary:
 	var full := {
 		"bounds": Rect2(Vector2.ZERO, texture_size),
 		"profile": PackedFloat32Array(),
-		"step": 1
+		"step": 1,
+		"root_center": Vector2(texture_size.x * 0.5, texture_size.y)
 	}
 	if texture_size.x <= 0.0 or texture_size.y <= 0.0:
 		return full
@@ -696,7 +729,8 @@ func _scan_content_metrics(image: Image) -> Dictionary:
 		return {
 			"bounds": Rect2(Vector2.ZERO, Vector2(float(width), float(height))),
 			"profile": PackedFloat32Array(),
-			"step": step
+			"step": step,
+			"root_center": Vector2(float(width) * 0.5, float(height))
 		}
 	var b_min_x := maxi(0, min_x - step)
 	var b_min_y := maxi(0, min_y - step)
@@ -707,6 +741,29 @@ func _scan_content_metrics(image: Image) -> Dictionary:
 		Vector2(float(b_max_x - b_min_x + 1), float(b_max_y - b_min_y + 1))
 	)
 	var center_x := (float(b_min_x) + float(b_max_x)) * 0.5
+	# Roots occupy the widest opaque row in the lowest 8% of the visible tree,
+	# capped so low canopy branches cannot become the physical anchor. This is a
+	# visual alignment metric only: collider size remains manifest-authored.
+	var root_band_height := clampi(
+		roundi(bounds.size.y * 0.08),
+		maxi(step * 4, 12),
+		maxi(step * 4, 32)
+	)
+	var root_center := Vector2(center_x, float(max_y))
+	var widest_root_row := -1
+	for root_row_index in range(row_min.size()):
+		var root_scan_y := root_row_index * step
+		if root_scan_y < max_y - root_band_height or root_scan_y > max_y:
+			continue
+		if row_max[root_row_index] < 0:
+			continue
+		var root_row_width := row_max[root_row_index] - row_min[root_row_index] + 1
+		if root_row_width > widest_root_row:
+			widest_root_row = root_row_width
+			root_center = Vector2(
+				(float(row_min[root_row_index]) + float(row_max[root_row_index])) * 0.5,
+				float(root_scan_y)
+			)
 	# Cumulative-max half-width from the opaque bottom upward (one bucket per
 	# scan step). Monotonic by construction, so a single forward search finds the
 	# first row that spans a requested width.
@@ -727,7 +784,12 @@ func _scan_content_metrics(image: Image) -> Dictionary:
 	for index in range(bucket_count):
 		carry = maxf(carry, profile[index])
 		profile[index] = carry
-	return { "bounds": bounds, "profile": profile, "step": step }
+	return {
+		"bounds": bounds,
+		"profile": profile,
+		"step": step,
+		"root_center": root_center
+	}
 
 func _update_damage_overlay() -> void:
 	if damage_overlay == null:

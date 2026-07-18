@@ -159,6 +159,7 @@ func _add_tree_cluster(
 		)
 		if tree is EnvironmentObject:
 			selected_variants[(tree as EnvironmentObject).get_asset_variant_id()] = true
+			tree.set_debug_footprint_visible(true)
 		if tree.has_method("has_asset_visual"):
 			_expect(bool(tree.call("has_asset_visual")), "forest_tree QA instance %d uses asset visual" % index)
 	_expect(selected_variants.size() == 8, "forest_tree QA board covers all eight imported variants")
@@ -173,7 +174,7 @@ func _add_background(scene_root: Node2D) -> void:
 
 func _add_labels(scene_root: Node2D) -> void:
 	var title := _make_label(
-		"ART-VIS-FIX / INFECTED PLAINS",
+		"ART-VIS-FIX / PLAINS TREE ROOT HITBOXES",
 		Vector2(0.0, 18.0),
 		Vector2(1280.0, 36.0),
 		24,

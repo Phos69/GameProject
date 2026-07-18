@@ -82,10 +82,15 @@ allineare la hitbox fisica al contenuto visibile; il footprint di placement e
 pathfinding resta separato.
 
 `random_variant_ids_by_context` definisce pool visuali che non alterano il
-layout. Per `forest_tree`, il contesto `infected_plains` contiene otto PNG
+layout. Per `forest_tree`, il contesto `plains` contiene otto PNG
 trasparenti organizzati in quattro coppie adulto/giovane. La scelta usa la cella
 world-space dell'istanza: e uniforme, ripetibile a parita di layout/seed e non
-modifica footprint, collisione, peso di generazione o Y-sort.
+modifica footprint, peso di generazione o Y-sort. La collisione fisica e invece
+specifica per variante tramite `variant_collision_size_ratios`: diametro `48 px`
+per i giovani e `72/80/96 px` per gli adulti, sempre centrato all'offset radici
+`(0, 24)`. `EnvironmentObject` rileva il centro visuale delle radici dalla riga
+opaca piu larga nella fascia inferiore dell'asset e allinea quel punto al centro
+del cerchio: il bordo inferiore del PNG non viene piu usato come anchor fisico.
 
 Per `floor_center`, il centro del contenuto opaco viene allineato al centro del
 collider fisico; non viene appoggiato sul bordo sud del footprint. Gli asset
@@ -93,13 +98,13 @@ collider fisico; non viene appoggiato sul bordo sud del footprint. Gli asset
 usano il centro/raggio esplicito del collider alle radici.
 
 `forest_tree` resta il riferimento per l'ostacolo singolo `3x3`: nella Pianura
-Infetta risolve una delle otto varianti adulto/giovane, mentre negli altri biomi
-conserva il fallback condiviso. Occupa nove slot di design e riserva un
-footprint runtime `96x96`, ma usa un collider
-circolare di raggio `24 px` centrato sulle radici a offset `(0, 24)`. Anche
+risolve una delle otto varianti adulto/giovane, mentre negli altri biomi conserva
+il fallback condiviso. Occupa nove slot di design e riserva un footprint runtime
+`96x96`; il fallback usa un cerchio di diametro `96 px`, mentre le varianti usano
+i diametri radici dichiarati sopra. Tutti sono centrati a offset `(0, 24)`. Anche
 `dead_tree` conserva il placement `48x96` e usa un cerchio di raggio `12 px`
 allo stesso offset verticale. Il loro anchor Y-sort coincide col centro del
-collider, non col centro della chioma.
+collider e col centro visuale delle radici, non col centro della chioma.
 
 `large_rock` e invece
 scalabile: il void-first genera rettangoli quadrati da `3x3` a `5x5` tile logici e

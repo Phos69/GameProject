@@ -31,6 +31,16 @@ const INFECTED_PLAINS_RASTER_COLLIDER_IDS: Array[StringName] = [
 	&"small_rock", &"broken_fence", &"wood_barrier", &"fallen_log",
 	&"ruined_house", &"abandoned_house", &"abandoned_car", &"dense_vegetation"
 ]
+const TREE_VARIANT_COLLISION_DIAMETERS := {
+	&"tree_pair_01_adult": 80.0,
+	&"tree_pair_01_young": 48.0,
+	&"tree_pair_02_adult": 80.0,
+	&"tree_pair_02_young": 48.0,
+	&"tree_pair_03_adult": 96.0,
+	&"tree_pair_03_young": 48.0,
+	&"tree_pair_04_adult": 72.0,
+	&"tree_pair_04_young": 48.0,
+}
 const REQUIRED_CRATE_ASSET_ID := &"supply_crate"
 const ENVIRONMENT_OBJECT_SCRIPT = preload("res://game/modes/zombie/environment_object.gd")
 const ENVIRONMENT_OBJECT_FACTORY_SCRIPT = preload("res://game/modes/zombie/environment_object_factory.gd")
@@ -319,6 +329,14 @@ func test_forest_tree_variation_is_visual_only() -> void:
 	assert_true(first_object.asset_sprite != null and second_object.asset_sprite != null, "forest_tree sprites are available")
 	if first_object.asset_sprite != null and second_object.asset_sprite != null:
 		assert_true(
+			first_object.get_asset_root_center().is_equal_approx(first.get_collision_offset()),
+			"first fallback tree visual roots share the collider center"
+		)
+		assert_true(
+			second_object.get_asset_root_center().is_equal_approx(second.get_collision_offset()),
+			"second fallback tree visual roots share the collider center"
+		)
+		assert_true(
 			first_object.asset_sprite.flip_h != second_object.asset_sprite.flip_h
 			or first_object.asset_sprite.modulate != second_object.asset_sprite.modulate,
 			"forest_tree instances get visible flip/tint variation"
@@ -365,7 +383,6 @@ func test_plains_tree_assets_and_random_selection() -> void:
 	if tree == null:
 		return
 	add_child(tree)
-	var collision_size := tree.get_collision_size()
 	var selected := {}
 	for index in range(16):
 		var position_key := Vector2(float(index + 100) * 48.0, 240.0)
@@ -374,13 +391,35 @@ func test_plains_tree_assets_and_random_selection() -> void:
 			"plains selects a tree asset variant"
 		)
 		selected[tree.get_asset_variant_id()] = true
+		var expected_diameter := float(
+			TREE_VARIANT_COLLISION_DIAMETERS[tree.get_asset_variant_id()]
+		)
+		var expected_size := Vector2.ONE * expected_diameter
 		assert_eq(
 			tree.get_asset_path(),
 			_manifest.get_object_asset_path(&"forest_tree", tree.get_asset_variant_id()),
 			"selected tree variant resolves its manifest path"
 		)
+		assert_true(
+			tree.get_collision_size().is_equal_approx(expected_size),
+			"%s collider diameter follows its visible roots" % String(tree.get_asset_variant_id())
+		)
+		assert_eq(
+			tree.get_collision_offset(),
+			Vector2(0.0, 24.0),
+			"%s collider remains centered on the root anchor" % String(tree.get_asset_variant_id())
+		)
+		assert_true(
+			tree.get_asset_root_center().is_equal_approx(tree.get_collision_offset()),
+			"%s visual and physics root centers coincide" % String(tree.get_asset_variant_id())
+		)
+		var collision := tree.get_node_or_null("CollisionShape2D") as CollisionShape2D
+		var circle := collision.shape as CircleShape2D if collision != null else null
+		assert_true(
+			circle != null and is_equal_approx(circle.radius, expected_diameter * 0.5),
+			"%s physics circle follows its root diameter" % String(tree.get_asset_variant_id())
+		)
 	assert_eq(selected.size(), 8, "grid-aligned positions cover all eight tree variants")
-	assert_eq(tree.get_collision_size(), collision_size, "tree visual randomization keeps collision size")
 	var stable_position := Vector2(912.0, 336.0)
 	tree.select_random_asset_variant(&"plains", stable_position)
 	var stable_variant := tree.get_asset_variant_id()

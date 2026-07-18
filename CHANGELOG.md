@@ -10,8 +10,8 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 - Importati otto alberi PNG trasparenti in quattro coppie adulto/giovane. Il
   manifest v16 espone pool visuali casuali per contesto e `forest_tree` sceglie
-  deterministicamente una variante nella Pianura Infetta in base alla cella
-  world-space, mantenendo invariati layout, footprint e collider alle radici.
+  deterministicamente una variante nella Pianura in base alla cella world-space,
+  mantenendo invariati layout e footprint.
 
 - `TERRAIN-PARCELS-001`: nuova pipeline terrain deterministica per regioni
   `75x75`, con route principali, sentieri interni e 7-10 lotti esclusivi
@@ -30,6 +30,12 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
   e test dedicati per indice e workflow.
 
 ### Fixed
+
+- Le otto varianti `forest_tree` non riusano piu il collider storico da 96 px:
+  i giovani usano un cerchio radici da 48 px e gli adulti uno da 72, 80 o 96 px
+  secondo la silhouette. Il centro visuale delle radici, ricavato dalla fascia
+  opaca inferiore del PNG, coincide ora con il centro del cerchio e con l'anchor
+  Y-sort `(0, 24)` anche dopo il flip orizzontale.
 
 - Erba, sentiero e asfalto della Pianura Infetta tornano a ripetere direttamente
   il raster normalizzato originale a periodo 256, senza atlas macro, specchi o
