@@ -11,8 +11,9 @@ const RESOLVER_UTILS := preload(
 ## The manifest is the single source of truth for how environment objects are
 ## converted to the orthogonal top-down pipeline: collision shape, footprint,
 ## blocking flags, procedural draw mode, asset contract and ground sort offset.
-## Manifest v15 separates placement footprint from physical collision, supports
-## contextual asset/collision variants, and keeps object orientation cardinal.
+## Manifest v16 separates placement footprint from physical collision, supports
+## contextual and deterministic-random asset variants, and keeps object
+## orientation cardinal.
 ## Missing art is allowed only when the entry explicitly declares a fallback or
 ## a needs_asset/procedural_fallback status.
 
@@ -309,6 +310,16 @@ func get_object_asset_path(
 	if not variant_id.is_empty() and variants.has(variant_id):
 		return String(variants[variant_id])
 	return String(contract.get("asset_path", ""))
+
+func get_object_random_variant_ids(
+	object_id: StringName,
+	context_id: StringName
+) -> Array[StringName]:
+	var contract := get_object_asset_contract(object_id)
+	var contexts := contract.get("random_variant_ids_by_context", {}) as Dictionary
+	if contexts.has(context_id):
+		return (contexts[context_id] as Array[StringName]).duplicate()
+	return []
 
 func get_object_visual_scale(
 	object_id: StringName,
@@ -611,6 +622,9 @@ func _normalize_asset_contract(section: StringName, entry: Dictionary) -> Dictio
 		"variant_asset_paths": _normalize_path_dictionary(
 			entry.get("variant_asset_paths", {})
 		),
+		"random_variant_ids_by_context": _normalize_string_name_array_dictionary(
+			entry.get("random_variant_ids_by_context", {})
+		),
 		"variant_visual_scales": _normalize_scale_dictionary(
 			entry.get("variant_visual_scales", {})
 		),
@@ -687,6 +701,16 @@ func _normalize_path_dictionary(value: Variant) -> Dictionary:
 		return result
 	for key in (value as Dictionary).keys():
 		result[StringName(str(key))] = String((value as Dictionary).get(key, ""))
+	return result
+
+func _normalize_string_name_array_dictionary(value: Variant) -> Dictionary:
+	var result := {}
+	if not value is Dictionary:
+		return result
+	for key in (value as Dictionary).keys():
+		result[StringName(str(key))] = _normalize_string_name_array(
+			(value as Dictionary).get(key, [])
+		)
 	return result
 
 func _normalize_scale_dictionary(value: Variant) -> Dictionary:
@@ -857,6 +881,9 @@ func _validate_asset_contract(
 	if not MISSING_ASSET_STATUSES.has(status) and not RESOLVER_UTILS.asset_path_exists(asset_path):
 		failures.append("%s/%s: asset_path does not exist for status '%s'" % [String(section), contract_id, status])
 	var variant_asset_paths := contract.get("variant_asset_paths", {}) as Dictionary
+	var random_variant_contexts := contract.get(
+		"random_variant_ids_by_context", {}
+	) as Dictionary
 	var variant_visual_scales := contract.get("variant_visual_scales", {}) as Dictionary
 	var variant_collision_size_ratios := contract.get("variant_collision_size_ratios", {}) as Dictionary
 	var variant_collision_offset_ratios := contract.get("variant_collision_offset_ratios", {}) as Dictionary
@@ -883,6 +910,19 @@ func _validate_asset_contract(
 		var offset := variant_collision_offset_ratios[variant_id] as Vector2
 		if absf(offset.x) > 1.0 or absf(offset.y) > 1.0:
 			failures.append("%s/%s: variant collision_offset_ratio must stay within [-1, 1] for '%s'" % [String(section), contract_id, String(variant_id)])
+	for context_id in random_variant_contexts.keys():
+		var random_variant_ids := random_variant_contexts[context_id] as Array[StringName]
+		if String(context_id).is_empty() or random_variant_ids.is_empty():
+			failures.append(
+				"%s/%s: random variant context/id list must not be empty"
+				% [String(section), contract_id]
+			)
+		for variant_id in random_variant_ids:
+			if not variant_asset_paths.has(variant_id):
+				failures.append(
+					"%s/%s: random variant context '%s' references missing asset variant '%s'"
+					% [String(section), contract_id, String(context_id), String(variant_id)]
+				)
 
 func _validate_asset_coverage(failures: PackedStringArray) -> void:
 	for object_id in objects.keys():

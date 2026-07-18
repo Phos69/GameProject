@@ -514,6 +514,11 @@ func _commit_obstacle(
 		obstacle,
 		layout.obstacle_positions[index]
 	)
+	ObstacleSystem.configure_random_obstacle_asset_variant(
+		obstacle,
+		biome.biome_id,
+		obstacle.global_position
+	)
 	if manifest != null and not manifest.blocks_movement(obstacle_id):
 		obstacle.remove_from_group("spawn_blockers")
 		obstacle.remove_from_group("environment_obstacles")
@@ -532,7 +537,13 @@ func _commit_obstacle(
 	)
 	obstacle.set_meta("region_id", region_id)
 	if index < layout.obstacle_rects.size():
-		obstacle.set_meta("obstacle_record", layout.get_obstacle_record(index, manifest))
+		var asset_variant_id := biome.biome_id
+		if obstacle is EnvironmentObject:
+			asset_variant_id = (obstacle as EnvironmentObject).get_asset_variant_id()
+		obstacle.set_meta(
+			"obstacle_record",
+			layout.get_obstacle_record(index, manifest, asset_variant_id)
+		)
 	obstacle_system.register_streamed_obstacle(obstacle, obstacle_id)
 	return true
 

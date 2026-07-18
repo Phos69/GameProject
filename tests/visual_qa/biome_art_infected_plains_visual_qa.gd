@@ -123,8 +123,13 @@ func _add_tree_cluster(
 		Vector2i(12, 10),
 		Vector2i(18, 9),
 		Vector2i(24, 11),
-		Vector2i(62, 12)
+		Vector2i(30, 9),
+		Vector2i(42, 10),
+		Vector2i(48, 9),
+		Vector2i(54, 11),
+		Vector2i(62, 9)
 	]
+	var selected_variants := {}
 	for index in range(tree_cells.size()):
 		var tree := system.create_obstacle_instance(
 			&"forest_tree",
@@ -143,8 +148,20 @@ func _add_tree_cluster(
 			tree,
 			LAYER_ORIGIN + layout.logical_to_world(tree_cells[index])
 		)
+		var selection_key := Vector2(float(index + 100) * 48.0, 240.0)
+		_expect(
+			ObstacleSystem.configure_random_obstacle_asset_variant(
+				tree,
+				&"infected_plains",
+				selection_key
+			),
+			"forest_tree QA instance %d selects an imported variant" % index
+		)
+		if tree is EnvironmentObject:
+			selected_variants[(tree as EnvironmentObject).get_asset_variant_id()] = true
 		if tree.has_method("has_asset_visual"):
 			_expect(bool(tree.call("has_asset_visual")), "forest_tree QA instance %d uses asset visual" % index)
+	_expect(selected_variants.size() == 8, "forest_tree QA board covers all eight imported variants")
 
 func _add_background(scene_root: Node2D) -> void:
 	var background := ColorRect.new()

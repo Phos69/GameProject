@@ -349,13 +349,21 @@ func _generate_obstacles() -> void:
 			obstacle,
 			layout.obstacle_positions[index]
 		)
+		configure_random_obstacle_asset_variant(
+			obstacle,
+			active_biome.biome_id,
+			obstacle.global_position
+		)
 		if index < layout.obstacle_rects.size():
+			var asset_variant_id := active_biome.biome_id
+			if obstacle is EnvironmentObject:
+				asset_variant_id = (obstacle as EnvironmentObject).get_asset_variant_id()
 			obstacle.set_meta(
 				"obstacle_record",
 				layout.get_obstacle_record(
 					index,
 					manifest,
-					active_biome.biome_id if active_biome != null else &""
+					asset_variant_id
 				)
 			)
 		if manifest != null and not manifest.blocks_movement(obstacle_id):
@@ -496,6 +504,18 @@ static func attach_obstacle_at_layout_center(
 	obstacle.set_meta("layout_center", layout_center)
 	obstacle.set_meta("sort_anchor_offset", anchor_offset)
 	return sort_anchor
+
+static func configure_random_obstacle_asset_variant(
+	obstacle: BiomeObstacle,
+	context_id: StringName,
+	world_position_key: Vector2
+) -> bool:
+	if not obstacle is EnvironmentObject:
+		return false
+	return (obstacle as EnvironmentObject).select_random_asset_variant(
+		context_id,
+		world_position_key
+	)
 
 static func configure_mesa_obstacle_visual(
 	obstacle: BiomeObstacle,

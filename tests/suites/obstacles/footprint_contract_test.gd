@@ -245,7 +245,7 @@ func test_3x3_feature_obstacle() -> void:
 		var asset_path := String(contract.get("asset_path", ""))
 		assert_true(asset_path.ends_with("_3x3.png"), "%s uses a named 3x3 PNG" % String(obstacle_id))
 		assert_true(FileAccess.file_exists(asset_path), "%s PNG exists" % String(obstacle_id))
-		assert_eq(String(contract.get("source", "")), "openai_image_generation", "%s records generated-art provenance" % String(obstacle_id))
+		assert_eq(String(contract.get("source", "")), "user_provided", "%s records imported-art provenance" % String(obstacle_id))
 
 	var system := ObstacleSystem.new()
 	add_child(system)

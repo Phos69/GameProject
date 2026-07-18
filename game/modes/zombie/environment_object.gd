@@ -38,6 +38,7 @@ const LEGACY_TILE_SCALE := WorldGridConfig.LEGACY_TILE_SCALE
 
 var asset_path: String = ""
 var asset_variant_id: StringName = &""
+var asset_variant_context_id: StringName = &""
 var anchor_id: StringName = &"floor_center"
 var asset_status: String = ""
 var asset_sprite: Sprite2D
@@ -105,6 +106,29 @@ func get_anchor_id() -> StringName:
 
 func get_asset_status() -> String:
 	return asset_status
+
+func get_asset_variant_id() -> StringName:
+	return asset_variant_id
+
+func select_random_asset_variant(
+	context_id: StringName,
+	world_position_key: Vector2
+) -> bool:
+	var manifest := EnvironmentAssetManifest.get_shared()
+	var variant_ids := manifest.get_object_random_variant_ids(
+		obstacle_id,
+		context_id
+	)
+	if variant_ids.is_empty():
+		return false
+	asset_variant_context_id = context_id
+	var seed := _asset_variation_seed(world_position_key)
+	asset_variant_id = variant_ids[seed % variant_ids.size()]
+	set_meta("asset_variant_context", asset_variant_context_id)
+	set_meta("asset_variant_id", asset_variant_id)
+	_apply_asset_contract()
+	_apply_asset_variation()
+	return true
 
 func has_asset_sprite() -> bool:
 	return (
@@ -564,10 +588,12 @@ func _apply_asset_variation() -> void:
 	if damage_overlay != null:
 		damage_overlay.flip_h = asset_sprite.flip_h
 
-func _asset_variation_seed() -> int:
+func _asset_variation_seed(
+	world_position_key: Vector2 = global_position
+) -> int:
 	var position_key := Vector2i(
-		roundi(global_position.x),
-		roundi(global_position.y)
+		roundi(world_position_key.x / WorldGridConfig.LOGICAL_TILE_SCALE),
+		roundi(world_position_key.y / WorldGridConfig.LOGICAL_TILE_SCALE)
 	)
 	return abs(
 		String(obstacle_id).hash()

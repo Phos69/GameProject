@@ -1090,9 +1090,13 @@ multi-bioma.
   quando il contratto dichiara esplicitamente un fallback procedurale.
 - Il loader accetta SVG, texture raster importate e, come estensione generica,
   risorse `Texture2D` `.tres` quali `AtlasTexture`; nessun prop attivo usa
-  attualmente quest'ultimo formato. `forest_tree` mantiene il
-  PNG trasparente originale e applica solo flip/tinta deterministici per ridurre
-  la ripetizione; `large_rock` non usa piu una silhouette fissa e rende
+  attualmente quest'ultimo formato. `forest_tree` conserva il PNG condiviso
+  come fallback; nella Pianura Infetta il contratto
+  `random_variant_ids_by_context` seleziona deterministicamente dalla posizione
+  world-space otto PNG trasparenti, organizzati in quattro coppie
+  adulto/giovane, e applica poi flip/tinta leggeri. La selezione visuale non
+  modifica layout, footprint o collider; `large_rock` non usa piu una
+  silhouette fissa e rende
   sull'intero `mesa_rect` un plateau rialzato con corona e pareti dedicate. La
   sorgente visuale non cambia gameplay, collisione o classificazione.
 - `RectilinearRockAreaMeshBuilder` costruisce una mesa solida con geometria

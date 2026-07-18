@@ -794,7 +794,9 @@ Identita dei biomi:
   generico unico. Ventitre ID dei pool tematici leggono altrettanti SVG
   cardinali individuali; la sostituzione visuale non modifica footprint,
   collisione o peso di generazione dell'ID;
-- `forest_tree` e condiviso nei cinque biomi; le foreste riempiono gli slot
+- `forest_tree` e condiviso nei cinque biomi; nella Pianura Infetta ogni istanza
+  sceglie in modo seed-based uno degli otto sprite in quattro coppie
+  adulto/giovane, senza cambiare footprint o collisione. Le foreste riempiono gli slot
   validi salvo 1-2 corridoi larghi 2 tile, mentre le radure hanno 2-8 alberi e
   filari seed-based al 50%. Le `large_rock` sono i blocker tecnici della
   montagna unica. Tutta la superficie non-route del lotto mesa usa dirt come

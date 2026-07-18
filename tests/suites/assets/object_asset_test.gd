@@ -327,6 +327,68 @@ func test_forest_tree_variation_is_visual_only() -> void:
 	second.queue_free()
 	await wait_physics_frames(1)
 
+func test_infected_plains_tree_assets_and_random_selection() -> void:
+	var variant_ids := _manifest.get_object_random_variant_ids(
+		&"forest_tree",
+		&"infected_plains"
+	)
+	assert_eq(variant_ids.size(), 8, "infected_plains exposes four adult/young tree pairs")
+	var adult_count := 0
+	var young_count := 0
+	for variant_id in variant_ids:
+		var variant_path := _manifest.get_object_asset_path(&"forest_tree", variant_id)
+		assert_true(_asset_exists(variant_path), "%s tree variant exists" % String(variant_id))
+		var image := Image.load_from_file(ProjectSettings.globalize_path(variant_path))
+		assert_false(image.is_empty(), "%s tree variant loads" % String(variant_id))
+		if image.is_empty():
+			continue
+		assert_eq(image.get_size(), Vector2i(444, 444), "%s keeps the shared pair canvas" % String(variant_id))
+		assert_eq(image.get_format(), Image.FORMAT_RGBA8, "%s keeps RGBA transparency" % String(variant_id))
+		assert_lt(image.get_pixel(0, 0).a, 0.01, "%s has a transparent corner" % String(variant_id))
+		adult_count += 1 if String(variant_id).ends_with("_adult") else 0
+		young_count += 1 if String(variant_id).ends_with("_young") else 0
+	assert_eq(adult_count, 4, "tree variant catalog contains four adults")
+	assert_eq(young_count, 4, "tree variant catalog contains four young trees")
+
+	var factory := ENVIRONMENT_OBJECT_FACTORY_SCRIPT.new(_manifest)
+	var tree := factory.create_obstacle(
+		&"forest_tree",
+		_size_for(&"forest_tree"),
+		&"circle",
+		0.0,
+		Color(0.28, 0.36, 0.18, 1.0),
+		Color(0.72, 0.56, 0.18, 1.0),
+		_manifest.get_sort_offset(&"forest_tree"),
+		&"infected_plains"
+	) as EnvironmentObject
+	assert_not_null(tree, "forest_tree random variant fixture creates")
+	if tree == null:
+		return
+	add_child(tree)
+	var collision_size := tree.get_collision_size()
+	var selected := {}
+	for index in range(16):
+		var position_key := Vector2(float(index + 100) * 48.0, 240.0)
+		assert_true(
+			tree.select_random_asset_variant(&"infected_plains", position_key),
+			"infected_plains selects a tree asset variant"
+		)
+		selected[tree.get_asset_variant_id()] = true
+		assert_eq(
+			tree.get_asset_path(),
+			_manifest.get_object_asset_path(&"forest_tree", tree.get_asset_variant_id()),
+			"selected tree variant resolves its manifest path"
+		)
+	assert_eq(selected.size(), 8, "grid-aligned positions cover all eight tree variants")
+	assert_eq(tree.get_collision_size(), collision_size, "tree visual randomization keeps collision size")
+	var stable_position := Vector2(912.0, 336.0)
+	tree.select_random_asset_variant(&"infected_plains", stable_position)
+	var stable_variant := tree.get_asset_variant_id()
+	tree.select_random_asset_variant(&"infected_plains", stable_position)
+	assert_eq(tree.get_asset_variant_id(), stable_variant, "the same world position selects the same tree variant")
+	tree.queue_free()
+	await wait_physics_frames(1)
+
 func test_supply_crate_asset_visual() -> void:
 	var crate_scene := load("res://game/drops/supply_crate.tscn") as PackedScene
 	assert_not_null(crate_scene, "supply crate scene loads")

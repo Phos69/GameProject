@@ -34,7 +34,9 @@ func create_obstacle(
 	if obstacle == null:
 		return null
 	if obstacle is EnvironmentObject:
-		(obstacle as EnvironmentObject).asset_variant_id = asset_variant_id
+		var environment_object := obstacle as EnvironmentObject
+		environment_object.asset_variant_id = asset_variant_id
+		environment_object.asset_variant_context_id = asset_variant_id
 	obstacle.configure(
 		obstacle_id,
 		size,

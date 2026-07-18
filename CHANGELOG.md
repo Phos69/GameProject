@@ -8,6 +8,11 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Added
 
+- Importati otto alberi PNG trasparenti in quattro coppie adulto/giovane. Il
+  manifest v16 espone pool visuali casuali per contesto e `forest_tree` sceglie
+  deterministicamente una variante nella Pianura Infetta in base alla cella
+  world-space, mantenendo invariati layout, footprint e collider alle radici.
+
 - `TERRAIN-PARCELS-001`: nuova pipeline terrain deterministica per regioni
   `75x75`, con route principali, sentieri interni e 7-10 lotti esclusivi
   `mesa/clearing/forest/fall_zone/town`; una mesa e una town sono garantite.

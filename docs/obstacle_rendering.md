@@ -45,7 +45,9 @@ Esempi:
 - `objects/generated_raster/infected_plains/broken_fence_2x1.png`;
 - `objects/generated_raster/infected_plains/fallen_log_3x1.png`;
 - `objects/generated_raster/infected_plains/dense_vegetation_3x3.png`;
-- `objects/trees/forest_tree_3x3.png`;
+- `objects/trees/forest_tree_3x3.png` (fallback condiviso);
+- `objects/trees/variants/tree_pair_01..04_{adult,young}.png`;
+- `source_sheets/tree_asset_sheet.png` (foglio RGB originale conservato per reimport);
 - `edges/cliffs/textures/rock_plateau_top_generated.png` (top massa rocciosa scalabile);
 - `edges/cliffs/textures/rock_cliff_face_upward_generated.png` (faccia cliff rialzata);
 - `objects/generated_raster/infected_plains/ruined_house_4x4.png`;
@@ -79,13 +81,21 @@ dichiarare `collision_size_ratio` oppure `variant_collision_size_ratios` per
 allineare la hitbox fisica al contenuto visibile; il footprint di placement e
 pathfinding resta separato.
 
+`random_variant_ids_by_context` definisce pool visuali che non alterano il
+layout. Per `forest_tree`, il contesto `infected_plains` contiene otto PNG
+trasparenti organizzati in quattro coppie adulto/giovane. La scelta usa la cella
+world-space dell'istanza: e uniforme, ripetibile a parita di layout/seed e non
+modifica footprint, collisione, peso di generazione o Y-sort.
+
 Per `floor_center`, il centro del contenuto opaco viene allineato al centro del
 collider fisico; non viene appoggiato sul bordo sud del footprint. Gli asset
 `bottom_center` conservano invece il contatto sul bordo sud, mentre gli alberi
 usano il centro/raggio esplicito del collider alle radici.
 
-`forest_tree` resta il riferimento per l'ostacolo singolo `3x3`: occupa nove
-slot di design e riserva un footprint runtime `96x96`, ma usa un collider
+`forest_tree` resta il riferimento per l'ostacolo singolo `3x3`: nella Pianura
+Infetta risolve una delle otto varianti adulto/giovane, mentre negli altri biomi
+conserva il fallback condiviso. Occupa nove slot di design e riserva un
+footprint runtime `96x96`, ma usa un collider
 circolare di raggio `24 px` centrato sulle radici a offset `(0, 24)`. Anche
 `dead_tree` conserva il placement `48x96` e usa un cerchio di raggio `12 px`
 allo stesso offset verticale. Il loro anchor Y-sort coincide col centro del

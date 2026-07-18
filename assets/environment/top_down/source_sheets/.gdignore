@@ -1,0 +1,2 @@
+# Authoring source sheets are retained for reimport but excluded from Godot's
+# runtime resource scan.
