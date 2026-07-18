@@ -91,18 +91,21 @@ func test_manifest_filesystem_alignment() -> void:
 
 func test_sample_svg_metadata() -> void:
 	var samples := [
-		_manifest.get_asset_contract(&"tile_sets", &"infected_plains"),
+		_manifest.get_asset_contract(&"tile_sets", &"plains"),
 		_manifest.get_asset_contract(&"terrain_tiles", &"main_road"),
 		_manifest.get_asset_contract(&"object_scenes", &"ice_rock"),
 		_manifest.get_asset_contract(&"edge_tiles", &"boundary_fence"),
 		_manifest.get_asset_contract(&"void_tiles", &"fall_zone"),
 		_manifest.get_asset_contract(&"passage_tiles", &"bridge"),
-		_manifest.get_asset_contract(&"biome_asset_sets", &"infected_plains")
+		_manifest.get_asset_contract(&"biome_asset_sets", &"plains")
 	]
 	for contract in samples:
 		var typed_contract := contract as Dictionary
 		var asset_path := String(typed_contract.get("asset_path", ""))
 		var asset_id := String(typed_contract.get("id", ""))
+		var physical_asset_id := (
+			"infected_plains" if asset_id == "plains" else asset_id
+		)
 		var file := FileAccess.open(asset_path, FileAccess.READ)
 		assert_not_null(file, "%s sample opens" % asset_path)
 		if file == null:
@@ -110,7 +113,7 @@ func test_sample_svg_metadata() -> void:
 		var content := file.get_as_text()
 		file.close()
 		assert_true(content.contains('data-generated-by="%s"' % GENERATED_BY), "%s has generator metadata" % asset_path)
-		assert_true(content.contains('data-id="%s"' % asset_id), "%s has stable asset id metadata" % asset_path)
+		assert_true(content.contains('data-id="%s"' % physical_asset_id), "%s has stable asset id metadata" % asset_path)
 		assert_true(content.contains("<svg"), "%s is an SVG document" % asset_path)
 
 func test_generated_prop_svg_resources() -> void:
@@ -166,7 +169,7 @@ func test_generated_prop_svg_resources() -> void:
 		"every generated prop has a dedicated cardinal SVG"
 	)
 
-func test_infected_plains_raster_resources() -> void:
+func test_plains_raster_resources() -> void:
 	for asset_id in INFECTED_PLAINS_RASTER_IDS:
 		var contract := _manifest.get_object_asset_contract(asset_id)
 		var asset_path := String(contract.get("asset_path", ""))

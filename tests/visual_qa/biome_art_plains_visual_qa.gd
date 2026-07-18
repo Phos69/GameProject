@@ -1,7 +1,7 @@
 extends SceneTree
 
-const OUTPUT_DIR := "res://build/qa/biome_art_fix/infected_plains"
-const OUTPUT_FILE := "infected_plains_route_edges.png"
+const OUTPUT_DIR := "res://build/qa/biome_art_fix/plains"
+const OUTPUT_FILE := "plains_route_edges.png"
 const LAYER_ORIGIN := Vector2(640.0, 420.0)
 
 var failures := PackedStringArray()
@@ -14,12 +14,12 @@ func _run() -> void:
 	var output_absolute := ProjectSettings.globalize_path(OUTPUT_DIR)
 	_expect(
 		DirAccess.make_dir_recursive_absolute(output_absolute) == OK,
-		"infected_plains QA output directory is available"
+		"plains QA output directory is available"
 	)
 	var biome := load(
-		"res://game/modes/zombie/biomes/infected_plains.tres"
+		"res://game/modes/zombie/biomes/plains.tres"
 	) as BiomeDefinition
-	_expect(biome != null and biome.palette != null, "infected_plains palette loads")
+	_expect(biome != null and biome.palette != null, "plains palette loads")
 	if biome == null or biome.palette == null:
 		_finish()
 		return
@@ -39,7 +39,7 @@ func _run() -> void:
 	layer.configure(
 		layout,
 		biome.palette,
-		&"infected_plains",
+		&"plains",
 		&"quality",
 		14
 	)
@@ -53,11 +53,11 @@ func _run() -> void:
 	for _frame in range(4):
 		await process_frame
 	var image := root.get_texture().get_image()
-	_expect(image != null and not image.is_empty(), "infected_plains route QA capture is available")
+	_expect(image != null and not image.is_empty(), "plains route QA capture is available")
 	if image != null and not image.is_empty():
 		_expect(
 			image.save_png(output_absolute.path_join(OUTPUT_FILE)) == OK,
-			"infected_plains route QA screenshot is saved"
+			"plains route QA screenshot is saved"
 		)
 	_finish()
 
@@ -152,7 +152,7 @@ func _add_tree_cluster(
 		_expect(
 			ObstacleSystem.configure_random_obstacle_asset_variant(
 				tree,
-				&"infected_plains",
+				&"plains",
 				selection_key
 			),
 			"forest_tree QA instance %d selects an imported variant" % index

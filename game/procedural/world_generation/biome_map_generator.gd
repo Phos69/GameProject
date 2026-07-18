@@ -7,14 +7,23 @@ signal biome_map_generated(cells: Array[BiomeCell])
 @export_range(1, 12, 1) var map_height: int = 3
 @export var cell_size: Vector2i = BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE
 @export_range(0.0, 1.0, 0.05) var extra_edge_chance: float = 0.38
-@export var starting_biome_id: StringName = &"infected_plains"
+@export var starting_biome_id: StringName = &"plains"
 @export var default_biome_order: Array[StringName] = [
-	&"infected_plains",
-	&"toxic_wastes",
-	&"burning_fields",
-	&"frozen_outskirts",
-	&"drowned_marsh"
+	&"plains",
+	&"burning_plains",
+	&"burning_plains",
+	&"frozen_tundra",
+	&"swamp"
 ]
+
+# Preserve the pre-redefinition local seed stream for retained content. The
+# logical IDs are canonical; these values are only deterministic hash salts.
+const BIOME_SEED_ID_ALIASES: Dictionary = {
+	&"plains": &"infected_plains",
+	&"burning_plains": &"burning_fields",
+	&"frozen_tundra": &"frozen_outskirts",
+	&"swamp": &"drowned_marsh",
+}
 
 var border_generator := BorderGenerator.new()
 var passage_generator := BiomePassageGenerator.new()
@@ -107,7 +116,7 @@ func clear_generated_data() -> void:
 func _resolve_biome_order(
 	available_biome_ids: Array[StringName],
 	seed_value: int,
-	required_count: int,
+	_required_count: int,
 	preserve_sequence: bool
 ) -> Array[StringName]:
 	var ordered := _default_order_from_available(available_biome_ids)
@@ -115,9 +124,6 @@ func _resolve_biome_order(
 		ordered.append(starting_biome_id)
 	if not preserve_sequence:
 		ordered = _shuffled_advanced_order(ordered, seed_value)
-	var base_order := ordered.duplicate()
-	while ordered.size() < required_count:
-		ordered.append(base_order[ordered.size() % maxi(base_order.size(), 1)])
 	return ordered
 
 func _default_order_from_available(
@@ -161,11 +167,14 @@ func _derive_cell_seed(
 	grid_y: int,
 	biome_id: StringName
 ) -> int:
+	var seed_biome_id := StringName(
+		BIOME_SEED_ID_ALIASES.get(biome_id, biome_id)
+	)
 	var raw := hash("%d:%d:%d:%s" % [
 		seed_value,
 		grid_x,
 		grid_y,
-		String(biome_id)
+		String(seed_biome_id)
 	])
 	return maxi(absi(raw), 1)
 
@@ -175,7 +184,9 @@ func _resolve_biome_for_grid(
 	height: int,
 	ordered_biomes: Array[StringName]
 ) -> StringName:
-	var cluster_order := _unique_biome_order(ordered_biomes)
+	# Duplicates are meaningful progression bands. Burning Plains occupies both
+	# former Toxic/Urban and Burning/Volcanic bands while remaining one biome ID.
+	var cluster_order := ordered_biomes
 	if cluster_order.is_empty():
 		return starting_biome_id
 	if grid_position == Vector2i.ZERO and cluster_order.has(starting_biome_id):

@@ -15,18 +15,18 @@ const ENCOUNTER_TELEGRAPH_MARKER = preload(
 )
 
 const ENCOUNTERS_BY_BIOME := {
-	&"infected_plains": [&"ambush", &"survivor_cache"],
+	&"plains": [&"ambush", &"survivor_cache"],
 	&"toxic_wastes": [&"ambush", &"elite_pack", &"cursed_crate", &"hazard_burst", &"toxic_leak", &"survivor_cache"],
-	&"burning_fields": [&"ambush", &"elite_pack", &"cursed_crate", &"hazard_burst", &"fire_breakout", &"survivor_cache"],
-	&"frozen_outskirts": [&"ambush", &"elite_pack", &"hazard_burst", &"whiteout", &"survivor_cache"],
-	&"drowned_marsh": [&"ambush", &"elite_pack", &"cursed_crate", &"hazard_burst", &"marsh_emergence", &"survivor_cache"]
+	&"burning_plains": [&"ambush", &"elite_pack", &"cursed_crate", &"hazard_burst", &"fire_breakout", &"survivor_cache"],
+	&"frozen_tundra": [&"ambush", &"elite_pack", &"hazard_burst", &"whiteout", &"survivor_cache"],
+	&"swamp": [&"ambush", &"elite_pack", &"cursed_crate", &"hazard_burst", &"marsh_emergence", &"survivor_cache"]
 }
 
 const MINI_EVENT_BY_BIOME := {
 	&"toxic_wastes": &"toxic_leak",
-	&"burning_fields": &"fire_breakout",
-	&"frozen_outskirts": &"whiteout",
-	&"drowned_marsh": &"marsh_emergence"
+	&"burning_plains": &"fire_breakout",
+	&"frozen_tundra": &"whiteout",
+	&"swamp": &"marsh_emergence"
 }
 
 @export_range(0.0, 1.0, 0.01) var base_chance: float = 0.18
@@ -678,11 +678,11 @@ func _reward_crate_id(biome: BiomeDefinition, cursed: bool) -> StringName:
 		match biome.biome_id if biome != null else &"":
 			&"toxic_wastes":
 				return &"biome_toxic"
-			&"burning_fields":
+			&"burning_plains":
 				return &"biome_fire"
-			&"frozen_outskirts":
+			&"frozen_tundra":
 				return &"biome_frost"
-			&"drowned_marsh":
+			&"swamp":
 				return &"biome_marsh"
 			_:
 				return &"military"
@@ -696,11 +696,11 @@ func _encounter_color(encounter_id: StringName, biome: BiomeDefinition) -> Color
 			return Color(0.78, 0.24, 1.0, 1.0)
 		&"hazard_burst":
 			match biome.biome_id if biome != null else &"":
-				&"burning_fields":
+				&"burning_plains":
 					return Color(1.0, 0.28, 0.08, 1.0)
-				&"frozen_outskirts":
+				&"frozen_tundra":
 					return Color(0.48, 0.90, 1.0, 1.0)
-				&"drowned_marsh":
+				&"swamp":
 					return Color(0.18, 0.72, 0.56, 1.0)
 				_:
 					return Color(0.38, 1.0, 0.22, 1.0)
@@ -721,22 +721,22 @@ func _get_telegraph_container() -> Node:
 
 func _biome_status(biome: BiomeDefinition) -> StringName:
 	match biome.biome_id if biome != null else &"":
-		&"burning_fields":
+		&"burning_plains":
 			return &"burn"
-		&"frozen_outskirts":
+		&"frozen_tundra":
 			return &"freeze"
-		&"drowned_marsh":
+		&"swamp":
 			return &"bleed"
 		_:
 			return &"poison"
 
 func _biome_hazard(biome: BiomeDefinition) -> StringName:
 	match biome.biome_id if biome != null else &"":
-		&"burning_fields":
+		&"burning_plains":
 			return &"fire_patch"
-		&"frozen_outskirts":
+		&"frozen_tundra":
 			return &"deep_snow_slow"
-		&"drowned_marsh":
+		&"swamp":
 			return &"mud_pool"
 		_:
 			return &"toxic_cloud"

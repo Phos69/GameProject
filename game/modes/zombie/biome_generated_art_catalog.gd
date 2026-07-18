@@ -3,7 +3,7 @@ class_name BiomeGeneratedArtCatalog
 
 const ASSET_ROOT := "res://assets/environment/top_down/generated_images"
 const EXPECTED_TOTAL_ASSET_COUNT := 195
-const EXPECTED_ACTIVE_ASSET_COUNT := 133
+const EXPECTED_ACTIVE_ASSET_COUNT := 95
 const SURFACE_MACRO_CELL_SIZE := 8
 
 const ROAD_BORDER_ORIENTATION_HORIZONTAL: StringName = &"horizontal"
@@ -87,7 +87,7 @@ const THEME_CONTRACTS: Dictionary = {
 		&"detail_ground_variations": ["01", "04"],
 		&"path_transitions": false,
 	},
-	&"volcanic": {
+	&"burning_plains": {
 		&"sampling": SAMPLING_REGION,
 		&"road_style": ROAD_STYLE_SURFACE,
 		&"native_border_orientation": ROAD_BORDER_ORIENTATION_VERTICAL,
@@ -111,20 +111,30 @@ const ROLE_CLIFF_INNER_CORNER: StringName = &"cliff_inner_corner"
 const ROLE_CLIFF_CAP: StringName = &"cliff_cap"
 
 const BIOME_THEME_IDS: Dictionary = {
-	&"toxic_wastes": &"urban_ruins",
-	&"burning_fields": &"volcanic",
-	&"frozen_outskirts": &"frozen_tundra",
-	&"drowned_marsh": &"swamp",
+	&"burning_plains": &"burning_plains",
+	&"frozen_tundra": &"frozen_tundra",
+	&"swamp": &"swamp",
 }
-const UNASSIGNED_THEME_IDS: Array[StringName] = [&"desert", &"forest"]
+const UNASSIGNED_THEME_IDS: Array[StringName] = [
+	&"desert",
+	&"forest",
+	&"urban_ruins",
+]
 const ALL_THEME_IDS: Array[StringName] = [
 	&"desert",
 	&"forest",
 	&"frozen_tundra",
 	&"swamp",
 	&"urban_ruins",
-	&"volcanic",
+	&"burning_plains",
 ]
+
+# The current charred-earth raster set is stored in the historical volcanic
+# directory. Runtime and data contracts expose only the Burning Plains name;
+# the directory alias can be removed when the physical asset pass lands.
+const THEME_ASSET_DIRECTORY_IDS: Dictionary = {
+	&"burning_plains": &"volcanic",
+}
 const SURFACE_ROLES: Array[StringName] = [
 	ROLE_GROUND,
 	ROLE_PATH,
@@ -433,10 +443,11 @@ static func road_border_side_material_id(
 
 static func road_border_source_orientation(asset_path: String) -> StringName:
 	for theme_id in THEME_CONTRACTS:
+		var directory_id := _asset_directory_for_theme(theme_id)
 		if (
 			theme_native_border_orientation(theme_id)
 			== ROAD_BORDER_ORIENTATION_HORIZONTAL
-			and asset_path.contains("/%s/" % String(theme_id))
+			and asset_path.contains("/%s/" % String(directory_id))
 		):
 			return ROAD_BORDER_ORIENTATION_HORIZONTAL
 	return ROAD_BORDER_ORIENTATION_VERTICAL
@@ -552,6 +563,7 @@ static func _ensure_profiles() -> void:
 		_profiles[theme_id] = _build_profile(theme_id)
 
 static func _build_profile(theme_id: StringName) -> Dictionary:
+	var directory_id := _asset_directory_for_theme(theme_id)
 	var profile := {
 		&"theme_id": theme_id,
 		ROLE_GROUND: PackedStringArray(),
@@ -568,16 +580,19 @@ static func _build_profile(theme_id: StringName) -> Dictionary:
 		ROLE_CLIFF_CAP: PackedStringArray(),
 	}
 	_append_directory_assets(
-		ASSET_ROOT.path_join("terrain").path_join(String(theme_id)),
+		ASSET_ROOT.path_join("terrain").path_join(String(directory_id)),
 		profile,
 		false
 	)
 	_append_directory_assets(
-		ASSET_ROOT.path_join("cliff").path_join(String(theme_id)),
+		ASSET_ROOT.path_join("cliff").path_join(String(directory_id)),
 		profile,
 		true
 	)
 	return profile
+
+static func _asset_directory_for_theme(theme_id: StringName) -> StringName:
+	return StringName(THEME_ASSET_DIRECTORY_IDS.get(theme_id, theme_id))
 
 static func _append_directory_assets(
 	directory_path: String,

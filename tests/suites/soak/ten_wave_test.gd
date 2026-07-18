@@ -2,7 +2,7 @@ extends GutTest
 ## Soak/Stress — Regressione zombie survival su dieci ondate con transizioni bioma.
 ##
 ## Migra:
-##   tests/zombie_revamp_ten_wave_smoke_test.gd  (boot main.tscn, 10 wave, 5 biomi)
+##   tests/zombie_revamp_ten_wave_smoke_test.gd  (boot main.tscn, 10 wave, 4 biomi)
 ##
 ## NB: suite di stress, esclusa dal run rapido (.gutconfig.json).
 
@@ -55,16 +55,15 @@ func test_ten_wave_run_crosses_biomes() -> void:
 	)
 
 	var biome_path: Array[StringName] = [
-		&"infected_plains",
-		&"toxic_wastes",
-		&"burning_fields",
-		&"frozen_outskirts",
-		&"drowned_marsh"
+		&"plains",
+		&"burning_plains",
+		&"frozen_tundra",
+		&"swamp"
 	]
 	var seen_biomes: Dictionary = {}
 	for wave_index in range(1, 11):
 		if wave_index in [3, 5, 7, 9]:
-			var target_index := mini(floori(float(wave_index - 1) / 2.0), 4)
+			var target_index := mini(floori(float(wave_index - 1) / 2.0), 3)
 			transition_system.cooldown_timer = 0.0
 			transition_system.transition_to(biome_path[target_index], &"east")
 			await wait_physics_frames(1)
@@ -73,7 +72,7 @@ func test_ten_wave_run_crosses_biomes() -> void:
 		for enemy in wave_manager.get_active_wave_enemies():
 			health_system.apply_damage(enemy, 99999)
 		assert_true(await _wait_for_wave_completed(wave_manager, wave_index), "wave %d completes cleanly" % wave_index)
-	assert_gte(seen_biomes.size(), 5, "ten-wave run exercises all five biomes")
+	assert_gte(seen_biomes.size(), 4, "ten-wave run exercises all four biomes")
 	assert_eq(wave_manager.current_wave, 10, "survival remains active through ten waves")
 
 	game_mode_manager = null

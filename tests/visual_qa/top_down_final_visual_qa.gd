@@ -94,7 +94,7 @@ func _run() -> void:
 		streamer,
 		enemy_system,
 		player,
-		&"infected_plains",
+		&"plains",
 		&"center",
 		"plains_full_region.png"
 	)
@@ -112,7 +112,7 @@ func _run() -> void:
 		streamer,
 		enemy_system,
 		player,
-		&"burning_fields",
+		&"burning_plains",
 		&"passage",
 		"ash_passage_crossing.png"
 	)
@@ -121,7 +121,7 @@ func _run() -> void:
 		streamer,
 		enemy_system,
 		player,
-		&"frozen_outskirts",
+		&"frozen_tundra",
 		&"obstacle",
 		"snow_objects_slots.png"
 	)
@@ -130,7 +130,7 @@ func _run() -> void:
 		streamer,
 		enemy_system,
 		player,
-		&"drowned_marsh",
+		&"swamp",
 		&"passage",
 		"marsh_bridge_void.png"
 	)
@@ -299,11 +299,11 @@ func _spawn_biome_roster(
 	match biome_id:
 		&"toxic_wastes":
 			roster = [&"toxic_zombie", &"toxic_exploder"]
-		&"burning_fields":
+		&"burning_plains":
 			roster = [&"burned_zombie", &"fire_runner", &"fire_exploder"]
-		&"frozen_outskirts":
+		&"frozen_tundra":
 			roster = [&"frozen_zombie", &"ice_armored_zombie", &"heavy_slow_zombie"]
-		&"drowned_marsh":
+		&"swamp":
 			roster = [&"drowned_zombie", &"marsh_zombie", &"water_emerging_zombie"]
 	for index in range(roster.size()):
 		var enemy := enemy_system.spawn_enemy(

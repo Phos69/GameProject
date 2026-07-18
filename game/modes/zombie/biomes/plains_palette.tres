@@ -4,7 +4,7 @@
 
 [resource]
 script = ExtResource("1_palette")
-biome_id = &"infected_plains"
+biome_id = &"plains"
 display_name = "Pianura Infetta"
 background_color = Color(0.075, 0.085, 0.06, 1)
 floor_color = Color(0.18, 0.20, 0.13, 1)

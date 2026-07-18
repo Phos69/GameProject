@@ -25,7 +25,7 @@ func place(
 	biome: BiomeDefinition,
 	rng: RandomNumberGenerator
 ) -> int:
-	var is_plains := biome != null and biome.biome_id == &"infected_plains"
+	var is_plains := biome != null and biome.biome_id == &"plains"
 	var minimum := PLAINS_MIN_COUNT if is_plains else MIN_COUNT
 	var maximum := PLAINS_MAX_COUNT if is_plains else MAX_COUNT
 	if biome != null and biome.generation_profile != null:
@@ -158,15 +158,15 @@ func _mesa_profile_id(biome: BiomeDefinition) -> StringName:
 		and not biome.generation_profile.mesa_profile_id.is_empty()
 	):
 		return biome.generation_profile.mesa_profile_id
-	var biome_id := biome.biome_id if biome != null else &"infected_plains"
+	var biome_id := biome.biome_id if biome != null else &"plains"
 	match biome_id:
 		&"toxic_wastes":
 			return &"urban_ruins"
-		&"burning_fields":
-			return &"volcanic"
-		&"frozen_outskirts":
+		&"burning_plains":
+			return &"burning_plains"
+		&"frozen_tundra":
 			return &"frozen_tundra"
-		&"drowned_marsh":
+		&"swamp":
 			return &"swamp"
 		_:
 			return &"forest"
@@ -176,5 +176,4 @@ func _center_reserved_rect(layout: BiomeEnvironmentLayout) -> Rect2i:
 	var center := layout.zone_size / 2
 	var half := WorldGridConfig.CENTER_RESERVED_HALF_TILES
 	return Rect2i(center - Vector2i(half, half), Vector2i(half * 2, half * 2))
-
 

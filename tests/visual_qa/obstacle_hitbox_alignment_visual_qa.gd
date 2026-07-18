@@ -88,7 +88,7 @@ func _run() -> void:
 			Color("46513d"),
 			Color("c6b36d"),
 			manifest.get_sort_offset(obstacle_id),
-			&"infected_plains"
+			&"plains"
 		) as EnvironmentObject
 		_expect(obstacle != null, "%s QA object is created" % String(obstacle_id))
 		if obstacle == null:

@@ -538,7 +538,7 @@ static func configure_mesa_obstacle_visual(
 	var profile_id: StringName = &"forest"
 	if mesa_index >= 0 and mesa_index < layout.mesa_profile_ids.size():
 		profile_id = layout.mesa_profile_ids[mesa_index]
-	elif biome_id != &"infected_plains":
+	elif biome_id != &"plains":
 		profile_id = BiomeGeneratedArtCatalog.get_theme_id_for_biome(biome_id)
 	obstacle.call(
 		"configure_mesa_visual",

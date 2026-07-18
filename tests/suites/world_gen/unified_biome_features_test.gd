@@ -6,11 +6,10 @@ const RANDOM_PROP_PLACEMENT_PASS = preload(
 	"res://game/procedural/world_generation/passes/random_prop_placement_pass.gd"
 )
 const BIOME_IDS: Array[String] = [
-	"infected_plains",
-	"toxic_wastes",
-	"burning_fields",
-	"frozen_outskirts",
-	"drowned_marsh",
+	"plains",
+	"burning_plains",
+	"frozen_tundra",
+	"swamp",
 ]
 const SENTINEL_SEEDS: Array[int] = [
 	10101, 18020, 25939, 33858, 41777,
@@ -146,7 +145,7 @@ func test_terrain_parcels_hold_and_vary_across_sentinel_seeds() -> void:
 			parcel_variants[str(layout.parcel_cell_indices)] = true
 			hazard_variants[str(static_hazards)] = true
 		assert_gt(parcel_variants.size(), 1, "%s varia i lotti tra seed" % biome_id)
-		if biome_id != "infected_plains":
+		if biome_id != "plains":
 			assert_gt(hazard_variants.size(), 1, "%s varia gli hazard tra seed" % biome_id)
 
 func _all_non_route_cells_belong_to_one_parcel(layout: BiomeEnvironmentLayout) -> bool:
@@ -175,7 +174,7 @@ func _rect_belongs_to_clearing(layout: BiomeEnvironmentLayout, rect: Rect2i) -> 
 	return true
 
 func test_random_prop_scan_fallback_reaches_the_profile_minimum() -> void:
-	var biome := WorldGen.load_biome("infected_plains")
+	var biome := WorldGen.load_biome("plains")
 	assert_not_null(biome, "carica il profilo per il fallback prop")
 	if biome == null:
 		return

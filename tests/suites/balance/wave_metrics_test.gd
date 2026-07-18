@@ -10,10 +10,9 @@ extends GutTest
 ## lo stato e (ri)connette i segnali sulla propria istanza fresca di main.tscn.
 
 const EXPECTED_THEMATIC_IDS := {
-	&"toxic_wastes": ["toxic_zombie", "toxic_exploder"],
-	&"burning_fields": ["burned_zombie", "fire_runner", "fire_exploder"],
-	&"frozen_outskirts": ["frozen_zombie", "ice_armored_zombie", "heavy_slow_zombie"],
-	&"drowned_marsh": ["drowned_zombie", "marsh_zombie", "water_emerging_zombie"]
+	&"burning_plains": ["burned_zombie", "fire_runner", "fire_exploder"],
+	&"frozen_tundra": ["frozen_zombie", "ice_armored_zombie", "heavy_slow_zombie"],
+	&"swamp": ["drowned_zombie", "marsh_zombie", "water_emerging_zombie"]
 }
 const DROP_MONEY := &"money"
 const MODE_INFINITE_ARENA := &"infinite_arena"
@@ -220,13 +219,13 @@ func test_zombie_survival_metrics() -> void:
 		_expect_biome_definition_variant_window(biome_manager, StringName(biome_id), 4)
 
 	assert_true(await _wait_for_wave_combat(wave_manager, 1, 900), "zombie survival wave 1 reaches combat")
-	assert_eq(wave_manager.current_wave_biome_id, &"infected_plains", "wave 1 records infected plains")
+	assert_eq(wave_manager.current_wave_biome_id, &"plains", "wave 1 records Plains")
 	await _damage_and_clear_wave(health_system, player)
 	assert_true(await _wait_for_wave_completed(wave_manager, 1, 300), "zombie survival wave 1 completes cleanly")
 	await wait_physics_frames(2)
 
 	assert_true(await _wait_for_wave_combat(wave_manager, 2, 900), "zombie survival wave 2 reaches combat")
-	assert_eq(wave_manager.current_wave_biome_id, &"infected_plains", "wave 2 records infected plains")
+	assert_eq(wave_manager.current_wave_biome_id, &"plains", "wave 2 records infected plains")
 	await _damage_and_clear_wave(health_system, player)
 	assert_true(await _wait_for_wave_completed(wave_manager, 2, 300), "zombie survival wave 2 completes cleanly")
 	await wait_physics_frames(4)

@@ -27,7 +27,7 @@ func _run() -> void:
 	current_scene = scene
 
 	var palette := load(
-		"res://game/modes/zombie/biomes/infected_plains_palette.tres"
+		"res://game/modes/zombie/biomes/plains_palette.tres"
 	) as BiomePalette
 	var layout := BiomeEnvironmentLayout.new()
 	layout.zone_size = ZONE_SIZE
@@ -51,7 +51,7 @@ func _run() -> void:
 	layer.configure(
 		layout,
 		palette,
-		&"infected_plains",
+		&"plains",
 		&"quality",
 		16
 	)

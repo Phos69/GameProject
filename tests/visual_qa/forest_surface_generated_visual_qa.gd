@@ -43,7 +43,7 @@ func _run() -> void:
 	_add_title(board)
 	var manifest := EnvironmentAssetManifest.reload_shared()
 	var palette := load(
-		"res://game/modes/zombie/biomes/infected_plains_palette.tres"
+		"res://game/modes/zombie/biomes/plains_palette.tres"
 	) as BiomePalette
 	for index in range(SURFACE_IDS.size()):
 		var texture := _load_texture(manifest, SURFACE_IDS[index], palette)

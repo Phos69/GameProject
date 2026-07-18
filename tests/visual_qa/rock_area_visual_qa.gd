@@ -25,7 +25,7 @@ func _run() -> void:
 		"rock-area QA output directory is available"
 	)
 	var biome := load(
-		"res://game/modes/zombie/biomes/infected_plains.tres"
+		"res://game/modes/zombie/biomes/plains.tres"
 	) as BiomeDefinition
 	_expect(biome != null and biome.palette != null, "infected plains palette loads")
 	if biome == null or biome.palette == null:
@@ -49,7 +49,7 @@ func _run() -> void:
 	layer.configure(
 		layout,
 		biome.palette,
-		&"infected_plains",
+		&"plains",
 		&"quality",
 		16
 	)
@@ -135,7 +135,7 @@ func _add_mesas_and_occlusion_probes(
 			rock,
 			layout,
 			index,
-			&"infected_plains",
+			&"plains",
 			biome.palette
 		)
 		_expect(sort_anchor != null, "rock %d owns a Y-sort wrapper" % index)

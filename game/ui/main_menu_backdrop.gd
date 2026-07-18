@@ -1,7 +1,7 @@
 extends Control
 class_name MainMenuBackdrop
 ## Fondale del main menu (VIS-012): gradiente notturno, griglia cardinale e
-## celle rettangolari nei toni dei cinque biomi, cosi' la prima schermata parla
+## celle rettangolari nei toni dei quattro biomi, cosi' la prima schermata parla
 ## il linguaggio visivo del mondo di gioco. Disegno statico: nessuna
 ## animazione, quindi coerente anche con il preset reduced motion.
 
@@ -11,10 +11,9 @@ const GRID_CELL := Vector2(96.0, 96.0)
 const GRID_LINE_COLOR := Color(0.30, 0.52, 0.70, 0.055)
 const BIOME_TILE_COLORS: Array[Color] = [
 	Color(0.30, 0.44, 0.20, 1.0),
-	Color(0.40, 0.44, 0.38, 1.0),
+	Color(0.50, 0.27, 0.15, 1.0),
 	Color(0.60, 0.70, 0.78, 1.0),
-	Color(0.20, 0.30, 0.27, 1.0),
-	Color(0.50, 0.27, 0.15, 1.0)
+	Color(0.20, 0.30, 0.27, 1.0)
 ]
 # Posizioni relative al viewport: fasce laterali, lontane dalla colonna
 # centrale del menu.
@@ -22,11 +21,11 @@ const BIOME_TILES: Array[Dictionary] = [
 	{"anchor": Vector2(0.115, 0.185), "width": 150.0, "biome": 0},
 	{"anchor": Vector2(0.185, 0.255), "width": 96.0, "biome": 0},
 	{"anchor": Vector2(0.130, 0.800), "width": 168.0, "biome": 3},
-	{"anchor": Vector2(0.215, 0.870), "width": 104.0, "biome": 4},
+	{"anchor": Vector2(0.215, 0.870), "width": 104.0, "biome": 1},
 	{"anchor": Vector2(0.865, 0.190), "width": 150.0, "biome": 2},
 	{"anchor": Vector2(0.800, 0.130), "width": 92.0, "biome": 2},
 	{"anchor": Vector2(0.880, 0.780), "width": 168.0, "biome": 1},
-	{"anchor": Vector2(0.800, 0.870), "width": 104.0, "biome": 4}
+	{"anchor": Vector2(0.800, 0.870), "width": 104.0, "biome": 1}
 ]
 
 func _notification(what: int) -> void:

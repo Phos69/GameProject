@@ -4,26 +4,30 @@ class_name BiomeManager
 signal current_biome_changed(biome_id: StringName, display_name: String)
 signal current_region_changed(region_id: StringName, biome_id: StringName)
 
-const INFECTED_PLAINS = preload(
-	"res://game/modes/zombie/biomes/infected_plains.tres"
+const PLAINS = preload(
+	"res://game/modes/zombie/biomes/plains.tres"
 )
-const TOXIC_WASTES = preload(
-	"res://game/modes/zombie/biomes/toxic_wastes.tres"
+const BURNING_PLAINS = preload(
+	"res://game/modes/zombie/biomes/burning_plains.tres"
 )
-const BURNING_FIELDS = preload(
-	"res://game/modes/zombie/biomes/burning_fields.tres"
+const FROZEN_TUNDRA = preload(
+	"res://game/modes/zombie/biomes/frozen_tundra.tres"
 )
-const FROZEN_OUTSKIRTS = preload(
-	"res://game/modes/zombie/biomes/frozen_outskirts.tres"
-)
-const DROWNED_MARSH = preload(
-	"res://game/modes/zombie/biomes/drowned_marsh.tres"
+const SWAMP = preload(
+	"res://game/modes/zombie/biomes/swamp.tres"
 )
 const BIOME_WORLD_GENERATOR_SCRIPT = preload(
 	"res://game/procedural/world_generation/biome_world_generator.gd"
 )
+const LEGACY_BIOME_ALIASES: Dictionary = {
+	&"infected_plains": &"plains",
+	&"toxic_wastes": &"burning_plains",
+	&"burning_fields": &"burning_plains",
+	&"frozen_outskirts": &"frozen_tundra",
+	&"drowned_marsh": &"swamp",
+}
 
-@export var default_biome_id: StringName = &"infected_plains"
+@export var default_biome_id: StringName = &"plains"
 @export var biome_definitions: Array[Resource] = []
 
 var biomes: Dictionary = {}
@@ -65,6 +69,7 @@ func generate_world_data(context: Dictionary = {}) -> Dictionary:
 # /biome change signals that build the live world (terrain, hazards, tiles).
 func apply_world_data(world_data: Dictionary) -> void:
 	active_world_data = world_data
+	_normalize_world_biome_ids()
 	_apply_generated_layouts()
 	select_starting_biome()
 
@@ -77,7 +82,9 @@ func _exit_tree() -> void:
 func register_biome(definition) -> void:
 	if definition == null:
 		return
-	var biome_id := StringName(definition.get("biome_id"))
+	var biome_id := canonicalize_biome_id(
+		StringName(definition.get("biome_id"))
+	)
 	if biome_id.is_empty():
 		return
 	biomes[biome_id] = definition
@@ -95,6 +102,7 @@ func select_starting_biome() -> bool:
 	return set_current_biome(default_biome_id)
 
 func set_current_biome(biome_id: StringName) -> bool:
+	biome_id = canonicalize_biome_id(biome_id)
 	_update_current_cell_for_biome(biome_id)
 	if current_biome_cell != null and current_biome_cell.biome_id == biome_id:
 		return set_current_region(current_biome_cell.id)
@@ -139,7 +147,10 @@ func get_current_display_name() -> String:
 	return String(current_biome.get("display_name")) if current_biome != null else ""
 
 func get_biome_definition(biome_id: StringName):
-	return biomes.get(biome_id)
+	return biomes.get(canonicalize_biome_id(biome_id))
+
+static func canonicalize_biome_id(biome_id: StringName) -> StringName:
+	return StringName(LEGACY_BIOME_ALIASES.get(biome_id, biome_id))
 
 func get_available_biome_ids() -> Array[StringName]:
 	var ids: Array[StringName] = []
@@ -193,11 +204,10 @@ func get_seed_debug_summary() -> String:
 	)
 
 func _register_builtin_biomes() -> void:
-	register_biome(INFECTED_PLAINS)
-	register_biome(TOXIC_WASTES)
-	register_biome(BURNING_FIELDS)
-	register_biome(FROZEN_OUTSKIRTS)
-	register_biome(DROWNED_MARSH)
+	register_biome(PLAINS)
+	register_biome(BURNING_PLAINS)
+	register_biome(FROZEN_TUNDRA)
+	register_biome(SWAMP)
 
 func _ensure_world_generator() -> void:
 	if world_generator != null:
@@ -251,6 +261,10 @@ func _apply_generated_layouts() -> void:
 		)
 	if current_biome_cell != null:
 		_apply_cell_layout_to_definition(current_biome_cell)
+
+func _normalize_world_biome_ids() -> void:
+	for cell in get_generated_biome_map():
+		cell.biome_id = canonicalize_biome_id(cell.biome_id)
 
 func _update_current_cell_for_biome(biome_id: StringName) -> void:
 	_ensure_world_generator()

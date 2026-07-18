@@ -81,11 +81,11 @@ func _run() -> void:
 	)
 
 	var biome_ids: Array[StringName] = [
-		&"infected_plains",
+		&"plains",
 		&"toxic_wastes",
-		&"burning_fields",
-		&"frozen_outskirts",
-		&"drowned_marsh"
+		&"burning_plains",
+		&"frozen_tundra",
+		&"swamp"
 	]
 	for biome_id in biome_ids:
 		if biome_manager.get_current_biome_id() != biome_id:
@@ -141,11 +141,11 @@ func _spawn_biome_roster(
 	match biome_id:
 		&"toxic_wastes":
 			roster = [&"toxic_zombie", &"toxic_exploder"]
-		&"burning_fields":
+		&"burning_plains":
 			roster = [&"burned_zombie", &"fire_runner", &"fire_exploder"]
-		&"frozen_outskirts":
+		&"frozen_tundra":
 			roster = [&"frozen_zombie", &"ice_armored_zombie"]
-		&"drowned_marsh":
+		&"swamp":
 			roster = [&"drowned_zombie", &"marsh_zombie", &"water_emerging_zombie"]
 	for index in range(roster.size()):
 		var enemy := enemy_system.spawn_enemy(

@@ -271,7 +271,7 @@ func _prop_pool(biome: BiomeDefinition) -> Array[Dictionary]:
 		var profile_pool := _validated_pool(biome.generation_profile.get_prop_rules())
 		if not profile_pool.is_empty():
 			return profile_pool
-	var biome_id := biome.biome_id if biome != null else &"infected_plains"
+	var biome_id := biome.biome_id if biome != null else &"plains"
 	return _validated_pool(_fallback_pool(biome_id))
 
 
@@ -287,7 +287,7 @@ func _fallback_pool(biome_id: StringName) -> Array[Dictionary]:
 				{"id": &"lab_wall", "weight": 1.0},
 				{"id": &"corroded_barrier", "weight": 1.1},
 			]
-		&"burning_fields":
+		&"burning_plains":
 			return [
 				{"id": &"burned_house", "weight": 0.6},
 				{"id": &"burned_car", "weight": 1.3},
@@ -296,7 +296,7 @@ func _fallback_pool(biome_id: StringName) -> Array[Dictionary]:
 				{"id": &"ash_barrier", "weight": 1.3},
 				{"id": &"scorched_barricade", "weight": 1.1},
 			]
-		&"frozen_outskirts":
+		&"frozen_tundra":
 			return [
 				{"id": &"snow_cabin", "weight": 0.7},
 				{"id": &"ice_rock", "weight": 1.4},
@@ -304,7 +304,7 @@ func _fallback_pool(biome_id: StringName) -> Array[Dictionary]:
 				{"id": &"snow_wall", "weight": 1.2},
 				{"id": &"fallen_log", "weight": 1.0},
 			]
-		&"drowned_marsh":
+		&"swamp":
 			return [
 				{"id": &"sunken_house", "weight": 0.6},
 				{"id": &"sunken_wreck", "weight": 1.1},

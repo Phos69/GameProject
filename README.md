@@ -341,19 +341,20 @@ Completato:
   laboratori, recinti, muri, barili, relitti, tronchi, ponti e crate restano
   disponibili senza asset esterni obbligatori o fallback barriera generico
   implicito;
-- cinque biomi giocabili nella stessa run, con partenza forzata dalla `Pianura Infetta`;
+- quattro biomi giocabili nella stessa run, tutti appartenenti alla famiglia
+  `plains`, con partenza forzata dalla `Pianura`;
 - spawn zombie delegato a `ZombieSpawner` dai bordi della camera, validato
   contro camera, player, walkable, hazard, fall zone e blocker, con fallback
   stream-aware e punti arena usati solo se validi;
-- layout ambientali data-driven per Pianura, Tossico, Infuocato, Neve e Palude;
+- layout ambientali data-driven per Pianura, Pianura Ardente, Tundra Gelata e Palude;
 - casse comuni, mediche, militari e tematiche con loot dedicato tramite `SupplyCrate` e `DropSystem`;
 - zona di caduta data-driven con visuale cliff/depth, 20 HP di danno, respawn
   all'ultima posizione sicura e invulnerabilita temporanea componibile;
 - feedback visuale/audio della caduta e rifiuto della zona da parte dello spawner zombie;
-- pozze tossiche, gas, fuoco, lava, ghiaccio, neve alta, acqua profonda e fango con danno o modifica movimento;
-- quindici varianti zombie tematiche configurate tramite `BiomeEnemyProfile`,
-  incluse quattro elite da wave 5 (`Toxic Reaver`, `Ember Hound`,
-  `Glacial Bulwark`, `Mire Stalker`);
+- fuoco, crepe ardenti, ghiaccio, neve alta, acqua profonda e fango con danno o modifica movimento;
+- dodici varianti zombie tematiche attive configurate tramite `BiomeEnemyProfile`,
+  incluse tre elite da wave 5 (`Ember Hound`, `Glacial Bulwark`,
+  `Mire Stalker`); i profili tossici restano archiviati e non sono generati;
 - otto pittogrammi zombie raster con alpha per i quattro archetipi base e le
   quattro elite, con fallback procedurale conservato;
 - HUD bioma con pericoli, risorse, status e annunci di transizione;

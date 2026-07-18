@@ -2,15 +2,16 @@ extends GutTest
 ## Runtime mesa contract: each blocker owns one local Y-sorted raised mesh.
 
 const BIOME_PROFILES: Dictionary = {
-	&"infected_plains": &"forest",
+	&"plains": &"forest",
 	&"toxic_wastes": &"urban_ruins",
-	&"burning_fields": &"volcanic",
-	&"frozen_outskirts": &"frozen_tundra",
-	&"drowned_marsh": &"swamp",
+	&"burning_plains": &"burning_plains",
+	&"frozen_tundra": &"frozen_tundra",
+	&"swamp": &"swamp",
 }
 const PROFILE_TOP_REPEAT: Dictionary = {
 	&"forest": BiomeTileLayer.FOREST_SURFACE_TEXTURE_WORLD_SIZE,
 	&"urban_ruins": BiomeTileLayer.TOXIC_SURFACE_TEXTURE_WORLD_SIZE,
+	&"burning_plains": BiomeTileLayer.BURNING_SURFACE_TEXTURE_WORLD_SIZE,
 	&"volcanic": BiomeTileLayer.BURNING_SURFACE_TEXTURE_WORLD_SIZE,
 	&"frozen_tundra": BiomeTileLayer.FROZEN_GROUND_TEXTURE_WORLD_SIZE,
 	&"swamp": BiomeTileLayer.MARSH_GROUND_TEXTURE_WORLD_SIZE,
@@ -206,8 +207,8 @@ func test_large_rock_collision_and_local_visual_share_the_layout_center() -> voi
 			blocker,
 			layout,
 			0,
-			&"infected_plains",
-			_load_palette(&"infected_plains")
+			&"plains",
+			_load_palette(&"plains")
 		)
 		await wait_process_frames(1)
 		assert_true(blocker.has_mesa_visual(), "the blocker owns the themed raised mesh")

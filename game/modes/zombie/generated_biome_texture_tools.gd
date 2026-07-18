@@ -13,7 +13,7 @@ const MARSH_SURFACE_EDGE_BLEND_PIXELS := 40
 const GROUND_MACRO_SEAM_BLEND_PIXELS := 128
 ## Frazione di larghezza del PNG road_border_defined occupata da ciascuna
 ## striscia di bordo; il core interno e' la fascia centrale restante.
-## Stesso rapporto usato dal core forestale di infected_plains.
+## Stesso rapporto usato dal core forestale di plains.
 const ROAD_CORE_CROP_MARGIN_RATIO := 0.32
 ## L'overlay bordo usa la fascia esterna piu una piccola porzione di strada,
 ## cosi il profilo ground->road resta leggibile anche quando viene compresso
@@ -35,17 +35,17 @@ const FROZEN_SNOW_BLEND_COLOR := Color(0.82, 0.90, 0.97, 1.0)
 # attori, crate e route chiare recuperano separazione (VIS-006) e i patch di
 # neve base non staccano dai materiali granulosi di route e passaggi.
 const FROZEN_GROUND_TONE := Color(0.90, 0.91, 0.93, 1.0)
-# drowned_marsh: fango, strada e acqua vivono tutti fra lum 54-66 (VIS-006,
+# swamp: fango, strada e acqua vivono tutti fra lum 54-66 (VIS-006,
 # "valori troppo scuri e vicini"). Il lift caldo porta walkway/strade sopra il
 # fango senza toccare il ground, che resta scuro per la leggibilita' attori.
 const SWAMP_ROUTE_LIFT_COLOR := Color(0.82, 0.72, 0.52, 1.0)
 const SWAMP_ROUTE_LIFT := 0.22
-# drowned_marsh: le strip lip dei cliff hanno dettaglio organico ad alta
+# swamp: le strip lip dei cliff hanno dettaglio organico ad alta
 # frequenza; minificate ~10x sul bordo dei chasm senza mipmap diventano
 # "glitter" dorato (VIS-002 bordo chiaro residuo). Il pre-downscale le porta
 # vicine alla scala di rendering reale.
 const SWAMP_CLIFF_TEXTURE_DOWNSCALE := 0.45
-# burning_fields: i pixel brace piu' accesi del ground competono con telegraph
+# burning_plains: i pixel brace piu' accesi del ground competono con telegraph
 # e fire hazard (VIS-006). Il damping selettivo scurisce solo i pixel a
 # dominanza arancio, lasciando lava feature e path intatti.
 const VOLCANIC_EMBER_THRESHOLD := 0.18
@@ -67,12 +67,12 @@ static func get_cached_normalized_texture_count() -> int:
 	return _normalized_texture_cache.size()
 
 static func surface_edge_trim_pixels(biome_id: StringName) -> int:
-	if biome_id == &"infected_plains":
+	if biome_id == &"plains":
 		# The three forest surface PNGs contain a broad baked shadow around their
 		# perimeter. Removing the full band prevents two dark edges from forming a
 		# visible line when the unchanged tile repeats vertically or horizontally.
 		return INFECTED_PLAINS_SURFACE_EDGE_TRIM_PIXELS
-	if biome_id == &"burning_fields":
+	if biome_id == &"burning_plains":
 		return BURNING_FIELDS_GENERATED_TEXTURE_EDGE_TRIM_PIXELS
 	return GENERATED_SURFACE_TEXTURE_EDGE_TRIM_PIXELS
 
@@ -83,30 +83,30 @@ static func should_harmonize_surface_edges(biome_id: StringName) -> bool:
 	# I raster generati non sono perfettamente tileable: senza armonizzazione la
 	# differenza fra bordi opposti diventa una banda a ogni repeat world-UV.
 	return (
-		biome_id == &"infected_plains"
-		or biome_id == &"burning_fields"
-		or biome_id == &"drowned_marsh"
-		or biome_id == &"frozen_outskirts"
+		biome_id == &"plains"
+		or biome_id == &"burning_plains"
+		or biome_id == &"swamp"
+		or biome_id == &"frozen_tundra"
 		or biome_id == &"toxic_wastes"
 	)
 
 static func should_harmonize_cliff_edges(biome_id: StringName) -> bool:
-	return biome_id == &"burning_fields" or biome_id == &"toxic_wastes"
+	return biome_id == &"burning_plains" or biome_id == &"toxic_wastes"
 
 static func cliff_texture_downscale(biome_id: StringName) -> float:
-	if biome_id == &"drowned_marsh":
+	if biome_id == &"swamp":
 		return SWAMP_CLIFF_TEXTURE_DOWNSCALE
 	return 1.0
 
 static func surface_edge_blend_pixels(biome_id: StringName) -> int:
 	match biome_id:
-		&"infected_plains":
+		&"plains":
 			return INFECTED_PLAINS_SURFACE_EDGE_BLEND_PIXELS
-		&"burning_fields":
+		&"burning_plains":
 			return BURNING_SURFACE_EDGE_BLEND_PIXELS
-		&"drowned_marsh":
+		&"swamp":
 			return MARSH_SURFACE_EDGE_BLEND_PIXELS
-		&"frozen_outskirts":
+		&"frozen_tundra":
 			return FROZEN_SURFACE_EDGE_BLEND_PIXELS
 		_:
 			return BURNING_FIELDS_EDGE_BLEND_PIXELS
@@ -137,11 +137,11 @@ static func normalize_surface_texture(
 	)
 	if _surface_uses_mirrored_atlas(biome_id, asset_path):
 		normalized = _build_mirrored_repeat_atlas(normalized)
-	if biome_id == &"frozen_outskirts":
+	if biome_id == &"frozen_tundra":
 		normalized = _harmonize_frozen_surface_texture(normalized, asset_path)
-	if biome_id == &"drowned_marsh":
+	if biome_id == &"swamp":
 		normalized = _harmonize_swamp_surface_texture(normalized, asset_path)
-	if biome_id == &"burning_fields":
+	if biome_id == &"burning_plains":
 		normalized = _harmonize_volcanic_surface_texture(normalized, asset_path)
 	if not asset_path.is_empty() and normalized != null:
 		_normalized_texture_cache[cache_key] = normalized
@@ -337,11 +337,11 @@ static func build_road_border_side_surface_texture(
 	var strip := crop_road_border_side_texture(oriented, side)
 	if strip == null:
 		return null
-	if biome_id == &"frozen_outskirts":
+	if biome_id == &"frozen_tundra":
 		strip = _harmonize_frozen_surface_texture(strip, asset_path)
-	if biome_id == &"drowned_marsh":
+	if biome_id == &"swamp":
 		strip = _harmonize_swamp_surface_texture(strip, asset_path)
-	if biome_id == &"burning_fields":
+	if biome_id == &"burning_plains":
 		strip = _harmonize_volcanic_surface_texture(strip, asset_path)
 	if not asset_path.is_empty() and strip != null:
 		_normalized_texture_cache[cache_key] = strip
@@ -376,11 +376,11 @@ static func build_road_core_surface_texture(
 		return null
 	if _surface_uses_mirrored_atlas(biome_id, asset_path):
 		core = _build_mirrored_repeat_atlas(core)
-	if biome_id == &"frozen_outskirts":
+	if biome_id == &"frozen_tundra":
 		core = _harmonize_frozen_surface_texture(core, asset_path)
-	if biome_id == &"drowned_marsh":
+	if biome_id == &"swamp":
 		core = _harmonize_swamp_surface_texture(core, asset_path)
-	if biome_id == &"burning_fields":
+	if biome_id == &"burning_plains":
 		core = _harmonize_volcanic_surface_texture(core, asset_path)
 	if not asset_path.is_empty() and core != null:
 		_normalized_texture_cache[cache_key] = core

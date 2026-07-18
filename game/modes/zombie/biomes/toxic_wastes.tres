@@ -8,15 +8,13 @@
 [resource]
 script = ExtResource("1_definition")
 biome_id = &"toxic_wastes"
-display_name = "Bioma Tossico"
-description = "Bioma velenoso con controllo area, gas e risorse chimiche."
+display_name = "Archivio: Bioma Tossico"
+description = "Contenuto legacy non registrato, conservato per compatibilita e QA degli asset."
 difficulty_rating = 1.55
 progression_depth = 1
 palette = ExtResource("2_palette")
 environment_layout = ExtResource("3_layout")
 generation_profile = ExtResource("4_profile")
-previous_biome_id = &"infected_plains"
-next_biome_id = &"burning_fields"
 biome_icon_id = &"toxic"
 danger_summary = "TOX: poison pools and gas"
 resource_summary = "Antidotes and corrosive ammo"

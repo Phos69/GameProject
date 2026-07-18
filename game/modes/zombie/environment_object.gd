@@ -565,7 +565,7 @@ func _ensure_default_mesa_visual() -> void:
 		return
 	configure_mesa_visual(
 		&"forest",
-		&"infected_plains",
+		&"plains",
 		0,
 		null,
 		WorldGridConfig.LOGICAL_TILE_SCALE

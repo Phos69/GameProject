@@ -59,7 +59,7 @@ func test_forest_surface_textures() -> void:
 	_validate_generated_asset(_manifest.get_void_asset_contract(EDGE_ID), EDGE_ID)
 
 func test_forest_runtime_consumption() -> void:
-	var palette := load("res://game/modes/zombie/biomes/infected_plains_palette.tres") as BiomePalette
+	var palette := load("res://game/modes/zombie/biomes/plains_palette.tres") as BiomePalette
 	var layout := BiomeEnvironmentLayout.new()
 	layout.zone_size = Vector2i(16, 16)
 	layout.generation_seed = 862041
@@ -76,7 +76,7 @@ func test_forest_runtime_consumption() -> void:
 	layer.configure(
 		layout,
 		palette,
-		&"infected_plains",
+		&"plains",
 		&"quality",
 		16,
 		null,
@@ -216,7 +216,7 @@ func test_forest_runtime_consumption() -> void:
 	await wait_physics_frames(1)
 
 func test_forest_route_surfaces_feed_boundary_mask() -> void:
-	var palette := load("res://game/modes/zombie/biomes/infected_plains_palette.tres") as BiomePalette
+	var palette := load("res://game/modes/zombie/biomes/plains_palette.tres") as BiomePalette
 	var layout := BiomeEnvironmentLayout.new()
 	layout.zone_size = Vector2i(28, 24)
 	layout.generation_seed = 712449
@@ -230,7 +230,7 @@ func test_forest_route_surfaces_feed_boundary_mask() -> void:
 	layout.rebuild_terrain_classification()
 	var layer := BiomeTileLayer.new()
 	add_child(layer)
-	layer.configure(layout, palette, &"infected_plains", &"quality", 14, null, _manifest, false)
+	layer.configure(layout, palette, &"plains", &"quality", 14, null, _manifest, false)
 	await wait_physics_frames(1)
 
 	assert_eq(
@@ -269,7 +269,7 @@ func test_forest_route_surfaces_feed_boundary_mask() -> void:
 	await wait_physics_frames(1)
 
 func test_forest_road_passages_use_asphalt_surface() -> void:
-	var palette := load("res://game/modes/zombie/biomes/infected_plains_palette.tres") as BiomePalette
+	var palette := load("res://game/modes/zombie/biomes/plains_palette.tres") as BiomePalette
 	var layout := BiomeEnvironmentLayout.new()
 	layout.zone_size = Vector2i(18, 12)
 	layout.generation_seed = 443118
@@ -285,7 +285,7 @@ func test_forest_road_passages_use_asphalt_surface() -> void:
 	layout.rebuild_terrain_classification()
 	var layer := BiomeTileLayer.new()
 	add_child(layer)
-	layer.configure(layout, palette, &"infected_plains", &"quality", 9, null, _manifest, false)
+	layer.configure(layout, palette, &"plains", &"quality", 9, null, _manifest, false)
 	await wait_physics_frames(1)
 
 	var connector_probe := Vector2i(4, 6)
@@ -395,21 +395,27 @@ func test_passage_over_lane_spoke_uses_asphalt_surface() -> void:
 
 const GENERATED_BIOME_THEMES: Dictionary = {
 	&"toxic_wastes": &"urban_ruins",
-	&"burning_fields": &"volcanic",
-	&"frozen_outskirts": &"frozen_tundra",
-	&"drowned_marsh": &"swamp",
+	&"burning_plains": &"burning_plains",
+	&"frozen_tundra": &"frozen_tundra",
+	&"swamp": &"swamp",
+}
+const GENERATED_BIOME_ASSET_DIRECTORIES: Dictionary = {
+	&"toxic_wastes": &"urban_ruins",
+	&"burning_plains": &"volcanic",
+	&"frozen_tundra": &"frozen_tundra",
+	&"swamp": &"swamp",
 }
 const GENERATED_BIOME_PASSAGE_TAGS: Dictionary = {
 	&"toxic_wastes": &"broken_gate",
-	&"burning_fields": &"burned_road",
-	&"frozen_outskirts": &"snow_pass",
-	&"drowned_marsh": &"bridge",
+	&"burning_plains": &"burned_road",
+	&"frozen_tundra": &"snow_pass",
+	&"swamp": &"bridge",
 }
 const GENERATED_BIOME_ROUTE_TAGS: Dictionary = {
 	&"toxic_wastes": &"service_lane",
-	&"burning_fields": &"ash_lane",
-	&"frozen_outskirts": &"packed_snow_path",
-	&"drowned_marsh": &"wooden_walkway",
+	&"burning_plains": &"ash_lane",
+	&"frozen_tundra": &"packed_snow_path",
+	&"swamp": &"wooden_walkway",
 }
 const FROZEN_SNOW_REFERENCE := Color(0.82, 0.90, 0.97, 1.0)
 
@@ -426,13 +432,13 @@ func test_generated_biome_catalog_contract() -> void:
 	)
 	assert_eq(
 		BiomeGeneratedArtCatalog.get_active_asset_count(),
-		133,
-		"all PNG files for the four active themes are catalogued"
+		95,
+		"all PNG files for the three generated active variants are catalogued"
 	)
 	assert_eq(
 		BiomeGeneratedArtCatalog.get_unassigned_theme_ids(),
-		[&"desert", &"forest"],
-		"desert and replacement forest art remain explicitly unassigned"
+		[&"desert", &"forest", &"urban_ruins"],
+		"desert, replacement forest and retired urban art remain unassigned"
 	)
 	var legacy_swamp_directory := DirAccess.open(
 		"res://assets/environment/top_down/tiles/swamp/textures"
@@ -453,14 +459,14 @@ func test_generated_biome_catalog_contract() -> void:
 		"toxic_wastes road role selects a full-bleed road surface"
 	)
 	var volcanic_road_path := BiomeGeneratedArtCatalog.select_surface_asset_path(
-		&"burning_fields",
+		&"burning_plains",
 		BiomeGeneratedArtCatalog.ROLE_ROAD,
 		13001,
 		Vector2i.ZERO
 	)
 	assert_true(
 		volcanic_road_path.contains("road_variation"),
-		"burning_fields road role selects a full-bleed road surface"
+		"burning_plains road role selects a full-bleed road surface"
 	)
 	for biome_id_value in GENERATED_BIOME_THEMES:
 		var biome_id := biome_id_value as StringName
@@ -524,7 +530,7 @@ func test_generated_biome_catalog_contract() -> void:
 		)
 
 func test_frozen_surface_selection_uses_coherent_materials() -> void:
-	var biome_id := &"frozen_outskirts"
+	var biome_id := &"frozen_tundra"
 	for sample in range(128):
 		var ground_path := BiomeGeneratedArtCatalog.select_surface_asset_path(
 			biome_id,
@@ -589,7 +595,7 @@ func test_frozen_surface_selection_uses_coherent_materials() -> void:
 	)
 
 func test_swamp_surface_selection_uses_coherent_materials() -> void:
-	var biome_id := &"drowned_marsh"
+	var biome_id := &"swamp"
 	for sample in range(128):
 		var ground_path := BiomeGeneratedArtCatalog.select_surface_asset_path(
 			biome_id,
@@ -724,7 +730,7 @@ func test_toxic_surface_selection_uses_coherent_materials() -> void:
 	)
 
 func test_burning_surface_selection_uses_coherent_materials() -> void:
-	var biome_id := &"burning_fields"
+	var biome_id := &"burning_plains"
 	for sample in range(128):
 		var ground_path := BiomeGeneratedArtCatalog.select_surface_asset_path(
 			biome_id,
@@ -944,7 +950,7 @@ func test_generated_biome_runtime_consumption() -> void:
 			"%s produces a non-empty masked surface canvas" % String(biome_id)
 		)
 		var expected_theme_fragment := (
-			"/%s/" % String(GENERATED_BIOME_THEMES[biome_id])
+			"/%s/" % String(GENERATED_BIOME_ASSET_DIRECTORIES[biome_id])
 		)
 		var first_rendered_id := &""
 		for rendered_id in layer.get_rendered_surface_material_ids():
@@ -992,8 +998,8 @@ func test_generated_biome_runtime_consumption() -> void:
 			expected_runtime_width *= 2
 		if (
 			(
-				biome_id == &"frozen_outskirts"
-				or biome_id == &"drowned_marsh"
+				biome_id == &"frozen_tundra"
+				or biome_id == &"swamp"
 			)
 			and source_path.contains("base_ground_variation_01")
 		):
@@ -1004,21 +1010,21 @@ func test_generated_biome_runtime_consumption() -> void:
 			"%s normalizes the generated surface dimensions at runtime"
 			% String(biome_id)
 		)
-		if biome_id == &"burning_fields":
+		if biome_id == &"burning_plains":
 			var runtime_image := runtime_texture.get_image()
 			assert_lte(
 				_edge_seam_score(runtime_image),
 				0.04,
-				"burning_fields runtime surface harmonizes opposite edges"
+				"burning_plains runtime surface harmonizes opposite edges"
 			)
 			assert_eq(
 				layer._forest_surface_texture_world_size(first_rendered_id),
 				BiomeTileLayer.BURNING_SURFACE_TEXTURE_WORLD_SIZE,
-				"burning_fields uses a broad repeat period"
+				"burning_plains uses a broad repeat period"
 			)
-		if biome_id == &"drowned_marsh":
+		if biome_id == &"swamp":
 			_assert_marsh_routes_are_lifted(layer, expected_surface_trim)
-		if biome_id == &"burning_fields":
+		if biome_id == &"burning_plains":
 			_assert_volcanic_embers_are_damped(layer, expected_surface_trim)
 		if biome_id == &"toxic_wastes":
 			var toxic_runtime_image := runtime_texture.get_image()
@@ -1032,14 +1038,14 @@ func test_generated_biome_runtime_consumption() -> void:
 				BiomeTileLayer.TOXIC_SURFACE_TEXTURE_WORLD_SIZE,
 				"toxic_wastes uses a broad repeat period"
 			)
-		if biome_id == &"frozen_outskirts":
+		if biome_id == &"frozen_tundra":
 			var frozen_ground_id := _find_surface_material_id(
 				layer,
 				"base_ground_variation_01"
 			)
 			assert_false(
 				frozen_ground_id.is_empty(),
-				"frozen_outskirts exposes its clean snow ground material"
+				"frozen_tundra exposes its clean snow ground material"
 			)
 			var frozen_ground_texture := (
 				layer._forest_surface_textures.get(frozen_ground_id)
@@ -1047,13 +1053,13 @@ func test_generated_biome_runtime_consumption() -> void:
 			)
 			assert_not_null(
 				frozen_ground_texture,
-				"frozen_outskirts builds its macro ground texture"
+				"frozen_tundra builds its macro ground texture"
 			)
 			var frozen_runtime_image := frozen_ground_texture.get_image()
 			assert_lte(
 				_edge_seam_score(frozen_runtime_image),
 				0.04,
-				"frozen_outskirts runtime surface has continuous repeat edges"
+				"frozen_tundra runtime surface has continuous repeat edges"
 			)
 			assert_lte(
 				_internal_half_seam_score(frozen_runtime_image),
@@ -1076,7 +1082,7 @@ func test_generated_biome_runtime_consumption() -> void:
 			)
 			assert_false(
 				frozen_path_id.is_empty(),
-				"frozen_outskirts exposes a path material"
+				"frozen_tundra exposes a path material"
 			)
 			assert_eq(
 				layer._forest_surface_texture_world_size(frozen_path_id),
@@ -1096,14 +1102,14 @@ func test_generated_biome_runtime_consumption() -> void:
 				expected_surface_trim,
 				"frozen road"
 			)
-		if biome_id == &"drowned_marsh":
+		if biome_id == &"swamp":
 			var marsh_ground_id := _find_surface_material_id(
 				layer,
 				"base_ground_variation_01"
 			)
 			assert_false(
 				marsh_ground_id.is_empty(),
-				"drowned_marsh exposes its quiet ground material"
+				"swamp exposes its quiet ground material"
 			)
 			var marsh_ground_texture := (
 				layer._forest_surface_textures.get(marsh_ground_id)
@@ -1111,13 +1117,13 @@ func test_generated_biome_runtime_consumption() -> void:
 			)
 			assert_not_null(
 				marsh_ground_texture,
-				"drowned_marsh builds its macro ground texture"
+				"swamp builds its macro ground texture"
 			)
 			var marsh_runtime_image := marsh_ground_texture.get_image()
 			assert_lte(
 				_edge_seam_score(marsh_runtime_image),
 				0.04,
-				"drowned_marsh runtime surface has continuous repeat edges"
+				"swamp runtime surface has continuous repeat edges"
 			)
 			assert_lte(
 				_internal_half_seam_score(marsh_runtime_image),
@@ -1140,7 +1146,7 @@ func test_generated_biome_runtime_consumption() -> void:
 			)
 			assert_false(
 				marsh_path_id.is_empty(),
-				"drowned_marsh exposes a path material"
+				"swamp exposes a path material"
 			)
 			assert_eq(
 				layer._forest_surface_texture_world_size(marsh_path_id),
@@ -1335,18 +1341,18 @@ func test_generated_biome_runtime_consumption() -> void:
 			"%s vertical cliff lip" % String(biome_id),
 			expected_cliff_downscale
 		)
-		if biome_id == &"burning_fields":
+		if biome_id == &"burning_plains":
 			var runtime_cliff_lip_image := layer._cliff_lip_texture.get_image()
 			assert_lte(
 				_edge_seam_score(runtime_cliff_lip_image),
 				0.06,
-				"burning_fields runtime cliff lip harmonizes opposite edges"
+				"burning_plains runtime cliff lip harmonizes opposite edges"
 			)
 		var probe := Vector2i(3, 3)
 		var material_path := layer.get_resolved_material_asset_path(probe)
 		assert_true(
 			material_path.contains(
-				"/%s/" % String(GENERATED_BIOME_THEMES[biome_id])
+				"/%s/" % String(GENERATED_BIOME_ASSET_DIRECTORIES[biome_id])
 			),
 			"%s ground resolves to its generated theme: %s"
 			% [String(biome_id), material_path]
@@ -1443,7 +1449,7 @@ func test_generated_biome_upward_cliff_profiles() -> void:
 			% String(biome_id)
 		)
 		var paths := profile.asset_paths
-		var theme_id := String(GENERATED_BIOME_THEMES[biome_id])
+		var theme_id := String(GENERATED_BIOME_ASSET_DIRECTORIES[biome_id])
 		assert_true(
 			String(paths.get(&"face", "")).contains("/%s/" % theme_id),
 			"%s upward face uses its biome theme" % String(biome_id)
@@ -1474,7 +1480,7 @@ func test_cliff_manifest_assets() -> void:
 		"cliff lip uses the directional grass-to-rock v2 material")
 
 func test_transition_meshes() -> void:
-	var palette := load("res://game/modes/zombie/biomes/infected_plains_palette.tres") as BiomePalette
+	var palette := load("res://game/modes/zombie/biomes/plains_palette.tres") as BiomePalette
 	assert_not_null(palette, "infected plains palette loads for cliff mesh QA")
 	if palette == null:
 		return
@@ -1491,7 +1497,7 @@ func test_transition_meshes() -> void:
 	_validate_lip_uv_direction(palette)
 
 func test_flush_pending_surface_matches_single_shot_build() -> void:
-	var palette := load("res://game/modes/zombie/biomes/infected_plains_palette.tres") as BiomePalette
+	var palette := load("res://game/modes/zombie/biomes/plains_palette.tres") as BiomePalette
 	assert_not_null(palette, "infected plains palette loads for cliff mesh QA")
 	if palette == null:
 		return
@@ -2221,7 +2227,7 @@ func test_projected_corner_seams_cover_l_t_cross_and_mirrors() -> void:
 			)
 
 func test_tile_layer_consumes_cliff_textures() -> void:
-	var palette := load("res://game/modes/zombie/biomes/infected_plains_palette.tres") as BiomePalette
+	var palette := load("res://game/modes/zombie/biomes/plains_palette.tres") as BiomePalette
 	var layout := BiomeEnvironmentLayout.new()
 	layout.zone_size = Vector2i(16, 16)
 	layout.generation_seed = 515151
@@ -2232,7 +2238,7 @@ func test_tile_layer_consumes_cliff_textures() -> void:
 	layout.rebuild_terrain_classification()
 	var layer := BiomeTileLayer.new()
 	add_child(layer)
-	layer.configure(layout, palette, &"infected_plains", &"quality", 16, null, _manifest, false)
+	layer.configure(layout, palette, &"plains", &"quality", 16, null, _manifest, false)
 	await wait_physics_frames(1)
 	assert_true(layer.has_cliff_art_textures(), "tile layer loads face and lip textures")
 	assert_true(layer.has_forest_cliff_border_art(), "forest tile layer loads horizontal and vertical cliff border art")
@@ -2354,7 +2360,7 @@ func test_forest_tile_contracts() -> void:
 		var contract := _manifest.get_asset_contract(section, tile_id)
 		assert_false(contract.is_empty(), "%s has a forest asset contract" % String(tile_id))
 		assert_true(_asset_exists(String(contract.get("asset_path", ""))), "%s asset file exists" % String(tile_id))
-	var biome_set := _manifest.get_biome_asset_set_contract(&"infected_plains")
+	var biome_set := _manifest.get_biome_asset_set_contract(&"plains")
 	assert_true(_string_name_array(biome_set.get("terrain_tiles", [])).has(&"forest_path"), "base biome asset set includes forest terrain tiles")
 	assert_true(_string_name_array(biome_set.get("void_tiles", [])).has(&"forest_cliff_edge"), "base biome asset set includes forest cliff edge")
 	assert_true(_string_name_array(biome_set.get("edge_tiles", [])).has(&"forest_mountain_wall"), "base biome asset set includes forest mountain wall")
@@ -2365,7 +2371,7 @@ func test_generated_forest_resolver() -> void:
 	add_child(biome_manager)
 	await wait_physics_frames(1)
 	biome_manager.start_run({"world_seed": 772031, "biome_map_width": 3, "biome_map_height": 3, "preserve_biome_sequence": false, "extra_edge_chance": 0.25})
-	var cell := _first_cell_for_biome(biome_manager.get_generated_biome_map(), &"infected_plains")
+	var cell := _first_cell_for_biome(biome_manager.get_generated_biome_map(), &"plains")
 	assert_not_null(cell, "generated map contains the base forest biome")
 	if cell == null:
 		biome_manager.queue_free()
@@ -2409,7 +2415,7 @@ func test_generated_forest_resolver() -> void:
 		assert_true([&"forest_tall_grass", &"grass_to_tall_grass"].has(resolver.resolve_tile_id(layout, tall_grass_cell, cell.biome_id, &"balanced", cell)),
 			"forest tall grass resolves to grass or its vegetation transition")
 
-	var palette := load("res://game/modes/zombie/biomes/infected_plains_palette.tres") as BiomePalette
+	var palette := load("res://game/modes/zombie/biomes/plains_palette.tres") as BiomePalette
 	var layer := BiomeTileLayer.new()
 	add_child(layer)
 	layer.configure(layout, palette, cell.biome_id, &"balanced", 20, resolver, _manifest)
@@ -2438,8 +2444,8 @@ func test_synthetic_forest_wall() -> void:
 	layout.obstacle_rects.append(wall_rect)
 	layout.obstacle_ids.append(&"boundary_fence")
 	layout.rebuild_terrain_classification()
-	assert_eq(resolver.resolve_tile_id(layout, Vector2i(4, 1), &"infected_plains"), &"forest_mountain_wall", "forest wall cells resolve to the mountain wall tile")
-	assert_eq(resolver.resolve_tile_id(layout, Vector2i(4, 4), &"infected_plains"), &"ground_to_mountain_wall", "ground beside wall resolves to a mountain transition")
+	assert_eq(resolver.resolve_tile_id(layout, Vector2i(4, 1), &"plains"), &"forest_mountain_wall", "forest wall cells resolve to the mountain wall tile")
+	assert_eq(resolver.resolve_tile_id(layout, Vector2i(4, 4), &"plains"), &"ground_to_mountain_wall", "ground beside wall resolves to a mountain transition")
 
 # --- helper (porting dei test legacy) ---------------------------------------
 
@@ -2599,7 +2605,7 @@ func _assert_terrain_surface_runtime_contract(
 func _expected_generated_surface_texture_trim_pixels(
 	biome_id: StringName
 ) -> int:
-	if biome_id == &"burning_fields":
+	if biome_id == &"burning_plains":
 		return 10
 	return 2
 

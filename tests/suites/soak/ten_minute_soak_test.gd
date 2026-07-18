@@ -6,7 +6,7 @@ extends GutTest
 ##
 ## NB: suite di stress, esclusa dal run rapido (.gutconfig.json). Avanza
 ## artificialmente wave_director.run_elapsed e tiene puliti i nemici per coprire
-## dieci minuti simulati con tutte e cinque le transizioni bioma.
+## dieci minuti simulati attraversando tutti e quattro i biomi.
 
 func test_accelerated_ten_minute_soak() -> void:
 	var scene = _new_main_scene_fixture()
@@ -53,13 +53,12 @@ func test_accelerated_ten_minute_soak() -> void:
 	)
 
 	var transition_targets: Array[StringName] = [
-		&"toxic_wastes",
-		&"burning_fields",
-		&"frozen_outskirts",
-		&"drowned_marsh"
+		&"burning_plains",
+		&"frozen_tundra",
+		&"swamp"
 	]
 	var next_transition_index := 0
-	var seen_biomes: Dictionary = {&"infected_plains": true}
+	var seen_biomes: Dictionary = {&"plains": true}
 	var simulated_elapsed := 0.0
 	var safety_frames := 0
 	while wave_director.run_elapsed < 600.0 and safety_frames < 2400:
@@ -77,7 +76,7 @@ func test_accelerated_ten_minute_soak() -> void:
 		await get_tree().physics_frame
 
 	assert_gte(wave_director.run_elapsed, 600.0, "survival remains active for ten simulated minutes")
-	assert_eq(seen_biomes.size(), 5, "ten-minute soak crosses all five biomes")
+	assert_eq(seen_biomes.size(), 4, "ten-minute soak crosses all four biomes")
 	assert_true(survival_mode.is_running and wave_manager.run_active, "survival systems remain active after the soak")
 	assert_gte(wave_manager.current_wave, 5, "multiple wave cycles complete during the soak")
 

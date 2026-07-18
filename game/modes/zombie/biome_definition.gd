@@ -1,8 +1,10 @@
 extends Resource
 class_name BiomeDefinition
 
-@export var biome_id: StringName = &"infected_plains"
-@export var display_name: String = "Pianura Infetta"
+@export var biome_id: StringName = &"plains"
+@export var biome_family_id: StringName = &"plains"
+@export var surface_theme_id: StringName = &"forest"
+@export var display_name: String = "Pianura"
 @export_multiline var description: String = ""
 @export var is_starting_biome: bool = false
 @export_range(0.1, 5.0, 0.05) var difficulty_rating: float = 1.0
@@ -101,7 +103,7 @@ func get_safe_allowed_zombie_types(wave_index: int) -> Array[StringName]:
 	return result
 
 func _uses_legacy_survival_roster() -> bool:
-	return is_starting_biome or biome_id == &"infected_plains"
+	return is_starting_biome or biome_id == &"plains"
 
 func _resolve_legacy_survival_enemy(
 	wave_index: int,

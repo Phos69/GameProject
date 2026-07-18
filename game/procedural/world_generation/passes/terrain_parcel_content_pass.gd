@@ -524,15 +524,15 @@ func _town_pools(biome: BiomeDefinition) -> Dictionary:
 				"buildings": biome.generation_profile.town_building_ids,
 				"vehicles": biome.generation_profile.town_vehicle_ids,
 			}
-	var biome_id := biome.biome_id if biome != null else &"infected_plains"
+	var biome_id := biome.biome_id if biome != null else &"plains"
 	match biome_id:
 		&"toxic_wastes":
 			return {"buildings": [&"lab_ruin", &"lab_block"], "vehicles": [&"abandoned_car"]}
-		&"burning_fields":
+		&"burning_plains":
 			return {"buildings": [&"burned_house"], "vehicles": [&"burned_car", &"metal_wreck"]}
-		&"frozen_outskirts":
+		&"frozen_tundra":
 			return {"buildings": [&"snow_cabin"], "vehicles": [&"abandoned_car"]}
-		&"drowned_marsh":
+		&"swamp":
 			return {"buildings": [&"sunken_house"], "vehicles": [&"sunken_wreck"]}
 		_:
 			return {"buildings": [&"ruined_house", &"abandoned_house"], "vehicles": [&"abandoned_car"]}

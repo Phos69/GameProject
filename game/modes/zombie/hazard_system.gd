@@ -666,11 +666,11 @@ func _fall_style_for_biome(biome_id: StringName) -> StringName:
 	match biome_id:
 		&"toxic_wastes":
 			return &"toxic_cliff"
-		&"burning_fields":
+		&"burning_plains":
 			return &"lava_cliff"
-		&"frozen_outskirts":
+		&"frozen_tundra":
 			return &"ice_cliff"
-		&"drowned_marsh":
+		&"swamp":
 			return &"marsh_cliff"
 		_:
 			return &"cliff"

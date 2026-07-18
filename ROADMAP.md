@@ -29,7 +29,7 @@ senza un nuovo goal esplicito e una voce in `TODO.md`.
 | Modalita base | Milestone 5-9: survival a ondate, boss `Wave Warden`, dungeon lineare, tower defense base, save/load, menu, export preset e packaging iniziale. | `ARCHITECTURE.md`, `GAME_DESIGN.md`, `docs/latest_commit_validation_report.md` |
 | Visual gameplay e UX base | Milestone 10-21: readability survival, telegraph boss, varianti zombie, visual armi/torri, polish boss, shooter ranged, downed/revive, risultati run, audio mix, secondo boss, arena data-driven, accessibilita e profiling. | `CHANGELOG.md`, `docs/testing/manual_checklist.md` |
 | Zombie survival e mondo top-down | Revamp zombie Z1-Z12, megamappa persistente, regioni `75x75`, streaming `10x10`, seam e chase cross-bioma; `TERRAIN-PARCELS-001` genera route e 7-10 lotti con mesa/town garantite, foreste, radure e fall zone, mantenendo gli hazard tematici nelle radure. | `ARCHITECTURE.md`, `GAME_DESIGN.md`, `map_generation_report.md`, suite `world_gen`, `environment`, `modes`, `soak` |
-| Asset top-down e ostacoli | `TOPDOWN-001`, rewrite biomi R1-R3, manifest ambiente, tile/terrain/passaggi/cliff asset-driven, footprint slot-based, alberi/rocce 3x3, plateau rocciosi scalabili e cliff PNG seamless. `BIOME-RASTER-001` completa il raster pass della Pianura Infetta; gli SVG degli altri quattro biomi restano sorgenti runtime fino a `BIOME-RASTER-002`. Il terreno usa assi H/V; il volume prospettico e separato dal footprint. | `docs/top_down_cardinal_contract.md`, `docs/obstacle_rendering.md`, `docs/forest_top_down_texture_system.md` |
+| Asset top-down e ostacoli | `TOPDOWN-001`, rewrite biomi R1-R3, manifest ambiente, tile/terrain/passaggi/cliff asset-driven, footprint slot-based, alberi/rocce 3x3, plateau rocciosi scalabili e cliff PNG seamless. `BIOME-RASTER-001` completa il raster pass della Pianura; gli SVG delle tre varianti avanzate restano sorgenti runtime fino a `BIOME-RASTER-002`. Il terreno usa assi H/V; il volume prospettico e separato dal footprint. | `docs/top_down_cardinal_contract.md`, `docs/obstacle_rendering.md`, `docs/forest_top_down_texture_system.md` |
 | RPG, armi e mercato | RPG Mode M1-M13, classi avanzate, inventario armi, 30 armi catalogo, mercato zombie ricorrente e WVIS W0-W8. | `docs/zombie_market.md`, `docs/weapon_visual_identity_validation_report.md`, `docs/rpg_character_visual_checklist.md` |
 | QA, tooling e documentazione | Cutover GUT, cleanup warning headless, server MCP locale read-only e cleanup documentale 2026-07-01. | `tools/mcp-server/README.md`, `docs/documentation_inventory.md`, `CHANGELOG.md` |
 
@@ -39,6 +39,14 @@ La fonte operativa resta `TODO.md` per gli item aperti; questa sezione registra
 anche le milestone completate per evitare sovrapposizioni.
 
 ### Generazione mondo
+
+- `BIOME-REDEF-001`: **completata 2026-07-18**. La tassonomia survival passa
+  da cinque identità storiche a quattro biomi canonici appartenenti alla
+  famiglia `plains`: Pianura, Pianura Ardente, Tundra Gelata e Palude.
+  `toxic_wastes`/`urban_ruins` sono archiviati, Pianura Ardente occupa entrambi
+  i precedenti band tossico e infuocato, gli ID legacy vengono normalizzati e
+  le revisioni terrain/generatore salgono a 6. Risorse, manifest, encounter,
+  roster, mappa `3x3`, soak e Visual QA usano il nuovo contratto.
 
 - `TERRAIN-PARCELS-001`: **completata 2026-07-17**. Route hub-and-spokes da
   7 tile e sentieri interni da 4 precedono il partizionamento; 7-10 lotti
@@ -57,12 +65,12 @@ anche le milestone completate per evitare sovrapposizioni.
   non cambia.
 
 - `BIOME-RASTER-001`: **completata 2026-07-16**. Dieci raster trasparenti
-  coprono tutti i prop della Pianura Infetta, incluso il tronco contestuale e
+  coprono tutti i prop della Pianura, incluso il tronco contestuale e
   le casse comune/medica distinte. Il manifest v13 risolve le varianti per
   bioma/tipo; contratti fisici e generazione restano invariati. Il follow-up di
   copertura hitbox assegna scale uniformi puntuali ai sei contratti che ne
   avevano bisogno e valida tutti i dieci raster su entrambi gli assi. Il seguito sui
-  quattro biomi avanzati e tracciato come `BIOME-RASTER-002` in `TODO.md`.
+  tre biomi avanzati e tracciato come `BIOME-RASTER-002` in `TODO.md`.
 
 - `TERRAIN-MASK-001`: **completata 2026-07-15**. Il renderer del terreno usa
   un classificatore condiviso per quattro superfici (`grass`, `path`,
@@ -76,7 +84,7 @@ anche le milestone completate per evitare sovrapposizioni.
   diverse senza dipendere da core/edge/corner stradali, materiali gameplay e
   semantica del void invariati. Evidenza: test CPU
   `terrain_boundary_mask_test.gd`, suite `assets`/`environment`/`obstacles`/
-  `world_gen` e Visual QA `infected_plains` piu review multi-bioma da 210
+  `world_gen` e Visual QA `plains` piu review multi-bioma da 210
   capture, tutti PASS.
 
 - `TOPDOWN-001`: **completata 2026-07-15**. Renderer, manifest v12, cache,
@@ -172,7 +180,7 @@ anche le milestone completate per evitare sovrapposizioni.
   23 SVG individuali `final`, dichiarati dal manifest con source
   `project_svg_generator` e attribution `environment_top_down_internal`. Le 23
   risorse `.tres` e le cinque tavole concept raster del percorso precedente
-  sono state rimosse. `BIOME-RASTER-001` ha poi promosso la Pianura Infetta ai
+  sono state rimosse. `BIOME-RASTER-001` ha poi promosso la Pianura ai
   raster; il residuo degli altri biomi e in `BIOME-RASTER-002`. Resta aperto il
   giudizio qualitativo manuale gia incluso in `BAL-001`. La chiusura non
   riapre genericamente `BIO-001` o il pass artistico archiviato.

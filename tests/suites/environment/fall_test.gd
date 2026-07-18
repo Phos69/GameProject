@@ -352,11 +352,11 @@ func _expected_border_obstacle_id(biome_id: StringName) -> StringName:
 	match biome_id:
 		&"toxic_wastes":
 			return &"toxic_boundary_wall"
-		&"burning_fields":
+		&"burning_plains":
 			return &"lava_boundary"
-		&"frozen_outskirts":
+		&"frozen_tundra":
 			return &"ice_boundary"
-		&"drowned_marsh":
+		&"swamp":
 			return &"deep_water_boundary"
 		_:
 			return &"boundary_fence"

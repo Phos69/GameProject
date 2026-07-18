@@ -1,21 +1,23 @@
 [gd_resource type="Resource" script_class="BiomeDefinition" load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://game/modes/zombie/biome_definition.gd" id="1_definition"]
-[ext_resource type="Resource" path="res://game/modes/zombie/biomes/drowned_marsh_palette.tres" id="2_palette"]
-[ext_resource type="Resource" path="res://game/modes/zombie/biomes/drowned_marsh_layout.tres" id="3_layout"]
-[ext_resource type="Resource" path="res://game/procedural/world_generation/profiles/drowned_marsh_generation.tres" id="4_profile"]
+[ext_resource type="Resource" path="res://game/modes/zombie/biomes/swamp_palette.tres" id="2_palette"]
+[ext_resource type="Resource" path="res://game/modes/zombie/biomes/swamp_layout.tres" id="3_layout"]
+[ext_resource type="Resource" path="res://game/procedural/world_generation/profiles/swamp_generation.tres" id="4_profile"]
 
 [resource]
 script = ExtResource("1_definition")
-biome_id = &"drowned_marsh"
-display_name = "Bioma Palude"
-description = "Bioma con acqua, fango, ponti e percorsi limitati."
+biome_id = &"swamp"
+biome_family_id = &"plains"
+surface_theme_id = &"swamp"
+display_name = "Palude"
+description = "Variante allagata delle pianure con fango, acqua profonda e ponti."
 difficulty_rating = 1.75
-progression_depth = 4
+progression_depth = 3
 palette = ExtResource("2_palette")
 environment_layout = ExtResource("3_layout")
 generation_profile = ExtResource("4_profile")
-previous_biome_id = &"frozen_outskirts"
+previous_biome_id = &"frozen_tundra"
 biome_icon_id = &"marsh"
 danger_summary = "MUD: deep water and movement slowdown"
 resource_summary = "Special ammo and organic materials"

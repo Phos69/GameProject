@@ -8,11 +8,10 @@ const GENERATED_ART_CATALOG = preload(
 	"res://game/modes/zombie/biome_generated_art_catalog.gd"
 )
 const BIOMES: Array[StringName] = [
-	&"infected_plains",
-	&"toxic_wastes",
-	&"burning_fields",
-	&"frozen_outskirts",
-	&"drowned_marsh"
+	&"plains",
+	&"burning_plains",
+	&"frozen_tundra",
+	&"swamp"
 ]
 const REVIEW_SEEDS: Array[int] = [641004, 772031, 918273]
 const REVIEW_RESOLUTIONS: Array[Vector2i] = [
@@ -869,11 +868,11 @@ func _spawn_biome_roster(biome_id: StringName, origin: Vector2) -> void:
 	match biome_id:
 		&"toxic_wastes":
 			roster = [&"toxic_zombie", &"toxic_exploder"]
-		&"burning_fields":
+		&"burning_plains":
 			roster = [&"burned_zombie", &"fire_runner", &"fire_exploder"]
-		&"frozen_outskirts":
+		&"frozen_tundra":
 			roster = [&"frozen_zombie", &"ice_armored_zombie", &"heavy_slow_zombie"]
-		&"drowned_marsh":
+		&"swamp":
 			roster = [&"drowned_zombie", &"marsh_zombie", &"water_emerging_zombie"]
 	for index in range(roster.size()):
 		var enemy := enemy_system.spawn_enemy(

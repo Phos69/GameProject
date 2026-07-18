@@ -159,11 +159,11 @@ func test_obstacle_system_queries() -> void:
 # --- chiavi stabili degli ostacoli ------------------------------------------
 
 func test_stable_obstacle_keys() -> void:
-	var first := ObstacleSystem.make_obstacle_key(&"infected_plains", 3, &"ruined_house")
-	var second := ObstacleSystem.make_obstacle_key(&"infected_plains", 3, &"ruined_house")
+	var first := ObstacleSystem.make_obstacle_key(&"plains", 3, &"ruined_house")
+	var second := ObstacleSystem.make_obstacle_key(&"plains", 3, &"ruined_house")
 	assert_eq(first, second, "obstacle key is stable for identical inputs")
-	assert_eq(first, &"infected_plains:3:ruined_house", "obstacle key encodes region, index and id")
-	assert_ne(ObstacleSystem.make_obstacle_key(&"infected_plains", 4, &"ruined_house"), first, "obstacle key differs by layout index")
+	assert_eq(first, &"plains:3:ruined_house", "obstacle key encodes region, index and id")
+	assert_ne(ObstacleSystem.make_obstacle_key(&"plains", 4, &"ruined_house"), first, "obstacle key differs by layout index")
 
 # --- maschere dei proiettili e muro solido ----------------------------------
 

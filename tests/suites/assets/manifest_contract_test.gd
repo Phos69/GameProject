@@ -16,7 +16,7 @@ const REQUIRED_SECTIONS: Array[StringName] = [
 	&"void_tiles", &"object_scenes", &"passage_tiles", &"biome_asset_sets"
 ]
 const BIOME_IDS: Array[String] = [
-	"infected_plains", "toxic_wastes", "burning_fields", "frozen_outskirts", "drowned_marsh"
+	"plains", "burning_plains", "frozen_tundra", "swamp"
 ]
 const GENERATED_WORLD_CONTEXT := {
 	"world_seed": 717171, "biome_map_width": 3, "biome_map_height": 3, "preserve_biome_sequence": false
@@ -60,7 +60,7 @@ func test_section_inventory() -> void:
 		assert_false(ids.is_empty(), "%s section has asset contracts" % String(section))
 		for asset_id in ids:
 			_assert_contract_shape(_manifest.get_asset_contract(section, asset_id), "%s/%s" % [String(section), String(asset_id)])
-	for biome_id in [&"infected_plains", &"toxic_wastes", &"burning_fields", &"frozen_outskirts", &"drowned_marsh"]:
+	for biome_id in [&"plains", &"burning_plains", &"frozen_tundra", &"swamp"]:
 		assert_true(_manifest.has_asset_contract(&"biome_asset_sets", biome_id), "%s has a biome asset set" % String(biome_id))
 
 func test_fallback_policy() -> void:

@@ -1,7 +1,7 @@
 extends "res://tests/visual_qa/biome_rendering_review_visual_qa.gd"
 
-const FROZEN_OUTPUT_DIR := "res://build/qa/biome_art_fix/frozen_outskirts"
-const FROZEN_BIOME_ID := &"frozen_outskirts"
+const FROZEN_OUTPUT_DIR := "res://build/qa/biome_art_fix/frozen_tundra"
+const FROZEN_BIOME_ID := &"frozen_tundra"
 const FROZEN_FOCUSES: Array[StringName] = [
 	FOCUS_CENTER,
 	FOCUS_PASSAGE,

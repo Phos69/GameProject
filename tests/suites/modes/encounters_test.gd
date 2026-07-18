@@ -159,7 +159,7 @@ func test_biome_mini_events() -> void:
 	encounter.configure_seed(2026)
 	visual_settings.apply_profile(&"high_contrast")
 
-	var cases := {&"toxic_wastes": &"toxic_leak", &"burning_fields": &"fire_breakout", &"frozen_outskirts": &"whiteout", &"drowned_marsh": &"marsh_emergence"}
+	var cases := {&"toxic_wastes": &"toxic_leak", &"burning_plains": &"fire_breakout", &"frozen_tundra": &"whiteout", &"swamp": &"marsh_emergence"}
 	for biome_id in cases.keys():
 		_validate_biome_event(encounter, visual_settings, StringName(biome_id), StringName(cases[biome_id]))
 	await _validate_whiteout_status_is_avoidable(encounter, hazard_system, player, exposed_player)
@@ -213,7 +213,7 @@ func _validate_whiteout_status_is_avoidable(
 	far_player: Node2D,
 	exposed_player: Node2D
 ) -> void:
-	var biome = load("res://game/modes/zombie/biomes/frozen_outskirts.tres")
+	var biome = load("res://game/modes/zombie/biomes/frozen_tundra.tres")
 	assert_not_null(biome, "frozen biome loads for whiteout status")
 	if biome == null:
 		return

@@ -68,7 +68,17 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Changed
 
-- Nella Pianura Infetta tutti i divider dirt del renderer reale riusano ora la
+- `BIOME-REDEF-001`: la survival usa quattro ID canonici nella famiglia
+  `plains`: `plains`, `burning_plains`, `frozen_tundra` e `swamp`. Pianura
+  Ardente assorbe i precedenti band Tossico/Urban e Infuocato/Volcanic; i dati
+  tossici restano archiviati ma non registrati. Aggiunti alias legacy,
+  `biome_family_id`/`surface_theme_id`, revisione terrain/cache 6, risorse e
+  manifest rinominati e QA riallineata ai quattro biomi.
+- Il catalogo espone `burning_plains` come tema logico e mantiene un alias
+  interno alla directory raster storica `volcanic`, così nessun consumer
+  runtime usa più `volcanic` come identità di bioma.
+
+- Nella Pianura tutti i divider dirt del renderer reale riusano ora la
   stessa istanza e scala world-space di `forest_dirt_path_generated.png` dei
   sentieri, inclusi confini del canvas terrain, cliff e contorni mesa; maschere,
   spessori, collisioni e materiali degli altri biomi restano invariati.

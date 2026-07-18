@@ -212,7 +212,7 @@ func _arena_context(seed_value: int) -> Dictionary:
 
 func _make_world(seed_value: int, cell_id: StringName) -> Dictionary:
 	var cell := BiomeCell.new()
-	cell.configure(cell_id, &"infected_plains", Vector2i.ZERO, Vector2i(8, 8), seed_value)
+	cell.configure(cell_id, &"plains", Vector2i.ZERO, Vector2i(8, 8), seed_value)
 	var cells: Array[BiomeCell] = [cell]
 	return {
 		"seed": seed_value,

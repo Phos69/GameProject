@@ -16,6 +16,7 @@ const FACE_REPEAT_WORLD_SIZE := 128.0
 const TOP_REPEAT_BY_PROFILE: Dictionary = {
 	&"forest": 256.0,
 	&"urban_ruins": 1024.0,
+	&"burning_plains": 512.0,
 	&"volcanic": 512.0,
 	&"frozen_tundra": 1024.0,
 	&"swamp": 1024.0,

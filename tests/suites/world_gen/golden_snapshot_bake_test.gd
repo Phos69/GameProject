@@ -122,7 +122,7 @@ func test_tile_bake_cache_roundtrips() -> void:
 	# fetch ritorna le mappe risolte; guardie su cell_count.
 	TileBakeCache.set_enabled(true)
 	TileBakeCache.clear()
-	var key := TileBakeCache.make_key(&"infected_plains", &"balanced", "layout-sig", 10)
+	var key := TileBakeCache.make_key(&"plains", &"balanced", "layout-sig", 10)
 	var payload := {
 		"tile_id": {0: &"forest_grass", 1: &"forest_path"},
 		"tile_section": {0: &"ground"},

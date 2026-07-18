@@ -62,9 +62,9 @@ func test_asset_contract_coverage() -> void:
 		var crate_path := _manifest.get_object_asset_path(REQUIRED_CRATE_ASSET_ID, crate_type)
 		assert_true(_asset_exists(crate_path), "supply_crate %s variant exists" % String(crate_type))
 		assert_true(crate_path.ends_with(".png"), "supply_crate %s uses raster art" % String(crate_type))
-	var plains_log_path := _manifest.get_object_asset_path(&"fallen_log", &"infected_plains")
-	assert_true(_asset_exists(plains_log_path), "infected_plains fallen_log variant exists")
-	assert_true(plains_log_path.ends_with(".png"), "infected_plains fallen_log uses raster art")
+	var plains_log_path := _manifest.get_object_asset_path(&"fallen_log", &"plains")
+	assert_true(_asset_exists(plains_log_path), "plains fallen_log variant exists")
+	assert_true(plains_log_path.ends_with(".png"), "plains fallen_log uses raster art")
 	assert_true(_manifest.get_object_asset_path(&"fallen_log").ends_with(".svg"), "other biomes keep fallen_log default until their art pass")
 
 func test_runtime_texture_shapes() -> void:
@@ -246,8 +246,8 @@ func test_obstacle_system_integration() -> void:
 	container.add_sibling(system)
 	await wait_physics_frames(1)
 
-	var biome := load("res://game/modes/zombie/biomes/infected_plains.tres") as BiomeDefinition
-	assert_not_null(biome, "infected_plains biome loads")
+	var biome := load("res://game/modes/zombie/biomes/plains.tres") as BiomeDefinition
+	assert_not_null(biome, "plains biome loads")
 	if biome != null:
 		system.start_run(biome)
 		await wait_physics_frames(1)
@@ -327,12 +327,12 @@ func test_forest_tree_variation_is_visual_only() -> void:
 	second.queue_free()
 	await wait_physics_frames(1)
 
-func test_infected_plains_tree_assets_and_random_selection() -> void:
+func test_plains_tree_assets_and_random_selection() -> void:
 	var variant_ids := _manifest.get_object_random_variant_ids(
 		&"forest_tree",
-		&"infected_plains"
+		&"plains"
 	)
-	assert_eq(variant_ids.size(), 8, "infected_plains exposes four adult/young tree pairs")
+	assert_eq(variant_ids.size(), 8, "plains exposes four adult/young tree pairs")
 	var adult_count := 0
 	var young_count := 0
 	for variant_id in variant_ids:
@@ -359,7 +359,7 @@ func test_infected_plains_tree_assets_and_random_selection() -> void:
 		Color(0.28, 0.36, 0.18, 1.0),
 		Color(0.72, 0.56, 0.18, 1.0),
 		_manifest.get_sort_offset(&"forest_tree"),
-		&"infected_plains"
+		&"plains"
 	) as EnvironmentObject
 	assert_not_null(tree, "forest_tree random variant fixture creates")
 	if tree == null:
@@ -370,8 +370,8 @@ func test_infected_plains_tree_assets_and_random_selection() -> void:
 	for index in range(16):
 		var position_key := Vector2(float(index + 100) * 48.0, 240.0)
 		assert_true(
-			tree.select_random_asset_variant(&"infected_plains", position_key),
-			"infected_plains selects a tree asset variant"
+			tree.select_random_asset_variant(&"plains", position_key),
+			"plains selects a tree asset variant"
 		)
 		selected[tree.get_asset_variant_id()] = true
 		assert_eq(
@@ -382,9 +382,9 @@ func test_infected_plains_tree_assets_and_random_selection() -> void:
 	assert_eq(selected.size(), 8, "grid-aligned positions cover all eight tree variants")
 	assert_eq(tree.get_collision_size(), collision_size, "tree visual randomization keeps collision size")
 	var stable_position := Vector2(912.0, 336.0)
-	tree.select_random_asset_variant(&"infected_plains", stable_position)
+	tree.select_random_asset_variant(&"plains", stable_position)
 	var stable_variant := tree.get_asset_variant_id()
-	tree.select_random_asset_variant(&"infected_plains", stable_position)
+	tree.select_random_asset_variant(&"plains", stable_position)
 	assert_eq(tree.get_asset_variant_id(), stable_variant, "the same world position selects the same tree variant")
 	tree.queue_free()
 	await wait_physics_frames(1)
@@ -458,19 +458,19 @@ func test_supply_crate_asset_visual() -> void:
 	crate.queue_free()
 	await wait_physics_frames(1)
 
-func test_infected_plains_raster_art_covers_hitboxes_without_stretch() -> void:
+func test_plains_raster_art_covers_hitboxes_without_stretch() -> void:
 	assert_eq(
 		_manifest.get_visual_scale(&"fallen_log"),
 		1.0,
 		"shared fallen_log keeps its default SVG scale"
 	)
 	assert_eq(
-		_manifest.get_object_visual_scale(&"fallen_log", &"infected_plains"),
+		_manifest.get_object_visual_scale(&"fallen_log", &"plains"),
 		1.85,
 		"infected-plains fallen_log uses only its raster-specific scale"
 	)
 	assert_eq(
-		_manifest.get_object_visual_scale(&"fallen_log", &"frozen_outskirts"),
+		_manifest.get_object_visual_scale(&"fallen_log", &"frozen_tundra"),
 		1.0,
 		"other biomes keep the shared fallen_log SVG scale"
 	)
@@ -490,7 +490,7 @@ func test_infected_plains_raster_art_covers_hitboxes_without_stretch() -> void:
 			Color.WHITE,
 			Color.WHITE,
 			_manifest.get_sort_offset(obstacle_id),
-			&"infected_plains"
+			&"plains"
 		) as EnvironmentObject
 		assert_not_null(obstacle, "%s raster obstacle builds" % String(obstacle_id))
 		if obstacle == null:
@@ -534,7 +534,7 @@ func test_infected_plains_raster_art_covers_hitboxes_without_stretch() -> void:
 		obstacle.queue_free()
 		await wait_physics_frames(1)
 
-func test_infected_plains_fallen_log_variant() -> void:
+func test_plains_fallen_log_variant() -> void:
 	var factory := ENVIRONMENT_OBJECT_FACTORY_SCRIPT.new(_manifest)
 	var obstacle := factory.create_obstacle(
 		&"fallen_log",
@@ -544,7 +544,7 @@ func test_infected_plains_fallen_log_variant() -> void:
 		Color(0.38, 0.30, 0.16, 1.0),
 		Color(0.74, 0.58, 0.16, 0.78),
 		_manifest.get_sort_offset(&"fallen_log"),
-		&"infected_plains"
+		&"plains"
 	)
 	assert_not_null(obstacle, "infected plains fallen log builds")
 	if obstacle != null:
@@ -552,7 +552,7 @@ func test_infected_plains_fallen_log_variant() -> void:
 		await wait_physics_frames(1)
 		assert_eq(
 			String(obstacle.call("get_asset_path")),
-			_manifest.get_object_asset_path(&"fallen_log", &"infected_plains"),
+			_manifest.get_object_asset_path(&"fallen_log", &"plains"),
 			"fallen log resolves the biome-specific raster"
 		)
 		assert_true(bool(obstacle.call("has_asset_visual")), "fallen log raster loads")
@@ -570,7 +570,7 @@ func test_infected_plains_fallen_log_variant() -> void:
 		Color(0.38, 0.30, 0.16, 1.0),
 		Color(0.74, 0.58, 0.16, 0.78),
 		_manifest.get_sort_offset(&"fallen_log"),
-		&"frozen_outskirts"
+		&"frozen_tundra"
 	)
 	assert_not_null(default_obstacle, "non-plains fallen log builds")
 	if default_obstacle != null:

@@ -1,22 +1,24 @@
 [gd_resource type="Resource" script_class="BiomeDefinition" load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://game/modes/zombie/biome_definition.gd" id="1_definition"]
-[ext_resource type="Resource" path="res://game/modes/zombie/biomes/frozen_outskirts_palette.tres" id="2_palette"]
-[ext_resource type="Resource" path="res://game/modes/zombie/biomes/frozen_outskirts_layout.tres" id="3_layout"]
-[ext_resource type="Resource" path="res://game/procedural/world_generation/profiles/frozen_outskirts_generation.tres" id="4_profile"]
+[ext_resource type="Resource" path="res://game/modes/zombie/biomes/frozen_tundra_palette.tres" id="2_palette"]
+[ext_resource type="Resource" path="res://game/modes/zombie/biomes/frozen_tundra_layout.tres" id="3_layout"]
+[ext_resource type="Resource" path="res://game/procedural/world_generation/profiles/frozen_tundra_generation.tres" id="4_profile"]
 
 [resource]
 script = ExtResource("1_definition")
-biome_id = &"frozen_outskirts"
-display_name = "Bioma Neve"
-description = "Bioma lento e difensivo con ghiaccio, neve alta e zombie resistenti."
+biome_id = &"frozen_tundra"
+biome_family_id = &"plains"
+surface_theme_id = &"frozen_tundra"
+display_name = "Tundra Gelata"
+description = "Variante delle pianure coperta da ghiaccio, neve alta e rovine congelate."
 difficulty_rating = 1.65
-progression_depth = 3
+progression_depth = 2
 palette = ExtResource("2_palette")
 environment_layout = ExtResource("3_layout")
 generation_profile = ExtResource("4_profile")
-previous_biome_id = &"burning_fields"
-next_biome_id = &"drowned_marsh"
+previous_biome_id = &"burning_plains"
+next_biome_id = &"swamp"
 biome_icon_id = &"frost"
 danger_summary = "ICE: slippery ground and deep snow"
 resource_summary = "Thermal kits and piercing ammo"

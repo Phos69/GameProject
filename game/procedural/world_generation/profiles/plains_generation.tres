@@ -4,7 +4,7 @@
 
 [resource]
 script = ExtResource("1_profile")
-biome_id = &"infected_plains"
+biome_id = &"plains"
 town_building_ids = Array[StringName]([&"ruined_house", &"abandoned_house"])
 town_vehicle_ids = Array[StringName]([&"abandoned_car"])
 mesa_profile_id = &"forest"

@@ -4,10 +4,10 @@
 
 [resource]
 script = ExtResource("1_profile")
-biome_id = &"burning_fields"
+biome_id = &"burning_plains"
 town_building_ids = Array[StringName]([&"burned_house"])
 town_vehicle_ids = Array[StringName]([&"burned_car", &"metal_wreck"])
-mesa_profile_id = &"volcanic"
+mesa_profile_id = &"burning_plains"
 random_prop_ids = Array[StringName]([&"burned_house", &"burned_car", &"metal_wreck", &"charred_wall", &"ash_barrier", &"scorched_barricade"])
 random_prop_weights = Array[float]([0.6, 1.3, 1.0, 1.2, 1.3, 1.1])
 static_hazard_ids = Array[StringName]([&"fire_zone", &"lava_crack"])

@@ -82,7 +82,7 @@ func _run() -> void:
 		"void cliff QA output directory is available"
 	)
 	var palette := load(
-		"res://game/modes/zombie/biomes/infected_plains_palette.tres"
+		"res://game/modes/zombie/biomes/plains_palette.tres"
 	) as BiomePalette
 	var manifest := EnvironmentAssetManifest.reload_shared()
 	var board := CliffQaBoard.new()

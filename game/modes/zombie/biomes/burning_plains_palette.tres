@@ -4,7 +4,7 @@
 
 [resource]
 script = ExtResource("1_palette")
-biome_id = &"burning_fields"
+biome_id = &"burning_plains"
 display_name = "Bioma Infuocato"
 background_color = Color(0.10, 0.055, 0.04, 1)
 floor_color = Color(0.20, 0.105, 0.075, 1)

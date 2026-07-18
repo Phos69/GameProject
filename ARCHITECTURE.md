@@ -182,7 +182,7 @@ definito in `docs/top_down_cardinal_contract.md`.
   fallback procedurale profile-driven.
 - `SurvivalMode`: ciclo survival, condizione di sconfitta e inoltro richieste boss.
 - `ZombieModeController`: coordinatore interno del revamp survival per bioma, terrain, casse, ostacoli e hazard.
-- `BiomeManager`: registro biomi, regione/bioma corrente, layout procedurale corrente e selezione iniziale della `Pianura Infetta`.
+- `BiomeManager`: registro biomi, regione/bioma corrente, layout procedurale corrente e selezione iniziale della `Pianura`.
 - `WorldGraph`: grafo seed-based dei territori, connesso tramite spanning tree ed edge extra, con API per raggiungibilita e connessioni fisiche.
 - `WorldRegion`: dati stabili di un territorio `75x75` tile logici (`450x450` equivalenti legacy), inclusi biome ID, coordinate, origine mondo, vicini, connessioni e layout generato.
 - `WorldRegionConnection`: edge navigazionale tra due regioni confinanti, con lato, direzione opposta, centro/larghezza del passaggio e coordinate globali.
@@ -219,7 +219,7 @@ definito in `docs/top_down_cardinal_contract.md`.
 - `TerrainSurfaceCanvas` e `terrain_surface_blend.gdshader`: stendono texture
   full-bleed in coordinate world-space, compongono sopra il divisore
   logico `terrain_divider_dirt` e usano un colore uniforme quando RGB e nullo.
-  In `infected_plains` quel materiale logico aliasa l'istanza runtime di
+  In `plains` quel materiale logico aliasa l'istanza runtime di
   `forest_path`, con lo stesso periodo world-space; i generated biome usano il
   raster condiviso `terrain_divider_dirt_generated.png`. Lo streamer passa
   l'offset della regione alla fase UV, quindi texture uguali
@@ -227,13 +227,13 @@ definito in `docs/top_down_cardinal_contract.md`.
 - `GeneratedBiomeTextureTools`: normalizzazione condivisa dei PNG generati usati
   in repeat runtime; applica crop dei bordi chiari, fix dei pixel alpha e la
   stessa policy a ground, cliff/void e raised cliff perimetrali. Per
-  `infected_plains` rimuove la vignettatura incorporata con crop perimetrale di
+  `plains` rimuove la vignettatura incorporata con crop perimetrale di
   40 px e blend dei bordi opposti di 8 px, poi conserva erba, sentiero e asfalto
   nel loro orientamento originale e li ripete direttamente, senza atlas,
   specchi o rotazioni;
   `toxic_wastes` usa invece un atlas specchiato a densita nativa,
-  mentre `frozen_outskirts` e `drowned_marsh` compongono quilt `2x2` da offset
-  dello stesso raster base. `burning_fields` armonizza i
+  mentre `frozen_tundra` e `swamp` compongono quilt `2x2` da offset
+  dello stesso raster base. `burning_plains` armonizza i
   bordi opposti del raster originale prima di rigenerare le mipmap. La
   normalizzazione non cambia
   classificazione, collisioni o pathfinding.
@@ -317,7 +317,7 @@ definito in `docs/top_down_cardinal_contract.md`.
   fisici, casse e hazard per un bioma; `parcel_types/bounds/areas` e la mappa
   cella->lotto descrivono i lotti indipendenti dallo streaming. La firma
   canonica e `layout-v4`; `rock_rects` resta
-  solo mirror legacy delle mesa della Pianura Infetta.
+  solo mirror legacy delle mesa della Pianura.
 - `WaveDirector`: composizione wave e scaling basati sul bioma corrente.
 - `ZombieSpawner`: spawn dai bordi della camera con distanza minima dai player,
   validazione walkable/hazard/ostacoli/blocker e fallback arena solo se valido.
@@ -343,8 +343,8 @@ definito in `docs/top_down_cardinal_contract.md`.
   collisione/layer/sort dal manifest e hook futuri per overlay danneggiato.
   Gli asset non aggiungono ombre, aloni o cerchi runtime sul floor; il floor
   resta responsabilita del tile layer.
-  La Pianura Infetta usa raster originali trasparenti per i propri prop; il
-  tronco condiviso seleziona il PNG tramite variante `infected_plains`, mentre
+  La Pianura usa raster originali trasparenti per i propri prop; il
+  tronco condiviso seleziona il PNG tramite variante `plains`, mentre
   gli altri biomi continuano a usare gli SVG dedicati in
   `objects/generated_props/` fino al loro pass. Il footprint di placement non
   cambia; la collisione puo usare `collision_size_ratio` per ID o
@@ -796,10 +796,14 @@ multi-bioma.
 - `BiomeEnvironmentLayout` deve classificare tutto il `75x75` come walkable,
   obstacle, hazard, border, void o fall zone. Il layout non assume piu pavimento
   continuo: parte da void e scava floor, strade, passaggi e blocchi interni.
+- `BiomeDefinition` espone `biome_family_id` e `surface_theme_id`. I quattro
+  ID canonici sono `plains`, `burning_plains`, `frozen_tundra` e `swamp`, tutti
+  nella famiglia `plains`; `BiomeManager` normalizza gli ID legacy durante il
+  caricamento ma non registra il bioma tossico.
 - Ogni layout runtime contiene almeno un chasm interno con cliff verso il void,
   salvo l'opt-out esplicito `disable_internal_void`, mesa tematizzate e un pool
-  pesato di prop. I quattro biomi avanzati aggiungono due hazard statici; la
-  Pianura Infetta conserva solo fall zone/chasm come pericolo ambientale
+  pesato di prop. I tre biomi avanzati aggiungono due hazard statici; la
+  Pianura conserva solo fall zone/chasm come pericolo ambientale
   statico. Lo stesso contratto interno vale per Survival e Infinite Arena.
 - `MapValidationSystem` rifiuta grafi non connessi, passaggi ostruiti, passaggi non fisici e classificazione incompleta.
 - `WorldRuntime` mantiene `current_region_id` e marca visited/discovered senza possedere regole combat.
@@ -865,10 +869,10 @@ multi-bioma.
   `3x3`; in assenza di seed manuale usa un seed default stabile, mentre un
   context `world_seed` permette riproduzione e debug.
 - Il context `single_biome_arena = true` e riservato a quick test/debug e genera
-  una sola cella `infected_plains` con bordi esterni fall-to-void, salvo
+  una sola cella `plains` con bordi esterni fall-to-void, salvo
   dimensioni mappa esplicite nel context.
 - La megamappa contiene territori `75x75`, seed locali, vicini, bordi, grafo connesso, passaggi fisici, fall boundary e layout ambientali validati prima di essere assegnati alle `BiomeDefinition`.
-- Ogni nuova run survival riparte dalla `Pianura Infetta`.
+- Ogni nuova run survival riparte dalla `Pianura`.
 - `WorldRuntime` marca la regione iniziale come visited, scopre i vicini collegati e conserva lo stato esplorazione.
 - I territori confinanti sono collegati da passaggi aperti; `RegionSeamSystem` aggiorna la regione corrente e il party condivide una sola regione alla volta.
 - Quando il party attraversa un varco, `RegionSeamSystem` verifica posizione,
@@ -923,7 +927,7 @@ multi-bioma.
 - `BiomeTileResolverUtils` contiene helper statici condivisi dal resolver
   per hashing stabile, membership in rettangoli e verifica path asset; non
   decide tile, sezioni o ruoli.
-- Per `infected_plains`, `BiomeTileResolver` usa il set forestale dedicato:
+- Per `plains`, `BiomeTileResolver` usa il set forestale dedicato:
   `forest_grass`, `forest_tall_grass`, `forest_path`, `forest_road`,
   `forest_road_border`, `forest_void`, `forest_cliff_edge`,
   `forest_mountain_wall` e le transizioni `grass_to_path`, `grass_to_road`,
@@ -972,8 +976,8 @@ multi-bioma.
   definiscono il limite calpestabile senza usare il divisore di terra come
   sostituto della parete di caduta.
   I biomi avanzati riusano lo stesso shader tramite `BiomeGeneratedArtCatalog`:
-  `toxic_wastes -> urban_ruins`, `burning_fields -> volcanic`,
-  `frozen_outskirts -> frozen_tundra` e `drowned_marsh -> swamp`. Ogni regione
+  `burning_plains -> burning_plains`,
+  `frozen_tundra -> frozen_tundra` e `swamp -> swamp`. Ogni regione
   sceglie un raster full-bleed stabile per i ruoli `ground`, `path` e `road`;
   `ROAD_STYLE_SURFACE` rende il ruolo road direttamente come asphalt, mentre
   le vecchie texture di transition/border/detail restano catalogate ma non
@@ -981,14 +985,16 @@ multi-bioma.
   semantica dei canali della maschera sono comuni a tutti i temi.
   `frozen_tundra` conserva per il ground la quilt runtime `2x2` a periodo
   world-space `1024`, mentre path e road restano a `512`; `swamp` usa lo stesso
-  periodo `1024` per il ground e `512` per path/road. `volcanic` mantiene il
+  periodo `1024` per il ground e `512` per path/road. `burning_plains` mantiene il
   ground pieno sulla base variation 02, le altre variation come detail e repeat
   world-space `512`. Il nuovo significato dei dati superficie invalida la
   `TileBakeCache` tramite la format version corrente.
-  `desert` e il set sostitutivo `forest` sono validati dal catalogo ma non
-  hanno un consumer runtime.
+  `desert`, il set sostitutivo `forest` e `urban_ruins` sono validati dal
+  catalogo ma non hanno un consumer runtime. Il profilo logico
+  `burning_plains` risolve temporaneamente la directory raster storica
+  `volcanic` tramite alias interno.
   Le `mesa_rects` vengono raggruppate per `mesa_profile_ids`: `forest`,
-  `urban_ruins`, `volcanic`, `frozen_tundra` e `swamp`. Il top usa il ruolo
+  `burning_plains`, `frozen_tundra` e `swamp`. Il top usa il ruolo
   `ground` del tema e le pareti il ruolo `cliff_face`; la Pianura conserva i
   raster forestali dedicati. Il tile layer risolve e valida gli stessi profili,
   ma il volume visibile viene emesso una volta per ciascun nodo `large_rock`
@@ -1015,7 +1021,7 @@ multi-bioma.
   convessi, mentre i raccordi concavi accorciano la run verticale: nessun
   corner e solo un contatore privo di mesh. La profondita world-space del lip
   usa circa due quinti del rim disponibile nel tema forestale e adegua lo span
-  UV alla profondita world-space. Nella Pianura Infetta le mesh orizzontale e verticale campionano con
+  UV alla profondita world-space. Nella Pianura le mesh orizzontale e verticale campionano con
   un'unica proiezione planare il top mesa `large_rock`
   (`rock_plateau_top_generated.png`); solo la parete nel void usa la texture
   cliff direzionale. Una `terrain_transition_mesh` separata ripete
@@ -1091,7 +1097,7 @@ multi-bioma.
 - Il loader accetta SVG, texture raster importate e, come estensione generica,
   risorse `Texture2D` `.tres` quali `AtlasTexture`; nessun prop attivo usa
   attualmente quest'ultimo formato. `forest_tree` conserva il PNG condiviso
-  come fallback; nella Pianura Infetta il contratto
+  come fallback; nella Pianura il contratto
   `random_variant_ids_by_context` seleziona deterministicamente dalla posizione
   world-space otto PNG trasparenti, organizzati in quattro coppie
   adulto/giovane, e applica poi flip/tinta leggeri. La selezione visuale non

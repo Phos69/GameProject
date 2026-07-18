@@ -3,10 +3,9 @@ extends SceneTree
 const OUTPUT_DIR := "res://build/qa/generated_biome_art"
 const OUTPUT_FILE := "generated_biome_materials.png"
 const BIOMES: Array[StringName] = [
-	&"toxic_wastes",
-	&"burning_fields",
-	&"frozen_outskirts",
-	&"drowned_marsh",
+	&"burning_plains",
+	&"frozen_tundra",
+	&"swamp",
 ]
 
 var failures := PackedStringArray()

@@ -136,8 +136,8 @@ cliff e lip restano pass separati sopra il canvas terreno.
 
 I sorgenti raster in `environment/top_down/generated_images/` sono organizzati
 per tema e ruolo. Il mapping runtime e:
-`toxic_wastes -> urban_ruins`, `burning_fields -> volcanic`,
-`frozen_outskirts -> frozen_tundra`, `drowned_marsh -> swamp`.
+`toxic_wastes -> urban_ruins`, `burning_plains -> volcanic`,
+`frozen_tundra -> frozen_tundra`, `swamp -> swamp`.
 `desert` e il nuovo `forest` sono puliti e catalogati ma non assegnati.
 
 `BiomeGeneratedArtCatalog` continua a catalogare pool tipizzati per ground,
@@ -247,7 +247,7 @@ intersezioni), passage tile (`road`, `bridge`, `snow_pass`, `broken_gate`,
 incroci fra lati cardinali; i rettangoli definiscono le aperture. La variante
 floor deriva da seed, cella e bioma.
 
-Per `infected_plains`, il resolver usa il set forestale dedicato:
+Per `plains`, il resolver usa il set forestale dedicato:
 `forest_grass`, varianti grass, `forest_tall_grass`, `forest_path`,
 `forest_road`, `forest_road_border`, `forest_void`, `forest_cliff_edge`,
 `forest_mountain_wall` e le transizioni `grass_to_path`, `grass_to_road`,
@@ -313,7 +313,7 @@ e la checklist sono in `docs/obstacle_rendering.md`.
 
 Gli asset correnti sono misti: SVG generati in-repo e PNG finali. La Pianura
 Infetta usa dieci raster originali in
-`objects/generated_raster/infected_plains/`: sette prop esclusivi, il tronco
+`objects/generated_raster/plains/`: sette prop esclusivi, il tronco
 contestuale e le casse `common`/`medical`. Gli altri biomi conservano per ora
 gli SVG cardinali dedicati in `objects/generated_props/`, con source
 `project_svg_generator` e attribution `environment_top_down_internal`. In runtime headless
@@ -337,7 +337,7 @@ cinque tavole raster precedenti sono state rimosse e non sono sorgenti runtime.
 Anche le 23 risorse `AtlasTexture` `.tres` ritagliate da quelle tavole sono
 state eliminate. Gli SVG individuali in `objects/generated_props/` restano le
 sorgenti cardinali per i biomi non ancora migrati; il manifest v14 sostituisce
-quelli della Pianura Infetta con raster e supporta varianti contestuali. Il
+quelli della Pianura con raster e supporta varianti contestuali. Il
 cutover ha conservato i contratti fisici; il follow-up rende espliciti l'anchor e il collider alle
 radici di `dead_tree`. Il `reed_wall` resta uno SVG verticale `1x3` indipendente;
 mapping e guardrail sono documentati nel README della cartella `concepts/`.

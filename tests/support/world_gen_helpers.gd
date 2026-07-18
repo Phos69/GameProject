@@ -5,7 +5,7 @@ extends RefCounted
 ## BiomeManager, così le suite possono costruire il mondo una sola volta in
 ## before_all e riusarlo tra i test.
 
-const STARTER_BIOME_PATH := "res://game/modes/zombie/biomes/infected_plains.tres"
+const STARTER_BIOME_PATH := "res://game/modes/zombie/biomes/plains.tres"
 const WorldGridConfig = preload("res://game/core/world_grid_config.gd")
 
 ## Carica una BiomeDefinition di zombie mode dal suo id (nome file .tres).

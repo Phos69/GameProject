@@ -4,7 +4,7 @@ class_name BiomeGenerationProfile
 ## Typed tuning contract for the feature passes shared by every void-first biome.
 ## Asset paths, anchors and collision remain owned by the environment manifest.
 
-@export var biome_id: StringName = &"infected_plains"
+@export var biome_id: StringName = &"plains"
 @export_group("Terrain parcels")
 @export_range(7, 10, 1) var parcel_min_count: int = 7
 @export_range(7, 10, 1) var parcel_max_count: int = 10

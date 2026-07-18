@@ -21,17 +21,17 @@ Regole per nuove voci:
 
 ## Backlog Aperto Prioritizzato
 
-### BIOME-RASTER-002 - Raster ambientali dei quattro biomi avanzati
+### BIOME-RASTER-002 - Raster ambientali delle tre varianti avanzate
 
-- Obiettivo: sostituire gli SVG ambientali ancora attivi in Tossico,
-  Infuocato, Neve e Palude con raster originali trasparenti coerenti con il
-  pass completato per la Pianura Infetta, senza modificare gameplay o layout.
+- Obiettivo: sostituire gli SVG ambientali ancora attivi in Pianura Ardente,
+  Tundra Gelata e Palude con raster originali trasparenti coerenti con il
+  pass completato per la Pianura, senza modificare gameplay o layout.
 - Milestone collegata: polish asset post-`TOPDOWN-001`, successiva a
   `BIOME-RASTER-001`.
 - File/sistemi coinvolti: `assets/environment/top_down/objects/`, manifest v13,
   `EnvironmentAssetManifest`, `EnvironmentObject`, Visual QA bioma e suite
   `assets`/`environment`/`obstacles`/`world_gen`.
-- Criterio di accettazione: ogni prop visibile nei quattro biomi usa un PNG con
+- Criterio di accettazione: ogni prop visibile nelle tre varianti usa un PNG con
   alpha e silhouette cardinale leggibile; varianti condivise sono risolte per
   bioma; ID, footprint, collider, sort, probabilita e seed layout restano
   invariati; attribuzione e prompt sono registrati.

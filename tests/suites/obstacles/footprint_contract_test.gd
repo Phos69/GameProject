@@ -29,7 +29,7 @@ const REQUIRED_FOOTPRINTS: Dictionary = {
 	Vector2i(3, 3): &"ice_rock"
 }
 const BIOME_IDS: Array[StringName] = [
-	&"infected_plains", &"toxic_wastes", &"burning_fields", &"frozen_outskirts", &"drowned_marsh"
+	&"plains", &"burning_plains", &"frozen_tundra", &"swamp"
 ]
 const FEATURE_IDS: Array[StringName] = [&"forest_tree"]
 const EXPECTED_SLOTS := Vector2i(3, 3)
@@ -197,7 +197,7 @@ func test_floor_center_visual_is_centered_on_its_collision() -> void:
 func test_generated_layout_records() -> void:
 	var generator := BiomeTerrainGenerator.new()
 	add_child(generator)
-	var biome := load("res://game/modes/zombie/biomes/infected_plains.tres") as BiomeDefinition
+	var biome := load("res://game/modes/zombie/biomes/plains.tres") as BiomeDefinition
 	assert_not_null(biome, "starter biome loads for generated footprint validation")
 	if biome != null:
 		var cell := BiomeCell.new()
@@ -281,7 +281,7 @@ func test_3x3_feature_obstacle() -> void:
 
 	var generator := BiomeTerrainGenerator.new()
 	add_child(generator)
-	var biome := load("res://game/modes/zombie/biomes/infected_plains.tres") as BiomeDefinition
+	var biome := load("res://game/modes/zombie/biomes/plains.tres") as BiomeDefinition
 	assert_not_null(biome, "infected plains loads")
 	if biome == null:
 		generator.queue_free()
@@ -401,7 +401,7 @@ func test_rock_area_mesh_builder() -> void:
 		Rect2i(Vector2i(8, 10), SMALL_CELLS),
 		Rect2i(Vector2i(52, 42), LARGE_CELLS)
 	]
-	var palette := load("res://game/modes/zombie/biomes/infected_plains_palette.tres") as BiomePalette
+	var palette := load("res://game/modes/zombie/biomes/plains_palette.tres") as BiomePalette
 	builder.configure(palette, 424242)
 	builder.build(rock_rects, Vector2i(100, 100), LOGICAL_TILE_SCALE)
 	var counts := builder.get_counts()

@@ -4,7 +4,7 @@
 
 [resource]
 script = ExtResource("1_palette")
-biome_id = &"drowned_marsh"
+biome_id = &"swamp"
 display_name = "Bioma Palude"
 background_color = Color(0.040, 0.075, 0.078, 1)
 floor_color = Color(0.09, 0.15, 0.14, 1)

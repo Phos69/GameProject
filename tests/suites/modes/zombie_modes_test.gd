@@ -33,8 +33,19 @@ func test_zombie_revamp_foundation() -> void:
 		scene = null
 		return
 
-	assert_gte(biome_manager.get_available_biome_ids().size(), 5, "biome manager registers the planned biome set")
-	assert_eq(biome_manager.get_current_biome_id(), &"infected_plains", "initial biome defaults to Pianura Infetta")
+	assert_eq(biome_manager.get_available_biome_ids().size(), 4, "biome manager registers exactly the four planned biomes")
+	for biome_id in [&"plains", &"burning_plains", &"frozen_tundra", &"swamp"]:
+		var biome := biome_manager.get_biome_definition(biome_id) as BiomeDefinition
+		assert_not_null(biome, "%s is registered" % String(biome_id))
+		if biome != null:
+			assert_eq(biome.biome_family_id, &"plains", "%s belongs to the plains family" % String(biome_id))
+			assert_false(biome.surface_theme_id.is_empty(), "%s declares its surface theme" % String(biome_id))
+	assert_eq(
+		biome_manager.get_biome_definition(&"toxic_wastes"),
+		biome_manager.get_biome_definition(&"burning_plains"),
+		"legacy toxic saves migrate to Burning Plains"
+	)
+	assert_eq(biome_manager.get_current_biome_id(), &"plains", "initial biome defaults to Pianura")
 	assert_eq(wave_director.get_enemy_id_for_spawn(1, 0, 3), &"survival_zombie", "first wave resolves to base zombies")
 
 	var visible_rect: Rect2 = zombie_spawner.get_visible_world_rect()
@@ -60,8 +71,8 @@ func test_zombie_revamp_foundation() -> void:
 	assert_true(streamer.is_area_ready(),
 		"the loading screen closes only after the active camera area is ready")
 	assert_true(await _wait_for_wave_combat(wave_manager, 1), "first wave reaches combat")
-	assert_eq(biome_manager.get_current_biome_id(), &"infected_plains", "survival run starts from the starting biome")
-	assert_eq(wave_manager.current_wave_biome_id, &"infected_plains", "wave manager records the biome used for the wave")
+	assert_eq(biome_manager.get_current_biome_id(), &"plains", "survival run starts from the starting biome")
+	assert_eq(wave_manager.current_wave_biome_id, &"plains", "wave manager records the biome used for the wave")
 	var wave_enemies := wave_manager.get_active_wave_enemies()
 	assert_eq(wave_enemies.size(), 2, "wave one spawns through the delegated systems")
 	for enemy in wave_enemies:
@@ -240,10 +251,10 @@ func _assert_default_survival_world(biome_manager: BiomeManager) -> void:
 	if graph != null:
 		for region in graph.get_regions_sorted():
 			graph_biomes[region.biome_id] = true
-	for required_biome in [&"infected_plains", &"toxic_wastes", &"burning_fields", &"frozen_outskirts", &"drowned_marsh"]:
+	for required_biome in [&"plains", &"burning_plains", &"frozen_tundra", &"swamp"]:
 		assert_true(graph_biomes.has(required_biome), "default survival graph contains %s" % String(required_biome))
 	var start_cell := biome_manager.get_current_biome_cell()
-	assert_true(start_cell != null and start_cell.biome_id == &"infected_plains", "default survival starts from infected_plains")
+	assert_true(start_cell != null and start_cell.biome_id == &"plains", "default survival starts from plains")
 	var connected_border_count := 0
 	var outer_fall_count := 0
 	for cell in cells:
@@ -264,7 +275,7 @@ func _assert_default_survival_world(biome_manager: BiomeManager) -> void:
 func _assert_single_biome_quick_arena(biome_manager: BiomeManager) -> void:
 	assert_eq(biome_manager.get_generated_biome_map().size(), 1, "quick arena profile generates one cell")
 	var start_cell := biome_manager.get_current_biome_cell()
-	assert_true(start_cell != null and start_cell.biome_id == &"infected_plains", "quick arena starts from infected_plains")
+	assert_true(start_cell != null and start_cell.biome_id == &"plains", "quick arena starts from plains")
 	if start_cell == null:
 		return
 	assert_true(start_cell.passages.is_empty(), "quick arena has no inter-region passages")
@@ -274,7 +285,7 @@ func _assert_single_biome_quick_arena(biome_manager: BiomeManager) -> void:
 func _assert_walled_infinite_arena_profile(biome_manager: BiomeManager) -> void:
 	assert_eq(biome_manager.get_generated_biome_map().size(), 1, "walled arena profile generates one cell")
 	var start_cell := biome_manager.get_current_biome_cell()
-	assert_true(start_cell != null and start_cell.biome_id == &"infected_plains", "walled arena starts from infected_plains")
+	assert_true(start_cell != null and start_cell.biome_id == &"plains", "walled arena starts from plains")
 	if start_cell == null:
 		return
 	assert_true(start_cell.passages.is_empty(), "walled arena has no inter-region passages")
@@ -371,11 +382,23 @@ func _assert_infinite_arena_world(biome_manager: BiomeManager) -> void:
 	_assert_no_perimeter_fall_zones(layout, "Infinite Arena layout")
 	assert_gt(layout.mesa_rects.size(), 0,
 		"Infinite Arena conserva le mesa del generatore condiviso")
+	assert_true(
+		layout.random_prop_rects.is_empty(),
+		"Infinite Arena usa contenuti per-lotto senza scatter globale legacy"
+	)
+	var parcel_content := (
+		layout.generation_summary.get("parcel_content", {}) as Dictionary
+	)
 	assert_between(
-		layout.random_prop_rects.size(),
-		ObstacleLayoutGenerator.VOIDFIRST_PROP_MIN_COUNT,
-		ObstacleLayoutGenerator.VOIDFIRST_PROP_MAX_COUNT,
-		"Infinite Arena conserva i prop casuali del generatore condiviso"
+		int(parcel_content.get("town_building_count", 0)),
+		2,
+		4,
+		"Infinite Arena conserva la town del generatore condiviso"
+	)
+	assert_gt(
+		layout.obstacle_ids.size(),
+		0,
+		"Infinite Arena conserva gli ostacoli dei lotti condivisi"
 	)
 	assert_true(bool(layout.validation_report.get("is_valid", false)), "Infinite Arena layout passes validation")
 	_assert_raised_cliff_layout(layout)

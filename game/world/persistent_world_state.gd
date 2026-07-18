@@ -7,7 +7,7 @@ class_name PersistentWorldState
 const CATEGORY_OPENED_CRATES: StringName = &"opened_crates"
 const CATEGORY_DESTROYED_OBSTACLES: StringName = &"destroyed_obstacles"
 const CATEGORY_COMPLETED_ENCOUNTERS: StringName = &"completed_encounters"
-const TERRAIN_GENERATION_REVISION: int = 5
+const TERRAIN_GENERATION_REVISION: int = 6
 
 var seed_value: int = 0
 var graph_signature: String = ""

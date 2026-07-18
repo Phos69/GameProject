@@ -4,7 +4,7 @@
 
 [resource]
 script = ExtResource("1_palette")
-biome_id = &"frozen_outskirts"
+biome_id = &"frozen_tundra"
 display_name = "Bioma Neve"
 background_color = Color(0.075, 0.095, 0.115, 1)
 floor_color = Color(0.18, 0.24, 0.27, 1)

@@ -1101,8 +1101,8 @@ func _load_forest_surface_art_textures() -> void:
 				continue
 			_register_surface_texture(material_id, asset_path, texture)
 		if (
-			biome_id == &"frozen_outskirts"
-			or biome_id == &"drowned_marsh"
+			biome_id == &"frozen_tundra"
+			or biome_id == &"swamp"
 		):
 			_apply_offset_ground_macro_texture()
 		_load_terrain_divider_texture()
@@ -1739,15 +1739,15 @@ func _forest_surface_texture_world_size(texture_id: StringName) -> float:
 		var texture_name := String(texture_id)
 		if biome_id == &"toxic_wastes":
 			return TOXIC_SURFACE_TEXTURE_WORLD_SIZE
-		if biome_id == &"frozen_outskirts":
+		if biome_id == &"frozen_tundra":
 			if texture_name.contains("base_ground_variation_01"):
 				return FROZEN_GROUND_TEXTURE_WORLD_SIZE
 			return FROZEN_SURFACE_TEXTURE_WORLD_SIZE
-		if biome_id == &"drowned_marsh":
+		if biome_id == &"swamp":
 			if texture_name.contains("base_ground_variation_01"):
 				return MARSH_GROUND_TEXTURE_WORLD_SIZE
 			return MARSH_SURFACE_TEXTURE_WORLD_SIZE
-		if biome_id == &"burning_fields":
+		if biome_id == &"burning_plains":
 			return BURNING_SURFACE_TEXTURE_WORLD_SIZE
 	return FOREST_SURFACE_TEXTURE_WORLD_SIZE
 

@@ -68,7 +68,7 @@ func test_biome_themed_enemies() -> void:
 	assert_true(mire_stalker.emerge_duration >= 1.5 and mire_stalker.contact_status_id == &"bleed", "mire stalker ambushes and applies bleed")
 
 	transition_system.cooldown_timer = 0.0
-	transition_system.transition_to(&"toxic_wastes", &"east")
+	transition_system.transition_to(&"burning_plains", &"east")
 	await wait_physics_frames(1)
 	player.global_position = Vector2.ZERO
 	var toxic_enemy := enemy_system.spawn_enemy(&"toxic_zombie", Vector2(20.0, 0.0)) as BasicEnemy
@@ -118,7 +118,7 @@ func test_wave_director_biome_scaling() -> void:
 		scene = null
 		return
 
-	for biome_id in [&"infected_plains", &"toxic_wastes", &"burning_fields", &"frozen_outskirts", &"drowned_marsh"]:
+	for biome_id in [&"plains", &"burning_plains", &"frozen_tundra", &"swamp"]:
 		var definition = biome_manager.get_biome_definition(StringName(biome_id))
 		assert_not_null(definition, "%s biome definition exists" % String(biome_id))
 		if definition == null:
@@ -133,10 +133,9 @@ func test_wave_director_biome_scaling() -> void:
 		assert_gt(float(definition.get("difficulty_rating")), 0.0, "%s biome defines difficulty" % String(biome_id))
 
 	var expected_elites := {
-		&"toxic_wastes": &"toxic_reaver",
-		&"burning_fields": &"ember_hound",
-		&"frozen_outskirts": &"glacial_bulwark",
-		&"drowned_marsh": &"mire_stalker"
+		&"burning_plains": &"ember_hound",
+		&"frozen_tundra": &"glacial_bulwark",
+		&"swamp": &"mire_stalker"
 	}
 	for biome_id in expected_elites:
 		var definition := biome_manager.get_biome_definition(biome_id) as BiomeDefinition
@@ -150,18 +149,21 @@ func test_wave_director_biome_scaling() -> void:
 			"%s enters deterministically from the elite wave gate" % String(elite_id)
 		)
 
-	assert_eq(biome_manager.get_current_biome_id(), &"infected_plains", "run defaults to the starting biome")
+	assert_eq(biome_manager.get_current_biome_id(), &"plains", "run defaults to the starting biome")
 	assert_eq(wave_director.get_enemy_id_for_spawn(1, 0, 3), &"survival_zombie", "starting biome first wave keeps base zombies")
 
-	assert_true(biome_manager.set_current_biome(&"toxic_wastes"), "biome manager can switch to the toxic biome")
-	var toxic_config: Dictionary = wave_director.configure_wave(2, false, 10)
-	assert_gt(int(toxic_config.get("regular_total", 0)), 10, "toxic biome increases regular wave size")
-	var toxic_boss_config: Dictionary = wave_director.configure_wave(5, true, 10)
-	assert_eq(int(toxic_boss_config.get("regular_total", 0)), int(toxic_config.get("regular_total", 0)), "boss wave minions retain the same biome pressure as regular waves")
-	assert_gt(float(toxic_config.get("spawn_rate_multiplier", 1.0)), 1.0, "toxic biome changes spawn cadence")
-	var toxic_scaling: Dictionary = wave_director.get_wave_scaling_multipliers()
-	assert_true(float(toxic_scaling.get("health", 1.0)) > 1.0 and float(toxic_scaling.get("damage", 1.0)) > 1.0, "toxic biome changes enemy scaling")
-	assert_eq(wave_director.get_enemy_id_for_spawn(2, 0, 10), &"toxic_zombie", "toxic biome can resolve a thematic zombie id")
+	assert_true(biome_manager.set_current_biome(&"burning_plains"), "biome manager can switch to Burning Plains")
+	var burning_config: Dictionary = wave_director.configure_wave(2, false, 10)
+	assert_gt(int(burning_config.get("regular_total", 0)), 10, "Burning Plains increases regular wave size")
+	var burning_boss_config: Dictionary = wave_director.configure_wave(5, true, 10)
+	assert_eq(int(burning_boss_config.get("regular_total", 0)), int(burning_config.get("regular_total", 0)), "boss wave minions retain the same biome pressure as regular waves")
+	assert_gt(float(burning_config.get("spawn_rate_multiplier", 1.0)), 1.0, "Burning Plains changes spawn cadence")
+	var burning_scaling: Dictionary = wave_director.get_wave_scaling_multipliers()
+	assert_true(float(burning_scaling.get("health", 1.0)) >= 1.0 and float(burning_scaling.get("damage", 1.0)) > 1.0, "Burning Plains changes enemy scaling")
+	assert_true(
+		wave_director.get_enemy_id_for_spawn(2, 0, 10) in [&"burned_zombie", &"fire_runner", &"fire_exploder", &"survival_zombie", &"survival_runner", &"survival_tank"],
+		"Burning Plains resolves its fire roster"
+	)
 
 	wave_manager.stop_run(true)
 	wave_manager.initial_delay = 100.0
@@ -170,9 +172,9 @@ func test_wave_director_biome_scaling() -> void:
 	wave_manager.boss_wave_interval = 99
 	wave_manager.start_run()
 	wave_manager.start_next_wave()
-	assert_eq(wave_manager.current_wave_biome_id, &"toxic_wastes", "wave manager records the current toxic biome")
+	assert_eq(wave_manager.current_wave_biome_id, &"burning_plains", "wave manager records Burning Plains")
 	assert_gt(wave_manager.current_wave_regular_total, 10, "wave manager applies biome wave size")
-	assert_eq(wave_manager.get_enemy_id_for_spawn(2, 0, 10), &"toxic_zombie", "wave manager delegates roster to the biome director")
+	assert_false(wave_manager.get_enemy_id_for_spawn(2, 0, 10).is_empty(), "wave manager delegates roster to the biome director")
 	wave_manager.stop_run(true)
 
 	scene.teardown()

@@ -14,7 +14,7 @@ const WorldGen = preload("res://tests/support/world_gen_helpers.gd")
 
 const GRAPH_SEED := 120120
 const BIOME_IDS: Array[StringName] = [
-	&"infected_plains", &"toxic_wastes", &"burning_fields", &"frozen_outskirts", &"drowned_marsh"
+	&"plains", &"burning_plains", &"frozen_tundra", &"swamp"
 ]
 
 var _manager: BiomeManager

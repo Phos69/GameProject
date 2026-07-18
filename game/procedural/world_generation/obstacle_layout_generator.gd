@@ -1050,19 +1050,19 @@ func _add_biome_navigation_features(
 	var vertical_ratio := 0.32
 	var horizontal_ratio := 0.68
 	match biome.biome_id:
-		&"infected_plains":
+		&"plains":
 			vertical_ratio = 0.34
 			horizontal_ratio = 0.66
 		&"toxic_wastes":
 			vertical_ratio = 0.38
 			horizontal_ratio = 0.62
-		&"burning_fields":
+		&"burning_plains":
 			vertical_ratio = 0.30
 			horizontal_ratio = 0.70
-		&"frozen_outskirts":
+		&"frozen_tundra":
 			vertical_ratio = 0.36
 			horizontal_ratio = 0.64
-		&"drowned_marsh":
+		&"swamp":
 			vertical_ratio = 0.28 + rng.randf_range(-0.015, 0.015)
 			horizontal_ratio = 0.72 + rng.randf_range(-0.015, 0.015)
 		_:
@@ -1074,7 +1074,7 @@ func _add_starter_water_crossing(
 	biome: BiomeDefinition,
 	rng: RandomNumberGenerator
 ) -> void:
-	if biome == null or biome.biome_id != &"infected_plains":
+	if biome == null or biome.biome_id != &"plains":
 		return
 	var river_y := _select_starter_river_y(layout, rng)
 	var river_band := Rect2i(
@@ -1261,11 +1261,11 @@ func _secondary_path_tag(biome_id: StringName) -> StringName:
 	match biome_id:
 		&"toxic_wastes":
 			return &"service_lane"
-		&"burning_fields":
+		&"burning_plains":
 			return &"ash_lane"
-		&"frozen_outskirts":
+		&"frozen_tundra":
 			return &"packed_snow_path"
-		&"drowned_marsh":
+		&"swamp":
 			return &"wooden_walkway"
 		_:
 			return &"broken_street"
@@ -1331,7 +1331,7 @@ func _add_internal_blocks(
 			layout.add_block_rect(block_rect, block_kind)
 			_apply_block_surface(layout, block_rect, block_kind, biome.biome_id)
 			block_index += 1
-	if biome != null and biome.biome_id == &"infected_plains":
+	if biome != null and biome.biome_id == &"plains":
 		_ensure_starter_block_mix(layout, biome.biome_id)
 	if allow_internal_void:
 		_ensure_internal_void_block(layout, biome.biome_id if biome != null else &"")
@@ -1371,7 +1371,7 @@ func _ensure_internal_void_block(
 			else &"open"
 		)
 		if (
-			biome_id == &"infected_plains"
+			biome_id == &"plains"
 			and (block_kind == &"building" or block_kind == &"dense_vegetation")
 		):
 			continue
@@ -1465,7 +1465,7 @@ func _apply_block_surface(
 			layout.add_floor_rect(block_rect, &"forest_tall_grass")
 		_:
 			var floor_tag := &"open_block"
-			if biome_id == &"infected_plains" and block_kind == &"forest":
+			if biome_id == &"plains" and block_kind == &"forest":
 				floor_tag = &"forest_tall_grass"
 			layout.add_floor_rect(block_rect, floor_tag)
 
@@ -1503,11 +1503,11 @@ func _resolve_block_kind(
 	match biome_id:
 		&"toxic_wastes":
 			pattern = [&"building", &"ruins", &"partial_void", &"open", &"large_obstacle", &"open", &"building", &"full_void"]
-		&"burning_fields":
+		&"burning_plains":
 			pattern = [&"ruins", &"partial_void", &"building", &"full_void", &"large_obstacle", &"open", &"ruins", &"open"]
-		&"frozen_outskirts":
+		&"frozen_tundra":
 			pattern = [&"building", &"open", &"large_obstacle", &"partial_void", &"forest", &"open", &"full_void", &"ruins"]
-		&"drowned_marsh":
+		&"swamp":
 			pattern = [&"partial_void", &"forest", &"open", &"full_void", &"building", &"open", &"large_obstacle", &"forest"]
 		_:
 			pass
@@ -1728,7 +1728,7 @@ func _add_starter_roadside_details(
 	biome: BiomeDefinition,
 	rng: RandomNumberGenerator
 ) -> void:
-	if biome == null or biome.biome_id != &"infected_plains":
+	if biome == null or biome.biome_id != &"plains":
 		return
 	var center := layout.zone_size / 2
 	var car_rects: Array[Rect2i] = [
@@ -1780,7 +1780,7 @@ func _ensure_starter_dense_obstacle(
 	biome: BiomeDefinition,
 	rng: RandomNumberGenerator
 ) -> void:
-	if biome == null or biome.biome_id != &"infected_plains":
+	if biome == null or biome.biome_id != &"plains":
 		return
 	if layout.obstacle_ids.has(&"dense_vegetation"):
 		return
@@ -1834,7 +1834,7 @@ func _ensure_starter_3x3_obstacles(
 	layout: BiomeEnvironmentLayout,
 	biome: BiomeDefinition
 ) -> void:
-	if biome == null or biome.biome_id != &"infected_plains":
+	if biome == null or biome.biome_id != &"plains":
 		return
 	var preferred_kinds: Dictionary = {
 		&"forest_tree": [&"forest", &"dense_vegetation", &"open", &"ruins"],
@@ -1936,7 +1936,7 @@ func _ensure_starter_house_obstacle(
 	biome: BiomeDefinition,
 	rng: RandomNumberGenerator
 ) -> void:
-	if biome == null or biome.biome_id != &"infected_plains":
+	if biome == null or biome.biome_id != &"plains":
 		return
 	if layout.obstacle_ids.has(&"ruined_house"):
 		return
@@ -2129,11 +2129,11 @@ func _small_prop_ids(biome_id: StringName) -> Array[StringName]:
 	match biome_id:
 		&"toxic_wastes":
 			return [&"small_rock", &"toxic_barrel", &"industrial_fence"]
-		&"burning_fields":
+		&"burning_plains":
 			return [&"small_rock", &"ash_barrier", &"broken_fence"]
-		&"frozen_outskirts":
+		&"frozen_tundra":
 			return [&"ice_rock", &"fallen_log", &"small_rock"]
-		&"drowned_marsh":
+		&"swamp":
 			return [&"marsh_log", &"small_rock", &"reed_wall"]
 		_:
 			return [&"small_rock", &"broken_fence", &"fallen_log"]
@@ -2511,13 +2511,13 @@ func _add_theme_hazards(
 		&"toxic_wastes":
 			_add_hazard_at_ratio(layout, &"toxic_puddle", Vector2(0.42, 0.22), _legacy_rect_size(26, 14))
 			_add_hazard_at_ratio(layout, &"gas_cloud", Vector2(0.74, 0.78), _legacy_rect_size(30, 18))
-		&"burning_fields":
+		&"burning_plains":
 			_add_hazard_at_ratio(layout, &"lava_crack", Vector2(0.36, 0.76), _legacy_rect_size(34, 10))
 			_add_hazard_at_ratio(layout, &"fire_zone", Vector2(0.72, 0.24), _legacy_rect_size(20, 20))
-		&"frozen_outskirts":
+		&"frozen_tundra":
 			_add_hazard_at_ratio(layout, &"slippery_ice", Vector2(0.34, 0.74), _legacy_rect_size(34, 20))
 			_add_hazard_at_ratio(layout, &"deep_snow_slow", Vector2(0.74, 0.22), _legacy_rect_size(28, 24))
-		&"drowned_marsh":
+		&"swamp":
 			_add_hazard_at_ratio(layout, &"deep_water", Vector2(0.30, 0.74), _legacy_rect_size(38, 22))
 			_add_hazard_at_ratio(layout, &"mud_slow", Vector2(0.74, 0.26), _legacy_rect_size(28, 22))
 		_:
@@ -2587,11 +2587,11 @@ func _large_obstacle_id(biome_id: StringName) -> StringName:
 	match biome_id:
 		&"toxic_wastes":
 			return &"lab_block"
-		&"burning_fields":
+		&"burning_plains":
 			return &"burned_house"
-		&"frozen_outskirts":
+		&"frozen_tundra":
 			return &"snow_cabin"
-		&"drowned_marsh":
+		&"swamp":
 			return &"sunken_house"
 		_:
 			return &"ruined_house"
@@ -2604,11 +2604,11 @@ func _block_obstacle_id(
 	match block_kind:
 		&"forest":
 			match biome_id:
-				&"drowned_marsh":
+				&"swamp":
 					return &"dead_tree"
-				&"frozen_outskirts":
+				&"frozen_tundra":
 					return &"ice_block"
-				&"burning_fields":
+				&"burning_plains":
 					return &"burned_car"
 				&"toxic_wastes":
 					return &"pipe_stack"
@@ -2618,11 +2618,11 @@ func _block_obstacle_id(
 			match biome_id:
 				&"toxic_wastes":
 					return &"lab_wall"
-				&"burning_fields":
+				&"burning_plains":
 					return &"charred_wall"
-				&"frozen_outskirts":
+				&"frozen_tundra":
 					return &"snow_wall"
-				&"drowned_marsh":
+				&"swamp":
 					return &"reed_wall"
 				_:
 					return &"wood_barrier"
@@ -2630,7 +2630,7 @@ func _block_obstacle_id(
 			var ids := _secondary_obstacle_ids(biome_id)
 			return ids[index % ids.size()]
 		_:
-			if biome_id == &"infected_plains" and index % 2 == 1:
+			if biome_id == &"plains" and index % 2 == 1:
 				return &"abandoned_house"
 			return _large_obstacle_id(biome_id)
 
@@ -2638,11 +2638,11 @@ func _secondary_obstacle_ids(biome_id: StringName) -> Array[StringName]:
 	match biome_id:
 		&"toxic_wastes":
 			return [&"industrial_fence", &"toxic_barrel", &"lab_wall"]
-		&"burning_fields":
+		&"burning_plains":
 			return [&"charred_wall", &"ash_barrier", &"burned_car"]
-		&"frozen_outskirts":
+		&"frozen_tundra":
 			return [&"snow_wall", &"ice_rock", &"fallen_log"]
-		&"drowned_marsh":
+		&"swamp":
 			return [&"reed_wall", &"marsh_log", &"broken_walkway"]
 		_:
 			return [&"small_rock", &"broken_fence", &"wood_barrier", &"abandoned_car"]
@@ -2651,11 +2651,11 @@ func _border_obstacle_id(biome_id: StringName) -> StringName:
 	match biome_id:
 		&"toxic_wastes":
 			return &"toxic_boundary_wall"
-		&"burning_fields":
+		&"burning_plains":
 			return &"lava_boundary"
-		&"frozen_outskirts":
+		&"frozen_tundra":
 			return &"ice_boundary"
-		&"drowned_marsh":
+		&"swamp":
 			return &"deep_water_boundary"
 		_:
 			return &"boundary_fence"
@@ -2664,11 +2664,11 @@ func _crate_ids(biome_id: StringName) -> Array[StringName]:
 	match biome_id:
 		&"toxic_wastes":
 			return [&"biome_toxic", &"medical", &"common"]
-		&"burning_fields":
+		&"burning_plains":
 			return [&"biome_fire", &"military", &"common"]
-		&"frozen_outskirts":
+		&"frozen_tundra":
 			return [&"biome_frost", &"medical", &"common"]
-		&"drowned_marsh":
+		&"swamp":
 			return [&"biome_marsh", &"common", &"medical"]
 		_:
 			return [&"common", &"medical", &"common"]
@@ -2678,7 +2678,7 @@ func _voidfirst_internal_chasm_min_count(biome: BiomeDefinition) -> int:
 		return maxi(biome.generation_profile.internal_chasm_min_count, 0)
 	return 1
 
-# Per-biome asset palette for the void-first pipeline. infected_plains resolves to
+# Per-biome asset palette for the void-first pipeline. plains resolves to
 # the historical literals so its output stays byte-identical (rock-area + forest
 # rendering only exist for the forest biome). The four thematic biomes reuse
 # existing selectors so the shared structure — rock/mass scatter, vegetation
@@ -2702,7 +2702,7 @@ func _voidfirst_palette(biome_id: StringName) -> Dictionary:
 				"spoke_tag": &"service_lane",
 				"line_vegetation": false,
 			}
-		&"burning_fields":
+		&"burning_plains":
 			return {
 				"rock_scalable": false,
 				"scatter_ids": [&"burned_house", &"burned_car", &"charred_wall"],
@@ -2712,7 +2712,7 @@ func _voidfirst_palette(biome_id: StringName) -> Dictionary:
 				"spoke_tag": &"ash_lane",
 				"line_vegetation": false,
 			}
-		&"frozen_outskirts":
+		&"frozen_tundra":
 			return {
 				"rock_scalable": false,
 				"scatter_ids": [&"snow_cabin", &"ice_rock", &"snow_wall"],
@@ -2722,7 +2722,7 @@ func _voidfirst_palette(biome_id: StringName) -> Dictionary:
 				"spoke_tag": &"packed_snow_path",
 				"line_vegetation": false,
 			}
-		&"drowned_marsh":
+		&"swamp":
 			return {
 				"rock_scalable": false,
 				"scatter_ids": [&"sunken_house", &"marsh_log", &"reed_wall"],
@@ -2817,7 +2817,7 @@ func _update_generation_summary(
 		"bridge_count": layout.bridge_rects.size(),
 		"river_count": (
 			1
-			if biome != null and biome.biome_id == &"infected_plains" and layout.water_rects.size() > 0
+			if biome != null and biome.biome_id == &"plains" and layout.water_rects.size() > 0
 			else 0
 		),
 		"water_segment_count": layout.water_rects.size(),

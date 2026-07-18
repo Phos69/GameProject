@@ -724,7 +724,7 @@ Il revamp zombie e completo come prima versione giocabile:
   `Infinite Arena` usa un mode id separato e context `arena_boundary_mode`;
 - lo stesso seed ricrea biomi, confini, passaggi, strade, mesa, prop casuali,
   hazard, casse e fall zone;
-- ogni run parte dalla `Pianura Infetta`, il bioma iniziale semplice;
+- ogni run parte dalla `Pianura`, il bioma iniziale semplice;
 - la topologia e un grafo connesso generato con spanning tree ed edge extra, quindi tutte le regioni sono raggiungibili e possono esistere loop;
 - il party attraversa passaggi fisici aperti tra territori confinanti; la
   regione corrente cambia dalla posizione world-space del gruppo, senza
@@ -757,31 +757,34 @@ Il revamp zombie e completo come prima versione giocabile:
 
 Identita dei biomi:
 
-- `Pianura Infetta`: onboarding, zombie base, casse comuni/mediche e fall zone;
+- `Pianura`: onboarding, zombie base, casse comuni/mediche e fall zone;
   il visuale ground usa texture full-bleed per erba, sentieri e asfalto, una
   maschera regionale con divisore di terra tra superfici, erba alta, cliff/void
   e pareti rocciose. La versione starter contiene anche una
   strada principale edge-to-edge, sentieri, almeno una casa, vegetazione densa
   impassabile, alberi `3x3` e masse rocciose scalabili, auto abbandonate e un possibile
   fiume attraversabile solo sui bridge;
-- `Bioma Tossico`: pozze e gas, antidoti, zombie tossici ed esplosivi; usa il
-  set terreno/cliff `urban_ruins`;
-- `Bioma Infuocato`: fiamme, lava, casse militari, runner ed esplosivi; usa il
-  set `volcanic`;
-- `Bioma Neve`: ghiaccio, neve alta, kit termici e zombie corazzati; usa il set
+- `Pianura Ardente`: erba secca, cenere, fiamme, crepe ardenti, casse militari,
+  runner ed esplosivi. Occupa i due precedenti band di progressione Tossico e
+  Infuocato, ma resta un solo bioma canonico;
+- `Tundra Gelata`: ghiaccio, neve alta, kit termici e zombie corazzati; usa il set
   `frozen_tundra`;
-- `Bioma Palude`: acqua profonda, fango, loot organico e zombie emergenti; usa
+- `Palude`: acqua profonda, fango, loot organico e zombie emergenti; usa
   il set `swamp`;
-- i set generati `desert` e `forest` non definiscono oggi un nuovo bioma e
-  restano non assegnati;
+- `toxic_wastes`/`urban_ruins` restano contenuti archiviati non registrati da
+  `BiomeManager`; non compaiono in nuove mappe, roster o encounter;
+- i set generati `desert`, `forest` sostitutivo e `urban_ruins` non definiscono
+  oggi un nuovo bioma e restano non assegnati. `burning_plains` usa
+  temporaneamente i raster fisici nella directory storica `volcanic` tramite
+  un alias del catalogo, senza esporre `volcanic` come ID di bioma o tema runtime;
 - tutti i layout sono deterministici e partono da void: il generatore scava
   strade principali orizzontali/verticali larghe 7 tile logici, sentieri
   tematici medi larghi 4 tile logici, passaggi fisici larghi 7 tile logici e
   blocchi interni;
 - strade/passaggi precedono i sentieri interni; insieme dividono ogni regione in
   7-10 lotti esclusivi, indipendenti dai chunk visuali `10x10`;
-- ogni regione contiene esattamente una mesa e una town. Le skin mesa sono rispettivamente `forest`,
-  `urban_ruins`, `volcanic`, `frozen_tundra` e `swamp`; il top usa il terreno
+- ogni regione contiene esattamente una mesa e una town. Le skin mesa attive
+  sono `forest`, `burning_plains`, `frozen_tundra` e `swamp`; il top usa il terreno
   del bioma e le pareti il relativo cliff, senza trasformarle in fall zone;
 - gli altri lotti usano pesi 45% radura, 35% foresta e 20% fall zone. Le case
   non sono piu scatter globali: una town contiene 2-4 edifici tematizzati,
@@ -794,7 +797,7 @@ Identita dei biomi:
   generico unico. Ventitre ID dei pool tematici leggono altrettanti SVG
   cardinali individuali; la sostituzione visuale non modifica footprint,
   collisione o peso di generazione dell'ID;
-- `forest_tree` e condiviso nei cinque biomi; nella Pianura Infetta ogni istanza
+- `forest_tree` e condiviso nei quattro biomi; nella Pianura ogni istanza
   sceglie in modo seed-based uno degli otto sprite in quattro coppie
   adulto/giovane, senza cambiare footprint o collisione. Le foreste riempiono gli slot
   validi salvo 1-2 corridoi larghi 2 tile, mentre le radure hanno 2-8 alberi e
@@ -830,10 +833,11 @@ Identita dei biomi:
 
 Zombie tematici:
 
-- Tossico: `toxic_zombie`, `toxic_exploder`, elite `toxic_reaver`;
-- Infuocato: `burned_zombie`, `fire_runner`, `fire_exploder`, elite `ember_hound`;
-- Neve: `frozen_zombie`, `ice_armored_zombie`, `heavy_slow_zombie`, elite `glacial_bulwark`;
+- Pianura Ardente: `burned_zombie`, `fire_runner`, `fire_exploder`, elite `ember_hound`;
+- Tundra Gelata: `frozen_zombie`, `ice_armored_zombie`, `heavy_slow_zombie`, elite `glacial_bulwark`;
 - Palude: `drowned_zombie`, `marsh_zombie`, `water_emerging_zombie`, elite `mire_stalker`;
+- i profili tossici restano caricabili per compatibilita e QA archiviale, ma
+  non appartengono a nessun roster di bioma attivo;
 - i profili configurano statistiche, resistenze, status al contatto, emersione e hazard alla morte;
 - tutte le varianti riusano targeting, health, scaling, drop e AI di `BasicEnemy`.
 
@@ -843,9 +847,9 @@ Regole hazard:
   corona tecnica di una tile per cliff/lip; se l'inset e troppo piccolo il lotto
   diventa una radura. La corona usa visivamente il dirt tematizzato del bioma,
   non il grass, quando separa route e bordo di caduta;
-- la `Pianura Infetta` non aggiunge hazard statici oltre a fall zone e chasm;
-  Tossico, Infuocato, Neve e Palude ne piazzano due per regione, scelti dal
-  profilo (`toxic_puddle`/`gas_cloud`, `fire_zone`/`lava_crack`,
+- la `Pianura` non aggiunge hazard statici oltre a fall zone e chasm;
+  Pianura Ardente, Tundra Gelata e Palude ne piazzano due per regione, scelti dal
+  profilo (`fire_zone`/`lava_crack`,
   `slippery_ice`/`deep_snow_slow`, `deep_water`/`mud_slow`);
 - gli hazard statici restano nelle radure e non si sovrappongono a spawn,
   route, passaggi, ostacoli, mesa, fall zone, crate o altri hazard;
@@ -864,10 +868,10 @@ Regole hazard:
   roccia mantiene proporzioni world-space coerenti col raster, occupa circa due
   quinti del rim forestale e non viene compressa in una fascia; i quattro
   corner convessi hanno geometria reale.
-  Nella Pianura Infetta la parte flat riusa il top roccioso delle mesa con UV
+  Nella Pianura la parte flat riusa il top roccioso delle mesa con UV
   planari continui; la faccia verticale resta un materiale cliff distinto.
   Sul lato terreno una fascia dirt sfumata, condivisa con il divisore delle
-  strade, usa lo stesso spessore nominale: nella Pianura Infetta campiona la
+  strade, usa lo stesso spessore nominale: nella Pianura campiona la
   stessa texture world-space dei sentieri, mentre gli altri biomi mantengono il
   divider dirt condiviso. Conserva un nucleo dirt opaco ben
   definito; un feather corto lo fonde sul margine della flat rock e uno esterno
@@ -898,7 +902,7 @@ Regole hazard:
 - la maschera regionale usa R per grass, G per path, B per asphalt, RGB nullo
   per il void uniforme e alpha per il divisore di terra. Cliff e lip vengono
   disegnati sopra la superficie e restano l'unico bordo visivo della caduta;
-- ground, path e road dei quattro biomi avanzati usano texture full-bleed del
+- ground, path e road dei tre biomi avanzati usano texture full-bleed del
   relativo set generato e lo stesso divisore comune; passaggi e hazard-underlay
   conservano la propria semantica. Questa skin non modifica collisioni, danno,
   spawn, fall recovery o pathfinding;
@@ -1077,15 +1081,14 @@ Gli status temporanei ora usano cinque ID canonici: `poison`, `burn`, `bleed`, `
 
 | Bioma | Ostacoli leggibili | Hazard/status | Nemici tematici |
 | --- | --- | --- | --- |
-| Pianura Infetta | case diroccate, alberi 3x3, masse rocciose 3-5 tile logici, muretti, auto e prop raster trasparenti; casse comuni/mediche visualmente distinte; corridoi larghi | pericolo basso | roster base onboarding |
-| Tossico | cisterne, tubi, pozze, barili chimici | `poison` da pozze/gas | Toxic Zombie, Toxic Exploder |
-| Infuocato | lava, fiamme, auto bruciate, crateri | `burn` da fuoco/lava | Burned Zombie, Fire Runner, Fire Exploder |
-| Neve | ghiaccio, neve alta, rocce ghiacciate | `freeze`/slow | Frozen Zombie, Ice Armored Zombie, Heavy Slow Zombie |
+| Pianura | case diroccate, alberi 3x3, masse rocciose 3-5 tile logici, muretti, auto e prop raster trasparenti; casse comuni/mediche visualmente distinte; corridoi larghi | pericolo basso | roster base onboarding |
+| Pianura Ardente | cenere, fiamme, auto e case bruciate, crepe ardenti | `burn` da fuoco/crepe | Burned Zombie, Fire Runner, Fire Exploder |
+| Tundra Gelata | ghiaccio, neve alta, rocce ghiacciate | `freeze`/slow | Frozen Zombie, Ice Armored Zombie, Heavy Slow Zombie |
 | Palude | alberi morti, fango, acqua stagnante, radici | `poison`/`bleed`/slow | Drowned Zombie, Marsh Zombie, Water Emerging Zombie |
 
 Gli encounter casuali supportano `ambush`, `elite_pack`, `cursed_crate`,
 `hazard_burst`, `survivor_cache` e mini-eventi bioma dedicati:
-`toxic_leak`, `fire_breakout`, `whiteout` e `marsh_emergence`. Sono selezionati
+`fire_breakout`, `whiteout` e `marsh_emergence`. Sono selezionati
 per bioma con RNG seed-based, frequenza bassa, cooldown di due wave complete e
 reward proporzionata; `survivor_cache` varia il ritmo senza trappola, mentre
 `cursed_crate` scambia loot migliore con status o pressione extra. I warning

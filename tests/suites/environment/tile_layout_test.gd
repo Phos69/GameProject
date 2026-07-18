@@ -17,10 +17,9 @@ const WorldGridConfig = preload("res://game/core/world_grid_config.gd")
 const MAP_SEED := 515151
 
 const PROP_IDS_BY_BIOME: Dictionary = {
-	&"toxic_wastes": [&"small_rock", &"toxic_barrel", &"industrial_fence"],
-	&"burning_fields": [&"small_rock", &"ash_barrier", &"broken_fence"],
-	&"frozen_outskirts": [&"ice_rock", &"fallen_log", &"small_rock"],
-	&"drowned_marsh": [&"marsh_log", &"small_rock", &"reed_wall"]
+	&"burning_plains": [&"small_rock", &"ash_barrier", &"broken_fence"],
+	&"frozen_tundra": [&"ice_rock", &"fallen_log", &"small_rock"],
+	&"swamp": [&"marsh_log", &"small_rock", &"reed_wall"]
 }
 const DEFAULT_PROP_IDS: Array = [&"small_rock", &"broken_fence", &"fallen_log"]
 
@@ -60,7 +59,7 @@ func test_manifest_and_required_contracts() -> void:
 		assert_true(_asset_exists(String(contract.get("asset_path", ""))), "%s file asset esiste" % String(tile_id))
 
 func test_resolver_coverage() -> void:
-	assert_gte(_sample_cells.size(), 5, "il tile layer campiona tutte le 5 palette biome")
+	assert_gte(_sample_cells.size(), 4, "il tile layer campiona le quattro palette biome")
 	var saw_tile_ids: Dictionary = {}
 	var saw_biome_ids: Dictionary = {}
 	var saw_route_tile := false
@@ -149,7 +148,7 @@ func test_resolver_coverage() -> void:
 	assert_true(road_tile_errors.is_empty(), "ogni cella strada risolve a un route tile (%s)" % ", ".join(road_tile_errors))
 	var void_depth_probe := _resolver.resolve_tile_id(_cells[0].generated_layout, Vector2i(-1, -1), _cells[0].biome_id, &"balanced", _cells[0])
 	assert_eq(void_depth_probe, BiomeTileResolver.TILE_VOID_DEPTH, "celle fuori bound risolvono a void_depth")
-	assert_gte(saw_biome_ids.size(), 5, "la coverage del resolver include 5 biome id")
+	assert_gte(saw_biome_ids.size(), 4, "la coverage del resolver include quattro biome id")
 	assert_false(
 		saw_tile_ids.has(BiomeTileResolver.TILE_FLOOR_BASE)
 		or saw_tile_ids.has(BiomeTileResolver.TILE_FLOOR_VARIANT_01)
@@ -266,7 +265,7 @@ func test_untextured_fallback_cells_use_axis_aligned_squares() -> void:
 	var layer := BiomeTileLayer.new()
 	layer.configure(
 		layout,
-		_palette_for_biome(&"infected_plains"),
+		_palette_for_biome(&"plains"),
 		&"cardinal_geometry_test",
 		&"performance",
 		2,
@@ -396,7 +395,7 @@ func test_object_placements_avoid_fall_zones() -> void:
 	var invalid_cell := BiomeCell.new()
 	invalid_cell.configure(
 		&"invalid_object_void",
-		&"infected_plains",
+		&"plains",
 		Vector2i.ZERO,
 		invalid_layout.zone_size,
 		17
@@ -464,11 +463,11 @@ func test_perimeter_void_world_edge_gap() -> void:
 	var layout := BiomeEnvironmentLayout.new()
 	layout.zone_size = Vector2i(80, 80)
 	var cell := BiomeCell.new()
-	cell.configure(&"void_edge_gap", &"infected_plains", Vector2i.ZERO, layout.zone_size, 17)
+	cell.configure(&"void_edge_gap", &"plains", Vector2i.ZERO, layout.zone_size, 17)
 	for side in BiomeCell.SIDES:
 		cell.set_border(side, BiomeCell.BorderType.BLOCKED)
 	var generator := ObstacleLayoutGenerator.new()
-	generator._apply_block_surface(layout, Rect2i(Vector2i(18, ObstacleLayoutGenerator.BORDER_THICKNESS), Vector2i(30, 24)), &"full_void", &"infected_plains")
+	generator._apply_block_surface(layout, Rect2i(Vector2i(18, ObstacleLayoutGenerator.BORDER_THICKNESS), Vector2i(30, 24)), &"full_void", &"plains")
 	var void_rect: Rect2i = layout.fall_zone_rects.front()
 	assert_eq(void_rect.position.y, 0, "il full void e esteso attraverso il bordo esterno")
 	generator._add_connected_border_walls(layout, cell, null)
@@ -502,14 +501,14 @@ func _palette_for_biome(biome_id: StringName) -> BiomePalette:
 	match biome_id:
 		&"toxic_wastes":
 			return load("res://game/modes/zombie/biomes/toxic_wastes_palette.tres") as BiomePalette
-		&"burning_fields":
-			return load("res://game/modes/zombie/biomes/burning_fields_palette.tres") as BiomePalette
-		&"frozen_outskirts":
-			return load("res://game/modes/zombie/biomes/frozen_outskirts_palette.tres") as BiomePalette
-		&"drowned_marsh":
-			return load("res://game/modes/zombie/biomes/drowned_marsh_palette.tres") as BiomePalette
+		&"burning_plains":
+			return load("res://game/modes/zombie/biomes/burning_plains_palette.tres") as BiomePalette
+		&"frozen_tundra":
+			return load("res://game/modes/zombie/biomes/frozen_tundra_palette.tres") as BiomePalette
+		&"swamp":
+			return load("res://game/modes/zombie/biomes/swamp_palette.tres") as BiomePalette
 		_:
-			return load("res://game/modes/zombie/biomes/infected_plains_palette.tres") as BiomePalette
+			return load("res://game/modes/zombie/biomes/plains_palette.tres") as BiomePalette
 
 func _find_first_floor_cell(layout: BiomeEnvironmentLayout, cell: BiomeCell) -> Vector2i:
 	for y in range(layout.zone_size.y):

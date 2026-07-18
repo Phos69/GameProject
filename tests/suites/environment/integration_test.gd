@@ -738,9 +738,9 @@ func test_biome_world_generation() -> void:
 	assert_eq(int(biome_manager.get_seed_record().get("global_seed", 0)), 424243, "seed record stores the current global seed")
 
 	var cells := biome_manager.get_generated_biome_map()
-	assert_gte(cells.size(), 5, "global biome map contains the planned biome cells")
+	assert_gte(cells.size(), 4, "global biome map contains the planned biome cells")
 	var start_cell := biome_manager.get_current_biome_cell()
-	assert_true(start_cell != null and start_cell.biome_id == &"infected_plains", "generated run starts from the base biome")
+	assert_true(start_cell != null and start_cell.biome_id == &"plains", "generated run starts from the base biome")
 	for cell in cells:
 		_validate_cell(cell)
 
@@ -763,7 +763,7 @@ func test_biome_world_generation() -> void:
 	var active_cell := biome_manager.get_current_biome_cell()
 	var active_biome := biome_manager.get_current_biome() as BiomeDefinition
 	var active_layout := (active_cell.generated_layout if active_cell != null else null)
-	assert_true(active_cell != null and active_cell.biome_id == &"infected_plains", "survival uses the generated starting cell")
+	assert_true(active_cell != null and active_cell.biome_id == &"plains", "survival uses the generated starting cell")
 	if active_layout != null and active_biome != null:
 		assert_gte(obstacle_system.get_active_obstacles().size(), active_layout.obstacle_positions.size(),
 			"obstacle system renders at least the generated current-region obstacle layout")
@@ -858,10 +858,10 @@ func test_zombie_biome_transition() -> void:
 		var graph_biomes := {}
 		for region in graph.get_regions_sorted():
 			graph_biomes[region.biome_id] = true
-		for required_biome in [&"infected_plains", &"toxic_wastes", &"burning_fields", &"frozen_outskirts", &"drowned_marsh"]:
+		for required_biome in [&"plains", &"burning_plains", &"frozen_tundra", &"swamp"]:
 			assert_true(graph_biomes.has(required_biome), "graph contains %s" % String(required_biome))
 
-	var marsh := biome_manager.get_biome_definition(&"drowned_marsh") as BiomeDefinition
+	var marsh := biome_manager.get_biome_definition(&"swamp") as BiomeDefinition
 	var themed_enemy_found := false
 	if marsh != null:
 		for spawn_index in range(40):
@@ -896,7 +896,7 @@ func test_zombie_environment_milestone() -> void:
 	var biome := biome_manager.get_current_biome() as BiomeDefinition
 	var layout := biome.environment_layout
 	var palette := biome.palette
-	assert_eq(biome_manager.get_current_biome_id(), &"infected_plains", "environment generation starts from Pianura Infetta")
+	assert_eq(biome_manager.get_current_biome_id(), &"plains", "environment generation starts from Pianura Infetta")
 	assert_not_null(layout, "starting biome exposes an environment layout")
 	if layout == null or palette == null:
 		return
@@ -1235,7 +1235,7 @@ func _has_blocked_boundary(obstacle_system: ObstacleSystem) -> bool:
 	return false
 
 func _has_thematic_loot(crate_system: ResourceCrateSystem, biome_id: StringName) -> bool:
-	if biome_id == &"infected_plains":
+	if biome_id == &"plains":
 		return crate_system.get_active_crate_ids().has(&"common") and crate_system.get_active_crate_ids().has(&"medical")
 	for crate in crate_system.get_active_crates():
 		if crate == null or crate.loot_table == null:

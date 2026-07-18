@@ -54,7 +54,7 @@ func test_manifest_void_coverage() -> void:
 		assert_true(_asset_exists(asset_path), "%s asset file exists" % String(asset_id))
 		assert_eq(String(contract.get("fallback_path", "")), "res://game/modes/zombie/biome_fall_zone.gd", "%s fallback path is explicit" % String(asset_id))
 
-	for biome_id in [&"infected_plains", &"toxic_wastes", &"burning_fields", &"frozen_outskirts", &"drowned_marsh"]:
+	for biome_id in [&"plains", &"burning_plains", &"frozen_tundra", &"swamp"]:
 		var void_tiles := _string_name_array(_manifest.get_biome_asset_set_contract(biome_id).get("void_tiles", []))
 		for asset_id in REQUIRED_VOID_ASSET_IDS:
 			assert_true(void_tiles.has(asset_id), "%s biome asset set includes %s" % [String(biome_id), String(asset_id)])
@@ -113,7 +113,7 @@ func test_cliff_corner_join_coverage() -> void:
 		stays_above_join = stays_above_join and upstream_path[index].y + upstream_drops[index].y <= TopDownCliffMeshBuilder.SOUTH_INSTANT_DEPTH
 	assert_true(stays_above_join, "lateral faces before a south corner do not extend below the join")
 
-	var palette := load("res://game/modes/zombie/biomes/infected_plains_palette.tres") as BiomePalette
+	var palette := load("res://game/modes/zombie/biomes/plains_palette.tres") as BiomePalette
 	builder.configure(palette, 44017)
 	builder.append_transition(BiomeTileResolver.TILE_VOID_EDGE_WEST, Vector2.ZERO, 18.0, 10.0)
 	var expected_void_color := Color(palette.background_color.darkened(0.68), 1.0)

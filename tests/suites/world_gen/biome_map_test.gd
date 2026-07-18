@@ -15,7 +15,7 @@ const WorldGen = preload("res://tests/support/world_gen_helpers.gd")
 const WorldGridConfig = preload("res://game/core/world_grid_config.gd")
 
 const MAP_SEED := 515151
-const BIOME_IDS := ["infected_plains", "toxic_wastes", "burning_fields", "frozen_outskirts", "drowned_marsh"]
+const BIOME_IDS := ["plains", "burning_plains", "frozen_tundra", "swamp"]
 
 var _manager: BiomeManager
 var _manifest: EnvironmentAssetManifest
@@ -45,7 +45,7 @@ func after_all() -> void:
 
 func test_map_generates_nine_cells() -> void:
 	assert_eq(_cells.size(), 9, "la megamappa genera 9 regioni 3x3")
-	assert_gte(_sample_cells.size(), 5, "la mappa campiona ogni biome esistente")
+	assert_gte(_sample_cells.size(), 4, "la mappa campiona i quattro biomi attivi")
 
 func test_generation_constants() -> void:
 	assert_eq(BiomeEnvironmentLayout.DEFAULT_ZONE_SIZE, WorldGridConfig.BIOME_SIZE, "regioni logiche 75x75")
@@ -285,9 +285,9 @@ func test_legacy_terrain_save_preserves_progress_and_resets_layout_ledgers() -> 
 func test_biome_thematic_roster() -> void:
 	var thematic := {
 		&"toxic_wastes": [&"toxic_zombie", &"toxic_exploder"],
-		&"burning_fields": [&"burned_zombie", &"fire_runner", &"fire_exploder"],
-		&"frozen_outskirts": [&"frozen_zombie", &"ice_armored_zombie", &"heavy_slow_zombie"],
-		&"drowned_marsh": [&"drowned_zombie", &"marsh_zombie", &"water_emerging_zombie"]
+		&"burning_plains": [&"burned_zombie", &"fire_runner", &"fire_exploder"],
+		&"frozen_tundra": [&"frozen_zombie", &"ice_armored_zombie", &"heavy_slow_zombie"],
+		&"swamp": [&"drowned_zombie", &"marsh_zombie", &"water_emerging_zombie"]
 	}
 	for id in BIOME_IDS:
 		var biome := WorldGen.load_biome(id)
@@ -340,11 +340,11 @@ func _expected_path_tag(biome_id: StringName) -> StringName:
 	match biome_id:
 		&"toxic_wastes":
 			return &"service_lane"
-		&"burning_fields":
+		&"burning_plains":
 			return &"ash_lane"
-		&"frozen_outskirts":
+		&"frozen_tundra":
 			return &"packed_snow_path"
-		&"drowned_marsh":
+		&"swamp":
 			return &"wooden_walkway"
 		_:
 			return &"broken_street"
@@ -407,11 +407,11 @@ func _expected_random_prop_ids(biome_id: StringName) -> Array[StringName]:
 	match biome_id:
 		&"toxic_wastes":
 			return [&"lab_ruin", &"chemical_barrel", &"toxic_barrel", &"pipe_stack", &"industrial_fence", &"lab_wall", &"corroded_barrier"]
-		&"burning_fields":
+		&"burning_plains":
 			return [&"burned_house", &"burned_car", &"metal_wreck", &"charred_wall", &"ash_barrier", &"scorched_barricade"]
-		&"frozen_outskirts":
+		&"frozen_tundra":
 			return [&"snow_cabin", &"ice_rock", &"ice_block", &"snow_wall", &"fallen_log"]
-		&"drowned_marsh":
+		&"swamp":
 			return [&"sunken_house", &"sunken_wreck", &"dead_tree", &"marsh_log", &"reed_wall", &"broken_walkway"]
 		_:
 			return [&"ruined_house", &"abandoned_house", &"abandoned_car", &"broken_fence", &"wood_barrier", &"small_rock", &"fallen_log"]
@@ -420,11 +420,11 @@ func _expected_town_ids(biome_id: StringName) -> Array[StringName]:
 	match biome_id:
 		&"toxic_wastes":
 			return [&"lab_ruin", &"lab_block", &"abandoned_car"]
-		&"burning_fields":
+		&"burning_plains":
 			return [&"burned_house", &"burned_car", &"metal_wreck"]
-		&"frozen_outskirts":
+		&"frozen_tundra":
 			return [&"snow_cabin", &"abandoned_car"]
-		&"drowned_marsh":
+		&"swamp":
 			return [&"sunken_house", &"sunken_wreck"]
 		_:
 			return [&"ruined_house", &"abandoned_house", &"abandoned_car"]
@@ -433,11 +433,11 @@ func _expected_mesa_profile(biome_id: StringName) -> StringName:
 	match biome_id:
 		&"toxic_wastes":
 			return &"urban_ruins"
-		&"burning_fields":
-			return &"volcanic"
-		&"frozen_outskirts":
+		&"burning_plains":
+			return &"burning_plains"
+		&"frozen_tundra":
 			return &"frozen_tundra"
-		&"drowned_marsh":
+		&"swamp":
 			return &"swamp"
 		_:
 			return &"forest"

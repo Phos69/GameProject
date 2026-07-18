@@ -21,7 +21,7 @@ const WorldGridConfig = preload("res://game/core/world_grid_config.gd")
 # qui passa anche per le altre invarianti, che sono strutturali.
 const SHARED_SEED := 246810
 const TREE_FOOTPRINT := Vector2i(2, 2)
-# infected_plains slice of the void-first palette, used to exercise the road
+# plains slice of the void-first palette, used to exercise the road
 # tree-lining pass directly (the generator resolves the full palette per biome).
 const _PLAINS_LINE_PALETTE := {"line_vegetation": true, "cluster_id": &"forest_tree"}
 
