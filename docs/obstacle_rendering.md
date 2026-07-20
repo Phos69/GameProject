@@ -15,7 +15,7 @@ fianchi sono `controlled_perspective`: possono superare la base solo sul piano
 visivo e non spostano celle, anchor o collisioni. Il contratto generale e in
 `docs/top_down_cardinal_contract.md`.
 
-Il manifest v14 usa slot da `4x4` celle legacy (`8 px` world-space per cella):
+Il manifest v17 usa slot da `4x4` celle legacy (`8 px` world-space per cella):
 
 ```text
 obstacle_id -> footprint_slots -> footprint_tiles -> occupied_cells
@@ -47,7 +47,8 @@ Esempi:
 - `objects/generated_raster/infected_plains/dense_vegetation_3x3.png`;
 - `objects/trees/forest_tree_3x3.png` (fallback condiviso);
 - `objects/trees/variants/tree_pair_01..04_{adult,young}.png`;
-- `source_sheets/tree_asset_sheet.png` (foglio RGB originale conservato per reimport);
+- `objects/trees/variants/{burning_plains,frozen_tundra}/tree_pair_01..04_{adult,young}.png`;
+- `source_sheets/{tree,burning_tree,frozen_tree}_asset_sheet.png` (fogli RGB originali conservati per reimport);
 - `edges/cliffs/textures/rock_plateau_top_generated.png` (top massa rocciosa scalabile);
 - `edges/cliffs/textures/rock_cliff_face_upward_generated.png` (faccia cliff rialzata);
 - `objects/generated_raster/infected_plains/ruined_house_4x4.png`;
@@ -82,24 +83,34 @@ allineare la hitbox fisica al contenuto visibile; il footprint di placement e
 pathfinding resta separato.
 
 `random_variant_ids_by_context` definisce pool visuali che non alterano il
-layout. Per `forest_tree`, il contesto `plains` contiene otto PNG
-trasparenti organizzati in quattro coppie adulto/giovane. La scelta usa la cella
-world-space dell'istanza: e uniforme, ripetibile a parita di layout/seed e non
-modifica footprint, peso di generazione o Y-sort. La collisione fisica e invece
-specifica per variante tramite `variant_collision_size_ratios`: diametro `48 px`
-per i giovani e `72/80/96 px` per gli adulti, sempre centrato all'offset radici
-`(0, 24)`. `EnvironmentObject` rileva il centro visuale delle radici dalla riga
-opaca piu larga nella fascia inferiore dell'asset e allinea quel punto al centro
-del cerchio: il bordo inferiore del PNG non viene piu usato come anchor fisico.
+layout. Per `forest_tree`, i contesti `plains`, `burning_plains` e
+`frozen_tundra` contengono ciascuno otto PNG trasparenti organizzati in quattro
+coppie adulto/giovane; `swamp` usa invece il proprio ID `dead_tree`. La scelta usa la
+cella world-space dell'istanza: e uniforme, ripetibile a parita di layout/seed e
+non modifica footprint, peso di generazione o Y-sort. La collisione fisica e
+invece specifica per variante tramite `variant_collision_size_ratios`: diametro
+`48 px` per i giovani e `72/80/96 px` per gli adulti, sempre centrato all'offset
+radici `(0, 24)`. `EnvironmentObject` rileva il centro visuale delle radici dalla
+riga opaca piu larga nella fascia inferiore dell'asset e allinea quel punto al
+centro del cerchio: il bordo inferiore del PNG non viene piu usato come anchor
+fisico.
+I crop derivati dal foglio RGB a scacchi devono inoltre decontaminare il colore
+dei pixel antialias: l'RGB della fascia esterna deve provenire dai pixel opachi
+vicini dell'albero e l'alpha viene contratto di `2 px` sul canvas sorgente
+`444x444` (meno di un pixel alla scala runtime). Pixel chiari ereditati dal
+fondale producono aloni con il filtro bilineare; anche i piccoli residui interni
+grigio-bianchi a bassa saturazione devono essere ricampionati dal colore locale.
+Entrambi i difetti sono rifiutati dalla suite asset.
 
 Per `floor_center`, il centro del contenuto opaco viene allineato al centro del
 collider fisico; non viene appoggiato sul bordo sud del footprint. Gli asset
 `bottom_center` conservano invece il contatto sul bordo sud, mentre gli alberi
 usano il centro/raggio esplicito del collider alle radici.
 
-`forest_tree` resta il riferimento per l'ostacolo singolo `3x3`: nella Pianura
-risolve una delle otto varianti adulto/giovane, mentre negli altri biomi conserva
-il fallback condiviso. Occupa nove slot di design e riserva un footprint runtime
+`forest_tree` resta il riferimento per l'ostacolo singolo `3x3`: Pianura,
+Pianura Ardente e Tundra Gelata risolvono il rispettivo pool di otto varianti
+adulto/giovane, mentre Palude genera `dead_tree`. Occupa nove slot di
+design e riserva un footprint runtime
 `96x96`; il fallback usa un cerchio di diametro `96 px`, mentre le varianti usano
 i diametri radici dichiarati sopra. Tutti sono centrati a offset `(0, 24)`. Anche
 `dead_tree` conserva il placement `48x96` e usa un cerchio di raggio `12 px`

@@ -8,10 +8,13 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Added
 
-- Importati otto alberi PNG trasparenti in quattro coppie adulto/giovane. Il
-  manifest v16 espone pool visuali casuali per contesto e `forest_tree` sceglie
-  deterministicamente una variante nella Pianura in base alla cella world-space,
-  mantenendo invariati layout e footprint.
+- Importate 24 varianti `forest_tree` PNG trasparenti: quattro coppie
+  adulto/giovane dedicate rispettivamente a Pianura, Pianura Ardente e Tundra
+  Gelata. Il manifest v17 espone tre pool visuali per contesto e seleziona
+  deterministicamente la variante dalla cella world-space, mantenendo invariati
+  layout, footprint e contratto dei collider alle radici. I profili dei due
+  biomi avanzati autorizzano ora `forest_tree`, rendendo visibili gli ostacoli
+  gia prodotti dai lotti forestali con il corretto set contestuale.
 
 - `TERRAIN-PARCELS-001`: nuova pipeline terrain deterministica per regioni
   `75x75`, con route principali, sentieri interni e 7-10 lotti esclusivi
@@ -30,6 +33,14 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
   e test dedicati per indice e workflow.
 
 ### Fixed
+
+- Rimossa la contaminazione bianca dai bordi antialias degli otto PNG
+  `forest_tree` adulto/giovane: il colore dei pixel di bordo deriva ora dalla
+  silhouette opaca vicina e l'alpha esterno e contratto di `2 px` sul canvas
+  sorgente `444x444`, meno di un pixel alla scala runtime. Dimensioni runtime e
+  collider restano invariati. Rimossi anche i piccoli residui grigio-bianchi
+  opachi tra rami e radici; la suite asset rifiuta future varianti con matte o
+  speckle chiaro a bassa saturazione.
 
 - Le otto varianti `forest_tree` non riusano piu il collider storico da 96 px:
   i giovani usano un cerchio radici da 48 px e gli adulti uno da 72, 80 o 96 px

@@ -23,6 +23,9 @@ Regole per nuove voci:
 
 ### BIOME-RASTER-002 - Raster ambientali delle tre varianti avanzate
 
+- Stato 2026-07-20: integrati i primi 16 raster contestuali del follow-up,
+  quattro coppie adulto/giovane per Pianura Ardente e Tundra Gelata. Restano i
+  prop ambientali non-albero dei tre biomi e il set dedicato della Palude.
 - Obiettivo: sostituire gli SVG ambientali ancora attivi in Pianura Ardente,
   Tundra Gelata e Palude con raster originali trasparenti coerenti con il
   pass completato per la Pianura, senza modificare gameplay o layout.

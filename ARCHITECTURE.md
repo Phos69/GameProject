@@ -1097,10 +1097,11 @@ multi-bioma.
 - Il loader accetta SVG, texture raster importate e, come estensione generica,
   risorse `Texture2D` `.tres` quali `AtlasTexture`; nessun prop attivo usa
   attualmente quest'ultimo formato. `forest_tree` conserva il PNG condiviso
-  come fallback; nella Pianura il contratto
+  come fallback; in Pianura, Pianura Ardente e Tundra Gelata il contratto
   `random_variant_ids_by_context` seleziona deterministicamente dalla posizione
-  world-space otto PNG trasparenti, organizzati in quattro coppie
-  adulto/giovane, e applica poi flip/tinta leggeri. La selezione visuale non
+  world-space uno dei rispettivi otto PNG trasparenti, organizzati in quattro
+  coppie adulto/giovane, e applica poi flip/tinta leggeri. Palude usa il proprio
+  ostacolo `dead_tree`. La selezione visuale non
   modifica layout, footprint o collider; `large_rock` non usa piu una
   silhouette fissa e rende
   sull'intero `mesa_rect` un plateau rialzato con corona e pareti dedicate. La
@@ -1190,9 +1191,10 @@ multi-bioma.
   presentazionale per l'occlusione.
   Le rocce bloccano movimento e proiettili sull'intero rettangolo. `forest_tree`
   mantiene il placement `96x96` e applica `visual_scale = 2.0` al raster. Il
-  fallback conserva un cerchio di raggio `48 px`; le otto varianti della
-  Pianura dichiarano invece diametri radici `48 px` per i giovani e
-  `72/80/96 px` per gli adulti tramite `variant_collision_size_ratios`. Tutti i
+  fallback conserva un cerchio di raggio `48 px`; le 24 varianti contestuali di
+  Pianura, Pianura Ardente e Tundra Gelata dichiarano invece diametri radici
+  `48 px` per i giovani e `72/80/96 px` per gli adulti tramite
+  `variant_collision_size_ratios`. Tutti i
   cerchi restano centrati a offset `(0, 24)`, separando la chioma riservata dal
   blocker fisico reale. `EnvironmentObject` calcola inoltre il root anchor
   visuale dalla riga opaca piu larga nella fascia inferiore del raster e lo

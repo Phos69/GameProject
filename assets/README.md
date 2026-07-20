@@ -66,7 +66,7 @@ non diventano requisiti di bootstrap.
 ## Ambiente top-down cardinale (manifest)
 
 `environment/top_down/manifest.json` e la fonte di verita per gli oggetti
-ambientali del bioma (ostacoli, bordi, casse, cliff, passaggi). Il manifest v14
+ambientali del bioma (ostacoli, bordi, casse, cliff, passaggi). Il manifest v17
 contiene anche il contratto asset-driven per `tile_sets`, `tile_variants`,
 `terrain_tiles`, `edge_tiles`, `void_tiles`, `object_scenes`, `passage_tiles`,
 `biome_asset_sets` e `fallback_policy`.
@@ -93,6 +93,12 @@ loader. Nessun prop attivo usa attualmente `.tres`: il tool SVG non riscrive
 eventuali texture autorate e in `--check` ne verifica comunque la presenza,
 mentre trasparenza e copertura sono validate da
 `tests/visual_qa/obstacle_asset_visual_qa.gd`.
+
+`forest_tree` usa pool `random_variant_ids_by_context` distinti per `plains`,
+`burning_plains` e `frozen_tundra`, ciascuno formato da quattro coppie
+adulto/giovane RGBA `444x444`. I fogli RGB `4x2` originali restano sotto
+`environment/top_down/source_sheets/`; i crop runtime sono decontaminati dal
+checkerboard e mantengono collider circolari separati dalla chioma.
 
 I cliff void usano raster finali in `edges/cliffs/textures/`:
 `cliff_face_generated_v2.png`, `grass_cliff_edge_generated_v2.png` per il

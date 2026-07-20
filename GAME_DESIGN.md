@@ -797,9 +797,10 @@ Identita dei biomi:
   generico unico. Ventitre ID dei pool tematici leggono altrettanti SVG
   cardinali individuali; la sostituzione visuale non modifica footprint,
   collisione o peso di generazione dell'ID;
-- `forest_tree` e condiviso nei quattro biomi; nella Pianura ogni istanza
-  sceglie in modo seed-based uno degli otto sprite in quattro coppie
-  adulto/giovane. Il footprint di generazione resta `96x96`, mentre il collider
+- `forest_tree` e condiviso nei quattro biomi; Pianura, Pianura Ardente e Tundra
+  Gelata scelgono ciascuna in modo seed-based uno degli otto sprite del proprio
+  pool in quattro coppie adulto/giovane, mentre Palude genera `dead_tree`.
+  Il footprint di generazione resta `96x96`, mentre il collider
   circolare segue le radici: diametro 48 px per i giovani e 72/80/96 px per gli
   adulti; il suo centro coincide con il centro visuale delle radici. Le foreste
   riempiono gli slot

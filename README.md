@@ -332,8 +332,10 @@ Completato:
   risolti come asset tile nel `75x75`, non come patch o frecce del gate;
 - oggetti e ostacoli asset-backed tramite SVG trasparenti e PNG: la Pianura
   Infetta usa raster dedicati, incluse le varianti contestuali per tronco e
-  casse, mentre gli altri biomi mantengono gli SVG cardinali individuali in
-  `objects/generated_props/`; oggetti, hazard e fall zone restano a rotazione
+  casse; `forest_tree` usa inoltre otto varianti dedicate in Pianura, Pianura
+  Ardente e Tundra Gelata, mentre gli altri prop dei biomi avanzati mantengono
+  gli SVG cardinali individuali in `objects/generated_props/`; oggetti, hazard
+  e fall zone restano a rotazione
   zero; i raster usano scale uniformi per-ID/variante e collider espliciti
   quando la silhouette reale supera il footprint, senza stretch, mentre gli alberi
   separano il footprint della chioma dal collider circolare alle radici e le

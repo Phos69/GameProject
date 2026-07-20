@@ -31,15 +31,23 @@ const INFECTED_PLAINS_RASTER_COLLIDER_IDS: Array[StringName] = [
 	&"small_rock", &"broken_fence", &"wood_barrier", &"fallen_log",
 	&"ruined_house", &"abandoned_house", &"abandoned_car", &"dense_vegetation"
 ]
-const TREE_VARIANT_COLLISION_DIAMETERS := {
-	&"tree_pair_01_adult": 80.0,
-	&"tree_pair_01_young": 48.0,
-	&"tree_pair_02_adult": 80.0,
-	&"tree_pair_02_young": 48.0,
-	&"tree_pair_03_adult": 96.0,
-	&"tree_pair_03_young": 48.0,
-	&"tree_pair_04_adult": 72.0,
-	&"tree_pair_04_young": 48.0,
+const TREE_VARIANT_CONTEXTS: Array[StringName] = [
+	&"plains", &"burning_plains", &"frozen_tundra",
+]
+const TREE_BIOME_RESOURCE_PATHS := {
+	&"plains": "res://game/modes/zombie/biomes/plains.tres",
+	&"burning_plains": "res://game/modes/zombie/biomes/burning_plains.tres",
+	&"frozen_tundra": "res://game/modes/zombie/biomes/frozen_tundra.tres",
+}
+const TREE_VARIANT_COLLISION_DIAMETERS_BY_SUFFIX := {
+	"tree_pair_01_adult": 80.0,
+	"tree_pair_01_young": 48.0,
+	"tree_pair_02_adult": 80.0,
+	"tree_pair_02_young": 48.0,
+	"tree_pair_03_adult": 96.0,
+	"tree_pair_03_young": 48.0,
+	"tree_pair_04_adult": 72.0,
+	"tree_pair_04_young": 48.0,
 }
 const REQUIRED_CRATE_ASSET_ID := &"supply_crate"
 const ENVIRONMENT_OBJECT_SCRIPT = preload("res://game/modes/zombie/environment_object.gd")
@@ -345,28 +353,57 @@ func test_forest_tree_variation_is_visual_only() -> void:
 	second.queue_free()
 	await wait_physics_frames(1)
 
-func test_plains_tree_assets_and_random_selection() -> void:
-	var variant_ids := _manifest.get_object_random_variant_ids(
-		&"forest_tree",
-		&"plains"
-	)
-	assert_eq(variant_ids.size(), 8, "plains exposes four adult/young tree pairs")
-	var adult_count := 0
-	var young_count := 0
-	for variant_id in variant_ids:
-		var variant_path := _manifest.get_object_asset_path(&"forest_tree", variant_id)
-		assert_true(_asset_exists(variant_path), "%s tree variant exists" % String(variant_id))
-		var image := Image.load_from_file(ProjectSettings.globalize_path(variant_path))
-		assert_false(image.is_empty(), "%s tree variant loads" % String(variant_id))
-		if image.is_empty():
-			continue
-		assert_eq(image.get_size(), Vector2i(444, 444), "%s keeps the shared pair canvas" % String(variant_id))
-		assert_eq(image.get_format(), Image.FORMAT_RGBA8, "%s keeps RGBA transparency" % String(variant_id))
-		assert_lt(image.get_pixel(0, 0).a, 0.01, "%s has a transparent corner" % String(variant_id))
-		adult_count += 1 if String(variant_id).ends_with("_adult") else 0
-		young_count += 1 if String(variant_id).ends_with("_young") else 0
-	assert_eq(adult_count, 4, "tree variant catalog contains four adults")
-	assert_eq(young_count, 4, "tree variant catalog contains four young trees")
+func test_biome_tree_assets_and_random_selection() -> void:
+	for source_path in [
+		"res://assets/environment/top_down/source_sheets/tree_asset_sheet.png",
+		"res://assets/environment/top_down/source_sheets/burning_tree_asset_sheet.png",
+		"res://assets/environment/top_down/source_sheets/frozen_tree_asset_sheet.png",
+	]:
+		assert_true(FileAccess.file_exists(source_path), "%s source sheet exists" % source_path)
+
+	for context_id in TREE_VARIANT_CONTEXTS:
+		var biome := load(String(TREE_BIOME_RESOURCE_PATHS[context_id])) as BiomeDefinition
+		assert_not_null(biome, "%s biome resource loads" % String(context_id))
+		if biome != null:
+			assert_has(
+				biome.obstacle_ids,
+				&"forest_tree",
+				"%s allows generated forest trees to spawn" % String(context_id)
+			)
+		var variant_ids := _manifest.get_object_random_variant_ids(&"forest_tree", context_id)
+		assert_eq(
+			variant_ids.size(),
+			8,
+			"%s exposes four adult/young tree pairs" % String(context_id)
+		)
+		var adult_count := 0
+		var young_count := 0
+		for variant_id in variant_ids:
+			var variant_path := _manifest.get_object_asset_path(&"forest_tree", variant_id)
+			assert_true(_asset_exists(variant_path), "%s tree variant exists" % String(variant_id))
+			var image := Image.load_from_file(ProjectSettings.globalize_path(variant_path))
+			assert_false(image.is_empty(), "%s tree variant loads" % String(variant_id))
+			if image.is_empty():
+				continue
+			assert_eq(image.get_size(), Vector2i(444, 444), "%s keeps the shared pair canvas" % String(variant_id))
+			assert_eq(image.get_format(), Image.FORMAT_RGBA8, "%s keeps RGBA transparency" % String(variant_id))
+			assert_lt(image.get_pixel(0, 0).a, 0.01, "%s has a transparent corner" % String(variant_id))
+			if context_id == &"plains":
+				assert_eq(
+					_count_light_desaturated_pixels(image),
+					0,
+					"%s has no white or gray matte speckles" % String(variant_id)
+				)
+			elif context_id == &"burning_plains":
+				assert_eq(
+					_count_bright_neutral_pixels(image),
+					0,
+					"%s has no trapped checkerboard pixels" % String(variant_id)
+				)
+			adult_count += 1 if String(variant_id).ends_with("_adult") else 0
+			young_count += 1 if String(variant_id).ends_with("_young") else 0
+		assert_eq(adult_count, 4, "%s contains four adults" % String(context_id))
+		assert_eq(young_count, 4, "%s contains four young trees" % String(context_id))
 
 	var factory := ENVIRONMENT_OBJECT_FACTORY_SCRIPT.new(_manifest)
 	var tree := factory.create_obstacle(
@@ -383,48 +420,57 @@ func test_plains_tree_assets_and_random_selection() -> void:
 	if tree == null:
 		return
 	add_child(tree)
-	var selected := {}
-	for index in range(16):
-		var position_key := Vector2(float(index + 100) * 48.0, 240.0)
-		assert_true(
-			tree.select_random_asset_variant(&"plains", position_key),
-			"plains selects a tree asset variant"
-		)
-		selected[tree.get_asset_variant_id()] = true
-		var expected_diameter := float(
-			TREE_VARIANT_COLLISION_DIAMETERS[tree.get_asset_variant_id()]
-		)
-		var expected_size := Vector2.ONE * expected_diameter
+	for context_id in TREE_VARIANT_CONTEXTS:
+		var selected := {}
+		for index in range(16):
+			var position_key := Vector2(float(index + 100) * 48.0, 240.0)
+			assert_true(
+				tree.select_random_asset_variant(context_id, position_key),
+				"%s selects a tree asset variant" % String(context_id)
+			)
+			selected[tree.get_asset_variant_id()] = true
+			var expected_diameter := _tree_variant_collision_diameter(
+				tree.get_asset_variant_id()
+			)
+			var expected_size := Vector2.ONE * expected_diameter
+			assert_eq(
+				tree.get_asset_path(),
+				_manifest.get_object_asset_path(&"forest_tree", tree.get_asset_variant_id()),
+				"selected tree variant resolves its manifest path"
+			)
+			assert_true(
+				tree.get_collision_size().is_equal_approx(expected_size),
+				"%s collider diameter follows its visible roots" % String(tree.get_asset_variant_id())
+			)
+			assert_eq(
+				tree.get_collision_offset(),
+				Vector2(0.0, 24.0),
+				"%s collider remains centered on the root anchor" % String(tree.get_asset_variant_id())
+			)
+			assert_true(
+				tree.get_asset_root_center().is_equal_approx(tree.get_collision_offset()),
+				"%s visual and physics root centers coincide" % String(tree.get_asset_variant_id())
+			)
+			var collision := tree.get_node_or_null("CollisionShape2D") as CollisionShape2D
+			var circle := collision.shape as CircleShape2D if collision != null else null
+			assert_true(
+				circle != null and is_equal_approx(circle.radius, expected_diameter * 0.5),
+				"%s physics circle follows its root diameter" % String(tree.get_asset_variant_id())
+			)
 		assert_eq(
-			tree.get_asset_path(),
-			_manifest.get_object_asset_path(&"forest_tree", tree.get_asset_variant_id()),
-			"selected tree variant resolves its manifest path"
+			selected.size(),
+			8,
+			"%s grid positions cover all eight tree variants" % String(context_id)
 		)
-		assert_true(
-			tree.get_collision_size().is_equal_approx(expected_size),
-			"%s collider diameter follows its visible roots" % String(tree.get_asset_variant_id())
-		)
+		var stable_position := Vector2(912.0, 336.0)
+		tree.select_random_asset_variant(context_id, stable_position)
+		var stable_variant := tree.get_asset_variant_id()
+		tree.select_random_asset_variant(context_id, stable_position)
 		assert_eq(
-			tree.get_collision_offset(),
-			Vector2(0.0, 24.0),
-			"%s collider remains centered on the root anchor" % String(tree.get_asset_variant_id())
+			tree.get_asset_variant_id(),
+			stable_variant,
+			"%s keeps stable selection at the same position" % String(context_id)
 		)
-		assert_true(
-			tree.get_asset_root_center().is_equal_approx(tree.get_collision_offset()),
-			"%s visual and physics root centers coincide" % String(tree.get_asset_variant_id())
-		)
-		var collision := tree.get_node_or_null("CollisionShape2D") as CollisionShape2D
-		var circle := collision.shape as CircleShape2D if collision != null else null
-		assert_true(
-			circle != null and is_equal_approx(circle.radius, expected_diameter * 0.5),
-			"%s physics circle follows its root diameter" % String(tree.get_asset_variant_id())
-		)
-	assert_eq(selected.size(), 8, "grid-aligned positions cover all eight tree variants")
-	var stable_position := Vector2(912.0, 336.0)
-	tree.select_random_asset_variant(&"plains", stable_position)
-	var stable_variant := tree.get_asset_variant_id()
-	tree.select_random_asset_variant(&"plains", stable_position)
-	assert_eq(tree.get_asset_variant_id(), stable_variant, "the same world position selects the same tree variant")
 	tree.queue_free()
 	await wait_physics_frames(1)
 
@@ -733,6 +779,42 @@ func _asset_exists(asset_path: String) -> bool:
 	if asset_path.is_empty():
 		return false
 	return ResourceLoader.exists(asset_path) or FileAccess.file_exists(asset_path)
+
+func _count_light_desaturated_pixels(image: Image) -> int:
+	var contaminated_pixel_count := 0
+	for y in range(image.get_height()):
+		for x in range(image.get_width()):
+			var pixel := image.get_pixel(x, y)
+			if pixel.a <= 0.0:
+				continue
+			var maximum_channel := maxf(pixel.r, maxf(pixel.g, pixel.b))
+			var minimum_channel := minf(pixel.r, minf(pixel.g, pixel.b))
+			if maximum_channel < 0.275:
+				continue
+			var saturation := (maximum_channel - minimum_channel) / maximum_channel
+			if saturation <= 0.2:
+				contaminated_pixel_count += 1
+	return contaminated_pixel_count
+
+func _count_bright_neutral_pixels(image: Image) -> int:
+	var contaminated_pixel_count := 0
+	for y in range(image.get_height()):
+		for x in range(image.get_width()):
+			var pixel := image.get_pixel(x, y)
+			if pixel.a <= 0.0:
+				continue
+			var maximum_channel := maxf(pixel.r, maxf(pixel.g, pixel.b))
+			var minimum_channel := minf(pixel.r, minf(pixel.g, pixel.b))
+			if minimum_channel > 0.86 and maximum_channel - minimum_channel < 0.12:
+				contaminated_pixel_count += 1
+	return contaminated_pixel_count
+
+func _tree_variant_collision_diameter(variant_id: StringName) -> float:
+	var variant_name := String(variant_id)
+	for suffix in TREE_VARIANT_COLLISION_DIAMETERS_BY_SUFFIX:
+		if variant_name.ends_with(String(suffix)):
+			return float(TREE_VARIANT_COLLISION_DIAMETERS_BY_SUFFIX[suffix])
+	return 96.0
 
 func _write_test_svg(path: String, asset_id: StringName) -> bool:
 	var file := FileAccess.open(path, FileAccess.WRITE)
