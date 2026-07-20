@@ -96,6 +96,11 @@ func test_audio_mix_and_cues() -> void:
 		_has_optional_event(&"optional_test"),
 		"optional licensed streams replace fallback when present"
 	)
+	audio_manager.play_cue(&"biome_entered")
+	assert_true(
+		_has_optional_event(&"biome_entered"),
+		"the seam cue uses its boot-time PCM instead of main-thread synthesis"
+	)
 
 	local_multiplayer.activate_slot(2)
 	game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL)

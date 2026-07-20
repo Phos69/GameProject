@@ -313,13 +313,14 @@ Completato:
 - revamp zombie completo con controller, biomi, wave director, spawner camera-edge, transizioni e sistemi ambientali modulari;
 - motore procedurale seed-based per mappa globale biomi, celle `75x75` tile logici (`450x450` equivalenti legacy), passaggi, fall boundary, layout interno e validazione pathfinding;
 - megamappa persistente seed-based con grafo connesso, regioni default `3x3` da `75x75`, passaggi fisici aperti, stato esplorazione salvabile e mappa consultabile;
-- streaming senza caricamenti ai confini: regione corrente e vicini restano
-  gameplay-ready, mentre il terreno e composto da chunk visuali `10x10`
-  caricati attorno alla camera con prefetch, retention e isteresi; l'unload
-  usa ownership e smaltimento foglia-per-foglia a budget, mentre bake e
-  finalizzazione geometrica runtime sono distribuiti tramite worker pool e
-  fasi main-thread misurabili; anche le eviction scadute sono limitate a un
-  solo chunk per frame;
+- streaming near-world senza caricamenti al confine: resta `FULL` la regione
+  corrente e viene preparato soltanto il target del varco entro 30 tile, non
+  tutti i vicini del grafo; il seam attende la readiness senza bloccare. Il
+  terreno usa chunk visuali `10x10` attorno alla camera con prefetch, retention
+  e isteresi; l'unload usa ownership e smaltimento foglia-per-foglia a budget,
+  firma/cache/mask CPU lavorano nel worker e le fasi geometriche main-thread
+  sono separate e misurabili. Anche le eviction scadute sono limitate a un solo
+  chunk per frame;
 - `Zombie Survival` avviata dal menu dedicato o da `F7` usa la megamappa `3x3`;
   l'arena compatta `1x1` resta disponibile solo passando
   `single_biome_arena = true` nel context di debug/test, mentre il profilo

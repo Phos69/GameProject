@@ -46,10 +46,11 @@ definito in `docs/top_down_cardinal_contract.md`.
 21. `RegionSeamSystem` legge posizione world-space del party, grafo e
     `WorldRegionConnection` aperti per aggiornare la regione corrente senza
     portali, trigger visibili o teletrasporto.
-22. `WorldRegionStreamer` mantiene incrementalmente la regione corrente e i
-    vicini indicati da `WorldRuntime.active_regions` come contenuto gameplay
-    `FULL`; `WorldChunkVisibilityController` rende solo i chunk attorno alla
-    camera. Il passaggio di confine non pulisce ne ricostruisce il mondo.
+22. `WorldRegionStreamer` separa i dati caldi dalla residency gameplay: mantiene
+    `FULL` la regione corrente e al massimo il vicino del varco fisicamente
+    prossimo alla party; `WorldChunkVisibilityController` rende solo i chunk
+    attorno alla camera. Il passaggio di confine riusa il target pre-caricato e
+    non pulisce ne ricostruisce il mondo.
 23. `SurvivalArenaManager` configura playground, player, crate, gate e fallback spawn per lo spawner.
 24. `HazardSystem` genera fall zone e hazard ambientali, aggiorna posizioni sicure, status e modificatori movimento.
 25. `WaveManager` interroga `WaveDirector` per roster/scaling bioma e `ZombieSpawner` per spawn dai bordi camera, poi crea zombie tramite `EnemySystem`.
@@ -819,20 +820,24 @@ multi-bioma.
 - `ExplorationMapPanel` mostra solo regioni note; unknown/fog non rivela la topologia completa.
 - `SaveManager` sovrappone `PersistentWorldState` alla prossima generazione con lo stesso seed.
 - Contratto megamappa scelto (Milestone 10.8): continuita fisica multi-regione
-  gameplay. `WorldRuntime.active_regions` e la fonte unica per corrente e
-  vicini: questi territori arrivano a contenuto `FULL`, mentre le regioni
-  esterne restano dati persistenti non istanziati. Regioni con player, nemici,
-  boss o hazard runtime vengono trattenute finche possiedono tali entita.
+  gameplay. `WorldRuntime.active_regions` descrive soltanto il working set dati
+  per esplorazione/mappa (corrente e vicini di grafo); non autorizza
+  l'istanziazione `FULL`. La residency gameplay e near-world: regione corrente,
+  precedente durante il grace/pin e al massimo il target del varco entro 30
+  tile logici dalla party. Regioni con player, nemici, boss o hazard runtime
+  vengono trattenute finche possiedono tali entita.
 - `ZombieModeController` invoca `WorldRegionStreamer.start_world()` una sola
   volta e poi `set_current_region()`; il cambio regione non usa `clear()`,
   loading screen, teleport o ricostruzione. Le nuove regioni vengono aggiunte
   una per volta, con un solo task tile attivo sul `WorkerThreadPool`, e
-  diventano `FULL` soltanto a bake e finalizzazione terminati;
+  diventano `FULL` soltanto a bake e finalizzazione terminati; un seam fisico
+  non cambia il bioma finche il target richiesto non e `FULL`;
   `ZombieSpawner` continua a leggere esclusivamente le regioni `FULL`. La
-  finalizzazione main-thread e una state machine: reset, maschera superficie,
-  chunk (uno per frame quando richiesti), cliff, bordi, mesa e cleanup non
-  vengono sommati nello stesso frame. Lo streamer viene pulito solo a
-  `stop_run()`.
+  firma layout, cache tile e raster CPU della maschera sono calcolati nel
+  worker; sul main restano upload `ImageTexture`, scene tree e `ArrayMesh`. La
+  finalizzazione main-thread e una state machine: reset, upload maschera,
+  chunk, cliff, rim/facce bordo, outline/profili mesa e cleanup non vengono
+  sommati nello stesso frame. Lo streamer viene pulito solo a `stop_run()`.
 - Ogni entry dello streamer possiede gli `instance_id` di ostacoli, hazard e
   crate creati per quella regione. L'unload passa `ACTIVE -> UNLOADING`,
   deregistra esclusivamente tali ID e non usa scansioni del registro globale o
@@ -850,8 +855,10 @@ multi-bioma.
   proteggersi dal riuso di ID. Il costo e lineare nel registro e non cresce come
   una serie di `Array.erase` per ogni oggetto della regione.
 - Il caricamento iniziale pre-riscalda texture tile, texture oggetto e metriche
-  alpha di tutte le varianti richieste dai biomi presenti, costruisce corrente
-  e vicini e prepara camera piu due anelli prima di dichiarare il mondo ready.
+  alpha di tutte le varianti richieste dai biomi presenti, ma costruisce solo la
+  regione corrente e prepara camera piu due anelli prima di dichiarare il mondo
+  ready. Il vicino diventa residente soltanto avvicinandosi al suo varco; oltre
+  la banda near-world entra nel normale grace/unload.
   La variante oggetto deterministica viene risolta dalla posizione world-space
   prima della factory, cosi texture e collider non vengono sostituiti dopo
   l'attach. Texture, `ArrayMesh`, nodi e scene tree restano main-thread; il task
@@ -877,6 +884,9 @@ multi-bioma.
 - `WeaponSystem` genera feedback per low ammo e reload; l'uso della base non e
   piu un evento fallback perche possiede un input dedicato.
 - I toni procedurali restano placeholder e non richiedono asset esterni.
+- Il fallback `biome_entered`, latency-critical sul seam, viene sintetizzato
+  una volta al bootstrap in `AudioStreamWAV` e usa una voce preallocata; non
+  esegue il loop PCM nel frame della transizione.
 - Spawn boss, telegraph e cambio fase usano cue distinti esposti da `gameplay_feedback_generated`.
 
 ## Contratto survival e wave
@@ -905,9 +915,12 @@ multi-bioma.
 - Ogni nuova run survival riparte dalla `Pianura`.
 - `WorldRuntime` marca la regione iniziale come visited, scopre i vicini collegati e conserva lo stato esplorazione.
 - I territori confinanti sono collegati da passaggi aperti; `RegionSeamSystem` aggiorna la regione corrente e il party condivide una sola regione alla volta.
-- Quando il party attraversa un varco, `RegionSeamSystem` verifica posizione,
-  regione target e connessione aperta usando coordinate globali; i lati senza
-  edge non cambiano regione e restano muro, bordo o fall zone.
+- Quando il party si avvicina a un varco, `RegionSeamSystem` ordina le
+  connessioni fisiche per distanza e richiede al massimo il target piu vicino.
+  All'attraversamento verifica posizione, connessione aperta e target `FULL`
+  usando coordinate globali; se il worker non ha finito rimanda il cambio
+  regione senza bloccare il main thread. I lati senza edge non cambiano regione
+  e restano muro, bordo o fall zone.
 - Durante la survival standard non esistono nodi nel gruppo
   `biome_transition_gates`; i passaggi sono comunicati da tile, apertura fisica
   e continuita del terreno.

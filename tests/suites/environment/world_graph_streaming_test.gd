@@ -175,6 +175,48 @@ func test_streaming_contract() -> void:
 	assert_true(unload_ok, "le regioni oltre il raggio restano dati non attivi")
 	_free_runtime(runtime)
 
+func test_near_world_prefetch_selects_only_the_approached_passage() -> void:
+	var seam_system := RegionSeamSystem.new()
+	add_child(seam_system)
+	seam_system.biome_manager = _manager
+	seam_system.graph = _graph
+	seam_system.anchor_region_id = _graph.start_region_id
+	seam_system.is_active = true
+	var source := _graph.get_region(_graph.start_region_id)
+	assert_not_null(source, "prefetch source region exists")
+	if source == null or source.connection_edges.is_empty():
+		seam_system.free()
+		return
+	var far_position := seam_system.logical_tile_to_world_position(
+		source.world_origin + source.size_tiles / 2,
+		_graph.start_region_id
+	)
+	assert_true(
+		seam_system.get_nearby_connected_region_ids(
+			far_position,
+			source.region_id,
+			12,
+			1
+		).is_empty(),
+		"graph neighbors stay non-resident while the party is far from every passage"
+	)
+	var connection := source.connection_edges.front() as WorldRegionConnection
+	var near_position := seam_system.get_crossing_position_for_connection(
+		connection,
+		_graph.start_region_id
+	)
+	assert_eq(
+		seam_system.get_nearby_connected_region_ids(
+			near_position,
+			source.region_id,
+			12,
+			1
+		),
+		[connection.to_region_id],
+		"the closest physical passage selects exactly its destination"
+	)
+	seam_system.free()
+
 func test_crate_persistence_and_save_round_trip() -> void:
 	var runtime := _make_runtime()
 	var region_a := _graph.start_region_id

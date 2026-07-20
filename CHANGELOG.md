@@ -14,6 +14,9 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
   aggiunte regressioni GUT dedicate a unload con riferimenti gia liberati,
   grace deadline, tile build asincrona, smaltimento incrementale, pooling terrain
   e autosave su worker.
+- Aggiunta la residency near-world: selezione geometrica del varco piu vicino,
+  hold esplicito per teleport/test e metriche per regioni richieste, build main,
+  firma/maschera worker e tempi delle singole fasi geometriche.
 
 - Importate 24 varianti `forest_tree` PNG trasparenti: quattro coppie
   adulto/giovane dedicate rispettivamente a Pianura, Pianura Ardente e Tundra
@@ -40,6 +43,18 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
   e test dedicati per indice e workflow.
 
 ### Fixed
+
+- Rimossa la causa architetturale residua del freeze al seam: i vicini di grafo
+  in `WorldRuntime.active_regions` restano dati caldi ma non vengono piu
+  istanziati tutti come biomi `FULL`. Lo streamer mantiene la regione corrente
+  e pre-carica soltanto il target del varco entro 30 tile; il cambio regione e
+  ammesso solo quando quel target e gameplay-ready. Uscendo dalla banda, grace,
+  pin e retirement gestiscono il rilascio della regione precedente.
+- Firma SHA del layout e raster CPU terrain `600x600` sono stati spostati nel
+  task tile del `WorkerThreadPool`; rim/facce cliff e outline/profili mesa sono
+  finalizzati in frame separati. Il cue `biome_entered` usa un PCM generato e
+  una voce preallocata al bootstrap, evitando 4410 campioni sintetizzati sul
+  main thread durante la transizione.
 
 - Eliminato il crash `signal 11` di `WorldRegionStreamer._unstream_region`:
   ostacoli, hazard e crate sono ora posseduti dalla regione tramite

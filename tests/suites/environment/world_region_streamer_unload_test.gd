@@ -139,7 +139,7 @@ func test_async_tile_build_uses_pool_and_incremental_geometry_phases() -> void:
 	layer.configure(
 		layout,
 		palette,
-		&"async_stream_test",
+		&"plains",
 		&"performance",
 		2,
 		null,
@@ -157,6 +157,12 @@ func test_async_tile_build_uses_pool_and_incremental_geometry_phases() -> void:
 	assert_eq(int(stats.get("phase", 99)), BiomeTileLayer.AsyncGeometryPhase.IDLE, "la state machine torna idle")
 	assert_eq(layer.get_cached_visual_tile_count(), 4, "il worker prepara la cache numerica completa")
 	assert_gte(float(stats.get("max_geometry_phase_msec", -1.0)), 0.0, "la finalizzazione espone timing per fase")
+	assert_gte(float(stats.get("signature_build_msec", -1.0)), 0.0, "la firma layout viene misurata nel worker")
+	assert_gte(float(stats.get("surface_mask_cpu_msec", -1.0)), 0.0, "il raster CPU della surface mask viene misurato nel worker")
+	assert_false(
+		layer.get_terrain_boundary_report().is_empty(),
+		"la surface mask preparata dal worker viene applicata nella fase main-thread"
+	)
 
 func test_runtime_registries_prune_freed_typed_entries_by_index() -> void:
 	var obstacle_system := ObstacleSystem.new()

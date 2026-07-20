@@ -50,10 +50,12 @@ func _ready() -> void:
 	for cue in cue_overrides:
 		if cue != null and not cue.cue_id.is_empty():
 			cue_registry[cue.cue_id] = cue
+	_prewarm_latency_critical_cues()
 	voice_pool = AudioVoicePool.new()
 	voice_pool.name = "OptionalVoicePool"
 	voice_pool.max_voices = max_optional_voices
 	add_child(voice_pool)
+	voice_pool.prewarm(1)
 	for bus_name in REQUIRED_BUSES:
 		if bus_name == &"Music" or bus_name == &"SFX":
 			continue
@@ -366,6 +368,39 @@ func _register_default_cues() -> void:
 	]
 	for cue in cues:
 		cue_registry[cue.cue_id] = cue
+
+## Il cue eseguito esattamente sul seam non deve sintetizzare migliaia di frame
+## nel main thread. Il piccolo PCM viene creato una volta durante il bootstrap e
+## riprodotto dal voice pool gia preallocato; eventuali asset override prevalgono.
+func _prewarm_latency_critical_cues() -> void:
+	var cue := cue_registry.get(&"biome_entered") as AudioCueData
+	if cue == null or cue.optional_stream != null:
+		return
+	cue.optional_stream = _make_tone_stream(
+		cue.fallback_frequency,
+		cue.fallback_duration,
+		cue.fallback_amplitude
+	)
+
+func _make_tone_stream(
+	frequency: float,
+	duration: float,
+	amplitude: float
+) -> AudioStreamWAV:
+	var frame_count := maxi(int(duration * MIX_RATE), 1)
+	var samples := PackedByteArray()
+	samples.resize(frame_count)
+	for frame_index in range(frame_count):
+		var sample_time := float(frame_index) / MIX_RATE
+		var envelope := 1.0 - float(frame_index) / float(frame_count)
+		var sample := sin(TAU * frequency * sample_time) * amplitude * envelope
+		samples[frame_index] = clampi(roundi(128.0 + sample * 127.0), 0, 255)
+	var stream := AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_8_BITS
+	stream.mix_rate = int(MIX_RATE)
+	stream.stereo = false
+	stream.data = samples
+	return stream
 
 func _make_cue(
 	cue_id: StringName,

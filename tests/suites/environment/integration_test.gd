@@ -100,7 +100,7 @@ func after_all() -> void:
 	EnvironmentObject.clear_content_metrics_cache()
 	await wait_physics_frames(3)
 
-# --- streaming completo della regione corrente e dei vicini -----------------
+# --- streaming near-world della regione corrente e del solo varco vicino ----
 # (milestone_10_full_region_streaming)
 
 func test_full_region_streaming() -> void:
@@ -130,10 +130,57 @@ func test_full_region_streaming() -> void:
 	if graph == null or current_cell == null:
 		return
 
-	var expected_active := _expected_active_ids(graph, current_cell.id)
+	var expected_data_active := _expected_active_ids(graph, current_cell.id)
+	assert_true(
+		_same_ids(world_runtime.get_active_region_ids(), expected_data_active),
+		"runtime keeps current and graph neighbors warm only as data"
+	)
+	var prefetched_neighbor_id: StringName = &""
+	var connection := _first_connection_for_cell(graph, current_cell)
+	assert_not_null(connection, "current region exposes a physical prefetch passage")
+	if connection != null:
+		prefetched_neighbor_id = connection.to_region_id
+		var prefetch_position: Vector2 = (
+			_scene.node(&"region_seam_system").get_crossing_position_for_connection(
+				connection,
+				graph.start_region_id
+			)
+		)
+		var requested_ids: Array[StringName] = streamer.refresh_near_world_residency(
+			prefetch_position
+		)
+		assert_true(
+			requested_ids.has(prefetched_neighbor_id),
+			"approaching one passage requests only its connected region"
+		)
+		assert_true(
+			await _wait_for_streamed_region_full(streamer, prefetched_neighbor_id),
+			"nearby passage destination reaches FULL before crossing"
+		)
+	var expected_resident: Array[StringName] = [current_cell.id]
+	if not prefetched_neighbor_id.is_empty():
+		expected_resident.append(prefetched_neighbor_id)
 	var streamed: Array[StringName] = streamer.get_streamed_region_ids()
-	assert_true(_same_ids(streamed, expected_active), "streamer contains current region plus connected neighbors")
-	for region_id in expected_active:
+	var near_world_stats := streamer.get_streaming_stats() as Dictionary
+	print(
+		(
+			"NEAR_WORLD_PROFILE: resident=%d main_build=%.3f ms geometry=%.3f ms "
+			+ "signature_worker=%.3f ms mask_worker=%.3f ms phases=%s"
+		)
+		% [
+			streamed.size(),
+			float(near_world_stats.get("max_region_build_msec", 0.0)),
+			float(near_world_stats.get("max_tile_geometry_phase_msec", 0.0)),
+			float(near_world_stats.get("max_tile_signature_worker_msec", 0.0)),
+			float(near_world_stats.get("max_surface_mask_worker_msec", 0.0)),
+			str(near_world_stats.get("tile_geometry_phase_msec", {}))
+		]
+	)
+	assert_true(
+		_same_ids(streamed, expected_resident),
+		"streamer contains current region plus the single nearby passage"
+	)
+	for region_id in expected_resident:
 		assert_eq(int(streamer.get_content_level(region_id)), 2, "%s is streamed as FULL gameplay content" % String(region_id))
 	var nonzero_texture_origins := 0
 	for layer_node in _scene.nodes(&"biome_tile_layers"):
@@ -244,7 +291,7 @@ func test_full_region_streaming() -> void:
 			"an already-pending chunk is promoted when it enters the camera (%s in %s)"
 			% [String(pending_chunk_keys[0]), str(distant_visible_keys)])
 
-	var neighbor_id := _first_neighbor_with_content(graph, biome_manager, current_cell.id)
+	var neighbor_id := prefetched_neighbor_id
 	assert_false(neighbor_id.is_empty(), "at least one connected neighbor has generated content")
 	if not neighbor_id.is_empty():
 		_assert_neighbor_gameplay_queries(streamer, biome_manager, obstacle_system, hazard_system, neighbor_id)
@@ -282,7 +329,7 @@ func test_top_down_streaming_performance() -> void:
 
 	assert_eq(biome_manager.get_generated_biome_map().size(), 9, "3x3 biome map is generated")
 	var streamed_ids: Array[StringName] = streamer.get_streamed_region_ids()
-	assert_gte(streamed_ids.size(), 2, "streamer loads current region and connected neighbors")
+	assert_eq(streamed_ids.size(), 1, "streamer starts with only the current nearby world resident")
 	for region_id in streamed_ids:
 		assert_eq(int(streamer.get_content_level(region_id)), 2, "%s is streamed as FULL gameplay content" % String(region_id))
 		var counts: Dictionary = streamer.get_region_content_counts(region_id)
@@ -457,7 +504,7 @@ func test_no_legacy_renderer_or_gates() -> void:
 	var current_region_id := biome_manager.get_current_region_id()
 	var streamed_ids: Array[StringName] = streamer.get_streamed_region_ids()
 	assert_false(current_region_id.is_empty(), "current region is resolved")
-	assert_gt(streamed_ids.size(), 1, "standard survival streams current plus neighbors")
+	assert_eq(streamed_ids.size(), 1, "standard survival does not instantiate distant graph neighbors")
 	assert_eq(int(streamer.get_content_level(current_region_id)), 2, "current region is streamed as FULL gameplay content")
 	var current_counts: Dictionary = streamer.get_region_content_counts(current_region_id)
 	assert_gt(int(current_counts.get("tiles", 0)), 0, "current streamed region owns an asset tile layer")
@@ -505,6 +552,27 @@ func test_seam_crossing_through_open_passage() -> void:
 	var player := player_manager.players.get(1) as Node2D
 	assert_not_null(player, "player one exists")
 	var crossing_position: Vector2 = seam_system.get_crossing_position_for_connection(connection, graph.start_region_id)
+	seam_system.set("cooldown_timer", 0.0)
+	assert_false(
+		seam_system.try_update_region_for_position(crossing_position),
+		"the seam defers its biome change while the destination is not FULL"
+	)
+	assert_eq(
+		biome_manager.get_current_region_id(),
+		start_cell.id,
+		"readiness wait keeps the source biome authoritative"
+	)
+	var requested_ids: Array[StringName] = streamer.refresh_near_world_residency(
+		crossing_position
+	)
+	assert_true(
+		requested_ids.has(connection.to_region_id),
+		"approaching the seam requests its destination"
+	)
+	assert_true(
+		await _wait_for_streamed_region_full(streamer, connection.to_region_id),
+		"destination is gameplay-ready before the seam changes biome"
+	)
 	var source_root_id := streamer.get_region_environment_root_instance_id(start_cell.id)
 	var target_root_id := streamer.get_region_environment_root_instance_id(connection.to_region_id)
 	assert_ne(source_root_id, 0, "source region root exists before crossing")
@@ -561,10 +629,11 @@ func test_open_passage_follows_physical_movement() -> void:
 	var seam_system = _scene.node(&"region_seam_system")
 	var transition_system: BiomeTransitionSystem = _scene.node(&"biome_transition_system") as BiomeTransitionSystem
 	var player_manager: PlayerManager = _scene.node(&"player_manager") as PlayerManager
+	var streamer: WorldRegionStreamer = _scene.node(&"world_region_streamer") as WorldRegionStreamer
 	assert_not_null(seam_system, "region seam system is available")
 	assert_not_null(transition_system, "transition system is available")
 	assert_not_null(player_manager, "player manager is available")
-	if biome_manager == null or world_runtime == null or seam_system == null or player_manager == null:
+	if biome_manager == null or world_runtime == null or seam_system == null or player_manager == null or streamer == null:
 		return
 
 	transition_system.transition_cooldown = 0.01
@@ -597,6 +666,11 @@ func test_open_passage_follows_physical_movement() -> void:
 	if connection == null:
 		return
 	var crossing_position: Vector2 = seam_system.get_crossing_position_for_connection(connection, graph.start_region_id)
+	streamer.refresh_near_world_residency(crossing_position)
+	assert_true(
+		await _wait_for_streamed_region_full(streamer, connection.to_region_id),
+		"movement transition waits for its near-world destination"
+	)
 	if player != null:
 		player.global_position = crossing_position
 	seam_system.set("cooldown_timer", 0.0)
@@ -659,6 +733,11 @@ func test_enemy_chases_across_biome_seam() -> void:
 		return
 	var direction := _direction_for_side(connection.side)
 	var crossing_position: Vector2 = seam_system.get_crossing_position_for_connection(connection, graph.start_region_id)
+	streamer.refresh_near_world_residency(crossing_position)
+	assert_true(
+		await _wait_for_streamed_region_full(streamer, connection.to_region_id),
+		"chase target region is FULL before crossing"
+	)
 	var source_root_id: int = int(
 		streamer.get_region_environment_root_instance_id(start_cell.id)
 	)
@@ -705,9 +784,16 @@ func test_enemy_chases_across_biome_seam() -> void:
 
 	if is_instance_valid(enemy):
 		enemy.queue_free()
-	await wait_physics_frames(2)
+	var target_region := graph.get_region(connection.to_region_id)
+	if target_region != null:
+		player.global_position = seam_system.logical_tile_to_world_position(
+			target_region.world_origin + target_region.size_tiles / 2,
+			graph.start_region_id
+		)
+	for _frame in range(12):
+		await wait_physics_frames(1)
 	assert_eq(streamer.get_region_environment_root_instance_id(start_cell.id), 0,
-		"the source region unloads after its last runtime pin leaves")
+		"the source region unloads after its last runtime pin leaves and the party exits its near-world band")
 
 # --- generazione del mondo a biomi e transizione via comando ----------------
 # (biome_world_generation)

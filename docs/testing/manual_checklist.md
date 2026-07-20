@@ -153,6 +153,13 @@ Visual QA consigliate:
   regioni/chunk. `max_retirement_msec` non deve produrre il vecchio picco circa
   2 secondi dopo il seam; `last_frame_chunk_evictions` non deve superare `1` e
   `max_chunk_eviction_msec` va registrato insieme al frame massimo.
+- Ripetere il percorso partendo dal centro regione: finche la party e lontana
+  dai varchi `gameplay_regions` deve restare `1`, mentre `active_regions` puo
+  contenere i vicini come soli dati. Entro 30 tile dal varco deve comparire un
+  solo ID in `nearby_prefetch_region_ids`; attendere che diventi `FULL`, attraversare e
+  verificare che non parta il caricamento di tutti i nuovi vicini del grafo.
+  Registrare `max_region_build_msec`, `tile_geometry_phase_msec`,
+  `max_tile_signature_worker_msec` e `max_surface_mask_worker_msec`.
 - Durante lo stesso percorso verificare che l'autosave compaia soltanto dopo la
   finestra di quiete e che il frame della transizione non contenga I/O file;
   progressione, regione corrente ed esplorazione devono risultare persistite

@@ -11,6 +11,10 @@ signal region_seam_crossed(
 
 @export_range(0.05, 3.0, 0.05) var transition_cooldown: float = 0.45
 @export_range(0, 12, 1) var crossing_margin_tiles: int = WorldGridConfig.CROSSING_MARGIN_TILES
+## Distanza dal rettangolo fisico del varco entro cui lo streamer puo iniziare
+## il prefetch della regione collegata. La selezione resta geometrica: un vicino
+## del grafo dall'altro lato della regione non diventa residente.
+@export_range(4, 40, 1) var region_prefetch_distance_tiles: int = 30
 @export var player_group: StringName = &"players"
 
 var biome_manager: BiomeManager
@@ -73,6 +77,8 @@ func try_update_region_for_position(world_position: Vector2) -> bool:
 	)
 	if connection == null:
 		return false
+	if not _is_destination_stream_ready(target_region_id, world_position):
+		return false
 	var changed := biome_manager.set_current_region(target_region_id)
 	if not changed:
 		return false
@@ -88,6 +94,24 @@ func try_update_region_for_position(world_position: Vector2) -> bool:
 		connection.connection_id
 	)
 	return true
+
+func _is_destination_stream_ready(
+	target_region_id: StringName,
+	world_position: Vector2
+) -> bool:
+	var streamer := get_tree().get_first_node_in_group(
+		"world_region_streamer"
+	) as WorldRegionStreamer
+	if (
+		streamer == null
+		or not streamer.is_streaming_graph(graph)
+		or streamer.is_region_streamed(target_region_id)
+	):
+		return true
+	# Anche un teleport sul seam resta non bloccante: richiede il target e il
+	# cambio biome avverra in un frame successivo, soltanto quando FULL.
+	streamer.refresh_near_world_residency(world_position)
+	return false
 
 func get_current_region_id() -> StringName:
 	if biome_manager != null:
@@ -179,6 +203,66 @@ func get_open_connection_for_world_position(
 			return connection
 	return null
 
+## Restituisce al massimo `max_results` regioni fisicamente raggiungibili da un
+## varco vicino alla posizione. I risultati sono ordinati per distanza e id per
+## rendere stabile la residency anche vicino agli angoli della mappa.
+func get_nearby_connected_region_ids(
+	world_position: Vector2,
+	from_region_id: StringName = &"",
+	max_distance_tiles: int = -1,
+	max_results: int = 1
+) -> Array[StringName]:
+	var result: Array[StringName] = []
+	if graph == null or max_results <= 0:
+		return result
+	var source_id := from_region_id
+	if source_id.is_empty():
+		source_id = get_current_region_id()
+	var source := graph.get_region(source_id)
+	if source == null:
+		return result
+	var distance_limit := (
+		region_prefetch_distance_tiles
+		if max_distance_tiles < 0
+		else maxi(max_distance_tiles, 0)
+	)
+	var world_tile := world_position_to_logical_tile(world_position)
+	var candidates: Array[Dictionary] = []
+	for connection in source.connection_edges:
+		if (
+			connection == null
+			or not connection.is_open
+			or not connection.physical_passage
+			or connection.to_region_id.is_empty()
+		):
+			continue
+		var distance_squared := _connection_distance_squared_tiles(
+			source,
+			connection,
+			world_tile
+		)
+		if distance_squared > distance_limit * distance_limit:
+			continue
+		candidates.append({
+			"region_id": connection.to_region_id,
+			"distance_squared": distance_squared
+		})
+	candidates.sort_custom(func(left: Dictionary, right: Dictionary) -> bool:
+		var left_distance := int(left.get("distance_squared", 0))
+		var right_distance := int(right.get("distance_squared", 0))
+		if left_distance != right_distance:
+			return left_distance < right_distance
+		return String(left.get("region_id", &"")) < String(right.get("region_id", &""))
+	)
+	for candidate in candidates:
+		var region_id := StringName(candidate.get("region_id", &""))
+		if region_id.is_empty() or result.has(region_id):
+			continue
+		result.append(region_id)
+		if result.size() >= max_results:
+			break
+	return result
+
 func region_contains_world_tile(region: WorldRegion, world_tile: Vector2i) -> bool:
 	if region == null:
 		return false
@@ -228,6 +312,61 @@ func _connection_contains_world_tile(
 		if _expanded_rect_has_point(rect, world_tile, crossing_margin_tiles):
 			return true
 	return _fallback_connection_band_contains(source, connection, world_tile)
+
+func _connection_distance_squared_tiles(
+	source: WorldRegion,
+	connection: WorldRegionConnection,
+	world_tile: Vector2i
+) -> int:
+	var passage_rect := connection.world_rect
+	if passage_rect.size.x <= 0 or passage_rect.size.y <= 0:
+		passage_rect = _fallback_connection_rect(source, connection)
+	return _distance_squared_to_rect(world_tile, passage_rect)
+
+func _distance_squared_to_rect(point: Vector2i, rect: Rect2i) -> int:
+	if rect.size.x <= 0 or rect.size.y <= 0:
+		return 2147483647
+	var last := rect.end - Vector2i.ONE
+	var delta_x := maxi(maxi(rect.position.x - point.x, point.x - last.x), 0)
+	var delta_y := maxi(maxi(rect.position.y - point.y, point.y - last.y), 0)
+	return delta_x * delta_x + delta_y * delta_y
+
+func _fallback_connection_rect(
+	source: WorldRegion,
+	connection: WorldRegionConnection
+) -> Rect2i:
+	var span_before := _span_before_center(connection.passage_width)
+	var center := source.world_origin + Vector2i(
+		connection.passage_position,
+		connection.passage_position
+	)
+	match connection.side:
+		&"west":
+			return Rect2i(
+				Vector2i(source.world_origin.x, center.y - span_before),
+				Vector2i(1, connection.passage_width)
+			)
+		&"north":
+			return Rect2i(
+				Vector2i(center.x - span_before, source.world_origin.y),
+				Vector2i(connection.passage_width, 1)
+			)
+		&"south":
+			return Rect2i(
+				Vector2i(
+					center.x - span_before,
+					source.world_origin.y + source.size_tiles.y - 1
+				),
+				Vector2i(connection.passage_width, 1)
+			)
+		_:
+			return Rect2i(
+				Vector2i(
+					source.world_origin.x + source.size_tiles.x - 1,
+					center.y - span_before
+				),
+				Vector2i(1, connection.passage_width)
+			)
 
 func _expanded_rect_has_point(
 	rect: Rect2i,

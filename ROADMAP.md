@@ -210,9 +210,13 @@ anche le milestone completate per evitare sovrapposizioni.
   tile a fasi, prewarm delle varianti oggetto, autosave I/O asincrono e
   retirement foglia-per-foglia. Il follow-up sul freeze ritardato limita le
   eviction mature a un chunk per frame e rende lineare la deregistrazione dei
-  registri owned. I tempi di contenuto, unload, geometria, eviction e retirement
-  sono ora leggibili da `get_streaming_stats()`; mesh terrain identiche e
-  materiali dismessi vengono riusati. La verifica renderizzata lunga resta
+  registri owned. Il follow-up architetturale separa ora `active_regions` dati
+  dalla residency gameplay: solo corrente e varco vicino sono `FULL`, il target
+  viene preparato entro 30 tile e il seam attende readiness. Firma layout,
+  raster CPU della mask e cue audio non lavorano piu sul main della
+  transizione. I tempi di contenuto, unload, geometria, worker, eviction e
+  retirement sono leggibili da `get_streaming_stats()`; mesh terrain identiche
+  e materiali dismessi vengono riusati. La verifica renderizzata lunga resta
   parte del playtest manuale, non una nuova milestone.
 - Il pass `WORLD-VIS-FIX` e completato: raised cliff e fall zone hanno semantica
   distinta, placement e contatti ground/void sono coperti da guardrail e il

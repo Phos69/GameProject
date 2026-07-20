@@ -9,9 +9,11 @@ enum AsyncGeometryPhase {
 	SURFACE_MASK = 1,
 	CHUNKS = 2,
 	CLIFFS = 3,
-	BORDERS = 4,
-	MESAS = 5,
-	CLEANUP = 6
+	BORDER_RIM = 4,
+	BORDER_FACES = 5,
+	MESA_OUTLINE = 6,
+	MESA_PROFILE = 7,
+	CLEANUP = 8
 }
 
 const DEFAULT_CHUNK_SIZE := 10
@@ -140,8 +142,15 @@ var _build_task_id: int = -1
 var _is_building: bool = false
 var _async_geometry_phase: int = AsyncGeometryPhase.IDLE
 var _async_chunk_cursor: int = 0
+var _async_mesa_profile_ids: Array[StringName] = []
+var _async_mesa_rect_groups: Dictionary = {}
+var _async_mesa_profile_cursor: int = 0
 var _last_geometry_phase_msec: float = 0.0
 var _max_geometry_phase_msec: float = 0.0
+var _max_geometry_phase_msec_by_phase: Dictionary = {}
+var _last_signature_build_msec: float = 0.0
+var _last_surface_mask_cpu_msec: float = 0.0
+var _threaded_surface_mask_data: Dictionary = {}
 # Chiave del tile-bake su disco (TileBakeCache): un hit salta l'intero loop di
 # resolve per-cella, la parte dominante del bake.
 var _bake_key: String = ""
@@ -212,12 +221,11 @@ func configure(
 	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	add_to_group("biome_tile_layers")
 	_rebuild_chunks()
-	_bake_key = TILE_BAKE_CACHE.make_key(
-		biome_id,
-		quality_preset,
-		layout.get_generation_signature() if layout != null else "",
-		chunk_size
-	)
+	_bake_key = ""
+	_threaded_surface_mask_data.clear()
+	_last_signature_build_msec = 0.0
+	_last_surface_mask_cpu_msec = 0.0
+	_max_geometry_phase_msec_by_phase.clear()
 	if async_build:
 		# The node is already in the tree but draws nothing until the bake finishes.
 		_is_building = true
@@ -229,6 +237,7 @@ func configure(
 			"Biome tile cache %s" % String(biome_id)
 		)
 		return
+	_bake_key = _make_bake_key()
 	_ensure_tile_cache()
 	_rebuild_ground_geometry()
 	queue_redraw()
@@ -237,10 +246,32 @@ func is_building() -> bool:
 	return _is_building
 
 func _threaded_build() -> void:
-	# Only deterministic numeric/cache data is prepared off-thread. ArrayMesh and
-	# scene-tree chunk creation are finalized on the main thread.
+	# Firma, cache tile e raster della maschera sono deterministici e non toccano
+	# il scene tree. ArrayMesh, nodi e ImageTexture restano sul main thread.
+	var signature_started_usec := Time.get_ticks_usec()
+	_bake_key = _make_bake_key()
+	_last_signature_build_msec = (
+		float(Time.get_ticks_usec() - signature_started_usec) / 1000.0
+	)
 	_ensure_tile_cache()
+	if layout != null and resolver != null and _uses_themed_ground():
+		var mask_started_usec := Time.get_ticks_usec()
+		_threaded_surface_mask_data = TERRAIN_BOUNDARY_MASK_BUILDER.build(
+			layout,
+			resolver
+		)
+		_last_surface_mask_cpu_msec = (
+			float(Time.get_ticks_usec() - mask_started_usec) / 1000.0
+		)
 	call_deferred("_finalize_threaded_build")
+
+func _make_bake_key() -> String:
+	return TILE_BAKE_CACHE.make_key(
+		biome_id,
+		quality_preset,
+		layout.get_generation_signature() if layout != null else "",
+		chunk_size
+	)
 
 # Carica le mappe-tile risolte dalla cache su disco (salta il loop di resolve) o,
 # in mancanza, le ribuilda e le persiste. La geometria viene comunque ricostruita
@@ -284,6 +315,9 @@ func _finalize_threaded_build() -> void:
 		WorkerThreadPool.wait_for_task_completion(_build_task_id)
 		_build_task_id = -1
 	_async_chunk_cursor = 0
+	_async_mesa_profile_ids.clear()
+	_async_mesa_rect_groups.clear()
+	_async_mesa_profile_cursor = 0
 	_async_geometry_phase = AsyncGeometryPhase.RESET
 	set_process(true)
 
@@ -292,12 +326,17 @@ func _process(_delta: float) -> void:
 		set_process(false)
 		return
 	var started_usec := Time.get_ticks_usec()
+	var processed_phase := _async_geometry_phase
 	match _async_geometry_phase:
 		AsyncGeometryPhase.RESET:
 			_reset_ground_geometry()
 			_async_geometry_phase = AsyncGeometryPhase.SURFACE_MASK
 		AsyncGeometryPhase.SURFACE_MASK:
-			if layout != null and palette != null:
+			if not _threaded_surface_mask_data.is_empty():
+				var prepared_mask_data := _threaded_surface_mask_data
+				_threaded_surface_mask_data = {}
+				_apply_terrain_surface_mask_data(prepared_mask_data)
+			elif layout != null and palette != null:
 				_rebuild_terrain_surface_mask()
 			_async_geometry_phase = AsyncGeometryPhase.CHUNKS
 		AsyncGeometryPhase.CHUNKS:
@@ -316,14 +355,20 @@ func _process(_delta: float) -> void:
 				_async_geometry_phase = AsyncGeometryPhase.CLIFFS
 		AsyncGeometryPhase.CLIFFS:
 			_build_region_cliffs()
-			_async_geometry_phase = AsyncGeometryPhase.BORDERS
-		AsyncGeometryPhase.BORDERS:
-			_build_region_borders()
-			_async_geometry_phase = AsyncGeometryPhase.MESAS
-		AsyncGeometryPhase.MESAS:
+			_async_geometry_phase = AsyncGeometryPhase.BORDER_RIM
+		AsyncGeometryPhase.BORDER_RIM:
+			_build_region_border_rim()
+			_async_geometry_phase = AsyncGeometryPhase.BORDER_FACES
+		AsyncGeometryPhase.BORDER_FACES:
+			_build_region_border_faces()
+			_async_geometry_phase = AsyncGeometryPhase.MESA_OUTLINE
+		AsyncGeometryPhase.MESA_OUTLINE:
 			if layout != null and palette != null:
-				_rebuild_mesa_geometry(layout.logical_tile_scale)
-			_async_geometry_phase = AsyncGeometryPhase.CLEANUP
+				_begin_mesa_geometry(layout.logical_tile_scale)
+			_async_geometry_phase = AsyncGeometryPhase.MESA_PROFILE
+		AsyncGeometryPhase.MESA_PROFILE:
+			if not _build_next_mesa_profile(layout.logical_tile_scale):
+				_async_geometry_phase = AsyncGeometryPhase.CLEANUP
 		AsyncGeometryPhase.CLEANUP:
 			_cleanup_ground_buffers()
 			_async_geometry_phase = AsyncGeometryPhase.IDLE
@@ -338,6 +383,10 @@ func _process(_delta: float) -> void:
 		_max_geometry_phase_msec,
 		_last_geometry_phase_msec
 	)
+	_max_geometry_phase_msec_by_phase[processed_phase] = maxf(
+		float(_max_geometry_phase_msec_by_phase.get(processed_phase, 0.0)),
+		_last_geometry_phase_msec
+	)
 
 func _exit_tree() -> void:
 	if _build_task_id >= 0:
@@ -345,13 +394,19 @@ func _exit_tree() -> void:
 		_build_task_id = -1
 	_async_geometry_phase = AsyncGeometryPhase.IDLE
 	_is_building = false
+	_threaded_surface_mask_data.clear()
+	_async_mesa_profile_ids.clear()
+	_async_mesa_rect_groups.clear()
 	_chunk_nodes.clear()
 
 func get_async_build_stats() -> Dictionary:
 	return {
 		"phase": _async_geometry_phase,
 		"last_geometry_phase_msec": _last_geometry_phase_msec,
-		"max_geometry_phase_msec": _max_geometry_phase_msec
+		"max_geometry_phase_msec": _max_geometry_phase_msec,
+		"geometry_phase_msec": _max_geometry_phase_msec_by_phase.duplicate(),
+		"signature_build_msec": _last_signature_build_msec,
+		"surface_mask_cpu_msec": _last_surface_mask_cpu_msec
 	}
 
 func get_chunk_count() -> int:
@@ -1397,6 +1452,10 @@ func _build_region_cliffs() -> void:
 		_cliff_mesh_builder.build_meshes()
 
 func _build_region_borders() -> void:
+	_build_region_border_rim()
+	_build_region_border_faces()
+
+func _build_region_border_rim() -> void:
 	if layout == null or palette == null:
 		return
 	var scale := layout.logical_tile_scale
@@ -1409,13 +1468,21 @@ func _build_region_borders() -> void:
 			scale,
 			_uses_generated_theme()
 		)
-		if _rectilinear_cliff_face_mesh_builder != null:
-			_rectilinear_cliff_face_mesh_builder.build(
-				layout.fall_zone_rects,
-				fall_zone_sides,
-				layout.zone_size,
-				scale
-			)
+
+func _build_region_border_faces() -> void:
+	if (
+		layout == null
+		or palette == null
+		or not has_forest_cliff_border_art()
+		or _rectilinear_cliff_face_mesh_builder == null
+	):
+		return
+	_rectilinear_cliff_face_mesh_builder.build(
+		layout.fall_zone_rects,
+		_get_fall_zone_sides(),
+		layout.zone_size,
+		layout.logical_tile_scale
+	)
 
 func _cleanup_ground_buffers() -> void:
 	# Ground/detail buffers now belong to BiomeTileChunk children.
@@ -1433,11 +1500,15 @@ func _rebuild_terrain_surface_mask() -> void:
 	_terrain_surface_mask_texture = null
 	if not _uses_themed_ground() or layout == null or resolver == null:
 		return
-	_refresh_terrain_surface_texture_ids()
-	_terrain_surface_mask_data = TERRAIN_BOUNDARY_MASK_BUILDER.build(
+	_apply_terrain_surface_mask_data(TERRAIN_BOUNDARY_MASK_BUILDER.build(
 		layout,
 		resolver
-	)
+	))
+
+func _apply_terrain_surface_mask_data(mask_data: Dictionary) -> void:
+	_terrain_surface_mask_data = mask_data
+	_terrain_surface_mask_texture = null
+	_refresh_terrain_surface_texture_ids()
 	var mask_image := _terrain_surface_mask_data.get("image") as Image
 	if mask_image != null and not mask_image.is_empty():
 		_terrain_surface_mask_texture = ImageTexture.create_from_image(mask_image)
@@ -1541,44 +1612,57 @@ func _surface_texture_or_fallback(
 	return fallback_texture
 
 func _rebuild_mesa_geometry(scale: float) -> void:
-	var rect_groups := _mesa_rect_groups()
+	_begin_mesa_geometry(scale)
+	while _build_next_mesa_profile(scale):
+		pass
+
+func _begin_mesa_geometry(scale: float) -> void:
+	_async_mesa_rect_groups = _mesa_rect_groups()
+	_async_mesa_profile_ids.clear()
+	_async_mesa_profile_cursor = 0
+	for profile_id_value in _async_mesa_rect_groups:
+		_async_mesa_profile_ids.append(StringName(profile_id_value))
+	_async_mesa_profile_ids.sort()
 	if _mesa_dirt_border_mesh_builder != null:
 		_mesa_dirt_border_mesh_builder.build_dirt_outline(
 			_mesa_rects_for_dirt_outline(),
 			layout.zone_size,
 			scale
 		)
-	for profile_id_value in rect_groups:
-		var profile_id := StringName(profile_id_value)
-		var rects: Array[Rect2i] = []
-		rects.assign(rect_groups[profile_id] as Array)
-		if rects.is_empty():
-			continue
-		if not _mesa_art_by_profile.has(profile_id):
-			_load_mesa_profile_art(profile_id)
-		var art_paths := (
-			_mesa_art_asset_paths.get(profile_id, {}) as Dictionary
+
+func _build_next_mesa_profile(scale: float) -> bool:
+	if _async_mesa_profile_cursor >= _async_mesa_profile_ids.size():
+		return false
+	var profile_id := _async_mesa_profile_ids[_async_mesa_profile_cursor]
+	_async_mesa_profile_cursor += 1
+	var rects: Array[Rect2i] = []
+	rects.assign(_async_mesa_rect_groups.get(profile_id, []) as Array)
+	if rects.is_empty():
+		return true
+	if not _mesa_art_by_profile.has(profile_id):
+		_load_mesa_profile_art(profile_id)
+	var art_paths := _mesa_art_asset_paths.get(profile_id, {}) as Dictionary
+	var top_path := String(art_paths.get(&"top", ""))
+	var top_repeat := RectilinearRockAreaMeshBuilder.TOP_TEXTURE_REPEAT_WORLD_SIZE
+	if profile_id != FOREST_MESA_PROFILE_ID and not top_path.is_empty():
+		top_repeat = _forest_surface_texture_world_size(
+			GENERATED_ART_CATALOG.material_id_from_path(top_path)
 		)
-		var top_path := String(art_paths.get(&"top", ""))
-		var top_repeat := RectilinearRockAreaMeshBuilder.TOP_TEXTURE_REPEAT_WORLD_SIZE
-		if profile_id != FOREST_MESA_PROFILE_ID and not top_path.is_empty():
-			top_repeat = _forest_surface_texture_world_size(
-				GENERATED_ART_CATALOG.material_id_from_path(top_path)
-			)
-		var builder := (
-			RECTILINEAR_ROCK_AREA_MESH_BUILDER_SCRIPT.new()
-			as RectilinearRockAreaMeshBuilder
-		)
-		builder.configure(
-			palette,
-			layout.generation_seed,
-			top_repeat,
-			RectilinearRockAreaMeshBuilder.FACE_TEXTURE_REPEAT_WORLD_SIZE
-		)
-		builder.build(rects, layout.zone_size, scale)
-		_mesa_area_mesh_builders[profile_id] = builder
-		if profile_id == _default_mesa_profile_id():
-			_rock_area_mesh_builder = builder
+	var builder := (
+		RECTILINEAR_ROCK_AREA_MESH_BUILDER_SCRIPT.new()
+		as RectilinearRockAreaMeshBuilder
+	)
+	builder.configure(
+		palette,
+		layout.generation_seed,
+		top_repeat,
+		RectilinearRockAreaMeshBuilder.FACE_TEXTURE_REPEAT_WORLD_SIZE
+	)
+	builder.build(rects, layout.zone_size, scale)
+	_mesa_area_mesh_builders[profile_id] = builder
+	if profile_id == _default_mesa_profile_id():
+		_rock_area_mesh_builder = builder
+	return true
 
 func _mesa_rects_for_dirt_outline() -> Array[Rect2i]:
 	if layout == null:

@@ -20,6 +20,11 @@ const WORLD_REGION_RETIREMENT_QUEUE_SCRIPT = preload(
 @export_range(0, 3, 1) var active_radius: int = 1
 @export_enum("performance", "balanced", "quality") var quality_preset: String = "balanced"
 @export_range(0.0, 10.0, 0.1) var unload_grace_seconds: float = 2.0
+@export var near_world_streaming_enabled: bool = true
+@export_range(4, 40, 1) var region_prefetch_distance_tiles: int = 30
+@export_range(1, 3, 1) var max_nearby_prefetch_regions: int = 1
+@export_range(0.05, 0.5, 0.05) var residency_refresh_seconds: float = 0.10
+@export_range(1.0, 15.0, 0.5) var explicit_prefetch_hold_seconds: float = 10.0
 @export_range(1, 4, 1) var max_region_builds_per_frame: int = 1
 @export_range(0, 4, 1) var render_margin_chunks: int = 1
 @export_range(0, 6, 1) var prefetch_margin_chunks: int = 2
@@ -62,11 +67,16 @@ var _seam_system: Node
 var _entries: Dictionary = {}
 var _last_content_commit_count: int = 0
 var _last_region_build_count: int = 0
+var _last_region_build_msec: float = 0.0
+var _max_region_build_msec: float = 0.0
 var _last_content_commit_msec: float = 0.0
 var _max_content_commit_msec: float = 0.0
 var _last_unload_msec: float = 0.0
 var _max_unload_msec: float = 0.0
 var _pin_collection_count: int = 0
+var _residency_refresh_timer: float = 0.0
+var _nearby_prefetch_region_ids: Array[StringName] = []
+var _explicit_prefetch_deadlines: Dictionary = {}
 
 func _ready() -> void:
 	add_to_group("world_region_streamer")
@@ -81,14 +91,19 @@ func _ready() -> void:
 	_ensure_retirement_queue()
 	set_process(true)
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if not _is_streaming:
 		return
 	_last_content_commit_count = 0
 	_last_content_commit_msec = 0.0
 	_last_region_build_count = 0
+	_last_region_build_msec = 0.0
 	_ensure_retirement_queue()
 	_retirement_queue.begin_frame()
+	_residency_refresh_timer = maxf(_residency_refresh_timer - delta, 0.0)
+	if near_world_streaming_enabled and _residency_refresh_timer <= 0.0:
+		refresh_near_world_residency()
+		_residency_refresh_timer = residency_refresh_seconds
 	_process_pending_regions()
 	_process_pending_content()
 	_process_scheduled_unloads()
@@ -149,7 +164,10 @@ func start_world(
 		_configure_chunk_visibility()
 		_prepare_systems(center.biome_id)
 		_is_streaming = true
-		for region_id in _collect_runtime_region_ids(center_region_id):
+		var initial_region_ids: Array[StringName] = [center_region_id]
+		if not near_world_streaming_enabled:
+			initial_region_ids = _collect_runtime_region_ids(center_region_id)
+		for region_id in initial_region_ids:
 			var region := graph.get_region(region_id)
 			if region != null:
 				_stream_region(region, region_id == center_region_id, false)
@@ -181,27 +199,13 @@ func set_current_region(region_id: StringName) -> bool:
 	if region_id == current_region_id:
 		return true
 	current_region_id = region_id
+	_explicit_prefetch_deadlines.clear()
 	_configure_active_biome(center.biome_id)
-	var desired_ids := _collect_runtime_region_ids(region_id)
-	var desired_lookup := {}
-	for desired_id in desired_ids:
-		desired_lookup[String(desired_id)] = true
-		_unload_deadlines.erase(String(desired_id))
-		if not _has_region_entry(desired_id) and not _pending_region_ids.has(desired_id):
-			if desired_id == region_id:
-				_pending_region_ids.push_front(desired_id)
-			else:
-				_pending_region_ids.append(desired_id)
-	for pending_id in _pending_region_ids.duplicate():
-		if not desired_lookup.has(String(pending_id)):
-			_pending_region_ids.erase(pending_id)
-	for key in _entries.keys():
-		var existing_id := StringName(key)
-		if desired_lookup.has(String(existing_id)):
-			continue
-		_unload_deadlines[String(existing_id)] = (
-			Time.get_ticks_msec() + int(unload_grace_seconds * 1000.0)
-		)
+	var desired_ids: Array[StringName] = [region_id]
+	if not near_world_streaming_enabled:
+		desired_ids = _collect_runtime_region_ids(region_id)
+	_apply_resident_region_ids(desired_ids)
+	_residency_refresh_timer = 0.0
 	_mark_current_tile_layer(region_id)
 	_configure_chunk_visibility()
 	# Il controller chiamante invoca prepare_area(); i caller diretti vengono
@@ -218,6 +222,54 @@ func prepare_area(_world_rect: Rect2 = Rect2()) -> bool:
 		get_viewport(),
 		_world_rect
 	)
+
+## Aggiorna la residency FULL dalla posizione fisica. Senza posizione esplicita
+## usa il centro della party; il parametro e' utile anche a test e teletrasporti
+## controllati che vogliono anticipare il caricamento prima di spostare i nodi.
+func refresh_near_world_residency(
+	world_position: Variant = null
+) -> Array[StringName]:
+	var desired_ids: Array[StringName] = []
+	if not _is_streaming or graph == null or current_region_id.is_empty():
+		return desired_ids
+	desired_ids.append(current_region_id)
+	_nearby_prefetch_region_ids.clear()
+	if near_world_streaming_enabled:
+		var seam_system := _resolve_seam_system() as RegionSeamSystem
+		var resolved_position: Variant = world_position
+		if resolved_position == null and seam_system != null:
+			resolved_position = seam_system.get_party_center()
+		if seam_system != null and resolved_position is Vector2:
+			_nearby_prefetch_region_ids = (
+				seam_system.get_nearby_connected_region_ids(
+					resolved_position as Vector2,
+					current_region_id,
+					region_prefetch_distance_tiles,
+					max_nearby_prefetch_regions
+				)
+			)
+			for nearby_id in _nearby_prefetch_region_ids:
+				if not desired_ids.has(nearby_id):
+					desired_ids.append(nearby_id)
+			if world_position != null:
+				var hold_deadline := (
+					Time.get_ticks_msec()
+					+ int(explicit_prefetch_hold_seconds * 1000.0)
+				)
+				for nearby_id in _nearby_prefetch_region_ids:
+					_explicit_prefetch_deadlines[String(nearby_id)] = hold_deadline
+		var now := Time.get_ticks_msec()
+		for key in _explicit_prefetch_deadlines.keys().duplicate():
+			if now >= int(_explicit_prefetch_deadlines[key]):
+				_explicit_prefetch_deadlines.erase(key)
+				continue
+			var held_id := StringName(key)
+			if held_id != current_region_id and not desired_ids.has(held_id):
+				desired_ids.append(held_id)
+	else:
+		desired_ids = _collect_runtime_region_ids(current_region_id)
+	_apply_resident_region_ids(desired_ids)
+	return desired_ids
 
 func is_area_ready(world_rect: Rect2 = Rect2()) -> bool:
 	return (
@@ -238,6 +290,9 @@ func get_pending_visual_chunk_keys() -> Array[StringName]:
 func get_streaming_stats() -> Dictionary:
 	var active_build_phase := -1
 	var max_geometry_phase_msec := 0.0
+	var max_geometry_phase_msec_by_phase := {}
+	var max_signature_build_msec := 0.0
+	var max_surface_mask_cpu_msec := 0.0
 	for entry_value in _entries.values():
 		var entry := entry_value as Dictionary
 		var tile_layer := entry.get("tile_layer") as BiomeTileLayer
@@ -252,12 +307,28 @@ func get_streaming_stats() -> Dictionary:
 			max_geometry_phase_msec,
 			float(build_stats.get("max_geometry_phase_msec", 0.0))
 		)
+		var phase_stats := build_stats.get("geometry_phase_msec", {}) as Dictionary
+		for phase_key in phase_stats:
+			max_geometry_phase_msec_by_phase[phase_key] = maxf(
+				float(max_geometry_phase_msec_by_phase.get(phase_key, 0.0)),
+				float(phase_stats[phase_key])
+			)
+		max_signature_build_msec = maxf(
+			max_signature_build_msec,
+			float(build_stats.get("signature_build_msec", 0.0))
+		)
+		max_surface_mask_cpu_msec = maxf(
+			max_surface_mask_cpu_msec,
+			float(build_stats.get("surface_mask_cpu_msec", 0.0))
+		)
 	var stats := {
 		"gameplay_regions": get_streamed_region_ids().size(),
 		"pending_regions": _pending_region_ids.size(),
 		"pending_content": _pending_content.size(),
 		"scheduled_unloads": _unload_deadlines.size(),
 		"last_frame_region_builds": _last_region_build_count,
+		"last_region_build_msec": _last_region_build_msec,
+		"max_region_build_msec": _max_region_build_msec,
 		"last_frame_content_commits": _last_content_commit_count,
 		"last_frame_content_commit_msec": _last_content_commit_msec,
 		"max_content_commit_msec": _max_content_commit_msec,
@@ -265,9 +336,16 @@ func get_streaming_stats() -> Dictionary:
 		"max_content_commits_per_frame": max_content_commits_per_frame,
 		"active_tile_build_phase": active_build_phase,
 		"max_tile_geometry_phase_msec": max_geometry_phase_msec,
+		"tile_geometry_phase_msec": max_geometry_phase_msec_by_phase,
+		"max_tile_signature_worker_msec": max_signature_build_msec,
+		"max_surface_mask_worker_msec": max_surface_mask_cpu_msec,
 		"last_region_unload_msec": _last_unload_msec,
 		"max_region_unload_msec": _max_unload_msec,
-		"pin_collection_count": _pin_collection_count
+		"pin_collection_count": _pin_collection_count,
+		"near_world_streaming_enabled": near_world_streaming_enabled,
+		"nearby_prefetch_regions": _nearby_prefetch_region_ids.size(),
+		"nearby_prefetch_region_ids": _nearby_prefetch_region_ids.duplicate(),
+		"explicit_prefetch_holds": _explicit_prefetch_deadlines.size()
 	}
 	_ensure_retirement_queue()
 	stats.merge(_retirement_queue.get_stats(), true)
@@ -300,11 +378,16 @@ func clear() -> void:
 	anchor_region_id = &""
 	_last_content_commit_count = 0
 	_last_region_build_count = 0
+	_last_region_build_msec = 0.0
+	_max_region_build_msec = 0.0
 	_last_content_commit_msec = 0.0
 	_max_content_commit_msec = 0.0
 	_last_unload_msec = 0.0
 	_max_unload_msec = 0.0
 	_pin_collection_count = 0
+	_residency_refresh_timer = 0.0
+	_nearby_prefetch_region_ids.clear()
+	_explicit_prefetch_deadlines.clear()
 	_is_streaming = false
 
 func get_streamed_region_ids() -> Array[StringName]:
@@ -803,6 +886,29 @@ func _collect_runtime_region_ids(
 	result.push_front(center_region_id)
 	return result
 
+func _apply_resident_region_ids(desired_ids: Array[StringName]) -> void:
+	var desired_lookup := {}
+	for desired_id in desired_ids:
+		if desired_id.is_empty():
+			continue
+		desired_lookup[String(desired_id)] = true
+		_unload_deadlines.erase(String(desired_id))
+		if _has_region_entry(desired_id) or _pending_region_ids.has(desired_id):
+			continue
+		if desired_id == current_region_id:
+			_pending_region_ids.push_front(desired_id)
+		else:
+			_pending_region_ids.append(desired_id)
+	for pending_id in _pending_region_ids.duplicate():
+		if not desired_lookup.has(String(pending_id)):
+			_pending_region_ids.erase(pending_id)
+	var deadline := Time.get_ticks_msec() + int(unload_grace_seconds * 1000.0)
+	for key in _entries.keys():
+		if desired_lookup.has(String(key)):
+			continue
+		if not _unload_deadlines.has(String(key)):
+			_unload_deadlines[String(key)] = deadline
+
 func _process_pending_regions() -> void:
 	if _has_running_tile_worker():
 		return
@@ -814,7 +920,15 @@ func _process_pending_regions() -> void:
 		var region := graph.get_region(region_id) if graph != null else null
 		if region == null:
 			continue
+		var build_started_usec := Time.get_ticks_usec()
 		_stream_region(region, region_id == current_region_id, true)
+		_last_region_build_msec = (
+			float(Time.get_ticks_usec() - build_started_usec) / 1000.0
+		)
+		_max_region_build_msec = maxf(
+			_max_region_build_msec,
+			_last_region_build_msec
+		)
 		built += 1
 	_last_region_build_count = built
 	if built > 0:

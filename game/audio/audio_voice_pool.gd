@@ -6,6 +6,11 @@ class_name AudioVoicePool
 var voices: Array[Dictionary] = []
 var sequence: int = 0
 
+func prewarm(min_voice_count: int = 1) -> void:
+	var target := clampi(min_voice_count, 0, max_voices)
+	while voices.size() < target:
+		_create_voice()
+
 func _exit_tree() -> void:
 	stop_all()
 
