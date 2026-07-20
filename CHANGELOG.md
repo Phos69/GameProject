@@ -74,6 +74,17 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Changed
 
+- Sostituiti i tre raster primari della Pianura Ardente con superfici quadrate
+  ad alta risoluzione dedicate: erba bruciata per il ground, terra/cenere per
+  sentieri e confini, asfalto annerito per le road. I ruoli e i percorsi del
+  catalogo restano invariati; la normalizzazione limita inoltre i soli pixel
+  caldi del ground che potrebbero competere con telegraph e hazard di fuoco. I
+  divider dirt riusano la stessa texture normalizzata e lo stesso periodo
+  world-space dei sentieri.
+- Sostituiti anche i raster primari di Tundra Gelata e Palude con i nuovi set
+  ad alta risoluzione per erba, dirt e asfalto. In tutti e tre i biomi avanzati
+  il dirt dei divider riusa ora il rispettivo materiale dei sentieri.
+
 - `BIOME-REDEF-001`: la survival usa quattro ID canonici nella famiglia
   `plains`: `plains`, `burning_plains`, `frozen_tundra` e `swamp`. Pianura
   Ardente assorbe i precedenti band Tossico/Urban e Infuocato/Volcanic; i dati

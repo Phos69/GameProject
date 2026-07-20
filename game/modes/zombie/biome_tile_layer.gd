@@ -1125,15 +1125,22 @@ func _load_forest_surface_art_textures() -> void:
 func _load_terrain_divider_texture() -> void:
 	if manifest == null:
 		return
-	# Infected Plains uses one compacted-earth material for paths and every dirt
-	# transition. Reusing the normalized runtime instance also keeps its atlas
-	# phase and filtering identical across both consumers.
-	if _uses_forest_ground():
+	# Plains and Burning Plains use one dirt material for paths and every terrain
+	# divider. Reusing the normalized runtime instance also keeps atlas phase,
+	# filtering and world-space density identical across both consumers.
+	if _uses_path_as_terrain_divider():
+		var path_texture_id := FOREST_PATH_TEXTURE_ID
+		if _uses_generated_theme():
+			var generation_seed := layout.generation_seed if layout != null else 0
+			path_texture_id = _generated_surface_texture_id_for_role(
+				GENERATED_ART_CATALOG.ROLE_PATH,
+				generation_seed
+			)
 		var path_texture := (
-			_forest_surface_textures.get(FOREST_PATH_TEXTURE_ID) as Texture2D
+			_forest_surface_textures.get(path_texture_id) as Texture2D
 		)
 		var path_asset_path := String(
-			_forest_surface_art_asset_paths.get(FOREST_PATH_TEXTURE_ID, "")
+			_forest_surface_art_asset_paths.get(path_texture_id, "")
 		)
 		if path_texture != null and not path_asset_path.is_empty():
 			_register_surface_texture(
@@ -1752,21 +1759,34 @@ func _forest_surface_texture_world_size(texture_id: StringName) -> float:
 	return FOREST_SURFACE_TEXTURE_WORLD_SIZE
 
 func _terrain_divider_texture_world_size() -> float:
-	# The forest divider aliases the original path tile; the other biomes retain
-	# the shared standalone divider. Both use the historical 256-unit period.
+	# Plains-family biomes that alias their path must also share its UV period;
+	# the remaining biomes retain the standalone divider's historical period.
 	var divider_asset_path := String(
 		_forest_surface_art_asset_paths.get(TERRAIN_DIVIDER_TEXTURE_ID, "")
 	)
+	var path_id := StringName(_terrain_surface_texture_ids.get(
+		TERRAIN_SURFACE_CLASSIFIER.SURFACE_PATH,
+		&""
+	))
 	var path_asset_path := String(
-		_forest_surface_art_asset_paths.get(FOREST_PATH_TEXTURE_ID, "")
+		_forest_surface_art_asset_paths.get(path_id, "")
 	)
 	if (
-		_uses_forest_ground()
+		_uses_path_as_terrain_divider()
+		and not path_id.is_empty()
 		and not path_asset_path.is_empty()
 		and divider_asset_path == path_asset_path
 	):
-		return _forest_surface_texture_world_size(FOREST_PATH_TEXTURE_ID)
+		return _forest_surface_texture_world_size(path_id)
 	return TERRAIN_DIVIDER_TEXTURE_WORLD_SIZE
+
+func _uses_path_as_terrain_divider() -> bool:
+	return (
+		_uses_forest_ground()
+		or biome_id == &"burning_plains"
+		or biome_id == &"frozen_tundra"
+		or biome_id == &"swamp"
+	)
 
 func _uses_forest_ground() -> bool:
 	return biome_id == BiomeTileResolver.FOREST_BIOME_ID

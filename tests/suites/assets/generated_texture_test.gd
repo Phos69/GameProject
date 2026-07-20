@@ -1022,6 +1022,12 @@ func test_generated_biome_runtime_consumption() -> void:
 				BiomeTileLayer.BURNING_SURFACE_TEXTURE_WORLD_SIZE,
 				"burning_plains uses a broad repeat period"
 			)
+		if (
+			biome_id == &"burning_plains"
+			or biome_id == &"frozen_tundra"
+			or biome_id == &"swamp"
+		):
+			_assert_generated_path_divider_reuse(layer, biome_id)
 		if biome_id == &"swamp":
 			_assert_marsh_routes_are_lifted(layer, expected_surface_trim)
 		if biome_id == &"burning_plains":
@@ -2566,11 +2572,15 @@ func _assert_terrain_surface_runtime_contract(
 		0,
 		"%s reports rasterized divider pixels" % label
 	)
-	var expected_divider_asset := (
-		"forest_dirt_path_generated"
-		if layer.biome_id == BiomeTileResolver.FOREST_BIOME_ID
-		else "terrain_divider_dirt"
-	)
+	var expected_divider_asset := "terrain_divider_dirt"
+	if layer.biome_id == BiomeTileResolver.FOREST_BIOME_ID:
+		expected_divider_asset = "forest_dirt_path_generated"
+	elif (
+		layer.biome_id == &"burning_plains"
+		or layer.biome_id == &"frozen_tundra"
+		or layer.biome_id == &"swamp"
+	):
+		expected_divider_asset = "path_variation"
 	assert_true(
 		String(report.get("divider_asset_path", "")).contains(
 			expected_divider_asset
@@ -2600,6 +2610,38 @@ func _assert_terrain_surface_runtime_contract(
 		terrain_canvas_count,
 		0,
 		"%s renders terrain through chunk surface canvases" % label
+	)
+
+func _assert_generated_path_divider_reuse(
+	layer: BiomeTileLayer,
+	biome_id: StringName
+) -> void:
+	var path_id := StringName(layer._terrain_surface_texture_ids.get(
+		TERRAIN_SURFACE_CLASSIFIER.SURFACE_PATH,
+		&""
+	))
+	var paths := layer.get_forest_surface_art_asset_paths()
+	assert_false(
+		path_id.is_empty(),
+		"%s exposes its path material" % String(biome_id)
+	)
+	assert_eq(
+		paths.get(BiomeTileLayer.TERRAIN_DIVIDER_TEXTURE_ID),
+		paths.get(path_id),
+		"%s dirt dividers reuse the exact path asset" % String(biome_id)
+	)
+	assert_true(
+		layer._forest_surface_textures.get(
+			BiomeTileLayer.TERRAIN_DIVIDER_TEXTURE_ID
+		) == layer._forest_surface_textures.get(path_id),
+		"%s dirt dividers reuse the normalized path texture instance"
+		% String(biome_id)
+	)
+	assert_eq(
+		layer._terrain_divider_texture_world_size(),
+		layer._forest_surface_texture_world_size(path_id),
+		"%s dirt dividers reuse the path world-space period"
+		% String(biome_id)
 	)
 
 func _expected_generated_surface_texture_trim_pixels(

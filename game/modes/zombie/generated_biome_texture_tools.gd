@@ -46,11 +46,10 @@ const SWAMP_ROUTE_LIFT := 0.22
 # vicine alla scala di rendering reale.
 const SWAMP_CLIFF_TEXTURE_DOWNSCALE := 0.45
 # burning_plains: i pixel brace piu' accesi del ground competono con telegraph
-# e fire hazard (VIS-006). Il damping selettivo scurisce solo i pixel a
-# dominanza arancio, lasciando lava feature e path intatti.
+# e fire hazard (VIS-006). Il cap selettivo limita la sola dominanza rossa dei
+# pixel caldi, lasciando invariati lava feature, path e il tono ocra del grass.
 const VOLCANIC_EMBER_THRESHOLD := 0.18
-const VOLCANIC_EMBER_DAMPING := 0.34
-const SURFACE_NORMALIZATION_CACHE_REVISION := "surface-v6-forest-shadow-crop"
+const SURFACE_NORMALIZATION_CACHE_REVISION := "surface-v7-burning-ember-cap"
 
 # Cache di sessione delle texture normalizzate, keyed su asset_path + parametri.
 # La normalizzazione gira pixel-per-pixel in GDScript: senza cache veniva rifatta
@@ -844,12 +843,10 @@ static func _harmonize_volcanic_surface_texture(
 			)
 			if ember <= VOLCANIC_EMBER_THRESHOLD:
 				continue
-			var strength := minf(
-				(ember - VOLCANIC_EMBER_THRESHOLD) / 0.30,
-				1.0
-			)
-			var adjusted := source.darkened(
-				VOLCANIC_EMBER_DAMPING * strength
+			var adjusted := source
+			adjusted.r = minf(
+				source.r,
+				(source.g + source.b) * 0.5 + VOLCANIC_EMBER_THRESHOLD
 			)
 			adjusted.a = source.a
 			image.set_pixel(x, y, adjusted)
