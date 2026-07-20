@@ -13,6 +13,8 @@ var retain_margin_chunks: int = 3
 var unload_grace_msec: int = 2000
 var commit_budget_msec: float = 2.0
 var max_commits_per_frame: int = 2
+var eviction_budget_msec: float = 0.5
+var max_evictions_per_frame: int = 1
 
 var loaded_chunk_keys: Array[StringName] = []
 var visible_chunk_keys: Array[StringName] = []
@@ -26,6 +28,11 @@ var _last_frame_commit_msec: float = 0.0
 var _max_chunk_commit_msec: float = 0.0
 var _total_chunk_commit_msec: float = 0.0
 var _total_chunk_commit_count: int = 0
+var _eviction_process_frame: int = -1
+var _eviction_frame_started_usec: int = 0
+var _last_frame_eviction_count: int = 0
+var _last_frame_eviction_msec: float = 0.0
+var _max_chunk_eviction_msec: float = 0.0
 var _visible_missing_chunk_count: int = 0
 # I set di coordinate per tier cambiano solo quando la camera attraversa un
 # confine di chunk (i margini sono multipli esatti del passo chunk, quindi ogni
@@ -44,7 +51,9 @@ func configure(
 	next_retain_margin_chunks: int,
 	next_unload_grace_seconds: float,
 	next_commit_budget_msec: float,
-	next_max_commits_per_frame: int
+	next_max_commits_per_frame: int,
+	next_eviction_budget_msec: float,
+	next_max_evictions_per_frame: int
 ) -> void:
 	var normalized_render_margin := maxi(next_render_margin_chunks, 0)
 	var normalized_prefetch_margin := maxi(
@@ -75,6 +84,8 @@ func configure(
 	unload_grace_msec = maxi(roundi(next_unload_grace_seconds * 1000.0), 0)
 	commit_budget_msec = maxf(next_commit_budget_msec, 0.1)
 	max_commits_per_frame = maxi(next_max_commits_per_frame, 1)
+	eviction_budget_msec = maxf(next_eviction_budget_msec, 0.1)
+	max_evictions_per_frame = maxi(next_max_evictions_per_frame, 1)
 
 func mark_dirty() -> void:
 	_refresh_requested = true
@@ -94,6 +105,11 @@ func clear() -> void:
 	_max_chunk_commit_msec = 0.0
 	_total_chunk_commit_msec = 0.0
 	_total_chunk_commit_count = 0
+	_eviction_process_frame = -1
+	_eviction_frame_started_usec = 0
+	_last_frame_eviction_count = 0
+	_last_frame_eviction_msec = 0.0
+	_max_chunk_eviction_msec = 0.0
 	_visible_missing_chunk_count = 0
 	_refresh_requested = true
 	_refresh_signatures.clear()
@@ -101,6 +117,7 @@ func clear() -> void:
 func process(entries: Dictionary, viewport: Viewport) -> void:
 	_last_frame_commit_count = 0
 	_last_frame_commit_msec = 0.0
+	_begin_eviction_frame()
 	# Refresh completo solo quando l'esito puo' cambiare: firma camera/chunk
 	# diversa, eviction in scadenza o richiesta esplicita (mark_dirty, cambio
 	# regione, build completata). Con la camera dentro lo stesso chunk il
@@ -183,7 +200,12 @@ func get_streaming_stats() -> Dictionary:
 			else 0.0
 		),
 		"chunk_commit_budget_msec": commit_budget_msec,
-		"max_chunk_commits_per_frame": max_commits_per_frame
+		"max_chunk_commits_per_frame": max_commits_per_frame,
+		"last_frame_chunk_evictions": _last_frame_eviction_count,
+		"last_frame_chunk_eviction_msec": _last_frame_eviction_msec,
+		"max_chunk_eviction_msec": _max_chunk_eviction_msec,
+		"chunk_eviction_budget_msec": eviction_budget_msec,
+		"max_chunk_evictions_per_frame": max_evictions_per_frame
 	}
 
 func get_pending_chunk_keys() -> Array[StringName]:
@@ -265,12 +287,11 @@ func refresh(
 			world_rect,
 			retain_margin_chunks
 		)
-		var retained_resident_coords := _apply_retention_policy(
+		_apply_retention_policy(
 			region_id,
 			tile_layer,
 			retain_coords
 		)
-		tile_layer.evict_chunks_except(retained_resident_coords)
 		_queue_requests(
 			region_id,
 			tile_layer,
@@ -496,6 +517,7 @@ func _apply_retention_policy(
 	tile_layer: BiomeTileLayer,
 	retain_coords: Array[Vector2i]
 ) -> Array[Vector2i]:
+	_begin_eviction_frame()
 	var result: Array[Vector2i] = []
 	var now := Time.get_ticks_msec()
 	var retained_lookup := {}
@@ -511,9 +533,42 @@ func _apply_retention_policy(
 			_eviction_deadlines[key] = now + unload_grace_msec
 		if now < int(_eviction_deadlines[key]):
 			result.append(coord)
-		else:
+		elif _can_evict_chunk_this_frame():
+			var started_usec := Time.get_ticks_usec()
+			tile_layer.evict_chunk(coord)
+			var elapsed_msec := (
+				float(Time.get_ticks_usec() - started_usec) / 1000.0
+			)
+			_last_frame_eviction_count += 1
+			_last_frame_eviction_msec += elapsed_msec
+			_max_chunk_eviction_msec = maxf(
+				_max_chunk_eviction_msec,
+				elapsed_msec
+			)
 			_eviction_deadlines.erase(key)
+		else:
+			# La deadline resta matura: _should_refresh() riprovera' al frame
+			# successivo senza liberare tutti i chunk scaduti insieme.
+			result.append(coord)
 	return result
+
+func _begin_eviction_frame() -> void:
+	var process_frame := int(Engine.get_process_frames())
+	if process_frame == _eviction_process_frame:
+		return
+	_eviction_process_frame = process_frame
+	_eviction_frame_started_usec = Time.get_ticks_usec()
+	_last_frame_eviction_count = 0
+	_last_frame_eviction_msec = 0.0
+
+func _can_evict_chunk_this_frame() -> bool:
+	if _last_frame_eviction_count >= max_evictions_per_frame:
+		return false
+	return (
+		_last_frame_eviction_count == 0
+		or float(Time.get_ticks_usec() - _eviction_frame_started_usec) / 1000.0
+		< eviction_budget_msec
+	)
 
 func _prune_pending_requests(desired_request_priorities: Dictionary) -> void:
 	var retained_requests: Array[Dictionary] = []

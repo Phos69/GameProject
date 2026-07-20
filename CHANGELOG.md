@@ -8,6 +8,13 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Added
 
+- Telemetria streaming per diagnosticare i seam: `get_streaming_stats()` espone
+  commit contenuti per frame, tempi massimi di commit/unload, fase attiva e
+  massimo della finalizzazione geometrica tile, region build e retirement;
+  aggiunte regressioni GUT dedicate a unload con riferimenti gia liberati,
+  grace deadline, tile build asincrona, smaltimento incrementale, pooling terrain
+  e autosave su worker.
+
 - Importate 24 varianti `forest_tree` PNG trasparenti: quattro coppie
   adulto/giovane dedicate rispettivamente a Pianura, Pianura Ardente e Tundra
   Gelata. Il manifest v17 espone tre pool visuali per contesto e seleziona
@@ -33,6 +40,43 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
   e test dedicati per indice e workflow.
 
 ### Fixed
+
+- Eliminato il crash `signal 11` di `WorldRegionStreamer._unstream_region`:
+  ostacoli, hazard e crate sono ora posseduti dalla regione tramite
+  `instance_id`, deregistrati senza scansioni globali e senza
+  `Node.is_ancestor_of`; l'unload e idempotente e i registri rimuovono per
+  indice anche entry gia liberate. Le scansioni di player/nemici che pinnano
+  una regione avvengono soltanto a deadline matura.
+- Ridotti i picchi ai cambi bioma: il tile bake usa il `WorkerThreadPool`
+  condiviso invece di creare un thread per regione e finalizza maschera,
+  chunk, cliff, bordi e mesa su frame distinti; i contenuti hanno budget e
+  tetto di due commit per frame. Rimossi inoltre il doppio refresh dei chunk,
+  le finalizzazioni hazard senza nuovi hazard e il doppio aggiornamento del
+  backdrop generato dai due segnali di transizione.
+- L'autosave non esegue piu stringify, scrittura e rotazione `.tmp/.bak` nel
+  frame successivo a `exploration_changed`: le richieste vengono coalesciate
+  per 750 ms, lo snapshot e acquisito sul main thread e tutto l'I/O atomico
+  viene completato dal `WorkerThreadPool`. I salvataggi espliciti mantengono il
+  precedente risultato sincrono.
+- L'unload runtime nasconde e disattiva subito la regione, poi
+  `WorldRegionRetirementQueue` libera le foglie con budget di 0,8 ms e massimo
+  quattro nodi nei soli frame senza build/commit. Non esiste piu un
+  `queue_free()` ricorsivo dell'intera regione a fine grace period. I quad
+  `ArrayMesh` identici del terrain sono condivisi e gli `ShaderMaterial`
+  dismessi vengono ripuliti e riusati, riducendo allocazioni/RID durante il
+  movimento della camera.
+- Eliminato il secondo hitch circa due secondi dopo il seam: le deadline chunk
+  maturate non confluiscono piu in un unico `evict_chunks_except()`. Il
+  controller elimina globalmente un solo chunk per process frame (budget 0,5
+  ms), anche in presenza di refresh multipli, e mantiene le altre deadline
+  mature per i frame successivi. La deregistrazione di ostacoli, hazard e crate
+  della regione usa inoltre una sola passata batch per registro invece di una
+  sequenza di `Array.erase` quadratici.
+- Le varianti degli ostacoli vengono risolte prima dell'istanza usando la
+  posizione world-space: texture e collider corretti sono applicati una sola
+  volta prima dell'ingresso nello SceneTree. Il loading iniziale pre-riscalda
+  texture e metriche alpha di tutte le varianti richieste dai biomi della
+  megamappa, evitando letture immagine first-use durante il seam.
 
 - Rimossa la contaminazione bianca dai bordi antialias degli otto PNG
   `forest_tree` adulto/giovane: il colore dei pixel di bordo deriva ora dalla

@@ -510,7 +510,6 @@ func _clear_void_backdrop() -> void:
 func _apply_active_biome(biome: BiomeDefinition) -> void:
 	if biome == null:
 		return
-	_update_void_backdrop(biome)
 	var region_id: StringName = (
 		biome_manager.get_current_region_id()
 		if biome_manager != null
@@ -518,6 +517,7 @@ func _apply_active_biome(biome: BiomeDefinition) -> void:
 	)
 	if not region_id.is_empty() and region_id == last_applied_region_id:
 		return
+	_update_void_backdrop(biome)
 	last_applied_region_id = region_id
 	if transition_system != null:
 		if transition_system.is_active:

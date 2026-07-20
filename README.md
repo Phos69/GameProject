@@ -315,7 +315,11 @@ Completato:
 - megamappa persistente seed-based con grafo connesso, regioni default `3x3` da `75x75`, passaggi fisici aperti, stato esplorazione salvabile e mappa consultabile;
 - streaming senza caricamenti ai confini: regione corrente e vicini restano
   gameplay-ready, mentre il terreno e composto da chunk visuali `10x10`
-  caricati attorno alla camera con prefetch, retention e isteresi;
+  caricati attorno alla camera con prefetch, retention e isteresi; l'unload
+  usa ownership e smaltimento foglia-per-foglia a budget, mentre bake e
+  finalizzazione geometrica runtime sono distribuiti tramite worker pool e
+  fasi main-thread misurabili; anche le eviction scadute sono limitate a un
+  solo chunk per frame;
 - `Zombie Survival` avviata dal menu dedicato o da `F7` usa la megamappa `3x3`;
   l'arena compatta `1x1` resta disponibile solo passando
   `single_biome_arena = true` nel context di debug/test, mentre il profilo
@@ -397,7 +401,8 @@ Completato:
   ondata, nemici rimasti e reward, visibile solo in questa modalita;
 - salvataggio JSON versionato di livello, XP, denaro e ultima modalita;
 - save v2 con migrazione automatica dei dati v1 e unlock persistenti;
-- autosave su variazioni della progressione;
+- autosave coalescente: snapshot main-thread e serializzazione/I/O atomico sul
+  worker, senza scritture nel frame della variazione di progressione o regione;
 - rifiuto dei save malformati o con versione non supportata;
 - unlock `Field Kit` al livello party 2, con 120 HP a inizio run;
 - reset idempotente della salute a ogni nuova run e sui player che entrano durante il gameplay;

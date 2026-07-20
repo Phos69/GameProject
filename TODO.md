@@ -44,6 +44,14 @@ Regole per nuove voci:
 
 ### BAL-001 - Bilanciamento, performance e playtest end-to-end
 
+- Hardening streaming 2026-07-20: chiuso il crash nativo nell'unload regione,
+  rimossi refresh/load first-use duplicati, introdotti worker pool,
+  finalizzazione geometrica a fasi, ownership per regione, retirement a budget,
+  autosave asincrono, pooling terrain, eviction chunk a unita singola e
+  deregistrazione batch lineare. Regressioni streaming 8/8, save edge
+  3/3, encounters 4/4, integrazione 11/11 e tile layout 10/10 PASS; resta nel
+  residuo manuale la misura p95/max renderizzata sul percorso ripetuto
+  attraverso i seam.
 - Stato 2026-07-08: la parte automatizzabile e' chiusa (suite soak/stress 8/8,
   profilo perf entro budget fino a ~96 mob, QA renderizzata del seam PASS,
   guardrail di nicchia su tutte e 7 le classi RPG); dettagli in

@@ -8,11 +8,42 @@ extends GutTest
 ## last_mode sconosciuto e roundtrip dei binding join/leave del multiplayer.
 
 const TEMP_SAVE_PATH := "user://qa_save_edge_test.json"
+const TEMP_AUTOSAVE_PATH := "user://qa_async_autosave_test.json"
 const MIGRATION_ROOT := "user://qa_save_migration_test"
 const MIGRATION_LEGACY_DIR := MIGRATION_ROOT + "/legacy"
 const MIGRATION_CURRENT_DIR := MIGRATION_ROOT + "/current"
 
 var _load_failures: Array[String] = []
+
+func test_autosave_is_coalesced_and_written_by_worker() -> void:
+	_remove_autosave_files()
+	var save_manager := SaveManager.new()
+	save_manager.save_path = TEMP_AUTOSAVE_PATH
+	save_manager.auto_load = false
+	save_manager.autosave_debounce_seconds = 1.0
+	add_child_autofree(save_manager)
+
+	save_manager.request_save()
+	var first_deadline := save_manager._autosave_due_msec
+	await wait_process_frames(1)
+	save_manager.request_save()
+	assert_true(save_manager.save_pending, "le richieste ravvicinate restano coalescenti")
+	assert_gte(save_manager._autosave_due_msec, first_deadline, "la seconda mutazione non anticipa la deadline")
+	assert_eq(save_manager._autosave_task_id, -1, "il debounce evita I/O nel frame della richiesta")
+
+	# Il flush forza solo l'avvio: stringify e rotazione file restano nel worker.
+	save_manager._flush_pending_save()
+	assert_false(save_manager.save_pending, "lo snapshot pending viene consegnato al worker")
+	assert_gte(save_manager._autosave_task_id, 0, "l'autosave usa WorkerThreadPool")
+	for _frame in range(120):
+		if save_manager._autosave_task_id < 0:
+			break
+		await wait_process_frames(1)
+	assert_eq(save_manager._autosave_task_id, -1, "il worker autosave termina")
+	assert_true(FileAccess.file_exists(TEMP_AUTOSAVE_PATH), "il payload asincrono viene promosso a save valido")
+	assert_false(FileAccess.file_exists(TEMP_AUTOSAVE_PATH + ".tmp"), "il worker non lascia file temporanei")
+	assert_false(FileAccess.file_exists(TEMP_AUTOSAVE_PATH + ".bak"), "il worker pulisce il backup dopo la promozione")
+	_remove_autosave_files()
 
 func test_save_edge_cases() -> void:
 	_load_failures = []
@@ -235,6 +266,12 @@ func _read_absolute_file(path: String) -> String:
 func _remove_save_files() -> void:
 	for suffix: String in ["", ".tmp", ".bak"]:
 		var path := TEMP_SAVE_PATH + suffix
+		if FileAccess.file_exists(path):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+
+func _remove_autosave_files() -> void:
+	for suffix: String in ["", ".tmp", ".bak"]:
+		var path := TEMP_AUTOSAVE_PATH + suffix
 		if FileAccess.file_exists(path):
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 

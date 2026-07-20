@@ -262,8 +262,12 @@ func test_save_and_mode_flow() -> void:
 
 	save_manager.save_path = TEMP_SAVE_PATH
 	save_manager.auto_persist_in_headless = true
+	save_manager.autosave_debounce_seconds = 0.05
 	progression.add_money(5)
-	await wait_physics_frames(2)
+	for _frame in range(120):
+		if FileAccess.file_exists(TEMP_SAVE_PATH):
+			break
+		await wait_physics_frames(1)
 	assert_true(FileAccess.file_exists(TEMP_SAVE_PATH), "progression changes trigger autosave")
 	save_manager.autosave_progression = false
 	save_manager.autosave_mode_selection = false

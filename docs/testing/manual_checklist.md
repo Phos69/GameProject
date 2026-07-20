@@ -144,6 +144,19 @@ Visual QA consigliate:
   residui.
 - Zombie Survival attraversa seam e passaggi, genera ondate e boss, applica
   hazard/fall e mantiene spawn su celle valide.
+- In Zombie Survival attraversare avanti/indietro lo stesso seam per almeno
+  20 volte, attendendo oltre 2 secondi sui lati per esercitare l'unload: nessun
+  freeze/crash, chunk vuoto o collider residuo. Nel profilo balanced a
+  `1280x720` verificare p95 <= 33,3 ms e frame massimo al seam <= 50 ms;
+  `get_streaming_stats()` deve mostrare code che tornano a zero,
+  `pending_retirement_roots == 0` dopo il drain e nessuna crescita monotona di
+  regioni/chunk. `max_retirement_msec` non deve produrre il vecchio picco circa
+  2 secondi dopo il seam; `last_frame_chunk_evictions` non deve superare `1` e
+  `max_chunk_eviction_msec` va registrato insieme al frame massimo.
+- Durante lo stesso percorso verificare che l'autosave compaia soltanto dopo la
+  finestra di quiete e che il frame della transizione non contenga I/O file;
+  progressione, regione corrente ed esplorazione devono risultare persistite
+  riavviando il gioco.
 - Un salvataggio corrente viene letto e scritto senza perdita di progressione.
 - Se esiste soltanto il vecchio save di `Iso Local Sandbox`, il primo avvio lo
   copia una sola volta nella directory `Local Action Sandbox`, senza migrare

@@ -191,6 +191,30 @@ func unregister_streamed_crate(crate: SupplyCrate) -> void:
 		return
 	active_crates.erase(crate)
 
+func unregister_streamed_crates_by_instance_ids(
+	instance_ids: Array,
+	region_id: StringName = &""
+) -> void:
+	if instance_ids.is_empty():
+		return
+	var owned_lookup := {}
+	for instance_id in instance_ids:
+		owned_lookup[int(instance_id)] = true
+	for index in range(active_crates.size() - 1, -1, -1):
+		var crate := active_crates[index]
+		if (
+			not is_instance_valid(crate)
+			or crate.is_queued_for_deletion()
+			or (
+				owned_lookup.has(int(crate.get_instance_id()))
+				and (
+					region_id.is_empty()
+					or StringName(crate.get_meta("region_id", &"")) == region_id
+				)
+			)
+		):
+			active_crates.remove_at(index)
+
 func is_layout_crate_consumed_for_region(
 	region_id: StringName,
 	crate_key: StringName
@@ -343,9 +367,10 @@ func _on_crate_tree_exited(crate: SupplyCrate) -> void:
 	active_crates.erase(crate)
 
 func _prune_crates() -> void:
-	for crate in active_crates.duplicate():
+	for index in range(active_crates.size() - 1, -1, -1):
+		var crate := active_crates[index]
 		if (
 			not is_instance_valid(crate)
 			or crate.is_queued_for_deletion()
 		):
-			active_crates.erase(crate)
+			active_crates.remove_at(index)

@@ -205,6 +205,15 @@ anche le milestone completate per evitare sovrapposizioni.
   Il profilo Zombie Survival `1280x720`, balanced/generated art, 4 player e
   28 nemici resta il riferimento: p95 normale <= 33,3 ms, seam <= 50 ms e
   nessun chunk mancante in camera.
+  L'hardening del 2026-07-20 ha eliminato ancestry/scansioni globali
+  dall'unload, introdotto ownership per regione, worker pool, finalizzazione
+  tile a fasi, prewarm delle varianti oggetto, autosave I/O asincrono e
+  retirement foglia-per-foglia. Il follow-up sul freeze ritardato limita le
+  eviction mature a un chunk per frame e rende lineare la deregistrazione dei
+  registri owned. I tempi di contenuto, unload, geometria, eviction e retirement
+  sono ora leggibili da `get_streaming_stats()`; mesh terrain identiche e
+  materiali dismessi vengono riusati. La verifica renderizzata lunga resta
+  parte del playtest manuale, non una nuova milestone.
 - Il pass `WORLD-VIS-FIX` e completato: raised cliff e fall zone hanno semantica
   distinta, placement e contatti ground/void sono coperti da guardrail e il
   profilo movimento/zoom non perde chunk visibili. Soak e tuning restano aperti.

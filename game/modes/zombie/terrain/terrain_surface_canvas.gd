@@ -4,6 +4,10 @@ class_name TerrainSurfaceCanvas
 const TERRAIN_SURFACE_SHADER = preload(
 	"res://game/modes/zombie/ground/terrain_surface_blend.gdshader"
 )
+const MAX_POOLED_MATERIALS: int = 256
+
+static var _quad_mesh_cache: Dictionary = {}
+static var _material_pool: Array[ShaderMaterial] = []
 
 var surface_mesh: ArrayMesh
 var surface_material: ShaderMaterial
@@ -18,9 +22,8 @@ func configure(render_data: Dictionary) -> void:
 	surface_material_ids.clear()
 	for material_id_value in render_data.get("surface_material_ids", []) as Array:
 		surface_material_ids.append(StringName(material_id_value))
-	surface_mesh = _build_quad_mesh(chunk_world_rect)
-	surface_material = ShaderMaterial.new()
-	surface_material.shader = TERRAIN_SURFACE_SHADER
+	surface_mesh = _get_or_build_quad_mesh(chunk_world_rect)
+	surface_material = _acquire_surface_material()
 	_set_texture_parameter(surface_material, &"surface_mask", render_data, "mask_texture")
 	_set_texture_parameter(surface_material, &"grass_texture", render_data, "grass_texture")
 	_set_texture_parameter(surface_material, &"path_texture", render_data, "path_texture")
@@ -60,6 +63,14 @@ func configure(render_data: Dictionary) -> void:
 	queue_redraw()
 
 
+func _exit_tree() -> void:
+	material = null
+	if surface_material != null:
+		_release_surface_material(surface_material)
+		surface_material = null
+	surface_mesh = null
+
+
 func get_surface_material_ids() -> Array[StringName]:
 	return surface_material_ids.duplicate()
 
@@ -76,13 +87,23 @@ func _set_texture_parameter(
 	key: String
 ) -> void:
 	var texture := render_data.get(key) as Texture2D
-	if texture != null:
-		shader_material.set_shader_parameter(parameter, texture)
+	# Anche null va scritto: un materiale riusato non deve conservare una
+	# texture o una mask appartenente al chunk precedente.
+	shader_material.set_shader_parameter(parameter, texture)
 
 
-func _build_quad_mesh(rect: Rect2) -> ArrayMesh:
+func _get_or_build_quad_mesh(rect: Rect2) -> ArrayMesh:
 	if rect.size.x <= 0.0 or rect.size.y <= 0.0:
 		return null
+	var cache_key := "%s,%s,%s,%s" % [
+		rect.position.x,
+		rect.position.y,
+		rect.size.x,
+		rect.size.y
+	]
+	var cached := _quad_mesh_cache.get(cache_key) as ArrayMesh
+	if cached != null:
+		return cached
 	var arrays := []
 	arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX] = PackedVector2Array([
@@ -106,4 +127,27 @@ func _build_quad_mesh(rect: Rect2) -> ArrayMesh:
 	arrays[Mesh.ARRAY_INDEX] = PackedInt32Array([0, 1, 2, 0, 2, 3])
 	var mesh := ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	_quad_mesh_cache[cache_key] = mesh
 	return mesh
+
+
+static func _acquire_surface_material() -> ShaderMaterial:
+	if not _material_pool.is_empty():
+		return _material_pool.pop_back()
+	var shader_material := ShaderMaterial.new()
+	shader_material.shader = TERRAIN_SURFACE_SHADER
+	return shader_material
+
+
+static func _release_surface_material(shader_material: ShaderMaterial) -> void:
+	if shader_material == null or _material_pool.size() >= MAX_POOLED_MATERIALS:
+		return
+	for parameter in [
+		&"surface_mask",
+		&"grass_texture",
+		&"path_texture",
+		&"asphalt_texture",
+		&"divider_texture"
+	]:
+		shader_material.set_shader_parameter(parameter, null)
+	_material_pool.append(shader_material)

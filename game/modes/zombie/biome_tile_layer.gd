@@ -3,6 +3,17 @@ class_name BiomeTileLayer
 
 signal build_completed
 
+enum AsyncGeometryPhase {
+	IDLE = -1,
+	RESET = 0,
+	SURFACE_MASK = 1,
+	CHUNKS = 2,
+	CLIFFS = 3,
+	BORDERS = 4,
+	MESAS = 5,
+	CLEANUP = 6
+}
+
 const DEFAULT_CHUNK_SIZE := 10
 const PERFORMANCE_CHUNK_SIZE := 13
 const QUALITY_CHUNK_SIZE := 8
@@ -123,10 +134,14 @@ var _chunk_nodes: Dictionary = {}
 var _uses_chunk_nodes: bool = false
 var _build_all_chunks_on_finalize: bool = true
 var _cliff_transition_built_chunks: Dictionary = {}
-# Optional worker thread for the CPU-heavy tile cache. Meshes and chunk nodes
-# are always finalized on the main thread.
-var _build_thread: Thread
+# WorkerThreadPool task for the CPU-heavy tile cache. Meshes and chunk nodes
+# are finalized on the main thread in separate phases, one phase per frame.
+var _build_task_id: int = -1
 var _is_building: bool = false
+var _async_geometry_phase: int = AsyncGeometryPhase.IDLE
+var _async_chunk_cursor: int = 0
+var _last_geometry_phase_msec: float = 0.0
+var _max_geometry_phase_msec: float = 0.0
 # Chiave del tile-bake su disco (TileBakeCache): un hit salta l'intero loop di
 # resolve per-cella, la parte dominante del bake.
 var _bake_key: String = ""
@@ -206,8 +221,13 @@ func configure(
 	if async_build:
 		# The node is already in the tree but draws nothing until the bake finishes.
 		_is_building = true
-		_build_thread = Thread.new()
-		_build_thread.start(_threaded_build)
+		_async_geometry_phase = AsyncGeometryPhase.IDLE
+		set_process(false)
+		_build_task_id = WorkerThreadPool.add_task(
+			_threaded_build,
+			false,
+			"Biome tile cache %s" % String(biome_id)
+		)
 		return
 	_ensure_tile_cache()
 	_rebuild_ground_geometry()
@@ -257,20 +277,82 @@ func _apply_tile_cache_payload(payload: Dictionary) -> void:
 	_missing_asset_count = int(payload.get("missing_asset_count", 0))
 
 func _finalize_threaded_build() -> void:
-	if _build_thread != null and _build_thread.is_started():
-		_build_thread.wait_to_finish()
-	_build_thread = null
-	_rebuild_ground_geometry()
-	_is_building = false
-	queue_redraw()
-	build_completed.emit()
+	if _build_task_id >= 0:
+		if not WorkerThreadPool.is_task_completed(_build_task_id):
+			call_deferred("_finalize_threaded_build")
+			return
+		WorkerThreadPool.wait_for_task_completion(_build_task_id)
+		_build_task_id = -1
+	_async_chunk_cursor = 0
+	_async_geometry_phase = AsyncGeometryPhase.RESET
+	set_process(true)
+
+func _process(_delta: float) -> void:
+	if _async_geometry_phase == AsyncGeometryPhase.IDLE:
+		set_process(false)
+		return
+	var started_usec := Time.get_ticks_usec()
+	match _async_geometry_phase:
+		AsyncGeometryPhase.RESET:
+			_reset_ground_geometry()
+			_async_geometry_phase = AsyncGeometryPhase.SURFACE_MASK
+		AsyncGeometryPhase.SURFACE_MASK:
+			if layout != null and palette != null:
+				_rebuild_terrain_surface_mask()
+			_async_geometry_phase = AsyncGeometryPhase.CHUNKS
+		AsyncGeometryPhase.CHUNKS:
+			if (
+				_build_all_chunks_on_finalize
+				and layout != null
+				and _async_chunk_cursor < _chunks.size()
+			):
+				_build_visual_chunk(
+					_chunks[_async_chunk_cursor],
+					layout.logical_tile_scale
+				)
+				_async_chunk_cursor += 1
+			else:
+				_uses_chunk_nodes = true
+				_async_geometry_phase = AsyncGeometryPhase.CLIFFS
+		AsyncGeometryPhase.CLIFFS:
+			_build_region_cliffs()
+			_async_geometry_phase = AsyncGeometryPhase.BORDERS
+		AsyncGeometryPhase.BORDERS:
+			_build_region_borders()
+			_async_geometry_phase = AsyncGeometryPhase.MESAS
+		AsyncGeometryPhase.MESAS:
+			if layout != null and palette != null:
+				_rebuild_mesa_geometry(layout.logical_tile_scale)
+			_async_geometry_phase = AsyncGeometryPhase.CLEANUP
+		AsyncGeometryPhase.CLEANUP:
+			_cleanup_ground_buffers()
+			_async_geometry_phase = AsyncGeometryPhase.IDLE
+			_is_building = false
+			set_process(false)
+			queue_redraw()
+			build_completed.emit()
+	_last_geometry_phase_msec = (
+		float(Time.get_ticks_usec() - started_usec) / 1000.0
+	)
+	_max_geometry_phase_msec = maxf(
+		_max_geometry_phase_msec,
+		_last_geometry_phase_msec
+	)
 
 func _exit_tree() -> void:
-	if _build_thread != null and _build_thread.is_started():
-		_build_thread.wait_to_finish()
-	_build_thread = null
+	if _build_task_id >= 0:
+		WorkerThreadPool.wait_for_task_completion(_build_task_id)
+		_build_task_id = -1
+	_async_geometry_phase = AsyncGeometryPhase.IDLE
 	_is_building = false
 	_chunk_nodes.clear()
+
+func get_async_build_stats() -> Dictionary:
+	return {
+		"phase": _async_geometry_phase,
+		"last_geometry_phase_msec": _last_geometry_phase_msec,
+		"max_geometry_phase_msec": _max_geometry_phase_msec
+	}
 
 func get_chunk_count() -> int:
 	return _chunks.size()
@@ -374,15 +456,22 @@ func evict_chunks_except(retained_coords: Array[Vector2i]) -> void:
 	for key in _chunk_nodes.keys().duplicate():
 		if retained.has(key):
 			continue
-		var chunk := _chunk_nodes[key] as Node
-		if chunk != null and is_instance_valid(chunk):
-			chunk.set("visible", false)
-			if chunk.is_inside_tree():
-				chunk.queue_free()
-			else:
-				chunk.free()
-		_chunk_nodes.erase(key)
+		evict_chunk(key as Vector2i)
 	_uses_chunk_nodes = true
+
+func evict_chunk(coord: Vector2i) -> bool:
+	if not _chunk_nodes.has(coord):
+		return false
+	var chunk := _chunk_nodes.get(coord) as Node
+	if chunk != null and is_instance_valid(chunk):
+		chunk.set("visible", false)
+		if chunk.is_inside_tree():
+			chunk.queue_free()
+		else:
+			chunk.free()
+	_chunk_nodes.erase(coord)
+	_uses_chunk_nodes = true
+	return true
 
 func ensure_chunk(coord: Vector2i) -> bool:
 	if has_chunk(coord):
@@ -1251,6 +1340,21 @@ func _apply_offset_ground_macro_texture() -> void:
 		_forest_surface_textures[ground_id] = macro_texture
 
 func _rebuild_ground_geometry() -> void:
+	_reset_ground_geometry()
+	if layout == null or palette == null:
+		return
+	var scale := layout.logical_tile_scale
+	_rebuild_terrain_surface_mask()
+	if _build_all_chunks_on_finalize:
+		for chunk_rect in _chunks:
+			_build_visual_chunk(chunk_rect, scale)
+	_uses_chunk_nodes = true
+	_build_region_cliffs()
+	_build_region_borders()
+	_rebuild_mesa_geometry(scale)
+	_cleanup_ground_buffers()
+
+func _reset_ground_geometry() -> void:
 	_ground_mesh = null
 	_ground_underlay_mesh = null
 	_forest_surface_meshes.clear()
@@ -1284,19 +1388,18 @@ func _rebuild_ground_geometry() -> void:
 	_mesa_area_mesh_builders.clear()
 	_rock_area_mesh_builder = null
 	_mesa_profile_mismatch_count = 0
-	if layout == null or palette == null:
-		return
-	var scale := layout.logical_tile_scale
-	_rebuild_terrain_surface_mask()
-	if _build_all_chunks_on_finalize:
-		for chunk_rect in _chunks:
-			_build_visual_chunk(chunk_rect, scale)
-	_uses_chunk_nodes = true
+
+func _build_region_cliffs() -> void:
 	# Per-cell cliff transitions are collected while each chunk is built, then
 	# committed once as the region-level feature layer. Large cliff/rock features
 	# also remain region-owned so a long feature is never duplicated at a seam.
 	if _cliff_mesh_builder != null:
 		_cliff_mesh_builder.build_meshes()
+
+func _build_region_borders() -> void:
+	if layout == null or palette == null:
+		return
+	var scale := layout.logical_tile_scale
 	if has_forest_cliff_border_art() and _cliff_border_mesh_builder != null:
 		var fall_zone_sides := _get_fall_zone_sides()
 		_cliff_border_mesh_builder.build(
@@ -1313,7 +1416,8 @@ func _rebuild_ground_geometry() -> void:
 				layout.zone_size,
 				scale
 			)
-	_rebuild_mesa_geometry(scale)
+
+func _cleanup_ground_buffers() -> void:
 	# Ground/detail buffers now belong to BiomeTileChunk children.
 	_ground_mesh = null
 	_ground_underlay_mesh = null

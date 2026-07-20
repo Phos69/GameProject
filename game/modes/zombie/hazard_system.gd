@@ -384,6 +384,30 @@ func unregister_streamed_hazard(hazard: Node2D) -> void:
 		return
 	active_hazards.erase(hazard)
 
+func unregister_streamed_hazards_by_instance_ids(
+	instance_ids: Array,
+	region_id: StringName = &""
+) -> void:
+	if instance_ids.is_empty():
+		return
+	var owned_lookup := {}
+	for instance_id in instance_ids:
+		owned_lookup[int(instance_id)] = true
+	for index in range(active_hazards.size() - 1, -1, -1):
+		var hazard := active_hazards[index]
+		if (
+			not is_instance_valid(hazard)
+			or hazard.is_queued_for_deletion()
+			or (
+				owned_lookup.has(int(hazard.get_instance_id()))
+				and (
+					region_id.is_empty()
+					or StringName(hazard.get_meta("region_id", &"")) == region_id
+				)
+			)
+		):
+			active_hazards.remove_at(index)
+
 func finalize_streamed_hazards() -> void:
 	if status_runtime != null:
 		status_runtime.process_runtime(0.0, get_tree(), active_hazards)
@@ -761,9 +785,10 @@ func _clear_runtime() -> void:
 	safe_update_timer = 0.0
 
 func _prune_hazards() -> void:
-	for hazard in active_hazards.duplicate():
+	for index in range(active_hazards.size() - 1, -1, -1):
+		var hazard := active_hazards[index]
 		if (
 			not is_instance_valid(hazard)
 			or hazard.is_queued_for_deletion()
 		):
-			active_hazards.erase(hazard)
+			active_hazards.remove_at(index)

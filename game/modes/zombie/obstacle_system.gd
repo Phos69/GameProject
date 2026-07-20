@@ -142,7 +142,8 @@ func create_obstacle_instance(
 	shape_id: StringName,
 	rotation_radians: float,
 	base_color: Color,
-	detail_color: Color
+	detail_color: Color,
+	asset_variant_id: StringName = &""
 ) -> BiomeObstacle:
 	return _create_obstacle(
 		obstacle_id,
@@ -150,7 +151,8 @@ func create_obstacle_instance(
 		shape_id,
 		rotation_radians,
 		base_color,
-		detail_color
+		detail_color,
+		asset_variant_id
 	)
 
 func register_streamed_obstacle(
@@ -169,6 +171,31 @@ func unregister_streamed_obstacle(obstacle: Node2D) -> void:
 	if obstacle == null:
 		return
 	active_obstacles.erase(obstacle)
+	_blocker_index_dirty = true
+
+func unregister_streamed_obstacles_by_instance_ids(
+	instance_ids: Array,
+	region_id: StringName = &""
+) -> void:
+	if instance_ids.is_empty():
+		return
+	var owned_lookup := {}
+	for instance_id in instance_ids:
+		owned_lookup[int(instance_id)] = true
+	for index in range(active_obstacles.size() - 1, -1, -1):
+		var obstacle := active_obstacles[index]
+		if (
+			not is_instance_valid(obstacle)
+			or obstacle.is_queued_for_deletion()
+			or (
+				owned_lookup.has(int(obstacle.get_instance_id()))
+				and (
+					region_id.is_empty()
+					or StringName(obstacle.get_meta("region_id", &"")) == region_id
+				)
+			)
+		):
+			active_obstacles.remove_at(index)
 	_blocker_index_dirty = true
 
 func _is_position_blocked(position: Vector2, skip_jumpable: bool) -> bool:
@@ -397,7 +424,8 @@ func _create_obstacle(
 	shape_id: StringName,
 	rotation_radians: float,
 	base_color: Color,
-	detail_color: Color
+	detail_color: Color,
+	asset_variant_id: StringName = &""
 ) -> BiomeObstacle:
 	if object_factory == null:
 		object_factory = ENVIRONMENT_OBJECT_FACTORY_SCRIPT.new(manifest)
@@ -410,7 +438,9 @@ func _create_obstacle(
 		base_color,
 		detail_color,
 		_sort_offset_for(obstacle_id),
-		active_biome.biome_id if active_biome != null else &""
+		asset_variant_id
+		if not asset_variant_id.is_empty()
+		else (active_biome.biome_id if active_biome != null else &"")
 	) as BiomeObstacle
 	if obstacle != null:
 		return obstacle
@@ -441,12 +471,13 @@ func _clear_runtime() -> void:
 	_blocker_index_dirty = true
 
 func _prune_runtime() -> void:
-	for obstacle in active_obstacles.duplicate():
+	for index in range(active_obstacles.size() - 1, -1, -1):
+		var obstacle := active_obstacles[index]
 		if (
 			not is_instance_valid(obstacle)
 			or obstacle.is_queued_for_deletion()
 		):
-			active_obstacles.erase(obstacle)
+			active_obstacles.remove_at(index)
 
 # Deterministic key: the layout regenerates in the same order for a given seed
 # and region, so {biome}:{index}:{id} is stable across revisits and safe to use

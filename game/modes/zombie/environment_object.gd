@@ -46,6 +46,7 @@ var damage_overlay: Sprite2D
 var procedural_fallback_active: bool = false
 var render_mode: StringName = &"sprite"
 var _asset_variation_pending: bool = false
+var _asset_contract_applied: bool = false
 var _mesa_mesh_builder: RectilinearRockAreaMeshBuilder
 var _mesa_top_texture: Texture2D
 var _mesa_face_texture: Texture2D
@@ -61,6 +62,57 @@ static var _content_metrics_cache: Dictionary = {}
 
 static func clear_content_metrics_cache() -> void:
 	_content_metrics_cache.clear()
+
+static func resolve_random_asset_variant(
+	next_obstacle_id: StringName,
+	context_id: StringName,
+	world_position_key: Vector2
+) -> StringName:
+	var manifest := EnvironmentAssetManifest.get_shared()
+	var variant_ids := manifest.get_object_random_variant_ids(
+		next_obstacle_id,
+		context_id
+	)
+	if variant_ids.is_empty():
+		return context_id
+	var seed := _asset_seed(next_obstacle_id, world_position_key)
+	return variant_ids[seed % variant_ids.size()]
+
+static func prewarm_asset_variant(
+	next_obstacle_id: StringName,
+	variant_id: StringName,
+	primary_color: Color,
+	accent_color: Color
+) -> void:
+	var manifest := EnvironmentAssetManifest.get_shared()
+	var next_asset_path := manifest.get_object_asset_path(
+		next_obstacle_id,
+		variant_id
+	)
+	if next_asset_path.is_empty() or _content_metrics_cache.has(next_asset_path):
+		return
+	var texture_size := SVG_TEXTURE_LOADER.DEFAULT_SIZE
+	if next_asset_path.ends_with(".svg") and NATIVE_SVG_OBJECT_IDS.has(next_obstacle_id):
+		var native_size := manifest.get_native_visual_size(next_obstacle_id)
+		texture_size = Vector2i(roundi(native_size.x), roundi(native_size.y))
+	var texture := SVG_TEXTURE_LOADER.load_texture(
+		next_asset_path,
+		primary_color,
+		accent_color,
+		texture_size
+	)
+	if texture == null:
+		return
+	var image := texture.get_image()
+	var metrics := {
+		"bounds": Rect2(Vector2.ZERO, texture.get_size()),
+		"profile": PackedFloat32Array(),
+		"step": 1,
+		"root_center": Vector2(texture.get_width() * 0.5, texture.get_height())
+	}
+	if image != null and image.get_width() > 0 and image.get_height() > 0:
+		metrics = _scan_content_metrics(image)
+	_content_metrics_cache[next_asset_path] = metrics
 
 func configure(
 	next_obstacle_id: StringName,
@@ -81,13 +133,16 @@ func configure(
 		next_sort_offset
 	)
 	_apply_asset_contract()
+	_asset_contract_applied = true
 	_queue_asset_variation()
 	queue_redraw()
 
 func _ready() -> void:
 	super._ready()
 	_ensure_visual_nodes()
-	_apply_asset_contract()
+	if not _asset_contract_applied:
+		_apply_asset_contract()
+		_asset_contract_applied = true
 	_queue_asset_variation()
 
 func _process(_delta: float) -> void:
@@ -122,12 +177,22 @@ func select_random_asset_variant(
 	if variant_ids.is_empty():
 		return false
 	asset_variant_context_id = context_id
-	var seed := _asset_variation_seed(world_position_key)
-	asset_variant_id = variant_ids[seed % variant_ids.size()]
+	var next_variant_id := resolve_random_asset_variant(
+		obstacle_id,
+		context_id,
+		world_position_key
+	)
+	var contract_changed := next_variant_id != asset_variant_id
+	asset_variant_id = next_variant_id
 	set_meta("asset_variant_context", asset_variant_context_id)
 	set_meta("asset_variant_id", asset_variant_id)
-	_apply_asset_contract()
+	if contract_changed:
+		_apply_asset_contract()
+		_asset_contract_applied = true
 	_apply_asset_variation()
+	_asset_variation_pending = false
+	if is_inside_tree():
+		set_process(false)
 	return true
 
 func has_asset_sprite() -> bool:
@@ -623,12 +688,18 @@ func _apply_asset_variation() -> void:
 func _asset_variation_seed(
 	world_position_key: Vector2 = global_position
 ) -> int:
+	return _asset_seed(obstacle_id, world_position_key)
+
+static func _asset_seed(
+	next_obstacle_id: StringName,
+	world_position_key: Vector2
+) -> int:
 	var position_key := Vector2i(
 		roundi(world_position_key.x / WorldGridConfig.LOGICAL_TILE_SCALE),
 		roundi(world_position_key.y / WorldGridConfig.LOGICAL_TILE_SCALE)
 	)
 	return abs(
-		String(obstacle_id).hash()
+		String(next_obstacle_id).hash()
 		+ position_key.x * 73856093
 		+ position_key.y * 19349663
 	)
@@ -692,7 +763,7 @@ func _content_skirt_height(
 			return float(index * step)
 	return float((profile.size() - 1) * step)
 
-func _scan_content_metrics(image: Image) -> Dictionary:
+static func _scan_content_metrics(image: Image) -> Dictionary:
 	if image.is_compressed():
 		image = image.duplicate()
 		image.decompress()

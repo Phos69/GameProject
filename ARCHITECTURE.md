@@ -124,7 +124,10 @@ definito in `docs/top_down_cardinal_contract.md`.
 - `RpgCharacterData`: risorsa dati per un profilo classe RPG selezionabile, inclusi nome proprio, descrizione stile, palette e riferimenti asset opzionali per portrait, preview gameplay, sprite, arma e icone.
 - `RpgPlayerComponent`: profilo RPG runtime, statistiche, XP per-run, adrenalina, passive automatiche, companion RPG, super e formule danno del player survival.
 - `RpgSuperResolver`: esecuzione delle super RPG usando `ProjectileSystem`, `HealthSystem` e bersagli damageable condivisi, incluse meteora arcana e trasformazione licantropo.
-- `SaveManager`: persistenza JSON versionata e autosave di progressione, impostazioni e stato mondo/esplorazione.
+- `SaveManager`: persistenza JSON versionata e autosave di progressione,
+  impostazioni e stato mondo/esplorazione. Le richieste automatiche vengono
+  coalesciate per 750 ms; il main thread acquisisce soltanto lo snapshot e un
+  task del pool esegue stringify, write e rotazione atomica dei file.
 - `VisualSettingsManager`: preset, valori visuali, notifica consumer e persistenza.
 - `VideoSettingsManager`: stato finestra, fullscreen, borderless, risoluzione,
   VSync e limite framerate persistenti.
@@ -758,6 +761,10 @@ multi-bioma.
 - XP, denaro e unlock attivano autosave; il cambio modalita aggiorna `last_mode`.
 - Cambi audio e visuali attivano lo stesso autosave differito.
 - Cambi della regione corrente o dello stato esplorazione possono attivare autosave quando l'auto-persistenza e abilitata.
+- Le richieste ravvicinate condividono una deadline di quiete; terminato il
+  debounce, lo snapshot viene copiato sul main thread e il `WorkerThreadPool`
+  serializza e ruota `.tmp/.bak`. `save_game()` resta sincrono per i caller che
+  richiedono conferma immediata e aspetta un eventuale autosave gia avviato.
 - `PersistentWorldState` serializza seed, firma mondo, regione corrente, posizione party e snapshot esplorazione senza salvare il layout completo rigenerabile.
 - `WorldSnapshotCodec` formato v7 salva anche la firma `layout-v4`; snapshot di
   formato precedente o con layout alterato vengono rifiutati invece di
@@ -819,13 +826,36 @@ multi-bioma.
 - `ZombieModeController` invoca `WorldRegionStreamer.start_world()` una sola
   volta e poi `set_current_region()`; il cambio regione non usa `clear()`,
   loading screen, teleport o ricostruzione. Le nuove regioni vengono aggiunte
-  una per volta, con un solo worker tile attivo, e diventano `FULL` soltanto a
-  bake terminato; `ZombieSpawner` continua a leggere esclusivamente le regioni
-  `FULL`. Lo streamer viene pulito solo a `stop_run()`.
-- Il caricamento iniziale pre-riscalda le texture dei biomi presenti, costruisce
-  corrente e vicini e prepara camera piu due anelli prima di dichiarare il
-  mondo ready. Texture, `ArrayMesh`, nodi e scene tree sono creati sul main
-  thread; il worker produce soltanto dati del tile bake.
+  una per volta, con un solo task tile attivo sul `WorkerThreadPool`, e
+  diventano `FULL` soltanto a bake e finalizzazione terminati;
+  `ZombieSpawner` continua a leggere esclusivamente le regioni `FULL`. La
+  finalizzazione main-thread e una state machine: reset, maschera superficie,
+  chunk (uno per frame quando richiesti), cliff, bordi, mesa e cleanup non
+  vengono sommati nello stesso frame. Lo streamer viene pulito solo a
+  `stop_run()`.
+- Ogni entry dello streamer possiede gli `instance_id` di ostacoli, hazard e
+  crate creati per quella regione. L'unload passa `ACTIVE -> UNLOADING`,
+  deregistra esclusivamente tali ID e non usa scansioni del registro globale o
+  ancestry sul SceneTree; un ID gia liberato viene ignorato e una seconda
+  richiesta e un no-op. Le entita che pinnano una regione vengono scansionate
+  una sola volta quando la deadline di grace e maturata.
+- Dopo la deregistrazione, le root della regione sono immediatamente invisibili
+  e `PROCESS_MODE_DISABLED`; `WorldRegionRetirementQueue` le smaltisce dalle
+  foglie verso la root con massimo quattro nodi/0,8 ms, solo nei frame privi di
+  build regione, commit contenuti o commit chunk. `clear()` puo invece drenare
+  subito la coda durante il teardown completo. Le metriche espongono root
+  pendenti, nodi ritirati nel frame e tempo last/max del retirement.
+- La deregistrazione owned costruisce un set di `instance_id` e filtra ciascun
+  registro una sola volta in ordine inverso, verificando anche `region_id` per
+  proteggersi dal riuso di ID. Il costo e lineare nel registro e non cresce come
+  una serie di `Array.erase` per ogni oggetto della regione.
+- Il caricamento iniziale pre-riscalda texture tile, texture oggetto e metriche
+  alpha di tutte le varianti richieste dai biomi presenti, costruisce corrente
+  e vicini e prepara camera piu due anelli prima di dichiarare il mondo ready.
+  La variante oggetto deterministica viene risolta dalla posizione world-space
+  prima della factory, cosi texture e collider non vengono sostituiti dopo
+  l'attach. Texture, `ArrayMesh`, nodi e scene tree restano main-thread; il task
+  worker produce soltanto dati/cache del tile bake.
 
 ## Contratto progressione e run
 
@@ -951,7 +981,10 @@ multi-bioma.
   wedge scuri sovrapposti.
   In Zombie Survival il rettangolo camera e visibile, +1 e caricato, +2 viene
   prefabbricato e i residenti entro +3 vengono conservati; oltre +3 il rilascio
-  avviene dopo 2 secondi. Lo scheduler ammette al massimo due chunk e non avvia
+  avviene dopo 2 secondi. Le deadline mature vengono drenate globalmente un
+  chunk per process frame entro 0,5 ms; ulteriori refresh nello stesso frame
+  condividono il medesimo contatore e non possono produrre un eviction burst.
+  Lo scheduler ammette al massimo due chunk e non avvia
   un secondo job dopo 2 ms; un singolo bake atomico puo superare tale budget ed
   e quindi esposto dalle metriche. Il controller legge e riprioritizza prima la
   camera, poi esegue il commit: visible, regione corrente e direzione di
@@ -959,7 +992,14 @@ multi-bioma.
   dell'intera regione alimenta una sola maschera RGBA8; ogni chunk ne campiona
   il sottorettangolo pertinente nel proprio `TerrainSurfaceCanvas`, senza mesh
   separate per ciascun materiale. `get_streaming_stats()` espone
-  `visible_missing_chunks` e tempi last/max/average dei commit. Infinite Arena
+  `visible_missing_chunks` e tempi last/max/average dei commit. Lo stesso
+  contratto limita a due anche i commit di contenuto entro 1,5 ms; le metriche
+  includono last/max contenuti, unload, fase tile corrente e massimo per fase
+  geometrica, oltre a count/tempo last e massimo delle eviction chunk. I canvas
+  terrain condividono i quad `ArrayMesh` con rettangolo
+  identico e riciclano `ShaderMaterial` ripuliti dalle texture del precedente
+  chunk, conservando uniform per-chunk senza riallocare continuamente i RID.
+  Infinite Arena
   riusa lo stesso tipo di chunk, ma prepara l'intera regione all'avvio senza
   `WorldRuntime`.
   Nel bioma forestale le texture runtime `forest_grass`, `forest_path` e
@@ -1130,7 +1170,9 @@ multi-bioma.
 - In streaming multi-regione, `ObstacleSystem` registra e rimuove
   simmetricamente gli ostacoli creati da `WorldRegionStreamer`; le query
   `is_position_blocked` leggono tutti i nodi attivi nei gruppi
-  `environment_obstacles`/`spawn_blockers`, inclusi i vicini.
+  `environment_obstacles`/`spawn_blockers`, inclusi i vicini. I registri di
+  ostacoli, hazard e crate eliminano le entry invalide per indice, senza
+  reinserire un oggetto freed in una `TypedArray` durante `erase`.
 - `EnvironmentTextureLoader` evita che il runtime dipenda dall'import editor:
   rasterizza direttamente il contenuto SVG quando mantiene corner trasparenti,
   accetta la texture SVG importata solo se non introduce un canvas opaco,

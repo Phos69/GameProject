@@ -22,6 +22,7 @@ const LEGACY_SAVE_MIGRATION_MARKER: String = ".project_rename_save_migration_v1"
 @export var autosave_progression: bool = true
 @export var autosave_mode_selection: bool = true
 @export var auto_persist_in_headless: bool = false
+@export_range(0.0, 5.0, 0.05) var autosave_debounce_seconds: float = 0.75
 
 var progression_manager: ProgressionManager
 var audio_manager: AudioManager
@@ -33,6 +34,11 @@ var world_runtime: WorldRuntime
 var last_mode: StringName = GameConstants.MODE_INFINITE_ARENA
 var save_pending: bool = false
 var is_loading: bool = false
+var _autosave_due_msec: int = 0
+var _autosave_task_id: int = -1
+var _autosave_task_path: String = ""
+var _autosave_task_result: Dictionary = {}
+var _autosave_result_mutex := Mutex.new()
 
 func _enter_tree() -> void:
 	add_to_group("save_manager")
@@ -69,6 +75,19 @@ func create_empty_save() -> Dictionary:
 	}
 
 func save_game() -> bool:
+	# I salvataggi espliciti mantengono la semantica sincrona e non corrono in
+	# parallelo con un autosave gia' avviato sullo stesso file.
+	_complete_autosave_task(true)
+	save_pending = false
+	var target_path := save_path
+	var result := _write_save_payload(
+		_collect_save_data(),
+		ProjectSettings.globalize_path(target_path)
+	)
+	return _emit_save_result(target_path, result)
+
+
+func _collect_save_data() -> Dictionary:
 	_resolve_progression_manager()
 	var data := create_empty_save()
 	if progression_manager != null:
@@ -118,55 +137,59 @@ func save_game() -> bool:
 		if world_runtime != null
 		else PersistentWorldState.create_empty_save_data()
 	)
+	return data
 
-	var temporary_path := save_path + ".tmp"
-	var file := FileAccess.open(temporary_path, FileAccess.WRITE)
+
+func _write_save_payload(data: Dictionary, absolute_save_path: String) -> Dictionary:
+	var absolute_temporary_path := absolute_save_path + ".tmp"
+	var absolute_backup_path := absolute_save_path + ".bak"
+	var file := FileAccess.open(absolute_temporary_path, FileAccess.WRITE)
 	if file == null:
-		save_failed.emit(save_path, "cannot open temporary save file")
-		return false
+		return {"ok": false, "reason": "cannot open temporary save file"}
 	file.store_string(JSON.stringify(data, "\t"))
 	# Senza questo check un errore di scrittura (es. disco pieno) promuoverebbe
 	# un .tmp troncato a save valido, cancellando anche il backup a fine flusso.
 	var write_error := file.get_error()
 	file.close()
 	if write_error != OK:
-		DirAccess.remove_absolute(
-			ProjectSettings.globalize_path(temporary_path)
-		)
-		save_failed.emit(save_path, error_string(write_error))
-		return false
+		DirAccess.remove_absolute(absolute_temporary_path)
+		return {"ok": false, "reason": error_string(write_error)}
 
-	var backup_path := save_path + ".bak"
-	var absolute_save_path := ProjectSettings.globalize_path(save_path)
-	var absolute_temporary_path := ProjectSettings.globalize_path(temporary_path)
-	var absolute_backup_path := ProjectSettings.globalize_path(backup_path)
-	if FileAccess.file_exists(backup_path):
+	if FileAccess.file_exists(absolute_backup_path):
 		DirAccess.remove_absolute(absolute_backup_path)
-	if FileAccess.file_exists(save_path):
+	if FileAccess.file_exists(absolute_save_path):
 		var backup_error := DirAccess.rename_absolute(
 			absolute_save_path,
 			absolute_backup_path
 		)
 		if backup_error != OK:
 			DirAccess.remove_absolute(absolute_temporary_path)
-			save_failed.emit(save_path, error_string(backup_error))
-			return false
+			return {"ok": false, "reason": error_string(backup_error)}
 	var rename_error := DirAccess.rename_absolute(
 		absolute_temporary_path,
 		absolute_save_path
 	)
 	if rename_error != OK:
-		if FileAccess.file_exists(backup_path):
+		if FileAccess.file_exists(absolute_backup_path):
 			DirAccess.rename_absolute(absolute_backup_path, absolute_save_path)
 		DirAccess.remove_absolute(absolute_temporary_path)
-		save_failed.emit(save_path, error_string(rename_error))
-		return false
-	if FileAccess.file_exists(backup_path):
+		return {"ok": false, "reason": error_string(rename_error)}
+	if FileAccess.file_exists(absolute_backup_path):
 		DirAccess.remove_absolute(absolute_backup_path)
-	save_completed.emit(save_path)
-	return true
+	return {"ok": true, "reason": ""}
+
+
+func _emit_save_result(target_path: String, result: Dictionary) -> bool:
+	var succeeded := bool(result.get("ok", false))
+	if succeeded:
+		save_completed.emit(target_path)
+	else:
+		save_failed.emit(target_path, String(result.get("reason", "unknown error")))
+	return succeeded
 
 func load_game() -> bool:
+	_complete_autosave_task(true)
+	save_pending = false
 	var source_path := save_path
 	var backup_path := save_path + ".bak"
 	if not FileAccess.file_exists(source_path) and FileAccess.file_exists(backup_path):
@@ -232,10 +255,30 @@ func load_game() -> bool:
 	return true
 
 func request_save() -> void:
-	if is_loading or save_pending:
+	if is_loading:
 		return
 	save_pending = true
-	call_deferred("_flush_pending_save")
+	# Ogni nuova mutazione sposta la deadline: gli eventi exploration_changed e
+	# region_runtime_changed della stessa transizione producono un solo snapshot.
+	_autosave_due_msec = Time.get_ticks_msec() + int(
+		maxf(autosave_debounce_seconds, 0.0) * 1000.0
+	)
+
+
+func _process(_delta: float) -> void:
+	_complete_autosave_task(false)
+	if (
+		save_pending
+		and _autosave_task_id < 0
+		and Time.get_ticks_msec() >= _autosave_due_msec
+	):
+		_start_async_autosave()
+
+
+func _exit_tree() -> void:
+	# Se il nodo viene smontato mentre il worker sta ruotando i file, aspetta la
+	# sola operazione gia' iniziata per non lasciare un .tmp a meta'.
+	_complete_autosave_task(true)
 
 func set_last_mode(mode_id: StringName) -> void:
 	var sanitized_mode := _sanitize_mode(mode_id)
@@ -501,8 +544,56 @@ func _on_region_runtime_changed(_region_id: StringName) -> void:
 		request_save()
 
 func _flush_pending_save() -> void:
+	if not save_pending:
+		return
+	_autosave_due_msec = Time.get_ticks_msec()
+	if _autosave_task_id < 0:
+		_start_async_autosave()
+
+
+func _start_async_autosave() -> void:
+	if not save_pending or _autosave_task_id >= 0:
+		return
 	save_pending = false
-	save_game()
+	_autosave_task_path = save_path
+	var data := _collect_save_data().duplicate(true)
+	var absolute_path := ProjectSettings.globalize_path(_autosave_task_path)
+	_autosave_result_mutex.lock()
+	_autosave_task_result = {}
+	_autosave_result_mutex.unlock()
+	_autosave_task_id = WorkerThreadPool.add_task(
+		_run_autosave_task.bind(data, absolute_path),
+		false,
+		"Autosave"
+	)
+
+
+func _run_autosave_task(data: Dictionary, absolute_path: String) -> void:
+	var result := _write_save_payload(data, absolute_path)
+	_autosave_result_mutex.lock()
+	_autosave_task_result = result
+	_autosave_result_mutex.unlock()
+
+
+func _complete_autosave_task(wait_for_completion: bool) -> bool:
+	if _autosave_task_id < 0:
+		return true
+	if (
+		not wait_for_completion
+		and not WorkerThreadPool.is_task_completed(_autosave_task_id)
+	):
+		return false
+	WorkerThreadPool.wait_for_task_completion(_autosave_task_id)
+	_autosave_task_id = -1
+	var target_path := _autosave_task_path
+	_autosave_task_path = ""
+	_autosave_result_mutex.lock()
+	var result := _autosave_task_result.duplicate(true)
+	_autosave_task_result = {}
+	_autosave_result_mutex.unlock()
+	if result.is_empty():
+		result = {"ok": false, "reason": "autosave worker returned no result"}
+	return _emit_save_result(target_path, result)
 
 func _auto_persistence_enabled() -> bool:
 	return DisplayServer.get_name() != "headless" or auto_persist_in_headless
