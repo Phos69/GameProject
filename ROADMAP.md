@@ -221,6 +221,11 @@ anche le milestone completate per evitare sovrapposizioni.
 - Il pass `WORLD-VIS-FIX` e completato: raised cliff e fall zone hanno semantica
   distinta, placement e contatti ground/void sono coperti da guardrail e il
   profilo movimento/zoom non perde chunk visibili. Soak e tuning restano aperti.
+  Il follow-up del 2026-07-21 elimina la starvation del retirement durante
+  movimento continuo, aggiunge logging strutturato persistente e introduce uno
+  soak reale di otto attraversamenti (il soak storico disabilitava lo streaming).
+  Un secondo fix mantiene pendente un seam gia validato durante readiness e
+  cooldown, impedendo la desincronizzazione tra posizione fisica e bioma corrente.
 - Le evidenze visuali dei mini-eventi bioma e dei set generated biome art
   rientrano qui; `BIO-001` non va riaperto salvo bug o tuning concreto.
 

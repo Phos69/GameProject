@@ -17,6 +17,13 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 - Aggiunta la residency near-world: selezione geometrica del varco piu vicino,
   hold esplicito per teleport/test e metriche per regioni richieste, build main,
   firma/maschera worker e tempi delle singole fasi geometriche.
+- Aggiunta la scatola nera `RuntimeDiagnostics`: snapshot JSONL flushati ogni due
+  secondi con frame, memoria host/GPU, ObjectDB e telemetria streaming; la
+  sessione precedente viene preservata al boot. Abilitati esplicitamente anche
+  file logging Godot, rotazione e flush stdout. Il nuovo soak
+  `region_streaming_churn_test.gd` attraversa otto volte un seam con streaming
+  reale, forza la party oltre la banda prima della readiness e verifica commit,
+  rimbalzo sul seam, drain e crescita nodi (82 assert, PASS).
 
 - Importate 24 varianti `forest_tree` PNG trasparenti: quattro coppie
   adulto/giovane dedicate rispettivamente a Pianura, Pianura Ardente e Tundra
@@ -44,6 +51,12 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Fixed
 
+- Rimosso l'avviso acustico automatico `biome_entered`: il cambio bioma
+  mantiene l'annuncio HUD ma non registra ne riproduce piu una cue audio.
+- Corretto l'inceppamento dopo attraversamenti ripetuti osservato nella
+  telemetria reale: un rimbalzo di un frame sul lato sorgente, ancora dentro la
+  banda fisica del varco, non cancella piu il crossing pendente. Il rientro
+  netto nella regione sorgente continua invece ad annullarlo.
 - Rimossa la causa architetturale residua del freeze al seam: i vicini di grafo
   in `WorldRuntime.active_regions` restano dati caldi ma non vengono piu
   istanziati tutti come biomi `FULL`. Lo streamer mantiene la regione corrente
@@ -52,9 +65,17 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
   pin e retirement gestiscono il rilascio della regione precedente.
 - Firma SHA del layout e raster CPU terrain `600x600` sono stati spostati nel
   task tile del `WorkerThreadPool`; rim/facce cliff e outline/profili mesa sono
-  finalizzati in frame separati. Il cue `biome_entered` usa un PCM generato e
-  una voce preallocata al bootstrap, evitando 4410 campioni sintetizzati sul
-  main thread durante la transizione.
+  finalizzati in frame separati.
+- Eliminata la starvation delle regioni ritirate durante movimento continuo:
+  anche i frame con build/commit liberano almeno una foglia con budget ridotto;
+  un backlog di tre root riceve il budget normale. La telemetria espone eta,
+  high-water mark e totali enqueue/completamento/nodi ritirati.
+- Corretto il mondo vuoto dopo un attraversamento rapido: `RegionSeamSystem`
+  conserva ora un crossing valido mentre il target carica o il cooldown e
+  attivo, quindi completa il cambio autoritativo anche se la party ha gia
+  lasciato la fascia del varco. La diagnostica confronta regione fisica,
+  `BiomeManager`, `WorldRuntime` e streamer; le soglie backlog/residency non
+  segnalano piu come errore i transienti leciti di grace + prefetch.
 
 - Eliminato il crash `signal 11` di `WorldRegionStreamer._unstream_region`:
   ostacoli, hazard e crate sono ora posseduti dalla regione tramite

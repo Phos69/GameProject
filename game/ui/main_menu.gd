@@ -691,6 +691,9 @@ func _is_gameplay_mode(mode_id: StringName) -> bool:
 
 func _quit_game() -> void:
 	_play_confirm()
+	var diagnostics := get_tree().get_first_node_in_group("runtime_diagnostics")
+	if diagnostics != null and diagnostics.has_method("mark_clean_shutdown"):
+		diagnostics.call("mark_clean_shutdown", "main_menu_quit")
 	get_tree().quit()
 
 func _on_game_mode_changed(mode_id: StringName) -> void:

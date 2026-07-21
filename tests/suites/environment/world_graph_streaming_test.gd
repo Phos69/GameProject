@@ -217,6 +217,81 @@ func test_near_world_prefetch_selects_only_the_approached_passage() -> void:
 	)
 	seam_system.free()
 
+func test_pending_crossing_survives_after_party_leaves_passage_band() -> void:
+	var source_id := _graph.start_region_id
+	assert_true(_manager.set_current_region(source_id), "source region is authoritative")
+	var source := _graph.get_region(source_id)
+	assert_not_null(source, "pending crossing source exists")
+	if source == null or source.connection_edges.is_empty():
+		return
+	var connection := source.connection_edges.front() as WorldRegionConnection
+	var target := _graph.get_region(connection.to_region_id)
+	assert_not_null(target, "pending crossing target exists")
+	if connection == null or target == null:
+		return
+	var seam_system := RegionSeamSystem.new()
+	add_child(seam_system)
+	seam_system.biome_manager = _manager
+	seam_system.graph = _graph
+	seam_system.anchor_region_id = _graph.start_region_id
+	seam_system.is_active = true
+	seam_system.cooldown_timer = 0.45
+	var crossing_position := seam_system.get_crossing_position_for_connection(
+		connection,
+		_graph.start_region_id
+	)
+	assert_false(
+		seam_system.try_update_region_for_position(crossing_position),
+		"cooldown defers the authoritative transition"
+	)
+	assert_eq(
+		String(seam_system.get_transition_diagnostics().get("pending_target_region_id", "")),
+		String(target.region_id),
+		"the valid passage is latched while transition is deferred"
+	)
+	# Riproduce il rimbalzo osservato nella telemetria reale: per un frame la
+	# posizione geometrica torna nella sorgente, ma resta ancora dentro il varco.
+	var source_seam_tile := (
+		connection.world_rect.position + connection.world_rect.size / 2
+	)
+	var source_seam_position := seam_system.logical_tile_to_world_position(
+		source_seam_tile,
+		_graph.start_region_id
+	)
+	assert_eq(
+		seam_system.get_region_id_for_world_position(source_seam_position),
+		source_id,
+		"the seam jitter probe is geometrically inside the source"
+	)
+	assert_false(
+		seam_system.try_update_region_for_position(source_seam_position),
+		"a one-frame source-side seam jitter does not commit"
+	)
+	assert_eq(
+		String(seam_system.get_transition_diagnostics().get("pending_target_region_id", "")),
+		String(target.region_id),
+		"source-side seam jitter keeps the valid crossing latched"
+	)
+	# Il player e ormai nel centro del target, molto oltre il margine fisico del
+	# varco: prima del fix get_open_connection_for_world_position() falliva qui e
+	# il mondo restava per sempre autoritativo sulla regione precedente.
+	var deep_target_position := seam_system.logical_tile_to_world_position(
+		target.world_origin + target.size_tiles / 2,
+		_graph.start_region_id
+	)
+	seam_system.cooldown_timer = 0.0
+	assert_true(
+		seam_system.try_update_region_for_position(deep_target_position),
+		"latched crossing commits after leaving the passage band"
+	)
+	assert_eq(
+		_manager.get_current_region_id(),
+		target.region_id,
+		"biome manager follows the region physically occupied by the party"
+	)
+	seam_system.free()
+	_manager.set_current_region(source_id)
+
 func test_crate_persistence_and_save_round_trip() -> void:
 	var runtime := _make_runtime()
 	var region_a := _graph.start_region_id

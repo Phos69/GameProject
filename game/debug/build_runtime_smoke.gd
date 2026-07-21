@@ -225,6 +225,9 @@ func _expect(condition: bool, message: String) -> void:
 	push_error("FAIL: " + message)
 
 func _finish() -> void:
+	var diagnostics := get_tree().get_first_node_in_group("runtime_diagnostics")
+	if diagnostics != null and diagnostics.has_method("mark_clean_shutdown"):
+		diagnostics.call("mark_clean_shutdown", "build_runtime_smoke")
 	if failures.is_empty():
 		print("BUILD_RUNTIME_SMOKE: PASS")
 		get_tree().quit(0)

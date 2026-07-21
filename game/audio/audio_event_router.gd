@@ -87,15 +87,6 @@ func _connect_sources() -> void:
 			hazard_system.player_environment_damaged.connect(
 				damage_callback
 			)
-	var biome_manager := get_tree().get_first_node_in_group(
-		"biome_manager"
-	) as BiomeManager
-	if biome_manager != null:
-		var biome_callback := Callable(self, "_on_biome_changed")
-		if not biome_manager.current_biome_changed.is_connected(
-			biome_callback
-		):
-			biome_manager.current_biome_changed.connect(biome_callback)
 	var game_mode_manager := get_tree().get_first_node_in_group(
 		"game_mode_manager"
 	) as GameModeManager
@@ -161,16 +152,6 @@ func _on_environment_damage(
 	audio_manager.play_cue(
 		&"environment_damage",
 		hazard_id,
-		&"Environment"
-	)
-
-func _on_biome_changed(
-	biome_id: StringName,
-	_display_name: String
-) -> void:
-	audio_manager.play_cue(
-		&"biome_entered",
-		biome_id,
 		&"Environment"
 	)
 

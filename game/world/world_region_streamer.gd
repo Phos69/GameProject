@@ -37,6 +37,13 @@ const WORLD_REGION_RETIREMENT_QUEUE_SCRIPT = preload(
 @export_range(1, 8, 1) var max_content_commits_per_frame: int = 2
 @export_range(0.1, 4.0, 0.1) var retirement_budget_msec: float = 0.8
 @export_range(1, 16, 1) var max_retired_nodes_per_frame: int = 4
+# Il retirement non puo' dipendere dall'esistenza di frame completamente
+# inattivi: durante un giro continuo build/commit possono altrimenti affamare
+# la coda e trattenere intere regioni invisibili. Nei frame occupati avanza con
+# un budget minimo; oltre la soglia backlog torna al budget normale.
+@export_range(0.05, 1.0, 0.05) var busy_retirement_budget_msec: float = 0.20
+@export_range(1, 4, 1) var busy_max_retired_nodes_per_frame: int = 1
+@export_range(1, 8, 1) var retirement_backlog_force_roots: int = 3
 
 var graph: WorldGraph
 var biome_manager: BiomeManager
@@ -77,6 +84,7 @@ var _pin_collection_count: int = 0
 var _residency_refresh_timer: float = 0.0
 var _nearby_prefetch_region_ids: Array[StringName] = []
 var _explicit_prefetch_deadlines: Dictionary = {}
+var _last_retirement_foreground_busy: bool = false
 
 func _ready() -> void:
 	add_to_group("world_region_streamer")
@@ -110,11 +118,26 @@ func _process(delta: float) -> void:
 	_configure_chunk_visibility()
 	_chunk_visibility.process(_entries, get_viewport())
 	var chunk_stats := _chunk_visibility.get_streaming_stats()
-	if (
+	_last_retirement_foreground_busy = not (
 		_last_region_build_count == 0
 		and _last_content_commit_count == 0
 		and int(chunk_stats.get("last_frame_chunk_commits", 0)) == 0
-	):
+	)
+	_process_retirement(_last_retirement_foreground_busy)
+
+func _process_retirement(foreground_busy: bool) -> void:
+	_ensure_retirement_queue()
+	var retirement_stats := _retirement_queue.get_stats()
+	var backlog_requires_priority := (
+		int(retirement_stats.get("pending_retirement_roots", 0))
+		>= retirement_backlog_force_roots
+	)
+	if foreground_busy and not backlog_requires_priority:
+		_retirement_queue.process(
+			busy_retirement_budget_msec,
+			busy_max_retired_nodes_per_frame
+		)
+	else:
 		_retirement_queue.process(
 			retirement_budget_msec,
 			max_retired_nodes_per_frame
@@ -345,7 +368,8 @@ func get_streaming_stats() -> Dictionary:
 		"near_world_streaming_enabled": near_world_streaming_enabled,
 		"nearby_prefetch_regions": _nearby_prefetch_region_ids.size(),
 		"nearby_prefetch_region_ids": _nearby_prefetch_region_ids.duplicate(),
-		"explicit_prefetch_holds": _explicit_prefetch_deadlines.size()
+		"explicit_prefetch_holds": _explicit_prefetch_deadlines.size(),
+		"retirement_foreground_busy": _last_retirement_foreground_busy
 	}
 	_ensure_retirement_queue()
 	stats.merge(_retirement_queue.get_stats(), true)
@@ -388,6 +412,7 @@ func clear() -> void:
 	_residency_refresh_timer = 0.0
 	_nearby_prefetch_region_ids.clear()
 	_explicit_prefetch_deadlines.clear()
+	_last_retirement_foreground_busy = false
 	_is_streaming = false
 
 func get_streamed_region_ids() -> Array[StringName]:

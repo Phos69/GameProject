@@ -7,9 +7,14 @@ class_name WorldRegionRetirementQueue
 ## si procede dalle foglie verso l'alto con un budget per frame.
 
 var _root_instance_ids: Array[int] = []
+var _enqueued_at_msec_by_id: Dictionary = {}
 var _last_retired_node_count: int = 0
 var _last_process_msec: float = 0.0
 var _max_process_msec: float = 0.0
+var _total_enqueued_roots: int = 0
+var _total_completed_roots: int = 0
+var _total_retired_nodes: int = 0
+var _max_pending_roots: int = 0
 
 
 func begin_frame() -> void:
@@ -27,6 +32,9 @@ func enqueue(root: Node) -> void:
 	if root is CanvasItem:
 		(root as CanvasItem).visible = false
 	_root_instance_ids.append(instance_id)
+	_enqueued_at_msec_by_id[instance_id] = Time.get_ticks_msec()
+	_total_enqueued_roots += 1
+	_max_pending_roots = maxi(_max_pending_roots, _root_instance_ids.size())
 
 
 func process(budget_msec: float, max_nodes: int) -> void:
@@ -48,15 +56,16 @@ func process(budget_msec: float, max_nodes: int) -> void:
 			break
 		var root := instance_from_id(_root_instance_ids[0]) as Node
 		if root == null or not is_instance_valid(root):
-			_root_instance_ids.remove_at(0)
+			_complete_front_root()
 			continue
 		if root.is_queued_for_deletion():
-			_root_instance_ids.remove_at(0)
+			_complete_front_root()
 			continue
 		if _queue_one_leaf(root):
 			_last_retired_node_count += 1
+			_total_retired_nodes += 1
 		if root.is_queued_for_deletion():
-			_root_instance_ids.remove_at(0)
+			_complete_front_root()
 	_last_process_msec = float(Time.get_ticks_usec() - started_usec) / 1000.0
 	_max_process_msec = maxf(_max_process_msec, _last_process_msec)
 
@@ -71,17 +80,38 @@ func flush() -> void:
 		):
 			root.queue_free()
 	_root_instance_ids.clear()
+	_enqueued_at_msec_by_id.clear()
 	_last_retired_node_count = 0
 	_last_process_msec = 0.0
 
 
 func get_stats() -> Dictionary:
+	var oldest_retirement_msec := 0
+	var now := Time.get_ticks_msec()
+	for instance_id in _root_instance_ids:
+		oldest_retirement_msec = maxi(
+			oldest_retirement_msec,
+			now - int(_enqueued_at_msec_by_id.get(instance_id, now))
+		)
 	return {
 		"pending_retirement_roots": _root_instance_ids.size(),
+		"oldest_retirement_msec": oldest_retirement_msec,
 		"last_frame_retired_nodes": _last_retired_node_count,
 		"last_frame_retirement_msec": _last_process_msec,
-		"max_retirement_msec": _max_process_msec
+		"max_retirement_msec": _max_process_msec,
+		"total_enqueued_retirement_roots": _total_enqueued_roots,
+		"total_completed_retirement_roots": _total_completed_roots,
+		"total_retired_nodes": _total_retired_nodes,
+		"max_pending_retirement_roots": _max_pending_roots
 	}
+
+
+func _complete_front_root() -> void:
+	if _root_instance_ids.is_empty():
+		return
+	var instance_id: int = _root_instance_ids.pop_front()
+	_enqueued_at_msec_by_id.erase(instance_id)
+	_total_completed_roots += 1
 
 
 func _queue_one_leaf(node: Node) -> bool:

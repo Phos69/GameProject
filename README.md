@@ -172,6 +172,18 @@ tools/run_visual_qa.sh            # vedi docs/testing/visual_qa.md
 godot --headless --path . --script res://tools/generate_top_down_environment_assets.gd -- --check
 ```
 
+Diagnostica crash/freeze:
+
+- Godot salva output, warning, errori script e crash handler in
+  `user://logs/godot.log` (10 file in rotazione su desktop).
+- La black box runtime salva ogni due secondi memoria, frame, nodi e code
+  streaming in `user://diagnostics/runtime_latest.jsonl`; al riavvio conserva
+  la sessione precedente in `runtime_previous.jsonl` e segnala se non conteneva
+  una chiusura pulita.
+- Su Windows `user://` corrisponde normalmente a
+  `%APPDATA%\Godot\app_userdata\Local Action Sandbox`. Per abilitare la stessa
+  diagnostica in headless usare `-- --runtime-diagnostics`.
+
 > I runner legacy `tools/run_tests.sh` / `.ps1` ("un processo per file") sono
 > deprecati e ora inoltrano a GUT. I Visual QA vivono in `tests/visual_qa/`,
 > i soak/stress in `tests/suites/soak/`.
@@ -315,12 +327,14 @@ Completato:
 - megamappa persistente seed-based con grafo connesso, regioni default `3x3` da `75x75`, passaggi fisici aperti, stato esplorazione salvabile e mappa consultabile;
 - streaming near-world senza caricamenti al confine: resta `FULL` la regione
   corrente e viene preparato soltanto il target del varco entro 30 tile, non
-  tutti i vicini del grafo; il seam attende la readiness senza bloccare. Il
+  tutti i vicini del grafo; il seam attende la readiness senza bloccare e
+  conserva il crossing se il player lascia la fascia prima del commit. Il
   terreno usa chunk visuali `10x10` attorno alla camera con prefetch, retention
   e isteresi; l'unload usa ownership e smaltimento foglia-per-foglia a budget,
   firma/cache/mask CPU lavorano nel worker e le fasi geometriche main-thread
   sono separate e misurabili. Anche le eviction scadute sono limitate a un solo
-  chunk per frame;
+  chunk per frame; il retirement avanza con un budget minimo anche durante
+  streaming continuo, evitando accumulo di regioni invisibili;
 - `Zombie Survival` avviata dal menu dedicato o da `F7` usa la megamappa `3x3`;
   l'arena compatta `1x1` resta disponibile solo passando
   `single_biome_arena = true` nel context di debug/test, mentre il profilo

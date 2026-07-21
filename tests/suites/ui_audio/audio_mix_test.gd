@@ -96,15 +96,18 @@ func test_audio_mix_and_cues() -> void:
 		_has_optional_event(&"optional_test"),
 		"optional licensed streams replace fallback when present"
 	)
-	audio_manager.play_cue(&"biome_entered")
-	assert_true(
-		_has_optional_event(&"biome_entered"),
-		"the seam cue uses its boot-time PCM instead of main-thread synthesis"
+	assert_false(
+		audio_manager.cue_registry.has(&"biome_entered"),
+		"biome transitions do not register an audible notification cue"
 	)
 
 	local_multiplayer.activate_slot(2)
 	game_mode_manager.set_mode(GameConstants.MODE_SURVIVAL)
 	await wait_physics_frames(2)
+	assert_false(
+		_has_cue_event(&"biome_entered"),
+		"starting or changing biome does not emit an audible notification"
+	)
 	var player_one := player_manager.players.get(1) as PlayerController
 	var player_two := player_manager.players.get(2) as PlayerController
 	if player_one != null and player_two != null:

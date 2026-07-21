@@ -50,7 +50,10 @@ Regole per nuove voci:
   finalizzazione geometrica a fasi, ownership per regione, retirement a budget,
   autosave asincrono, pooling terrain, eviction chunk a unita singola e
   deregistrazione batch lineare, firma/maschera CPU su worker e cue seam
-  pre-generato. Regressioni streaming 8/8, world graph 7/7, audio 1/1,
+  pre-generato. Il retirement ora avanza anche sotto carico continuo e una
+  black box persistente registra memoria/frame/ObjectDB/code; il nuovo soak con
+  streaming reale copre otto attraversamenti oltre la banda del varco e drain
+  completo. Regressioni streaming 9/9, world graph 8/8, audio 1/1,
   integrazione 11/11 e tile layout 10/10 PASS; resta nel
   residuo manuale la misura p95/max renderizzata sul percorso ripetuto
   attraverso i seam.

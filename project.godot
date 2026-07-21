@@ -13,6 +13,14 @@ config_version=5
 config/name="Local Action Sandbox"
 run/main_scene="res://game/main/main.tscn"
 config/features=PackedStringArray("4.6")
+run/flush_stdout_on_print=true
+
+[debug]
+
+file_logging/enable_file_logging=true
+file_logging/enable_file_logging.pc=true
+file_logging/log_path="user://logs/godot.log"
+file_logging/max_log_files=10
 
 [display]
 

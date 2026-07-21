@@ -50,7 +50,6 @@ func _ready() -> void:
 	for cue in cue_overrides:
 		if cue != null and not cue.cue_id.is_empty():
 			cue_registry[cue.cue_id] = cue
-	_prewarm_latency_critical_cues()
 	voice_pool = AudioVoicePool.new()
 	voice_pool.name = "OptionalVoicePool"
 	voice_pool.max_voices = max_optional_voices
@@ -363,24 +362,10 @@ func _register_default_cues() -> void:
 		_make_cue(&"player_revived", &"UI", 620.0, 0.18, 0.11, 92),
 		_make_cue(&"player_fell", &"Environment", 92.0, 0.22, 0.13, 90),
 		_make_cue(&"environment_damage", &"Environment", 170.0, 0.12, 0.10, 62),
-		_make_cue(&"biome_entered", &"Environment", 480.0, 0.20, 0.10, 76),
 		_make_cue(&"run_finished", &"UI", 260.0, 0.24, 0.12, 96)
 	]
 	for cue in cues:
 		cue_registry[cue.cue_id] = cue
-
-## Il cue eseguito esattamente sul seam non deve sintetizzare migliaia di frame
-## nel main thread. Il piccolo PCM viene creato una volta durante il bootstrap e
-## riprodotto dal voice pool gia preallocato; eventuali asset override prevalgono.
-func _prewarm_latency_critical_cues() -> void:
-	var cue := cue_registry.get(&"biome_entered") as AudioCueData
-	if cue == null or cue.optional_stream != null:
-		return
-	cue.optional_stream = _make_tone_stream(
-		cue.fallback_frequency,
-		cue.fallback_duration,
-		cue.fallback_amplitude
-	)
 
 func _make_tone_stream(
 	frequency: float,

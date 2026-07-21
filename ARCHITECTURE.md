@@ -831,7 +831,12 @@ multi-bioma.
   loading screen, teleport o ricostruzione. Le nuove regioni vengono aggiunte
   una per volta, con un solo task tile attivo sul `WorkerThreadPool`, e
   diventano `FULL` soltanto a bake e finalizzazione terminati; un seam fisico
-  non cambia il bioma finche il target richiesto non e `FULL`;
+  non cambia il bioma finche il target richiesto non e `FULL`. Se la party
+  attraversa la fascia del varco durante build o cooldown, `RegionSeamSystem`
+  conserva source, target e connessione come crossing pendente: il commit resta
+  valido anche quando la party e gia piu dentro il target. Un rimbalzo sul lato
+  sorgente ancora dentro la banda del varco mantiene il pending; soltanto un
+  rientro netto nella source o l'ingresso in una terza regione lo annulla;
   `ZombieSpawner` continua a leggere esclusivamente le regioni `FULL`. La
   firma layout, cache tile e raster CPU della maschera sono calcolati nel
   worker; sul main restano upload `ImageTexture`, scene tree e `ArrayMesh`. La
@@ -846,10 +851,12 @@ multi-bioma.
   una sola volta quando la deadline di grace e maturata.
 - Dopo la deregistrazione, le root della regione sono immediatamente invisibili
   e `PROCESS_MODE_DISABLED`; `WorldRegionRetirementQueue` le smaltisce dalle
-  foglie verso la root con massimo quattro nodi/0,8 ms, solo nei frame privi di
-  build regione, commit contenuti o commit chunk. `clear()` puo invece drenare
-  subito la coda durante il teardown completo. Le metriche espongono root
-  pendenti, nodi ritirati nel frame e tempo last/max del retirement.
+  foglie verso la root con massimo quattro nodi/0,8 ms. Anche un frame con
+  build o commit avanza almeno un nodo con budget 0,2 ms: il movimento continuo
+  non puo quindi affamare la coda; da tre root pendenti il backlog torna al
+  budget normale. `clear()` puo invece drenare subito la coda durante il
+  teardown completo. Le metriche espongono root pendenti, eta della piu vecchia,
+  high-water mark, totali enqueue/completati/nodi e tempo last/max.
 - La deregistrazione owned costruisce un set di `instance_id` e filtra ciascun
   registro una sola volta in ordine inverso, verificando anche `region_id` per
   proteggersi dal riuso di ID. Il costo e lineare nel registro e non cresce come
@@ -863,6 +870,14 @@ multi-bioma.
   prima della factory, cosi texture e collider non vengono sostituiti dopo
   l'attach. Texture, `ArrayMesh`, nodi e scene tree restano main-thread; il task
   worker produce soltanto dati/cache del tile bake.
+- `RuntimeDiagnostics`, creato dalla scena principale nelle esecuzioni con
+  rendering (o in headless con `--runtime-diagnostics`), e la scatola nera del
+  processo. Ogni due secondi persiste e flusha frame time, memoria host/GPU,
+  contatori ObjectDB e snapshot completo dello streaming in
+  `user://diagnostics/runtime_latest.jsonl`; al boot conserva la sessione
+  precedente in `runtime_previous.jsonl`. Il log engine Godot e esplicitamente
+  attivo in `user://logs/godot.log`. Un kill/OOM puo impedire uno stack nativo,
+  ma non cancella gli ultimi breadcrumb gia flushati.
 
 ## Contratto progressione e run
 
@@ -884,9 +899,8 @@ multi-bioma.
 - `WeaponSystem` genera feedback per low ammo e reload; l'uso della base non e
   piu un evento fallback perche possiede un input dedicato.
 - I toni procedurali restano placeholder e non richiedono asset esterni.
-- Il fallback `biome_entered`, latency-critical sul seam, viene sintetizzato
-  una volta al bootstrap in `AudioStreamWAV` e usa una voce preallocata; non
-  esegue il loop PCM nel frame della transizione.
+- Il cambio bioma non genera cue audio: resta soltanto il feedback visivo HUD,
+  mentre i suoni `Environment` sono riservati a eventi di gameplay.
 - Spawn boss, telegraph e cambio fase usano cue distinti esposti da `gameplay_feedback_generated`.
 
 ## Contratto survival e wave

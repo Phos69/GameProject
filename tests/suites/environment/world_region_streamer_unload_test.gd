@@ -125,6 +125,36 @@ func test_region_tree_is_retired_from_leaves_with_a_per_frame_cap() -> void:
 	assert_eq(int(streamer._retirement_queue.get_stats().get("pending_retirement_roots", 1)), 0, "la coda termina dopo aver drenato tutte le foglie")
 	assert_true(env_root.is_queued_for_deletion(), "la root viene liberata soltanto per ultima")
 
+func test_retirement_keeps_progressing_during_continuous_streaming_work() -> void:
+	var streamer := WorldRegionStreamer.new()
+	add_child_autofree(streamer)
+	streamer.busy_max_retired_nodes_per_frame = 1
+	streamer.busy_retirement_budget_msec = 4.0
+	var env_root := Node2D.new()
+	add_child_autofree(env_root)
+	for index in range(3):
+		var child := Node2D.new()
+		child.name = "BusyRetirementChild%d" % index
+		env_root.add_child(child)
+	streamer._retirement_queue.enqueue(env_root)
+
+	# Riproduce il caso prima del fix: ogni frame contiene ancora build/commit,
+	# quindi non esiste mai un frame completamente libero per il retirement.
+	for _frame in range(6):
+		streamer._process_retirement(true)
+
+	var stats := streamer._retirement_queue.get_stats()
+	assert_eq(
+		int(stats.get("pending_retirement_roots", 1)),
+		0,
+		"il lavoro streaming continuo non affama la coda delle regioni invisibili"
+	)
+	assert_eq(
+		int(stats.get("total_completed_retirement_roots", 0)),
+		1,
+		"la telemetria registra la root completamente smaltita"
+	)
+
 func test_async_tile_build_uses_pool_and_incremental_geometry_phases() -> void:
 	var layout := BiomeEnvironmentLayout.new()
 	layout.zone_size = Vector2i(2, 2)

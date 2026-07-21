@@ -153,6 +153,21 @@ Visual QA consigliate:
   regioni/chunk. `max_retirement_msec` non deve produrre il vecchio picco circa
   2 secondi dopo il seam; `last_frame_chunk_evictions` non deve superare `1` e
   `max_chunk_eviction_msec` va registrato insieme al frame massimo.
+- Oscillare brevemente avanti/indietro sulla linea del varco durante il
+  cooldown: il successivo ingresso deve completare il cambio bioma. L'annuncio
+  HUD deve restare visibile senza riprodurre alcun avviso acustico.
+- Prima del playtest annotare i path stampati da `RuntimeDiagnostics`. Dopo i
+  20 attraversamenti conservare `runtime_latest.jsonl` e `godot.log`; dopo un
+  crash/riavvio conservare subito anche `runtime_previous.jsonl`, verificando
+  gli ultimi valori di memoria, node/resource count, `gameplay_regions`,
+  `pending_retirement_roots`, `oldest_retirement_msec`, code e fase tile.
+  `streaming.seam.authoritative_region_id` deve coincidere con
+  `geometric_region_id` dopo il commit; durante l'attesa deve essere valorizzato
+  `pending_target_region_id`, senza arrivare a `visible_visual_chunks == 0`.
+- Eseguire inoltre lo soak reale (streaming non disabilitato):
+  `./tools/run_gut.ps1 -Config res://.gutconfig.soak.json -GutDir res://tests/suites/soak -Select region_streaming_churn`.
+  Otto attraversamenti avanti/indietro devono riportare unload/retirement a
+  zero e mantenere bounded il numero di nodi.
 - Ripetere il percorso partendo dal centro regione: finche la party e lontana
   dai varchi `gameplay_regions` deve restare `1`, mentre `active_regions` puo
   contenere i vicini come soli dati. Entro 30 tile dal varco deve comparire un

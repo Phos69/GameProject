@@ -158,6 +158,39 @@ func test_game_log_level_gating() -> void:
 
 	game_log.min_level = original_level
 
+
+func test_runtime_black_box_exposes_memory_and_streaming_diagnostics() -> void:
+	var diagnostics := RuntimeDiagnostics.new()
+	diagnostics.persistence_enabled = false
+	add_child_autofree(diagnostics)
+	var snapshot := diagnostics.collect_snapshot()
+	assert_true(snapshot.has("system_available_memory_bytes"), "la black box campiona la memoria disponibile del sistema")
+	assert_true(snapshot.has("node_count"), "la black box campiona i nodi ObjectDB")
+	assert_true(snapshot.has("max_frame_msec_since_sample"), "la black box conserva il frame peggiore tra due flush")
+	assert_true(snapshot.has("streaming"), "la black box include la telemetria dello streamer quando disponibile")
+	assert_true(
+		bool(ProjectSettings.get_setting("debug/file_logging/enable_file_logging.pc", false)),
+		"il log engine su file resta esplicitamente attivo nelle build desktop"
+	)
+	var anomalies := diagnostics._detect_anomalies({
+		"system_available_memory_bytes": 128 * 1024 * 1024,
+		"streaming": {
+			"pending_retirement_roots": 6,
+			"oldest_retirement_msec": 12_000,
+			"gameplay_regions": 4,
+			"seam": {
+				"authoritative_region_id": "biome_0_0",
+				"geometric_region_id": "biome_1_0",
+				"pending_target_region_id": ""
+			}
+		}
+	})
+	assert_has(anomalies, "low_system_memory", "la memoria critica viene marcata prima dell'OOM")
+	assert_has(anomalies, "retirement_backlog", "il backlog regioni viene marcato")
+	assert_has(anomalies, "retirement_stalled", "una root vecchia viene marcata come stall")
+	assert_has(anomalies, "excess_gameplay_regions", "la residency oltre contratto viene marcata")
+	assert_has(anomalies, "region_state_mismatch", "la regione fisica desincronizzata viene marcata")
+
 # --- helper -----------------------------------------------------------------
 
 # L'overlay cerca i sistemi diagnostici via SceneTree/group: la scena sintetica

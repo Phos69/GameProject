@@ -171,6 +171,9 @@ func _quit_game() -> void:
 	if save_manager != null:
 		save_manager.save_game()
 	_play_confirm()
+	var diagnostics := get_tree().get_first_node_in_group("runtime_diagnostics")
+	if diagnostics != null and diagnostics.has_method("mark_clean_shutdown"):
+		diagnostics.call("mark_clean_shutdown", "pause_menu_quit")
 	get_tree().quit()
 
 func _on_settings_closed() -> void:

@@ -23,6 +23,10 @@ var graph: WorldGraph
 var anchor_region_id: StringName = &""
 var is_active: bool = false
 var cooldown_timer: float = 0.0
+var _pending_source_region_id: StringName = &""
+var _pending_target_region_id: StringName = &""
+var _pending_connection: WorldRegionConnection
+var _pending_prefetch_position := Vector2.ZERO
 
 func _ready() -> void:
 	add_to_group("region_seam_system")
@@ -46,6 +50,7 @@ func start_run(
 	anchor_region_id = graph.start_region_id if graph != null else &""
 	is_active = graph != null and biome_manager != null
 	cooldown_timer = 0.0
+	_clear_pending_crossing()
 
 func stop_run() -> void:
 	biome_manager = null
@@ -54,6 +59,7 @@ func stop_run() -> void:
 	anchor_region_id = &""
 	is_active = false
 	cooldown_timer = 0.0
+	_clear_pending_crossing()
 
 func update_region_from_party() -> bool:
 	var party_position: Variant = get_party_center()
@@ -62,12 +68,20 @@ func update_region_from_party() -> bool:
 	return try_update_region_for_position(party_position as Vector2)
 
 func try_update_region_for_position(world_position: Vector2) -> bool:
-	if not is_active or cooldown_timer > 0.0:
+	if not is_active:
 		return false
 	var current_region_id := get_current_region_id()
 	if current_region_id.is_empty():
 		return false
 	var target_region_id := get_region_id_for_world_position(world_position)
+	if not _pending_target_region_id.is_empty():
+		var pending_result := _try_complete_pending_crossing(
+			current_region_id,
+			target_region_id,
+			world_position
+		)
+		if pending_result != 0:
+			return pending_result > 0
 	if target_region_id.is_empty() or target_region_id == current_region_id:
 		return false
 	var connection := get_open_connection_for_world_position(
@@ -77,8 +91,79 @@ func try_update_region_for_position(world_position: Vector2) -> bool:
 	)
 	if connection == null:
 		return false
-	if not _is_destination_stream_ready(target_region_id, world_position):
+	if (
+		cooldown_timer > 0.0
+		or not _is_destination_stream_ready(target_region_id, world_position)
+	):
+		_remember_pending_crossing(
+			current_region_id,
+			target_region_id,
+			connection,
+			world_position
+		)
 		return false
+	return _commit_crossing(current_region_id, target_region_id, connection)
+
+## 1 = transizione completata, -1 = pending gestito/non completato, 0 = pending
+## invalidato e il chiamante puo valutare un nuovo crossing nello stesso frame.
+func _try_complete_pending_crossing(
+	current_region_id: StringName,
+	geometric_region_id: StringName,
+	world_position: Vector2
+) -> int:
+	if current_region_id != _pending_source_region_id:
+		_clear_pending_crossing()
+		return 0
+	if geometric_region_id == _pending_source_region_id:
+		# Collision response e input opposti possono far oscillare la party di una
+		# cella attorno al seam. Finche resta nella banda fisica non perdiamo il
+		# crossing gia validato: senza questa isteresi un singolo frame sul lato
+		# sorgente lasciava poi il player nel target senza piu alcun pending.
+		if _pending_passage_contains_world_position(world_position):
+			_request_pending_prefetch()
+			return -1
+		# Un rientro netto nella sorgente annulla invece il tentativo.
+		_clear_pending_crossing()
+		return -1
+	if (
+		not geometric_region_id.is_empty()
+		and geometric_region_id != _pending_target_region_id
+	):
+		_clear_pending_crossing()
+		return 0
+	if cooldown_timer > 0.0:
+		_request_pending_prefetch()
+		return -1
+	if not _is_destination_stream_ready(
+		_pending_target_region_id,
+		_pending_prefetch_position
+	):
+		return -1
+	var source_id := _pending_source_region_id
+	var target_id := _pending_target_region_id
+	var connection := _pending_connection
+	if connection == null:
+		_clear_pending_crossing()
+		return 0
+	return 1 if _commit_crossing(source_id, target_id, connection) else -1
+
+func _pending_passage_contains_world_position(world_position: Vector2) -> bool:
+	if graph == null or _pending_connection == null:
+		return false
+	var source := graph.get_region(_pending_source_region_id)
+	if source == null:
+		return false
+	return _connection_contains_world_tile(
+		source,
+		_pending_connection,
+		world_position_to_logical_tile(world_position)
+	)
+
+func _commit_crossing(
+	current_region_id: StringName,
+	target_region_id: StringName,
+	connection: WorldRegionConnection
+) -> bool:
 	var changed := biome_manager.set_current_region(target_region_id)
 	if not changed:
 		return false
@@ -88,12 +173,54 @@ func try_update_region_for_position(world_position: Vector2) -> bool:
 	):
 		world_runtime.set_current_region(target_region_id)
 	cooldown_timer = transition_cooldown
+	_clear_pending_crossing()
 	region_seam_crossed.emit(
 		current_region_id,
 		target_region_id,
 		connection.connection_id
 	)
 	return true
+
+func _remember_pending_crossing(
+	source_region_id: StringName,
+	target_region_id: StringName,
+	connection: WorldRegionConnection,
+	prefetch_position: Vector2
+) -> void:
+	_pending_source_region_id = source_region_id
+	_pending_target_region_id = target_region_id
+	_pending_connection = connection
+	_pending_prefetch_position = prefetch_position
+	_request_pending_prefetch()
+
+func _request_pending_prefetch() -> void:
+	if _pending_target_region_id.is_empty():
+		return
+	var streamer := get_tree().get_first_node_in_group(
+		"world_region_streamer"
+	) as WorldRegionStreamer
+	if streamer != null and streamer.is_streaming_graph(graph):
+		streamer.refresh_near_world_residency(_pending_prefetch_position)
+
+func _clear_pending_crossing() -> void:
+	_pending_source_region_id = &""
+	_pending_target_region_id = &""
+	_pending_connection = null
+	_pending_prefetch_position = Vector2.ZERO
+
+func get_transition_diagnostics() -> Dictionary:
+	var party_position: Variant = get_party_center()
+	return {
+		"authoritative_region_id": String(get_current_region_id()),
+		"geometric_region_id": (
+			String(get_region_id_for_world_position(party_position as Vector2))
+			if party_position is Vector2
+			else ""
+		),
+		"pending_source_region_id": String(_pending_source_region_id),
+		"pending_target_region_id": String(_pending_target_region_id),
+		"cooldown_seconds": cooldown_timer
+	}
 
 func _is_destination_stream_ready(
 	target_region_id: StringName,
