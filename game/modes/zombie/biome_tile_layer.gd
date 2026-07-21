@@ -55,7 +55,7 @@ const BIOME_TILE_CHUNK_BAKER_SCRIPT = preload(
 const CLIFF_FACE_TEXTURE_ID := &"cliff_face_texture"
 const CLIFF_LIP_TEXTURE_ID := &"cliff_lip_texture"
 const CLIFF_LIP_VERTICAL_TEXTURE_ID := &"cliff_lip_vertical_texture"
-const ROCK_CLIFF_FACE_TEXTURE_ID := &"rock_cliff_face_texture"
+const ROCK_CLIFF_FACE_TEXTURE_ID := CLIFF_FACE_TEXTURE_ID
 const LARGE_ROCK_OBJECT_ID := &"large_rock"
 const FOREST_MESA_PROFILE_ID := &"forest"
 const FOREST_GRASS_TEXTURE_ID := &"forest_grass"
@@ -112,7 +112,7 @@ var _cliff_face_texture: Texture2D
 var _cliff_lip_texture: Texture2D
 var _cliff_lip_vertical_texture: Texture2D
 var _rock_top_texture: Texture2D
-var _rock_cliff_face_texture: Texture2D
+var _rock_cliff_wall_texture: Texture2D
 var _forest_surface_textures: Dictionary = {}
 var _forest_surface_art_asset_paths: Dictionary = {}
 var _surface_texture_ids: Array[StringName] = []
@@ -919,6 +919,7 @@ func _draw() -> void:
 	# above the flat rim to soften the rock-side join as well.
 	if (
 		uses_rectilinear_cliff_art
+		and biome_id != &"plains"
 		and terrain_divider_texture != null
 		and _cliff_border_mesh_builder != null
 		and _cliff_border_mesh_builder.terrain_transition_mesh != null
@@ -1000,6 +1001,30 @@ func _load_cliff_art_textures() -> void:
 		return
 	if manifest == null:
 		return
+	if biome_id == &"plains":
+		var rock_cliff_kit_id := manifest.get_biome_rock_cliff_kit_id(biome_id)
+		if not rock_cliff_kit_id.is_empty():
+			var face_path := manifest.get_rock_cliff_kit_fallback_path(
+				rock_cliff_kit_id, &"wall"
+			)
+			_cliff_art_asset_paths[CLIFF_FACE_TEXTURE_ID] = face_path
+			_cliff_art_asset_paths[&"rock_cliff_kit_id"] = String(rock_cliff_kit_id)
+			_cliff_art_asset_paths[&"external_rock_atlas_ready"] = (
+				"true"
+				if manifest.rock_cliff_kit_has_external_assets(rock_cliff_kit_id)
+				else "false"
+			)
+			_cliff_face_texture = SVG_TEXTURE_LOADER.load_texture(
+				face_path,
+				palette.prop_color if palette != null else Color(0.32, 0.30, 0.27, 1.0),
+				palette.floor_color if palette != null else Color(0.44, 0.48, 0.31, 1.0),
+				Vector2i(512, 512)
+			)
+			_cliff_lip_texture = _load_cliff_art_texture(CLIFF_LIP_TEXTURE_ID)
+			_cliff_lip_vertical_texture = _load_cliff_art_texture(
+				CLIFF_LIP_VERTICAL_TEXTURE_ID
+			)
+			return
 	_cliff_face_texture = _load_cliff_art_texture(CLIFF_FACE_TEXTURE_ID)
 	_cliff_lip_texture = _load_cliff_art_texture(CLIFF_LIP_TEXTURE_ID)
 	_cliff_lip_vertical_texture = _load_cliff_art_texture(
@@ -1081,7 +1106,7 @@ func _should_harmonize_generated_cliff_edges() -> bool:
 
 func _load_rock_art_texture() -> void:
 	_rock_top_texture = null
-	_rock_cliff_face_texture = null
+	_rock_cliff_wall_texture = null
 	_rock_art_asset_paths.clear()
 	_mesa_art_by_profile.clear()
 	_mesa_art_asset_paths.clear()
@@ -1095,7 +1120,7 @@ func _load_rock_art_texture() -> void:
 		_mesa_art_asset_paths.get(default_profile, {}) as Dictionary
 	)
 	_rock_top_texture = default_art.get(&"top") as Texture2D
-	_rock_cliff_face_texture = default_art.get(&"face") as Texture2D
+	_rock_cliff_wall_texture = default_art.get(&"face") as Texture2D
 	_rock_art_asset_paths = default_paths.duplicate(true)
 
 func _load_mesa_profile_art(profile_id: StringName) -> void:
@@ -1108,12 +1133,21 @@ func _load_mesa_profile_art(profile_id: StringName) -> void:
 	if profile_id == FOREST_MESA_PROFILE_ID:
 		if manifest == null:
 			return
-		var contract := manifest.get_object_asset_contract(LARGE_ROCK_OBJECT_ID)
-		top_path = String(contract.get("asset_path", ""))
-		var face_contract := manifest.get_void_asset_contract(
-			ROCK_CLIFF_FACE_TEXTURE_ID
-		)
-		face_path = String(face_contract.get("asset_path", ""))
+		var rock_cliff_kit_id := manifest.get_biome_rock_cliff_kit_id(biome_id)
+		if not rock_cliff_kit_id.is_empty():
+			top_path = manifest.get_rock_cliff_kit_fallback_path(
+				rock_cliff_kit_id, &"top"
+			)
+			face_path = manifest.get_rock_cliff_kit_fallback_path(
+				rock_cliff_kit_id, &"wall"
+			)
+		else:
+			var contract := manifest.get_object_asset_contract(LARGE_ROCK_OBJECT_ID)
+			top_path = String(contract.get("asset_path", ""))
+			var face_contract := manifest.get_void_asset_contract(
+				ROCK_CLIFF_FACE_TEXTURE_ID
+			)
+			face_path = String(face_contract.get("asset_path", ""))
 		if not top_path.is_empty():
 			top_texture = SVG_TEXTURE_LOADER.load_texture(
 				top_path,
@@ -1154,8 +1188,17 @@ func _load_mesa_profile_art(profile_id: StringName) -> void:
 	var top_role := GENERATED_ART_CATALOG.ROLE_GROUND
 	var face_role := GENERATED_ART_CATALOG.ROLE_CLIFF_FACE
 	if profile_id == FOREST_MESA_PROFILE_ID:
-		top_role = LARGE_ROCK_OBJECT_ID
-		face_role = ROCK_CLIFF_FACE_TEXTURE_ID
+		var rock_cliff_kit_id := (
+			manifest.get_biome_rock_cliff_kit_id(biome_id)
+			if manifest != null
+			else &""
+		)
+		if rock_cliff_kit_id.is_empty():
+			top_role = LARGE_ROCK_OBJECT_ID
+			face_role = ROCK_CLIFF_FACE_TEXTURE_ID
+		else:
+			top_role = &"rock_cliff_top_fallback"
+			face_role = &"rock_cliff_wall_fallback"
 	_mesa_art_asset_paths[profile_id] = {
 		&"top": top_path,
 		&"face": face_path,
@@ -1466,7 +1509,8 @@ func _build_region_border_rim() -> void:
 			fall_zone_sides,
 			layout.zone_size,
 			scale,
-			_uses_generated_theme()
+			_uses_generated_theme(),
+			layout.mesa_rects
 		)
 
 func _build_region_border_faces() -> void:
@@ -1481,7 +1525,8 @@ func _build_region_border_faces() -> void:
 		layout.fall_zone_rects,
 		_get_fall_zone_sides(),
 		layout.zone_size,
-		layout.logical_tile_scale
+		layout.logical_tile_scale,
+		layout.mesa_rects
 	)
 
 func _cleanup_ground_buffers() -> void:
@@ -1623,7 +1668,7 @@ func _begin_mesa_geometry(scale: float) -> void:
 	for profile_id_value in _async_mesa_rect_groups:
 		_async_mesa_profile_ids.append(StringName(profile_id_value))
 	_async_mesa_profile_ids.sort()
-	if _mesa_dirt_border_mesh_builder != null:
+	if _mesa_dirt_border_mesh_builder != null and biome_id != &"plains":
 		_mesa_dirt_border_mesh_builder.build_dirt_outline(
 			_mesa_rects_for_dirt_outline(),
 			layout.zone_size,

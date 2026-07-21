@@ -8,6 +8,32 @@ playground minimo e registra i sistemi base. Le modalita future devono usare
 sistemi comuni invece di duplicare gameplay. Il contratto di proiezione e
 definito in `docs/top_down_cardinal_contract.md`.
 
+## PLAINS-ROCK-001: montagne e void
+
+La Plains seleziona `plains_dark_fantasy` tramite `rock_cliff_kits` nel
+manifest ambiente v18. Il kit dichiara due atlas esterni `2048x2048`, griglia
+`4x4`, moduli `512x512`, regioni semantiche parete/top, provenienza e fallback
+espliciti. `RockCliffAtlasSet` accetta i PNG soltanto quando entrambi esistono e
+hanno dimensione esatta; espone ritagli `AtlasTexture` e non genera raster.
+`RockCliffTopologyResolver` e l'autorita tipizzata per lati, corner concavi e
+convessi, diagonali, cap e varianti center determinate da seed e coordinata.
+
+Nella Plains Survival `TerrainParcelContentPass` conserva l'inviluppo della
+mesa ma trasforma le due righe meridionali in fall-zone aderente. Le quote
+canoniche sono montagna `+2`, terreno `0`, void `-1,75` tile. I builder ricevono
+lo stesso contorno unificato: al contatto montagna-void la run viene spezzata
+sui port della mesa, la faccia copre direttamente `3,75` tile e il south wall
+della mesa, il lip e il dirt divider duplicati vengono soppressi. Collider
+rettangolare, sort anchor, route e footprint complessivo restano autorevoli.
+Le run restano mesh batched; non viene creato un nodo per cella.
+
+Il boundary mode `walled`/`blocked` di Infinite Arena disabilita ogni void
+interno, pur usando lo stesso contratto roccioso per raised cliff e mesa. I
+biomi avanzati continuano a usare i profili generated esistenti. Finche gli
+atlas esterni non vengono consegnati, tutti i consumer Plains risolvono lo
+stesso wall fallback. Il vecchio face raster upward, rimasto senza consumer o
+fallback, e stato ritirato; il plateau top resta fallback fino al cutover.
+
 ## Flusso runtime attuale
 
 1. `main.tscn` carica manager, world e `MainMenu`.
@@ -1187,7 +1213,7 @@ multi-bioma.
   obliqui in `LATERAL_LEAN_RATIO`) salgono dal prato fino al bordo; la parete
   nord guarda lontano dalla camera e non viene emessa. Le pareti sono disegnate
   per prime e la corona le copre, mascherando i triangoli alti. Il top usa
-  `rock_plateau_top_generated.png`, le pareti `rock_cliff_face_upward_generated.png`
+  `rock_plateau_top_generated.png`, le pareti il wall fallback condiviso del kit
   con shading per lato e gradiente verso la base; nessuna fissure/lip disegnata a
   mano, quindi la superficie resta priva di linee procedurali. Corona e facce
   vengono disegnate una sola volta dal nodo oggetto Y-sorted; il tile layer

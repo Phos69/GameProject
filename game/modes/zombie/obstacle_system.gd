@@ -578,8 +578,22 @@ static func configure_mesa_obstacle_visual(
 		layout.generation_seed,
 		palette,
 		layout.logical_tile_scale,
-		layout.obstacle_positions[index]
+		layout.obstacle_positions[index],
+		_mesa_touches_void_to_south(layout, mesa_rect)
 	)
+
+static func _mesa_touches_void_to_south(
+	layout: BiomeEnvironmentLayout,
+	mesa_rect: Rect2i
+) -> bool:
+	for fall_rect in layout.fall_zone_rects:
+		if (
+			fall_rect.position.y == mesa_rect.end.y
+			and fall_rect.position.x <= mesa_rect.position.x
+			and fall_rect.end.x >= mesa_rect.end.x
+		):
+			return true
+	return false
 
 func _sort_offset_for(obstacle_id: StringName) -> float:
 	if manifest == null:

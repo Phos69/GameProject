@@ -90,6 +90,11 @@ func test_sample_cells_layout_invariants() -> void:
 		assert_true(layout.random_prop_rects.is_empty(),
 			"%s disattiva lo scatter globale" % String(cell.id))
 		var content := layout.generation_summary.get("parcel_content", {}) as Dictionary
+		assert_eq(
+			int(content.get("mountain_void_contact_count", 0)),
+			1 if cell.biome_id == &"plains" else 0,
+			"%s applica il contatto montagna-void solo alla Plains" % String(cell.id)
+		)
 		assert_between(int(content.get("town_building_count", 0)), 2, 4,
 			"%s town con 2..4 edifici" % String(cell.id))
 		assert_between(int(content.get("town_vehicle_count", 0)), 1, 3,

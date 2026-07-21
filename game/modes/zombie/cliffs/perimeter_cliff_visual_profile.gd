@@ -10,7 +10,7 @@ const GENERATED_ART_CATALOG := preload(
 const GENERATED_TEXTURE_TOOLS := preload(
 	"res://game/modes/zombie/generated_biome_texture_tools.gd"
 )
-const FACE_TEXTURE_ID := &"rock_cliff_face_texture"
+const FACE_TEXTURE_ID := &"cliff_face_texture"
 const TOP_OBJECT_ID := &"large_rock"
 const TEXTURE_SIZE := Vector2i(512, 512)
 
@@ -21,6 +21,8 @@ var wall_height: float = 0.0
 var face_texture: Texture2D
 var top_texture: Texture2D
 var asset_paths: Dictionary = {}
+var rock_cliff_kit_id: StringName = &""
+var external_rock_atlas_ready: bool = false
 
 func configure(
 	next_style: StringName,
@@ -42,6 +44,8 @@ func configure(
 	face_texture = null
 	top_texture = null
 	asset_paths.clear()
+	rock_cliff_kit_id = &""
+	external_rock_atlas_ready = false
 	if style == BiomeEnvironmentLayout.PERIMETER_VISUAL_RAISED_CLIFF:
 		_load_textures(primary_color, accent_color, biome_id)
 
@@ -95,15 +99,28 @@ func _load_textures(
 		)
 		return
 	var manifest := EnvironmentAssetManifest.get_shared()
-	var face_path := String(
-		manifest.get_void_asset_contract(FACE_TEXTURE_ID).get("asset_path", "")
+	rock_cliff_kit_id = manifest.get_biome_rock_cliff_kit_id(biome_id)
+	external_rock_atlas_ready = (
+		not rock_cliff_kit_id.is_empty()
+		and manifest.rock_cliff_kit_has_external_assets(rock_cliff_kit_id)
 	)
-	var top_path := String(
-		manifest.get_object_asset_contract(TOP_OBJECT_ID).get("asset_path", "")
-	)
+	var face_path := ""
+	var top_path := ""
+	if not rock_cliff_kit_id.is_empty():
+		face_path = manifest.get_rock_cliff_kit_fallback_path(rock_cliff_kit_id, &"wall")
+		top_path = manifest.get_rock_cliff_kit_fallback_path(rock_cliff_kit_id, &"top")
+	else:
+		face_path = String(
+			manifest.get_void_asset_contract(FACE_TEXTURE_ID).get("asset_path", "")
+		)
+		top_path = String(
+			manifest.get_object_asset_contract(TOP_OBJECT_ID).get("asset_path", "")
+		)
 	asset_paths = {
 		&"face": face_path,
-		&"top": top_path
+		&"top": top_path,
+		&"rock_cliff_kit_id": rock_cliff_kit_id,
+		&"external_rock_atlas_ready": external_rock_atlas_ready,
 	}
 	face_texture = TEXTURE_LOADER.load_texture(
 		face_path,

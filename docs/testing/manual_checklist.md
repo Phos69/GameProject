@@ -53,6 +53,22 @@ Per iterazioni mirate sulla mappa:
   player non deve attraversare il filare e il visuale deve risultare doppio
   rispetto al precedente asset runtime senza cambiare il footprint `2x2`.
 
+### PLAINS-ROCK-001
+
+- Acquisire a `1280x720` e `960x540`: tavola completa dei due atlas, raccordo
+  concavo/convesso, mesa isolata, mesa con chasm sud, bordo mondo e i quattro
+  lati/corner della Infinite Arena.
+- Confrontare almeno tre seed Plains: ogni mesa alta almeno cinque tile deve
+  diventare montagna `altezza-2` piu chasm sud largo quanto la mesa; route e
+  inviluppo non attraversabile non devono cambiare.
+- Al contatto montagna-void verificare una sola parete continua da `+2` a
+  `-1,75` tile, senza south wall doppia, lip, dirt divider o giunto a quota zero.
+- Con `F9` verificare collider rettangolare, fall-zone, respawn, dodge sui gap,
+  pathfinding e Y-sort con piu player. Infinite Arena deve avere zero fall-zone
+  interne e raised cliff su tutti i lati.
+- Rifiutare il cutover se una regione atlas e invertita, fuori griglia, non
+  repeatable, contiene materiale non roccioso o non resta leggibile a `48x48`.
+
 ## Asset ambiente
 
 - Visitare tutti e cinque i biomi e controllare ground, route, passaggi,

@@ -66,10 +66,26 @@ non diventano requisiti di bootstrap.
 ## Ambiente top-down cardinale (manifest)
 
 `environment/top_down/manifest.json` e la fonte di verita per gli oggetti
-ambientali del bioma (ostacoli, bordi, casse, cliff, passaggi). Il manifest v17
+ambientali del bioma (ostacoli, bordi, casse, cliff, passaggi). Il manifest v18
 contiene anche il contratto asset-driven per `tile_sets`, `tile_variants`,
 `terrain_tiles`, `edge_tiles`, `void_tiles`, `object_scenes`, `passage_tiles`,
-`biome_asset_sets` e `fallback_policy`.
+`biome_asset_sets`, `rock_cliff_kits` e `fallback_policy`.
+
+### Kit cliff roccioso Plains
+
+`environment/top_down/rock_cliffs/plains/generation_manifest.json` conserva i
+prompt integrali, output `2048x2048`, griglia `4x4`, celle `512x512`, chroma key
+`#FF00FF`, policy alpha, licenza e attribuzione di `PLAINS-ROCK-001`. I file
+attesi sono `plains_dark_fantasy_wall_atlas.png` e
+`plains_dark_fantasy_top_atlas.png`; vanno generati esternamente e non possono
+essere dipinti o sostituiti dal codice.
+
+Se il generatore restituisce chroma key, estrarre l'alpha con
+`tools/remove_sprite_chroma_key.gd`. Il kit si promuove da `needs_asset` solo se
+entrambi gli atlas hanno dimensione esatta, le 32 regioni dichiarate sono
+uniche e dentro i bounds, le direzioni corrispondono alla tabella, i port sono
+allineati e i bordi repeatable non mostrano seam a `48x48`. In caso contrario
+l'atlas va rifiutato e rigenerato. Rotazione e mirroring runtime sono vietati.
 
 Il manifest dichiara `coordinate_system: orthogonal_top_down` e
 `volume_style: controlled_perspective`. Ground e route restano allineati agli
@@ -125,8 +141,7 @@ raccordo della cresta usa mesh e raster dedicati costruiti da
 usano un tile sovrapposto. L'import limita il runtime a 512 px e genera
 mipmap; i sorgenti restano conservati per iterazioni.
 
-Infinite Arena riusa inoltre i raster gia finali
-`rock_cliff_face_upward_generated.png` e
+Infinite Arena riusa inoltre il wall fallback condiviso del kit Plains e
 `rock_plateau_top_generated.png` per il proprio perimetro `raised_cliff`.
 `BiomeObstaclePainter` li applica ai segmenti solidi con UV world-space
 continui e geometria distinta per lati orizzontali/verticali; non sono
@@ -316,7 +331,7 @@ e disegnato una sola volta dal nodo `large_rock` per evitare lastre duplicate o
 shiftate.
 Il top usa
 `edges/cliffs/textures/rock_plateau_top_generated.png`; le pareti usano
-`rock_cliff_face_upward_generated.png` con shading per lato. Non e una fascia
+il wall fallback condiviso `cliff_face_generated_v2.png` con shading per lato. Non e una fascia
 piatta e non porta linee disegnate: il dettaglio arriva solo dalle texture.
 
 Gli slot ostacolo misurano `4x4` celle logiche. I formati piccoli vivono in

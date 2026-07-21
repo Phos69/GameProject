@@ -4,6 +4,7 @@ class_name TerrainParcelContentPass
 const WorldGridConfig = preload("res://game/core/world_grid_config.gd")
 
 const FALL_ZONE_RIM := 1
+const PLAINS_MOUNTAIN_VOID_DEPTH := 2
 const FOREST_CORRIDOR_WIDTH := 2
 const CLEARING_TREE_MIN_DISTANCE := 5
 const MAX_FOREST_TREES := 420
@@ -19,10 +20,12 @@ func populate(
 	layout: BiomeEnvironmentLayout,
 	biome: BiomeDefinition,
 	rng: RandomNumberGenerator,
-	path_tag: StringName
+	path_tag: StringName,
+	allow_internal_void: bool = true
 ) -> Dictionary:
 	var summary := {
 		"mesa_count": 0,
+		"mountain_void_contact_count": 0,
 		"forest_tree_count": 0,
 		"clearing_tree_count": 0,
 		"fall_zone_parcel_count": 0,
@@ -34,9 +37,15 @@ func populate(
 	for parcel_index in range(layout.parcel_types.size()):
 		match layout.parcel_types[parcel_index]:
 			BiomeEnvironmentLayout.PARCEL_MESA:
-				summary["mesa_count"] = int(summary["mesa_count"]) + _populate_mesa(
-					layout, biome, parcel_index
+				var mesa_result := _populate_mesa(
+					layout, biome, parcel_index, allow_internal_void
 				)
+				summary["mesa_count"] = int(summary["mesa_count"]) + int(
+					mesa_result.get("mesa_count", 0)
+				)
+				summary["mountain_void_contact_count"] = int(
+					summary["mountain_void_contact_count"]
+				) + int(mesa_result.get("contact_count", 0))
 			BiomeEnvironmentLayout.PARCEL_FOREST:
 				summary["forest_tree_count"] = int(summary["forest_tree_count"]) + _populate_forest(
 					layout, biome, parcel_index, rng
@@ -46,7 +55,7 @@ func populate(
 					layout, biome, parcel_index, rng
 				)
 			BiomeEnvironmentLayout.PARCEL_FALL_ZONE:
-				if _populate_fall_zone(layout, parcel_index):
+				if allow_internal_void and _populate_fall_zone(layout, parcel_index):
 					summary["fall_zone_parcel_count"] = int(summary["fall_zone_parcel_count"]) + 1
 				else:
 					layout.set_parcel_type(parcel_index, BiomeEnvironmentLayout.PARCEL_CLEARING)
@@ -65,11 +74,25 @@ func populate(
 func _populate_mesa(
 	layout: BiomeEnvironmentLayout,
 	biome: BiomeDefinition,
-	parcel_index: int
-) -> int:
+	parcel_index: int,
+	allow_internal_void: bool
+) -> Dictionary:
 	var rect := _largest_inner_rect(layout, parcel_index, 1)
 	if rect.size.x < 5 or rect.size.y < 5:
-		return 0
+		return {"mesa_count": 0, "contact_count": 0}
+	var contact_count := 0
+	if (
+		allow_internal_void
+		and biome != null
+		and biome.biome_id == &"plains"
+	):
+		var chasm_rect := Rect2i(
+			Vector2i(rect.position.x, rect.end.y - PLAINS_MOUNTAIN_VOID_DEPTH),
+			Vector2i(rect.size.x, PLAINS_MOUNTAIN_VOID_DEPTH)
+		)
+		rect.size.y -= PLAINS_MOUNTAIN_VOID_DEPTH
+		layout.add_fall_zone_rect(chasm_rect, &"internal")
+		contact_count = 1
 	layout.mesa_rects.append(rect)
 	layout.mesa_profile_ids.append(_mesa_profile_id(biome))
 	layout.obstacle_rects.append(rect)
@@ -78,7 +101,7 @@ func _populate_mesa(
 	layout.obstacle_sizes.append(layout.rect_size_to_world(rect))
 	layout.obstacle_rotations.append(0.0)
 	layout.obstacle_shape_ids.append(&"rectangle")
-	return 1
+	return {"mesa_count": 1, "contact_count": contact_count}
 
 
 func _populate_forest(

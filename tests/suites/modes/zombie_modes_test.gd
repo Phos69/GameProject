@@ -389,6 +389,11 @@ func _assert_infinite_arena_world(biome_manager: BiomeManager) -> void:
 	var parcel_content := (
 		layout.generation_summary.get("parcel_content", {}) as Dictionary
 	)
+	assert_eq(
+		int(parcel_content.get("mountain_void_contact_count", 0)),
+		0,
+		"Infinite Arena non introduce il chasm aderente della Plains Survival"
+	)
 	assert_between(
 		int(parcel_content.get("town_building_count", 0)),
 		2,
@@ -413,25 +418,15 @@ func _assert_arena_terrain_is_solid(scene) -> void:
 	if player != null:
 		assert_false(hazard_system.is_void_at_world_position(player.global_position), "Infinite Arena player spawn is not classified as void")
 
-# The walled arena keeps a walled perimeter (no fall edge to the void), but
-# internal chasms are now a shared terrain feature and may appear, so assert only
-# that every emitted fall zone is an internal chasm and none is a perimeter
-# (side-tagged) fall boundary.
+# The walled Infinite Arena is fully solid: neither perimeter fall edges nor
+# internal chasms are allowed by the mode contract.
 func _assert_no_perimeter_fall_zones(layout: BiomeEnvironmentLayout, label: String) -> void:
-	var internal_chasm_count := 0
+	var fall_zone_count := 0
 	for index in range(layout.hazard_ids.size()):
 		if layout.hazard_ids[index] != &"fall_zone":
 			continue
-		var side: StringName = layout.hazard_sides[index]
-		assert_eq(
-			side,
-			&"internal",
-			"%s keeps a walled perimeter: fall zones are internal chasms only (got side '%s')" % [label, String(side)]
-		)
-		if side == &"internal":
-			internal_chasm_count += 1
-	assert_gt(internal_chasm_count, 0,
-		"%s garantisce almeno un chasm interno" % label)
+		fall_zone_count += 1
+	assert_eq(fall_zone_count, 0, "%s non emette fall-zone" % label)
 
 func _assert_raised_cliff_layout(layout: BiomeEnvironmentLayout) -> void:
 	assert_eq(

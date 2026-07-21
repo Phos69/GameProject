@@ -438,15 +438,16 @@ func _expect_profile_paths(profile_id: StringName, paths: Dictionary) -> void:
 	assert_true(FileAccess.file_exists(face_path), "%s mesa face exists" % String(profile_id))
 	if profile_id == &"forest":
 		if paths.has(&"top_role"):
-			assert_eq(StringName(paths.get(&"top_role", &"")), &"large_rock", "forest crown preserves its dedicated object role")
+			assert_eq(StringName(paths.get(&"top_role", &"")), &"rock_cliff_top_fallback", "Plains crown records the pending kit fallback role")
 		if paths.has(&"face_role"):
-			assert_eq(StringName(paths.get(&"face_role", &"")), &"rock_cliff_face_texture", "forest wall preserves its dedicated void role")
+			assert_eq(StringName(paths.get(&"face_role", &"")), &"rock_cliff_wall_fallback", "Plains wall records the shared kit fallback role")
 		assert_true(top_path.ends_with("rock_plateau_top_generated.png"), "forest preserves its dedicated plateau crown")
-		assert_true(face_path.ends_with("rock_cliff_face_upward_generated.png"), "forest preserves its dedicated upward wall")
+		assert_true(face_path.ends_with("cliff_face_generated_v2.png"), "Plains mesa and void use one shared wall fallback")
 		return
 	if paths.has(&"top_role"):
 		assert_eq(StringName(paths.get(&"top_role", &"")), BiomeGeneratedArtCatalog.ROLE_GROUND, "%s crown consumes the ground role" % String(profile_id))
 	if paths.has(&"face_role"):
 		assert_eq(StringName(paths.get(&"face_role", &"")), BiomeGeneratedArtCatalog.ROLE_CLIFF_FACE, "%s wall consumes the cliff-face role" % String(profile_id))
-	assert_true(top_path.contains("/terrain/%s/" % String(profile_id)), "%s top uses the existing ground role" % String(profile_id))
-	assert_true(face_path.contains("/cliff/%s/" % String(profile_id)), "%s wall uses the existing cliff-face role" % String(profile_id))
+	var asset_theme := &"volcanic" if profile_id == &"burning_plains" else profile_id
+	assert_true(top_path.contains("/terrain/%s/" % String(asset_theme)), "%s top uses the existing ground role" % String(profile_id))
+	assert_true(face_path.contains("/cliff/%s/" % String(asset_theme)), "%s wall uses the existing cliff-face role" % String(profile_id))

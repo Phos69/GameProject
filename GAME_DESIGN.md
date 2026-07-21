@@ -32,6 +32,17 @@ Un action sandbox locale dove 1-4 giocatori affrontano arene, dungeon e difese a
   bloccano movimento e proiettili secondo il manifest e partecipano allo Y-sort.
 - Void/fall zone comunica una caduta tramite lip e faccia cliff; non deve essere
   confuso con una parete o con terreno normale.
+- Nella Plains montagne, chasm, bordo mondo e raised cliff di Infinite Arena
+  appartengono allo stesso kit roccioso dark-fantasy: la roccia non incorpora
+  erba, strada o materiale del terreno confinante.
+- Ogni mesa della Plains Survival alta almeno cinque tile conserva lo stesso
+  inviluppo non attraversabile ma usa le due righe meridionali come chasm
+  aderente. Il contatto mostra una sola discesa continua dalla cima al void,
+  senza plateau dirt, lip o fascia di terreno intermedia.
+- Il top montagna e composto da edge/corner e quattro center variants
+  deterministiche e deve leggere come massa frastagliata, non come superficie
+  piatta. Infinite Arena conserva mesa e raised cliff, ma non genera chasm o
+  fall-zone interni.
 - La profondita grafica della parete di un chasm resta uniforme anche quando il
   vuoto e piu lungo; unioni a L/T/croce devono chiudere anche i raccordi concavi,
   senza quadranti neri o interruzioni del lip. Il raccordo deriva dal contorno

@@ -11,6 +11,7 @@ const PERIMETER_FACE_DEPTH_TILES := 1.15
 const PERIMETER_MIN_FACE_DEPTH := 42.0
 const INTERNAL_LATERAL_WALL_WIDTH_TILES := 0.65
 const INTERNAL_FAR_FACE_DEPTH_TILES := 1.75
+const MOUNTAIN_RAISE_TILES := 2.0
 # Horizontal lean of the lateral walls as a fraction of their drop depth. 0.0 is a
 # flat vertical strip; ~0.5 ≈ 27° from vertical, matching TopDownCliffMeshBuilder.
 const LATERAL_VOID_SLOPE := 0.5
@@ -21,19 +22,22 @@ const FALL_ZONE_BOUNDARY_RUNS = preload(
 var face_mesh: ArrayMesh
 var face_count: int = 0
 var concave_join_count: int = 0
+var mountain_contact_count: int = 0
 var corner_drop_by_vertex: Dictionary = {}
 
 func reset() -> void:
 	face_mesh = null
 	face_count = 0
 	concave_join_count = 0
+	mountain_contact_count = 0
 	corner_drop_by_vertex.clear()
 
 func build(
 	fall_zone_rects: Array[Rect2i],
 	fall_zone_sides: Array[StringName],
 	zone_size: Vector2i,
-	logical_scale: float
+	logical_scale: float,
+	mesa_rects: Array[Rect2i] = []
 ) -> void:
 	reset()
 	if fall_zone_rects.is_empty() or logical_scale <= 0.0:
@@ -43,6 +47,10 @@ func build(
 		fall_zone_rects,
 		fall_zone_sides,
 		zone_size
+	)
+	RockCliffTopologyResolver.annotate_mountain_contacts(
+		boundary_runs,
+		mesa_rects
 	)
 	var face_runs: Array[Dictionary] = []
 	for run in boundary_runs:
@@ -80,14 +88,24 @@ func _describe_boundary_run(
 			if orientation == FALL_ZONE_BOUNDARY_RUNS.TOP
 			else _near_face_depth(depth_rect, perimeter_side, logical_scale)
 		)
+		var mountain_raise := 0.0
+		if RockCliffTopologyResolver.is_mountain_contact(run):
+			mountain_raise = logical_scale * MOUNTAIN_RAISE_TILES
+			mountain_contact_count += 1
 		return _face_run_data(
-			Vector2(left, boundary_y),
-			Vector2(right, boundary_y),
-			Vector2(0.0, void_direction_y * face_depth),
+			Vector2(left, boundary_y - mountain_raise),
+			Vector2(right, boundary_y - mountain_raise),
+			Vector2(
+				0.0,
+				void_direction_y * face_depth + mountain_raise
+			),
 			Vector2i(int(start), int(boundary)),
 			Vector2i(int(end), int(boundary)),
 			run,
-			perimeter_side == FALL_ZONE_BOUNDARY_RUNS.INTERNAL
+			(
+				perimeter_side == FALL_ZONE_BOUNDARY_RUNS.INTERNAL
+				and not RockCliffTopologyResolver.is_mountain_contact(run)
+			)
 		)
 	var top := (start - zone_offset.y) * logical_scale
 	var bottom := (end - zone_offset.y) * logical_scale
@@ -153,6 +171,10 @@ func _face_run_data(
 		"start_corner": StringName(source_run.get("start_corner", &"")),
 		"end_corner": StringName(source_run.get("end_corner", &"")),
 		"joinable": joinable,
+		"wall_role": RockCliffTopologyResolver.wall_role_for_run(source_run),
+		"mountain_contact": RockCliffTopologyResolver.is_mountain_contact(
+			source_run
+		),
 	}
 
 func _build_corner_drops(face_runs: Array[Dictionary]) -> Dictionary:
@@ -347,4 +369,3 @@ func _boundary_color() -> Color:
 
 func _inside_color() -> Color:
 	return Color(0.52, 0.52, 0.52, 0.16)
-

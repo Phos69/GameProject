@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "milestone": "PLAINS-ROCK-001",
+  "status": "awaiting_external_assets",
+  "generator": "external prompt-driven image generation",
+  "output": {
+    "size_px": [2048, 2048],
+    "atlas_grid": [4, 4],
+    "module_size_px": [512, 512],
+    "background": "transparent RGBA or exact #FF00FF chroma key",
+    "runtime_scale": "one module per 48x48 logical tile",
+    "rotation_or_mirroring": false
+  },
+  "processing": {
+    "alpha_tool": "res://tools/remove_sprite_chroma_key.gd",
+    "policy": "mechanical alpha extraction and AtlasTexture regions only; no generated or painted runtime fallback",
+    "validation": [
+      "exact 4x4 alignment",
+      "all declared ports connect on matching cell boundaries",
+      "straight modules repeat on their longitudinal axis",
+      "no non-rock biome material",
+      "no detached alpha islands or light matte",
+      "readable at 48x48 pixels"
+    ]
+  },
+  "assets": {
+    "wall": {
+      "file": "plains_dark_fantasy_wall_atlas.png",
+      "prompt": "Create a production-ready 2048x2048 square 2D sprite atlas for an orthogonal top-down dark-fantasy game, divided into an exact invisible 4x4 grid of equal 512x512 cells. The atlas represents one coherent modular rocky cliff system. Every module must contain rock only, with no grass, dirt, snow, lava, water, floor texture, platform, cast shadow, text, labels, borders or interface elements. Use a perfectly uniform #FF00FF chroma-key background wherever there is no rock. Art direction: ominous natural mountain rock, charcoal and iron-brown stone, subtle cold violet shadows in deep cracks, painterly high detail, strong readable silhouettes, controlled perspective, light consistently from the upper-left. It must remain readable when each cell is reduced to 48x48 gameplay pixels. Cell layout, left to right: Row 1: straight cliff edge facing North, East, South, West. Row 2: convex outer corner NE, SE, SW, NW. Row 3: concave inner corner NE, SE, SW, NW. Row 4: diagonal NE-SW junction, diagonal NW-SE junction, horizontal terminal cap, vertical terminal cap. All connection ports must reach the exact same positions on their cell boundaries. Straight edges must repeat seamlessly along their longitudinal axis. Corners must connect perfectly to the matching straight modules. The rocky face must have consistent scale, lighting and strata across every cell. The top crest is entirely rocky and the descending face must not contain any neighboring terrain material. No isolated fragments, white matte, glow, fog baked into the image, perspective floor, isometric grid, watermark or text."
+    },
+    "top": {
+      "file": "plains_dark_fantasy_top_atlas.png",
+      "prompt": "Create a production-ready 2048x2048 square 2D sprite atlas for modular mountain tops in an orthogonal top-down dark-fantasy game, divided into an exact invisible 4x4 grid of equal 512x512 cells. Every module contains rock only on a perfectly uniform #FF00FF chroma-key background. The mountain must read as a real craggy mass rather than a flat plateau: clustered low peaks, broken ridgelines, fractured slabs, crevices and uneven height, with a strong top-down silhouette and controlled local perspective. Use charcoal and iron-brown rock with cold violet-black recesses and consistent upper-left lighting. Cell layout, left to right: Row 1: convex outer top corners NE, SE, SW, NW. Row 2: repeatable top edges North, East, South, West. Row 3: concave inner top corners NE, SE, SW, NW. Row 4: four distinct seamless center modules containing compatible low peaks and ridges. All modules must connect at identical points on their cell boundaries. Edge modules repeat seamlessly along their axis; center modules tile seamlessly on all four sides and can be mixed without visible seams. Peaks must stay low enough not to hide an excessive part of the battlefield, but must clearly break the flat surface. No grass, dirt, moss, vegetation, road, snow, lava, floor patch, cast shadow, text, labels, frame, watermark, isolated fragments or isometric projection."
+    }
+  },
+  "license": "Project original",
+  "attribution_key": "environment_top_down_external"
+}

@@ -5,6 +5,9 @@ const WorldGridConfig = preload("res://game/core/world_grid_config.gd")
 const RESOLVER_UTILS := preload(
 	"res://game/modes/zombie/biome_tile_resolver_utils.gd"
 )
+const ROCK_CLIFF_TOPOLOGY_RESOLVER := preload(
+	"res://game/modes/zombie/cliffs/rock_cliff_topology_resolver.gd"
+)
 
 ## Loader and validator for the top-down environment asset manifest.
 ##
@@ -131,6 +134,7 @@ var object_visual_styles: Dictionary = {}
 var terrain_styles: Dictionary = {}
 var terrain_sample_step_presets: Dictionary = {}
 var conversion_backlog: Array[StringName] = []
+var rock_cliff_kits: Dictionary = {}
 var load_error: String = ""
 
 static func get_shared() -> EnvironmentAssetManifest:
@@ -184,6 +188,7 @@ func load_from_disk(path: String = MANIFEST_PATH) -> bool:
 		var normalized := _normalize_object(entry)
 		objects[normalized["id"]] = normalized
 	_load_asset_contract_data(data)
+	_load_rock_cliff_kits(data.get("rock_cliff_kits", {}))
 	for backlog_value in data.get("conversion_backlog", []) as Array:
 		conversion_backlog.append(StringName(str(backlog_value)))
 	return true
@@ -202,6 +207,7 @@ func _clear_loaded_data() -> void:
 	terrain_styles.clear()
 	terrain_sample_step_presets.clear()
 	conversion_backlog.clear()
+	rock_cliff_kits.clear()
 	load_error = ""
 
 func has_object(object_id: StringName) -> bool:
@@ -345,6 +351,59 @@ func get_tile_variant_asset_contract(tile_id: StringName) -> Dictionary:
 
 func get_biome_asset_set_contract(biome_id: StringName) -> Dictionary:
 	return get_asset_contract(&"biome_asset_sets", biome_id)
+
+func get_rock_cliff_kit_contract(kit_id: StringName) -> Dictionary:
+	if rock_cliff_kits.has(kit_id):
+		return (rock_cliff_kits[kit_id] as Dictionary).duplicate(true)
+	return {}
+
+func get_biome_rock_cliff_kit_contract(biome_id: StringName) -> Dictionary:
+	var biome_contract := get_biome_asset_set_contract(biome_id)
+	var kit_id := StringName(str(biome_contract.get("rock_cliff_kit_id", "")))
+	return get_rock_cliff_kit_contract(kit_id)
+
+func get_biome_rock_cliff_kit_id(biome_id: StringName) -> StringName:
+	var biome_contract := get_biome_asset_set_contract(biome_id)
+	return StringName(str(biome_contract.get("rock_cliff_kit_id", "")))
+
+func rock_cliff_kit_has_external_assets(kit_id: StringName) -> bool:
+	var kit := get_rock_cliff_kit_contract(kit_id)
+	return (
+		RESOLVER_UTILS.asset_path_exists(String(kit.get("wall_atlas_path", "")))
+		and RESOLVER_UTILS.asset_path_exists(String(kit.get("top_atlas_path", "")))
+	)
+
+func get_rock_cliff_kit_asset_path(
+	kit_id: StringName,
+	kind: StringName
+) -> String:
+	var kit := get_rock_cliff_kit_contract(kit_id)
+	var path_key := "%s_atlas_path" % String(kind)
+	var fallback_key := "%s_fallback_path" % String(kind)
+	var asset_path := String(kit.get(path_key, ""))
+	if RESOLVER_UTILS.asset_path_exists(asset_path):
+		return asset_path
+	return String(kit.get(fallback_key, ""))
+
+func get_rock_cliff_kit_fallback_path(
+	kit_id: StringName,
+	kind: StringName
+) -> String:
+	var kit := get_rock_cliff_kit_contract(kit_id)
+	return String(kit.get("%s_fallback_path" % String(kind), ""))
+
+func get_rock_cliff_atlas_region(
+	kit_id: StringName,
+	kind: StringName,
+	role: StringName
+) -> Rect2i:
+	var kit := get_rock_cliff_kit_contract(kit_id)
+	var regions := kit.get("%s_regions" % String(kind), {}) as Dictionary
+	var cell := regions.get(role, Vector2i(-1, -1)) as Vector2i
+	var module_size := kit.get("module_size_px", Vector2i.ZERO) as Vector2i
+	if cell.x < 0 or cell.y < 0 or module_size.x <= 0 or module_size.y <= 0:
+		return Rect2i()
+	return Rect2i(cell * module_size, module_size)
 
 func get_fallback_policy() -> Dictionary:
 	return fallback_policy.duplicate(true)
@@ -495,6 +554,8 @@ func validate() -> Dictionary:
 		failures.append("obstacle_footprint.slot_size_cells must be positive")
 	if version >= 7:
 		_validate_asset_contracts(failures)
+	if version >= 18:
+		_validate_rock_cliff_kits(failures)
 	for object_id in objects.keys():
 		var entry := objects[object_id] as Dictionary
 		var collision_shape := String(entry.get("collision_shape", ""))
@@ -578,6 +639,65 @@ func _load_asset_contract_data(data: Dictionary) -> void:
 	for section in ASSET_CONTRACT_SECTIONS:
 		asset_contracts[StringName(section)] = {}
 		_load_asset_contract_section(StringName(section), data.get(section, {}))
+
+func _load_rock_cliff_kits(value: Variant) -> void:
+	if not value is Dictionary:
+		return
+	for key in (value as Dictionary).keys():
+		var source := (value as Dictionary).get(key, {}) as Dictionary
+		var kit_id := StringName(str(key))
+		rock_cliff_kits[kit_id] = {
+			"id": kit_id,
+			"status": String(source.get("status", "needs_asset")),
+			"biome_ids": _normalize_string_name_array(
+				source.get("biome_ids", [])
+			),
+			"atlas_grid": _normalize_vector2i(
+				source.get("atlas_grid", [0, 0]), Vector2i.ZERO
+			),
+			"module_size_px": _normalize_vector2i(
+				source.get("module_size_px", [0, 0]), Vector2i.ZERO
+			),
+			"wall_atlas_path": String(source.get("wall_atlas_path", "")),
+			"top_atlas_path": String(source.get("top_atlas_path", "")),
+			"wall_fallback_path": String(source.get("wall_fallback_path", "")),
+			"top_fallback_path": String(source.get("top_fallback_path", "")),
+			"wall_regions": _normalize_atlas_regions(
+				source.get("wall_regions", {})
+			),
+			"top_regions": _normalize_atlas_regions(
+				source.get("top_regions", {})
+			),
+			"source": String(source.get("source", "")),
+			"license": String(source.get("license", "")),
+			"attribution_key": String(source.get("attribution_key", "")),
+			"generation_manifest_path": String(
+				source.get("generation_manifest_path", "")
+			),
+		}
+
+func _normalize_atlas_regions(value: Variant) -> Dictionary:
+	var result := {}
+	if not value is Dictionary:
+		return result
+	for key in (value as Dictionary).keys():
+		result[StringName(str(key))] = _normalize_vector2i(
+			(value as Dictionary).get(key, [0, 0]),
+			Vector2i(-1, -1)
+		)
+	return result
+
+func _normalize_vector2i(value: Variant, default_value: Vector2i) -> Vector2i:
+	if value is Vector2i:
+		return value as Vector2i
+	if value is Vector2:
+		var vector := value as Vector2
+		return Vector2i(roundi(vector.x), roundi(vector.y))
+	if value is Array:
+		var values := value as Array
+		if values.size() >= 2:
+			return Vector2i(int(values[0]), int(values[1]))
+	return default_value
 
 func _load_asset_contract_section(section: StringName, value: Variant) -> void:
 	var section_data := asset_contracts.get(section, {}) as Dictionary
@@ -679,6 +799,7 @@ func _normalize_asset_contract(section: StringName, entry: Dictionary) -> Dictio
 		"generated_cliff_roles": _normalize_string_name_array(
 			entry.get("generated_cliff_roles", [])
 		),
+		"rock_cliff_kit_id": StringName(str(entry.get("rock_cliff_kit_id", ""))),
 		"terrain_tiles": _normalize_string_name_array(entry.get("terrain_tiles", [])),
 		"object_scenes": _normalize_string_name_array(entry.get("object_scenes", [])),
 		"edge_tiles": _normalize_string_name_array(entry.get("edge_tiles", [])),
@@ -966,6 +1087,54 @@ func _validate_asset_coverage(failures: PackedStringArray) -> void:
 	]:
 		if not has_asset_contract(&"void_tiles", void_id):
 			failures.append("%s: missing void_tiles asset contract" % String(void_id))
+
+func _validate_rock_cliff_kits(failures: PackedStringArray) -> void:
+	if rock_cliff_kits.is_empty():
+		failures.append("rock_cliff_kits section must not be empty in manifest v18")
+		return
+	for kit_id in rock_cliff_kits:
+		var kit := rock_cliff_kits[kit_id] as Dictionary
+		var status := String(kit.get("status", ""))
+		if not ASSET_STATUSES.has(status):
+			failures.append("rock_cliff_kits/%s: invalid status" % String(kit_id))
+		if (kit.get("atlas_grid", Vector2i.ZERO) as Vector2i) != Vector2i(4, 4):
+			failures.append("rock_cliff_kits/%s: atlas_grid must be 4x4" % String(kit_id))
+		if (kit.get("module_size_px", Vector2i.ZERO) as Vector2i) != Vector2i(512, 512):
+			failures.append("rock_cliff_kits/%s: module_size_px must be 512x512" % String(kit_id))
+		for field in ["source", "license", "attribution_key", "generation_manifest_path"]:
+			if String(kit.get(field, "")).is_empty():
+				failures.append("rock_cliff_kits/%s: %s must not be empty" % [String(kit_id), field])
+		for kind in [&"wall", &"top"]:
+			var asset_path := String(kit.get("%s_atlas_path" % String(kind), ""))
+			var fallback_path := String(kit.get("%s_fallback_path" % String(kind), ""))
+			if asset_path.is_empty():
+				failures.append("rock_cliff_kits/%s: %s atlas path is empty" % [String(kit_id), String(kind)])
+			if fallback_path.is_empty() or not RESOLVER_UTILS.asset_path_exists(fallback_path):
+				failures.append("rock_cliff_kits/%s: %s fallback is unavailable" % [String(kit_id), String(kind)])
+			if status not in MISSING_ASSET_STATUSES and not RESOLVER_UTILS.asset_path_exists(asset_path):
+				failures.append("rock_cliff_kits/%s: %s atlas is unavailable" % [String(kit_id), String(kind)])
+		var expected_by_kind := {
+			&"wall": ROCK_CLIFF_TOPOLOGY_RESOLVER.WALL_ROLES,
+			&"top": ROCK_CLIFF_TOPOLOGY_RESOLVER.TOP_ROLES,
+		}
+		for kind in expected_by_kind:
+			var regions := kit.get("%s_regions" % String(kind), {}) as Dictionary
+			var seen := {}
+			var expected_roles: Array[StringName] = expected_by_kind[kind]
+			for role in expected_roles:
+				if not regions.has(role):
+					failures.append("rock_cliff_kits/%s: missing %s role %s" % [String(kit_id), String(kind), String(role)])
+					continue
+				var cell := regions[role] as Vector2i
+				if cell.x < 0 or cell.y < 0 or cell.x >= 4 or cell.y >= 4:
+					failures.append("rock_cliff_kits/%s: %s role %s is outside atlas" % [String(kit_id), String(kind), String(role)])
+				if seen.has(cell):
+					failures.append("rock_cliff_kits/%s: duplicate %s atlas cell" % [String(kit_id), String(kind)])
+				seen[cell] = true
+	var plains_contract := get_biome_asset_set_contract(&"plains")
+	var plains_kit := StringName(str(plains_contract.get("rock_cliff_kit_id", "")))
+	if plains_kit.is_empty() or not rock_cliff_kits.has(plains_kit):
+		failures.append("plains biome asset set must reference a rock cliff kit")
 
 func _load_object_visual_data(value: Variant) -> void:
 	if not value is Dictionary:

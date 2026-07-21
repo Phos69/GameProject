@@ -10,7 +10,7 @@ const TEXTURE_LOADER = preload(
 
 const FOREST_PROFILE_ID: StringName = &"forest"
 const LARGE_ROCK_OBJECT_ID: StringName = &"large_rock"
-const ROCK_FACE_TEXTURE_ID: StringName = &"rock_cliff_face_texture"
+const ROCK_FACE_TEXTURE_ID: StringName = &"cliff_face_texture"
 const TEXTURE_LOAD_SIZE := Vector2i(512, 512)
 const FACE_REPEAT_WORLD_SIZE := 128.0
 const TOP_REPEAT_BY_PROFILE: Dictionary = {
@@ -35,17 +35,30 @@ static func resolve(
 	var profile_id := normalize_profile_id(requested_profile_id, biome_id)
 	var top_path := ""
 	var face_path := ""
+	var rock_cliff_kit_id := source_manifest.get_biome_rock_cliff_kit_id(biome_id)
+	var external_rock_atlas_ready := (
+		not rock_cliff_kit_id.is_empty()
+		and source_manifest.rock_cliff_kit_has_external_assets(rock_cliff_kit_id)
+	)
 	if profile_id == FOREST_PROFILE_ID:
-		top_path = String(
-			source_manifest.get_object_asset_contract(
-				LARGE_ROCK_OBJECT_ID
-			).get("asset_path", "")
-		)
-		face_path = String(
-			source_manifest.get_void_asset_contract(
-				ROCK_FACE_TEXTURE_ID
-			).get("asset_path", "")
-		)
+		if not rock_cliff_kit_id.is_empty():
+			top_path = source_manifest.get_rock_cliff_kit_fallback_path(
+				rock_cliff_kit_id, &"top"
+			)
+			face_path = source_manifest.get_rock_cliff_kit_fallback_path(
+				rock_cliff_kit_id, &"wall"
+			)
+		else:
+			top_path = String(
+				source_manifest.get_object_asset_contract(
+					LARGE_ROCK_OBJECT_ID
+				).get("asset_path", "")
+			)
+			face_path = String(
+				source_manifest.get_void_asset_contract(
+					ROCK_FACE_TEXTURE_ID
+				).get("asset_path", "")
+			)
 	else:
 		top_path = _select_profile_path(
 			profile_id,
@@ -69,6 +82,8 @@ static func resolve(
 	)
 	return {
 		"profile_id": profile_id,
+		"rock_cliff_kit_id": rock_cliff_kit_id,
+		"external_rock_atlas_ready": external_rock_atlas_ready,
 		"top_path": top_path,
 		"face_path": face_path,
 		"top_texture": TEXTURE_LOADER.load_texture(

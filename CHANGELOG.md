@@ -8,6 +8,21 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Added
 
+- `PLAINS-ROCK-001`: aggiunti manifest ambiente v18 e contratto
+  `rock_cliff_kits/plains_dark_fantasy`, prompt/versione/licenza/chroma-key dei
+  due atlas esterni, loader `AtlasTexture` senza rasterizzazione e resolver
+  tipizzato per lati, corner, diagonali, cap e top center deterministici.
+- Nella Plains Survival ogni mesa conserva il proprio inviluppo ma converte le
+  due righe sud in chasm aderente. Il contatto usa una sola faccia alta `3,75`
+  tile e sopprime south wall, lip e dirt divider duplicati; mesa, void e raised
+  cliff condividono lo stesso wall fallback in attesa degli atlas definitivi.
+- Ritirato `rock_cliff_face_upward_generated.png` dopo la verifica di assenza
+  di consumer e fallback; `rock_plateau_top_generated.png` resta il fallback
+  esplicito finche non viene consegnato il nuovo atlas top.
+- Infinite Arena ora converte i lotti fall-zone in terreno solido e non genera
+  void interno quando il boundary mode e `walled`/`blocked`. Incrementate firma
+  layout, revisione generatore/terrain, snapshot e cache rendering.
+
 - Unificati i doppi muri tra biomi in un solo raised cliff spesso due tile:
   `WorldRegionStreamer` conserva i collider regionali per collisioni e unload,
   ma delega il seam a `BiomeBoundaryWallSystem`, con un visual condiviso

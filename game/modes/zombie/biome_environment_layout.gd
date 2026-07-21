@@ -7,7 +7,7 @@ const DEFAULT_ZONE_SIZE := WorldGridConfig.BIOME_SIZE
 const PERIMETER_VISUAL_WALL: StringName = &"procedural_wall"
 const PERIMETER_VISUAL_RAISED_CLIFF: StringName = &"raised_cliff"
 const RAISED_CLIFF_HEIGHT_CELLS := WorldGridConfig.RAISED_CLIFF_HEIGHT_TILES
-const GENERATION_SIGNATURE_VERSION: int = 4
+const GENERATION_SIGNATURE_VERSION: int = 5
 
 const PARCEL_NONE: StringName = &""
 const PARCEL_MESA: StringName = &"mesa"

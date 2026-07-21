@@ -42,6 +42,7 @@ var top_mesh: ArrayMesh
 var face_mesh: ArrayMesh
 var area_count: int = 0
 var face_count: int = 0
+var suppress_south_face: bool = false
 
 func configure(
 	next_palette: BiomePalette,
@@ -66,6 +67,7 @@ func reset() -> void:
 	face_mesh = null
 	area_count = 0
 	face_count = 0
+	suppress_south_face = false
 
 func build(
 	mesa_rects: Array[Rect2i],
@@ -101,9 +103,11 @@ func build(
 func build_local_size(
 	world_size: Vector2,
 	logical_scale: float,
-	world_uv_origin: Vector2 = Vector2.ZERO
+	world_uv_origin: Vector2 = Vector2.ZERO,
+	next_suppress_south_face: bool = false
 ) -> void:
 	reset()
+	suppress_south_face = next_suppress_south_face
 	if world_size.x <= 0.0 or world_size.y <= 0.0 or logical_scale <= 0.0:
 		return
 	var top := QuadMeshBuffers.create()
@@ -164,6 +168,8 @@ func _append_area(
 		var outward := Vector2(delta.y, -delta.x).normalized()
 		# The north face points away from the cardinal camera and remains hidden.
 		if outward.y < -0.35:
+			continue
+		if suppress_south_face and outward.y > 0.35:
 			continue
 		var brightness := FRONT_BRIGHTNESS
 		if outward.x < -0.35:

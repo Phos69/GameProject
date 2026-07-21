@@ -52,6 +52,7 @@ var _mesa_top_texture: Texture2D
 var _mesa_face_texture: Texture2D
 var _mesa_profile_id: StringName = &""
 var _mesa_art_asset_paths: Dictionary = {}
+var _mesa_south_face_suppressed: bool = false
 
 # Opaque-content metrics (bounds + width profile, texture pixels) keyed by
 # asset_path. The same asset always loads at one deterministic size, so it is
@@ -268,6 +269,9 @@ func get_mesa_geometry_counts() -> Dictionary:
 	if _mesa_mesh_builder == null:
 		return {}
 	return _mesa_mesh_builder.get_counts()
+
+func has_suppressed_mesa_south_face() -> bool:
+	return _mesa_south_face_suppressed
 
 func is_world_position_behind_cliff(world_position: Vector2) -> bool:
 	return (
@@ -592,7 +596,8 @@ func configure_mesa_visual(
 	generation_seed: int,
 	palette: BiomePalette,
 	logical_tile_scale: float,
-	world_uv_origin: Vector2 = Vector2.ZERO
+	world_uv_origin: Vector2 = Vector2.ZERO,
+	suppress_south_face: bool = false
 ) -> void:
 	if not uses_mesa_visual():
 		return
@@ -609,7 +614,10 @@ func configure_mesa_visual(
 	_mesa_art_asset_paths = {
 		"top": String(art.get("top_path", "")),
 		"face": String(art.get("face_path", "")),
+		"rock_cliff_kit_id": StringName(art.get("rock_cliff_kit_id", &"")),
+		"external_rock_atlas_ready": bool(art.get("external_rock_atlas_ready", false)),
 	}
+	_mesa_south_face_suppressed = suppress_south_face
 	_mesa_mesh_builder = MESA_MESH_BUILDER.new() as RectilinearRockAreaMeshBuilder
 	_mesa_mesh_builder.configure(
 		palette,
@@ -620,7 +628,8 @@ func configure_mesa_visual(
 	_mesa_mesh_builder.build_local_size(
 		obstacle_size,
 		logical_tile_scale,
-		world_uv_origin
+		world_uv_origin,
+		suppress_south_face
 	)
 	_configure_mesa_collision_polygon(logical_tile_scale)
 	queue_redraw()

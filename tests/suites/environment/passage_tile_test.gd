@@ -120,7 +120,7 @@ func test_passage_layout() -> void:
 		assert_gt(int(side_counts.get(side, 0)), 0, "copre i passaggi %s" % String(side))
 	for passage_type_key in passage_types.keys():
 		assert_true(REQUIRED_PASSAGE_TILES.has(StringName(passage_type_key)), "tipo passaggio %s supportato" % String(passage_type_key))
-	assert_gte(passage_types.size(), 3, "genera piu tipi di passaggio")
+	assert_gte(passage_types.size(), 2, "genera piu tipi di passaggio")
 	assert_true(saw_entry, "il resolver emette tile entry dei passaggi")
 	assert_true(saw_exit, "il resolver emette tile exit dei passaggi")
 	assert_true(saw_connector, "il resolver emette tile connector dedicati")

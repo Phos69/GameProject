@@ -1,8 +1,8 @@
 {
-  "version": 17,
+  "version": 18,
   "coordinate_system": "orthogonal_top_down",
   "volume_style": "controlled_perspective",
-  "notes": "Manifest v17 uses the four canonical plains-family biome IDs, a screen-aligned cardinal grid, contextual deterministic raster variants and collision variants; forest_tree has dedicated plains, burning_plains and frozen_tundra pools, while archived toxic/urban assets remain available but are not part of the active biome registry.",
+  "notes": "Manifest v18 adds the external modular rock-cliff kit contract for Plains while retaining explicit legacy raster fallbacks until the two authored atlases are delivered.",
   "obstacle_footprint": {
     "slot_size_cells": [4, 4],
     "logical_cell_world_pixels": 8,
@@ -34,6 +34,34 @@
       "crate": "res://game/drops/supply_crate.gd",
       "cliff": "res://game/modes/zombie/cliffs/top_down_cliff_mesh_builder.gd",
       "cliff_border": "res://game/modes/zombie/cliffs/top_down_cliff_border_mesh_builder.gd"
+    }
+  },
+  "rock_cliff_kits": {
+    "plains_dark_fantasy": {
+      "status": "needs_asset",
+      "biome_ids": ["plains"],
+      "atlas_grid": [4, 4],
+      "module_size_px": [512, 512],
+      "wall_atlas_path": "res://assets/environment/top_down/rock_cliffs/plains/plains_dark_fantasy_wall_atlas.png",
+      "top_atlas_path": "res://assets/environment/top_down/rock_cliffs/plains/plains_dark_fantasy_top_atlas.png",
+      "wall_fallback_path": "res://assets/environment/top_down/edges/cliffs/textures/cliff_face_generated_v2.png",
+      "top_fallback_path": "res://assets/environment/top_down/edges/cliffs/textures/rock_plateau_top_generated.png",
+      "wall_regions": {
+        "edge_north": [0, 0], "edge_east": [1, 0], "edge_south": [2, 0], "edge_west": [3, 0],
+        "convex_north_east": [0, 1], "convex_south_east": [1, 1], "convex_south_west": [2, 1], "convex_north_west": [3, 1],
+        "concave_north_east": [0, 2], "concave_south_east": [1, 2], "concave_south_west": [2, 2], "concave_north_west": [3, 2],
+        "diagonal_north_east_south_west": [0, 3], "diagonal_north_west_south_east": [1, 3], "cap_horizontal": [2, 3], "cap_vertical": [3, 3]
+      },
+      "top_regions": {
+        "convex_north_east": [0, 0], "convex_south_east": [1, 0], "convex_south_west": [2, 0], "convex_north_west": [3, 0],
+        "edge_north": [0, 1], "edge_east": [1, 1], "edge_south": [2, 1], "edge_west": [3, 1],
+        "concave_north_east": [0, 2], "concave_south_east": [1, 2], "concave_south_west": [2, 2], "concave_north_west": [3, 2],
+        "center_01": [0, 3], "center_02": [1, 3], "center_03": [2, 3], "center_04": [3, 3]
+      },
+      "source": "external_prompt_generation",
+      "license": "Project original",
+      "attribution_key": "environment_top_down_external",
+      "generation_manifest_path": "res://assets/environment/top_down/rock_cliffs/plains/generation_manifest.json"
     }
   },
   "tile_sets": {
@@ -119,7 +147,6 @@
     "void_depth": { "asset_path": "res://assets/environment/top_down/edges/void/void_depth.svg", "anchor": "center", "fallback_path": "res://game/modes/zombie/biome_fall_zone.gd" },
     "void_vertical_lines": { "asset_path": "res://assets/environment/top_down/edges/void/void_vertical_lines.svg", "anchor": "edge_aligned", "fallback_path": "res://game/modes/zombie/biome_fall_zone.gd" },
     "cliff_face_texture": { "asset_path": "res://assets/environment/top_down/edges/cliffs/textures/cliff_face_generated_v2.png", "status": "final", "anchor": "center", "source": "openai_image_generation", "license": "Project original", "attribution_key": "environment_top_down_openai", "fallback_path": "res://game/modes/zombie/cliffs/top_down_cliff_mesh_builder.gd" },
-    "rock_cliff_face_texture": { "asset_path": "res://assets/environment/top_down/edges/cliffs/textures/rock_cliff_face_upward_generated.png", "status": "final", "anchor": "center", "source": "openai_image_generation", "license": "Project original", "attribution_key": "environment_top_down_openai", "fallback_path": "res://game/modes/zombie/cliffs/top_down_cliff_mesh_builder.gd" },
     "cliff_lip_texture": { "asset_path": "res://assets/environment/top_down/edges/cliffs/textures/grass_cliff_edge_generated_v2.png", "status": "final", "anchor": "edge_aligned", "source": "openai_image_generation", "license": "Project original", "attribution_key": "environment_top_down_openai", "fallback_path": "res://game/modes/zombie/cliffs/top_down_cliff_mesh_builder.gd" },
     "cliff_lip_vertical_texture": { "asset_path": "res://assets/environment/top_down/edges/cliffs/textures/grass_cliff_edge_vertical_generated.png", "status": "final", "anchor": "edge_aligned", "source": "openai_image_generation", "license": "Project original", "attribution_key": "environment_top_down_openai", "fallback_path": "res://game/modes/zombie/cliffs/top_down_cliff_border_mesh_builder.gd" }
   },
@@ -253,7 +280,7 @@
     "cliff_ramp": { "asset_path": "res://assets/environment/top_down/passages/cliff_ramp.svg", "fallback_path": "res://game/modes/zombie/biome_tile_layer.gd" }
   },
   "biome_asset_sets": {
-    "plains": { "asset_path": "res://assets/environment/top_down/previews/infected_plains_asset_set.svg", "biome_ids": ["plains"], "fallback_path": "res://game/modes/zombie/biome_tile_layer.gd", "tile_set": "plains", "terrain_tiles": ["forest_grass", "forest_grass_variant_01", "forest_grass_variant_02", "forest_tall_grass", "forest_path", "forest_road", "forest_road_border", "grass_to_path", "grass_to_road", "grass_to_tall_grass", "path_to_road", "ground_to_void_cliff", "ground_to_mountain_wall", "main_road", "road", "broken_street", "road_intersection", "road_edge", "road_curve_north", "road_curve_east", "road_curve_south", "road_curve_west"], "object_scenes": ["small_rock", "large_rock", "broken_fence", "wood_barrier", "boundary_fence", "ruined_house", "abandoned_house", "abandoned_car", "fallen_log", "forest_tree", "dense_vegetation"], "edge_tiles": ["boundary_fence", "forest_mountain_wall"], "void_tiles": ["fall_zone", "void_edge_near", "forest_void", "forest_cliff_edge", "cliff_lip_north", "cliff_lip_south", "cliff_lip_east", "cliff_lip_west", "void_depth", "void_vertical_lines"], "passage_tiles": ["road", "road_entry", "road_exit", "cliff_ramp"] },
+    "plains": { "asset_path": "res://assets/environment/top_down/previews/infected_plains_asset_set.svg", "biome_ids": ["plains"], "fallback_path": "res://game/modes/zombie/biome_tile_layer.gd", "tile_set": "plains", "rock_cliff_kit_id": "plains_dark_fantasy", "terrain_tiles": ["forest_grass", "forest_grass_variant_01", "forest_grass_variant_02", "forest_tall_grass", "forest_path", "forest_road", "forest_road_border", "grass_to_path", "grass_to_road", "grass_to_tall_grass", "path_to_road", "ground_to_void_cliff", "ground_to_mountain_wall", "main_road", "road", "broken_street", "road_intersection", "road_edge", "road_curve_north", "road_curve_east", "road_curve_south", "road_curve_west"], "object_scenes": ["small_rock", "large_rock", "broken_fence", "wood_barrier", "boundary_fence", "ruined_house", "abandoned_house", "abandoned_car", "fallen_log", "forest_tree", "dense_vegetation"], "edge_tiles": ["boundary_fence", "forest_mountain_wall"], "void_tiles": ["fall_zone", "void_edge_near", "forest_void", "forest_cliff_edge", "cliff_lip_north", "cliff_lip_south", "cliff_lip_east", "cliff_lip_west", "void_depth", "void_vertical_lines"], "passage_tiles": ["road", "road_entry", "road_exit", "cliff_ramp"] },
     "toxic_wastes": { "asset_path": "res://assets/environment/top_down/previews/toxic_wastes_asset_set.svg", "biome_ids": ["toxic_wastes"], "fallback_path": "res://game/modes/zombie/biome_tile_layer.gd", "tile_set": "toxic_wastes", "generated_theme_id": "urban_ruins", "status": "final", "source": "openai_image_generation", "license": "Project original", "attribution_key": "environment_top_down_openai", "generated_surface_roles": ["ground", "path", "road", "ground_to_path", "ground_to_road", "detail"], "generated_cliff_roles": ["cliff_face", "cliff_lip_horizontal", "cliff_lip_vertical", "cliff_outer_corner", "cliff_inner_corner", "cliff_cap"], "terrain_tiles": ["main_road", "road", "service_lane", "broken_gate", "road_intersection", "road_edge", "road_curve_north", "road_curve_east", "road_curve_south", "road_curve_west"], "object_scenes": ["large_rock", "forest_tree", "abandoned_car", "corroded_barrier", "lab_ruin", "chemical_barrel", "pipe_stack", "lab_block", "industrial_fence", "toxic_barrel", "lab_wall", "toxic_boundary_wall"], "edge_tiles": ["toxic_boundary_wall"], "void_tiles": ["fall_zone", "void_edge_near", "cliff_lip_north", "cliff_lip_south", "cliff_lip_east", "cliff_lip_west", "void_depth", "void_vertical_lines"], "passage_tiles": ["broken_gate", "broken_gate_entry", "broken_gate_exit", "road", "road_entry", "road_exit", "cliff_ramp"] },
     "burning_plains": { "asset_path": "res://assets/environment/top_down/previews/burning_fields_asset_set.svg", "biome_ids": ["burning_plains"], "fallback_path": "res://game/modes/zombie/biome_tile_layer.gd", "tile_set": "burning_plains", "generated_theme_id": "burning_plains", "status": "final", "source": "openai_image_generation", "license": "Project original", "attribution_key": "environment_top_down_openai", "generated_surface_roles": ["ground", "path", "road", "ground_to_path", "ground_to_road", "detail"], "generated_cliff_roles": ["cliff_face", "cliff_lip_horizontal", "cliff_lip_vertical", "cliff_outer_corner", "cliff_inner_corner", "cliff_cap"], "terrain_tiles": ["main_road", "road", "ash_lane", "burned_road", "road_intersection", "road_edge", "road_curve_north", "road_curve_east", "road_curve_south", "road_curve_west"], "object_scenes": ["large_rock", "forest_tree", "abandoned_car", "scorched_barricade", "burned_house", "burned_car", "metal_wreck", "charred_wall", "ash_barrier", "lava_boundary"], "edge_tiles": ["lava_boundary"], "void_tiles": ["fall_zone", "void_edge_near", "cliff_lip_north", "cliff_lip_south", "cliff_lip_east", "cliff_lip_west", "void_depth", "void_vertical_lines"], "passage_tiles": ["burned_road", "burned_road_entry", "burned_road_exit", "road", "road_entry", "road_exit", "cliff_ramp"] },
     "frozen_tundra": { "asset_path": "res://assets/environment/top_down/previews/frozen_outskirts_asset_set.svg", "biome_ids": ["frozen_tundra"], "fallback_path": "res://game/modes/zombie/biome_tile_layer.gd", "tile_set": "frozen_tundra", "generated_theme_id": "frozen_tundra", "status": "final", "source": "openai_image_generation", "license": "Project original", "attribution_key": "environment_top_down_openai", "generated_surface_roles": ["ground", "path", "road", "ground_to_path", "ground_to_road", "detail"], "generated_cliff_roles": ["cliff_face", "cliff_lip_horizontal", "cliff_lip_vertical", "cliff_outer_corner", "cliff_inner_corner", "cliff_cap"], "terrain_tiles": ["main_road", "road", "packed_snow_path", "snow_pass", "road_intersection", "road_edge", "road_curve_north", "road_curve_east", "road_curve_south", "road_curve_west"], "object_scenes": ["large_rock", "forest_tree", "abandoned_car", "ice_rock", "ice_block", "snow_cabin", "snow_wall", "fallen_log", "ice_boundary"], "edge_tiles": ["ice_boundary"], "void_tiles": ["fall_zone", "void_edge_near", "cliff_lip_north", "cliff_lip_south", "cliff_lip_east", "cliff_lip_west", "void_depth", "void_vertical_lines"], "passage_tiles": ["snow_pass", "snow_pass_entry", "snow_pass_exit", "road", "road_entry", "road_exit", "cliff_ramp"] },

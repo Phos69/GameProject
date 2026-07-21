@@ -58,6 +58,7 @@ var mesa_inset_corner_patch_count: int = 0
 var diagonal_void_patch_count: int = 0
 var corner_count: int = 0
 var concave_corner_count: int = 0
+var suppressed_mountain_contact_count: int = 0
 var sample_full_texture: bool = false
 var _diagonal_void_centers: Dictionary = {}
 
@@ -74,6 +75,7 @@ func reset() -> void:
 	diagonal_void_patch_count = 0
 	corner_count = 0
 	concave_corner_count = 0
+	suppressed_mountain_contact_count = 0
 	_diagonal_void_centers.clear()
 
 func build(
@@ -81,7 +83,8 @@ func build(
 	fall_zone_sides: Array[StringName],
 	zone_size: Vector2i,
 	logical_scale: float,
-	next_sample_full_texture: bool = false
+	next_sample_full_texture: bool = false,
+	mesa_rects: Array[Rect2i] = []
 ) -> void:
 	reset()
 	sample_full_texture = next_sample_full_texture
@@ -98,8 +101,15 @@ func build(
 		fall_zone_sides,
 		zone_size
 	)
+	RockCliffTopologyResolver.annotate_mountain_contacts(
+		boundary_runs,
+		mesa_rects
+	)
 	_annotate_diagonal_corner_radii(boundary_runs)
 	for run in boundary_runs:
+		if RockCliffTopologyResolver.is_mountain_contact(run):
+			suppressed_mountain_contact_count += 1
+			continue
 		_append_boundary_run(
 			horizontal,
 			vertical,

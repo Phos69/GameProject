@@ -2313,13 +2313,13 @@ func test_tile_layer_consumes_cliff_textures() -> void:
 	assert_eq(int(border_counts.get("faces", 0)), 4, "synthetic fall rectangle replaces angled per-cell faces with four linear faces")
 	assert_eq(
 		int(layer.get_mesa_area_counts().get("dirt_transitions", 0)),
-		4,
-		"synthetic mesa receives dirt around its complete ground footprint"
+		0,
+		"Plains mesa omits the legacy dirt outline"
 	)
 	assert_eq(
 		int(layer.get_mesa_area_counts().get("dirt_corners", 0)),
-		4,
-		"synthetic mesa dirt outline rounds all four footprint corners"
+		0,
+		"Plains mesa emits no dirt corner patches"
 	)
 	var transition_tile := layer.get_resolved_tile_id(Vector2i(6, 6))
 	assert_true(

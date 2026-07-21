@@ -15,7 +15,7 @@ fianchi sono `controlled_perspective`: possono superare la base solo sul piano
 visivo e non spostano celle, anchor o collisioni. Il contratto generale e in
 `docs/top_down_cardinal_contract.md`.
 
-Il manifest v17 usa slot da `4x4` celle legacy (`8 px` world-space per cella):
+Il manifest v18 usa slot da `4x4` celle legacy (`8 px` world-space per cella):
 
 ```text
 obstacle_id -> footprint_slots -> footprint_tiles -> occupied_cells
@@ -50,7 +50,7 @@ Esempi:
 - `objects/trees/variants/{burning_plains,frozen_tundra}/tree_pair_01..04_{adult,young}.png`;
 - `source_sheets/{tree,burning_tree,frozen_tree}_asset_sheet.png` (fogli RGB originali conservati per reimport);
 - `edges/cliffs/textures/rock_plateau_top_generated.png` (top massa rocciosa scalabile);
-- `edges/cliffs/textures/rock_cliff_face_upward_generated.png` (faccia cliff rialzata);
+- `edges/cliffs/textures/cliff_face_generated_v2.png` (wall fallback condiviso Plains);
 - `objects/generated_raster/infected_plains/ruined_house_4x4.png`;
 - `objects/generated_props/lab_block_6x6_generated.svg`.
 
@@ -130,7 +130,7 @@ scalabile: il void-first genera rettangoli quadrati da `3x3` a `5x5` tile logici
 `RectilinearRockAreaMeshBuilder` trasforma ogni `rock_rect` in un plateau
 rialzato, cioe il void cliff specchiato verso l'alto. La corona cobble
 (`rock_plateau_top_generated.png`) e sollevata di `RAISE_HEIGHT_CELLS` e rientra
-in un mesa; tre pareti continue a colonne (`rock_cliff_face_upward_generated.png`)
+in un mesa; tre pareti continue a colonne (wall fallback condiviso del kit Plains)
 salgono dal prato fino al bordo: il fronte sud a tutta larghezza piu i due
 fianchi obliqui inclinati di `LATERAL_LEAN_RATIO`. La parete nord guarda lontano
 dalla camera e non viene emessa. Le pareti sono disegnate per prime e la corona

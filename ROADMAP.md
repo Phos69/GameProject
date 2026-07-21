@@ -55,6 +55,13 @@ anche le milestone completate per evitare sovrapposizioni.
   snapshot v7. Fuzz 20x5, suite mirate e Visual QA biomi 6/6 sono verdi; resta
   in `BAL-001` soltanto il playtest manuale lungo.
 
+- `PLAINS-ROCK-001`: **fondazione runtime completata 2026-07-21; consegna asset
+  aperta**. Manifest v18, resolver topologico, split mesa/chasm, faccia continua
+  `3,75` tile, soppressione dei giunti, arena senza void interno e revisioni di
+  layout/generatore/snapshot/cache sono integrati. Il cutover visuale ai due
+  atlas `plains_dark_fantasy` resta bloccato soltanto dalla consegna e QA dei PNG
+  esterni; il task residuo e dettagliato in `TODO.md`.
+
 ### Presentazione e UX
 
 - `CHAR-DIR-001`: **completata 2026-07-17 (7/7)**. Tutti i personaggi usano un

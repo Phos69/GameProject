@@ -224,7 +224,11 @@ func populate_layout_voidfirst(
 		layout, biome, parcel_rng, palette["spoke_tag"] as StringName
 	)
 	var parcel_content: Dictionary = TERRAIN_PARCEL_CONTENT_PASS.new().populate(
-		layout, biome, content_rng, palette["spoke_tag"] as StringName
+		layout,
+		biome,
+		content_rng,
+		palette["spoke_tag"] as StringName,
+		_internal_void_enabled(context)
 	)
 	_add_connected_border_walls(layout, cell, biome, context)
 	_place_voidfirst_theme_hazards(layout, biome, hazard_rng)
@@ -1345,12 +1349,14 @@ func _is_walled_arena_context(context: Dictionary) -> bool:
 		or ContextUtils.get_string(context, "arena_boundary_mode", "") == "blocked"
 	)
 
-# Internal void/chasms are a shared terrain feature, decoupled from the boundary
-# mode: they are emitted in every mode (Survival and the walled Infinite Arena
-# alike) and only suppressed by an explicit opt-out flag. The walled boundary now
-# governs the perimeter only (walls vs fall edge), never the interior.
+# Internal void/chasms remain enabled for Survival regions. A walled/blocked
+# arena is the explicit Infinite Arena contract and must stay fully solid;
+# callers can also opt out independently for synthetic layouts and tests.
 func _internal_void_enabled(context: Dictionary) -> bool:
-	return not ContextUtils.get_bool(context, "disable_internal_void", false)
+	return (
+		not _is_walled_arena_context(context)
+		and not ContextUtils.get_bool(context, "disable_internal_void", false)
+	)
 
 func _ensure_internal_void_block(
 	layout: BiomeEnvironmentLayout,
