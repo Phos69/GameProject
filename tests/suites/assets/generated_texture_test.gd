@@ -51,6 +51,38 @@ var _manifest: EnvironmentAssetManifest
 func before_all() -> void:
 	_manifest = EnvironmentAssetManifest.reload_shared()
 
+func test_biome_wall_transition_texture_follows_boundary_axis() -> void:
+	GeneratedBiomeTextureTools.clear_cache()
+	var warm := _solid_texture(Color(0.9, 0.1, 0.05, 1.0))
+	var cold := _solid_texture(Color(0.05, 0.2, 0.9, 1.0))
+	var east := GeneratedBiomeTextureTools.blend_biome_wall_transition_texture(
+		warm, cold, &"east", "test-east"
+	)
+	var west := GeneratedBiomeTextureTools.blend_biome_wall_transition_texture(
+		warm, cold, &"west", "test-west"
+	)
+	assert_not_null(east, "east-facing shared wall creates a transition texture")
+	assert_not_null(west, "west-facing shared wall creates a transition texture")
+	if east == null or west == null:
+		return
+	var east_image := east.get_image()
+	var west_image := west.get_image()
+	assert_gt(
+		east_image.get_pixel(0, 4).r,
+		east_image.get_pixel(7, 4).r,
+		"east transition starts with the source mountain"
+	)
+	assert_gt(
+		east_image.get_pixel(7, 4).b,
+		east_image.get_pixel(0, 4).b,
+		"east transition ends with the neighboring mountain"
+	)
+	assert_gt(
+		west_image.get_pixel(0, 4).b,
+		west_image.get_pixel(7, 4).b,
+		"west transition reverses the cross-wall gradient"
+	)
+
 # --- forest surface textures (forest_grass_generated_texture) ---------------
 
 func test_forest_surface_textures() -> void:
@@ -3315,3 +3347,8 @@ func _average_visible_rgb_delta_to_color(image: Image, target: Color) -> float:
 	if samples <= 0:
 		return 1.0
 	return total / float(samples)
+
+func _solid_texture(color: Color) -> Texture2D:
+	var image := Image.create(8, 8, false, Image.FORMAT_RGBA8)
+	image.fill(color)
+	return ImageTexture.create_from_image(image)

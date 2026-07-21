@@ -1208,6 +1208,15 @@ multi-bioma.
   `environment_obstacles`/`spawn_blockers`, inclusi i vicini. I registri di
   ostacoli, hazard e crate eliminano le entry invalide per indice, senza
   reinserire un oggetto freed in una `TypedArray` durante `erase`.
+- Su un confine tra due regioni, i due segmenti perimetrali da una tile restano
+  collider separati e region-owned, cosi unload e query gameplay non acquisiscono
+  ownership incrociata. `WorldRegionStreamer` ne sopprime pero il draw locale e
+  delega a `BiomeBoundaryWallSystem` un solo `BiomeBoundaryWallVisual` spesso
+  due tile, posseduto dal seam e
+  residente finche almeno una delle due regioni e caricata. La regione a
+  nord/ovest fornisce segmentazione e lato canonici; la corona miscela i due top
+  montagna lungo l'asse trasversale, mentre le facce esterne usano il cliff del
+  bioma corrispondente. I varchi e la collisione restano quelli dei layout.
 - `EnvironmentTextureLoader` evita che il runtime dipenda dall'import editor:
   rasterizza direttamente il contenuto SVG quando mantiene corner trasparenti,
   accetta la texture SVG importata solo se non introduce un canvas opaco,
@@ -1231,6 +1240,9 @@ multi-bioma.
   rocciose; se uno dei raster manca torna al muro procedurale. Il nodo ostacolo
   resta proprietario di collision layer, shape, footprint, Y-sort, metadata e
   gruppi runtime: il cliff arena non usa `BiomeFallZone` e non applica caduta.
+  Il painter accetta inoltre il profilo secondario e UV trasversali 0..1 per il
+  solo visual condiviso dei seam, evitando che il gradiente si ripeta lungo la
+  parete.
 - Il manifest v15 vieta fallback impliciti e valida anche ogni path dichiarato
   in `variant_asset_paths`: ogni ID generato da ostacoli,
   terrain, passaggi, bordi o fall zone deve avere un contratto asset-driven con

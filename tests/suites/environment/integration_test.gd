@@ -180,6 +180,35 @@ func test_full_region_streaming() -> void:
 		_same_ids(streamed, expected_resident),
 		"streamer contains current region plus the single nearby passage"
 	)
+	var shared_wall_roots := streamer.get_shared_biome_wall_roots() as Dictionary
+	assert_gt(
+		shared_wall_roots.size(),
+		0,
+		"streamed biome seams create shared double-thickness wall visuals"
+	)
+	for root_value in shared_wall_roots.values():
+		var shared_root := root_value as Node2D
+		assert_not_null(shared_root, "shared biome wall root remains resident")
+		if shared_root == null:
+			continue
+		assert_true(
+			bool(shared_root.get_meta("unified_biome_wall_root", false)),
+			"shared wall root is distinguishable from regional collision walls"
+		)
+		for child in shared_root.get_children():
+			var transition_visual := child as BiomeBoundaryWallVisual
+			assert_not_null(transition_visual, "shared wall uses transition visual segments")
+			if transition_visual == null:
+				continue
+			assert_eq(
+				float(transition_visual.get_meta("wall_thickness_world", 0.0)),
+				WorldGridConfig.LOGICAL_TILE_SCALE * 2.0,
+				"runtime seam wall spans the two regional border strips once"
+			)
+			assert_true(
+				transition_visual.has_transition_art(),
+				"runtime seam wall loads both neighboring mountain materials"
+			)
 	for region_id in expected_resident:
 		assert_eq(int(streamer.get_content_level(region_id)), 2, "%s is streamed as FULL gameplay content" % String(region_id))
 	var nonzero_texture_origins := 0

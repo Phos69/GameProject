@@ -818,9 +818,11 @@ Identita dei biomi:
   rotazione zero sugli assi H/V;
   il movimento e la mira degli attori rimangono analogici;
 - i lati collegati tra biomi hanno raised cliff tematici alti due tile logiche con
-  almeno un passaggio raggiungibile; ogni regione rende il proprio lato con il
-  proprio tema. I lati senza vicino diventano fall zone con visuale
-  cliff/depth;
+  almeno un passaggio raggiungibile. Le due fasce confinanti da una tile formano
+  un solo muro spesso due tile: la corona passa gradualmente dalla montagna del
+  primo bioma a quella del secondo e le facce esterne mantengono il rispettivo
+  tema. I collider restano regionali e i varchi non cambiano. I lati senza
+  vicino diventano fall zone con visuale cliff/depth;
 - tall grass, classificazione delle superfici, maschera regionale, divisore di
   terra e sostituzione delle texture sono solo lettura visuale: non rendono
   obbligatori asset esterni e non cambiano walkability, danno, spawn o

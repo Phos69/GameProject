@@ -50,6 +50,7 @@ const SWAMP_CLIFF_TEXTURE_DOWNSCALE := 0.45
 # pixel caldi, lasciando invariati lava feature, path e il tono ocra del grass.
 const VOLCANIC_EMBER_THRESHOLD := 0.18
 const SURFACE_NORMALIZATION_CACHE_REVISION := "surface-v7-burning-ember-cap"
+const BIOME_WALL_TRANSITION_CACHE_REVISION := "biome-wall-transition-v1"
 
 # Cache di sessione delle texture normalizzate, keyed su asset_path + parametri.
 # La normalizzazione gira pixel-per-pixel in GDScript: senza cache veniva rifatta
@@ -64,6 +65,74 @@ static func clear_cache() -> void:
 
 static func get_cached_normalized_texture_count() -> int:
 	return _normalized_texture_cache.size()
+
+## Costruisce la texture della corona per il muro condiviso tra due regioni.
+## L'asse trasversale viene consumato una sola volta (UV 0..1) dal painter,
+## mentre l'asse longitudinale continua a ripetersi in world-space. In questo
+## modo la sfumatura non ricomincia a ogni repeat della texture della montagna.
+static func blend_biome_wall_transition_texture(
+	primary_texture: Texture2D,
+	secondary_texture: Texture2D,
+	neighbor_side: StringName,
+	cache_key: String = ""
+) -> Texture2D:
+	if primary_texture == null:
+		return secondary_texture
+	if secondary_texture == null:
+		return primary_texture
+	var full_key := ""
+	if not cache_key.is_empty():
+		full_key = "%s|%s|%s" % [
+			BIOME_WALL_TRANSITION_CACHE_REVISION,
+			cache_key,
+			String(neighbor_side),
+		]
+		if _normalized_texture_cache.has(full_key):
+			return _normalized_texture_cache[full_key] as Texture2D
+	var primary := _readable_texture_image(primary_texture)
+	var secondary := _readable_texture_image(secondary_texture)
+	if primary == null or primary.is_empty():
+		return secondary_texture
+	if secondary == null or secondary.is_empty():
+		return primary_texture
+	primary.convert(Image.FORMAT_RGBA8)
+	secondary.convert(Image.FORMAT_RGBA8)
+	if secondary.get_size() != primary.get_size():
+		secondary.resize(
+			primary.get_width(),
+			primary.get_height(),
+			Image.INTERPOLATE_LANCZOS
+		)
+	var horizontal_transition := (
+		neighbor_side == &"west" or neighbor_side == &"east"
+	)
+	var reverse_transition := (
+		neighbor_side == &"west" or neighbor_side == &"north"
+	)
+	var denominator := float(
+		maxi(
+			(primary.get_width() if horizontal_transition else primary.get_height()) - 1,
+			1
+		)
+	)
+	for y in range(primary.get_height()):
+		for x in range(primary.get_width()):
+			var axis_position := float(x if horizontal_transition else y)
+			var blend := axis_position / denominator
+			if reverse_transition:
+				blend = 1.0 - blend
+			blend = blend * blend * (3.0 - 2.0 * blend)
+			primary.set_pixel(
+				x,
+				y,
+				primary.get_pixel(x, y).lerp(secondary.get_pixel(x, y), blend)
+			)
+	primary.fix_alpha_edges()
+	primary.generate_mipmaps()
+	var result := ImageTexture.create_from_image(primary)
+	if not full_key.is_empty():
+		_normalized_texture_cache[full_key] = result
+	return result
 
 static func surface_edge_trim_pixels(biome_id: StringName) -> int:
 	if biome_id == &"plains":

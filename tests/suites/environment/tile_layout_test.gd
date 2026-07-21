@@ -495,6 +495,31 @@ func test_perimeter_wall_factory_render() -> void:
 		assert_true(bool(wall.call("uses_procedural_fallback")), "il muro perimetrale usa il volume top-down procedurale tileabile")
 	wall.free()
 
+func test_shared_biome_wall_uses_one_double_thickness_transition_visual() -> void:
+	var visual := BiomeBoundaryWallVisual.new()
+	var shared_thickness := WorldGridConfig.LOGICAL_TILE_SCALE * 2.0
+	visual.configure(
+		Vector2(shared_thickness, shared_thickness),
+		&"east",
+		Vector2.ZERO,
+		BiomeEnvironmentLayout.RAISED_CLIFF_HEIGHT_CELLS,
+		WorldGridConfig.LOGICAL_TILE_SCALE,
+		&"plains",
+		_palette_for_biome(&"plains"),
+		&"frozen_tundra",
+		_palette_for_biome(&"frozen_tundra")
+	)
+	assert_true(visual.has_transition_art(), "shared wall loads both mountain materials")
+	assert_true(bool(visual.get_meta("unified_biome_wall", false)), "shared wall is one visual contract")
+	assert_eq(
+		float(visual.get_meta("wall_thickness_world", 0.0)),
+		WorldGridConfig.LOGICAL_TILE_SCALE * 2.0,
+		"shared wall spans both former one-tile border strips"
+	)
+	assert_eq(visual.get_meta("primary_biome_id", &""), &"plains", "source biome owns one edge")
+	assert_eq(visual.get_meta("secondary_biome_id", &""), &"frozen_tundra", "neighbor biome owns the opposite edge")
+	visual.free()
+
 # --- helper ---------------------------------------------------------------
 
 func _palette_for_biome(biome_id: StringName) -> BiomePalette:

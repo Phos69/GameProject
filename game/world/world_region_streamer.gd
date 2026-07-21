@@ -10,6 +10,9 @@ signal visual_chunks_changed(loaded_count: int, pending_count: int)
 const BIOME_TILE_LAYER_SCRIPT = preload(
 	"res://game/modes/zombie/biome_tile_layer.gd"
 )
+const BIOME_BOUNDARY_WALL_SYSTEM_SCRIPT = preload(
+	"res://game/modes/zombie/cliffs/biome_boundary_wall_system.gd"
+)
 const WORLD_CHUNK_VISIBILITY_CONTROLLER_SCRIPT = preload(
 	"res://game/world/streaming/world_chunk_visibility_controller.gd"
 )
@@ -66,6 +69,7 @@ var _unload_deadlines: Dictionary = {}
 var _chunk_visibility: WorldChunkVisibilityController
 var _retirement_queue: WorldRegionRetirementQueue
 var _seam_system: Node
+var _biome_boundary_wall_system: BiomeBoundaryWallSystem
 
 # String(region_id) -> { "state": int, "level": int, "offset": Vector2,
 # "env_root": Node2D, "pickup_root": Node2D, "owned_obstacles": Array,
@@ -182,6 +186,15 @@ func start_world(
 			graph.start_region_id
 			if not graph.start_region_id.is_empty()
 			else center_region_id
+		)
+		_biome_boundary_wall_system = (
+			BIOME_BOUNDARY_WALL_SYSTEM_SCRIPT.new() as BiomeBoundaryWallSystem
+		)
+		_biome_boundary_wall_system.configure(
+			graph,
+			biome_manager,
+			environment_container,
+			anchor_region_id
 		)
 		_prewarm_world_assets()
 		_configure_chunk_visibility()
@@ -383,6 +396,9 @@ func clear() -> void:
 	_ensure_retirement_queue()
 	for key in _entries.keys().duplicate():
 		_unstream_region(StringName(key))
+	if _biome_boundary_wall_system != null:
+		_biome_boundary_wall_system.clear()
+	_biome_boundary_wall_system = null
 	# clear() appartiene al teardown/reset completo, non alla transizione tra
 	# regioni: qui e' corretto chiudere gli eventuali retirement ancora pendenti.
 	_retirement_queue.flush()
@@ -451,6 +467,13 @@ func get_region_content_counts(region_id: StringName) -> Dictionary:
 		"hazards": int(entry.get("hazards", 0)),
 		"crates": int(entry.get("crates", 0))
 	}
+
+func get_shared_biome_wall_roots() -> Dictionary:
+	return (
+		_biome_boundary_wall_system.get_roots()
+		if _biome_boundary_wall_system != null
+		else {}
+	)
 
 func get_region_environment_root_instance_id(region_id: StringName) -> int:
 	var entry := _entries.get(String(region_id), {}) as Dictionary
@@ -604,6 +627,7 @@ func _stream_region(
 		"owned_crates": []
 	}
 	_entries[String(region.region_id)] = entry
+	_biome_boundary_wall_system.refresh_for_region(region.region_id, _entries)
 	# Percorso sincrono (avvio run): tutto il contenuto e' pronto nello stesso
 	# frame. Percorso asincrono (regione entrata nel raggio durante il gameplay):
 	# ostacoli/hazard/casse vengono accodati e committati con un budget per frame
@@ -747,6 +771,17 @@ func _commit_obstacle(
 		index,
 		biome.biome_id
 	)
+	if (
+		obstacle.is_perimeter_wall()
+		and _biome_boundary_wall_system != null
+		and _biome_boundary_wall_system.region_has_neighbor_on_side(
+			region_id,
+			obstacle.get_perimeter_side()
+		)
+	):
+		# I due collider regionali restano indipendenti per ownership/unload, ma
+		# la loro coppia viene disegnata una sola volta dal visual condiviso.
+		obstacle.set_perimeter_visual_suppressed(true)
 	ObstacleSystem.configure_mesa_obstacle_visual(
 		obstacle,
 		layout,
@@ -1253,6 +1288,8 @@ func _unstream_region(region_id: StringName) -> void:
 	_retirement_queue.enqueue(env_root)
 	_retirement_queue.enqueue(pickup_root)
 	_entries.erase(key)
+	if _biome_boundary_wall_system != null:
+		_biome_boundary_wall_system.refresh_for_region(region_id, _entries)
 	_pending_region_ids.erase(region_id)
 	if not _pending_content.is_empty():
 		var retained_items: Array[Dictionary] = []
@@ -1266,7 +1303,6 @@ func _unstream_region(region_id: StringName) -> void:
 		_chunk_visibility.mark_dirty()
 	_last_unload_msec = float(Time.get_ticks_usec() - started_usec) / 1000.0
 	_max_unload_msec = maxf(_max_unload_msec, _last_unload_msec)
-
 
 func _ensure_retirement_queue() -> void:
 	if _retirement_queue == null:

@@ -8,6 +8,13 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Added
 
+- Unificati i doppi muri tra biomi in un solo raised cliff spesso due tile:
+  `WorldRegionStreamer` conserva i collider regionali per collisioni e unload,
+  ma delega il seam a `BiomeBoundaryWallSystem`, con un visual condiviso
+  persistente e una transizione fra le due
+  texture montagna e facce cliff coerenti ai biomi confinanti. Aggiunti guardrail
+  per direzione del gradiente, spessore e caricamento dei due materiali.
+
 - Telemetria streaming per diagnosticare i seam: `get_streaming_stats()` espone
   commit contenuti per frame, tempi massimi di commit/unload, fase attiva e
   massimo della finalizzazione geometrica tile, region build e retirement;

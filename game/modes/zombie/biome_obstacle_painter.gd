@@ -12,10 +12,12 @@ static func draw_raised_perimeter_cliff(
 	wall_height: float,
 	face_texture: Texture2D,
 	top_texture: Texture2D,
-	uv_origin: Vector2
+	uv_origin: Vector2,
+	secondary_face_texture: Texture2D = null,
+	neighbor_side: StringName = &""
 ) -> void:
 	_draw_raised_cliff_shadow(canvas, obstacle_size)
-	if obstacle_size.x >= obstacle_size.y:
+	if side == &"north" or side == &"south":
 		_draw_horizontal_raised_cliff(
 			canvas,
 			obstacle_size,
@@ -23,7 +25,9 @@ static func draw_raised_perimeter_cliff(
 			wall_height,
 			face_texture,
 			top_texture,
-			uv_origin
+			uv_origin,
+			secondary_face_texture,
+			neighbor_side
 		)
 	else:
 		_draw_vertical_raised_cliff(
@@ -33,7 +37,9 @@ static func draw_raised_perimeter_cliff(
 			wall_height,
 			face_texture,
 			top_texture,
-			uv_origin
+			uv_origin,
+			secondary_face_texture,
+			neighbor_side
 		)
 
 static func _draw_horizontal_raised_cliff(
@@ -43,7 +49,9 @@ static func _draw_horizontal_raised_cliff(
 	wall_height: float,
 	face_texture: Texture2D,
 	top_texture: Texture2D,
-	uv_origin: Vector2
+	uv_origin: Vector2,
+	secondary_face_texture: Texture2D,
+	neighbor_side: StringName
 ) -> void:
 	var half := obstacle_size * 0.5
 	var lift := Vector2(0.0, -wall_height)
@@ -56,6 +64,11 @@ static func _draw_horizontal_raised_cliff(
 	var top_south_east := south_east + lift
 	var top_south_west := south_west + lift
 	var face_brightness := 0.94 if side == &"north" else 1.0
+	var exposed_face_texture := (
+		secondary_face_texture
+		if neighbor_side == &"south" and secondary_face_texture != null
+		else face_texture
+	)
 	_draw_cliff_face(
 		canvas,
 		PackedVector2Array([
@@ -68,20 +81,20 @@ static func _draw_horizontal_raised_cliff(
 		uv_origin.x + obstacle_size.x,
 		wall_height,
 		face_brightness,
-		face_texture
+		exposed_face_texture
 	)
-	_draw_cliff_top(
-		canvas,
-		PackedVector2Array([
-			top_north_west,
-			top_north_east,
-			top_south_east,
-			top_south_west
-		]),
-		uv_origin,
-		half,
-		top_texture
-	)
+	var top_points := PackedVector2Array([
+		top_north_west,
+		top_north_east,
+		top_south_east,
+		top_south_west
+	])
+	if neighbor_side.is_empty():
+		_draw_cliff_top(canvas, top_points, uv_origin, half, top_texture)
+	else:
+		_draw_biome_transition_cliff_top(
+			canvas, top_points, uv_origin, half, top_texture, neighbor_side
+		)
 
 static func _draw_vertical_raised_cliff(
 	canvas: CanvasItem,
@@ -90,7 +103,9 @@ static func _draw_vertical_raised_cliff(
 	wall_height: float,
 	face_texture: Texture2D,
 	top_texture: Texture2D,
-	uv_origin: Vector2
+	uv_origin: Vector2,
+	secondary_face_texture: Texture2D,
+	neighbor_side: StringName
 ) -> void:
 	var half := obstacle_size * 0.5
 	var lean := minf(
@@ -107,6 +122,16 @@ static func _draw_vertical_raised_cliff(
 	var top_south_west := south_west + Vector2(lean, -wall_height)
 	var west_brightness := 0.88 if side == &"east" else 0.68
 	var east_brightness := 0.88 if side == &"west" else 0.76
+	var west_face_texture := (
+		secondary_face_texture
+		if neighbor_side == &"west" and secondary_face_texture != null
+		else face_texture
+	)
+	var east_face_texture := (
+		secondary_face_texture
+		if neighbor_side == &"east" and secondary_face_texture != null
+		else face_texture
+	)
 	_draw_cliff_face(
 		canvas,
 		PackedVector2Array([
@@ -119,7 +144,7 @@ static func _draw_vertical_raised_cliff(
 		uv_origin.y + obstacle_size.y,
 		wall_height,
 		west_brightness,
-		face_texture
+		west_face_texture
 	)
 	_draw_cliff_face(
 		canvas,
@@ -133,20 +158,20 @@ static func _draw_vertical_raised_cliff(
 		uv_origin.y,
 		wall_height,
 		east_brightness,
-		face_texture
+		east_face_texture
 	)
-	_draw_cliff_top(
-		canvas,
-		PackedVector2Array([
-			top_north_west,
-			top_north_east,
-			top_south_east,
-			top_south_west
-		]),
-		uv_origin,
-		half,
-		top_texture
-	)
+	var top_points := PackedVector2Array([
+		top_north_west,
+		top_north_east,
+		top_south_east,
+		top_south_west
+	])
+	if neighbor_side.is_empty():
+		_draw_cliff_top(canvas, top_points, uv_origin, half, top_texture)
+	else:
+		_draw_biome_transition_cliff_top(
+			canvas, top_points, uv_origin, half, top_texture, neighbor_side
+		)
 
 static func _draw_cliff_face(
 	canvas: CanvasItem,
@@ -194,6 +219,43 @@ static func _draw_cliff_top(
 				+ half_size
 			) / RAISED_CLIFF_TOP_REPEAT_WORLD_SIZE
 		)
+	canvas.draw_polygon(
+		points,
+		PackedColorArray([
+			Color(1.06, 1.06, 1.06, 1.0),
+			Color(1.06, 1.06, 1.06, 1.0),
+			Color(1.02, 1.02, 1.02, 1.0),
+			Color(1.02, 1.02, 1.02, 1.0)
+		]),
+		uvs,
+		texture
+	)
+
+static func _draw_biome_transition_cliff_top(
+	canvas: CanvasItem,
+	points: PackedVector2Array,
+	uv_origin: Vector2,
+	half_size: Vector2,
+	texture: Texture2D,
+	neighbor_side: StringName
+) -> void:
+	var horizontal_transition := (
+		neighbor_side == &"west" or neighbor_side == &"east"
+	)
+	var full_size := half_size * 2.0
+	var uvs := PackedVector2Array()
+	for point in points:
+		var local_surface := point + half_size
+		if horizontal_transition:
+			uvs.append(Vector2(
+				local_surface.x / maxf(full_size.x, 1.0),
+				(uv_origin.y + local_surface.y) / RAISED_CLIFF_TOP_REPEAT_WORLD_SIZE
+			))
+		else:
+			uvs.append(Vector2(
+				(uv_origin.x + local_surface.x) / RAISED_CLIFF_TOP_REPEAT_WORLD_SIZE,
+				local_surface.y / maxf(full_size.y, 1.0)
+			))
 	canvas.draw_polygon(
 		points,
 		PackedColorArray([

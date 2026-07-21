@@ -38,6 +38,7 @@ var accent_color: Color = Color(0.74, 0.58, 0.16, 0.82)
 var sort_offset: float = 0.0
 var sort_anchor_y: float = 0.0
 var perimeter_cliff_profile := PERIMETER_CLIFF_PROFILE.new()
+var perimeter_visual_suppressed: bool = false
 
 func configure(
 	next_obstacle_id: StringName,
@@ -224,6 +225,11 @@ func configure_perimeter_visual(
 	set_meta("perimeter_uv_origin", perimeter_cliff_profile.uv_origin)
 	queue_redraw()
 
+func set_perimeter_visual_suppressed(suppressed: bool) -> void:
+	perimeter_visual_suppressed = suppressed
+	set_meta("perimeter_visual_suppressed", suppressed)
+	queue_redraw()
+
 func get_perimeter_visual_style() -> StringName:
 	return perimeter_cliff_profile.style
 
@@ -359,6 +365,8 @@ func _draw() -> void:
 			_draw_barrier()
 
 func _draw_perimeter_wall() -> void:
+	if perimeter_visual_suppressed:
+		return
 	if has_raised_cliff_art():
 		BIOME_OBSTACLE_PAINTER.draw_raised_perimeter_cliff(
 			self,
