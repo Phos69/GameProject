@@ -98,7 +98,15 @@ mentre trasparenza e copertura sono validate da
 `burning_plains` e `frozen_tundra`, ciascuno formato da quattro coppie
 adulto/giovane RGBA `444x444`. I fogli RGB `4x2` originali restano sotto
 `environment/top_down/source_sheets/`; i crop runtime sono decontaminati dal
-checkerboard e mantengono collider circolari separati dalla chioma.
+checkerboard e mantengono collider circolari separati dalla chioma. Pianura
+contiene una sola silhouette alpha connessa sia a `444 px` sia nel campione
+nearest-neighbor runtime a circa `298 px`. Burning viene reestratto dal foglio
+con matte morbido, edge contraction di `1 px` e despill; la luminosita neutra
+premoltiplicata per alpha non puo superare `0,30`. Frozen rende
+trasparenti anche i vuoti bianco-neutri tra i rami: parti innevate separate sono
+ammesse. Burning e Frozen non ammettono componenti sotto `12 px` nel sorgente o `4 px` a runtime. Dopo aver rigenerato i crop eseguire
+`godot --headless --path . --script res://tools/sanitize_tree_assets.gd -- --write`;
+senza `--write` lo stesso comando e un check non distruttivo.
 
 I cliff void usano raster finali in `edges/cliffs/textures/`:
 `cliff_face_generated_v2.png`, `grass_cliff_edge_generated_v2.png` per il

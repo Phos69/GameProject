@@ -26,6 +26,12 @@ Regole per nuove voci:
 - Stato 2026-07-20: integrati i primi 16 raster contestuali del follow-up,
   quattro coppie adulto/giovane per Pianura Ardente e Tundra Gelata. Restano i
   prop ambientali non-albero dei tre biomi e il set dedicato della Palude.
+  Stato 2026-07-21: tutte le 24 varianti albero integrate sono state ripulite
+  dalle isole alpha staccate; negli otto Frozen anche il matte bianco tra i rami
+  e ora trasparente, mentre gli otto Burning sono stati reestratti con matte
+  morbido e despill per eliminare gli highlight bianchi. I difetti sono protetti da check automatico; i
+  lotti forestali palustri continuano a usare il fallback condiviso gia pulito finche non sara
+  disponibile il set raster dedicato della Palude.
 - Obiettivo: sostituire gli SVG ambientali ancora attivi in Pianura Ardente,
   Tundra Gelata e Palude con raster originali trasparenti coerenti con il
   pass completato per la Pianura, senza modificare gameplay o layout.

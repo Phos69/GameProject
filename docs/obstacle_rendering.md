@@ -100,7 +100,15 @@ vicini dell'albero e l'alpha viene contratto di `2 px` sul canvas sorgente
 `444x444` (meno di un pixel alla scala runtime). Pixel chiari ereditati dal
 fondale producono aloni con il filtro bilineare; anche i piccoli residui interni
 grigio-bianchi a bassa saturazione devono essere ricampionati dal colore locale.
-Entrambi i difetti sono rifiutati dalla suite asset.
+I PNG Plains devono inoltre contenere una sola componente alpha connessa a 8
+direzioni sia sul canvas `444x444` sia dopo il nearest-neighbor a circa
+`298x298`. I Burning sono reestratti dal source sheet con chroma-key sul bordo,
+matte morbido, contraction di `1 px` e despill: il contributo visibile di un
+pixel neutro (`massimo RGB * alpha`) non puo superare `0,30`. Nei Frozen il matte bianco-neutro interno fra i rami viene
+convertito in trasparenza; neve e rami legittimamente separati restano ammessi,
+ma Burning e Frozen non ammettono componenti sotto `12 px` nel sorgente o `4 px` nel campione runtime.
+`tools/sanitize_tree_assets.gd -- --write` applica entrambe le regole; tutti
+questi difetti sono rifiutati dalla suite asset.
 
 Per `floor_center`, il centro del contenuto opaco viene allineato al centro del
 collider fisico; non viene appoggiato sul bordo sud del footprint. Gli asset

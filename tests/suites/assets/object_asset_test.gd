@@ -34,6 +34,25 @@ const INFECTED_PLAINS_RASTER_COLLIDER_IDS: Array[StringName] = [
 const TREE_VARIANT_CONTEXTS: Array[StringName] = [
 	&"plains", &"burning_plains", &"frozen_tundra",
 ]
+const TREE_RUNTIME_SIZE := Vector2i(298, 298)
+const FROZEN_BACKGROUND_MIN_CHANNEL := 0.94
+const FROZEN_BACKGROUND_MAX_CHANNEL_SPREAD := 0.035
+const FROZEN_MIN_SOURCE_COMPONENT_AREA := 12
+const FROZEN_MIN_RUNTIME_COMPONENT_AREA := 4
+const BURNING_VISIBLE_NEUTRAL_LIMIT := 0.30
+const BURNING_MAX_CHANNEL_SPREAD := 0.18
+const BURNING_MIN_SOURCE_COMPONENT_AREA := 12
+const BURNING_MIN_RUNTIME_COMPONENT_AREA := 4
+const TREE_ALPHA_NEIGHBORS: Array[Vector2i] = [
+	Vector2i.LEFT,
+	Vector2i.RIGHT,
+	Vector2i.UP,
+	Vector2i.DOWN,
+	Vector2i(-1, -1),
+	Vector2i(1, -1),
+	Vector2i(-1, 1),
+	Vector2i(1, 1),
+]
 const TREE_BIOME_RESOURCE_PATHS := {
 	&"plains": "res://game/modes/zombie/biomes/plains.tres",
 	&"burning_plains": "res://game/modes/zombie/biomes/burning_plains.tres",
@@ -388,22 +407,99 @@ func test_biome_tree_assets_and_random_selection() -> void:
 			assert_eq(image.get_size(), Vector2i(444, 444), "%s keeps the shared pair canvas" % String(variant_id))
 			assert_eq(image.get_format(), Image.FORMAT_RGBA8, "%s keeps RGBA transparency" % String(variant_id))
 			assert_lt(image.get_pixel(0, 0).a, 0.01, "%s has a transparent corner" % String(variant_id))
+			if context_id == &"frozen_tundra":
+				assert_eq(
+					_count_frozen_background_pixels(image),
+					0,
+					"%s has transparent branch gaps instead of a white matte" % String(variant_id)
+				)
+				assert_eq(
+					_count_small_alpha_components(image, FROZEN_MIN_SOURCE_COMPONENT_AREA),
+					0,
+					"%s has no detached source specks" % String(variant_id)
+				)
+				assert_eq(
+					_count_runtime_small_alpha_components(image, FROZEN_MIN_RUNTIME_COMPONENT_AREA),
+					0,
+					"%s has no detached specks after runtime downscale" % String(variant_id)
+				)
+			elif context_id == &"burning_plains":
+				assert_eq(
+					_count_burning_visible_neutral_pixels(image),
+					0,
+					"%s has no visible white checkerboard highlights" % String(variant_id)
+				)
+				assert_eq(
+					_count_small_alpha_components(image, BURNING_MIN_SOURCE_COMPONENT_AREA),
+					0,
+					"%s has no detached source specks" % String(variant_id)
+				)
+				assert_eq(
+					_count_runtime_small_alpha_components(image, BURNING_MIN_RUNTIME_COMPONENT_AREA),
+					0,
+					"%s has no detached specks after runtime downscale" % String(variant_id)
+				)
+			else:
+				assert_eq(
+					_count_alpha_components(image),
+					1,
+					"%s has no detached source specks" % String(variant_id)
+				)
+				assert_eq(
+					_count_runtime_alpha_components(image),
+					1,
+					"%s has no detached specks after runtime downscale" % String(variant_id)
+				)
 			if context_id == &"plains":
 				assert_eq(
 					_count_light_desaturated_pixels(image),
 					0,
 					"%s has no white or gray matte speckles" % String(variant_id)
 				)
-			elif context_id == &"burning_plains":
-				assert_eq(
-					_count_bright_neutral_pixels(image),
-					0,
-					"%s has no trapped checkerboard pixels" % String(variant_id)
-				)
 			adult_count += 1 if String(variant_id).ends_with("_adult") else 0
 			young_count += 1 if String(variant_id).ends_with("_young") else 0
 		assert_eq(adult_count, 4, "%s contains four adults" % String(context_id))
 		assert_eq(young_count, 4, "%s contains four young trees" % String(context_id))
+
+	# Swamp forest parcels intentionally use the shared fallback tree, while
+	# random swamp props use the dedicated dead-tree SVG. Cover both paths: the
+	# raster must remain one connected silhouette and the SVG must not introduce
+	# near-white pixels that become dots against the dark marsh floor.
+	assert_true(
+		_manifest.get_object_random_variant_ids(&"forest_tree", &"swamp").is_empty(),
+		"swamp forest trees use the shared fallback asset"
+	)
+	var fallback_tree_path := _manifest.get_object_asset_path(&"forest_tree")
+	var fallback_tree := Image.load_from_file(
+		ProjectSettings.globalize_path(fallback_tree_path)
+	)
+	assert_false(fallback_tree.is_empty(), "swamp fallback forest tree loads")
+	if not fallback_tree.is_empty():
+		assert_eq(
+			_count_alpha_components(fallback_tree),
+			1,
+			"swamp fallback forest tree has no detached source specks"
+		)
+		assert_eq(
+			_count_runtime_alpha_components(fallback_tree),
+			1,
+			"swamp fallback forest tree has no detached specks after runtime downscale"
+		)
+	var dead_tree_path := _manifest.get_object_asset_path(&"dead_tree")
+	var dead_tree_size := _manifest.get_native_visual_size(&"dead_tree")
+	var dead_tree_texture := SVG_TEXTURE_LOADER.load_texture(
+		dead_tree_path,
+		Color(0.21, 0.36, 0.35, 1.0),
+		Color(0.76, 0.69, 0.44, 1.0),
+		Vector2i(roundi(dead_tree_size.x), roundi(dead_tree_size.y))
+	)
+	assert_not_null(dead_tree_texture, "swamp dead tree runtime texture loads")
+	if dead_tree_texture != null:
+		assert_eq(
+			_count_bright_neutral_pixels(dead_tree_texture.get_image()),
+			0,
+			"swamp dead tree has no near-white runtime specks"
+		)
 
 	var factory := ENVIRONMENT_OBJECT_FACTORY_SCRIPT.new(_manifest)
 	var tree := factory.create_obstacle(
@@ -808,6 +904,104 @@ func _count_bright_neutral_pixels(image: Image) -> int:
 			if minimum_channel > 0.86 and maximum_channel - minimum_channel < 0.12:
 				contaminated_pixel_count += 1
 	return contaminated_pixel_count
+
+func _count_frozen_background_pixels(image: Image) -> int:
+	var contaminated_pixel_count := 0
+	for y in range(image.get_height()):
+		for x in range(image.get_width()):
+			var pixel := image.get_pixel(x, y)
+			if pixel.a <= 0.0:
+				continue
+			var maximum_channel := maxf(pixel.r, maxf(pixel.g, pixel.b))
+			var minimum_channel := minf(pixel.r, minf(pixel.g, pixel.b))
+			if (
+				minimum_channel >= FROZEN_BACKGROUND_MIN_CHANNEL
+				and maximum_channel - minimum_channel <= FROZEN_BACKGROUND_MAX_CHANNEL_SPREAD
+			):
+				contaminated_pixel_count += 1
+	return contaminated_pixel_count
+
+func _count_burning_visible_neutral_pixels(image: Image) -> int:
+	var contaminated_pixel_count := 0
+	for y in range(image.get_height()):
+		for x in range(image.get_width()):
+			var pixel := image.get_pixel(x, y)
+			if pixel.a <= 0.0:
+				continue
+			var maximum_channel := maxf(pixel.r, maxf(pixel.g, pixel.b))
+			var minimum_channel := minf(pixel.r, minf(pixel.g, pixel.b))
+			if (
+				maximum_channel - minimum_channel <= BURNING_MAX_CHANNEL_SPREAD
+				and maximum_channel * pixel.a > BURNING_VISIBLE_NEUTRAL_LIMIT
+			):
+				contaminated_pixel_count += 1
+	return contaminated_pixel_count
+
+func _count_alpha_components(image: Image) -> int:
+	return _alpha_component_sizes(image).size()
+
+func _alpha_component_sizes(image: Image) -> Array[int]:
+	var width := image.get_width()
+	var height := image.get_height()
+	var visited := PackedByteArray()
+	visited.resize(width * height)
+	var component_sizes: Array[int] = []
+	for y in range(height):
+		for x in range(width):
+			var index := y * width + x
+			if visited[index] != 0 or image.get_pixel(x, y).a <= 0.0:
+				continue
+			var component_size := 0
+			var pending := PackedInt32Array([index])
+			visited[index] = 1
+			while not pending.is_empty():
+				var current: int = pending[pending.size() - 1]
+				pending.resize(pending.size() - 1)
+				component_size += 1
+				var current_x := current % width
+				var current_y := int(current / width)
+				for offset in TREE_ALPHA_NEIGHBORS:
+					var neighbor_x: int = current_x + offset.x
+					var neighbor_y: int = current_y + offset.y
+					if (
+						neighbor_x < 0
+						or neighbor_x >= width
+						or neighbor_y < 0
+						or neighbor_y >= height
+					):
+						continue
+					var neighbor := neighbor_y * width + neighbor_x
+					if visited[neighbor] != 0 or image.get_pixel(neighbor_x, neighbor_y).a <= 0.0:
+						continue
+					visited[neighbor] = 1
+					pending.append(neighbor)
+			component_sizes.append(component_size)
+	return component_sizes
+
+func _count_small_alpha_components(image: Image, minimum_area: int) -> int:
+	var small_component_count := 0
+	for component_size in _alpha_component_sizes(image):
+		if component_size < minimum_area:
+			small_component_count += 1
+	return small_component_count
+
+func _count_runtime_alpha_components(image: Image) -> int:
+	var runtime_image := image.duplicate()
+	runtime_image.resize(
+		TREE_RUNTIME_SIZE.x,
+		TREE_RUNTIME_SIZE.y,
+		Image.INTERPOLATE_NEAREST
+	)
+	return _count_alpha_components(runtime_image)
+
+func _count_runtime_small_alpha_components(image: Image, minimum_area: int) -> int:
+	var runtime_image := image.duplicate()
+	runtime_image.resize(
+		TREE_RUNTIME_SIZE.x,
+		TREE_RUNTIME_SIZE.y,
+		Image.INTERPOLATE_NEAREST
+	)
+	return _count_small_alpha_components(runtime_image, minimum_area)
 
 func _tree_variant_collision_diameter(variant_id: StringName) -> float:
 	var variant_name := String(variant_id)

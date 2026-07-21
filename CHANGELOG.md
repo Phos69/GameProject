@@ -51,6 +51,21 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Fixed
 
+- Sanificato l'intero set delle 24 varianti raster `forest_tree`, rimuovendo i
+  frammenti alpha opachi staccati che alla riduzione runtime `444 -> ~298 px`
+  producevano puntini netti. Gli otto alberi bruciati sono stati reestratti dal
+  foglio sorgente con matte morbido, edge contraction e despill: il bianco del
+  checkerboard non resta piu nelle lumeggiature e i rami sottili rimangono
+  leggibili. Negli otto alberi della Tundra Gelata sono stati resi trasparenti anche gli spazi
+  bianco-neutri del fondale rimasti tra i rami, preservando i toni azzurri e
+  grigi della neve. Pianura conserva una sola silhouette; Burning e Frozen
+  ammettono parti sottili separate ma rifiutano componenti sotto `12 px`
+  sul sorgente o `4 px` dopo il campionamento runtime. Il fallback
+  `forest_tree_3x3.png` usato dai lotti forestali della Palude e il
+  `dead_tree` SVG palustre sono stati verificati separatamente. Il nuovo tool
+  `sanitize_tree_assets.gd` ripete la pulizia dopo un eventuale reimport dai
+  source sheet e la suite asset impedisce la regressione.
+
 - Rimosso l'avviso acustico automatico `biome_entered`: il cambio bioma
   mantiene l'annuncio HUD ma non registra ne riproduce piu una cue audio.
 - Corretto l'inceppamento dopo attraversamenti ripetuti osservato nella

@@ -445,15 +445,15 @@ static func build_offset_ground_macro_texture(
 	)
 	var base_top_right := _offset_periodic_image(
 		base,
-		Vector2i(tile_size.x / 3, tile_size.y / 7)
+		Vector2i(tile_size.x * 7 / 13, tile_size.y * 11 / 17)
 	)
 	var base_bottom_left := _offset_periodic_image(
 		base,
-		Vector2i(tile_size.x * 2 / 3, tile_size.y * 3 / 5)
+		Vector2i(tile_size.x * 5 / 11, tile_size.y * 13 / 19)
 	)
 	var base_bottom_right := _offset_periodic_image(
 		base,
-		Vector2i(tile_size.x / 5, tile_size.y * 2 / 5)
+		Vector2i(tile_size.x * 9 / 16, tile_size.y * 3 / 14)
 	)
 	var source_rect := Rect2i(Vector2i.ZERO, tile_size)
 	atlas.blit_rect(base, source_rect, Vector2i.ZERO)

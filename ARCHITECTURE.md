@@ -1168,7 +1168,15 @@ multi-bioma.
   `random_variant_ids_by_context` seleziona deterministicamente dalla posizione
   world-space uno dei rispettivi otto PNG trasparenti, organizzati in quattro
   coppie adulto/giovane, e applica poi flip/tinta leggeri. Palude usa il proprio
-  ostacolo `dead_tree`. La selezione visuale non
+  ostacolo `dead_tree`; i suoi lotti forestali generati dal profilo condiviso
+  possono usare il fallback `forest_tree_3x3.png`. Le varianti Plains devono
+  avere una sola componente alpha connessa a 8 direzioni sia a `444 px` sia nel
+  campione runtime a circa `298 px`. Le Burning sono reestratte dal foglio RGB
+  con matte morbido, edge contraction e despill; il limite premoltiplicato
+  `RGB * alpha <= 0,30` impedisce highlight neutri bianchi. Le Frozen rendono trasparente il
+  matte bianco-neutro tra i rami e possono conservare parti innevate separate,
+  pur rifiutando, come Burning, componenti sotto `12 px` nel sorgente o `4 px` a runtime:
+  frammenti piu piccoli diventerebbero puntini durante il downscale. La selezione visuale non
   modifica layout, footprint o collider; `large_rock` non usa piu una
   silhouette fissa e rende
   sull'intero `mesa_rect` un plateau rialzato con corona e pareti dedicate. La
