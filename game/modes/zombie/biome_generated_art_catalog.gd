@@ -44,6 +44,8 @@ const ROAD_STYLE_SURFACE: StringName = &"surface"
 ##   ROLE_DETAIL perche' rompono la superficie base (es. urban_ruins: il
 ##   lichene chiaro 01 e la ghiaia bruna 04 leggevano come scacchiera di
 ##   pannelli contro la coppia di rubble grigi, ART-VIS-FIX VIS-002).
+## - catalog_only_path_variations: vecchie varianti path ancora censite per
+##   tooling/archivio ma escluse dal pool runtime ROLE_PATH.
 ## - path_transitions: false = ground_to_path renderizza direttamente il path
 ##   (taglio netto, nessuna texture intermedia).
 const THEME_CONTRACTS: Dictionary = {
@@ -93,6 +95,7 @@ const THEME_CONTRACTS: Dictionary = {
 		&"native_border_orientation": ROAD_BORDER_ORIENTATION_VERTICAL,
 		&"ground_detail_in_pool": false,
 		&"detail_ground_variations": ["01", "03", "04"],
+		&"catalog_only_path_variations": ["02"],
 		&"path_transitions": false,
 	},
 }
@@ -183,6 +186,13 @@ static func _theme_ground_detail_in_pool(theme_id: StringName) -> bool:
 
 static func _theme_detail_ground_variations(theme_id: StringName) -> Array:
 	return _theme_contract_value(theme_id, &"detail_ground_variations", []) as Array
+
+static func _theme_catalog_only_path_variations(theme_id: StringName) -> Array:
+	return _theme_contract_value(
+		theme_id,
+		&"catalog_only_path_variations",
+		[]
+	) as Array
 
 static func _theme_uses_path_transitions(theme_id: StringName) -> bool:
 	return bool(_theme_contract_value(theme_id, &"path_transitions", true))
@@ -648,6 +658,9 @@ static func _surface_role_for_file(
 			return ROLE_DETAIL
 		return ROLE_GROUND_TO_ROAD
 	if file_name.contains("path_variation"):
+		for variation in _theme_catalog_only_path_variations(theme_id):
+			if file_name.contains("path_variation_%s" % String(variation)):
+				return ROLE_DETAIL
 		return ROLE_PATH
 	if file_name.contains("road_variation"):
 		if _theme_uses_road_border(theme_id):

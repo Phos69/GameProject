@@ -58,6 +58,12 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Fixed
 
+- La Pianura Ardente non seleziona piu' casualmente la vecchia
+  `volcanic_terrain_06_path_variation_02.png` per i sentieri: il pool runtime
+  usa sempre la nuova superficie terra/cenere
+  `volcanic_terrain_05_path_variation_01.png`, mentre il raster precedente
+  resta censito soltanto per tooling e archivio.
+
 - Corretto il guardrail delle chiavi world-cache rimasto fermo alla revisione
   generatore `5` dopo il bump intenzionale a `6`: il test ricava ora il prefisso
   dalla sorgente unica `WorldDataCache.GENERATOR_REVISION`, evitando literal

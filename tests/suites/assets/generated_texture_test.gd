@@ -784,6 +784,20 @@ func test_burning_surface_selection_uses_coherent_materials() -> void:
 			ground_path.contains("base_ground_variation_02"),
 			"burning ground uses the quiet ember material as its full-surface base"
 		)
+		var path_path := BiomeGeneratedArtCatalog.select_surface_asset_path(
+			biome_id,
+			BiomeGeneratedArtCatalog.ROLE_PATH,
+			88013 + sample,
+			Vector2i(sample * 5, sample * 7)
+		)
+		assert_true(
+			path_path.contains("path_variation_01"),
+			"burning paths use the new dedicated ash-and-dirt surface"
+		)
+		assert_false(
+			path_path.contains("path_variation_02"),
+			"burning paths exclude the old dirt surface from the runtime pool"
+		)
 	var coherent_roles: Array[StringName] = [
 		BiomeGeneratedArtCatalog.ROLE_PATH,
 		BiomeGeneratedArtCatalog.ROLE_ROAD,
