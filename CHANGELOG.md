@@ -58,6 +58,11 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Fixed
 
+- Corretto il guardrail delle chiavi world-cache rimasto fermo alla revisione
+  generatore `5` dopo il bump intenzionale a `6`: il test ricava ora il prefisso
+  dalla sorgente unica `WorldDataCache.GENERATOR_REVISION`, evitando literal
+  duplicati che possono diventare obsoleti ai prossimi cambi di generazione.
+
 - Sanificato l'intero set delle 24 varianti raster `forest_tree`, rimuovendo i
   frammenti alpha opachi staccati che alla riduzione runtime `444 -> ~298 px`
   producevano puntini netti. Gli otto alberi bruciati sono stati reestratti dal
