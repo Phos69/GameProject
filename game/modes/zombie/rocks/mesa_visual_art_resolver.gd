@@ -35,13 +35,34 @@ static func resolve(
 	var profile_id := normalize_profile_id(requested_profile_id, biome_id)
 	var top_path := ""
 	var face_path := ""
+	var top_texture: Texture2D = null
+	var face_texture: Texture2D = null
+	var top_role: StringName = &""
+	var face_role: StringName = &""
 	var rock_cliff_kit_id := source_manifest.get_biome_rock_cliff_kit_id(biome_id)
 	var external_rock_atlas_ready := (
 		not rock_cliff_kit_id.is_empty()
 		and source_manifest.rock_cliff_kit_has_external_assets(rock_cliff_kit_id)
 	)
 	if profile_id == FOREST_PROFILE_ID:
-		if not rock_cliff_kit_id.is_empty():
+		if external_rock_atlas_ready:
+			var atlas_set := RockCliffAtlasSet.new()
+			if atlas_set.configure(biome_id, source_manifest):
+				var variant := posmod(
+					("%d|mesa_top" % generation_seed).hash(),
+					4
+				)
+				top_role = RockCliffTopologyResolver.TOP_ROLES[12 + variant]
+				face_role = &"edge_south"
+				top_texture = atlas_set.get_top_texture(top_role)
+				face_texture = atlas_set.get_wall_texture(face_role)
+				top_path = source_manifest.get_rock_cliff_kit_asset_path(
+					rock_cliff_kit_id, &"top"
+				)
+				face_path = source_manifest.get_rock_cliff_kit_asset_path(
+					rock_cliff_kit_id, &"wall"
+				)
+		elif not rock_cliff_kit_id.is_empty():
 			top_path = source_manifest.get_rock_cliff_kit_fallback_path(
 				rock_cliff_kit_id, &"top"
 			)
@@ -60,6 +81,8 @@ static func resolve(
 				).get("asset_path", "")
 			)
 	else:
+		top_role = GENERATED_ART_CATALOG.ROLE_GROUND
+		face_role = GENERATED_ART_CATALOG.ROLE_CLIFF_FACE
 		top_path = _select_profile_path(
 			profile_id,
 			GENERATED_ART_CATALOG.ROLE_GROUND,
@@ -80,18 +103,24 @@ static func resolve(
 		if palette != null
 		else Color(0.48, 0.43, 0.34, 1.0)
 	)
+	if top_texture == null:
+		top_texture = TEXTURE_LOADER.load_texture(
+			top_path, primary, accent, TEXTURE_LOAD_SIZE
+		)
+	if face_texture == null:
+		face_texture = TEXTURE_LOADER.load_texture(
+			face_path, primary, accent, TEXTURE_LOAD_SIZE
+		)
 	return {
 		"profile_id": profile_id,
 		"rock_cliff_kit_id": rock_cliff_kit_id,
 		"external_rock_atlas_ready": external_rock_atlas_ready,
 		"top_path": top_path,
 		"face_path": face_path,
-		"top_texture": TEXTURE_LOADER.load_texture(
-			top_path, primary, accent, TEXTURE_LOAD_SIZE
-		),
-		"face_texture": TEXTURE_LOADER.load_texture(
-			face_path, primary, accent, TEXTURE_LOAD_SIZE
-		),
+		"top_role": top_role,
+		"face_role": face_role,
+		"top_texture": top_texture,
+		"face_texture": face_texture,
 		"top_repeat_world_size": float(
 			TOP_REPEAT_BY_PROFILE.get(profile_id, 256.0)
 		),

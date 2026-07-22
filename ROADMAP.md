@@ -55,12 +55,18 @@ anche le milestone completate per evitare sovrapposizioni.
   snapshot v7. Fuzz 20x5, suite mirate e Visual QA biomi 6/6 sono verdi; resta
   in `BAL-001` soltanto il playtest manuale lungo.
 
-- `PLAINS-ROCK-001`: **fondazione runtime completata 2026-07-21; consegna asset
-  aperta**. Manifest v18, resolver topologico, split mesa/chasm, faccia continua
+- `PLAINS-ROCK-001`: **cutover runtime completato; sign-off visuale aperto al
+  2026-07-22**. Manifest v19, resolver topologico, split mesa/chasm, faccia continua
   `3,75` tile, soppressione dei giunti, arena senza void interno e revisioni di
-  layout/generatore/snapshot/cache sono integrati. Il cutover visuale ai due
-  atlas `plains_dark_fantasy` resta bloccato soltanto dalla consegna e QA dei PNG
-  esterni; il task residuo e dettagliato in `TODO.md`.
+  layout/generatore/snapshot/cache sono integrati. Parete e top atlas
+  `plains_dark_fantasy` derivano deterministicamente dalla croce esterna e sono
+  attivi sulle mesa e sul void Plains tramite batch per ruolo. La sorgente v3
+  mantiene le facce laterali scoscese dentro il footprint tramite inset interno
+  di una tile, crop dell'intera parete authored e clip solidale mesh/UV,
+  inclusi corner e diagonali; il top runtime omette coerentemente le due colonne
+  laterali. Resta il sign-off
+  manuale multi-seed e la decisione artistica su un eventuale top esterno con
+  picchi piu pronunciati; il residuo e dettagliato in `TODO.md`.
 
 ### Presentazione e UX
 

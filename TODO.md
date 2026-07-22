@@ -21,24 +21,30 @@ Regole per nuove voci:
 
 ## Backlog Aperto Prioritizzato
 
-### PLAINS-ROCK-001 - Consegna e cutover atlas rocciosi Plains
+### PLAINS-ROCK-001 - Sign-off visuale atlas rocciosi Plains
 
-- Stato 2026-07-21: contratto manifest v18, prompt, chroma-key, resolver,
-  `AtlasTexture`, geometria continua e regole Plains/Infinite Arena sono
-  implementati. I due PNG sorgente restano intenzionalmente assenti; il runtime
-  usa un fallback roccioso condiviso e non produce sostituti raster.
-- Obiettivo: generare esternamente e consegnare
-  `plains_dark_fantasy_wall_atlas.png` e
-  `plains_dark_fantasy_top_atlas.png`, quindi promuovere il kit da `needs_asset`
-  a `final` solo dopo la convalida visiva e topologica.
+- Stato 2026-07-22: contratto manifest v19, parete e top RGBA `2048x2048`,
+  resolver, UV di regione, batch per ruolo e regole Plains/Infinite Arena sono
+  implementati. Entrambi gli atlas derivano deterministicamente dalla croce
+  esterna senza nuovi pixel; hash, alpha e derivazione sono registrati e il kit
+  e `final`. Visual QA dedicate coprono croce, mesa, unione void concava e il
+  contatto mesa-chasm con parete rocciosa estesa sulla prima tile di caduta. La
+  sorgente v3 aumenta la pendenza laterale con cresta arretrata di una tile;
+  il repacker usa l'intera faccia authored e i guardrail coprono alpha, mesh e
+  UV di straight e corner senza skin oltre il footprint di collisione. Il top
+  runtime arretra della stessa tile est/ovest mantenendo il collider completo.
+- Obiettivo residuo: sign-off manuale multi-seed a entrambe le risoluzioni e
+  decisione esplicita se la superficie sorgente-derivata e sufficiente oppure
+  se commissionare un nuovo top esterno con picchi; il runtime non deve
+  sintetizzare questi ultimi.
 - Milestone collegata: polish ambiente post-`TOPDOWN-001`.
 - File/sistemi coinvolti: `assets/environment/top_down/rock_cliffs/plains/`,
   manifest ambiente, `RockCliffAtlasSet`, renderer mesa/void/perimetro,
   `BiomeTileLayer`, Visual QA cliff e suite `assets`, `environment`,
   `obstacles`, `world_gen`, `modes`.
-- Criterio di accettazione: due atlas RGBA `2048x2048` esatti, 32 regioni
-  uniche e connesse, nessun materiale non roccioso, bordi repeatable, top non
-  flat leggibile a `48x48`; nessun consumer runtime del vecchio raster upward.
+- Criterio di accettazione: nessun buco o campionamento dell'intero atlas,
+  pareti continue su L/T/croce e contatto mesa-void, materiale solo roccioso,
+  top leggibile a `48x48`; nessun consumer del vecchio raster upward.
 - Test richiesto: import Godot, check alpha/chroma e atlas, suite GUT mirate,
   tavola completa e scene mesa/void/bordo/arena a `1280x720` e `960x540`,
   multi-seed Plains e verifica `F9` di collider, fall-zone e Y-sort multiplayer.

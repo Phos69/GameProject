@@ -94,7 +94,7 @@ func append_transition(
 		return
 	transition_count += 1
 	var base_top := palette.prop_color.lightened(0.12)
-	var void_color := palette.background_color.darkened(0.68)
+	var void_color := ZombieModeController.get_void_background_color(palette)
 	for face in faces:
 		var path: PackedVector2Array = face.path
 		var drop: Vector2 = face.drop

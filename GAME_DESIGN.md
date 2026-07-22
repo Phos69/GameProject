@@ -35,19 +35,30 @@ Un action sandbox locale dove 1-4 giocatori affrontano arene, dungeon e difese a
 - Nella Plains montagne, chasm, bordo mondo e raised cliff di Infinite Arena
   appartengono allo stesso kit roccioso dark-fantasy: la roccia non incorpora
   erba, strada o materiale del terreno confinante.
+- Le facce est e ovest della croce v3 sono ricavate verso l'interno del
+  footprint: la base resta sul bordo della hitbox e la cresta arretra di una
+  tile completa. Il renderer campiona l'intera parete rocciosa e clippa insieme geometria
+  e UV al collider; il fianco risulta leggibile senza skin esterna o raccordi
+  che sembrino un semplice cambio di pavimentazione. Anche il top calpestabile
+  arretra di una tile sui lati est e ovest, senza ridurre il blocker fisico.
 - Ogni mesa della Plains Survival alta almeno cinque tile conserva lo stesso
   inviluppo non attraversabile ma usa le due righe meridionali come chasm
   aderente. Il contatto mostra una sola discesa continua dalla cima al void,
-  senza plateau dirt, lip o fascia di terreno intermedia.
-- Il top montagna e composto da edge/corner e quattro center variants
-  deterministiche e deve leggere come massa frastagliata, non come superficie
-  piatta. Infinite Arena conserva mesa e raised cliff, ma non genera chasm o
-  fall-zone interni.
+  senza plateau dirt, lip o fascia di terreno intermedia. L'arte della parete
+  copre la prima riga del chasm; la seconda conserva un void profondo nero,
+  uniforme e privo di contaminazioni dirt.
+- Il top montagna Plains usa quattro varianti centrali deterministiche ricavate
+  dalla superficie della croce; i moduli concavi/convessi/cardinali della stessa
+  sorgente ne costruiscono il perimetro roccioso. Non vengono inventati picchi
+  assenti nell'asset: per una silhouette piu alta serve un nuovo top esterno.
+  Infinite Arena conserva mesa e raised cliff, ma non genera chasm o fall-zone
+  interni.
 - La profondita grafica della parete di un chasm resta uniforme anche quando il
   vuoto e piu lungo; unioni a L/T/croce devono chiudere anche i raccordi concavi,
-  senza quadranti neri o interruzioni del lip. Il raccordo deriva dal contorno
-  unificato e dalla proiezione condivisa delle pareti incidenti, non da decal o
-  patch asset-specifiche sovrapposte al vertice.
+  senza quadranti neri, interruzioni del lip o code lineari sul terreno. Il
+  raccordo deriva dal contorno
+  unificato e dai moduli canonici classificati sulla maschera dei quattro
+  quadranti del vertice, non da patch correttive special-case.
 
 ## Giocatori
 

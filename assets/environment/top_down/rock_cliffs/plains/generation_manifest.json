@@ -1,23 +1,32 @@
 {
-  "version": 1,
+  "version": 9,
   "milestone": "PLAINS-ROCK-001",
-  "status": "awaiting_external_assets",
-  "generator": "external prompt-driven image generation",
+  "status": "final_source_derived_kit_v3_inset_lateral_faces",
+  "generator": "external prompt-driven image generation plus deterministic offline repacking",
   "output": {
     "size_px": [2048, 2048],
     "atlas_grid": [4, 4],
     "module_size_px": [512, 512],
     "background": "transparent RGBA or exact #FF00FF chroma key",
-    "runtime_scale": "one module per 48x48 logical tile",
+    "runtime_scale": "top centers use one module per 48x48 logical tile and omit the first and last lateral columns on mesas at least three tiles wide; boundary modules are 2x2 stamps centered on grid vertices and clipped with matching UVs to the authoritative footprint; east/west crests are remapped one full tile into the occupied half while their bases remain on the footprint boundary",
     "rotation_or_mirroring": false
   },
   "processing": {
     "alpha_tool": "res://tools/remove_sprite_chroma_key.gd",
-    "policy": "mechanical alpha extraction and AtlasTexture regions only; no generated or painted runtime fallback",
+    "wall_atlas_tool": "res://tools/build_plains_rock_wall_atlas.gd",
+    "top_atlas_tool": "res://tools/build_plains_rock_top_atlas.gd",
+    "wall_source_sha256": "d292edbb559b219cce1af6d7b60c5f4a0e23368abfb3cc8d3b1dcbc24a797b61",
+    "wall_alpha_source_sha256": "99f3e1ea096c4023851f30bbcf632eb94dc0d5a067f0eca39c7243555a738f2e",
+    "wall_atlas_sha256": "46752cad068d7012179c1187f6adbf8fc0bd110b8c4b78d3f5948ea38819041e",
+    "top_atlas_sha256": "df128a9d5a08606f5a58941973b7b097fea23a357269cacdf77a10fb104365de",
+    "policy": "mechanical alpha extraction, declared atlas regions and footprint-safe source-pixel remapping only; AtlasTexture is used for previews and normalized region UVs for batched meshes; no generated or painted runtime fallback",
     "validation": [
       "exact 4x4 alignment",
-      "all declared ports connect on matching cell boundaries",
-      "straight modules repeat on their longitudinal axis",
+      "declared role matches the sampled cardinal quadrant mask",
+      "all declared ports connect when overlapping 2x2 vertex stamps",
+      "east/west straight, convex and concave modules emit zero alpha in the outside half or missing quadrant",
+      "east/west authored faces cover the internal one-tile band and remain distinct from the adjacent crown",
+      "straight and corner modules form a continuous boundary at runtime scale",
       "no non-rock biome material",
       "no detached alpha islands or light matte",
       "readable at 48x48 pixels"
@@ -25,11 +34,25 @@
   },
   "assets": {
     "wall": {
+      "status": "ready",
       "file": "plains_dark_fantasy_wall_atlas.png",
+      "source_file": "plains_dark_fantasy_wall_cross_source_v3.png",
+      "supersedes": "plains_dark_fantasy_wall_cross_source_v2.png",
+      "source_size_px": [1254, 1254],
+      "source_pixel_format": "RGB with #FF00FF-family chroma background",
+      "alpha_source_file": "plains_dark_fantasy_wall_cross_source_v3_alpha.png",
+      "alpha_source_size_px": [1256, 1256],
+      "derivation": "tolerant chroma removal from the non-uniform magenta background, transparent padding to 1256x1256, v3 authored landmark crops and scale to 512x512. East/west straight modules are centered on the authored lower base; the repacker samples the complete authored face from the measured crest landmarks, remaps the crest 256 atlas pixels inward and rescales that rocky face into the internal one-tile band. The same half-module remap is applied to matching convex corners, only the missing-quadrant rows of concave corners, and therefore to composed diagonals. Longitudinal edges are harmonized afterward. Runtime stamp geometry and UVs are clipped together to the authoritative footprint. No alpha is emitted outside it and there is no rotation, mirroring, generative fill, painted RGB pixel or geometry expansion",
+      "source_prompt_revision": 3,
+      "source_generation_prompt": "Create ONE single connected plus-shaped rocky mountain platform for an orthogonal top-down dark-fantasy 2D game. This is one object, not a sprite atlas and not multiple separate pieces. Use a square canvas at the highest available resolution. Place the object exactly centered on a perfectly uniform solid #FF00FF chroma-key background. Imagine an invisible square gameplay grid. The plus shape has four cardinal arms and a central intersection. Every arm is exactly 3 imaginary gameplay tiles thick. The complete visible object — rocky top, cliff crests, cliff faces and lower bases — must remain strictly INSIDE this exact plus-shaped footprint. Nothing may protrude beyond the outer boundary of the cross. No overhang, shadow, rock fragment, cliff base or perspective projection may extend outside the footprint. The outer silhouette must remain a clean, exact plus shape with straight North, East, South and West sides, four clean convex outer corners, four clean concave inner corners, rectangular cardinal arms, no rounded ends and no detached pieces. The East-facing and West-facing borders must read as moderately steep rocky cliff faces, not as flat floor-texture transitions. Create this depth by carving the cliff INWARD: keep the lower base exactly on the original outer footprint boundary, move the upper crest slightly inward, use approximately 0.25 imaginary tile of visible lateral cliff depth, make the walkable rocky top slightly narrower near those edges, and never enlarge or displace the outer silhouette. The lateral faces must show real chunky rock blocks, cracks and short irregular strata. Preserve natural proportions: no stretched horizontal streaks, spikes, speed lines, thin decorative outlines or smeared texture. The South-facing cliff can be deeper and more visible, but it must also remain completely inside the cross footprint. The North-facing edge may show only a subtle crest. All straight faces and all concave and convex corners must join into one solid continuous rocky volume. Use ominous natural dark-fantasy mountain rock, charcoal and iron-brown stone, cold violet-black recesses, fractured slabs, broken ridges, subtle uneven height, a strong readable silhouette, painterly high detail and consistent upper-left lighting. Use an orthogonal top-down game view with controlled 2.5D cliff volume, never isometric. The rocky top must remain clearly distinguishable from every cliff face when reduced to 48 pixels per gameplay tile. Rock only: no grass, dirt, soil, moss, vegetation, road, snow, lava, water, floor material, platform underneath, atmospheric fog or neighboring terrain texture. Use only perfectly uniform #FF00FF wherever there is no rock. No cast shadow, ambient shadow outside the footprint, glow, white matte, border, grid, text, labels, watermark or interface elements.",
       "prompt": "Create a production-ready 2048x2048 square 2D sprite atlas for an orthogonal top-down dark-fantasy game, divided into an exact invisible 4x4 grid of equal 512x512 cells. The atlas represents one coherent modular rocky cliff system. Every module must contain rock only, with no grass, dirt, snow, lava, water, floor texture, platform, cast shadow, text, labels, borders or interface elements. Use a perfectly uniform #FF00FF chroma-key background wherever there is no rock. Art direction: ominous natural mountain rock, charcoal and iron-brown stone, subtle cold violet shadows in deep cracks, painterly high detail, strong readable silhouettes, controlled perspective, light consistently from the upper-left. It must remain readable when each cell is reduced to 48x48 gameplay pixels. Cell layout, left to right: Row 1: straight cliff edge facing North, East, South, West. Row 2: convex outer corner NE, SE, SW, NW. Row 3: concave inner corner NE, SE, SW, NW. Row 4: diagonal NE-SW junction, diagonal NW-SE junction, horizontal terminal cap, vertical terminal cap. All connection ports must reach the exact same positions on their cell boundaries. Straight edges must repeat seamlessly along their longitudinal axis. Corners must connect perfectly to the matching straight modules. The rocky face must have consistent scale, lighting and strata across every cell. The top crest is entirely rocky and the descending face must not contain any neighboring terrain material. No isolated fragments, white matte, glow, fog baked into the image, perspective floor, isometric grid, watermark or text."
     },
     "top": {
+      "status": "ready_source_derived",
       "file": "plains_dark_fantasy_top_atlas.png",
+      "source_file": "plains_dark_fantasy_wall_cross_source_v3_alpha.png",
+      "source_size_px": [1256, 1256],
+      "derivation": "the twelve boundary modules reuse the corresponding validated v3 wall-atlas crops, including the footprint-safe internal lateral inset; four center variants are cropped strictly inside authored top surfaces, their alpha is normalized to opaque so violet rock cracks are not mistaken for chroma holes, and their edges are harmonized on both axes; no rotation, mirroring, generative fill, painted RGB pixels or invented peaks",
       "prompt": "Create a production-ready 2048x2048 square 2D sprite atlas for modular mountain tops in an orthogonal top-down dark-fantasy game, divided into an exact invisible 4x4 grid of equal 512x512 cells. Every module contains rock only on a perfectly uniform #FF00FF chroma-key background. The mountain must read as a real craggy mass rather than a flat plateau: clustered low peaks, broken ridgelines, fractured slabs, crevices and uneven height, with a strong top-down silhouette and controlled local perspective. Use charcoal and iron-brown rock with cold violet-black recesses and consistent upper-left lighting. Cell layout, left to right: Row 1: convex outer top corners NE, SE, SW, NW. Row 2: repeatable top edges North, East, South, West. Row 3: concave inner top corners NE, SE, SW, NW. Row 4: four distinct seamless center modules containing compatible low peaks and ridges. All modules must connect at identical points on their cell boundaries. Edge modules repeat seamlessly along their axis; center modules tile seamlessly on all four sides and can be mixed without visible seams. Peaks must stay low enough not to hide an excessive part of the battlefield, but must clearly break the flat surface. No grass, dirt, moss, vegetation, road, snow, lava, floor patch, cast shadow, text, labels, frame, watermark, isolated fragments or isometric projection."
     }
   },

@@ -12,6 +12,13 @@ const PERIMETER_MIN_FACE_DEPTH := 42.0
 const INTERNAL_LATERAL_WALL_WIDTH_TILES := 0.65
 const INTERNAL_FAR_FACE_DEPTH_TILES := 1.75
 const MOUNTAIN_RAISE_TILES := 2.0
+## The delivered cross keeps the south-facing opaque rock in the upper half of
+## its atlas cell. A regular 2x2 stamp therefore ends at the crest boundary.
+## Mountain-to-void contacts use twice the visual height so that this opaque
+## half also covers the first chasm tile instead of revealing the dirt underlay.
+## This is render-only: the canonical +2 -> -1.75 face and all collision data
+## remain unchanged.
+const MOUNTAIN_CONTACT_ATLAS_HEIGHT_MULTIPLIER := 2.0
 # Horizontal lean of the lateral walls as a fraction of their drop depth. 0.0 is a
 # flat vertical strip; ~0.5 ≈ 27° from vertical, matching TopDownCliffMeshBuilder.
 const LATERAL_VOID_SLOPE := 0.5
@@ -20,16 +27,22 @@ const FALL_ZONE_BOUNDARY_RUNS = preload(
 )
 
 var face_mesh: ArrayMesh
+var face_meshes_by_role: Dictionary = {}
 var face_count: int = 0
 var concave_join_count: int = 0
 var mountain_contact_count: int = 0
+var atlas_stamp_count: int = 0
+var mountain_contact_stamp_count: int = 0
 var corner_drop_by_vertex: Dictionary = {}
 
 func reset() -> void:
 	face_mesh = null
+	face_meshes_by_role.clear()
 	face_count = 0
 	concave_join_count = 0
 	mountain_contact_count = 0
+	atlas_stamp_count = 0
+	mountain_contact_stamp_count = 0
 	corner_drop_by_vertex.clear()
 
 func build(
@@ -37,7 +50,8 @@ func build(
 	fall_zone_sides: Array[StringName],
 	zone_size: Vector2i,
 	logical_scale: float,
-	mesa_rects: Array[Rect2i] = []
+	mesa_rects: Array[Rect2i] = [],
+	atlas_set: RockCliffAtlasSet = null
 ) -> void:
 	reset()
 	if fall_zone_rects.is_empty() or logical_scale <= 0.0:
@@ -59,9 +73,26 @@ func build(
 			face_runs.append(face_run)
 	corner_drop_by_vertex = _build_corner_drops(face_runs)
 	var buffers := QuadMeshBuffers.create()
+	var role_buffers := {}
 	for face_run in face_runs:
 		_append_face_run(buffers, face_run, corner_drop_by_vertex)
 	face_mesh = QuadMeshBuffers.build_mesh(buffers)
+	if atlas_set != null:
+		role_buffers.clear()
+		_append_atlas_boundary_stamps(
+			role_buffers,
+			fall_zone_rects,
+			zone_size,
+			logical_scale,
+			mesa_rects,
+			atlas_set
+		)
+	for role in role_buffers:
+		var role_mesh := QuadMeshBuffers.build_mesh(
+			role_buffers[role] as Dictionary
+		)
+		if role_mesh != null:
+			face_meshes_by_role[role] = role_mesh
 
 func _describe_boundary_run(
 	run: Dictionary,
@@ -278,6 +309,149 @@ func _append_face_run(
 		if end_point.y <= start_point.y:
 			return
 	_append_projected_face(buffers, start_point, end_point, start_drop, end_drop)
+
+func _append_atlas_boundary_stamps(
+	buffers_by_role: Dictionary,
+	fall_zone_rects: Array[Rect2i],
+	zone_size: Vector2i,
+	logical_scale: float,
+	mesa_rects: Array[Rect2i],
+	atlas_set: RockCliffAtlasSet
+) -> void:
+	var void_cells := {}
+	var candidate_vertices := {}
+	var zone_bounds := Rect2i(Vector2i.ZERO, zone_size)
+	for source_rect in fall_zone_rects:
+		var rect := source_rect.intersection(zone_bounds)
+		for y in range(rect.position.y, rect.end.y):
+			for x in range(rect.position.x, rect.end.x):
+				var cell := Vector2i(x, y)
+				void_cells[cell] = true
+				candidate_vertices[cell] = true
+				candidate_vertices[cell + Vector2i.RIGHT] = true
+				candidate_vertices[cell + Vector2i.DOWN] = true
+				candidate_vertices[cell + Vector2i.ONE] = true
+	var zone_offset := Vector2(zone_size) * 0.5
+	for vertex_value in candidate_vertices:
+		var vertex := vertex_value as Vector2i
+		var mask := _terrain_quadrant_mask(vertex, zone_bounds, void_cells)
+		var role := RockCliffTopologyResolver.wall_role_for_vertex_mask(mask)
+		if role.is_empty():
+			continue
+		var raise := _mountain_raise_at_vertex(
+			vertex, mesa_rects, logical_scale
+		)
+		var position := (
+			Vector2(vertex) - zone_offset - Vector2.ONE
+		) * logical_scale
+		position.y -= raise
+		var size := _atlas_stamp_size(logical_scale, raise, role)
+		var uv_rect := atlas_set.get_wall_uv_rect(role)
+		var crop := _atlas_stamp_crop(role, raise)
+		position += size * crop.position
+		size *= crop.size
+		uv_rect = Rect2(
+			uv_rect.position + uv_rect.size * crop.position,
+			uv_rect.size * crop.size
+		)
+		var nw := position
+		var ne := position + Vector2(size.x, 0.0)
+		var se := position + size
+		var sw := position + Vector2(0.0, size.y)
+		QuadMeshBuffers.append_quad(
+			_buffers_for_role(buffers_by_role, role),
+			PackedVector2Array([nw, ne, se, sw]),
+			PackedVector2Array([
+				uv_rect.position,
+				uv_rect.position + Vector2(uv_rect.size.x, 0.0),
+				uv_rect.end,
+				uv_rect.position + Vector2(0.0, uv_rect.size.y),
+			]),
+			PackedColorArray([
+				Color.WHITE, Color.WHITE, Color.WHITE, Color.WHITE,
+			])
+		)
+		atlas_stamp_count += 1
+		if raise > 0.0:
+			mountain_contact_stamp_count += 1
+
+func _atlas_stamp_size(
+	logical_scale: float,
+	mountain_raise: float,
+	role: StringName = &""
+) -> Vector2:
+	var height := logical_scale * 2.0 + mountain_raise
+	# Only the straight south-facing modules own the continuous tall drop. A
+	# stretched concave endpoint repeats its lateral arm below the turn and leaves
+	# the one-tile vertical tail seen over grass.
+	if mountain_raise > 0.0 and role == &"edge_south":
+		height *= MOUNTAIN_CONTACT_ATLAS_HEIGHT_MULTIPLIER
+	return Vector2(logical_scale * 2.0, height)
+
+func _atlas_stamp_crop(role: StringName, mountain_raise: float) -> Rect2:
+	# At a three-terrain/one-void vertex the neighbouring straight modules own
+	# both arms. Keeping the whole 2x2 concave cell repeats those arms for one
+	# extra tile beyond the corner (the visible strip over grass). Retain only
+	# the quadrant containing the actual turn. Raised contact corners stay whole
+	# because their vertically stretched art owns the mountain-to-void drop.
+	if mountain_raise > 0.0:
+		return Rect2(Vector2.ZERO, Vector2.ONE)
+	match role:
+		&"concave_north_west":
+			return Rect2(0.0, 0.0, 0.5, 0.5)
+		&"concave_north_east":
+			return Rect2(0.5, 0.0, 0.5, 0.5)
+		&"concave_south_east":
+			return Rect2(0.5, 0.5, 0.5, 0.5)
+		&"concave_south_west":
+			return Rect2(0.0, 0.5, 0.5, 0.5)
+	return Rect2(Vector2.ZERO, Vector2.ONE)
+
+func _terrain_quadrant_mask(
+	vertex: Vector2i,
+	zone_bounds: Rect2i,
+	void_cells: Dictionary
+) -> int:
+	var quadrant_cells: Array[Vector2i] = [
+		vertex + Vector2i(-1, -1),
+		vertex + Vector2i(0, -1),
+		vertex,
+		vertex + Vector2i(-1, 0),
+	]
+	var quadrant_bits: Array[int] = [
+		RockCliffTopologyResolver.VertexQuadrant.NORTH_WEST,
+		RockCliffTopologyResolver.VertexQuadrant.NORTH_EAST,
+		RockCliffTopologyResolver.VertexQuadrant.SOUTH_EAST,
+		RockCliffTopologyResolver.VertexQuadrant.SOUTH_WEST,
+	]
+	var mask := 0
+	for index in range(quadrant_cells.size()):
+		var cell := quadrant_cells[index]
+		if zone_bounds.has_point(cell) and not void_cells.has(cell):
+			mask |= quadrant_bits[index]
+	return mask
+
+func _mountain_raise_at_vertex(
+	vertex: Vector2i,
+	mesa_rects: Array[Rect2i],
+	logical_scale: float
+) -> float:
+	for mesa in mesa_rects:
+		if (
+			vertex.y == mesa.end.y
+			and vertex.x >= mesa.position.x
+			and vertex.x <= mesa.end.x
+		):
+			return logical_scale * MOUNTAIN_RAISE_TILES
+	return 0.0
+
+func _buffers_for_role(
+	buffers_by_role: Dictionary,
+	role: StringName
+) -> Dictionary:
+	if not buffers_by_role.has(role):
+		buffers_by_role[role] = QuadMeshBuffers.create()
+	return buffers_by_role[role] as Dictionary
 
 func _far_face_depth(rect: Rect2, side: StringName, logical_scale: float) -> float:
 	if _is_perimeter_side(side):

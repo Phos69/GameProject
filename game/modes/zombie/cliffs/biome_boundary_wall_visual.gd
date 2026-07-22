@@ -101,11 +101,14 @@ func _draw() -> void:
 			wall_size,
 			boundary_side,
 			wall_height,
-			primary_profile.face_texture,
+			primary_profile.face_draw_texture,
 			transition_top_texture,
 			uv_origin,
-			secondary_profile.face_texture,
-			boundary_side
+			secondary_profile.face_draw_texture,
+			boundary_side,
+			primary_profile.face_uv_rect,
+			Rect2(),
+			secondary_profile.face_uv_rect
 		)
 		return
 	BIOME_OBSTACLE_PAINTER.draw_perimeter_wall(

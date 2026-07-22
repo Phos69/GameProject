@@ -1,8 +1,8 @@
 {
-  "version": 18,
+  "version": 19,
   "coordinate_system": "orthogonal_top_down",
   "volume_style": "controlled_perspective",
-  "notes": "Manifest v18 adds the external modular rock-cliff kit contract for Plains while retaining explicit legacy raster fallbacks until the two authored atlases are delivered.",
+  "notes": "Manifest v19 promotes the source-derived Plains dark-fantasy wall and top atlases to the active runtime kit while retaining explicit technical fallbacks.",
   "obstacle_footprint": {
     "slot_size_cells": [4, 4],
     "logical_cell_world_pixels": 8,
@@ -38,7 +38,7 @@
   },
   "rock_cliff_kits": {
     "plains_dark_fantasy": {
-      "status": "needs_asset",
+      "status": "final",
       "biome_ids": ["plains"],
       "atlas_grid": [4, 4],
       "module_size_px": [512, 512],

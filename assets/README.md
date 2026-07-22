@@ -75,13 +75,29 @@ contiene anche il contratto asset-driven per `tile_sets`, `tile_variants`,
 
 `environment/top_down/rock_cliffs/plains/generation_manifest.json` conserva i
 prompt integrali, output `2048x2048`, griglia `4x4`, celle `512x512`, chroma key
-`#FF00FF`, policy alpha, licenza e attribuzione di `PLAINS-ROCK-001`. I file
-attesi sono `plains_dark_fantasy_wall_atlas.png` e
-`plains_dark_fantasy_top_atlas.png`; vanno generati esternamente e non possono
-essere dipinti o sostituiti dal codice.
+`#FF00FF`, policy alpha, licenza e attribuzione di `PLAINS-ROCK-001`. Il wall
+atlas deriva dalla sorgente esterna connessa v3
+`plains_dark_fantasy_wall_cross_source_v3.png`: il tooling offline estrae l'alpha
+dal fondo magenta non uniforme,
+ritaglia i landmark direzionali e compone le 16 celle senza rotazione,
+mirroring, generative fill o pittura di pixel. Il top atlas usa lo stesso
+contratto e quattro crop interni armonizzati dalla superficie della croce; il
+loro alpha viene reso opaco per conservare le crepe viola come dettaglio rock,
+senza modificare i pixel RGB o aggiungere picchi inesistenti nella sorgente.
+La v3 contiene la maggiore pendenza laterale dentro la propria silhouette: il
+repacker allinea la base est/ovest al confine del modulo occupato, campiona la
+faccia completa dal suo landmark reale, arretra la cresta di 256 pixel atlas
+(`1` tile runtime) e riscalata la parete nella fascia interna. Lo stesso remap
+viene applicato ai corner compatibili; la validazione rifiuta alpha nelle meta
+esterne. Il runtime clippa insieme stamp e UV e non fa uscire mesh o skin dal
+footprint di collisione; i center opachi del top omettono inoltre la prima e
+l'ultima colonna, così la corona comincia sulla stessa cresta interna.
 
 Se il generatore restituisce chroma key, estrarre l'alpha con
-`tools/remove_sprite_chroma_key.gd`. Il kit si promuove da `needs_asset` solo se
+`tools/remove_sprite_chroma_key.gd`; la croce parete approvata viene ripacchettata
+con `tools/build_plains_rock_wall_atlas.gd` e il top con
+`tools/build_plains_rock_top_atlas.gd`. Il loader valida separatamente i due
+atlas, ma il kit e utilizzabile a runtime solo se
 entrambi gli atlas hanno dimensione esatta, le 32 regioni dichiarate sono
 uniche e dentro i bounds, le direzioni corrispondono alla tabella, i port sono
 allineati e i bordi repeatable non mostrano seam a `48x48`. In caso contrario

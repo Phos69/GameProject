@@ -318,6 +318,11 @@ func test_fall_zone_technical_rim_uses_dirt_between_road_and_void() -> void:
 	)
 	_assert_cell_rgb(image, Vector2i(1, 0), Vector3i(0, 255, 0),
 		"the rim encodes the dirt/path texture in the green channel")
+	assert_eq(
+		_max_cell_alpha(image, Vector2i(2, 0)),
+		0,
+		"the dirt divider never tints the void side of the technical rim"
+	)
 
 
 func test_mesa_parcel_uses_dirt_without_overriding_routes() -> void:
@@ -394,6 +399,15 @@ func _all_alpha_is_zero(image: Image) -> bool:
 		if bytes[index] != 0:
 			return false
 	return true
+
+
+func _max_cell_alpha(image: Image, cell: Vector2i) -> int:
+	var pixels_per_tile := BOUNDARY_MASK_BUILDER.MASK_PIXELS_PER_TILE
+	var result := 0
+	for y in range(cell.y * pixels_per_tile, (cell.y + 1) * pixels_per_tile):
+		for x in range(cell.x * pixels_per_tile, (cell.x + 1) * pixels_per_tile):
+			result = maxi(result, roundi(image.get_pixel(x, y).a * 255.0))
+	return result
 
 
 func _alpha_bytes(image: Image) -> PackedByteArray:

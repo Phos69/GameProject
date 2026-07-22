@@ -11,10 +11,11 @@ definito in `docs/top_down_cardinal_contract.md`.
 ## PLAINS-ROCK-001: montagne e void
 
 La Plains seleziona `plains_dark_fantasy` tramite `rock_cliff_kits` nel
-manifest ambiente v18. Il kit dichiara due atlas esterni `2048x2048`, griglia
+manifest ambiente v19. Il kit dichiara due atlas `2048x2048`, griglia
 `4x4`, moduli `512x512`, regioni semantiche parete/top, provenienza e fallback
-espliciti. `RockCliffAtlasSet` accetta i PNG soltanto quando entrambi esistono e
-hanno dimensione esatta; espone ritagli `AtlasTexture` e non genera raster.
+espliciti. `RockCliffAtlasSet` valida parete e top indipendentemente, espone
+ritagli `AtlasTexture` per preview e rettangoli UV normalizzati per le mesh; il
+kit e completo solo quando entrambi esistono e hanno dimensione esatta.
 `RockCliffTopologyResolver` e l'autorita tipizzata per lati, corner concavi e
 convessi, diagonali, cap e varianti center determinate da seed e coordinata.
 
@@ -25,14 +26,47 @@ lo stesso contorno unificato: al contatto montagna-void la run viene spezzata
 sui port della mesa, la faccia copre direttamente `3,75` tile e il south wall
 della mesa, il lip e il dirt divider duplicati vengono soppressi. Collider
 rettangolare, sort anchor, route e footprint complessivo restano autorevoli.
-Le run restano mesh batched; non viene creato un nodo per cella.
+Poiche il modulo south-facing derivato dalla croce concentra la roccia opaca
+nella meta superiore della cella atlas, i soli stamp sul contatto montagna-void
+usano altezza visuale `2x`: restano ancorati alla cima e coprono la prima tile
+del chasm, senza cambiare la faccia canonica, il collider o la fall-zone.
+Il moltiplicatore appartiene soltanto agli stamp `edge_south`; applicarlo ai
+corner concavi prolungherebbe il loro braccio laterale oltre la giunzione. I
+concavi non sollevati campionano inoltre solo il quadrante del raccordo, mentre
+le run adiacenti possiedono i due tratti rettilinei.
+Il riempimento Plains del void e un nero freddo opaco condiviso anche dal
+backdrop fuori regione; i texel void della terrain mask hanno inoltre alpha
+divider nullo, quindi nessun materiale dirt viene miscelato nel vuoto.
+Nel renderer Plains i moduli `2x2` sono classificati dalla maschera dei quattro
+quadranti che incontrano ogni vertice e raggruppati in una mesh per ruolo. Le
+mesh campionano il PNG atlas completo con UV di regione esplicite, perche
+`draw_mesh()` non applica il remap di `AtlasTexture`. Il top usa quattro crop
+centrali selezionati con hash di seed e coordinata. Non viene creato un nodo per
+cella e gli altri biomi conservano le mesh e texture repeat legacy.
 
 Il boundary mode `walled`/`blocked` di Infinite Arena disabilita ogni void
 interno, pur usando lo stesso contratto roccioso per raised cliff e mesa. I
-biomi avanzati continuano a usare i profili generated esistenti. Finche gli
-atlas esterni non vengono consegnati, tutti i consumer Plains risolvono lo
-stesso wall fallback. Il vecchio face raster upward, rimasto senza consumer o
-fallback, e stato ritirato; il plateau top resta fallback fino al cutover.
+biomi avanzati continuano a usare i profili generated esistenti. Parete e top
+approvati derivano offline dalla croce sorgente tramite sola estrazione alpha,
+crop, scaling, armonizzazione dei bordi e composizione; il manifest registra
+tool e hash. Il cutover Plains e attivo e non rasterizza o dipinge asset a
+runtime. Il top sorgente-derivato e continuo ma non aggiunge picchi assenti
+dalla croce: un'eventuale silhouette montuosa piu alta richiede un nuovo asset
+esterno. Il vecchio face raster upward, senza consumer o fallback, e ritirato.
+La revisione v3 della croce rende le facce laterali piu scoscese ricavandole
+verso l'interno della silhouette. Per `edge_east` e `edge_west` il repacker
+centra la base sul limite del footprint, arretra la cresta di una tile e
+riscalata nella fascia liberata l'intera faccia authored misurata dal suo vero
+landmark, non gli ultimi pixel scuri; convessi, concavi e
+diagonali applicano lo stesso offset nelle rispettive meta occupate. Le meta
+esterne restano alpha zero; stamp e UV vengono clippati insieme al footprint,
+quindi base e hitbox coincidono e nessun vertice laterale straborda. I landmark sono validati sulla sua
+silhouette e i quattro center crop interni normalizzano solo l'alpha,
+preservando integralmente il colore sorgente. Anche la corona runtime omette
+la prima e l'ultima colonna laterale: i center opachi iniziano una tile dentro
+la base, mentre blocker anomali larghi meno di tre tile conservano il top.
+`TileBakeCache` v35 usa il contratto render `plains_rock_cliff:v6` per
+invalidare i bake precedenti.
 
 ## Flusso runtime attuale
 

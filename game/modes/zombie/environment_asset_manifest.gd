@@ -367,10 +367,20 @@ func get_biome_rock_cliff_kit_id(biome_id: StringName) -> StringName:
 	return StringName(str(biome_contract.get("rock_cliff_kit_id", "")))
 
 func rock_cliff_kit_has_external_assets(kit_id: StringName) -> bool:
-	var kit := get_rock_cliff_kit_contract(kit_id)
 	return (
-		RESOLVER_UTILS.asset_path_exists(String(kit.get("wall_atlas_path", "")))
-		and RESOLVER_UTILS.asset_path_exists(String(kit.get("top_atlas_path", "")))
+		rock_cliff_kit_has_external_asset(kit_id, &"wall")
+		and rock_cliff_kit_has_external_asset(kit_id, &"top")
+	)
+
+func rock_cliff_kit_has_external_asset(
+	kit_id: StringName,
+	kind: StringName
+) -> bool:
+	if kind != &"wall" and kind != &"top":
+		return false
+	var kit := get_rock_cliff_kit_contract(kit_id)
+	return RESOLVER_UTILS.asset_path_exists(
+		String(kit.get("%s_atlas_path" % String(kind), ""))
 	)
 
 func get_rock_cliff_kit_asset_path(
@@ -1090,7 +1100,7 @@ func _validate_asset_coverage(failures: PackedStringArray) -> void:
 
 func _validate_rock_cliff_kits(failures: PackedStringArray) -> void:
 	if rock_cliff_kits.is_empty():
-		failures.append("rock_cliff_kits section must not be empty in manifest v18")
+		failures.append("rock_cliff_kits section must not be empty in manifest v18+")
 		return
 	for kit_id in rock_cliff_kits:
 		var kit := rock_cliff_kits[kit_id] as Dictionary

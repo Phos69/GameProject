@@ -72,3 +72,9 @@ scala delle vere supply crate da quella degli edifici ambientali.
 `biome_art_drowned_marsh` produce 42 PNG e aggiunge il focus `reed_wall` per
 verificare canvas, scala e ancoraggio runtime. Il review multi-bioma standard
 resta a 150 PNG.
+
+`plains_rock_cross_continuous_texture_visual_qa.gd` e una comparativa artistica
+v2/v3: usa una singola sorgente RGBA per top e pareti di ogni croce e salva
+`build/qa/plains_rock_cliffs/plains_rock_cross_continuous_texture_comparison.png`.
+Non esercita collider o placement runtime e non promuove una variante nel
+manifest.

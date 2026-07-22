@@ -23,6 +23,9 @@ const SVG_TEXTURE_LOADER = preload(
 const MESA_MESH_BUILDER = preload(
 	"res://game/modes/zombie/rocks/rectilinear_rock_area_mesh_builder.gd"
 )
+const MODULAR_MESA_MESH_BUILDER = preload(
+	"res://game/modes/zombie/rocks/modular_rock_area_mesh_builder.gd"
+)
 const MESA_ART_RESOLVER = preload(
 	"res://game/modes/zombie/rocks/mesa_visual_art_resolver.gd"
 )
@@ -48,6 +51,8 @@ var render_mode: StringName = &"sprite"
 var _asset_variation_pending: bool = false
 var _asset_contract_applied: bool = false
 var _mesa_mesh_builder: RectilinearRockAreaMeshBuilder
+var _modular_mesa_mesh_builder: ModularRockAreaMeshBuilder
+var _mesa_rock_cliff_atlas_set: RockCliffAtlasSet
 var _mesa_top_texture: Texture2D
 var _mesa_face_texture: Texture2D
 var _mesa_profile_id: StringName = &""
@@ -268,7 +273,10 @@ func get_mesa_art_asset_paths() -> Dictionary:
 func get_mesa_geometry_counts() -> Dictionary:
 	if _mesa_mesh_builder == null:
 		return {}
-	return _mesa_mesh_builder.get_counts()
+	var counts := _mesa_mesh_builder.get_counts()
+	if _modular_mesa_mesh_builder != null:
+		counts["atlas_batches"] = _modular_mesa_mesh_builder.get_counts()
+	return counts
 
 func has_suppressed_mesa_south_face() -> bool:
 	return _mesa_south_face_suppressed
@@ -326,24 +334,31 @@ func set_debug_footprint_visible(enabled: bool) -> void:
 func _draw() -> void:
 	if uses_mesa_visual():
 		if has_mesa_visual():
-			var face_mesh := _mesa_mesh_builder.get_face_mesh()
-			if face_mesh != null:
+			if (
+				_modular_mesa_mesh_builder != null
+				and _mesa_rock_cliff_atlas_set != null
+				and _mesa_rock_cliff_atlas_set.is_ready()
+			):
+				_draw_modular_mesa()
+			else:
+				var face_mesh := _mesa_mesh_builder.get_face_mesh()
+				if face_mesh != null:
+					draw_mesh(
+						face_mesh,
+						_mesa_face_texture,
+						Transform2D.IDENTITY,
+						Color(1.12, 1.12, 1.12, 1.0)
+						if _mesa_profile_id == &"forest"
+						else Color.WHITE
+					)
 				draw_mesh(
-					face_mesh,
-					_mesa_face_texture,
+					_mesa_mesh_builder.top_mesh,
+					_mesa_top_texture,
 					Transform2D.IDENTITY,
-					Color(1.12, 1.12, 1.12, 1.0)
+					Color(1.06, 1.06, 1.06, 1.0)
 					if _mesa_profile_id == &"forest"
 					else Color.WHITE
 				)
-			draw_mesh(
-				_mesa_mesh_builder.top_mesh,
-				_mesa_top_texture,
-				Transform2D.IDENTITY,
-				Color(1.06, 1.06, 1.06, 1.0)
-				if _mesa_profile_id == &"forest"
-				else Color.WHITE
-			)
 		if show_debug_footprint:
 			_draw_rect_debug_footprint()
 		return
@@ -352,6 +367,22 @@ func _draw() -> void:
 		return
 	if show_debug_footprint:
 		_draw_rect_debug_footprint()
+
+func _draw_modular_mesa() -> void:
+	for role_value in _modular_mesa_mesh_builder.top_meshes_by_role:
+		var role := StringName(role_value)
+		if _mesa_rock_cliff_atlas_set.top_atlas != null:
+			draw_mesh(
+				_modular_mesa_mesh_builder.top_meshes_by_role[role] as ArrayMesh,
+				_mesa_rock_cliff_atlas_set.top_atlas
+			)
+	for role_value in _modular_mesa_mesh_builder.face_meshes_by_role:
+		var role := StringName(role_value)
+		if _mesa_rock_cliff_atlas_set.wall_atlas != null:
+			draw_mesh(
+				_modular_mesa_mesh_builder.face_meshes_by_role[role] as ArrayMesh,
+				_mesa_rock_cliff_atlas_set.wall_atlas
+			)
 
 func _apply_asset_contract() -> void:
 	var manifest := EnvironmentAssetManifest.get_shared()
@@ -616,7 +647,26 @@ func configure_mesa_visual(
 		"face": String(art.get("face_path", "")),
 		"rock_cliff_kit_id": StringName(art.get("rock_cliff_kit_id", &"")),
 		"external_rock_atlas_ready": bool(art.get("external_rock_atlas_ready", false)),
+		"top_role": StringName(art.get("top_role", &"")),
+		"face_role": StringName(art.get("face_role", &"")),
 	}
+	_mesa_rock_cliff_atlas_set = null
+	_modular_mesa_mesh_builder = null
+	if bool(art.get("external_rock_atlas_ready", false)):
+		var atlas_set := RockCliffAtlasSet.new()
+		if atlas_set.configure(biome_id, EnvironmentAssetManifest.get_shared()):
+			_mesa_rock_cliff_atlas_set = atlas_set
+			_modular_mesa_mesh_builder = (
+				MODULAR_MESA_MESH_BUILDER.new() as ModularRockAreaMeshBuilder
+			)
+			_modular_mesa_mesh_builder.build_local_size(
+				obstacle_size,
+				logical_tile_scale,
+				generation_seed,
+				suppress_south_face,
+				_mesa_rock_cliff_atlas_set
+			)
+	texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 	_mesa_south_face_suppressed = suppress_south_face
 	_mesa_mesh_builder = MESA_MESH_BUILDER.new() as RectilinearRockAreaMeshBuilder
 	_mesa_mesh_builder.configure(

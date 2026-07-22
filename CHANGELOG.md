@@ -8,6 +8,55 @@ consolidati in `README.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `GAME_DESIGN.md`,
 
 ### Added
 
+- `PLAINS-ROCK-001`: aggiunta una comparativa Visual QA v2/v3 a `1280x720`
+  che disegna ogni montagna a croce con una singola texture RGBA continua per
+  pavimento, cresta e discesa verticale, a circa `48 px/tile`. La prova resta
+  artistica e non modifica atlas, collider o renderer runtime.
+- `PLAINS-ROCK-001`: promossa la croce sorgente v3 con facce est/ovest piu
+  scoscese ma interamente contenute nel footprint. Il repacker mantiene la base
+  sul limite collisione, campiona la vera faccia authored e arretra la cresta di
+  una tile completa per straight, convessi, concavi e diagonali. Stamp e UV sono ora
+  clippati insieme al footprint, eliminando sia la sottile riga scura sia ogni
+  possibile strabordo. Rigenerati wall/top atlas e hash del generation manifest
+  v9. Anche i center del top omettono ora le due colonne laterali, allineando la
+  corona alla cresta arretrata senza comprimere le UV o cambiare il collider;
+  `TileBakeCache` sale a v35 con contratto render `plains_rock_cliff:v6`.
+  La QA runtime dedicata riprende la mesa Plains in Zombie Survival su due seed
+  a `1280x720` e `960x540`.
+- `PLAINS-ROCK-001`: integrata la croce sorgente v2 con facce laterali inclinate
+  verso screen-bottom. Aggiornati landmark offline, alpha despill, hash e
+  derivazione; rigenerati entrambi gli atlas runtime `2048x2048`. I crop center
+  rendono opaco soltanto l'alpha interno per preservare le crepe viola che il
+  chroma-key potrebbe confondere con lo sfondo.
+- `PLAINS-ROCK-001`: il contatto mesa-chasm raddoppia l'altezza visuale dei
+  soli stamp atlas sollevati. La meta opaca della croce ora copre anche la
+  prima tile della fall-zone e non lascia affiorare il dirt underlay; quote,
+  collisioni e profondita canonica `3,75` restano invariate. Aggiunta la
+  preview dedicata `plains_mountain_void_contact.png`.
+- Il void Plains usa ora un nero freddo uniforme indipendente dalla palette e
+  la maschera terrain azzera il dirt divider sul lato non attraversabile: il
+  marrone non puo piu filtrare dentro chasm o bordo mondo.
+- I corner concavi del void vengono ritagliati al solo quadrante di raccordo e
+  non ripetono piu un tratto lineare sull'erba. Sul contatto sollevato il `2x`
+  e riservato alla parete south rettilinea: gli endpoint restano all'altezza
+  normale e terminano sul vertice.
+- `PLAINS-ROCK-001`: completato il cutover Plains ai due atlas sorgente-derivati
+  `2048x2048`. Mesa e void compongono moduli `2x2` dalla maschera dei quadranti
+  di ogni vertice e li raggruppano per ruolo; le mesh usano UV normalizzate sul
+  PNG completo, evitando il campionamento errato dell'intero atlas che
+  `draw_mesh()` produrrebbe con un semplice `AtlasTexture`.
+- Il top montagna usa quattro crop centrali della croce selezionati con hash di
+  seed/coordinata; non genera picchi artificiali. Aggiunte preview runtime a
+  `48 px/tile` per mesa e unione void a croce con quattro concavi.
+- `PLAINS-ROCK-001`: aggiunta una Visual QA sorgente-derivata che ricostruisce
+  una croce spessa tre tile usando i 16 wall module reali e quattro varianti top
+  estratte meccanicamente dalla superficie della croce, per valutare il limite
+  qualitativo del top senza introdurre nuovi pixel o picchi generativi.
+- `PLAINS-ROCK-001`: acquisita la croce rocciosa esterna della parete, estratto
+  l'alpha e prodotto deterministicamente l'atlas RGBA `2048x2048` con 16 moduli
+  unici. Aggiunto il repacker offline, registrati hash e derivazione nel
+  generation manifest e reso `RockCliffAtlasSet` capace di validare una consegna
+  wall-only senza promuovere il kit finche manca il top frastagliato.
 - `PLAINS-ROCK-001`: aggiunti manifest ambiente v18 e contratto
   `rock_cliff_kits/plains_dark_fantasy`, prompt/versione/licenza/chroma-key dei
   due atlas esterni, loader `AtlasTexture` senza rasterizzazione e resolver

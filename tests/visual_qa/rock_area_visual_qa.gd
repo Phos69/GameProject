@@ -64,8 +64,8 @@ func _run() -> void:
 		"both plateau definitions report rounded visible wall segments"
 	)
 	_expect(
-		int(counts.get("dirt_inset_corners", 0)) == 8,
-		"both plateau dirt crowns fill their four rounded base cut-outs"
+		int(counts.get("dirt_inset_corners", 0)) == 0,
+		"Plains mesas do not restore the retired dirt crown"
 	)
 	await _add_mesas_and_occlusion_probes(scene_root, layout, biome)
 	_add_labels(scene_root)
@@ -81,12 +81,12 @@ func _run() -> void:
 
 func _make_layout() -> BiomeEnvironmentLayout:
 	var layout := BiomeEnvironmentLayout.new()
-	layout.zone_size = Vector2i(80, 56)
-	layout.logical_tile_scale = 8.0
+	layout.zone_size = Vector2i(25, 13)
+	layout.logical_tile_scale = WorldGridConfig.LOGICAL_TILE_SCALE
 	layout.generation_seed = 24681357
 	layout.add_floor_rect(Rect2i(Vector2i.ZERO, layout.zone_size), &"forest_grass")
-	var small := Rect2i(Vector2i(8, 20), Vector2i(15, 15))
-	var large := Rect2i(Vector2i(43, 13), Vector2i(30, 30))
+	var small := Rect2i(Vector2i(2, 5), Vector2i(3, 3))
+	var large := Rect2i(Vector2i(14, 3), Vector2i(6, 6))
 	layout.mesa_rects.append(small)
 	layout.mesa_rects.append(large)
 	layout.mesa_profile_ids.append(&"forest")
@@ -150,6 +150,12 @@ func _add_mesas_and_occlusion_probes(
 		_expect(
 			int(geometry.get("faces", 0)) == 17,
 			"rock %d owns rounded visible wall segments" % index
+		)
+		var atlas_batches := geometry.get("atlas_batches", {}) as Dictionary
+		_expect(
+			int(atlas_batches.get("top_quads", 0)) > 0
+			and int(atlas_batches.get("face_quads", 0)) > 0,
+			"rock %d owns atlas-safe batched top and wall modules" % index
 		)
 		_expect(
 			rock.global_position.is_equal_approx(layout_center),

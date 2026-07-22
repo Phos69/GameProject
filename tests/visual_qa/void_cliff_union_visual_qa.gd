@@ -3,7 +3,7 @@ extends SceneTree
 const OUTPUT_DIR := "res://build/qa/void_cliffs"
 const OUTPUT_FILE := "void_cliff_union_concave.png"
 const ZONE_SIZE := Vector2i(20, 14)
-const LOGICAL_SCALE := 32.0
+const LOGICAL_SCALE := WorldGridConfig.LOGICAL_TILE_SCALE
 const FALL_RECTS: Array[Rect2i] = [
 	Rect2i(Vector2i(9, 1), Vector2i(4, 12)),
 	Rect2i(Vector2i(3, 5), Vector2i(14, 4)),
@@ -21,6 +21,7 @@ class CliffUnionBoard extends Node2D:
 	var face_texture: Texture2D
 	var horizontal_texture: Texture2D
 	var vertical_texture: Texture2D
+	var atlas_set: RockCliffAtlasSet
 
 	func _draw() -> void:
 		var zone_size_world := Vector2(ZONE_SIZE) * LOGICAL_SCALE
@@ -39,11 +40,26 @@ class CliffUnionBoard extends Node2D:
 				Vector2(rect.size) * LOGICAL_SCALE
 			)
 			draw_rect(void_rect, Color("050706"), true)
-		if border_builder != null and border_builder.vertical_mesh != null:
+		if (
+			atlas_set == null
+			and border_builder != null
+			and border_builder.vertical_mesh != null
+		):
 			draw_mesh(border_builder.vertical_mesh, vertical_texture)
 		if face_builder != null and face_builder.face_mesh != null:
-			draw_mesh(face_builder.face_mesh, face_texture)
-		if border_builder != null and border_builder.horizontal_mesh != null:
+			if atlas_set != null and atlas_set.is_wall_ready():
+				for role in face_builder.face_meshes_by_role:
+					draw_mesh(
+						face_builder.face_meshes_by_role[role] as ArrayMesh,
+						atlas_set.wall_atlas
+					)
+			else:
+				draw_mesh(face_builder.face_mesh, face_texture)
+		if (
+			atlas_set == null
+			and border_builder != null
+			and border_builder.horizontal_mesh != null
+		):
 			draw_mesh(border_builder.horizontal_mesh, horizontal_texture)
 
 func _initialize() -> void:
@@ -64,8 +80,21 @@ func _run() -> void:
 	board.name = "VoidCliffUnionVisualQa"
 	board.position = Vector2(640.0, 375.0)
 	board.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+	board.atlas_set = RockCliffAtlasSet.new()
+	_expect(
+		board.atlas_set.configure(&"plains", manifest),
+		"Plains rock atlas loads for the void-union preview"
+	)
 	board.face_builder = RectilinearCliffFaceMeshBuilder.new()
-	board.face_builder.build(FALL_RECTS, FALL_SIDES, ZONE_SIZE, LOGICAL_SCALE)
+	var no_mesas: Array[Rect2i] = []
+	board.face_builder.build(
+		FALL_RECTS,
+		FALL_SIDES,
+		ZONE_SIZE,
+		LOGICAL_SCALE,
+		no_mesas,
+		board.atlas_set
+	)
 	board.border_builder = TopDownCliffBorderMeshBuilder.new()
 	board.border_builder.build(FALL_RECTS, FALL_SIDES, ZONE_SIZE, LOGICAL_SCALE)
 	board.face_texture = _load_texture(manifest, &"cliff_face_texture", palette)
@@ -113,7 +142,7 @@ func _load_texture(
 
 func _add_labels(board: Node2D) -> void:
 	var title := Label.new()
-	title.text = "VOID CLIFF - PROFONDITA UNIFORME E ANGOLI CONCAVI"
+	title.text = "PLAINS VOID - PARETE ROCCIOSA MODULARE E ANGOLI CONCAVI"
 	title.position = Vector2(-640.0, -345.0)
 	title.size = Vector2(1280.0, 42.0)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

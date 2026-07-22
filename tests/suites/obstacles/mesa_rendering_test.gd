@@ -55,6 +55,114 @@ func test_odd_zone_mesa_centers_preserve_half_tile_precision() -> void:
 			% [rect.size.x, rect.size.y]
 		)
 
+func test_plains_lateral_cliffs_fill_one_tile_inside_the_collision_footprint() -> void:
+	var logical_scale := 48.0
+	var world_size := Vector2(MESA_RECT.size) * logical_scale
+	var half_width := world_size.x * 0.5
+	var atlas_set := RockCliffAtlasSet.new()
+	assert_true(atlas_set.configure(&"plains", _manifest), "Plains rock atlas loads")
+	var builder := ModularRockAreaMeshBuilder.new()
+	builder.build_local_size(
+		world_size,
+		logical_scale,
+		441902,
+		false,
+		atlas_set
+	)
+	assert_true(
+		builder.face_meshes_by_role.has(&"edge_east"),
+		"Plains mesa emits a readable east cliff face"
+	)
+	assert_true(
+		builder.face_meshes_by_role.has(&"edge_west"),
+		"Plains mesa emits a readable west cliff face"
+	)
+	if (
+		not builder.face_meshes_by_role.has(&"edge_east")
+		or not builder.face_meshes_by_role.has(&"edge_west")
+	):
+		return
+	var east_vertices := _mesh_vertices(
+		builder.face_meshes_by_role[&"edge_east"] as ArrayMesh
+	)
+	var west_vertices := _mesh_vertices(
+		builder.face_meshes_by_role[&"edge_west"] as ArrayMesh
+	)
+	assert_false(east_vertices.is_empty(), "east cliff owns renderable vertices")
+	assert_false(west_vertices.is_empty(), "west cliff owns renderable vertices")
+	if east_vertices.is_empty() or west_vertices.is_empty():
+		return
+	var east_bounds := _vertex_x_bounds(east_vertices)
+	var west_bounds := _vertex_x_bounds(west_vertices)
+	assert_almost_eq(
+		east_bounds.y,
+		half_width,
+		0.001,
+		"east cliff base coincides with the collision footprint"
+	)
+	assert_almost_eq(
+		west_bounds.x,
+		-half_width,
+		0.001,
+		"west cliff base coincides with the collision footprint"
+	)
+	assert_almost_eq(
+		east_bounds.x,
+		half_width - logical_scale,
+		0.001,
+		"east crest retreats inward by exactly one tile"
+	)
+	assert_almost_eq(
+		west_bounds.y,
+		-half_width + logical_scale,
+		0.001,
+		"west crest retreats inward by exactly one tile"
+	)
+	assert_true(
+		_vertices_fit_x_bounds(east_vertices, -half_width, half_width),
+		"east cliff vertices stay inside the authoritative hitbox width"
+	)
+	assert_true(
+		_vertices_fit_x_bounds(west_vertices, -half_width, half_width),
+		"west cliff vertices stay inside the authoritative hitbox width"
+	)
+
+func test_plains_mountain_top_retreats_one_tile_from_lateral_collision_edges() -> void:
+	var logical_scale := 48.0
+	var world_size := Vector2(MESA_RECT.size) * logical_scale
+	var half_width := world_size.x * 0.5
+	var atlas_set := RockCliffAtlasSet.new()
+	assert_true(atlas_set.configure(&"plains", _manifest), "Plains rock atlas loads")
+	var builder := ModularRockAreaMeshBuilder.new()
+	builder.build_local_size(
+		world_size,
+		logical_scale,
+		441902,
+		false,
+		atlas_set
+	)
+	var top_vertices := _role_mesh_vertices(builder.top_meshes_by_role)
+	assert_false(top_vertices.is_empty(), "Plains mesa owns renderable top geometry")
+	if top_vertices.is_empty():
+		return
+	var top_bounds := _vertex_x_bounds(top_vertices)
+	assert_almost_eq(
+		top_bounds.x,
+		-half_width + logical_scale,
+		0.001,
+		"west top crest retreats inward by exactly one tile"
+	)
+	assert_almost_eq(
+		top_bounds.y,
+		half_width - logical_scale,
+		0.001,
+		"east top crest retreats inward by exactly one tile"
+	)
+	assert_true(
+		_vertices_fit_x_bounds(top_vertices, -half_width, half_width),
+		"top geometry stays inside the authoritative collision footprint"
+	)
+
 func test_all_biomes_render_one_themed_y_sorted_mesa_volume() -> void:
 	var system := ObstacleSystem.new()
 	add_child(system)
@@ -136,6 +244,18 @@ func test_all_biomes_render_one_themed_y_sorted_mesa_volume() -> void:
 			var blocker_counts := blocker.get_mesa_geometry_counts()
 			assert_eq(int(blocker_counts.get("areas", 0)), 1, "%s blocker owns one crown" % String(biome_id))
 			assert_eq(int(blocker_counts.get("faces", 0)), 17, "%s blocker owns rounded wall segments" % String(biome_id))
+			if biome_id == &"plains":
+				var atlas_batches := blocker_counts.get("atlas_batches", {}) as Dictionary
+				assert_eq(
+					int(atlas_batches.get("top_quads", 0)),
+					(MESA_RECT.size.x - 2) * MESA_RECT.size.y,
+					"Plains crown omits the two lateral cliff columns"
+				)
+				assert_gt(
+					int(atlas_batches.get("face_quads", 0)),
+					0,
+					"Plains perimeter emits batched wall stamps"
+				)
 			assert_eq(
 				float(blocker_counts.get("top_texture_repeat_world_size", 0.0)),
 				float(PROFILE_TOP_REPEAT[profile_id]),
@@ -389,6 +509,42 @@ func _load_palette(biome_id: StringName) -> BiomePalette:
 		"res://game/modes/zombie/biomes/%s_palette.tres" % String(biome_id)
 	) as BiomePalette
 
+func _mesh_vertices(mesh: ArrayMesh) -> PackedVector2Array:
+	var result := PackedVector2Array()
+	if mesh == null:
+		return result
+	for surface_index in range(mesh.get_surface_count()):
+		var arrays := mesh.surface_get_arrays(surface_index)
+		var vertices := arrays[Mesh.ARRAY_VERTEX] as PackedVector2Array
+		result.append_array(vertices)
+	return result
+
+func _role_mesh_vertices(meshes_by_role: Dictionary) -> PackedVector2Array:
+	var result := PackedVector2Array()
+	for role_value in meshes_by_role:
+		result.append_array(
+			_mesh_vertices(meshes_by_role[role_value] as ArrayMesh)
+		)
+	return result
+
+func _vertex_x_bounds(vertices: PackedVector2Array) -> Vector2:
+	var minimum := INF
+	var maximum := -INF
+	for vertex in vertices:
+		minimum = minf(minimum, vertex.x)
+		maximum = maxf(maximum, vertex.x)
+	return Vector2(minimum, maximum)
+
+func _vertices_fit_x_bounds(
+	vertices: PackedVector2Array,
+	minimum: float,
+	maximum: float
+) -> bool:
+	for vertex in vertices:
+		if vertex.x < minimum - 0.001 or vertex.x > maximum + 0.001:
+			return false
+	return true
+
 func _assert_mesa_collision_visual_alignment(
 	blocker: EnvironmentObject,
 	layout_center: Vector2,
@@ -438,11 +594,16 @@ func _expect_profile_paths(profile_id: StringName, paths: Dictionary) -> void:
 	assert_true(FileAccess.file_exists(face_path), "%s mesa face exists" % String(profile_id))
 	if profile_id == &"forest":
 		if paths.has(&"top_role"):
-			assert_eq(StringName(paths.get(&"top_role", &"")), &"rock_cliff_top_fallback", "Plains crown records the pending kit fallback role")
+			assert_true(
+				StringName(paths.get(&"top_role", &"")) in [
+					&"center_01", &"center_02", &"center_03", &"center_04",
+				],
+				"Plains crown records one deterministic atlas center"
+			)
 		if paths.has(&"face_role"):
-			assert_eq(StringName(paths.get(&"face_role", &"")), &"rock_cliff_wall_fallback", "Plains wall records the shared kit fallback role")
-		assert_true(top_path.ends_with("rock_plateau_top_generated.png"), "forest preserves its dedicated plateau crown")
-		assert_true(face_path.ends_with("cliff_face_generated_v2.png"), "Plains mesa and void use one shared wall fallback")
+			assert_eq(StringName(paths.get(&"face_role", &"")), &"edge_south", "Plains wall records the active atlas face")
+		assert_true(top_path.ends_with("plains_dark_fantasy_top_atlas.png"), "Plains uses the source-derived top atlas")
+		assert_true(face_path.ends_with("plains_dark_fantasy_wall_atlas.png"), "Plains mesa and void use the active wall atlas")
 		return
 	if paths.has(&"top_role"):
 		assert_eq(StringName(paths.get(&"top_role", &"")), BiomeGeneratedArtCatalog.ROLE_GROUND, "%s crown consumes the ground role" % String(profile_id))

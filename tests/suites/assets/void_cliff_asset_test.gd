@@ -116,7 +116,7 @@ func test_cliff_corner_join_coverage() -> void:
 	var palette := load("res://game/modes/zombie/biomes/plains_palette.tres") as BiomePalette
 	builder.configure(palette, 44017)
 	builder.append_transition(BiomeTileResolver.TILE_VOID_EDGE_WEST, Vector2.ZERO, 18.0, 10.0)
-	var expected_void_color := Color(palette.background_color.darkened(0.68), 1.0)
+	var expected_void_color := ZombieModeController.get_void_background_color(palette)
 	var face_reaches_void_color := false
 	for color in builder._face_colors:
 		if color.is_equal_approx(expected_void_color):

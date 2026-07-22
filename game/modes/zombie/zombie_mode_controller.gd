@@ -51,6 +51,7 @@ var _void_backdrop_layer: CanvasLayer
 var _void_backdrop: ColorRect
 
 const VOID_BACKDROP_DARKEN := 0.68
+const PLAINS_VOID_BACKGROUND_COLOR := Color(0.003, 0.004, 0.006, 1.0)
 const SINGLE_BIOME_ARENA_KEY := "single_biome_arena"
 const DISABLE_WORLD_RUNTIME_KEY := "disable_world_runtime"
 const DISABLE_REGION_STREAMING_KEY := "disable_region_streaming"
@@ -74,6 +75,8 @@ var _run_generation: int = 0
 static func get_void_background_color(palette: BiomePalette) -> Color:
 	if palette == null:
 		return RenderingServer.get_default_clear_color()
+	if palette.biome_id == &"plains":
+		return PLAINS_VOID_BACKGROUND_COLOR
 	return palette.background_color.darkened(VOID_BACKDROP_DARKEN)
 
 func _ready() -> void:

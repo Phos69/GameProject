@@ -373,9 +373,13 @@ func _draw_perimeter_wall() -> void:
 			obstacle_size,
 			perimeter_cliff_profile.side,
 			get_wall_height(),
-			perimeter_cliff_profile.face_texture,
-			perimeter_cliff_profile.top_texture,
-			perimeter_cliff_profile.uv_origin
+			perimeter_cliff_profile.face_draw_texture,
+			perimeter_cliff_profile.top_draw_texture,
+			perimeter_cliff_profile.uv_origin,
+			null,
+			&"",
+			perimeter_cliff_profile.face_uv_rect,
+			perimeter_cliff_profile.top_uv_rect
 		)
 		return
 	BIOME_OBSTACLE_PAINTER.draw_perimeter_wall(

@@ -20,6 +20,10 @@ var uv_origin: Vector2 = Vector2.ZERO
 var wall_height: float = 0.0
 var face_texture: Texture2D
 var top_texture: Texture2D
+var face_draw_texture: Texture2D
+var top_draw_texture: Texture2D
+var face_uv_rect: Rect2 = Rect2()
+var top_uv_rect: Rect2 = Rect2()
 var asset_paths: Dictionary = {}
 var rock_cliff_kit_id: StringName = &""
 var external_rock_atlas_ready: bool = false
@@ -43,6 +47,10 @@ func configure(
 	)
 	face_texture = null
 	top_texture = null
+	face_draw_texture = null
+	top_draw_texture = null
+	face_uv_rect = Rect2()
+	top_uv_rect = Rect2()
 	asset_paths.clear()
 	rock_cliff_kit_id = &""
 	external_rock_atlas_ready = false
@@ -97,6 +105,8 @@ func _load_textures(
 			GENERATED_TEXTURE_TOOLS.surface_edge_trim_pixels(biome_id),
 			GENERATED_TEXTURE_TOOLS.should_harmonize_surface_edges(biome_id)
 		)
+		face_draw_texture = face_texture
+		top_draw_texture = top_texture
 		return
 	var manifest := EnvironmentAssetManifest.get_shared()
 	rock_cliff_kit_id = manifest.get_biome_rock_cliff_kit_id(biome_id)
@@ -106,7 +116,26 @@ func _load_textures(
 	)
 	var face_path := ""
 	var top_path := ""
-	if not rock_cliff_kit_id.is_empty():
+	var face_role: StringName = &""
+	var top_role: StringName = &""
+	if external_rock_atlas_ready:
+		var atlas_set := RockCliffAtlasSet.new()
+		if atlas_set.configure(biome_id, manifest):
+			face_role = StringName("edge_%s" % String(side))
+			top_role = &"center_01"
+			face_texture = atlas_set.get_wall_texture(face_role)
+			top_texture = atlas_set.get_top_texture(top_role)
+			face_draw_texture = atlas_set.wall_atlas
+			top_draw_texture = atlas_set.top_atlas
+			face_uv_rect = atlas_set.get_wall_uv_rect(face_role)
+			top_uv_rect = atlas_set.get_top_uv_rect(top_role)
+			face_path = manifest.get_rock_cliff_kit_asset_path(
+				rock_cliff_kit_id, &"wall"
+			)
+			top_path = manifest.get_rock_cliff_kit_asset_path(
+				rock_cliff_kit_id, &"top"
+			)
+	elif not rock_cliff_kit_id.is_empty():
 		face_path = manifest.get_rock_cliff_kit_fallback_path(rock_cliff_kit_id, &"wall")
 		top_path = manifest.get_rock_cliff_kit_fallback_path(rock_cliff_kit_id, &"top")
 	else:
@@ -121,19 +150,27 @@ func _load_textures(
 		&"top": top_path,
 		&"rock_cliff_kit_id": rock_cliff_kit_id,
 		&"external_rock_atlas_ready": external_rock_atlas_ready,
+		&"face_role": face_role,
+		&"top_role": top_role,
 	}
-	face_texture = TEXTURE_LOADER.load_texture(
-		face_path,
-		primary_color,
-		accent_color,
-		TEXTURE_SIZE
-	)
-	top_texture = TEXTURE_LOADER.load_texture(
-		top_path,
-		primary_color,
-		accent_color,
-		TEXTURE_SIZE
-	)
+	if face_texture == null:
+		face_texture = TEXTURE_LOADER.load_texture(
+			face_path,
+			primary_color,
+			accent_color,
+			TEXTURE_SIZE
+		)
+	if top_texture == null:
+		top_texture = TEXTURE_LOADER.load_texture(
+			top_path,
+			primary_color,
+			accent_color,
+			TEXTURE_SIZE
+		)
+	if face_draw_texture == null:
+		face_draw_texture = face_texture
+	if top_draw_texture == null:
+		top_draw_texture = top_texture
 
 func _load_generated_repeating_texture(
 	asset_path: String,

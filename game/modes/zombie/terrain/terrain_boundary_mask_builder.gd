@@ -47,6 +47,11 @@ static func build(
 				Vector2i(pixel_x, pixel_y),
 				generation_seed
 			)
+			# Dirt belongs to the walkable side of a transition. Painting it into a
+			# zero-weight void texel tints narrow chasms brown, especially after
+			# linear mask filtering.
+			if surface_kind == SURFACE_CLASSIFIER.SURFACE_VOID:
+				divider_alpha = 0.0
 			if divider_alpha > 0.0:
 				divider_pixel_count += 1
 			var byte_index := (pixel_y * image_size.x + pixel_x) * 4
